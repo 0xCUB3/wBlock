@@ -193,7 +193,7 @@ struct EditorMetadataAutofillState: Equatable {
 }
 
 /// One reviewed URL with the same metadata fields as local imports.
-struct AddContentURLMetadataSection: View {
+struct AddContentURLMetadataSection<Footer: View>: View {
     let url: URL
     @Binding var name: String
     @Binding var description: String
@@ -201,6 +201,7 @@ struct AddContentURLMetadataSection: View {
     let categories: [FilterListCategory]
     var categoryName: (FilterListCategory) -> String = { $0.localizedName }
     var languages: Binding<Set<String>>? = nil
+    @ViewBuilder var footer: () -> Footer
 
     var body: some View {
         Section {
@@ -211,6 +212,8 @@ struct AddContentURLMetadataSection: View {
                 .textCase(nil)
                 .lineLimit(1)
                 .truncationMode(.middle)
+        } footer: {
+            footer()
         }
     }
 }

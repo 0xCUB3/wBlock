@@ -2004,7 +2004,7 @@ struct AddUserScriptView: View {
                         category: Binding(get: { urlCategories[key] ?? selectedCategory }, set: { urlCategories[key] = $0 }),
                         categories: FilterListCategory.userScriptCategories,
                         categoryName: { $0.userScriptCategoryName }
-                    )
+                    ) { EmptyView() }
                 }
             } else {
                 Section {

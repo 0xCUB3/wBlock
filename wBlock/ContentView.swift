@@ -1483,7 +1483,7 @@ struct AddFilterListView: View {
                 Section {
                     AddContentBackButton { isReviewingText = false }
                 }
-                Section { userListMetaFields }
+                Section { userListMetaFields } footer: { duplicateNameNote(for: userListTitle) }
             } else {
                 AddContentSourceSection(title: "Rules", placeholder: "Paste or type filter rules.",
                     isEmpty: pastedRules.isEmpty, isDisabled: isSaving, onPaste: pasteRulesFromClipboard,
@@ -1510,6 +1510,7 @@ struct AddFilterListView: View {
                 if stagedFile != nil { userListMetaFields }
             } footer: {
                 AddContentNote(text: "Local imports won't auto-update; re-import to replace.", error: importErrorMessage)
+                if stagedFile != nil { duplicateNameNote(for: userListTitle) }
             }
         }
     }
@@ -1539,7 +1540,9 @@ struct AddFilterListView: View {
                     get: { urlLanguages[url.absoluteString] ?? [] },
                     set: { urlLanguages[url.absoluteString] = $0 }
                 )
-            )
+            ) {
+                duplicateNameNote(for: nameBinding(for: url).wrappedValue)
+            }
         }
     }
 
@@ -1563,10 +1566,7 @@ struct AddFilterListView: View {
     // MARK: - Footer
 	    private var urlFooterMessage: some View {
 	        Group {
-	            if isCustomNameDuplicate {
-	                Text("That name is already used by another filter list.")
-	                    .foregroundStyle(.orange)
-	            } else {
+	            if !isReviewingURLs {
 	                switch validationState {
 	                case .idle:
 	                    Text("wBlock will fetch and enable the filter list automatically")
@@ -1970,18 +1970,30 @@ struct AddFilterListView: View {
     }
 
     private var isCustomNameDuplicate: Bool {
-        let existingNames = filterManager.filterLists.map(\.name)
-        return duplicateNameCandidates.contains {
-            FilterListAddValidation.isDuplicateName(candidate: $0, existingNames: existingNames)
-        }
+        duplicateNameCandidates.contains(where: isDuplicateName)
     }
 
     /// Every name the add would save. Reviewed URLs count with their fetched
     /// titles too, not just typed names, and every URL is checked (#948).
+    /// Only names on screen count, so a name left in another step can't
+    /// quietly disable Next (#952).
     private var duplicateNameCandidates: [String] {
         switch addMode {
         case .url: return isReviewingURLs ? newURLs.map { nameBinding(for: $0).wrappedValue } : []
-        case .paste, .file: return [userListTitle]
+        case .paste: return isReviewingText ? [userListTitle] : []
+        case .file: return stagedFile != nil ? [userListTitle] : []
+        }
+    }
+
+    private func isDuplicateName(_ name: String) -> Bool {
+        FilterListAddValidation.isDuplicateName(candidate: name, existingNames: filterManager.filterLists.map(\.name))
+    }
+
+    /// Under the name it's about, in every add mode (#952).
+    @ViewBuilder
+    private func duplicateNameNote(for name: String) -> some View {
+        if isDuplicateName(name) {
+            AddContentNote(error: LocalizedStrings.text("That name is already used by another filter list."))
         }
     }
 
