@@ -211,10 +211,10 @@ Top of the Userscripts tab, under General. Both ship off. Once one is on, each f
 </details>
 
 <details>
-<summary>How often do filters update?</summary>
+<summary>How often do filters update, and does wBlock need to stay open?</summary>
 <br>
 
-As often as you set it, from hourly to weekly, or only when you hit refresh. On macOS the launch agent checks while the app is closed (you can turn that off). On iPhone and iPad, iOS decides when to wake wBlock, and sometimes that's not until you open it.
+As often as you set it, from hourly to weekly, or only when you hit refresh. You don't need to keep wBlock open. On macOS a launch agent checks while the app is closed (you can turn that off). On iPhone and iPad, iOS decides when to wake wBlock in the background. It wakes it less often, or not until you open it, when Background App Refresh is off or you swipe wBlock away in the app switcher.
 
 </details>
 
