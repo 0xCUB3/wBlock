@@ -26203,14 +26203,26 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       timer = setTimeout(() => reject(new Error(`Native message timed out: ${action || "unknown"}`)), timeoutMs);
     })]);
   };
+  // Sequential frames of one page, and iframe-heavy apps, ask for the same
+  // configuration many times a second. A cache entry the native host
+  // confirmed within this window is served without another lookup or state
+  // query. Any state-changing native call ends the window for every entry.
+  const CONFIG_REVALIDATE_INTERVAL_MS = 5000;
+  const configValidatedAt = new Map();
+  const isConfigFresh = key => Date.now() - (configValidatedAt.get(key) || 0) < CONFIG_REVALIDATE_INTERVAL_MS;
+  const forgetStaleStateOn = action => {
+    if (/^(set|resume|pause|clear)/.test(action)) configValidatedAt.clear();
+  };
   const sendQueuedNativeMessage = request => {
     const action = request && typeof request.action === "string" ? request.action : "";
+    forgetStaleStateOn(action);
     const response = nativeMessageQueue.then(() => withNativeMessageTimeout(browser.runtime.sendNativeMessage("application.id", request), nativeMessageTimeoutMs(request), action));
     nativeMessageQueue = response.catch(() => {});
     return response;
   };
   const sendPriorityNativeMessage = request => {
     const action = request && typeof request.action === "string" ? request.action : "";
+    forgetStaleStateOn(action);
     return withNativeMessageTimeout(
       browser.runtime.sendNativeMessage("application.id", request),
       nativeMessageTimeoutMs(request),
@@ -26232,6 +26244,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
             message.messageName ||
             (message.userInfo && message.userInfo.action)
           );
+          configValidatedAt.clear();
           if (action === "wblock:userscriptsChanged") {
             clearDocumentStartSessionCache();
           } else if (action === "wblock:zapperRulesChanged") {
@@ -26296,7 +26309,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     // Inert responses must not replace a usable configuration in the cache.
     const configuration = message.payload;
+    const key = cacheKey(url, topUrl);
     if (configuration.disabled === true || configuration.paused === true) {
+      configValidatedAt.delete(key);
       return configuration;
     }
     if (generation !== configurationGeneration) return configuration;
@@ -26304,12 +26319,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     // the timestamp.
     if (configuration.engineTimestamp !== engineTimestamp) {
       cache.clear();
+      configValidatedAt.clear();
       engineTimestamp = configuration.engineTimestamp;
     }
+    configValidatedAt.set(key, Date.now());
     // Save the new message in the cache for the given URL. Delete the key
     // first so Map insertion order doubles as LRU order for the persisted
     // slice.
-    const key = cacheKey(url, topUrl);
     cache.delete(key);
     cache.set(key, configuration);
     if (cache.size > CONFIG_CACHE_LIMIT) {
@@ -26345,6 +26361,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   const getConfiguration = async (message, url, topUrl) => {
     await configCacheHydration;
     const key = cacheKey(url, topUrl);
+    if (cache.has(key) && isConfigFresh(key)) {
+      return { configuration: cache.get(key), fromCache: true, fresh: true };
+    }
     if (cache.has(key)) {
       // Revalidate without making the cached path wait for the full rules lookup.
       void requestConfigurationCoalesced(message, url, topUrl).catch(error => {
@@ -26734,6 +26753,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     if (message && message.action === "wblock:clearCache") {
       configurationGeneration += 1;
       cache.clear();
+      configValidatedAt.clear();
       engineTimestamp = 0;
       pendingConfigurationRequests.clear();
       pendingSiteDisabledRequests.clear();
@@ -27133,10 +27153,13 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       wBlockLogger.error(errorMessage, url);
       return { type: MessageType.InitContentScript, state: "error", error: errorMessage };
     }
-    const { configuration: cachedConfiguration, fromCache } = configurationResult;
+    const { configuration: cachedConfiguration, fromCache, fresh } = configurationResult;
     let configuration = cachedConfiguration;
     let cachedBlockingState = null;
-    if (fromCache) {
+    if (fresh) {
+      cachedBlockingState = { disabled: false, paused: false };
+      configuration = { ...cachedConfiguration, disabled: false, paused: false };
+    } else if (fromCache) {
       let host = "";
       try {
         host = new URL(url).hostname;

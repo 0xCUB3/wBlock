@@ -639,8 +639,9 @@ for (const [label, inertState, activeCSS] of [
     !state.storage[CACHE_KEY] || !state.storage[CACHE_KEY].entries.some(([key]) => key === `${pageUrl}#`));
 }
 
-// Scenario M: cache hits resolve current state before applying rules across
-// pause and site-disable transitions.
+// Scenario M: a freshly validated cache hit skips the native state query, and
+// state changes through the popup end that window so the next hit resolves
+// current state before applying rules.
 {
   const pageUrl = "https://cache-state.example/";
   let stateValue = { disabled: false, paused: false };
@@ -660,30 +661,39 @@ for (const [label, inertState, activeCSS] of [
   await sleep(20);
   await state.onMessage({ type: "InitContentScript" }, topFrameSender(pageUrl));
   const beforeCoalescedState = blockingStateRequests;
+  const nativeBeforeFresh = state.nativeMessages.length;
   await Promise.all([
     state.onMessage({ type: "InitContentScript" }, topFrameSender(pageUrl)),
     state.onMessage({ type: "InitContentScript" }, topFrameSender(pageUrl))
   ]);
   check(
-    "concurrent cached lookups coalesce the priority state request",
-    blockingStateRequests === beforeCoalescedState + 1
+    "freshly validated cache hits skip every native lookup",
+    blockingStateRequests === beforeCoalescedState && state.nativeMessages.length === nativeBeforeFresh
   );
+  const popupSender = { origin: "null" };
+  const changeState = async value => {
+    stateValue = value;
+    await state.onMessage({
+      action: "wblock:popup:nativeMessage",
+      message: { action: "setSiteDisabledState", host: "cache-state.example", disabled: value.disabled }
+    }, popupSender);
+  };
   const initialApplications = state.cssInserted.length;
-  stateValue = { disabled: false, paused: true };
+  await changeState({ disabled: false, paused: true });
   await state.onMessage({ type: "InitContentScript" }, topFrameSender(pageUrl));
   check(
     "enabled-to-paused cache transition does not apply cached rules",
     state.cssInserted.length === initialApplications
   );
 
-  stateValue = { disabled: false, paused: false };
+  await changeState({ disabled: false, paused: false });
   await state.onMessage({ type: "InitContentScript" }, topFrameSender(pageUrl));
   check(
     "paused-to-enabled cache transition reapplies current rules",
     state.cssInserted.length === initialApplications + 1
   );
 
-  stateValue = { disabled: true, paused: false };
+  await changeState({ disabled: true, paused: false });
   await state.onMessage({ type: "InitContentScript" }, topFrameSender(pageUrl));
   check(
     "enabled-to-site-disabled cache transition does not apply cached rules",
