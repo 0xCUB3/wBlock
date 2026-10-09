@@ -1178,3 +1178,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 /* Shown under a sync setting while a sync is running */
 "Available when the current sync finishes." = "目前同步完成後可用。";
+"Generic Rules" = "通用規則";
+"Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps." = "使用未指定網站的規則在所有網站上隱藏元素。關閉後仍保留針對特定網站的隱藏，並讓頁面更輕快，尤其是複雜的網頁應用程式。";

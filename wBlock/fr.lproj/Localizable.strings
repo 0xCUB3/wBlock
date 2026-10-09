@@ -1178,3 +1178,5 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 
 /* Shown under a sync setting while a sync is running */
 "Available when the current sync finishes." = "Disponible lorsque la synchronisation en cours sera terminée.";
+"Generic Rules" = "Règles génériques";
+"Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps." = "Masque des éléments sur tous les sites avec des règles qui n'en nomment aucun. Désactivé, le masquage propre à chaque site reste actif et les pages sont plus légères, surtout les applications web chargées.";

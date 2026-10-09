@@ -1178,3 +1178,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 /* Shown under a sync setting while a sync is running */
 "Available when the current sync finishes." = "Станет доступно после завершения текущей синхронизации.";
+"Generic Rules" = "Общие правила";
+"Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps." = "Скрывает элементы на всех сайтах правилами, в которых сайт не указан. Если выключить, скрытие для конкретных сайтов останется, а страницы станут легче, особенно тяжёлые веб-приложения.";

@@ -27,13 +27,27 @@ struct CosmeticFilteringSitesView: View {
                 // The scope only matters while the switch is on, so it is
                 // hidden rather than left editable with no effect.
                 if isEnabled {
+                    Toggle(isOn: Binding(
+                        get: { sites.includesGeneric },
+                        set: { update(sites.selectedSites, sites.excludedSites, includesGeneric: $0) }
+                    )) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Generic Rules")
+                            Text("Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    .settingsSwitch()
+                    .settingsGroup()
                     SiteScopeEditor(
                         title: "Apply on", selectedSites: sites.selectedSites, excludedSites: sites.excludedSites,
                         emptySelectionMessage: "No sites selected. Cosmetic filtering will not apply.",
                         excludedMessage: "Cosmetic filtering will not apply on these sites. Network blocking still applies.",
                         footer: "Sites include their subdomains. Apply changes to update filtering.",
-                        updateSelected: { update(CosmeticFilteringPreference.Sites(selectedSites: $0, excludedSites: sites.excludedSites)) },
-                        updateExcluded: { update(CosmeticFilteringPreference.Sites(selectedSites: sites.selectedSites, excludedSites: $0)) }
+                        updateSelected: { update($0, sites.excludedSites) },
+                        updateExcluded: { update(sites.selectedSites, $0) }
                     )
                 }
             }
@@ -52,7 +66,11 @@ struct CosmeticFilteringSitesView: View {
         filterManager.markNonSelectionChangesPending()
     }
 
-    private func update(_ newSites: CosmeticFilteringPreference.Sites) {
+    private func update(_ selected: [String]?, _ excluded: [String], includesGeneric: Bool? = nil) {
+        let newSites = CosmeticFilteringPreference.Sites(
+            selectedSites: selected, excludedSites: excluded,
+            includesGeneric: includesGeneric ?? sites.includesGeneric
+        )
         guard newSites != sites else { return }
         sites = newSites
         CosmeticFilteringPreference.setSites(newSites)

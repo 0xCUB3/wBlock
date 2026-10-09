@@ -19,21 +19,32 @@ public enum CosmeticFilteringPreference {
     public struct Sites: Codable, Equatable, Sendable {
         public var selectedSites: [String]?
         public var excludedSites: [String]
+        /// Nil keeps generic rules (those naming no site), which every frame
+        /// on every site has to match against.
+        private var genericRules: Bool?
+
+        public var includesGeneric: Bool { genericRules != false }
 
         public static let all = Sites()
 
-        public init(selectedSites: [String]? = nil, excludedSites: [String] = []) {
+        public init(selectedSites: [String]? = nil, excludedSites: [String] = [], includesGeneric: Bool = true) {
             self.selectedSites = selectedSites.map { FilterListSiteExclusion.normalizedDomains(from: $0) }
             self.excludedSites = FilterListSiteExclusion.normalizedDomains(from: excludedSites)
+            self.genericRules = includesGeneric ? nil : false
         }
 
         /// Folded into cache identity; nil leaves existing caches valid.
         var cacheMarker: String? {
-            self == .all ? nil : FilterListSiteExclusion.scopeMarker(excluding: excludedSites, including: selectedSites)
+            guard self != .all else { return nil }
+            let marker = FilterListSiteExclusion.scopeMarker(excluding: excludedSites, including: selectedSites)
+            return includesGeneric ? marker : marker + "|generic=off"
         }
 
         public func restricting(_ rules: String) -> String {
-            FilterListSiteExclusion.restrictingCosmeticRules(rules, excluding: excludedSites, including: selectedSites)
+            FilterListSiteExclusion.restrictingCosmeticRules(
+                includesGeneric ? rules : FilterListSiteExclusion.droppingGenericCosmeticRules(rules),
+                excluding: excludedSites, including: selectedSites
+            )
         }
     }
 

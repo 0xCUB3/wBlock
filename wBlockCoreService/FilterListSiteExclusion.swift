@@ -88,6 +88,26 @@ public enum FilterListSiteExclusion {
             .joined(separator: "\n")
     }
 
+    /// Removes hiding rules that name no site. Exceptions stay, since they only
+    /// ever cancel other rules.
+    static func droppingGenericCosmeticRules(_ text: String) -> String {
+        text
+            .split(omittingEmptySubsequences: false, whereSeparator: \.isNewline)
+            .compactMap { raw in
+                let line = String(raw)
+                guard CosmeticFilteringPreference.isCosmeticRule(line),
+                      let cosmetic = splitCosmetic(line.trimmingCharacters(in: .whitespacesAndNewlines)),
+                      !cosmetic.separator.contains("@")
+                else { return line }
+                let namesSite = cosmetic.domains.split(separator: ",").contains { domain in
+                    let trimmed = domain.trimmingCharacters(in: .whitespaces)
+                    return !trimmed.isEmpty && !trimmed.hasPrefix("~")
+                }
+                return namesSite ? line : nil
+            }
+            .joined(separator: "\n")
+    }
+
     /// Cache identity for a site scope, since it changes compiled output
     /// without touching any list file.
     static func scopeMarker(excluding excluded: [String], including selected: [String]?) -> String {

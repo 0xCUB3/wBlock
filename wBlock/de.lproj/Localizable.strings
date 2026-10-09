@@ -1178,3 +1178,5 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 
 /* Shown under a sync setting while a sync is running */
 "Available when the current sync finishes." = "Verfügbar, sobald die aktuelle Synchronisierung abgeschlossen ist.";
+"Generic Rules" = "Allgemeine Regeln";
+"Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps." = "Blendet Elemente auf allen Websites mit Regeln aus, die keine Website nennen. Ausgeschaltet bleibt das Ausblenden für bestimmte Websites erhalten und Seiten werden leichter, besonders aufwendige Web-Apps.";

@@ -1178,3 +1178,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 /* Shown under a sync setting while a sync is running */
 "Available when the current sync finishes." = "يتوفر عند انتهاء المزامنة الحالية.";
+"Generic Rules" = "القواعد العامة";
+"Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps." = "تخفي العناصر في كل المواقع بقواعد لا تحدد موقعًا. يؤدي إيقافها إلى الإبقاء على الإخفاء الخاص بكل موقع ويجعل الصفحات أخف، خاصة تطبيقات الويب المزدحمة.";

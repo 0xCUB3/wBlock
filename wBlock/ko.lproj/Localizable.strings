@@ -1178,3 +1178,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 /* Shown under a sync setting while a sync is running */
 "Available when the current sync finishes." = "현재 동기화가 끝나면 사용할 수 있습니다.";
+"Generic Rules" = "일반 규칙";
+"Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps." = "사이트를 지정하지 않는 규칙으로 모든 사이트의 요소를 숨깁니다. 끄면 사이트별 숨기기는 유지되고, 특히 무거운 웹 앱에서 페이지가 가벼워집니다.";

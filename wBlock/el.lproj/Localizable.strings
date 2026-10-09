@@ -1178,3 +1178,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 /* Shown under a sync setting while a sync is running */
 "Available when the current sync finishes." = "Διαθέσιμο όταν ολοκληρωθεί ο τρέχων συγχρονισμός.";
+"Generic Rules" = "Γενικοί κανόνες";
+"Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps." = "Κρύβει στοιχεία σε κάθε ιστότοπο με κανόνες που δεν ορίζουν ιστότοπο. Αν το απενεργοποιήσετε, η απόκρυψη ανά ιστότοπο παραμένει και οι σελίδες γίνονται πιο ελαφριές, ειδικά οι απαιτητικές εφαρμογές ιστού.";

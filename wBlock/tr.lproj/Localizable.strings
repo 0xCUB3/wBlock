@@ -1187,3 +1187,5 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 
 /* Shown under a sync setting while a sync is running */
 "Available when the current sync finishes." = "Geçerli eşitleme bittiğinde kullanılabilir.";
+"Generic Rules" = "Genel Kurallar";
+"Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps." = "Site belirtmeyen kurallarla her sitede öğeleri gizler. Kapatıldığında siteye özel gizleme sürer ve sayfalar, özellikle yoğun web uygulamaları, hafifler.";

@@ -1178,3 +1178,5 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 
 /* Shown under a sync setting while a sync is running */
 "Available when the current sync finishes." = "Disponibil după ce se termină sincronizarea curentă.";
+"Generic Rules" = "Reguli generice";
+"Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps." = "Ascunde elemente pe toate site-urile cu reguli care nu numesc un site. Dezactivarea păstrează ascunderea specifică fiecărui site și face paginile mai ușoare, mai ales aplicațiile web complexe.";

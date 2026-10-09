@@ -1178,3 +1178,5 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 
 /* Shown under a sync setting while a sync is running */
 "Available when the current sync finishes." = "Az aktuális szinkronizálás befejezése után érhető el.";
+"Generic Rules" = "Általános szabályok";
+"Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps." = "Minden webhelyen elrejt elemeket olyan szabályokkal, amelyek nem neveznek meg webhelyet. Kikapcsolva a webhelyekre szabott elrejtés megmarad, az oldalak pedig könnyebbek lesznek, főleg az összetett webalkalmazások.";

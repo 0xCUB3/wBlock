@@ -55,6 +55,19 @@ struct CosmeticFilteringPreferenceTests {
         require(except.contains("example.com##.promoted"), "rules for other sites stay, got \(except)")
         require(except.contains("example.com#%#//scriptlet('set-constant', 'adBlock', 'false')"), "scriptlets untouched")
 
+        // Generic rules off: only hiding rules that name a site remain.
+        let generic = [
+            "##.ad-banner", "~gazzetta.it##.wide", "#?#div:has(> .sponsor)", "#$#.overlay { display: none; }",
+        ]
+        let specific = lines(CosmeticFilteringPreference.Sites(includesGeneric: false).restricting((generic + cosmetic + kept).joined(separator: "\n")))
+        require(!specific.contains { generic.contains($0) }, "generic rules must be dropped, got \(specific)")
+        require(specific.contains("example.com##.promoted") && specific.contains("example.com#@#.promoted"),
+                "site rules and exceptions must stay, got \(specific)")
+        require(kept.filter { !$0.isEmpty }.allSatisfy(specific.contains), "non-cosmetic rules must stay, got \(specific)")
+        require(CosmeticFilteringPreference.Sites(includesGeneric: false) != .all, "generic off must change cache identity")
+        let decoded = try? JSONDecoder().decode(CosmeticFilteringPreference.Sites.self, from: Data(#"{"excludedSites":[]}"#.utf8))
+        require(decoded == .all, "older saved scopes must decode with generic rules on")
+
         print("PASS: cosmetic filtering preference")
     }
 }
