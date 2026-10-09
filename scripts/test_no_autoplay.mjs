@@ -238,6 +238,14 @@ function createEnvironment(options = {}) {
     },
   };
   sandbox.window = sandbox;
+  env.windowListeners = new Map();
+  sandbox.addEventListener = (type, fn) => {
+    if (!env.windowListeners.has(type)) env.windowListeners.set(type, []);
+    env.windowListeners.get(type).push(fn);
+  };
+  env.dispatchWindow = (type, event) => {
+    for (const fn of env.windowListeners.get(type) || []) fn(event);
+  };
   const context = vm.createContext(sandbox);
   env.sandbox = sandbox;
   env.storage = storageData;
@@ -507,6 +515,21 @@ async function playResult(media) {
   await settle();
   check("visible return refreshes native site allow and stands the gate down",
     (await playResult(video)) === "ok");
+}
+
+// --- The initial pageshow does not repeat the boot reconcile ---
+{
+  const env = createEnvironment({ hint: true, storage: { [NATIVE_MIGRATED_KEY]: true }, nativeNoAutoplayState: { enabled: true, siteAllowed: false } });
+  env.run();
+  await settle();
+  const stateRequests = () => env.runtimeMessages.filter(m => m && m.action === "wblock:noAutoplay:getState").length;
+  const booted = stateRequests();
+  env.dispatchWindow("pageshow", { persisted: false });
+  await settle();
+  check("initial pageshow sends no extra native requests", booted === 1 && stateRequests() === 1);
+  env.dispatchWindow("pageshow", { persisted: true });
+  await settle();
+  check("back/forward restore refreshes native state", stateRequests() === 2);
 }
 
 // --- 11. CSP fallback: gate runs in the isolated world ---
