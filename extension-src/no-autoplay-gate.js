@@ -200,39 +200,26 @@
             };
         } catch (e) { /* ignore */ }
 
-        var observer = new MutationObserver(function (mutations) {
-            if (disabled) return;
-            for (var i = 0; i < mutations.length; i++) {
-                var mutation = mutations[i];
-                if (mutation.type === 'attributes') {
-                    if (!isUnlocked(mutation.target)) disarm(mutation.target);
-                    continue;
-                }
-                var nodes = mutation.addedNodes;
-                for (var j = 0; j < nodes.length; j++) scan(nodes[j]);
-            }
-        });
-
-        // Standing down disconnects the observer so a disabled gate costs DOM
-        // mutations nothing; weak references let removed shadow roots go.
-        var observedRoots = [];
-        function startObserving(root) {
-            try {
-                observer.observe(root, {
-                    childList: true,
-                    subtree: true,
-                    attributes: true,
-                    attributeFilter: ['autoplay']
-                });
-            } catch (e) { /* ignore */ }
+        // Media events reach a capturing listener on their root, so the gate
+        // costs nothing per DOM mutation; a subtree observer cost ~4% of
+        // Speedometer (#873). loadstart fires before autoplay can begin, and
+        // play/playing catch the rest. These events stay inside shadow roots,
+        // so each root gets its own listeners; weak references let removed
+        // shadow roots go.
+        var roots = [];
+        function onLoadStart(event) {
+            disarm(event.target);
         }
 
-        function observeRoot(root) {
+        function guardRoot(root) {
             if (!root || root._wblockNoAutoplayObserved) return;
             root._wblockNoAutoplayObserved = true;
-            observedRoots.push(new WeakRef(root));
-            if (!disabled) startObserving(root);
-            scan(root);
+            roots.push(new WeakRef(root));
+            try {
+                root.addEventListener('loadstart', onLoadStart, true);
+                root.addEventListener('play', onPlayEvent, true);
+                root.addEventListener('playing', onPlayEvent, true);
+            } catch (e) { /* ignore */ }
         }
 
         try {
@@ -240,7 +227,7 @@
             if (nativeAttachShadow && !nativeAttachShadow._wblockNoAutoplayPatched) {
                 var patchedAttachShadow = function () {
                     var root = nativeAttachShadow.apply(this, arguments);
-                    observeRoot(root);
+                    guardRoot(root);
                     return root;
                 };
                 patchedAttachShadow._wblockNoAutoplayPatched = true;
@@ -255,19 +242,15 @@
         try {
             doc.addEventListener('wblock-no-autoplay-disable-' + token, function () {
                 disabled = true;
-                observer.disconnect();
             }, false);
             doc.addEventListener('wblock-no-autoplay-enable-' + token, function () {
                 if (!disabled) return;
                 disabled = false;
-                // Mutations queued while disconnected are lost, so rescan
+                // Media that loaded while disabled kept autoplay, so rescan
                 // every surviving root, shadow roots included.
-                observedRoots = observedRoots.filter(function (ref) {
+                roots = roots.filter(function (ref) {
                     var root = ref.deref();
-                    if (root) {
-                        startObserving(root);
-                        scan(root);
-                    }
+                    if (root) scan(root.documentElement || root);
                     return !!root;
                 });
             }, false);
@@ -279,13 +262,9 @@
                 doc.addEventListener('touchstart', unlockFromEvent, true);
                 doc.addEventListener('click', unlockFromEvent, true);
                 doc.addEventListener('keydown', onKey, true);
-                doc.addEventListener('play', onPlayEvent, true);
-                doc.addEventListener('playing', onPlayEvent, true);
             } catch (e) { /* ignore */ }
-            if (doc.documentElement) observeRoot(doc.documentElement);
-            else doc.addEventListener('DOMContentLoaded', function () {
-                if (doc.documentElement) observeRoot(doc.documentElement);
-            });
+            guardRoot(doc);
+            scan(doc.documentElement);
         }
 
         boot();

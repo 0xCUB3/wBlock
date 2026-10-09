@@ -368,14 +368,11 @@ async function playResult(media) {
   late._autoplay = true;
   late.setAttribute("autoplay", "");
   late.paused = false;
-  env.triggerMutations([{ type: "childList", addedNodes: [late] }]);
-  check("mutation observer disarms media added later",
-    late.pauseCalls > 0 && !late.hasAttribute("autoplay") && late.getAttribute("data-wblock-no-autoplay") === "1");
-
-  const rearmed = env.makeMedia("video");
-  rearmed.setAttribute("autoplay", "");
-  env.triggerMutations([{ type: "attributes", addedNodes: [], target: rearmed }]);
-  check("mutation observer strips a re-added autoplay attribute", !rearmed.hasAttribute("autoplay"));
+  env.dispatch("loadstart", { target: late });
+  check("loadstart disarms media added later",
+    !late.hasAttribute("autoplay") && late.getAttribute("data-wblock-no-autoplay") === "1");
+  env.dispatch("playing", { target: late });
+  check("playing pauses media that started anyway", late.pauseCalls > 0 && late.paused);
 
   check("pause-on-play event catches media that slipped through", (() => {
     const slipped = env.makeMedia("video");
@@ -530,7 +527,7 @@ async function playResult(media) {
   const late = env.makeMedia("video");
   late._autoplay = true;
   late.setAttribute("autoplay", "");
-  env.triggerMutations([{ type: "childList", addedNodes: [late] }]);
+  env.dispatch("loadstart", { target: late });
   check("CSP fallback strips autoplay from added media", !late.hasAttribute("autoplay"));
 
   env.dispatch("click", { target: video, composedPath: () => [video] });
@@ -595,13 +592,16 @@ async function playResult(media) {
   check("malformed site-disabled response clears the hint", !env.localStore.has(HINT_KEY));
 }
 
-// --- A gate that stands down stops observing the DOM until re-enabled ---
+// --- The gate never observes DOM mutations, and a stood-down gate leaves media alone ---
 {
   const env = createEnvironment({ hint: true, nativeNoAutoplayState: { enabled: false, siteAllowed: false } });
   env.run();
-  check("armed gate observes the document", env.observers.some(observer => observer.connected));
+  check("armed gate does not observe DOM mutations", env.observers.length === 0);
   await settle();
-  check("standing down disconnects every gate observer", env.observers.every(observer => !observer.connected));
+  const media = env.makeMedia("video");
+  media.setAttribute("autoplay", "");
+  env.dispatch("loadstart", { target: media });
+  check("stood-down gate keeps autoplay", media.hasAttribute("autoplay"));
 }
 
 if (failures > 0) {
