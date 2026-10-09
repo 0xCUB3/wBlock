@@ -61,6 +61,11 @@ struct CosmeticFilteringPreferenceTests {
         ]
         let specific = lines(CosmeticFilteringPreference.Sites(includesGeneric: false).restricting((generic + cosmetic + kept).joined(separator: "\n")))
         require(!specific.contains { generic.contains($0) }, "generic rules must be dropped, got \(specific)")
+        let disguised = CosmeticFilteringPreference.Sites(includesGeneric: false)
+            .restricting(##"##[data-ad="#@#"]"## + "\n" + ##"##[data-ad="#$#"]"##)
+        require(lines(disguised).allSatisfy(\.isEmpty), "marker text inside a selector must not hide a generic rule, got \(disguised)")
+        let excludedDisguise = lines(CosmeticFilteringPreference.Sites(excludedSites: ["a.com"]).restricting(#"b.com##[title="x##y"]"#))
+        require(excludedDisguise == [#"b.com##[title="x##y"]"#], "selector text must stay intact, got \(excludedDisguise)")
         require(specific.contains("example.com##.promoted") && specific.contains("example.com#@#.promoted"),
                 "site rules and exceptions must stay, got \(specific)")
         require(kept.filter { !$0.isEmpty }.allSatisfy(specific.contains), "non-cosmetic rules must stay, got \(specific)")
