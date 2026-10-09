@@ -42,6 +42,16 @@ import wBlockCoreService
             "https://filters.adtidy.org/ios/filters/11_optimized.txt",
             "https://cdn.jsdelivr.net/gh/AdguardTeam/FiltersRegistry@master/platforms/ios/filters/11_optimized.txt",
         ], "ios registry mirrors")
+        for id in [17, 251] {
+            let primary = URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/mac_v3/filters/\(id)_optimized.txt")!
+            let cdn = URL(string: "https://filters.adtidy.org/mac_v3/filters/\(id)_optimized.txt")!
+            let js = URL(string: "https://cdn.jsdelivr.net/gh/AdguardTeam/FiltersRegistry@master/platforms/mac_v3/filters/\(id)_optimized.txt")!
+            check(FilterListURLMirror.fallbackURLs(for: primary) == [cdn, js], "mac_v3 mirror order and platform")
+            check(FilterListURLMirror.fallbackURLs(for: cdn) == [primary, js], "mac_v3 CDN primary")
+            check(FilterListURLMirror.allowsFallback(primary: primary, fallback: cdn), "mac_v3 adtidy allowed")
+            let wrongPlatform = URL(string: "https://filters.adtidy.org/extension/safari/filters/\(id)_optimized.txt")!
+            check(!FilterListURLMirror.allowsFallback(primary: primary, fallback: wrongPlatform), "mac_v3 cannot use Safari mirrors")
+        }
         let nordic = URL(string: "https://raw.githubusercontent.com/DandelionSprout/adfilt/master/NorwegianExperimentalList%20alternate%20versions/NorwegianExperimentalList.txt")!
         let nordicMirrors = FilterListURLMirror.fallbackURLs(for: nordic)
         check(nordicMirrors.contains(where: { $0.host == "cdn.jsdelivr.net" }), "Nordic jsdelivr fallback")

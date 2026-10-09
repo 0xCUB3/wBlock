@@ -10,7 +10,8 @@ public enum FilterListURLMirror {
         guard fallback.host?.lowercased() == "filters.adtidy.org" else { return true }
         let primaryPath = primary.path.lowercased()
         let fallbackPath = fallback.path.lowercased()
-        if primaryPath.contains("filter_17_trackparam") || primaryPath.contains("/17_") {
+        if primaryPath.contains("filter_17_trackparam")
+            || (primaryPath.contains("/extension/safari/filters/") && primaryPath.contains("/17_")) {
             return false
         }
         let isSafariPrimary = primaryPath.contains("/platforms/extension/safari/filters/")
@@ -22,7 +23,7 @@ public enum FilterListURLMirror {
         let host = url.host?.lowercased()
         let path = url.path.lowercased()
         if host == "filters.adtidy.org" {
-            return path.hasPrefix("/extension/safari/filters/") || path.hasPrefix("/ios/filters/") ? path : nil
+            return ["/extension/safari/filters/", "/ios/filters/", "/mac_v3/filters/"].contains { path.hasPrefix($0) } ? path : nil
         }
         guard (host == "raw.githubusercontent.com" && path.hasPrefix("/adguardteam/filtersregistry/"))
             || (host == "cdn.jsdelivr.net" && path.hasPrefix("/gh/adguardteam/filtersregistry@")),
@@ -69,13 +70,14 @@ public enum FilterListURLMirror {
         var result = [jsDelivr]
         // AdGuard publishes each registry platform at the same path on its own CDN.
         let platforms = ["platforms/extension/safari/filters/": "extension/safari/filters/",
-                         "platforms/ios/filters/": "ios/filters/"]
+                         "platforms/ios/filters/": "ios/filters/",
+                         "platforms/mac_v3/filters/": "mac_v3/filters/"]
         if user == "AdguardTeam" && repo == "FiltersRegistry",
            let (prefix, adtidyPath) = platforms.first(where: { jsPath.hasPrefix($0.key) }) {
             let filename = String(jsPath.dropFirst(prefix.count))
             // filter 17 is not published at AdGuard's Safari endpoint.
             if filename != "filter.txt" && filename != "filter_17_TrackParam.txt"
-                && !filename.hasPrefix("17_") {
+                && !(adtidyPath == "extension/safari/filters/" && filename.hasPrefix("17_")) {
                 result.insert(URL(string: "https://filters.adtidy.org/\(adtidyPath)\(filename)")!, at: 0)
             }
         }
