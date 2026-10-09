@@ -435,18 +435,6 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
     /// Reads the default filter file contents from the main bundle.
     ///
     /// - Returns: The contents of the default filter list or an error message if the file cannot be read.
-    public static func readDefaultFilterList() -> String {
-        do {
-            if let filePath = Bundle.main.url(forResource: "filter", withExtension: "txt") {
-                return try String(contentsOf: filePath, encoding: .utf8)
-            }
-
-            return "Not found the default filter file"
-        } catch {
-            return "Failed to read the filter file: \(error)"
-        }
-    }
-
     public struct ReloadAttemptResult: Sendable {
         public let success: Bool
         public let skipped: Bool

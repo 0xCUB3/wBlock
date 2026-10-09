@@ -54,13 +54,6 @@ public enum SafariContentBlockerAffinityProcessor {
         SafariContentBlockerAffinitySnapshot(filters: filters, containerURL: containerURL)
     }
 
-    public static func detectFiltersWithAffinity(
-        _ filters: [FilterList],
-        containerURL: URL
-    ) -> Set<UUID> {
-        snapshot(for: filters, containerURL: containerURL).filterIDs
-    }
-
     /// Returns the content that should participate in affinity-aware target
     /// distribution, or `nil` when the filter contributes only to its
     /// assigned target.

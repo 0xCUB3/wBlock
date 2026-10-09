@@ -3826,13 +3826,6 @@ public class UserScriptManager: ObservableObject {
         logger.info("✅ Migrated per-site userscript exceptions to protobuf (\(legacy.count) script(s))")
     }
 
-    /// Manually triggers duplicate userscript removal and cleanup
-    public func cleanupDuplicateUserScripts() {
-        logger.info("🧹 Manual cleanup of duplicate userscripts requested")
-        // Force duplicate detection even during initial setup when manually requested
-        checkForDuplicatesAndAskForConfirmation()
-    }
-
     /// Confirms removal of pending duplicate userscripts
     public func confirmDuplicateRemoval() {
         let requested = pendingDuplicatesToRemove
