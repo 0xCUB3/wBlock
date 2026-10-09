@@ -1090,7 +1090,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Names and descriptions" = "الأسماء والأوصاف";
 "Paste URL" = "لصق URL";
 "Paste URLs" = "لصق عناوين URL";
-"Not provided" = "غير متوفر";
 
 "%@ submitted at last apply" = "%@ أُرسلت عند آخر تطبيق";
 

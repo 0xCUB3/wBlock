@@ -1064,7 +1064,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Names and descriptions" = "名前と説明";
 "Paste URL" = "URLをペースト";
 "Paste URLs" = "URLをペースト";
-"Not provided" = "未指定";
 "%@ submitted at last apply" = "前回の適用時に%@件送信";
 "Submitted at last apply" = "前回の適用時に送信";
 "Source rules submitted to the converter at last apply, not Safari’s final rule count." = "前回の適用時に変換処理へ送信された元のルールであり、Safariの最終的なルール数ではありません。";

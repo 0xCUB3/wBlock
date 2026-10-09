@@ -1090,7 +1090,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Names and descriptions" = "名称和描述";
 "Paste URL" = "粘贴 URL";
 "Paste URLs" = "粘贴 URL";
-"Not provided" = "未提供";
 
 "%@ submitted at last apply" = "上次应用时提交了 %@ 条";
 

@@ -1090,7 +1090,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Names and descriptions" = "이름 및 설명";
 "Paste URL" = "URL 붙여넣기";
 "Paste URLs" = "URL 붙여넣기";
-"Not provided" = "제공되지 않음";
 
 "%@ submitted at last apply" = "마지막 적용 시 %@개 전달";
 

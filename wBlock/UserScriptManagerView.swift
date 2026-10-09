@@ -1123,12 +1123,10 @@ struct UserScriptInfoSidebar: View {
                     script.isUserStyle ? "Userstyle" : "Userscript",
                     comment: "Content type"
                 ), valueStyle: .typeBadge)
-                InfoMetadataRow(title: "Author", value: metadata.author ?? String(localized: "Not provided"))
-                InfoMetadataRow(
-                    title: "Homepage",
-                    value: metadata.homepage?.absoluteString ?? String(localized: "Not provided"),
-                    url: metadata.homepage
-                )
+                if let author = metadata.author { InfoMetadataRow(title: "Author", value: author) }
+                if let homepage = metadata.homepage {
+                    InfoMetadataRow(title: "Homepage", value: homepage.absoluteString, url: homepage)
+                }
                 if isDownloaded, !script.version.isEmpty { InfoMetadataRow(title: "Version", value: script.version) }
                 if script.url != nil { ScriptURLView(script: script) }
                 if contentLength > 0 { InfoMetadataRow(title: "Size", value: formatFileSize(contentLength)) }

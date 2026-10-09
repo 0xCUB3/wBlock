@@ -1090,7 +1090,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Names and descriptions" = "Имена и описания";
 "Paste URL" = "Вставить URL";
 "Paste URLs" = "Вставить URL-адреса";
-"Not provided" = "Не указано";
 
 "%@ submitted at last apply" = "%@ передано при последнем применении";
 

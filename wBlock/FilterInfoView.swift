@@ -75,7 +75,8 @@ struct FilterInfoView: View {
     }
 
     private var infoContent: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        let credit = BuiltInFilterCredits.credit(for: liveFilter)
+        return VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 8) {
                 if !liveFilter.localizedDisplayDescription.isEmpty {
                     Text(liveFilter.localizedDisplayDescription)
@@ -98,12 +99,12 @@ struct FilterInfoView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
-                InfoMetadataRow(title: "Author", value: cachedMetadata.author ?? String(localized: "Not provided"))
-                InfoMetadataRow(
-                    title: "Homepage",
-                    value: cachedMetadata.homepage?.absoluteString ?? String(localized: "Not provided"),
-                    url: cachedMetadata.homepage
-                )
+                if let author = credit?.author ?? cachedMetadata.author {
+                    InfoMetadataRow(title: "Author", value: author)
+                }
+                if let homepage = credit?.homepage ?? cachedMetadata.homepage {
+                    InfoMetadataRow(title: "Homepage", value: homepage.absoluteString, url: homepage)
+                }
                 if isDownloaded, !liveFilter.version.isEmpty { InfoMetadataRow(title: "Version", value: liveFilter.version) }
                 if liveFilter.url.scheme?.lowercased() == "http" || liveFilter.url.scheme?.lowercased() == "https" {
                     VStack(alignment: .leading, spacing: 6) {
