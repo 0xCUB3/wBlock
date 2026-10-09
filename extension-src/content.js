@@ -6125,32 +6125,48 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     if (!root || typeof MutationObserver === "undefined") {
       return;
     }
+    // The interstitial is a real http(s) document; blank and srcdoc frames
+    // never carry it.
+    if (!/^https?:$/i.test((window.location && window.location.protocol) || "")) return;
+    const challengeSelector = 'script[src^="/cdn-cgi/challenge-platform"],script[src*="challenges.cloudflare.com"],#challenge-form,#challenge-stage,#challenge-runner';
+    // Inspect only what was added. Re-querying the whole document on every
+    // mutation made DOM-heavy pages pay five full searches per change.
+    const isChallengeNode = node => node.nodeType === 1
+      && (node.matches(challengeSelector) || !!node.querySelector(challengeSelector)
+        || (node.tagName === "TITLE" && cloudflareChallengeTitle(document.title)));
     try {
-      const observer = new MutationObserver(() => {
+      const observer = new MutationObserver(mutations => {
         if (cloudflareChallengeContext) {
           observer.disconnect();
           return;
         }
-        if (
-          document.querySelector('script[src^="/cdn-cgi/challenge-platform"]')
-          || document.querySelector('script[src*="challenges.cloudflare.com"]')
-          || document.querySelector("#challenge-form")
-          || document.querySelector("#challenge-stage")
-          || document.querySelector("#challenge-runner")
-          || cloudflareChallengeTitle(document.title)
-        ) {
-          observer.disconnect();
-          markCloudflareChallenge();
+        for (const mutation of mutations) {
+          const titleText = mutation.target.nodeName === "TITLE";
+          for (const node of mutation.addedNodes) {
+            if ((titleText && cloudflareChallengeTitle(document.title)) || isChallengeNode(node)) {
+              stop();
+              markCloudflareChallenge();
+              return;
+            }
+          }
         }
       });
+      const stop = () => {
+        observer.disconnect();
+        document.removeEventListener("DOMContentLoaded", finish);
+      };
+      // The markers arrive while the document parses, so one last full check
+      // at DOMContentLoaded ends the watch.
+      const finish = () => {
+        stop();
+        if (!cloudflareChallengeContext
+          && (document.querySelector(challengeSelector) || cloudflareChallengeTitle(document.title))) {
+          markCloudflareChallenge();
+        }
+      };
       observer.observe(root, { childList: true, subtree: true });
-      // The interstitial markup lands within the first second; stop watching
-      // before it can outlast a normal page load.
-      setTimeout(() => {
-        try {
-          observer.disconnect();
-        } catch (_) {}
-      }, 5000);
+      document.addEventListener("DOMContentLoaded", finish);
+      setTimeout(stop, 5000);
     } catch (_) {}
   };
   if (isCloudflareChallengeFrameNow()) {
