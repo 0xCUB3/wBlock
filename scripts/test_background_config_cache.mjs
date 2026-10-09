@@ -1130,7 +1130,7 @@ for (const source of [canonicalSource, bundleSource]) {
   let failNoAutoplay = true;
   const state = loadBackground({ nativeHandler: message => {
     if (message && message.action === "getNoAutoplayState") {
-      return failNoAutoplay ? { error: "cold" } : { enabled: true, siteAllowed: false };
+      return failNoAutoplay ? null : { enabled: true, siteAllowed: false };
     }
     if (message && message.action === "getUserScripts") return { userScripts: [] };
     if (message && message.action === "getSiteDisabledState") return { disabled: false };
@@ -1147,7 +1147,7 @@ for (const source of [canonicalSource, bundleSource]) {
   }
   check("repeat frames share one userscript lookup", count("getUserScripts") === 1);
   check("repeat frames share one site-state lookup", count("getSiteDisabledState") === 1);
-  check("failed reads are not shared", count("getNoAutoplayState") === 3);
+  check("malformed reads are not shared", count("getNoAutoplayState") === 3);
   await state.onMessage({ action: "setUserScriptStorageValue", scriptId: "s", key: "k", rawValue: "1" }, sender);
   await state.onMessage(userScripts, sender);
   check("a mutation ends shared reads", count("getUserScripts") === 2);

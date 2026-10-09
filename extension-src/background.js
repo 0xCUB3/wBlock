@@ -26228,19 +26228,26 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     Promise.resolve(response).finally(forgetRecentNativeState).catch(() => {});
     return response;
   };
-  const readNativeRecently = (request, send = sendPriorityNativeMessage) => {
+  const RECENT_NATIVE_READ_LIMIT = 128;
+  const readNativeRecently = (request, send = sendPriorityNativeMessage, shareable = () => true) => {
     const key = JSON.stringify(request);
     const hit = recentNativeReads.get(key);
-    if (hit) return hit;
+    if (hit && Date.now() - hit.at < CONFIG_REVALIDATE_INTERVAL_MS) return hit.promise;
     const promise = send(request);
-    recentNativeReads.set(key, promise);
+    const entry = { promise, at: Date.now() };
+    recentNativeReads.delete(key);
+    recentNativeReads.set(key, entry);
+    if (recentNativeReads.size > RECENT_NATIVE_READ_LIMIT) {
+      recentNativeReads.delete(recentNativeReads.keys().next().value);
+    }
     const forget = () => {
-      if (recentNativeReads.get(key) === promise) recentNativeReads.delete(key);
+      if (recentNativeReads.get(key) === entry) recentNativeReads.delete(key);
     };
-    // Failures are never shared; the next frame asks again.
-    promise.then(response => response && (response.error || response.state === "error")
-      ? forget()
-      : setTimeout(forget, CONFIG_REVALIDATE_INTERVAL_MS), forget);
+    // Failures and malformed answers are never shared; the next frame asks again.
+    promise.then(response => {
+      if (!response || typeof response !== "object" || response.error
+        || response.state === "error" || response.ok === false || !shareable(response)) forget();
+    }, forget);
     return promise;
   };
   const sendQueuedNativeMessage = request => {
@@ -26896,7 +26903,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
 
       try {
-        const response = await readNativeRecently(userScriptRequest);
+        // Only "no scripts here" is shared: script payloads carry revisions and
+        // GM storage that must stay current.
+        const response = await readNativeRecently(userScriptRequest, sendPriorityNativeMessage,
+          answer => Array.isArray(answer.userScripts) && answer.userScripts.length === 0);
         const scripts = response && response.userScripts ? response.userScripts : [];
         if (response && response.error) {
           return { userScripts: scripts, error: response.error };
