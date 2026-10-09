@@ -660,8 +660,9 @@ struct OnboardingView: View {
 
                         Spacer()
 
-                        Toggle("", isOn: $hasEnabledContentBlockers)
+                        Toggle("", isOn: contentBlockerSetupBinding)
                             .labelsHidden()
+                            .disabled(isRefreshingContentBlockers)
                     }
 
                     if !detectedContentBlockerStates.isEmpty {
@@ -744,6 +745,26 @@ struct OnboardingView: View {
                 }
                 Task {
                     await confirmAdvancedSetupEnabled()
+                }
+            }
+        )
+    }
+
+    /// Checking the box re-reads Safari's state; it only sticks when all five
+    /// blockers are on, or when Safari can't report their state (#959).
+    private var contentBlockerSetupBinding: Binding<Bool> {
+        Binding(
+            get: { hasEnabledContentBlockers },
+            set: { newValue in
+                guard newValue else {
+                    hasEnabledContentBlockers = false
+                    return
+                }
+                Task {
+                    await refreshContentBlockerStates()
+                    if detectedContentBlockerStates.isEmpty {
+                        hasEnabledContentBlockers = true
+                    }
                 }
             }
         )
