@@ -26213,12 +26213,20 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   const configValidatedAt = new Map();
   const recentNativeReads = new Map();
   const isConfigFresh = key => Date.now() - (configValidatedAt.get(key) || 0) < CONFIG_REVALIDATE_INTERVAL_MS;
+  // A lookup that was in flight when state changed must not start a window.
+  let nativeStateEpoch = 0;
   const forgetRecentNativeState = () => {
+    nativeStateEpoch += 1;
     configValidatedAt.clear();
     recentNativeReads.clear();
   };
-  const forgetStaleStateOn = action => {
-    if (/^(set|resume|pause|clear|sync|delete)/.test(action)) forgetRecentNativeState();
+  // Mutations end the window when sent and again when done, so reads that
+  // overlapped them are not shared either.
+  const forgetStaleStateAround = (action, response) => {
+    if (!/^(set|resume|pause|clear|sync|delete)/.test(action)) return response;
+    forgetRecentNativeState();
+    Promise.resolve(response).finally(forgetRecentNativeState).catch(() => {});
+    return response;
   };
   const readNativeRecently = (request, send = sendPriorityNativeMessage) => {
     const key = JSON.stringify(request);
@@ -26237,19 +26245,17 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   };
   const sendQueuedNativeMessage = request => {
     const action = request && typeof request.action === "string" ? request.action : "";
-    forgetStaleStateOn(action);
     const response = nativeMessageQueue.then(() => withNativeMessageTimeout(browser.runtime.sendNativeMessage("application.id", request), nativeMessageTimeoutMs(request), action));
     nativeMessageQueue = response.catch(() => {});
-    return response;
+    return forgetStaleStateAround(action, response);
   };
   const sendPriorityNativeMessage = request => {
     const action = request && typeof request.action === "string" ? request.action : "";
-    forgetStaleStateOn(action);
-    return withNativeMessageTimeout(
+    return forgetStaleStateAround(action, withNativeMessageTimeout(
       browser.runtime.sendNativeMessage("application.id", request),
       nativeMessageTimeoutMs(request),
       action
-    );
+    ));
   };
   let nativeStatePort = null;
   let nativeStateReconnectTimer = null;
@@ -26313,6 +26319,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    */
   const requestConfiguration = async (request, url, topUrl) => {
     const generation = configurationGeneration;
+    const epoch = nativeStateEpoch;
     // Prepare the request payload.
     request.payload = {
       url,
@@ -26333,10 +26340,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     const configuration = message.payload;
     const key = cacheKey(url, topUrl);
     if (configuration.disabled === true || configuration.paused === true) {
-      configValidatedAt.delete(key);
+      // Pause and site state reach beyond this URL.
+      configValidatedAt.clear();
       return configuration;
     }
     if (generation !== configurationGeneration) return configuration;
+    const fresh = epoch === nativeStateEpoch;
     // If the engine timestamp has been updated, clear the cache and update
     // the timestamp.
     if (configuration.engineTimestamp !== engineTimestamp) {
@@ -26344,14 +26353,16 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       forgetRecentNativeState();
       engineTimestamp = configuration.engineTimestamp;
     }
-    configValidatedAt.set(key, Date.now());
+    if (fresh) configValidatedAt.set(key, Date.now());
     // Save the new message in the cache for the given URL. Delete the key
     // first so Map insertion order doubles as LRU order for the persisted
     // slice.
     cache.delete(key);
     cache.set(key, configuration);
     if (cache.size > CONFIG_CACHE_LIMIT) {
-      cache.delete(cache.keys().next().value);
+      const evicted = cache.keys().next().value;
+      cache.delete(evicted);
+      configValidatedAt.delete(evicted);
     }
     persistConfigCache();
     return configuration;
@@ -27169,6 +27180,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         return { type: MessageType.InitContentScript, state: "error", error: errorMessage };
       }
       if (cachedBlockingState.disabled || cachedBlockingState.paused) {
+        configValidatedAt.clear();
         configuration = emptyConfigurationForState(
           cachedBlockingState.disabled,
           cachedBlockingState.paused

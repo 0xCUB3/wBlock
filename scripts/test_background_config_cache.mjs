@@ -1153,6 +1153,45 @@ for (const source of [canonicalSource, bundleSource]) {
   check("a mutation ends shared reads", count("getUserScripts") === 2);
 }
 
+// A lookup that overlaps a state change never starts a fresh window, and an
+// inert answer for one URL ends the window for every URL.
+{
+  let paused = false;
+  let releaseSlow = null;
+  const state = loadBackground({ nativeHandler: message => {
+    if (message && message.action === "getBlockingState") return { disabled: false, paused };
+    if (message && message.action === "setSiteDisabledState") return { ok: true };
+    const url = message && message.payload ? message.payload.url : "";
+    if (url === "https://race.example/slow") {
+      return new Promise(resolve => { releaseSlow = () => resolve({ payload: makeConfig(["#race"], 40) }); });
+    }
+    return { payload: makeConfig(["#race"], 40, [], [], { disabled: false, paused }) };
+  } });
+  await sleep(20);
+  const popupSender = { origin: "null" };
+  const slowSender = topFrameSender("https://race.example/slow");
+  const pending = state.onMessage({ type: "InitContentScript" }, slowSender);
+  await sleep(5);
+  paused = true;
+  await state.onMessage({ action: "wblock:popup:nativeMessage", message: { action: "setSiteDisabledState", host: "race.example", disabled: false } }, popupSender);
+  releaseSlow();
+  await pending;
+  const applied = state.cssInserted.length;
+  const after = await state.onMessage({ type: "InitContentScript" }, slowSender);
+  check("a lookup overlapping a state change is not trusted as fresh",
+    after && after.paused === true && state.cssInserted.length === applied);
+
+  paused = false;
+  const a = topFrameSender("https://race.example/a");
+  await state.onMessage({ type: "InitContentScript" }, a);
+  paused = true;
+  await state.onMessage({ type: "InitContentScript" }, topFrameSender("https://race.example/b"));
+  const appliedBeforeA = state.cssInserted.length;
+  const again = await state.onMessage({ type: "InitContentScript" }, a);
+  check("an inert answer ends every fresh window",
+    again && again.paused === true && state.cssInserted.length === appliedBeforeA);
+}
+
 if (failures > 0) {
   console.error(`\n${failures} check(s) failed`);
   process.exit(1);
