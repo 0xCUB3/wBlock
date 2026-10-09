@@ -87,7 +87,7 @@ struct RemoveParamDNRRuleGeneratorTests {
 
         let generic = rules[2]
         expectEqual(generic.action.type, "redirect", "generic action")
-        expectEqual(generic.action.redirect?.transform.queryTransform?.removeParams, ["utm_source"], "generic remove param")
+        expectEqual(generic.action.redirect?.transform?.queryTransform?.removeParams, ["utm_source"], "generic remove param")
         expectEqual(generic.condition.urlFilter, "^utm_source=", "generic param-aware filter")
         expectEqual(generic.condition.resourceTypes, ["main_frame", "sub_frame"], "default document resources")
 
@@ -100,11 +100,11 @@ struct RemoveParamDNRRuleGeneratorTests {
         expectEqual(exception.condition.urlFilter, "||example.com^*^fbclid=", "exception filter")
 
         let stripAll = rules[5]
-        expectEqual(stripAll.action.redirect?.transform.query, "", "strip-all query transform")
+        expectEqual(stripAll.action.redirect?.transform?.query, "", "strip-all query transform")
         expectEqual(stripAll.condition.urlFilter, "||example.org^", "strip-all filter")
 
         let encoded = rules[6]
-        expectEqual(encoded.action.redirect?.transform.queryTransform?.removeParams, ["$param"], "encoded param decoded")
+        expectEqual(encoded.action.redirect?.transform?.queryTransform?.removeParams, ["$param"], "encoded param decoded")
         expectEqual(encoded.condition.resourceTypes, ["script"], "explicit resource type")
         expectEqual(encoded.condition.domains, ["foo.example"], "included legacy-compatible domain")
         expectEqual(encoded.condition.excludedDomains, ["bar.example"], "excluded legacy-compatible domain")

@@ -1,0 +1,2 @@
+These files are bundled from @adguard/scriptlets version 2.5.1 (GPL-3.0)
+Source: https://github.com/AdguardTeam/Scriptlets/releases/tag/v2.5.1

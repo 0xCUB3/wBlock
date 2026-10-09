@@ -365,6 +365,7 @@
 				"Resources/no-autoplay-gate.js",
 				"Resources/no-autoplay.js",
 				Resources/pages,
+				Resources/redirects,
 				Resources/rules/csp_strip_rules.json,
 				"Resources/userscript-injector.js",
 				"Resources/zapper-content.js",
@@ -531,6 +532,7 @@
 				Resources/_locales,
 				Resources/assets,
 				Resources/pages,
+				Resources/redirects,
 			);
 			path = "wBlock Scripts (iOS)";
 			sourceTree = "<group>";

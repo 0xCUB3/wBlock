@@ -68,6 +68,16 @@
     "host_permissions": [
         "<all_urls>"
     ],
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "redirects/*"
+            ],
+            "matches": [
+                "<all_urls>"
+            ]
+        }
+    ],
     "declarative_net_request": {
         "rule_resources": [
             {

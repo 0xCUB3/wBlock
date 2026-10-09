@@ -164,6 +164,9 @@ public enum WebExtensionRequestHandler {
             case "getRemoveParamDNRRules":
                 handleGetRemoveParamDNRRules(message: message!, context: context)
                 return
+            case "reportRedirectDNRStatus":
+                handleReportRedirectDNRStatus(message: message!, context: context)
+                return
             case "syncZapperRules":
                 handleSyncZapperRules(message: message!, context: context)
                 return
@@ -687,6 +690,26 @@ public enum WebExtensionRequestHandler {
         }
         let response = createResponse(with: payload.mapValues { Optional($0) })
         context.completeRequest(returningItems: [response])
+    }
+
+    /// Records whether wBlock Scripts serves its redirects, which decides
+    /// whether the next Apply may lift native blocks for them.
+    private static func handleReportRedirectDNRStatus(message: [String: Any?], context: NSExtensionContext) {
+        var ok = false
+        if let containerURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value
+        ) {
+            let status = RemoveParamDNRRuleGenerator.RedirectStatus(
+                installedRedirects: message["installedRedirects"] as? Int ?? 0,
+                hostAccess: message["hostAccess"] as? Bool ?? false,
+                privateAccess: message["privateAccess"] as? Bool,
+                reportedAt: Date()
+            )
+            ok = (try? RemoveParamDNRRuleGenerator.saveRedirectStatus(status, containerURL: containerURL)) != nil
+            os_log(.info, "Redirect DNR status: %d installed, host access %d, saved %d",
+                   status.installedRedirects, status.hostAccess ? 1 : 0, ok ? 1 : 0)
+        }
+        context.completeRequest(returningItems: [createResponse(with: ["ok": ok])])
     }
 
     #if os(macOS)

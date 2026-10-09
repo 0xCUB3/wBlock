@@ -644,6 +644,8 @@ extension AppFilterManager {
                     "skipped": "\(removeParamDNRSummary.skippedRules)",
                     "truncated": "\(removeParamDNRSummary.truncatedRules)",
                     "disabledAllow": "\(removeParamDNRSummary.disabledSiteAllowRules)",
+                    "resourceRedirects": "\(removeParamDNRSummary.resourceRedirectRules)",
+                    "redirectCarveOuts": "\(removeParamDNRSummary.redirectCarveOuts)",
                 ]
             )
             if removeParamDNRSummary.truncatedRules > 0 {

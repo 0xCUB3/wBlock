@@ -2032,6 +2032,17 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             )
         }
 
+        let redirectCarveOuts = RemoveParamDNRRuleGenerator.savedRedirectCarveOuts(containerURL: containerURL)
+        if !redirectCarveOuts.isEmpty {
+            try ContentBlockerInputWriter.appendInline(
+                redirectCarveOuts,
+                to: fileHandle,
+                hasher: &hasher,
+                newlineData: newlineData,
+                isCancelled: cancellationRequested
+            )
+        }
+
         if let extraRulesText, !extraRulesText.isEmpty {
             try ContentBlockerInputWriter.appendInline(
                 extraRulesText,

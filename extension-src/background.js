@@ -27670,6 +27670,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   // supported dynamic DNR but did not expose their quota, so keep a
   // conservative compatibility ceiling only for that legacy tier.
   const REMOVE_PARAM_DNR_OLD_SAFARI_FALLBACK_LIMIT = 5000;
+  const REDIRECT_DNR_STATUS_REPORT_KEY = "wblockRedirectDNRStatusReport";
+  const REDIRECT_DNR_STATUS_REPORT_THROTTLE_MS = 6 * 60 * 60 * 1000;
   let removeParamDNRInstallPromise = null;
   let removeParamDNRRulesCache = null;
   let removeParamDNRVersion = "";
@@ -27758,6 +27760,50 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }
     return { ...rule, condition };
   };
+  const reportRedirectDNRStatus = async (installedRules) => {
+    try {
+      let hostAccess = false;
+      try {
+        // Safari answers false for "<all_urls>" even when every site is granted.
+        hostAccess = await browser.permissions.contains({ origins: ["*://*/*"] });
+      } catch {
+        hostAccess = false;
+      }
+      let privateAccess = null;
+      try {
+        if (typeof browser.extension?.isAllowedIncognitoAccess === "function") {
+          privateAccess = await browser.extension.isAllowedIncognitoAccess();
+        }
+      } catch {
+        privateAccess = null;
+      }
+      const installedRedirects = installedRules.filter(rule =>
+        rule && rule.action && rule.action.redirect && typeof rule.action.redirect.extensionPath === "string"
+      ).length;
+      const status = { installedRedirects, hostAccess, privateAccess, at: Date.now() };
+      const stored = await browser.storage.local.get(REDIRECT_DNR_STATUS_REPORT_KEY);
+      const lastReport = stored && stored[REDIRECT_DNR_STATUS_REPORT_KEY];
+      const shouldReport = !lastReport
+        || lastReport.installedRedirects !== installedRedirects
+        || lastReport.hostAccess !== hostAccess
+        || lastReport.privateAccess !== privateAccess
+        || Date.now() - (lastReport.at || 0) >= REDIRECT_DNR_STATUS_REPORT_THROTTLE_MS;
+      if (shouldReport) {
+        // Priority path: a slow queued request (script updates wait up to
+        // two minutes) must not hold this report until the page suspends.
+        await sendPriorityNativeMessage({
+          action: "reportRedirectDNRStatus",
+          installedRedirects,
+          hostAccess,
+          privateAccess
+        });
+        await browser.storage.local.set({ [REDIRECT_DNR_STATUS_REPORT_KEY]: status });
+      }
+    } catch (error) {
+      console.warn("[wBlock] Failed to report redirect DNR status:", error);
+      logSupportDiagnostic({ event: "dnr_status_report_failed", error: String(error && error.message || error) });
+    }
+  };
   const prepareRemoveParamRulesForRuntime = rules => {
     const dnr = browser.declarativeNetRequest;
     const reported = Number(dnr && dnr.MAX_NUMBER_OF_DYNAMIC_AND_SESSION_RULES);
@@ -27803,6 +27849,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         && storedState.version === version
         && storedState.count === installRules.length
         && trackedRules.length === installRules.length) {
+      await reportRedirectDNRStatus(trackedRules);
       return;
     }
     const removeRuleIds = trackedRules.map(rule => rule.id);
@@ -27815,6 +27862,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     await browser.storage.local.set({
       [REMOVE_PARAM_DNR_STORAGE_KEY]: { version, count: installRules.length }
     });
+    await reportRedirectDNRStatus(installRules);
   };
   const removeParamURLFilterRegexCache = new Map();
   const dnrSeparatorPattern = "(?:[^A-Za-z0-9_.%-]|$)";
@@ -27943,6 +27991,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     if (!removeParamDNRInstallPromise) {
       removeParamDNRInstallPromise = installRemoveParamDNRRules().catch(error => {
         console.error("[wBlock] Failed to install removeparam DNR rules:", error);
+        logSupportDiagnostic({ event: "dnr_install_failed", error: String(error && error.message || error) });
       }).finally(() => {
         removeParamDNRInstallPromise = null;
       });

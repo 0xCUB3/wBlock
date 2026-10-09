@@ -3,7 +3,8 @@ import Foundation
 import os.log
 
 /// Builds the WebExtension DNR rules used for the subset of `$removeparam` that
-/// Safari can express: literal query parameter names and strip-all query rules.
+/// Safari can express: literal query parameter names and strip-all query rules,
+/// plus `$redirect` resource replacements (see RedirectDNRRules.swift).
 ///
 /// This is intentionally conservative. Regex-valued, inverted, malformed, and
 /// otherwise unsupported rules are skipped rather than widened into rules that
@@ -40,7 +41,7 @@ public enum RemoveParamDNRRuleGenerator {
         "xmlhttprequest", "xhr", "ping", "media", "websocket", "other",
     ]
 
-    private static let resourceTypeMap: [String: [String]] = [
+    static let resourceTypeMap: [String: [String]] = [
         "doc": ["main_frame"],
         "document": ["main_frame"],
         "main_frame": ["main_frame"],
@@ -68,6 +69,10 @@ public enum RemoveParamDNRRuleGenerator {
         /// Supported rules dropped only because the dynamic-rule budget was full.
         public let truncatedRules: Int
         public let disabledSiteAllowRules: Int
+        /// Admitted `$redirect` resource replacements.
+        public let resourceRedirectRules: Int
+        /// Native content-blocker exceptions that let those replacements win.
+        public let redirectCarveOuts: Int
         public let version: String
 
         public init(
@@ -77,8 +82,12 @@ public enum RemoveParamDNRRuleGenerator {
             skippedRules: Int,
             truncatedRules: Int = 0,
             disabledSiteAllowRules: Int,
+            resourceRedirectRules: Int = 0,
+            redirectCarveOuts: Int = 0,
             version: String
         ) {
+            self.resourceRedirectRules = resourceRedirectRules
+            self.redirectCarveOuts = redirectCarveOuts
             self.generatedRules = generatedRules
             self.removeParamRules = removeParamRules
             self.exceptionRules = exceptionRules
@@ -102,7 +111,9 @@ public enum RemoveParamDNRRuleGenerator {
     }
 
     public struct Redirect: Codable, Equatable {
-        public var transform: URLTransform
+        public var transform: URLTransform? = nil
+        /// Bundled replacement served by wBlock Scripts for `$redirect` rules.
+        public var extensionPath: String? = nil
     }
 
     public struct URLTransform: Codable, Equatable {
@@ -143,8 +154,10 @@ public enum RemoveParamDNRRuleGenerator {
 
     public static func generateRules(
         from rulesText: String,
+        redirectSources: [String] = [],
         disabledSites: [String] = []
     ) -> (rules: [DeclarativeRule], summary: Summary) {
+        let resolvedRedirects = resourceRedirectRules(fromSources: redirectSources)
         let disabledRules = makeDisabledSiteAllowRules(
             disabledSites,
             startingID: ruleIDBase,
@@ -161,10 +174,18 @@ public enum RemoveParamDNRRuleGenerator {
 
         var removeParamRules = 0
         var exceptionRules = 0
-        var skippedRules = 0
+        var skippedRules = resolvedRedirects.skipped
+
+        // Resource replacements stand in for blocks, so they are admitted before
+        // query stripping when the budget is tight.
+        for rule in resolvedRedirects.rules {
+            generatedSourceRuleCount += 1
+            sourceRulesInOrder.append(rule)
+            redirectRules.append(rule)
+        }
 
         for rawLine in rulesText.split(whereSeparator: \.isNewline) {
-            let result = buildRule(from: String(rawLine), nextID: ruleIDBase + generatedSourceRuleCount)
+            let result = buildRule(from: String(rawLine), nextID: 0)
             if result.wasRemoveParamRule { removeParamRules += 1 }
             if result.wasExceptionRule { exceptionRules += 1 }
             if result.skipped { skippedRules += 1 }
@@ -212,6 +233,7 @@ public enum RemoveParamDNRRuleGenerator {
             skippedRules: skippedRules,
             truncatedRules: truncatedRules,
             disabledSiteAllowRules: disabledAllowRulesCount,
+            resourceRedirectRules: rules.filter { $0.action.redirect?.extensionPath != nil }.count,
             version: version
         )
         return (rules, summary)
@@ -228,44 +250,67 @@ public enum RemoveParamDNRRuleGenerator {
             throw CocoaError(.fileNoSuchFile)
         }
 
-        let removeParamRules = extractedRemoveParamRules(
+        let extracted = extractedDNRSourceRules(
             for: filters,
             containerURL: containerURL
         )
 
-        let generated = generateRules(from: removeParamRules, disabledSites: disabledSites)
+        let generated = generateRules(
+            from: extracted.removeParam,
+            redirectSources: extracted.redirectSources,
+            disabledSites: disabledSites
+        )
         try saveRules(generated.rules, groupIdentifier: groupIdentifier)
+        let carveOuts = saveRedirectCarveOuts(for: generated.rules, containerURL: containerURL)
+        let summary = Summary(
+            generatedRules: generated.summary.generatedRules,
+            removeParamRules: generated.summary.removeParamRules,
+            exceptionRules: generated.summary.exceptionRules,
+            skippedRules: generated.summary.skippedRules,
+            truncatedRules: generated.summary.truncatedRules,
+            disabledSiteAllowRules: generated.summary.disabledSiteAllowRules,
+            resourceRedirectRules: generated.summary.resourceRedirectRules,
+            redirectCarveOuts: carveOuts,
+            version: generated.summary.version
+        )
         os_log(
             .info,
-            "Saved %d removeparam DNR rules (%d source removeparam, %d exceptions, %d skipped, %d truncated, %d disabled-site allow rules)",
-            generated.summary.generatedRules,
-            generated.summary.removeParamRules,
-            generated.summary.exceptionRules,
-            generated.summary.skippedRules,
-            generated.summary.truncatedRules,
-            generated.summary.disabledSiteAllowRules
+            "Saved %d DNR rules (%d source removeparam, %d exceptions, %d skipped, %d truncated, %d disabled-site allow rules, %d resource redirects, %d native carve-outs)",
+            summary.generatedRules,
+            summary.removeParamRules,
+            summary.exceptionRules,
+            summary.skippedRules,
+            summary.truncatedRules,
+            summary.disabledSiteAllowRules,
+            summary.resourceRedirectRules,
+            summary.redirectCarveOuts
         )
-        return generated.summary
+        return summary
     }
 
     // MARK: - Extraction cache
 
-    /// Sidecar that remembers the removeparam lines extracted from each filter
-    /// source, keyed by the source file's size and modification time. Site
-    /// toggles regenerate DNR rules often, and re-scanning every filter list from
-    /// disk each time was the dominant cost; with the sidecar only lists whose
-    /// file actually changed are rescanned.
+    /// Sidecar that remembers the removeparam and redirect lines extracted from
+    /// each filter source, keyed by the source file's size and modification
+    /// time. Site toggles regenerate DNR rules often, and re-scanning every
+    /// filter list from disk each time was the dominant cost; with the sidecar
+    /// only lists whose file actually changed are rescanned.
     private struct ExtractionEntry: Codable {
         var fingerprint: String
         var lines: String
+        var redirectLines: String
     }
 
-    private static let extractionCacheFilename = "removeparam-extraction-cache.json"
+    private static let extractionCacheFilename = "dnr-extraction-cache.json"
+    private static let legacyExtractionCacheFilename = "removeparam-extraction-cache.json"
 
-    static func extractedRemoveParamRules(
+    static func extractedDNRSourceRules(
         for filters: [FilterList],
         containerURL: URL
-    ) -> String {
+    ) -> (removeParam: String, redirectSources: [String]) {
+        try? FileManager.default.removeItem(
+            at: containerURL.appendingPathComponent(legacyExtractionCacheFilename)
+        )
         let cacheURL = containerURL.appendingPathComponent(extractionCacheFilename)
         var cache: [String: ExtractionEntry] = [:]
         if let data = try? Data(contentsOf: cacheURL),
@@ -274,6 +319,7 @@ public enum RemoveParamDNRRuleGenerator {
         }
 
         var combined = ""
+        var redirectSources = RedirectFeed.sources(for: filters)
         var updated: [String: ExtractionEntry] = [:]
         var cacheChanged = false
 
@@ -285,17 +331,21 @@ public enum RemoveParamDNRRuleGenerator {
             let key = sourceURL.lastPathComponent
             let fingerprint = fileFingerprint(at: sourceURL) ?? "missing"
 
+            let entry: ExtractionEntry
             if let cached = cache[key], cached.fingerprint == fingerprint {
-                updated[key] = cached
-                combined.append(cached.lines)
-                continue
+                entry = cached
+            } else {
+                guard let contents = try? String(contentsOf: sourceURL, encoding: .utf8) else { continue }
+                entry = ExtractionEntry(
+                    fingerprint: fingerprint,
+                    lines: extractRemoveParamLines(from: contents),
+                    redirectLines: extractRedirectLines(from: contents)
+                )
+                cacheChanged = true
             }
-
-            guard let contents = try? String(contentsOf: sourceURL, encoding: .utf8) else { continue }
-            let lines = extractRemoveParamLines(from: contents)
-            updated[key] = ExtractionEntry(fingerprint: fingerprint, lines: lines)
-            cacheChanged = true
-            combined.append(lines)
+            updated[key] = entry
+            combined.append(entry.lines)
+            if !entry.redirectLines.isEmpty { redirectSources.append(entry.redirectLines) }
         }
 
         if cacheChanged || updated.count != cache.count {
@@ -303,7 +353,7 @@ public enum RemoveParamDNRRuleGenerator {
                 try? data.write(to: cacheURL, options: .atomic)
             }
         }
-        return combined
+        return (combined, redirectSources)
     }
 
     static func extractRemoveParamLines(from contents: String) -> String {
@@ -330,6 +380,11 @@ public enum RemoveParamDNRRuleGenerator {
     public static func clearSavedRules(groupIdentifier: String) throws -> Summary {
         let rules: [DeclarativeRule] = []
         try saveRules(rules, groupIdentifier: groupIdentifier)
+        if let containerURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: groupIdentifier
+        ) {
+            _ = saveRedirectCarveOuts(for: rules, containerURL: containerURL)
+        }
         return Summary(
             generatedRules: 0,
             removeParamRules: 0,
@@ -500,13 +555,13 @@ public enum RemoveParamDNRRuleGenerator {
         )
     }
 
-    private static func splitOptions(_ optionsText: String) -> [String] {
+    static func splitOptions(_ optionsText: String) -> [String] {
         optionsText.split(separator: ",", omittingEmptySubsequences: true)
             .map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
     }
 
-    private static func optionNameAndValue(_ option: String) -> (name: String, value: String?) {
+    static func optionNameAndValue(_ option: String) -> (name: String, value: String?) {
         let parts = option.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
         let name = String(parts.first ?? "").trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         let value = parts.count > 1 ? String(parts[1]) : nil
@@ -574,7 +629,7 @@ public enum RemoveParamDNRRuleGenerator {
         return false
     }
 
-    private static func normalizeURLFilterPattern(_ rawPattern: String) -> String? {
+    static func normalizeURLFilterPattern(_ rawPattern: String) -> String? {
         var pattern = rawPattern.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !pattern.isEmpty else { return nil }
         guard !(pattern.hasPrefix("/") && pattern.hasSuffix("/") && pattern.count > 1) else { return nil }
@@ -647,7 +702,7 @@ public enum RemoveParamDNRRuleGenerator {
         return (included.sorted(), excluded.sorted())
     }
 
-    private static func isSupportedDomain(_ domain: String) -> Bool {
+    static func isSupportedDomain(_ domain: String) -> Bool {
         guard !domain.isEmpty else { return false }
         guard !domain.contains("*") && !domain.contains("/") && !domain.contains(":") else { return false }
         return domain.allSatisfy { character in
@@ -707,13 +762,15 @@ public enum RemoveParamDNRRuleGenerator {
                     isUrlFilterCaseSensitive: nil
                 )
             ))
+            // No resource types: every subresource, so resource replacements
+            // also stay off on a disabled site.
             rules.append(DeclarativeRule(
                 id: startingID + rules.count,
                 priority: 20_000,
                 action: RuleAction(type: "allow", redirect: nil),
                 condition: RuleCondition(
                     urlFilter: nil,
-                    resourceTypes: ["main_frame", "sub_frame", "xmlhttprequest"],
+                    resourceTypes: nil,
                     domains: [domain],
                     excludedDomains: nil,
                     requestDomains: nil,
