@@ -27964,6 +27964,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   };
   const getCleanURLWithRemoveParamRules = async urlString => {
     if (!urlString || !/^https?:/i.test(urlString)) return urlString;
+    // Removeparam rules only strip query parameters.
+    if (!urlString.includes("?")) return urlString;
     const loaded = await loadRemoveParamDNRRules();
     if (!loaded.rules || loaded.rules.length === 0) return urlString;
     const originalURL = new URL(urlString);
