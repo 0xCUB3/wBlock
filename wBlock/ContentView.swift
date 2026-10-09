@@ -1284,6 +1284,9 @@ struct AddFilterListView: View {
     @State private var isFetchingURLMetadata = false
     @State private var submittedURLs: [URL]?
     @State private var isSaving: Bool = false
+    /// Names as they were before this add saved. The list being added must
+    /// not flag itself as a duplicate while the sheet closes (#955).
+    @State private var namesBeforeSave: [String]?
     @State private var showingFileImporter = false
     @State private var importErrorMessage: String?
     @State private var pastedRules: String = ""
@@ -1630,7 +1633,7 @@ struct AddFilterListView: View {
                 return
             }
             submittedURLs = urls
-            isSaving = true
+            beginSaving()
             Task { @MainActor in
                 for url in urls {
                     let key = FilterListURLSupport.identityKey(for: url)
@@ -1669,7 +1672,7 @@ struct AddFilterListView: View {
                 isReviewingText = true
                 return
             }
-            isSaving = true
+            beginSaving()
             Task { @MainActor in
                 let finalName = userListTitle.trimmingCharacters(in: .whitespacesAndNewlines)
                 let finalDescription = userListDescription.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1686,12 +1689,13 @@ struct AddFilterListView: View {
                 if !filterManager.hasError {
                     dismiss()
                 } else {
+                    namesBeforeSave = nil
                     importErrorMessage = filterManager.statusDescription
                 }
             }
         case .file:
             guard let stagedFile else { return }
-            isSaving = true
+            beginSaving()
             Task { @MainActor in
                 let finalName = userListTitle.trimmingCharacters(in: .whitespacesAndNewlines)
                 let finalDescription = userListDescription.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1707,6 +1711,7 @@ struct AddFilterListView: View {
                 if !filterManager.hasError {
                     dismiss()
                 } else {
+                    namesBeforeSave = nil
                     importErrorMessage = filterManager.statusDescription
                 }
             }
@@ -1984,7 +1989,13 @@ struct AddFilterListView: View {
     }
 
     private func isDuplicateName(_ name: String) -> Bool {
-        FilterListAddValidation.isDuplicateName(candidate: name, existingNames: filterManager.filterLists.map(\.name))
+        FilterListAddValidation.isDuplicateName(
+            candidate: name, existingNames: namesBeforeSave ?? filterManager.filterLists.map(\.name))
+    }
+
+    private func beginSaving() {
+        namesBeforeSave = filterManager.filterLists.map(\.name)
+        isSaving = true
     }
 
     /// Under the name it's about, in every add mode (#952).
