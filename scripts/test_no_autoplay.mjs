@@ -144,8 +144,8 @@ function createEnvironment(options = {}) {
     this.roots = [];
     env.observers.push(this);
   }
-  MutationObserver.prototype.observe = function (root) { this.roots.push(root); };
-  MutationObserver.prototype.disconnect = function () {};
+  MutationObserver.prototype.observe = function (root) { this.roots.push(root); this.connected = true; };
+  MutationObserver.prototype.disconnect = function () { this.connected = false; };
   env.triggerMutations = (mutations) => {
     for (const observer of env.observers) observer.callback(mutations);
   };
@@ -593,6 +593,15 @@ async function playResult(media) {
   await settle();
   check("malformed site-disabled response stands down", (await playResult(env.makeMedia("video"))) === "ok");
   check("malformed site-disabled response clears the hint", !env.localStore.has(HINT_KEY));
+}
+
+// --- A gate that stands down stops observing the DOM until re-enabled ---
+{
+  const env = createEnvironment({ hint: true, nativeNoAutoplayState: { enabled: false, siteAllowed: false } });
+  env.run();
+  check("armed gate observes the document", env.observers.some(observer => observer.connected));
+  await settle();
+  check("standing down disconnects every gate observer", env.observers.every(observer => !observer.connected));
 }
 
 if (failures > 0) {

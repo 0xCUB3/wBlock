@@ -213,9 +213,10 @@
             }
         });
 
-        function observeRoot(root) {
-            if (!root || root._wblockNoAutoplayObserved) return;
-            root._wblockNoAutoplayObserved = true;
+        // Standing down disconnects the observer so a disabled gate costs DOM
+        // mutations nothing; weak references let removed shadow roots go.
+        var observedRoots = [];
+        function startObserving(root) {
             try {
                 observer.observe(root, {
                     childList: true,
@@ -224,6 +225,13 @@
                     attributeFilter: ['autoplay']
                 });
             } catch (e) { /* ignore */ }
+        }
+
+        function observeRoot(root) {
+            if (!root || root._wblockNoAutoplayObserved) return;
+            root._wblockNoAutoplayObserved = true;
+            observedRoots.push(new WeakRef(root));
+            if (!disabled) startObserving(root);
             scan(root);
         }
 
@@ -247,9 +255,16 @@
         try {
             doc.addEventListener('wblock-no-autoplay-disable-' + token, function () {
                 disabled = true;
+                observer.disconnect();
             }, false);
             doc.addEventListener('wblock-no-autoplay-enable-' + token, function () {
+                if (!disabled) return;
                 disabled = false;
+                observedRoots = observedRoots.filter(function (ref) {
+                    var root = ref.deref();
+                    if (root) startObserving(root);
+                    return !!root;
+                });
                 scan(doc.documentElement || doc);
             }, false);
         } catch (e) { /* ignore */ }
