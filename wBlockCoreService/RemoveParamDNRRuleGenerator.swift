@@ -463,6 +463,9 @@ public enum RemoveParamDNRRuleGenerator {
     }
 
     private struct ParsedSavedRules {
+        /// Atomic writes replace the file, so its number tells rewrites apart
+        /// even when the timestamp and size match.
+        let fileNumber: Int
         let modified: Date
         let size: Int
         let version: String
@@ -482,17 +485,19 @@ public enum RemoveParamDNRRuleGenerator {
         }
         let url = containerURL.appendingPathComponent(rulesFilename)
         guard
-            let values = try? url.resourceValues(forKeys: [.contentModificationDateKey, .fileSizeKey]),
-            let modified = values.contentModificationDate,
-            let size = values.fileSize
+            let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),
+            let fileNumber = (attributes[.systemFileNumber] as? NSNumber)?.intValue,
+            let modified = attributes[.modificationDate] as? Date,
+            let size = (attributes[.size] as? NSNumber)?.intValue
         else { return nil }
         parsedRulesLock.lock()
         defer { parsedRulesLock.unlock() }
-        if let cached = parsedRules, cached.modified == modified, cached.size == size {
+        if let cached = parsedRules, cached.fileNumber == fileNumber, cached.modified == modified, cached.size == size {
             return cached
         }
         guard let data = try? Data(contentsOf: url) else { return nil }
         let parsed = ParsedSavedRules(
+            fileNumber: fileNumber,
             modified: modified,
             size: size,
             version: sha256Hex(data: data),

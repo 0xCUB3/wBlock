@@ -260,12 +260,16 @@
             doc.addEventListener('wblock-no-autoplay-enable-' + token, function () {
                 if (!disabled) return;
                 disabled = false;
+                // Mutations queued while disconnected are lost, so rescan
+                // every surviving root, shadow roots included.
                 observedRoots = observedRoots.filter(function (ref) {
                     var root = ref.deref();
-                    if (root) startObserving(root);
+                    if (root) {
+                        startObserving(root);
+                        scan(root);
+                    }
                     return !!root;
                 });
-                scan(doc.documentElement || doc);
             }, false);
         } catch (e) { /* ignore */ }
 

@@ -26347,8 +26347,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     const configuration = message.payload;
     const key = cacheKey(url, topUrl);
     if (configuration.disabled === true || configuration.paused === true) {
-      // Pause and site state reach beyond this URL.
-      configValidatedAt.clear();
+      // Pause and site state reach beyond this URL, and reads already in
+      // flight must not restart freshness afterward.
+      forgetRecentNativeState();
       return configuration;
     }
     if (generation !== configurationGeneration) return configuration;
@@ -27190,7 +27191,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         return { type: MessageType.InitContentScript, state: "error", error: errorMessage };
       }
       if (cachedBlockingState.disabled || cachedBlockingState.paused) {
-        configValidatedAt.clear();
+        forgetRecentNativeState();
         configuration = emptyConfigurationForState(
           cachedBlockingState.disabled,
           cachedBlockingState.paused
@@ -28039,7 +28040,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     } catch (error) {
       console.warn("[wBlock] Native host warm-up failed:", error);
     } finally {
-      cache.delete(cacheKey(NATIVE_WARMUP_URL, undefined));
+      const key = cacheKey(NATIVE_WARMUP_URL, undefined);
+      cache.delete(key);
+      configValidatedAt.delete(key);
     }
   };
   configCacheHydration.then(warmUpNativeHost);
