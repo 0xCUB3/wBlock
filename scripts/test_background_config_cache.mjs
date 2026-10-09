@@ -1124,6 +1124,35 @@ for (const source of [canonicalSource, bundleSource]) {
   check("popup relay reports native transport failures", failed.ok === false && failed.error === "Native unavailable");
 }
 
+// Per-frame state reads share one native answer until a mutation passes
+// through the background; failures are never shared.
+{
+  let failNoAutoplay = true;
+  const state = loadBackground({ nativeHandler: message => {
+    if (message && message.action === "getNoAutoplayState") {
+      return failNoAutoplay ? { error: "cold" } : { enabled: true, siteAllowed: false };
+    }
+    if (message && message.action === "getUserScripts") return { userScripts: [] };
+    if (message && message.action === "getSiteDisabledState") return { disabled: false };
+    return { payload: makeConfig([], 1) };
+  } });
+  const count = action => state.nativeMessages.filter(message => message && message.action === action).length;
+  const sender = frameSender("https://frames.example/a", "https://frames.example/");
+  const userScripts = { action: "getUserScripts", url: "https://frames.example/a", includeContent: true };
+  await sleep(20); // let the startup warm-up record the engine timestamp
+  for (let i = 0; i < 3; i += 1) {
+    await state.onMessage(userScripts, sender);
+    await state.onMessage({ action: "wblock:getSiteDisabledState", host: "frames.example" }, sender);
+    await state.onMessage({ action: "wblock:noAutoplay:getState", host: "frames.example" }, sender);
+  }
+  check("repeat frames share one userscript lookup", count("getUserScripts") === 1);
+  check("repeat frames share one site-state lookup", count("getSiteDisabledState") === 1);
+  check("failed reads are not shared", count("getNoAutoplayState") === 3);
+  await state.onMessage({ action: "setUserScriptStorageValue", scriptId: "s", key: "k", rawValue: "1" }, sender);
+  await state.onMessage(userScripts, sender);
+  check("a mutation ends shared reads", count("getUserScripts") === 2);
+}
+
 if (failures > 0) {
   console.error(`\n${failures} check(s) failed`);
   process.exit(1);

@@ -26207,11 +26207,33 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   // configuration many times a second. A cache entry the native host
   // confirmed within this window is served without another lookup or state
   // query. Any state-changing native call ends the window for every entry.
+  // The same window covers per-frame state reads (site state, No Autoplay,
+  // zapper rules, userscripts): identical reads share one native answer.
   const CONFIG_REVALIDATE_INTERVAL_MS = 5000;
   const configValidatedAt = new Map();
+  const recentNativeReads = new Map();
   const isConfigFresh = key => Date.now() - (configValidatedAt.get(key) || 0) < CONFIG_REVALIDATE_INTERVAL_MS;
+  const forgetRecentNativeState = () => {
+    configValidatedAt.clear();
+    recentNativeReads.clear();
+  };
   const forgetStaleStateOn = action => {
-    if (/^(set|resume|pause|clear)/.test(action)) configValidatedAt.clear();
+    if (/^(set|resume|pause|clear|sync|delete)/.test(action)) forgetRecentNativeState();
+  };
+  const readNativeRecently = (request, send = sendPriorityNativeMessage) => {
+    const key = JSON.stringify(request);
+    const hit = recentNativeReads.get(key);
+    if (hit) return hit;
+    const promise = send(request);
+    recentNativeReads.set(key, promise);
+    const forget = () => {
+      if (recentNativeReads.get(key) === promise) recentNativeReads.delete(key);
+    };
+    // Failures are never shared; the next frame asks again.
+    promise.then(response => response && (response.error || response.state === "error")
+      ? forget()
+      : setTimeout(forget, CONFIG_REVALIDATE_INTERVAL_MS), forget);
+    return promise;
   };
   const sendQueuedNativeMessage = request => {
     const action = request && typeof request.action === "string" ? request.action : "";
@@ -26244,7 +26266,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
             message.messageName ||
             (message.userInfo && message.userInfo.action)
           );
-          configValidatedAt.clear();
+          forgetRecentNativeState();
           if (action === "wblock:userscriptsChanged") {
             clearDocumentStartSessionCache();
           } else if (action === "wblock:zapperRulesChanged") {
@@ -26319,7 +26341,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     // the timestamp.
     if (configuration.engineTimestamp !== engineTimestamp) {
       cache.clear();
-      configValidatedAt.clear();
+      forgetRecentNativeState();
       engineTimestamp = configuration.engineTimestamp;
     }
     configValidatedAt.set(key, Date.now());
@@ -26629,41 +26651,15 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   const normalizeSiteDisabledHost = host => typeof host === "string"
     ? host.trim().toLowerCase()
     : "";
-  const pendingSiteDisabledRequests = new Map();
-  const pendingBlockingStateRequests = new Map();
-  const requestSiteDisabledState = host => {
-    const normalizedHost = normalizeSiteDisabledHost(host);
-    const pending = pendingSiteDisabledRequests.get(normalizedHost);
-    if (pending) {
-      return pending;
-    }
-    // Zapper activation and action state cannot wait behind background updates.
-    const requestPromise = sendPriorityNativeMessage({
-      action: "getSiteDisabledState",
-      host: normalizedHost
-    }).finally(() => {
-      if (pendingSiteDisabledRequests.get(normalizedHost) === requestPromise) {
-        pendingSiteDisabledRequests.delete(normalizedHost);
-      }
-    });
-    pendingSiteDisabledRequests.set(normalizedHost, requestPromise);
-    return requestPromise;
-  };
-  const requestBlockingState = host => {
-    const normalizedHost = normalizeSiteDisabledHost(host);
-    const pending = pendingBlockingStateRequests.get(normalizedHost);
-    if (pending) return pending;
-    const requestPromise = sendPriorityNativeMessage({
-      action: "getBlockingState",
-      host: normalizedHost
-    }).finally(() => {
-      if (pendingBlockingStateRequests.get(normalizedHost) === requestPromise) {
-        pendingBlockingStateRequests.delete(normalizedHost);
-      }
-    });
-    pendingBlockingStateRequests.set(normalizedHost, requestPromise);
-    return requestPromise;
-  };
+  // Zapper activation and action state cannot wait behind background updates.
+  const requestSiteDisabledState = host => readNativeRecently({
+    action: "getSiteDisabledState",
+    host: normalizeSiteDisabledHost(host)
+  });
+  const requestBlockingState = host => readNativeRecently({
+    action: "getBlockingState",
+    host: normalizeSiteDisabledHost(host)
+  });
   const handleMessages = async (request, sender) => {
     var _sender$tab, _sender$tab2;
     // Cast the incoming request to `Message`.
@@ -26753,11 +26749,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     if (message && message.action === "wblock:clearCache") {
       configurationGeneration += 1;
       cache.clear();
-      configValidatedAt.clear();
+      forgetRecentNativeState();
       engineTimestamp = 0;
       pendingConfigurationRequests.clear();
-      pendingSiteDisabledRequests.clear();
-      pendingBlockingStateRequests.clear();
       await Promise.all([
         clearPersistedConfigCache(),
         clearDocumentStartSessionCache()
@@ -26810,7 +26804,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         return { ok: false, error: "Missing host" };
       }
       try {
-        const response = await sendPriorityNativeMessage({ action: "getNoAutoplayState", host });
+        const response = await readNativeRecently({ action: "getNoAutoplayState", host });
         if (!response || typeof response.enabled !== "boolean" || typeof response.siteAllowed !== "boolean") {
           throw new Error("Invalid No Autoplay state from native host");
         }
@@ -26844,10 +26838,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         return { ok: false, error: "Missing hostname", rules: [] };
       }
       try {
-        const response = await sendQueuedNativeMessage({
+        const response = await readNativeRecently({
           action: "getZapperRules",
           hostname
-        });
+        }, sendQueuedNativeMessage);
         return response || { ok: false, rules: [] };
       } catch (error) {
         const errorMessage = String(error && error.message ? error.message : error);
@@ -26886,13 +26880,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         action: "getUserScripts",
         url: message.url,
         isTopFrame: message.isTopFrame,
-        requestId: "userscripts-" + Date.now(),
         includeContent: message.includeContent === true,
         maxInlineContentBytes: message.maxInlineContentBytes || 0
       };
 
       try {
-        const response = await sendPriorityNativeMessage(userScriptRequest);
+        const response = await readNativeRecently(userScriptRequest);
         const scripts = response && response.userScripts ? response.userScripts : [];
         if (response && response.error) {
           return { userScripts: scripts, error: response.error };
