@@ -1505,13 +1505,13 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         if cancellationRequested() {
             throw CancellationError()
         }
-        var safariRulesJSON = lowercasingTriggerDomains(result.safariRulesJSON)
+        var safariRulesJSON = normalizedSafariRules(result.safariRulesJSON)
         var safariRulesCount = result.safariRulesCount
         if let ignoreSegment, !ignoreSegment.rules.isEmpty {
             let segment = try convertRules(rules: ignoreSegment.rules, isCancelled: cancellationRequested)
             let sites = DisabledSitesNormalizer.normalizedDomains(from: ignoreSegment.sites)
             let segmentJSON = injectIgnoreRulesForDisabledSites(
-                json: lowercasingTriggerDomains(segment.safariRulesJSON), disabledSites: sites
+                json: normalizedSafariRules(segment.safariRulesJSON), disabledSites: sites
             )
             safariRulesJSON = concatenatedRuleArrays(segmentJSON, safariRulesJSON)
             safariRulesCount += segment.safariRulesCount + sites.count
@@ -2234,11 +2234,15 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             .replacingOccurrences(of: "\"", with: "\\\"")
     }
 
+    static func normalizedSafariRules(_ json: String) -> String {
+        documentScopingDomainCosmetics(lowercasingTriggerDomains(json))
+    }
+
     /// SafariConverterLib keeps domains as written (`Karo.Studio##…`), but WebKit rejects the whole
     /// list with "Domains must be lower case ASCII" (#898). Hostnames are case-insensitive.
     /// Scans bytes because a regex over the full JSON cost as much as the rest of
     /// the wrapper around conversion. Domains are punycoded ASCII.
-    static func lowercasingTriggerDomains(_ json: String) -> String {
+    private static func lowercasingTriggerDomains(_ json: String) -> String {
         var bytes = Array(json.utf8)
         let key = Array(#"-domain":["#.utf8)
         var changed = false
@@ -2258,6 +2262,46 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             }
         }
         return changed ? String(decoding: bytes, as: UTF8.self) : json
+    }
+
+    /// WebKit runs every conditional rule with a matching url-filter (`.*` for cosmetics) on each
+    /// subresource load, then re-adds its selector to the document. A page-domain condition gives the
+    /// same answer for the document load, so hiding rules only need that load. The per-load work cost
+    /// ~10% of Speedometer on sites none of these rules match (#873). Frame-URL rules stay as they are:
+    /// on a document load WebKit checks them against the frame's previous URL.
+    /// Converter JSON is `{"trigger":{…},"action":{…}}`; these quoted keys cannot occur unescaped in strings.
+    private static func documentScopingDomainCosmetics(_ json: String) -> String {
+        let triggerStart = Array(#"{"trigger":{"#.utf8)
+        let cosmeticAction = Array(#"},"action":{"type":"css-display-none""#.utf8)
+        let pageConditions = ["if-domain", "unless-domain", "if-top-url", "unless-top-url"].map { Array("\"\($0)\":".utf8) }
+        let resourceType = Array(#""resource-type":"#.utf8)
+        let documentOnly = Array(#","resource-type":["document"]"#.utf8)
+        let bytes = Array(json.utf8)
+        var output: [UInt8] = []
+        output.reserveCapacity(bytes.count + bytes.count / 50)
+        var trigger = 0
+        var copied = 0
+        func matches(_ pattern: [UInt8], at index: Int) -> Bool {
+            index + pattern.count <= bytes.count && bytes[index..<(index + pattern.count)].elementsEqual(pattern)
+        }
+        func contains(_ pattern: [UInt8], in range: Range<Int>) -> Bool {
+            range.contains(where: { bytes[$0] == pattern[0] && $0 + pattern.count <= range.upperBound && matches(pattern, at: $0) })
+        }
+        for index in bytes.indices where bytes[index] == UInt8(ascii: "{") || bytes[index] == UInt8(ascii: "}") {
+            if matches(triggerStart, at: index) {
+                trigger = index
+            } else if matches(cosmeticAction, at: index) {
+                let triggerBody = trigger..<index
+                guard pageConditions.contains(where: { contains($0, in: triggerBody) }),
+                      !contains(resourceType, in: triggerBody) else { continue }
+                output += bytes[copied..<index]
+                output += documentOnly
+                copied = index
+            }
+        }
+        guard copied > 0 else { return json }
+        output += bytes[copied...]
+        return String(decoding: output, as: UTF8.self)
     }
 
     private static func disabledSiteIgnoreRuleJSON(for site: String) -> String {
