@@ -6013,24 +6013,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       if (!extendedCss || !extendedCss.length) {
         return;
       }
-      // Plain selectors Safari can match on its own (:has, :is, ...) go to a
-      // style sheet, so ExtendedCss only observes the page for rules that need it.
-      const native = [];
-      extendedCss = extendedCss.filter(rule => {
-        const selector = rule.trim();
-        if (!selector || selector.at(-1) === '}' || /-ext-|-abp-/.test(selector)) return true;
-        try {
-          document.createDocumentFragment().querySelector(selector);
-        } catch (e) {
-          return true;
-        }
-        native.push(selector);
-        return false;
-      });
-      this.insertCss(native);
-      if (!extendedCss.length) {
-        return;
-      }
       try {
         const cssRules = toCSSRules(extendedCss);
         const extCss = new ExtendedCss({
