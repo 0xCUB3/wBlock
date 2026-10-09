@@ -6174,42 +6174,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   } else {
     startCloudflareChallengeWatch();
   }
-  // Compatibility fallback for responses produced before InitContentScript
-  // carried native state. Keep this as one combined lookup so legacy pages do
-  // not accidentally route a pause query through configuration handling.
-  let legacyBlockingStatePromise;
-  const getLegacyBlockingStatePromise = () => {
-    if (!legacyBlockingStatePromise) {
-      legacyBlockingStatePromise = (async () => {
-        try {
-          if (typeof browser === "undefined" || !browser.runtime || !browser.runtime.sendMessage) {
-            return "error";
-          }
-          const host = window.location && typeof window.location.hostname === "string"
-            ? window.location.hostname
-            : "";
-          if (!host) {
-            return false;
-          }
-          const response = await browser.runtime.sendMessage({
-            action: "wblock:getBlockingState",
-            host
-          });
-          if (response && response.state === "error") {
-            return "error";
-          }
-          if (!response || typeof response.disabled !== "boolean" || typeof response.paused !== "boolean") {
-            return "error";
-          }
-          return response.disabled || response.paused;
-        } catch (error) {
-          console.warn('[wBlock] Failed to resolve combined blocking state:', error);
-          return "error";
-        }
-      })();
-    }
-    return legacyBlockingStatePromise;
-  };
   /**
    * Main entry point function for the content script.
    *
@@ -6226,15 +6190,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     if (response && response.state === "error") {
       return Promise.resolve(true);
     }
-    const state = response && typeof response.disabled === "boolean"
-      && typeof response.paused === "boolean"
-      ? response
-      : response && response.payload;
-    if (state && typeof state.disabled === "boolean"
-      && typeof state.paused === "boolean") {
-      return Promise.resolve(state.disabled || state.paused);
-    }
-    return getLegacyBlockingStatePromise();
+    // Every InitContentScript response carries native state; treat a
+    // response without it as unknown and leave the page alone.
+    return Promise.resolve(!(response && typeof response.disabled === "boolean"
+      && typeof response.paused === "boolean")
+      || response.disabled || response.paused);
   };
   const main = async () => {
     // First of all, make sure that the content script is exposed to the

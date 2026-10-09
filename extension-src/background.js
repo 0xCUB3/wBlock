@@ -26799,30 +26799,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         return { ok: false, error: String(error && error.message ? error.message : error) };
       }
     }
-    if (message && message.action === "wblock:getBlockingState") {
-      const host = normalizeSiteDisabledHost(message.host);
-      if (!host) {
-        return { ok: false, state: "error", error: "Missing host" };
-      }
-      try {
-        const response = await requestBlockingState(host);
-        if (!response || typeof response.disabled !== "boolean" || typeof response.paused !== "boolean") {
-          throw new Error("Invalid blocking state from native host");
-        }
-        return {
-          ok: true,
-          disabled: response.disabled,
-          paused: response.paused
-        };
-      } catch (error) {
-        console.warn("[wBlock] Failed to resolve blocking state for", host, error);
-        return {
-          ok: false,
-          state: "error",
-          error: String(error && error.message ? error.message : error)
-        };
-      }
-    }
     if (message && message.action === "wblock:zapper:syncRules") {
       const hostname = typeof message.hostname === "string" ? message.hostname : "";
       const rules = Array.isArray(message.rules) ? message.rules : [];

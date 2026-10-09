@@ -621,28 +621,6 @@ for (const [label, inertState, activeCSS] of [
     ));
 }
 
-// Scenario K: the background compatibility route is one combined lookup with
-// the normalized host, not a generic configuration request.
-{
-  const state = loadBackground({
-    nativeHandler: message => message && message.action === "getBlockingState"
-      ? { disabled: true, paused: false }
-      : { payload: makeConfig([], 24) }
-  });
-  const response = await state.onMessage(
-    { action: "wblock:getBlockingState", host: " Example.COM " },
-    topFrameSender("https://example.com/")
-  );
-  const nativeRequest = state.nativeMessages.find(message => message && message.action === "getBlockingState");
-  check("combined compatibility route returns both state fields",
-    response && response.disabled === true && response.paused === false);
-  check("combined compatibility route sends normalized host",
-    nativeRequest && nativeRequest.host === "example.com");
-  check("combined compatibility route does not request configuration",
-    !state.nativeMessages.some(message => message && message.payload
-      && message.payload.url === "https://example.com/"));
-}
-
 // Scenario L: native configuration failures return an explicit error state and
 // never create a cache entry.
 {

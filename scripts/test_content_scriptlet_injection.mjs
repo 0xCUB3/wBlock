@@ -285,37 +285,6 @@ try {
       raceScriptEls.length >= 1 && raceScriptEls.some(el => (el.textContent || "").includes("__wblockRaceProbe")),
     );
 
-    const compatibilityMessages = [];
-    const compatibilityBrowser = {
-      runtime: {
-        onMessage: { addListener() {} },
-        sendMessage(message) {
-          compatibilityMessages.push(message);
-          if (message.action === "wblock:getBlockingState") {
-            return Promise.resolve({ disabled: true, paused: false });
-          }
-          if (message.type === "InitContentScript") {
-            return Promise.resolve({ payload: { css: [], extendedCss: [], scriptlets: [], js: [] } });
-          }
-          return Promise.resolve({});
-        },
-      },
-    };
-    const compatibilityRun = new Function("browser", "window", "self", source);
-    compatibilityRun(compatibilityBrowser, raceWindow, raceWindow);
-    await new Promise(resolve => setTimeout(resolve, 20));
-    const compatibilityStateMessages = compatibilityMessages.filter(message => message && message.action === "wblock:getBlockingState");
-    check(
-      "legacy Init response uses one combined compatibility lookup",
-      compatibilityStateMessages.length === 1 && compatibilityStateMessages[0].host === "youtube.com",
-    );
-    check(
-      "legacy Init response does not route an unrouted pause action",
-      !compatibilityMessages.some(message => message && (
-        message.action === "wblock:getSiteDisabledState" || message.action === "getBlockingPausedState"
-      )),
-    );
-
     const errorMessages = [];
     const errorBrowser = {
       runtime: {
