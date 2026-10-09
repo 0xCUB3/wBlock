@@ -6156,7 +6156,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         document.removeEventListener("DOMContentLoaded", finish);
       };
       // The markers arrive while the document parses, so one last full check
-      // at DOMContentLoaded ends the watch.
+      // at DOMContentLoaded ends the watch, even after the observer timed out.
       const finish = () => {
         stop();
         if (!cloudflareChallengeContext
@@ -6166,7 +6166,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       };
       observer.observe(root, { childList: true, subtree: true });
       document.addEventListener("DOMContentLoaded", finish);
-      setTimeout(stop, 5000);
+      setTimeout(() => observer.disconnect(), 5000);
     } catch (_) {}
   };
   if (isCloudflareChallengeFrameNow()) {
