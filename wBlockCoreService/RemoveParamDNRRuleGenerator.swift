@@ -417,14 +417,12 @@ public enum RemoveParamDNRRuleGenerator {
     ) -> [String: Any] {
         let safeOffset = max(0, offset)
         let safeLimit = max(1, min(limit, 500))
-        guard let data = savedRulesData(groupIdentifier: groupIdentifier) else {
+        guard let saved = parsedSavedRules(groupIdentifier: groupIdentifier) else {
             return emptyRulesPayload(offset: safeOffset, limit: safeLimit)
         }
 
-        let version = sha256Hex(data: data)
-        guard
-            let json = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]]
-        else {
+        let version = saved.version
+        guard let json = saved.rules else {
             return [
                 "ok": false,
                 "error": "Failed to decode saved removeparam DNR rules",
@@ -464,15 +462,44 @@ public enum RemoveParamDNRRuleGenerator {
         try data.write(to: url, options: .atomic)
     }
 
-    private static func savedRulesData(groupIdentifier: String) -> Data? {
+    private struct ParsedSavedRules {
+        let modified: Date
+        let size: Int
+        let version: String
+        let rules: [[String: Any]]?
+    }
+
+    private static let parsedRulesLock = NSLock()
+    nonisolated(unsafe) private static var parsedRules: ParsedSavedRules?
+
+    /// The extension pages through the saved rules in small chunks; read,
+    /// hash, and parse the file once per write instead of once per chunk.
+    private static func parsedSavedRules(groupIdentifier: String) -> ParsedSavedRules? {
         guard let containerURL = FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: groupIdentifier
         ) else {
             return nil
         }
         let url = containerURL.appendingPathComponent(rulesFilename)
-        guard FileManager.default.fileExists(atPath: url.path) else { return nil }
-        return try? Data(contentsOf: url)
+        guard
+            let values = try? url.resourceValues(forKeys: [.contentModificationDateKey, .fileSizeKey]),
+            let modified = values.contentModificationDate,
+            let size = values.fileSize
+        else { return nil }
+        parsedRulesLock.lock()
+        defer { parsedRulesLock.unlock() }
+        if let cached = parsedRules, cached.modified == modified, cached.size == size {
+            return cached
+        }
+        guard let data = try? Data(contentsOf: url) else { return nil }
+        let parsed = ParsedSavedRules(
+            modified: modified,
+            size: size,
+            version: sha256Hex(data: data),
+            rules: (try? JSONSerialization.jsonObject(with: data)) as? [[String: Any]]
+        )
+        parsedRules = parsed
+        return parsed
     }
 
     /// Nil means this is not a removeparam rule; otherwise use the actual DNR builder.
