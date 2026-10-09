@@ -26671,14 +26671,17 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     ? host.trim().toLowerCase()
     : "";
   // Zapper activation and action state cannot wait behind background updates.
+  // The app can change these without telling Safari (iOS), so frames share
+  // only a read still in flight, never a settled answer.
+  const inFlightOnly = () => false;
   const requestSiteDisabledState = host => readNativeRecently({
     action: "getSiteDisabledState",
     host: normalizeSiteDisabledHost(host)
-  });
+  }, sendPriorityNativeMessage, inFlightOnly);
   const requestBlockingState = host => readNativeRecently({
     action: "getBlockingState",
     host: normalizeSiteDisabledHost(host)
-  });
+  }, sendPriorityNativeMessage, inFlightOnly);
   const handleMessages = async (request, sender) => {
     var _sender$tab, _sender$tab2;
     // Cast the incoming request to `Message`.

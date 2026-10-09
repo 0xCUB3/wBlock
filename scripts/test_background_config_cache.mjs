@@ -1146,7 +1146,9 @@ for (const source of [canonicalSource, bundleSource]) {
     await state.onMessage({ action: "wblock:noAutoplay:getState", host: "frames.example" }, sender);
   }
   check("repeat frames share one userscript lookup", count("getUserScripts") === 1);
-  check("repeat frames share one site-state lookup", count("getSiteDisabledState") === 1);
+  check("settled site state is asked again", count("getSiteDisabledState") === 3);
+  await Promise.all([1, 2, 3].map(() => state.onMessage({ action: "wblock:getSiteDisabledState", host: "frames.example" }, sender)));
+  check("concurrent frames share one site-state lookup", count("getSiteDisabledState") === 4);
   check("malformed reads are not shared", count("getNoAutoplayState") === 3);
   await state.onMessage({ action: "setUserScriptStorageValue", scriptId: "s", key: "k", rawValue: "1" }, sender);
   await state.onMessage(userScripts, sender);
