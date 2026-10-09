@@ -36,6 +36,7 @@ struct ContentView: View {
     @State private var selectedFilterInfo: FilterList?
     @State private var selectedFilterSettings: FilterList?
     @State private var selectedFilterRules: FilterList?
+    @State private var selectedFilterFallbacks: FilterList?
     @State private var selectedCategoryInfo: FilterListCategory?
     @State private var isForeignFiltersExpanded = ProtobufDataManager.shared.isForeignFiltersExpanded
     @State private var showingCapacityPopover = false
@@ -219,6 +220,10 @@ struct ContentView: View {
             FilterSettingsView(filter: filter, filterManager: filterManager)
                 .infoSheetPresentationCompat()
         }
+        .infoPresentation(item: $selectedFilterFallbacks) { filter in
+            FilterFallbacksView(filter: filter, urls: FilterCatalogRemote.fallbacks(for: filter))
+                .infoSheetPresentationCompat()
+        }
         .sheet(item: $selectedFilterRules) { filter in
             if filter.isInlineUserList {
                 EditUserListView(filterManager: filterManager, filter: filter)
@@ -230,6 +235,7 @@ struct ContentView: View {
         .onReceive(tabSelection.$value.removeDuplicates().dropFirst()) { _ in
             selectedFilterInfo = nil
             selectedFilterSettings = nil
+            selectedFilterFallbacks = nil
             selectedCategoryInfo = nil
             filterSearchText = ""
             showFilterSearch = false
@@ -765,6 +771,7 @@ struct ContentView: View {
                 switch action {
                 case .settings: selectedFilterSettings = filter
                 case .editInfo: editingCustomFilter = filter
+                case .fallbacks: selectedFilterFallbacks = filter
                 default: selectedFilterRules = filter
                 }
             }

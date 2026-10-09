@@ -4,11 +4,14 @@ import wBlockCoreService
 /// Uses the same resolved fallback chain as foreground and background downloads.
 struct FilterFallbacksButton: View {
     let filter: FilterList
+    /// Presents from the window instead. A sheet on a macOS popover strands
+    /// the window dimmed when a click outside closes the popover (#956).
+    var onShow: (() -> Void)? = nil
     @State private var showingFallbacks = false
 
     var body: some View {
         Button {
-            showingFallbacks = true
+            if let onShow { onShow() } else { showingFallbacks = true }
         } label: {
             Label("Fallbacks", systemImage: "point.topleft.down.curvedto.point.bottomright.up")
         }
@@ -20,7 +23,7 @@ struct FilterFallbacksButton: View {
     }
 }
 
-private struct FilterFallbacksView: View {
+struct FilterFallbacksView: View {
     let filter: FilterList
     let urls: [URL]
     @Environment(\.dismiss) private var dismiss

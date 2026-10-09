@@ -110,7 +110,10 @@ struct FilterInfoView: View {
                         InfoMetadataRow(title: "Source URL", value: liveFilter.url.absoluteString, url: liveFilter.url)
                         HStack {
                             CopyURLButton(url: liveFilter.url)
-                            FilterFallbacksButton(filter: liveFilter)
+                            FilterFallbacksButton(
+                                filter: liveFilter,
+                                onShow: onAction.map { _ in { perform(.fallbacks) {} } }
+                            )
                         }
                     }
                 }

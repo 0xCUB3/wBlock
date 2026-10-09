@@ -8,6 +8,7 @@ enum FilterContextMenuAction: String {
     case viewRules
     case editRules
     case editInfo
+    case fallbacks
     case moveTo
     case deleteList
 }
