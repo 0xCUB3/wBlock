@@ -300,7 +300,11 @@
         document.addEventListener('visibilitychange', function () {
             if (document.visibilityState === 'visible') reconcile();
         });
-        window.addEventListener('pageshow', reconcile);
+        // Only a back/forward cache restore; the initial pageshow would repeat
+        // the boot reconcile and its two native round trips in every frame.
+        window.addEventListener('pageshow', function (event) {
+            if (event.persisted) reconcile();
+        });
     } catch (e) { /* ignore */ }
 
     // Live updates when the popup changes the global or per-site setting.

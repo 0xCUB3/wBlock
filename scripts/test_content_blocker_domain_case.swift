@@ -2,7 +2,8 @@ import Foundation
 import wBlockCoreService
 
 // WebKit rejects a whole rule list when any if-domain/unless-domain entry has uppercase
-// letters, and SafariConverterLib keeps domains as written (#898).
+// letters, and SafariConverterLib keeps domains as written (#898). Domain-scoped hiding rules are
+// limited to document loads so WebKit doesn't re-evaluate them on every subresource (#873).
 @main
 struct ContentBlockerDomainCaseTests {
     static func main() throws {
@@ -15,7 +16,7 @@ struct ContentBlockerDomainCaseTests {
 
         let target = ContentBlockerTargetManager.shared.allTargets(forPlatform: .macOS)[0]
         let list = FilterList(name: "mixed case", url: URL(string: "https://example.com/list.txt")!, category: .foreign, isSelected: true)
-        try "Foo.COM##.ad\nbar.com,~Baz.Com##.ad\nKaro.Studio##a[href*=\"Karo.Studio\"]>img\n"
+        try "Foo.COM##.ad\nbar.com,~Baz.Com##.ad\nKaro.Studio##a[href*=\"Karo.Studio\"]>img\n##.generic-ad\n"
             .write(to: container.appendingPathComponent(ContentBlockerIncrementalCache.localFilename(for: list)), atomically: true, encoding: .utf8)
 
         let ordered = ContentBlockerMappingService.orderedForCompilation([list])
@@ -41,6 +42,11 @@ struct ContentBlockerDomainCaseTests {
         check(Set(["*foo.com", "*baz.com"]).isSubset(of: domains), "mixed-case domains are lowercased: \(domains)")
         check(domains.allSatisfy { $0 == $0.lowercased() }, "no uppercase domain reaches Safari: \(domains)")
         check(selectors.contains { $0.contains("Karo.Studio") }, "selectors keep their case: \(selectors)")
+        for rule in rules where (rule["action"] as? [String: Any])?["type"] as? String == "css-display-none" {
+            let trigger = rule["trigger"] as? [String: Any] ?? [:]
+            let scoped = trigger["if-domain"] != nil || trigger["unless-domain"] != nil
+            check((trigger["resource-type"] as? [String]) == (scoped ? ["document"] : nil), "hiding rule load scope: \(trigger)")
+        }
         print("PASS: content blocker domains are lowercase")
     }
 
