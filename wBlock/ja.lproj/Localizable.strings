@@ -174,7 +174,7 @@
 "Base filter only." = "ベースフィルターのみ。";
 "Baseline Userscripts" = "基本ユーザースクリプト";
 "Baseline userscripts are enabled by default. You can adjust them here." = "基本ユーザースクリプトはデフォルトで有効になっています。ここで調整できます。";
-"Best default" = "おすすめのデフォルト値";
+"Best default" = "おすすめのデフォルト設定";
 "Beta" = "Beta";
 "Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "ベータ版ユーザースクリプトはまだテスト中で、ページが崩れたり予期しない動作をしたりすることがあります。いつでもオフにできます。";
 "BGAppRefresh" = "アプリのバックグラウンド更新";
