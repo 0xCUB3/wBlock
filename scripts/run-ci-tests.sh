@@ -183,11 +183,14 @@ compile_core_test compilation-provenance scripts/test_compilation_provenance.swi
 compile_core_test target-compilation scripts/test_target_compilation.swift
 compile_core_test issue-729-headless-rebuild-gate scripts/test_issue_729_headless_rebuild_gate.swift
 compile_core_test foreign-filter-groups scripts/test_foreign_filter_groups.swift \
-  wBlock/LocalizationHelpers.swift wBlock/ConcurrentLogManager.swift wBlock/LogTimeZone.swift
+  wBlock/LocalizationHelpers.swift wBlock/FilterListLoader.swift wBlock/ConcurrentLogManager.swift wBlock/LogTimeZone.swift
 compile_core_test filter-list-presentation scripts/test_filter_list_presentation.swift \
   wBlock/FilterListPresentation.swift wBlock/ListDisplayOrder.swift wBlock/ContentRowMetadata.swift \
-  wBlock/LocalizationHelpers.swift wBlock/ConcurrentLogManager.swift wBlock/LogTimeZone.swift
+  wBlock/LocalizationHelpers.swift wBlock/FilterListLoader.swift wBlock/ConcurrentLogManager.swift wBlock/LogTimeZone.swift
 compile_core_test filter-catalog-remote scripts/test_filter_catalog_remote.swift
+compile_core_test filter-catalog-migrations scripts/test_filter_catalog_migrations.swift \
+  wBlock/FilterListLoader.swift wBlock/FilterListSetup.swift wBlock/LocalizationHelpers.swift \
+  wBlock/ConcurrentLogManager.swift wBlock/LogTimeZone.swift
 compile_core_test filter-list-fetch-chain scripts/test_filter_list_fetch_chain.swift
 compile_core_test filter-download-processor scripts/test_filter_download_processor.swift
 compile_core_test issue-508-backup scripts/test_issue_508_backup_userscript.swift

@@ -96,11 +96,8 @@
 "Additional filter list for websites in Hebrew." = "قائمة مرشحات إضافية لمواقع الويب باللغة العبرية.";
 "Additional filter list for websites in Hindi, Tamil and other Dravidian and Indic languages." = "قائمة مرشحات إضافية لمواقع الويب باللغات الهندية والتاميلية واللغات الدرافيديونية والهندية الأخرى.";
 "Additional filter list for websites in Icelandic." = "قائمة مرشحات إضافية لمواقع الويب باللغة الأيسلندية.";
-"Additional filter list for websites in Indonesian." = "قائمة التصفية الإضافية لمواقع الويب باللغة الإندونيسية.";
-"Additional filter list for websites in Italian." = "قائمة مرشحات إضافية لمواقع الويب باللغة الإيطالية.";
 "Additional filter list for websites in Latvian." = "قائمة عوامل التصفية الإضافية لمواقع الويب باللغة اللاتفية.";
 "Additional filter list for websites in Lithuanian." = "قائمة عوامل التصفية الإضافية لمواقع الويب باللغة الليتوانية.";
-"Additional filter list for websites in Polish." = "قائمة عوامل التصفية الإضافية لمواقع الويب باللغة البولندية.";
 "Additional filter list for websites in Slovenian." = "قائمة عوامل التصفية الإضافية لمواقع الويب باللغة السلوفينية.";
 "AdGuard Base Filter" = "AdGuard Base Filter";
 "AdGuard Chinese filter" = "AdGuard Chinese filter";
@@ -192,19 +189,14 @@
 "Blocking paused" = "الحظر متوقف مؤقتًا";
 "Blocking resumed" = "تم استئناف الحظر";
 "Blocks ads and trackers on various Macedonian websites." = "يحظر الإعلانات والمتتبعات على مواقع الويب المقدونية المختلفة.";
-"Blocks ads and tracking servers to enhance privacy." = "يحظر الإعلانات وخوادم التتبع لتعزيز الخصوصية.";
-"Blocks website features that use generative AI and content labeled as AI-generated." = "يحجب ميزات مواقع الويب التي تستخدم الذكاء الاصطناعي التوليدي والمحتوى المصنّف على أنه مولّد بالذكاء الاصطناعي.";
 "Blocks banners promoting mobile app downloads." = "حظر اللافتات التي تروج لتنزيلات تطبيقات الهاتف المحمول.";
 "Blocks cookie consent notices on web pages." = "يحظر إشعارات الموافقة على ملفات تعريف الارتباط على صفحات الويب.";
 "Blocks miscellaneous irritating elements not covered by other filters." = "يحجب العناصر المهيجة المتنوعة التي لا تغطيها المرشحات الأخرى.";
-"Blocks online tracking and web analytics systems." = "يحظر أنظمة التتبع عبر الإنترنت وتحليلات الويب.";
 "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "لا يستطيع Safari تطبيق قواعد inline-script في هذه القائمة. فعّل Bypass Paywalls Clean في نصوص المستخدم للمواقع المدعومة باللغة الإنجليزية.";
 "Blocks pop-up ads on web pages." = "يحظر الإعلانات المنبثقة على صفحات الويب.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "يحظر النوافذ المنبثقة الترويجية والاشتراكات في الرسائل الإخبارية وطلبات الإشعارات.";
 "Blocks social media content on webpages." = "يحظر محتوى الوسائط الاجتماعية على صفحات الويب.";
-"Blocks social media widgets and buttons." = "يحظر أدوات وأزرار الوسائط الاجتماعية.";
 "Blocks third-party widgets, chat assistants, and support widgets." = "يحظر أدوات الطرف الثالث ومساعدي الدردشة وأدوات الدعم.";
-"Blocks tracking scripts, web beacons, and other privacy-invasive elements." = "يحظر نصوص التتبع وإشارات الويب والعناصر الأخرى التي تنتهك الخصوصية.";
 "Building combined filter engine..." = "بناء محرك مرشح مشترك ...";
 "Building filter engine" = "بناء محرك الفلاتر";
 "Bulgarian list" = "Bulgarian list";
@@ -212,7 +204,6 @@
 "by word" = "كلمات كاملة";
 "Bypass Paywalls Clean Filter" = "Bypass Paywalls Clean Filter";
 "Bypass paywalls of news sites." = "تجاوز paywalls للمواقع الإخبارية.";
-"Bypasses Anti-Adblock scripts used on some websites." = "يتجاوز البرامج النصية لمكافحة Adblock المستخدمة في بعض مواقع الويب.";
 "Calculated source rule count for filter" = "تم حساب عدد قواعد المصدر للفلتر";
 "Cancel" = "إلغاء";
 "Category" = "الفئة";
@@ -239,9 +230,7 @@
 "Community options" = "خيارات المجتمع";
 "Community-maintained options for additional regional coverage." = "خيارات يديرها المجتمع لتغطية إقليمية إضافية.";
 "Completed" = "مكتمل";
-"Comprehensive ad-blocking rules by AdGuard." = "قواعد شاملة لحظر الإعلانات من AdGuard.";
 "Conditional check failed" = "فشل الفحص الشرطي";
-"Contains new rules and fixes not yet included in other filters." = "يحتوي على قواعد وإصلاحات جديدة لم يتم تضمينها بعد في عوامل التصفية الأخرى.";
 "Content filtering" = "تصفية المحتوى";
 "Continue" = "متابعة";
 "Continue Setup" = "متابعة الإعداد";
@@ -304,7 +293,6 @@
 "EasyList Dutch + AdGuard Dutch filter. Filter list that specifically removes ads on websites in Dutch language." = "EasyList Dutch + مرشح AdGuard الهولندي. قائمة التصفية التي تزيل الإعلانات على مواقع الويب باللغة الهولندية على وجه التحديد.";
 "EasyList Germany + AdGuard German filter. Filter list that specifically removes ads on websites in German language." = "EasyList Germany + مرشح AdGuard الألماني. قائمة التصفية التي تزيل الإعلانات على مواقع الويب باللغة الألمانية على وجه التحديد.";
 "EasyList Hebrew" = "EasyList Hebrew";
-"EasyList Italy" = "EasyList Italy";
 "EasyList Lithuania" = "EasyList Lithuania";
 "EasyList Thailand" = "EasyList Thailand";
 "EasyPrivacy" = "EasyPrivacy";
@@ -412,7 +400,6 @@
 "Filter that enables ad blocking on websites in Ukrainian language." = "عامل التصفية الذي يتيح حظر الإعلانات على مواقع الويب باللغة الأوكرانية.";
 "Filter that protects against various types of scams in the Polish network, such as mass text messaging, fake online stores, etc." = "عامل تصفية يحمي من أنواع مختلفة من عمليات الاحتيال في الشبكة البولندية، مثل الرسائل النصية الجماعية والمتاجر المزيفة عبر الإنترنت وما إلى ذلك.";
 "CERT Polska's list of dangerous domains that impersonate real sites to steal data or money." = "قائمة CERT Polska للنطاقات الخطرة التي تنتحل صفة مواقع حقيقية لسرقة البيانات أو الأموال.";
-"Filter that removes ads and various scripts from websites with Korean content. Combined and augmented with AdGuard-specific rules for enhanced filtering. This filter is expected to be used alongside with AdGuard Base filter." = "عامل تصفية يزيل الإعلانات والنصوص المتنوعة من مواقع الويب ذات المحتوى الكوري. تم دمجها وزيادتها مع القواعد الخاصة بـ AdGuard لتحسين التصفية. من المتوقع أن يتم استخدام هذا الفلتر جنبًا إلى جنب مع مرشح AdGuard Base.";
 "Filter Update" = "تحديث الفلتر";
 "FilterApply" = "تطبيق الفلتر";
 "Filtering off" = "التصفية متوقفة";
@@ -442,7 +429,6 @@
 "Hold for 3 seconds to apply without checking for updates." = "اضغط مطولًا لمدة 3 ثوانٍ للتطبيق دون التحقق من التحديثات.";
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
-"Hufilter. Filter list that specifically removes ads on websites in the Hungarian language." = "هوفيلتر. قائمة التصفية التي تزيل الإعلانات على مواقع الويب باللغة المجرية على وجه التحديد.";
 "Hungarian filter" = "مرشح المجرية";
 "Icelandic ABP List" = "Icelandic ABP List";
 "iCloud Sync" = "مزامنة iCloud";
@@ -551,7 +537,6 @@
 "Not selected" = "غير محدد";
 "Not synced yet" = "لم تتم المزامنة بعد";
 "Notify me" = "أعلمني";
-"Official Polish filters for AdBlock, uBlock Origin & AdGuard" = "المرشحات البولندية الرسمية لـ AdBlock وuBlock Origin وAdGuard";
 "OK" = "موافق";
 "on line" = "في السطر";
 "Online Security Filter" = "Online Security Filter";
@@ -561,7 +546,6 @@
 "Only pasted user lists can be edited." = "يمكن تحرير قوائم المستخدمين التي تم لصقها فقط.";
 "Open Login Items" = "فتح عناصر تسجيل الدخول";
 "Open Safari Settings" = "فتح إعدادات Safari";
-"Optimized for mobile ad blocking. Recommended for iOS/iPadOS." = "الأمثل لحظر إعلانات الهاتف المحمول. يوصى به لنظام iOS/iPadOS.";
 "Other" = "أخرى";
 "Overdue catch-up" = "استدراك متأخر";
 "Paste" = "لصق";
@@ -577,7 +561,6 @@
 "Pausing blocking..." = "جارٍ إيقاف الحظر مؤقتًا…";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";
 "Dandelion Sprout's Anti-Malware List" = "Dandelion Sprout's Anti-Malware List";
-"Blocks malware and scam domains, malicious redirects, and unwanted software prompts." = "يحظر نطاقات البرامج الضارة والاحتيال وعمليات إعادة التوجيه الضارة ومطالبات البرامج غير المرغوب فيها.";
 "Pick your base blocking level." = "اختر مستوى الحظر الأساسي.";
 "Prepared removeparam DNR rules" = "تم تحضير قواعد removeparam DNR";
 "Preparing %d extension" = "جارٍ تجهيز %d امتداد";
@@ -618,7 +601,6 @@
 "Remove Older Versions" = "إزالة الإصدارات الأقدم";
 "Removed custom filter" = "تمت إزالة الفلتر المخصّص";
 "Removed deprecated filter list(s)" = "تمت إزالة قائمة/قوائم الفلاتر المهجورة";
-"Removes tracking parameters from URLs." = "يزيل معلمات التتبع من عناوين URL.";
 "Removing userscript" = "إزالة البرنامج النصي للمستخدم";
 "Replace" = "استبدال";
 "replace" = "استبدال";
@@ -678,7 +660,6 @@
 "Settings → Apps → Safari → Extensions" = "الإعدادات → التطبيقات → Safari → الإضافات";
 "Setup Instructions" = "تعليمات الإعداد";
 "Ships with the app" = "يأتي مع التطبيق";
-"Shortens links by removing unnecessary tracking and clutter parameters." = "يقصّر الروابط عبر إزالة معلمات التتبع والمعلمات الزائدة غير الضرورية.";
 "Show blocked item count in toolbar" = "إظهار عدد العناصر المحظورة في شريط الأدوات";
 "Show Enabled Only" = "إظهار المفعّل فقط";
 "Show preview only" = "إظهار المعاينة فقط";
@@ -910,9 +891,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Block Outsider Intrusion into LAN" = "Block Outsider Intrusion into LAN";
 "Stevo's AI Blocklist" = "Stevo's AI Blocklist";
 "AdGuard Allowlist" = "AdGuard Allowlist";
-"Blocks tracking pixels and other mail tracking techniques." = "يحظر وحدات بكسل التتبع وغيرها من تقنيات تتبع البريد.";
-"Blocks public websites from reaching local network addresses and router admin pages. Can break some local apps." = "يمنع المواقع العامة من الوصول إلى عناوين الشبكة المحلية وصفحات إدارة الموجّه. قد يعطل بعض التطبيقات المحلية.";
-"Allows sites and resources that should not be blocked." = "يسمح بالمواقع والموارد التي ينبغي عدم حظرها.";
 
 
 /* Auto-update controls */
@@ -1180,3 +1158,30 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Available when the current sync finishes." = "يتوفر عند انتهاء المزامنة الحالية.";
 "Generic Rules" = "القواعد العامة";
 "Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps." = "تخفي العناصر في كل المواقع بقواعد لا تحدد موقعًا. يؤدي إيقافها إلى الإبقاء على الإخفاء الخاص بكل موقع ويجعل الصفحات أخف، خاصة تطبيقات الويب المزدحمة.";
+"AdGuard Italian filter" = "فلتر AdGuard الإيطالي";
+"AdGuard Polish filter" = "فلتر AdGuard البولندي";
+"EasyList + AdGuard English filter. This filter is necessary for quality ad blocking." = "قائمة سهلة + مرشح قاعدة ادجوارد. هذا الفلتر ضروري لحظر الإعلانات عالي الجودة";
+"The most comprehensive list of various online counters and web analytics tools. Use this filter if you do not want your actions on the Internet to be tracked." = "القائمة الأكثر شمولا من مختلف العدادات على الإنترنت وأدوات تحليلات الويب. استخدم هذا الفلتر ، إذا كنت لا تريد تتبع إجراءاتك على الإنترنت.";
+"Filter that enhances privacy by removing tracking parameters from URLs." = "فلتر يعزز الخصوصية عن طريق إزالة معلمات التتبع من عناوين URL.";
+"Automatically removes unnecessary '$' and '&' values from URLs, making them easier to copy from the URL bar and pasting elsewhere as links. Already included in Dandelion Sprout's Annoyances List." = "يزيل تلقائيًا قيم  '$' و '&' الغير ضرورية من عناوين URL، مما يسهل النسخ من شريط URL واللصق بمكان آخر كروابط. متضمن بالفعل في قائمة Sprout's Annoyances List.";
+"Blocks cookie notices on web pages." = "يحظر ملفات تعريف الارتباط على صفحات الويب. مدرج في فلتر AdGuard Annoyances.";
+"Blocks all kinds of pop-ups that are not necessary for websites' operation according to our Filter policy." = "يحظر جميع أنواع النوافذ المنبثقة غير الضرورية لتشغيل مواقع الويب وفقا لسياسة التصفية الخاصة بنا.";
+"Blocks irritating banners that promote mobile apps of websites." = "يحظر اللافتات المزعجة التي تروج لتطبيقات الأجهزة المحمولة لمواقع الويب.";
+"Blocks irritating elements that do not fall under popular categories of annoyances, such as website promotional offers and restrictions on copying and text selection." = "يحظر العناصر المزعجة التي لا تندرج ضمن الفئات الشائعة للإزعاجات، مثل العروض الترويجية للموقع والقيود المفروضة على النسخ وتحديد النص.";
+"Blocks annoying third-party widgets: online assistants, live support chats, etc." = "حظر أدوات الطرف الثالث المزعجة: المساعدون عبر الإنترنت ، ومحادثات الدعم المباشر ، وما إلى ذلك.";
+"Filter for social media widgets such as 'Like' and 'Share' buttons and more." = "تصفية لعناصر وسائل الاعلام الاجتماعية أزرار\"اعجبني\"  وما الى ذلك";
+"A filter list that hides website features which use generative AI and AI-generated content." = "قائمة تصفية تُخفي ميزات مواقع الويب التي تستخدم الذكاء الاصطناعي التوليدي والمحتوى المُنشأ بواسطة الذكاء الاصطناعي.";
+"This filter blocks tracking pixels in email clients." = "يقوم هذا الفلتر بحظر بكسلات التتبع في عملاء البريد الإلكتروني.";
+"Prevents public Internet sites from digging into your LAN files." = "يمنع المواقع العامة على الشبكة العنكبوتية من التطفل على ملفات الشبكة المحلية الخاصة بك.";
+"Blocks more malware than most other major anti-malware lists - domains and URL patterns used in malware redirection chains, IP addresses that are solely used by malware, PUP nags, and a few scammers. Already included in Dandelion Sprout's Annoyances List." = "يحظر برامج ضارة أكثر من معظم قوائم مكافحة البرامج الضارة الرئيسية الأخرى - المجالات وأنماط عناوين URL المستخدمة في سلاسل إعادة توجيه البرامج الضارة وعناوين IP التي تستخدمها البرامج الضارة فقط وتذمر PUP وعدد قليل من المحتالين. تم تضمينه بالفعل في قائمة مضايقات Dandelion Sprout.";
+"Filter that blocks ads, trackers, and other nasty things." = "تصفية تمنع الإعلانات وأجهزة التتبع والأشياء السيئة الأخرى.";
+"Removes anti-adblock warnings and other obtrusive messages." = "يزيل تحذيرات مكافحة حظر adblock والرسائل الاقتحامية الأخرى.";
+"Filter that unblocks search ads in Google, DuckDuckGo, Bing, or Yahoo and self-promotion on websites." = "تصفية تعمل على إلغاء حظر إعلانات البحث في Google أو DuckDuckGo أو Bing أو Yahoo والترويج الذاتي على مواقع الويب.";
+"Filter designed to test certain hazardous filtering rules before they are added to the basic filters." = "تم تصميم عامل التصفية لاختبار قواعد معينه للتصفية الخطرة قبل اضافتها إلى عوامل التصفية الاساسيه.";
+"Additional filter list for websites in Indonesian and Malay." = "قائمة تصفية إضافية لمواقع الويب باللغة الإندونيسية والملايوية.";
+"EasyList Italy + AdGuard Italian filter. Filter list that specifically removes ads on websites in the Italian language." = "EasyList Italy + فلتر AdGuard الإيطالي. قائمة التصفية التي تزيل الإعلانات تحديدًا على مواقع الويب باللغة الإيطالية.";
+"Hufilter. Filter list that specifically removes ads, privacy threats, and security risks on websites in the Hungarian language." = "Hufilter. قائمة الفلاتر التي تزيل على وجه التحديد الإعلانات وتهديدات الخصوصية ومخاطر الأمان على مواقع الويب باللغة المجرية.";
+"The filterslist-KO Classic filter list for AdGuard blocks ads and disables anti-adblock scripts on Korean-language websites and apps." = "تحظر قائمة الفلاتر filterslist-KO Classic المخصّصة لـ AdGuard الإعلانات وتعطّل البرامج النصية المضادة لحظر الإعلانات على مواقع الويب والتطبيقات باللغة الكورية.";
+"Official Polish filters for AdBlock, uBlock Origin & AdGuard + AdGuard Polish filter. Filter list that specifically removes ads on websites in the Polish language." = "Official Polish filters for AdBlock, uBlock Origin & AdGuard + مرشح AdGuard البولندي. قائمة مرشحات تُزيل الإعلانات على وجه التحديد من المواقع الإلكترونية باللغة البولندية.";
+"Privacy protection supplement for EasyList." = "ملحق حماية الخصوصية لـ EasyList.";
+"Filter for all known mobile ad networks. Useful for mobile devices. Recommended for iOS and iPadOS." = "تصفيه لكافة شبكات الإعلانات المتنقلة المعروفة. مفيده للاجهزه النقالة. موصى به لنظامي iOS وiPadOS.";

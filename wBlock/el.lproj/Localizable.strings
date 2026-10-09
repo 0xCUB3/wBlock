@@ -96,11 +96,8 @@
 "Additional filter list for websites in Hebrew." = "Πρόσθετη λίστα φίλτρων για ιστότοπους στα εβραϊκά.";
 "Additional filter list for websites in Hindi, Tamil and other Dravidian and Indic languages." = "Πρόσθετη λίστα φίλτρων για ιστότοπους στα Χίντι, Ταμίλ και άλλες Δραβιδικές και Ινδικές γλώσσες.";
 "Additional filter list for websites in Icelandic." = "Πρόσθετη λίστα φίλτρων για ιστότοπους στα ισλανδικά.";
-"Additional filter list for websites in Indonesian." = "Πρόσθετη λίστα φίλτρων για ιστότοπους στα Ινδονησιακά.";
-"Additional filter list for websites in Italian." = "Πρόσθετη λίστα φίλτρων για ιστότοπους στα ιταλικά.";
 "Additional filter list for websites in Latvian." = "Πρόσθετη λίστα φίλτρων για ιστότοπους στα λετονικά.";
 "Additional filter list for websites in Lithuanian." = "Πρόσθετη λίστα φίλτρων για ιστότοπους στα λιθουανικά.";
-"Additional filter list for websites in Polish." = "Πρόσθετη λίστα φίλτρων για ιστότοπους στα πολωνικά.";
 "Additional filter list for websites in Slovenian." = "Πρόσθετη λίστα φίλτρων για ιστότοπους στα σλοβενικά.";
 "AdGuard Base Filter" = "AdGuard Base Filter";
 "AdGuard Chinese filter" = "AdGuard Chinese filter";
@@ -192,19 +189,14 @@
 "Blocking paused" = "Ο αποκλεισμός σε παύση";
 "Blocking resumed" = "Ο αποκλεισμός συνεχίστηκε";
 "Blocks ads and trackers on various Macedonian websites." = "Αποκλείει διαφημίσεις και trackers σε διάφορες ιστοσελίδες της Μακεδονίας.";
-"Blocks ads and tracking servers to enhance privacy." = "Αποκλείει τις διαφημίσεις και τους διακομιστές παρακολούθησης για τη βελτίωση του απορρήτου.";
-"Blocks website features that use generative AI and content labeled as AI-generated." = "Αποκλείει λειτουργίες ιστοτόπων που χρησιμοποιούν παραγωγική τεχνητή νοημοσύνη και περιεχόμενο που επισημαίνεται ως δημιουργημένο από τεχνητή νοημοσύνη.";
 "Blocks banners promoting mobile app downloads." = "Αποκλείει τα banner που προωθούν λήψεις εφαρμογών για κινητά.";
 "Blocks cookie consent notices on web pages." = "Αποκλείει τις ειδοποιήσεις συναίνεσης για cookie σε ιστοσελίδες.";
 "Blocks miscellaneous irritating elements not covered by other filters." = "Αποκλείει διάφορα ερεθιστικά στοιχεία που δεν καλύπτονται από άλλα φίλτρα.";
-"Blocks online tracking and web analytics systems." = "Αποκλείει τα διαδικτυακά συστήματα παρακολούθησης και ανάλυσης ιστού.";
 "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "Το Safari δεν μπορεί να εφαρμόσει τους κανόνες inline-script αυτής της λίστας. Ενεργοποιήστε το Bypass Paywalls Clean στον κώδικα χρήστη για τους υποστηριζόμενους αγγλόφωνους ιστοτόπους.";
 "Blocks pop-up ads on web pages." = "Αποκλείει τα αναδυόμενα παράθυρα στις ιστοσελίδες.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "Αποκλείει διαφημιστικά αναδυόμενα παράθυρα, εγγραφές σε ενημερωτικά δελτία και αιτήματα ειδοποιήσεων.";
 "Blocks social media content on webpages." = "Αποκλείει το περιεχόμενο των μέσων κοινωνικής δικτύωσης σε ιστοσελίδες.";
-"Blocks social media widgets and buttons." = "Αποκλείει γραφικά στοιχεία και κουμπιά μέσων κοινωνικής δικτύωσης.";
 "Blocks third-party widgets, chat assistants, and support widgets." = "Αποκλείει γραφικά στοιχεία τρίτων, βοηθούς συνομιλίας και γραφικά στοιχεία υποστήριξης.";
-"Blocks tracking scripts, web beacons, and other privacy-invasive elements." = "Αποκλείει κώδικες παρακολούθησης, web beacons και άλλα στοιχεία που παραβιάζουν το απόρρητο.";
 "Building combined filter engine..." = "Κατασκευή κινητήρα συνδυασμένου φίλτρου...";
 "Building filter engine" = "Δημιουργία μηχανής φίλτρων";
 "Bulgarian list" = "Bulgarian list";
@@ -212,7 +204,6 @@
 "by word" = "ολόκληρες λέξεις";
 "Bypass Paywalls Clean Filter" = "Bypass Paywalls Clean Filter";
 "Bypass paywalls of news sites." = "Παράκαμψη paywalls ειδησεογραφικών τοποθεσιών.";
-"Bypasses Anti-Adblock scripts used on some websites." = "Παρακάμπτει τους κώδικες Anti-Adblock που χρησιμοποιούνται σε ορισμένους ιστότοπους.";
 "Calculated source rule count for filter" = "Υπολογισμός αριθμού κανόνων πηγής για το φίλτρο";
 "Cancel" = "Ακύρωση";
 "Category" = "Κατηγορία";
@@ -239,9 +230,7 @@
 "Community options" = "Επιλογές Κοινότητας";
 "Community-maintained options for additional regional coverage." = "Επιλογές που διατηρούνται από την κοινότητα για πρόσθετη περιφερειακή κάλυψη.";
 "Completed" = "Ολοκληρώθηκε";
-"Comprehensive ad-blocking rules by AdGuard." = "Ολοκληρωμένοι κανόνες αποκλεισμού διαφημίσεων από το AdGuard.";
 "Conditional check failed" = "Αποτυχία υπό όρους ελέγχου";
-"Contains new rules and fixes not yet included in other filters." = "Περιέχει νέους κανόνες και διορθώσεις που δεν περιλαμβάνονται ακόμη σε άλλα φίλτρα.";
 "Content filtering" = "Φιλτράρισμα περιεχομένου";
 "Continue" = "Συνέχεια";
 "Continue Setup" = "Συνέχεια Ρύθμισης";
@@ -304,7 +293,6 @@
 "EasyList Dutch + AdGuard Dutch filter. Filter list that specifically removes ads on websites in Dutch language." = "Φίλτρο EasyList Dutch + AdGuard Dutch. Λίστα φίλτρων που καταργεί ειδικά τις διαφημίσεις σε ιστότοπους στην ολλανδική γλώσσα.";
 "EasyList Germany + AdGuard German filter. Filter list that specifically removes ads on websites in German language." = "EasyList Germany + Γερμανικό φίλτρο AdGuard. Λίστα φίλτρων που αφαιρεί συγκεκριμένα διαφημίσεις σε ιστότοπους στη γερμανική γλώσσα.";
 "EasyList Hebrew" = "EasyList Hebrew";
-"EasyList Italy" = "EasyList Italy";
 "EasyList Lithuania" = "EasyList Lithuania";
 "EasyList Thailand" = "EasyList Thailand";
 "EasyPrivacy" = "EasyPrivacy";
@@ -412,7 +400,6 @@
 "Filter that enables ad blocking on websites in Ukrainian language." = "Φίλτρο που επιτρέπει τον αποκλεισμό διαφημίσεων σε ιστότοπους στην ουκρανική γλώσσα.";
 "Filter that protects against various types of scams in the Polish network, such as mass text messaging, fake online stores, etc." = "Φίλτρο που προστατεύει από διάφορους τύπους απάτες στο πολωνικό δίκτυο, όπως μαζικά μηνύματα κειμένου, πλαστά ηλεκτρονικά καταστήματα κ.λπ.";
 "CERT Polska's list of dangerous domains that impersonate real sites to steal data or money." = "Λίστα της CERT Polska με επικίνδυνους τομείς που μιμούνται πραγματικούς ιστότοπους για να κλέψουν δεδομένα ή χρήματα.";
-"Filter that removes ads and various scripts from websites with Korean content. Combined and augmented with AdGuard-specific rules for enhanced filtering. This filter is expected to be used alongside with AdGuard Base filter." = "Φίλτρο που αφαιρεί διαφημίσεις και διάφορους κώδικες από ιστότοπους με κορεατικό περιεχόμενο. Συνδυάζεται και επαυξάνεται με κανόνες που αφορούν ειδικά το AdGuard για βελτιωμένο φιλτράρισμα. Αυτό το φίλτρο αναμένεται να χρησιμοποιηθεί μαζί με το φίλτρο AdGuard Base.";
 "Filter Update" = "Φίλτρο Ενημέρωσης";
 "FilterApply" = "Εφαρμογή φίλτρου";
 "Filtering off" = "Το φιλτράρισμα είναι απενεργοποιημένο";
@@ -442,7 +429,6 @@
 "Hold for 3 seconds to apply without checking for updates." = "Κρατήστε πατημένο για 3 δευτερόλεπτα για εφαρμογή χωρίς έλεγχο ενημερώσεων.";
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
-"Hufilter. Filter list that specifically removes ads on websites in the Hungarian language." = "Hufilter. Λίστα φίλτρων που καταργεί ειδικά τις διαφημίσεις σε ιστότοπους στην ουγγρική γλώσσα.";
 "Hungarian filter" = "Ουγγρικό φίλτρο";
 "Icelandic ABP List" = "Icelandic ABP List";
 "iCloud Sync" = "Συγχρονισμός iCloud";
@@ -551,7 +537,6 @@
 "Not selected" = "Δεν έχει επιλεγεί";
 "Not synced yet" = "Δεν έχει συγχρονιστεί ακόμη";
 "Notify me" = "Ενημερώστε με";
-"Official Polish filters for AdBlock, uBlock Origin & AdGuard" = "Επίσημα πολωνικά φίλτρα για AdBlock, uBlock Origin και AdGuard";
 "OK" = "Εντάξει";
 "on line" = "στη γραμμή";
 "Online Security Filter" = "Online Security Filter";
@@ -561,7 +546,6 @@
 "Only pasted user lists can be edited." = "Μόνο επικολλημένες λίστες χρηστών μπορούν να επεξεργαστούν.";
 "Open Login Items" = "Άνοιγμα στοιχείων σύνδεσης";
 "Open Safari Settings" = "Άνοιγμα ρυθμίσεων Safari";
-"Optimized for mobile ad blocking. Recommended for iOS/iPadOS." = "Βελτιστοποιημένο για αποκλεισμό διαφημίσεων για κινητά. Συνιστάται για iOS/iPadOS.";
 "Other" = "Άλλη";
 "Overdue catch-up" = "Καθυστερημένη ανάκτηση";
 "Paste" = "Επικόλληση";
@@ -577,7 +561,6 @@
 "Pausing blocking..." = "Παύση αποκλεισμού…";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";
 "Dandelion Sprout's Anti-Malware List" = "Dandelion Sprout's Anti-Malware List";
-"Blocks malware and scam domains, malicious redirects, and unwanted software prompts." = "Αποκλείει τομείς κακόβουλου λογισμικού και απάτης, κακόβουλες ανακατευθύνσεις και προτροπές για ανεπιθύμητο λογισμικό.";
 "Pick your base blocking level." = "Επιλέξτε το βασικό επίπεδο αποκλεισμού σας.";
 "Prepared removeparam DNR rules" = "Προετοιμασία κανόνων removeparam DNR";
 "Preparing %d extension" = "Προετοιμασία %d επέκτασης";
@@ -618,7 +601,6 @@
 "Remove Older Versions" = "Κατάργηση Παλαιότερων Εκδόσεων";
 "Removed custom filter" = "Απομακρύνθηκε το προσαρμοσμένο φίλτρο";
 "Removed deprecated filter list(s)" = "Αφαιρέθηκαν οι παρωχημένες λίστες φίλτρων";
-"Removes tracking parameters from URLs." = "Αφαιρεί παραμέτρους παρακολούθησης από URL.";
 "Removing userscript" = "Αφαίρεση σεναρίου χρήστη";
 "Replace" = "Αντικατάσταση";
 "replace" = "αντικατάσταση";
@@ -678,7 +660,6 @@
 "Settings → Apps → Safari → Extensions" = "Ρυθμίσεις → Εφαρμογές → Safari → Επεκτάσεις";
 "Setup Instructions" = "Οδηγίες εγκατάστασης";
 "Ships with the app" = "Παρέχεται με την εφαρμογή";
-"Shortens links by removing unnecessary tracking and clutter parameters." = "Συντομεύει τους συνδέσμους αφαιρώντας περιττές παραμέτρους παρακολούθησης και άλλες άχρηστες παραμέτρους.";
 "Show blocked item count in toolbar" = "Εμφάνιση αριθμού αποκλεισμένων στοιχείων στη γραμμή εργαλείων";
 "Show Enabled Only" = "Εμφάνιση μόνο ενεργών";
 "Show preview only" = "Εμφάνιση μόνο προεπισκόπησης";
@@ -910,9 +891,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Block Outsider Intrusion into LAN" = "Block Outsider Intrusion into LAN";
 "Stevo's AI Blocklist" = "Stevo's AI Blocklist";
 "AdGuard Allowlist" = "AdGuard Allowlist";
-"Blocks tracking pixels and other mail tracking techniques." = "Αποκλείει εικονοστοιχεία παρακολούθησης και άλλες τεχνικές παρακολούθησης αλληλογραφίας.";
-"Blocks public websites from reaching local network addresses and router admin pages. Can break some local apps." = "Εμποδίζει δημόσιους ιστότοπους να φτάσουν σε διευθύνσεις τοπικού δικτύου και σελίδες διαχείρισης του δρομολογητή. Μπορεί να χαλάσει ορισμένες τοπικές εφαρμογές.";
-"Allows sites and resources that should not be blocked." = "Επιτρέπει ιστότοπους και πόρους που δεν πρέπει να αποκλείονται.";
 
 
 /* Auto-update controls */
@@ -1180,3 +1158,30 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Available when the current sync finishes." = "Διαθέσιμο όταν ολοκληρωθεί ο τρέχων συγχρονισμός.";
 "Generic Rules" = "Γενικοί κανόνες";
 "Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps." = "Κρύβει στοιχεία σε κάθε ιστότοπο με κανόνες που δεν ορίζουν ιστότοπο. Αν το απενεργοποιήσετε, η απόκρυψη ανά ιστότοπο παραμένει και οι σελίδες γίνονται πιο ελαφριές, ειδικά οι απαιτητικές εφαρμογές ιστού.";
+"AdGuard Italian filter" = "AdGuard Ιταλικό φίλτρο";
+"AdGuard Polish filter" = "AdGuard Πολωνικό φίλτρο";
+"EasyList + AdGuard English filter. This filter is necessary for quality ad blocking." = "EasyList + AdGuard Βασικό φίλτρο. Αυτό το φίλτρο είναι απαραίτητο για ποιοτικό αποκλεισμό διαφημίσεων.";
+"The most comprehensive list of various online counters and web analytics tools. Use this filter if you do not want your actions on the Internet to be tracked." = "Η πιο ολοκληρωμένη λίστα διαφόρων διαδικτυακών μετρητών και εργαλείων ανάλυσης ιστού. Χρησιμοποιήστε αυτό το φίλτρο, εάν δεν θέλετε να παρακολουθούνται οι ενέργειές σας στο Διαδίκτυο.";
+"Filter that enhances privacy by removing tracking parameters from URLs." = "Το φίλτρο αυτό ενισχύει την προστασία του απορρήτου με την αφαίρεση παραμέτρων παρακολούθησης από τις διευθύνσεις URL.";
+"Automatically removes unnecessary '$' and '&' values from URLs, making them easier to copy from the URL bar and pasting elsewhere as links. Already included in Dandelion Sprout's Annoyances List." = "Αφαιρεί αυτόματα τις περιττές τιμές «$» και «&» από τα URL, κάνοντάς τα ευκολότερα να αντιγραφούν από τη γραμμή URL και να επικολληθούν οπουδήποτε αλλού ως σύνδεσμοι. Ήδη περιλαμβάνεται στην λίστα ενοχλήσεων του Dandelion Sprout.";
+"Blocks cookie notices on web pages." = "Αποκλείει τις ειδοποιήσεις cookie σε ιστοσελίδες.";
+"Blocks all kinds of pop-ups that are not necessary for websites' operation according to our Filter policy." = "Αποκλείει όλα τα είδη αναδυόμενων παραθύρων που δεν είναι απαραίτητα για τη λειτουργία των ιστότοπων σύμφωνα με την πολιτική φίλτρων.";
+"Blocks irritating banners that promote mobile apps of websites." = "Αποκλείει ενοχλητικά banner που προωθούν εφαρμογές ιστοτόπων για κινητές συσκευές.";
+"Blocks irritating elements that do not fall under popular categories of annoyances, such as website promotional offers and restrictions on copying and text selection." = "Αποκλείει ενοχλητικά στοιχεία που δεν εμπίπτουν στις δημοφιλείς κατηγορίες ενοχλητικών, όπως προωθητικές προσφορές ιστοσελίδων και περιορισμούς στην αντιγραφή και την επιλογή κειμένου.";
+"Blocks annoying third-party widgets: online assistants, live support chats, etc." = "Αποκλείει ενοχλητικά γραφικά στοιχεία τρίτων: διαδικτυακούς βοηθούς, ζωντανές συνομιλίες υποστήριξης κ.λπ.";
+"Filter for social media widgets such as 'Like' and 'Share' buttons and more." = "Φιλτράρισμα widget κοινωνικών δικτύων (κουμπιά \"Μου αρέσει\" και παρόμοια).";
+"A filter list that hides website features which use generative AI and AI-generated content." = "Μια λίστα φίλτρων που αποκρύπτει λειτουργίες ιστότοπων που χρησιμοποιούν γενετική τεχνητή νοημοσύνη και περιεχόμενο που δημιουργείται από AI.";
+"This filter blocks tracking pixels in email clients." = "Αυτό το φίλτρο αποκλείει pixels παρακολούθησης σε πελάτες ηλεκτρονικού ταχυδρομείου.";
+"Prevents public Internet sites from digging into your LAN files." = "Αποτρέπει τις δημόσιες ιστοσελίδες του Διαδικτύου να ερευνήσουν τα αρχεία του LAN σας.";
+"Blocks more malware than most other major anti-malware lists - domains and URL patterns used in malware redirection chains, IP addresses that are solely used by malware, PUP nags, and a few scammers. Already included in Dandelion Sprout's Annoyances List." = "Αποκλείει περισσότερο κακόβουλο λογισμικό από τις περισσότερες άλλες μεγάλες λίστες κατά του κακόβουλου λογισμικού - τομείς και μοτίβα URL που χρησιμοποιούνται σε αλυσίδες ανακατεύθυνσης κακόβουλου λογισμικού, Διευθύνσεις IP που χρησιμοποιούνται αποκλειστικά από κακόβουλο λογισμικό, ενοχλητικά από PUP, και μερικούς απατεώνες. Περιλαμβάνεται ήδη στη Dandelion Sprout's Annoyances List.";
+"Filter that blocks ads, trackers, and other nasty things." = "Φίλτρο που αποκλείει διαφημίσεις, προγράμματα παρακολούθησης και άλλα επικίνδυνα πράγματα.";
+"Removes anti-adblock warnings and other obtrusive messages." = "Καταργεί τις προειδοποιήσεις κατά του adblock και άλλα ενοχλητικά μηνύματα.";
+"Filter that unblocks search ads in Google, DuckDuckGo, Bing, or Yahoo and self-promotion on websites." = "Φίλτρο που ξεμπλοκάρει τις διαφημίσεις αναζήτησης στο Google, DuckDuckGo, Bing ή Yahoo και αυτοπροβολή σε ιστότοπους.";
+"Filter designed to test certain hazardous filtering rules before they are added to the basic filters." = "Φίλτρο σχεδιασμένο για να δοκιμάζει ορισμένους επικίνδυνους κανόνες φιλτραρίσματος προτού προστεθούν στα βασικά φίλτρα.";
+"Additional filter list for websites in Indonesian and Malay." = "Πρόσθετη λίστα φίλτρων για ιστότοπους στα Ινδονησιακά και τα Μαλαισιακά.";
+"EasyList Italy + AdGuard Italian filter. Filter list that specifically removes ads on websites in the Italian language." = "EasyList Italy + AdGuard Ιταλικό φίλτρο. Φίλτρο λίστας που καταργεί συγκεκριμένα διαφημίσεις σε ιστοσελίδες στην ιταλική γλώσσα.";
+"Hufilter. Filter list that specifically removes ads, privacy threats, and security risks on websites in the Hungarian language." = "Hufilter. Λίστα φίλτρου που αφαιρεί συγκεκριμένα διαφημίσεις, απειλές απορρήτου και κινδύνους ασφάλειας σε ιστοσελίδες στην ουγγρική γλώσσα.";
+"The filterslist-KO Classic filter list for AdGuard blocks ads and disables anti-adblock scripts on Korean-language websites and apps." = "Η κλασική λίστα φίλτρων filterslist-KO για το AdGuard αποκλείει διαφημίσεις και απενεργοποιεί δέσμες ενεργειών κατά του αποκλεισμού διαφημίσεων σε κορεατόφωνους ιστοτόπους και εφαρμογές.";
+"Official Polish filters for AdBlock, uBlock Origin & AdGuard + AdGuard Polish filter. Filter list that specifically removes ads on websites in the Polish language." = "Official Polish filters for AdBlock, uBlock Origin & AdGuard + Πολωνικό φίλτρο AdGuard. Λίστα φίλτρων που αφαιρεί ειδικά τις διαφημίσεις σε ιστότοπους στην πολωνική γλώσσα.";
+"Privacy protection supplement for EasyList." = "Συμπλήρωμα προστασίας απορρήτου για τον Easylist.";
+"Filter for all known mobile ad networks. Useful for mobile devices. Recommended for iOS and iPadOS." = "Φίλτρο για όλα τα γνωστά δίκτυα διαφημίσεων για κινητά. Χρήσιμο για φορητές συσκευές. Συνιστάται για iOS και iPadOS.";

@@ -178,10 +178,14 @@ enum ForeignFilterOrganizer {
         }
     }
 
+    private static let catalogOrder = Dictionary(uniqueKeysWithValues:
+        FilterListLoader().getDefaultFilterLists().filter { $0.category == .foreign }
+            .enumerated().map { ($0.element.url, $0.offset) })
+
     static func sortedFilters(_ filters: [FilterList]) -> [FilterList] {
         filters.sorted { lhs, rhs in
-            let lhsRank = filterPriority(lhs)
-            let rhsRank = filterPriority(rhs)
+            let lhsRank = catalogOrder[lhs.url] ?? (catalogOrder.count + filterPriority(lhs))
+            let rhsRank = catalogOrder[rhs.url] ?? (catalogOrder.count + filterPriority(rhs))
             if lhsRank != rhsRank { return lhsRank < rhsRank }
 
             let nameComparison = lhs.localizedDisplayName.localizedCaseInsensitiveCompare(rhs.localizedDisplayName)
@@ -204,11 +208,7 @@ enum ForeignFilterOrganizer {
     }
 
     private static func filterPriority(_ filter: FilterList) -> Int {
-        var priority = trustRank(for: filter)
-        if isSuperseded(filter) {
-            priority += 10
-        }
-        return priority
+        trustRank(for: filter) + (isSuperseded(filter) ? 10 : 0)
     }
 
     private static func trustRank(for filter: FilterList) -> Int {

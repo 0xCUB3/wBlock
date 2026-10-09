@@ -96,11 +96,8 @@
 "Additional filter list for websites in Hebrew." = "Additional filter list for websites in Hebrew.";
 "Additional filter list for websites in Hindi, Tamil and other Dravidian and Indic languages." = "Additional filter list for websites in Hindi, Tamil and other Dravidian and Indic languages.";
 "Additional filter list for websites in Icelandic." = "Additional filter list for websites in Icelandic.";
-"Additional filter list for websites in Indonesian." = "Additional filter list for websites in Indonesian.";
-"Additional filter list for websites in Italian." = "Additional filter list for websites in Italian.";
 "Additional filter list for websites in Latvian." = "Additional filter list for websites in Latvian.";
 "Additional filter list for websites in Lithuanian." = "Additional filter list for websites in Lithuanian.";
-"Additional filter list for websites in Polish." = "Additional filter list for websites in Polish.";
 "Additional filter list for websites in Slovenian." = "Additional filter list for websites in Slovenian.";
 "AdGuard Base Filter" = "AdGuard Base Filter";
 "AdGuard Chinese filter" = "AdGuard Chinese filter";
@@ -192,19 +189,14 @@
 "Blocking paused" = "Blocking paused";
 "Blocking resumed" = "Blocking resumed";
 "Blocks ads and trackers on various Macedonian websites." = "Blocks ads and trackers on various Macedonian websites.";
-"Blocks ads and tracking servers to enhance privacy." = "Blocks ads and tracking servers to enhance privacy.";
-"Blocks website features that use generative AI and content labeled as AI-generated." = "Blocks website features that use generative AI and content labeled as AI-generated.";
 "Blocks banners promoting mobile app downloads." = "Blocks banners promoting mobile app downloads.";
 "Blocks cookie consent notices on web pages." = "Blocks cookie consent notices on web pages.";
 "Blocks miscellaneous irritating elements not covered by other filters." = "Blocks miscellaneous irritating elements not covered by other filters.";
-"Blocks online tracking and web analytics systems." = "Blocks online tracking and web analytics systems.";
 "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites.";
 "Blocks pop-up ads on web pages." = "Blocks pop-up ads on web pages.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "Blocks promotional pop-ups, newsletter sign-ups, and notification requests.";
 "Blocks social media content on webpages." = "Blocks social media content on webpages.";
-"Blocks social media widgets and buttons." = "Blocks social media widgets and buttons.";
 "Blocks third-party widgets, chat assistants, and support widgets." = "Blocks third-party widgets, chat assistants, and support widgets.";
-"Blocks tracking scripts, web beacons, and other privacy-invasive elements." = "Blocks tracking scripts, web beacons, and other privacy-invasive elements.";
 "Building combined filter engine..." = "Building combined filter engine...";
 "Building filter engine" = "Building filter engine";
 "Bulgarian list" = "Bulgarian list";
@@ -212,7 +204,6 @@
 "by word" = "by word";
 "Bypass Paywalls Clean Filter" = "Bypass Paywalls Clean Filter";
 "Bypass paywalls of news sites." = "Bypass paywalls of news sites.";
-"Bypasses Anti-Adblock scripts used on some websites." = "Bypasses Anti-Adblock scripts used on some websites.";
 "Calculated source rule count for filter" = "Calculated source rule count for filter";
 "Cancel" = "Cancel";
 "Category" = "Category";
@@ -239,9 +230,7 @@
 "Community options" = "Community options";
 "Community-maintained options for additional regional coverage." = "Community-maintained options for additional regional coverage.";
 "Completed" = "Completed";
-"Comprehensive ad-blocking rules by AdGuard." = "Comprehensive ad-blocking rules by AdGuard.";
 "Conditional check failed" = "Conditional check failed";
-"Contains new rules and fixes not yet included in other filters." = "Contains new rules and fixes not yet included in other filters.";
 "Content filtering" = "Content filtering";
 "Continue" = "Continue";
 "Continue Setup" = "Continue Setup";
@@ -304,7 +293,6 @@
 "EasyList Dutch + AdGuard Dutch filter. Filter list that specifically removes ads on websites in Dutch language." = "EasyList Dutch + AdGuard Dutch filter. Filter list that specifically removes ads on websites in Dutch language.";
 "EasyList Germany + AdGuard German filter. Filter list that specifically removes ads on websites in German language." = "EasyList Germany + AdGuard German filter. Filter list that specifically removes ads on websites in German language.";
 "EasyList Hebrew" = "EasyList Hebrew";
-"EasyList Italy" = "EasyList Italy";
 "EasyList Lithuania" = "EasyList Lithuania";
 "EasyList Thailand" = "EasyList Thailand";
 "EasyPrivacy" = "EasyPrivacy";
@@ -412,7 +400,6 @@
 "Filter that enables ad blocking on websites in Ukrainian language." = "Filter that enables ad blocking on websites in Ukrainian language.";
 "Filter that protects against various types of scams in the Polish network, such as mass text messaging, fake online stores, etc." = "Filter that protects against various types of scams in the Polish network, such as mass text messaging, fake online stores, etc.";
 "CERT Polska's list of dangerous domains that impersonate real sites to steal data or money." = "CERT Polska's list of dangerous domains that impersonate real sites to steal data or money.";
-"Filter that removes ads and various scripts from websites with Korean content. Combined and augmented with AdGuard-specific rules for enhanced filtering. This filter is expected to be used alongside with AdGuard Base filter." = "Filter that removes ads and various scripts from websites with Korean content. Combined and augmented with AdGuard-specific rules for enhanced filtering. This filter is expected to be used alongside with AdGuard Base filter.";
 "Filter Update" = "Filter Update";
 "FilterApply" = "FilterApply";
 "Filtering off" = "Filtering off";
@@ -442,7 +429,6 @@
 "Hold for 3 seconds to apply without checking for updates." = "Hold for 3 seconds to apply without checking for updates.";
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
-"Hufilter. Filter list that specifically removes ads on websites in the Hungarian language." = "Hufilter. Filter list that specifically removes ads on websites in the Hungarian language.";
 "Hungarian filter" = "Hungarian filter";
 "Icelandic ABP List" = "Icelandic ABP List";
 "iCloud Sync" = "iCloud Sync";
@@ -551,7 +537,6 @@
 "Not selected" = "Not selected";
 "Not synced yet" = "Not synced yet";
 "Notify me" = "Notify me";
-"Official Polish filters for AdBlock, uBlock Origin & AdGuard" = "Official Polish filters for AdBlock, uBlock Origin & AdGuard";
 "OK" = "OK";
 "on line" = "on line";
 "Online Security Filter" = "Online Security Filter";
@@ -561,7 +546,6 @@
 "Only pasted user lists can be edited." = "Only pasted user lists can be edited.";
 "Open Login Items" = "Open Login Items";
 "Open Safari Settings" = "Open Safari Settings";
-"Optimized for mobile ad blocking. Recommended for iOS/iPadOS." = "Optimized for mobile ad blocking. Recommended for iOS/iPadOS.";
 "Other" = "Other";
 "Overdue catch-up" = "Overdue catch-up";
 "Paste" = "Paste";
@@ -574,7 +558,6 @@
 "Pausing blocking..." = "Pausing blocking...";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";
 "Dandelion Sprout's Anti-Malware List" = "Dandelion Sprout's Anti-Malware List";
-"Blocks malware and scam domains, malicious redirects, and unwanted software prompts." = "Blocks malware and scam domains, malicious redirects, and unwanted software prompts.";
 "Pick your base blocking level." = "Pick your base blocking level.";
 "Prepared removeparam DNR rules" = "Prepared removeparam DNR rules";
 "Preparing %d extension" = "Preparing %d extension";
@@ -615,7 +598,6 @@
 "Remove Older Versions" = "Remove Older Versions";
 "Removed custom filter" = "Removed custom filter";
 "Removed deprecated filter list(s)" = "Removed deprecated filter list(s)";
-"Removes tracking parameters from URLs." = "Removes tracking parameters from URLs.";
 "Removing userscript" = "Removing userscript";
 "Replace" = "Replace";
 "replace" = "replace";
@@ -675,7 +657,6 @@
 "Settings → Apps → Safari → Extensions" = "Settings → Apps → Safari → Extensions";
 "Setup Instructions" = "Setup Instructions";
 "Ships with the app" = "Ships with the app";
-"Shortens links by removing unnecessary tracking and clutter parameters." = "Shortens links by removing unnecessary tracking and clutter parameters.";
 "Show blocked item count in toolbar" = "Show blocked item count in toolbar";
 "Show Enabled Only" = "Show Enabled Only";
 "Show preview only" = "Show preview only";
@@ -907,9 +888,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Block Outsider Intrusion into LAN" = "Block Outsider Intrusion into LAN";
 "Stevo's AI Blocklist" = "Stevo's AI Blocklist";
 "AdGuard Allowlist" = "AdGuard Allowlist";
-"Blocks tracking pixels and other mail tracking techniques." = "Blocks tracking pixels and other mail tracking techniques.";
-"Blocks public websites from reaching local network addresses and router admin pages. Can break some local apps." = "Blocks public websites from reaching local network addresses and router admin pages. Can break some local apps.";
-"Allows sites and resources that should not be blocked." = "Allows sites and resources that should not be blocked.";
 
 
 /* Auto-update controls */
@@ -1189,3 +1167,30 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Available when the current sync finishes." = "Available when the current sync finishes.";
 "Generic Rules" = "Generic Rules";
 "Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps." = "Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps.";
+"AdGuard Italian filter" = "AdGuard Italian filter";
+"AdGuard Polish filter" = "AdGuard Polish filter";
+"EasyList + AdGuard English filter. This filter is necessary for quality ad blocking." = "EasyList + AdGuard English filter. This filter is necessary for quality ad blocking.";
+"The most comprehensive list of various online counters and web analytics tools. Use this filter if you do not want your actions on the Internet to be tracked." = "The most comprehensive list of various online counters and web analytics tools. Use this filter if you do not want your actions on the Internet to be tracked.";
+"Filter that enhances privacy by removing tracking parameters from URLs." = "Filter that enhances privacy by removing tracking parameters from URLs.";
+"Automatically removes unnecessary '$' and '&' values from URLs, making them easier to copy from the URL bar and pasting elsewhere as links. Already included in Dandelion Sprout's Annoyances List." = "Automatically removes unnecessary '$' and '&' values from URLs, making them easier to copy from the URL bar and pasting elsewhere as links. Already included in Dandelion Sprout's Annoyances List.";
+"Blocks cookie notices on web pages." = "Blocks cookie notices on web pages.";
+"Blocks all kinds of pop-ups that are not necessary for websites' operation according to our Filter policy." = "Blocks all kinds of pop-ups that are not necessary for websites' operation according to our Filter policy.";
+"Blocks irritating banners that promote mobile apps of websites." = "Blocks irritating banners that promote mobile apps of websites.";
+"Blocks irritating elements that do not fall under popular categories of annoyances, such as website promotional offers and restrictions on copying and text selection." = "Blocks irritating elements that do not fall under popular categories of annoyances, such as website promotional offers and restrictions on copying and text selection.";
+"Blocks annoying third-party widgets: online assistants, live support chats, etc." = "Blocks annoying third-party widgets: online assistants, live support chats, etc.";
+"Filter for social media widgets such as 'Like' and 'Share' buttons and more." = "Filter for social media widgets such as 'Like' and 'Share' buttons and more.";
+"A filter list that hides website features which use generative AI and AI-generated content." = "A filter list that hides website features which use generative AI and AI-generated content.";
+"This filter blocks tracking pixels in email clients." = "This filter blocks tracking pixels in email clients.";
+"Prevents public Internet sites from digging into your LAN files." = "Prevents public Internet sites from digging into your LAN files.";
+"Blocks more malware than most other major anti-malware lists - domains and URL patterns used in malware redirection chains, IP addresses that are solely used by malware, PUP nags, and a few scammers. Already included in Dandelion Sprout's Annoyances List." = "Blocks more malware than most other major anti-malware lists - domains and URL patterns used in malware redirection chains, IP addresses that are solely used by malware, PUP nags, and a few scammers. Already included in Dandelion Sprout's Annoyances List.";
+"Filter that blocks ads, trackers, and other nasty things." = "Filter that blocks ads, trackers, and other nasty things.";
+"Removes anti-adblock warnings and other obtrusive messages." = "Removes anti-adblock warnings and other obtrusive messages.";
+"Filter that unblocks search ads in Google, DuckDuckGo, Bing, or Yahoo and self-promotion on websites." = "Filter that unblocks search ads in Google, DuckDuckGo, Bing, or Yahoo and self-promotion on websites.";
+"Filter designed to test certain hazardous filtering rules before they are added to the basic filters." = "Filter designed to test certain hazardous filtering rules before they are added to the basic filters.";
+"Additional filter list for websites in Indonesian and Malay." = "Additional filter list for websites in Indonesian and Malay.";
+"EasyList Italy + AdGuard Italian filter. Filter list that specifically removes ads on websites in the Italian language." = "EasyList Italy + AdGuard Italian filter. Filter list that specifically removes ads on websites in the Italian language.";
+"Hufilter. Filter list that specifically removes ads, privacy threats, and security risks on websites in the Hungarian language." = "Hufilter. Filter list that specifically removes ads, privacy threats, and security risks on websites in the Hungarian language.";
+"The filterslist-KO Classic filter list for AdGuard blocks ads and disables anti-adblock scripts on Korean-language websites and apps." = "The filterslist-KO Classic filter list for AdGuard blocks ads and disables anti-adblock scripts on Korean-language websites and apps.";
+"Official Polish filters for AdBlock, uBlock Origin & AdGuard + AdGuard Polish filter. Filter list that specifically removes ads on websites in the Polish language." = "Official Polish filters for AdBlock, uBlock Origin & AdGuard + AdGuard Polish filter. Filter list that specifically removes ads on websites in the Polish language.";
+"Privacy protection supplement for EasyList." = "Privacy protection supplement for EasyList.";
+"Filter for all known mobile ad networks. Useful for mobile devices. Recommended for iOS and iPadOS." = "Filter for all known mobile ad networks. Useful for mobile devices. Recommended for iOS and iPadOS.";

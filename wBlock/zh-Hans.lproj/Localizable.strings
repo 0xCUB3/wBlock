@@ -96,11 +96,8 @@
 "Additional filter list for websites in Hebrew." = "希伯来语网站的附加过滤器列表。";
 "Additional filter list for websites in Hindi, Tamil and other Dravidian and Indic languages." = "印地语、泰米尔语和其他德拉威语和印度语网站的附加过滤器列表。";
 "Additional filter list for websites in Icelandic." = "冰岛语网站的附加过滤器列表。";
-"Additional filter list for websites in Indonesian." = "印度尼西亚语网站的附加过滤器列表。";
-"Additional filter list for websites in Italian." = "意大利语网站的附加过滤器列表。";
 "Additional filter list for websites in Latvian." = "拉脱维亚语网站的附加过滤器列表。";
 "Additional filter list for websites in Lithuanian." = "立陶宛语网站的附加过滤器列表。";
-"Additional filter list for websites in Polish." = "波兰语网站的附加过滤器列表。";
 "Additional filter list for websites in Slovenian." = "斯洛文尼亚语网站的附加过滤器列表。";
 "AdGuard Base Filter" = "AdGuard Base Filter";
 "AdGuard Chinese filter" = "AdGuard Chinese filter";
@@ -192,19 +189,14 @@
 "Blocking paused" = "拦截已暂停";
 "Blocking resumed" = "拦截已恢复";
 "Blocks ads and trackers on various Macedonian websites." = "阻止各种马其顿网站上的广告和跟踪器。";
-"Blocks ads and tracking servers to enhance privacy." = "阻止广告和跟踪服务器以增强隐私。";
-"Blocks website features that use generative AI and content labeled as AI-generated." = "屏蔽使用生成式人工智能的网站功能以及标注为人工智能生成的内容。";
 "Blocks banners promoting mobile app downloads." = "阻止宣传移动应用程序下载的横幅。";
 "Blocks cookie consent notices on web pages." = "阻止网页上的 cookie 同意通知。";
 "Blocks miscellaneous irritating elements not covered by other filters." = "阻挡其他过滤器未覆盖的各种刺激性元素。";
-"Blocks online tracking and web analytics systems." = "阻止在线跟踪和网络分析系统。";
 "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "Safari 无法应用此列表的 inline-script 规则。对于受支持的英语网站，请在用户脚本中启用 Bypass Paywalls Clean。";
 "Blocks pop-up ads on web pages." = "阻止网页上的弹出广告。";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "阻止促销弹出窗口、时事通讯注册和通知请求。";
 "Blocks social media content on webpages." = "阻止网页上的社交媒体内容。";
-"Blocks social media widgets and buttons." = "阻止社交媒体小部件和按钮。";
 "Blocks third-party widgets, chat assistants, and support widgets." = "阻止第三方小部件、聊天助手和支持小部件。";
-"Blocks tracking scripts, web beacons, and other privacy-invasive elements." = "阻止跟踪脚本、网络信标和其他侵犯隐私的元素。";
 "Building combined filter engine..." = "建筑组合过滤发动机...";
 "Building filter engine" = "正在构建过滤器引擎";
 "Bulgarian list" = "Bulgarian list";
@@ -212,7 +204,6 @@
 "by word" = "整词匹配";
 "Bypass Paywalls Clean Filter" = "Bypass Paywalls Clean Filter";
 "Bypass paywalls of news sites." = "绕过新闻网站的付费墙。";
-"Bypasses Anti-Adblock scripts used on some websites." = "绕过某些网站上使用的反广告拦截脚本。";
 "Calculated source rule count for filter" = "已计算过滤器的源规则数量";
 "Cancel" = "取消";
 "Category" = "类别";
@@ -239,9 +230,7 @@
 "Community options" = "社区选项";
 "Community-maintained options for additional regional coverage." = "由社区维护的额外地区覆盖选项。";
 "Completed" = "已完成";
-"Comprehensive ad-blocking rules by AdGuard." = "AdGuard 的综合广告拦截规则。";
 "Conditional check failed" = "条件检查失败";
-"Contains new rules and fixes not yet included in other filters." = "包含其他过滤器中尚未包含的新规则和修复。";
 "Content filtering" = "内容过滤";
 "Continue" = "继续";
 "Continue Setup" = "继续设置";
@@ -304,7 +293,6 @@
 "EasyList Dutch + AdGuard Dutch filter. Filter list that specifically removes ads on websites in Dutch language." = "EasyList 荷兰语 + AdGuard 荷兰语过滤器。专门删除荷兰语网站上的广告的过滤器列表。";
 "EasyList Germany + AdGuard German filter. Filter list that specifically removes ads on websites in German language." = "EasyList 德国 + AdGuard 德国过滤器。专门删除德语网站上的广告的过滤器列表。";
 "EasyList Hebrew" = "EasyList Hebrew";
-"EasyList Italy" = "EasyList Italy";
 "EasyList Lithuania" = "EasyList Lithuania";
 "EasyList Thailand" = "EasyList Thailand";
 "EasyPrivacy" = "EasyPrivacy";
@@ -412,7 +400,6 @@
 "Filter that enables ad blocking on websites in Ukrainian language." = "可在乌克兰语网站上启用广告拦截的过滤器。";
 "Filter that protects against various types of scams in the Polish network, such as mass text messaging, fake online stores, etc." = "过滤器可防止波兰网络中的各种类型的诈骗，例如群发短信、虚假在线商店等。";
 "CERT Polska's list of dangerous domains that impersonate real sites to steal data or money." = "CERT Polska 维护的危险域名列表，这些域名冒充真实网站以窃取数据或钱财。";
-"Filter that removes ads and various scripts from websites with Korean content. Combined and augmented with AdGuard-specific rules for enhanced filtering. This filter is expected to be used alongside with AdGuard Base filter." = "过滤器可从包含韩语内容的网站中删除广告和各种脚本。与 AdGuard 特定规则相结合和增强，以增强过滤功能。该过滤器预计将与 AdGuard Base 过滤器一起使用。";
 "Filter Update" = "过滤器更新";
 "FilterApply" = "应用过滤器";
 "Filtering off" = "过滤已关闭";
@@ -442,7 +429,6 @@
 "Hold for 3 seconds to apply without checking for updates." = "按住 3 秒即可在不检查更新的情况下应用。";
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
-"Hufilter. Filter list that specifically removes ads on websites in the Hungarian language." = "胡过滤器。专门删除匈牙利语网站上的广告的过滤器列表。";
 "Hungarian filter" = "匈牙利过滤器";
 "Icelandic ABP List" = "Icelandic ABP List";
 "iCloud Sync" = "iCloud 同步";
@@ -551,7 +537,6 @@
 "Not selected" = "未选择";
 "Not synced yet" = "尚未同步";
 "Notify me" = "通知我";
-"Official Polish filters for AdBlock, uBlock Origin & AdGuard" = "AdBlock、uBlock Origin 和 AdGuard 的官方波兰过滤器";
 "OK" = "确定";
 "on line" = "在第";
 "Online Security Filter" = "Online Security Filter";
@@ -561,7 +546,6 @@
 "Only pasted user lists can be edited." = "只能编辑粘贴的用户列表。";
 "Open Login Items" = "打开登录项";
 "Open Safari Settings" = "打开 Safari 设置";
-"Optimized for mobile ad blocking. Recommended for iOS/iPadOS." = "针对移动广告拦截进行了优化。推荐用于 iOS/iPadOS。";
 "Other" = "其他";
 "Overdue catch-up" = "逾期补跑";
 "Paste" = "粘贴";
@@ -574,7 +558,6 @@
 "Pausing blocking..." = "正在暂停拦截…";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";
 "Dandelion Sprout's Anti-Malware List" = "Dandelion Sprout's Anti-Malware List";
-"Blocks malware and scam domains, malicious redirects, and unwanted software prompts." = "拦截恶意软件和诈骗域名、恶意重定向以及不需要的软件推广提示。";
 "Pick your base blocking level." = "选择你的基础拦截级别。";
 "Prepared removeparam DNR rules" = "已准备 removeparam DNR 规则";
 "Preparing %d extension" = "正在准备 %d 个扩展";
@@ -615,7 +598,6 @@
 "Remove Older Versions" = "移除旧版本";
 "Removed custom filter" = "已移除自定义过滤器";
 "Removed deprecated filter list(s)" = "已移除已弃用的过滤器列表";
-"Removes tracking parameters from URLs." = "从 URL 中移除跟踪参数。";
 "Removing userscript" = "正在移除用户脚本";
 "Replace" = "替换";
 "replace" = "替换";
@@ -675,7 +657,6 @@
 "Settings → Apps → Safari → Extensions" = "设置 → 应用 → Safari → 扩展";
 "Setup Instructions" = "设置说明";
 "Ships with the app" = "随应用提供";
-"Shortens links by removing unnecessary tracking and clutter parameters." = "通过移除不必要的跟踪参数和冗余参数来缩短链接。";
 "Show blocked item count in toolbar" = "在工具栏中显示已拦截项数量";
 "Show Enabled Only" = "仅显示已启用项";
 "Show preview only" = "仅显示预览";
@@ -907,9 +888,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Block Outsider Intrusion into LAN" = "Block Outsider Intrusion into LAN";
 "Stevo's AI Blocklist" = "Stevo's AI Blocklist";
 "AdGuard Allowlist" = "AdGuard Allowlist";
-"Blocks tracking pixels and other mail tracking techniques." = "拦截跟踪像素及其他邮件跟踪技术。";
-"Blocks public websites from reaching local network addresses and router admin pages. Can break some local apps." = "阻止公开网站访问本地网络地址和路由器管理页面。可能会导致部分本地应用无法正常工作。";
-"Allows sites and resources that should not be blocked." = "允许不应被拦截的网站和资源。";
 
 
 /* Auto-update controls */
@@ -1180,3 +1158,30 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Available when the current sync finishes." = "当前同步完成后可用。";
 "Generic Rules" = "通用规则";
 "Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps." = "使用未指定网站的规则在所有网站上隐藏元素。关闭后仍保留针对特定网站的隐藏，并让页面更轻快，尤其是复杂的网页应用。";
+"AdGuard Italian filter" = "AdGuard 意大利语过滤器";
+"AdGuard Polish filter" = "AdGuard 波兰语过滤器";
+"EasyList + AdGuard English filter. This filter is necessary for quality ad blocking." = "EasyList + AdGuard Base 过滤器。此过滤器是实现高质量的广告拦截所必需的。";
+"The most comprehensive list of various online counters and web analytics tools. Use this filter if you do not want your actions on the Internet to be tracked." = "最全面的各种在线计数器和网络分析工具列表。如果您不希望您在互联网上的行为被跟踪，请使用此过滤器。";
+"Filter that enhances privacy by removing tracking parameters from URLs." = "通过从 URL 中删除跟踪参数来增强隐私的过滤器。";
+"Automatically removes unnecessary '$' and '&' values from URLs, making them easier to copy from the URL bar and pasting elsewhere as links. Already included in Dandelion Sprout's Annoyances List." = "自动从 URL 中删除不必要的 '$' 和 '&' 值，使它们更容易从 URL 栏中复制并作为链接粘贴到其他地方。已包含在 Dandelion Sprout 的防骚扰列表中。";
+"Blocks cookie notices on web pages." = "拦截网页上的 Cookie 通知。";
+"Blocks all kinds of pop-ups that are not necessary for websites' operation according to our Filter policy." = "根据我们的过滤政策，拦截网站运营时不需要的各种弹窗。";
+"Blocks irritating banners that promote mobile apps of websites." = "拦截推广网站移动应用程序的恼人横幅。";
+"Blocks irritating elements that do not fall under popular categories of annoyances, such as website promotional offers and restrictions on copying and text selection." = "拦截不属于常见干扰类别的烦人元素，例如网站促销优惠，以及对复制和文本选择的限制。";
+"Blocks annoying third-party widgets: online assistants, live support chats, etc." = "拦截恼人的第三方小工具，包括在线助手、实时支持聊天等等。";
+"Filter for social media widgets such as 'Like' and 'Share' buttons and more." = "此过滤器用于社交媒体小部件（“点赞”按钮及类似的元素）。";
+"A filter list that hides website features which use generative AI and AI-generated content." = "用于隐藏使用生成式 AI 及 AI 生成内容的网站功能的过滤器列表。";
+"This filter blocks tracking pixels in email clients." = "此过滤器用于拦截邮件客户端中的跟踪像素";
+"Prevents public Internet sites from digging into your LAN files." = "防止公共互联网网站窃取局域网文件。";
+"Blocks more malware than most other major anti-malware lists - domains and URL patterns used in malware redirection chains, IP addresses that are solely used by malware, PUP nags, and a few scammers. Already included in Dandelion Sprout's Annoyances List." = "相比多数主流反恶意软件列表，本列表具备更全面的拦截能力，其覆盖范围包括：恶意软件重定向链中的域名与 URL 模式、恶意软件专属 IP 地址、潜在不受欢迎程序（PUP）弹窗及部分欺诈网站。该列表功能已集成于 Dandelion Sprout‘s Annoyances List 中。";
+"Filter that blocks ads, trackers, and other nasty things." = "拦截广告、跟踪器，和其他东西的让人恶心的东西的过滤器。";
+"Removes anti-adblock warnings and other obtrusive messages." = "移除反广告拦截警告和其他突兀的消息";
+"Filter that unblocks search ads in Google, DuckDuckGo, Bing, or Yahoo and self-promotion on websites." = "该过滤器会解除对 DuckDuckGo、Google、 Bing、 Yahoo 搜索广告和自我推销广告的过滤。";
+"Filter designed to test certain hazardous filtering rules before they are added to the basic filters." = "此过滤器设计用于在将某些有风险的过滤规则添加到基本过滤器之前对其进行测试。";
+"Additional filter list for websites in Indonesian and Malay." = "印度尼西亚语和马来语网站的补充过滤器列表。";
+"EasyList Italy + AdGuard Italian filter. Filter list that specifically removes ads on websites in the Italian language." = "EasyList Italy + AdGuard 意大利语过滤器。此过滤器专门移除意大利语网站上的广告。";
+"Hufilter. Filter list that specifically removes ads, privacy threats, and security risks on websites in the Hungarian language." = "Hufilter。专门在匈牙利语网站上删除广告、隐私威胁和安全风险的过滤列表。";
+"The filterslist-KO Classic filter list for AdGuard blocks ads and disables anti-adblock scripts on Korean-language websites and apps." = "filterslist-KO Classic 过滤规则用于 AdGuard，可拦截韩语网站及应用中的广告，并禁用反广告拦截脚本。";
+"Official Polish filters for AdBlock, uBlock Origin & AdGuard + AdGuard Polish filter. Filter list that specifically removes ads on websites in the Polish language." = "Official Polish filters for AdBlock, uBlock Origin & AdGuard + AdGuard 波兰语过滤器。此过滤器专门移除波兰语网站上的广告。";
+"Privacy protection supplement for EasyList." = "EasyList 的隐私保护补充";
+"Filter for all known mobile ad networks. Useful for mobile devices. Recommended for iOS and iPadOS." = "该过滤器将过滤已知的所有移动广告网络。对移动设备非常有帮助。 推荐用于 iOS 和 iPadOS。";

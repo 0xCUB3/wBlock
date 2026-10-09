@@ -48,6 +48,12 @@ import wBlockCoreService
         var selected = nordic
         selected.isSelected = true
         check(ForeignFilterOrganizer.groups(for: [selected], preferredLanguages: ["da"]).first?.filters == [selected], "selected record and metadata survive unchanged")
+        let catalog = FilterListLoader().getDefaultFilterLists().filter { $0.category == .foreign }
+        check(ForeignFilterOrganizer.sortedFilters(catalog.reversed()).map(\.url) == catalog.map(\.url),
+              "regional display follows catalog order regardless of stored order or trust")
+        let subset = Array(catalog.enumerated().filter { $0.offset.isMultiple(of: 3) }.map(\.element))
+        check(ForeignFilterOrganizer.sortedFilters(subset.reversed()).map(\.url) == subset.map(\.url),
+              "filtered regional display preserves catalog order")
         print("PASS: foreign filter groups")
     }
 }
