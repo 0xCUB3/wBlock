@@ -425,7 +425,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         baseRulesHashHex: String,
         cosmeticSites: CosmeticFilteringPreference.Sites = .all
     ) -> String {
-        let fingerprint = compatibilityRulesFingerprintHex() + "|identity-v4"
+        let fingerprint = compatibilityRulesFingerprintHex() + "|identity-v5"
         let material = cosmeticSites.cacheMarker.map { "\(baseRulesHashHex)|\(fingerprint)|cosmetic=\($0)" }
             ?? "\(baseRulesHashHex)|\(fingerprint)"
         let digest = SHA256.hash(data: Data(material.utf8))
