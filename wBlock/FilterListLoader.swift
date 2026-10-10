@@ -709,7 +709,7 @@ class FilterListLoader {
                         string:
                             "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/ios/filters/11_optimized.txt"
                     )!, category: FilterListCategory.ads, isSelected: true,
-                    description: "Filter for all known mobile ad networks. Useful for mobile devices. Recommended for iOS and iPadOS."))
+                    description: "Filter for all known mobile ad networks. Useful for mobile devices."))
         #endif
 
         // Multi Pro Mini is the size-optimized browser/mobile list. Keep its catalog

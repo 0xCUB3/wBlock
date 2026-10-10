@@ -1184,4 +1184,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "The filterslist-KO Classic filter list for AdGuard blocks ads and disables anti-adblock scripts on Korean-language websites and apps." = "AdGuard용 filterslist-KO Classic 필터 목록은 한국어 웹사이트와 앱에서 광고를 차단하고 광고 차단 방지 스크립트를 비활성화합니다.";
 "Official Polish filters for AdBlock, uBlock Origin & AdGuard + AdGuard Polish filter. Filter list that specifically removes ads on websites in the Polish language." = "Official Polish filters for AdBlock, uBlock Origin & AdGuard + AdGuard 폴란드어 필터. 특히 폴란드어 웹사이트에서 광고를 제거하기 위한 필터 목록입니다.";
 "Privacy protection supplement for EasyList." = "EasyList 개인 정보 보호 추가 필터.";
-"Filter for all known mobile ad networks. Useful for mobile devices. Recommended for iOS and iPadOS." = "알려진 모든 모바일 광고 네트워크를 차단하는 필터입니다. 모바일 기기에 유용합니다. iOS 및 iPadOS에 권장됩니다.";
+"Filter for all known mobile ad networks. Useful for mobile devices." = "알려진 모든 모바일 광고 네트워크를 차단하는 필터입니다. 모바일 기기에 유용합니다.";
