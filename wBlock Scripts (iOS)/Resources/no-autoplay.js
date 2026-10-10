@@ -40,9 +40,13 @@
         && !!browser.storage.local;
     if (!hasExtensionContext) return;
 
-    // The manifest loads the same bundled gate before this controller.
+    // The same bundled gate is loaded before this controller.
     var noAutoplayGate = globalThis.__wblockNoAutoplayGate;
     if (typeof noAutoplayGate !== 'function') return;
+    // The background injects into open tabs when No Autoplay turns on, which
+    // can reach a frame that still runs an earlier controller.
+    if (globalThis.__wblockNoAutoplayController) return;
+    globalThis.__wblockNoAutoplayController = true;
 
     // ------------------------------------------------------------------
     // Controller (isolated world): decides whether the gate is armed.

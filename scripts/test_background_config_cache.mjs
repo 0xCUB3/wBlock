@@ -1149,7 +1149,9 @@ for (const source of [canonicalSource, bundleSource]) {
   check("settled site state is asked again", count("getSiteDisabledState") === 3);
   await Promise.all([1, 2, 3].map(() => state.onMessage({ action: "wblock:getSiteDisabledState", host: "frames.example" }, sender)));
   check("concurrent frames share one site-state lookup", count("getSiteDisabledState") === 4);
-  check("malformed reads are not shared", count("getNoAutoplayState") === 3);
+  // The background's own host-less No Autoplay read is not a frame read.
+  const frameNoAutoplayReads = state.nativeMessages.filter(message => message && message.action === "getNoAutoplayState" && message.host).length;
+  check("malformed reads are not shared", frameNoAutoplayReads === 3);
   await state.onMessage({ action: "setUserScriptStorageValue", scriptId: "s", key: "k", rawValue: "1" }, sender);
   await state.onMessage(userScripts, sender);
   check("a mutation ends shared reads", count("getUserScripts") === 2);

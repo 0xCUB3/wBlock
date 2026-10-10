@@ -1788,6 +1788,9 @@ public enum WebExtensionRequestHandler {
                 "enabled": effectiveBlocked,
                 "siteAllowed": !host.isEmpty && !effectiveBlocked,
                 "globalEnabled": manager.isNoAutoplayEnabled,
+                // Whether any site blocks autoplay; the extension loads its
+                // No Autoplay scripts only then.
+                "active": manager.isNoAutoplayEnabled || !manager.noAutoplayBlockedSites.isEmpty,
             ])
             context.completeRequest(returningItems: [response])
         }

@@ -22,8 +22,6 @@
     "content_scripts": [
         {
             "js": [
-                "no-autoplay-gate.js",
-                "no-autoplay.js",
                 "zapper-content.js",
                 "content.js"
             ],

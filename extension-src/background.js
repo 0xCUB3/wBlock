@@ -26682,6 +26682,63 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     action: "getBlockingState",
     host: normalizeSiteDisabledHost(host)
   }, sendPriorityNativeMessage, inFlightOnly);
+  // No Autoplay's scripts load only while it can block on some site, so with
+  // it off no frame runs them or asks native for its state. Safari before
+  // 16.4 cannot register scripts; there they are injected as frames start.
+  const NO_AUTOPLAY_SCRIPT = {
+    id: "wblock-no-autoplay",
+    js: ["no-autoplay-gate.js", "no-autoplay.js"],
+    matches: ["<all_urls>"],
+    allFrames: true,
+    runAt: "document_start"
+  };
+  const canRegisterNoAutoplay = !!(browser.scripting && browser.scripting.registerContentScripts);
+  // Mirrors the controller's state sources: a cached enabled flag counts
+  // before migration and whenever native cannot answer. null means unknown,
+  // so the current setup is left as it is.
+  const isNoAutoplayActive = async () => {
+    const stored = await browser.storage.local.get(["wblock.noAutoplay.enabled.v1", "wblock.noAutoplay.nativeMigrated.v1"]);
+    const cachedEnabled = !!stored && stored["wblock.noAutoplay.enabled.v1"] === true;
+    if (cachedEnabled && stored["wblock.noAutoplay.nativeMigrated.v1"] !== true) return true;
+    const response = await readNativeRecently({ action: "getNoAutoplayState" }).catch(() => null);
+    if (response && typeof response.active === "boolean") return response.active;
+    return cachedEnabled || null;
+  };
+  const injectNoAutoplay = target => browser.scripting.executeScript({
+    target, files: NO_AUTOPLAY_SCRIPT.js, injectImmediately: true
+  }).catch(() => {});
+  let noAutoplaySync = Promise.resolve();
+  let lastNoAutoplaySync = 0;
+  // Without registration, the last state this background saw stands in; the
+  // first one seen is not a change, or every wake would inject into all tabs.
+  // A forced (popup) sync always backfills, since the popup may have woken it.
+  let noAutoplayLoaded = null;
+  const syncNoAutoplayScripts = (force = false) => {
+    if (!force && Date.now() - lastNoAutoplaySync < CONFIG_REVALIDATE_INTERVAL_MS) return noAutoplaySync;
+    lastNoAutoplaySync = Date.now();
+    noAutoplaySync = noAutoplaySync.then(async () => {
+      const active = await isNoAutoplayActive();
+      if (active === null) return;
+      const ids = [NO_AUTOPLAY_SCRIPT.id];
+      const loaded = canRegisterNoAutoplay
+        ? (await browser.scripting.getRegisteredContentScripts({ ids })).length > 0
+        : !force && (noAutoplayLoaded ?? active);
+      noAutoplayLoaded = active;
+      if (active === loaded) return;
+      if (canRegisterNoAutoplay) {
+        await (active
+          ? browser.scripting.registerContentScripts([NO_AUTOPLAY_SCRIPT])
+          : browser.scripting.unregisterContentScripts({ ids }));
+      }
+      if (!active) return;
+      // Registration only reaches documents that start later. Not awaited, so
+      // the popup's reply does not wait on every tab.
+      browser.tabs.query({}).then(tabs => tabs.forEach(tab => {
+        if (typeof tab.id === "number") injectNoAutoplay({ tabId: tab.id, allFrames: true });
+      }), () => {});
+    }).catch(error => console.warn("[wBlock] No Autoplay setup failed:", error));
+    return noAutoplaySync;
+  };
   const handleMessages = async (request, sender) => {
     var _sender$tab, _sender$tab2;
     // Cast the incoming request to `Message`.
@@ -26707,6 +26764,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       try {
         // User actions must not wait behind queued filter or userscript updates.
         const response = await sendPriorityNativeMessage(nativeRequest);
+        if (/^setNoAutoplay/.test(nativeRequest.action)) await syncNoAutoplayScripts(true);
         return { ok: true, response };
       } catch (error) {
         return { ok: false, error: String(error && error.message ? error.message : error) };
@@ -28052,8 +28110,16 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   scheduleInstallRemoveParamDNRRules(true);
   refreshActionStateForAllTabs();
   // Start handling messages from content scripts.
+  syncNoAutoplayScripts();
   browser.runtime.onMessage.addListener((request, sender) => {
     scheduleInstallRemoveParamDNRRules(false);
+    syncNoAutoplayScripts();
+    if (!canRegisterNoAutoplay && request && request.type === MessageType.InitContentScript
+      && sender && sender.tab && typeof sender.tab.id === "number" && Number.isSafeInteger(sender.frameId)) {
+      isNoAutoplayActive().then(active => {
+        if (active) injectNoAutoplay({ tabId: sender.tab.id, frameIds: [sender.frameId] });
+      }, () => {});
+    }
     return handleMessages(request, sender);
   });
 })(browser);
