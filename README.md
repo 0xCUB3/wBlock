@@ -118,17 +118,11 @@ It's one app on macOS, iOS, iPadOS, and visionOS. iCloud syncs your lists, custo
 
 ## Install
 
-- [App Store](https://apps.apple.com/us/app/wblock/id6746388723). It updates itself, and it's the one I'd use.
+- [App Store](https://apps.apple.com/us/app/wblock/id6746388723) with automatic updates.
 - Homebrew: `brew tap 0xcub3/wblock && brew install --cask wblock`
 - DMG from the [latest release](https://github.com/0xCUB3/wBlock/releases/latest).
 
-All three are the same build. On first launch wBlock walks you through turning the extensions on in Safari.
-
-### TestFlight betas
-
-[TestFlight](https://testflight.apple.com/) is Apple's optional beta distribution service. I use it to distribute signed beta builds and get feedback before a stable release. You don't need TestFlight or a paid Apple Developer membership to install the stable builds above.
-
-Apple automatically collects beta crash logs and usage information and shares them with the developer. You cannot opt out of that collection while testing. Feedback and screenshots you submit are shared too and can contain private content. Read [Apple's TestFlight privacy notice](https://www.apple.com/legal/privacy/data/en/test-flight/) and the [TestFlight section of wBlock's privacy policy](PRIVACY_POLICY.md#testflight-beta-testing) before joining.
+On first launch wBlock walks you through turning the extensions on in Safari.
 
 <br>
 
@@ -152,9 +146,7 @@ No. Pick one general-purpose blocker.
 
 Two blockers fight over the same requests and the same page. Mozilla's [webRequest docs](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/webRequest/onHeadersReceived) say that when two extensions change one response in conflicting ways, only one of them wins. uBlock Origin's README says "Do NOT use uBO with any other content blocker" ([source](https://github.com/gorhill/ublock#all-programs)), and AdGuard warns about slow loading, broken sites, and video trouble ([source](https://adguard.com/en/adguard-browser-extension/opera/overview.html)).
 
-It also makes your bug report useless. With two blockers on, I can't tell which one let the ad through or broke the site. Turn the other one off before you file anything.
-
-<img width="1560" height="176" alt="Skill Issue" src="https://github.com/user-attachments/assets/b9c519bf-bbc7-40c0-bc4c-6a6d1fccb488" />
+If a site breaks or an ad gets through, turn off other ad blockers before reporting it. That helps identify which extension is responsible.
 
 </details>
 
