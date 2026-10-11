@@ -280,15 +280,25 @@ struct FilterRulesView: View {
             guard !rules.isEmpty else { return }
             let content = rules
             let earlier = earlierListContents()
-            let result = await Task.detached(priority: .userInitiated) { () -> FilterRuleAnalysis in
+            let worker = Task.detached(priority: .userInitiated) { () -> FilterRuleAnalysis in
                 var seen = Set<String>()
-                for text in earlier { seen.formUnion(FilterRuleAnalysis.ruleSet(from: text)) }
+                for text in earlier {
+                    guard !Task.isCancelled else { return FilterRuleAnalysis(lines: []) }
+                    seen.formUnion(FilterRuleAnalysis.ruleSet(from: text, isCancelled: { Task.isCancelled }))
+                }
+                guard !Task.isCancelled else { return FilterRuleAnalysis(lines: []) }
                 return FilterRuleAnalysis.analyze(
                     content: content,
                     seenInEarlierLists: seen,
                     isCancelled: { Task.isCancelled }
                 )
-            }.value
+            }
+            let result = await withTaskCancellationHandler {
+                await worker.value
+            } onCancel: {
+                worker.cancel()
+            }
+            guard !Task.isCancelled else { return }
             if !result.lines.isEmpty {
                 analysis = result
                 rebuildDisplayedText()
