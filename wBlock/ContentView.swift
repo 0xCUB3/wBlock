@@ -1301,6 +1301,9 @@ struct AddFilterListView: View {
     @State private var isImportingURLList = false
     @State private var urlListImportGeneration = 0
     @State private var importsURLList = false
+    /// Set when Find hands over a registry list: the URL change it makes goes
+    /// straight to review instead of resetting it.
+    @State private var reviewsNextURLInput = false
 
     private struct StagedFilterFile {
         let filename: String
@@ -1323,6 +1326,7 @@ struct AddFilterListView: View {
         case url = "URL"
         case paste = "Text"
         case file = "File"
+        case find = "Find"
 
         var id: String { rawValue }
         var localizedTitle: LocalizedStringKey { LocalizedStringKey(rawValue) }
@@ -1331,6 +1335,7 @@ struct AddFilterListView: View {
             case .url: return "link"
             case .paste: return "text.alignleft"
             case .file: return "doc"
+            case .find: return "magnifyingglass"
             }
         }
     }
@@ -1373,7 +1378,8 @@ struct AddFilterListView: View {
             modeContent(mode)
         }
         .onChangeCompat(of: urlInput) { oldValue, newValue in
-            isReviewingURLs = false
+            isReviewingURLs = reviewsNextURLInput
+            reviewsNextURLInput = false
             let normalized: String
             if urlEntryMode == .single {
                 normalized = FilterListURLSupport.normalizeSingleURLInput(from: oldValue, to: newValue)
@@ -1513,6 +1519,28 @@ struct AddFilterListView: View {
                 AddContentNote(text: "Local imports won't auto-update; re-import to replace.", error: importErrorMessage)
                 if stagedFile != nil { duplicateNameNote(for: userListTitle) }
             }
+        case .find:
+            FilterRegistrySearchSections(filterManager: filterManager, onAdd: review)
+        }
+    }
+
+    /// Opens a registry list in URL review with the registry's name,
+    /// description, category, and languages as the automatic values.
+    private func review(_ list: AdGuardRegistryList) {
+        let url = list.filter.url
+        fetchedURLMetadata[FilterListURLSupport.identityKey(for: url)] =
+            URLMetadata(title: list.filter.name, description: list.filter.description)
+        urlCategories[url.absoluteString] = list.filter.category
+        urlLanguages[url.absoluteString] = Set(list.filter.languages)
+        addMode = .url
+        let input = urlEntryMode == .single
+            ? url.absoluteString
+            : UserScriptURLSupport.appendingPastedURLs(url.absoluteString, to: urlInput)
+        if input == urlInput {
+            isReviewingURLs = true
+        } else {
+            reviewsNextURLInput = true
+            urlInput = input
         }
     }
 
@@ -1619,11 +1647,15 @@ struct AddFilterListView: View {
             return !isStagingFile
                 && stagedFile != nil
                 && !userListTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        case .find:
+            return true
         }
     }
 
     private func submit() {
         switch addMode {
+        case .find:
+            dismiss()
         case .url:
             guard case .valid(let urls) = validationState else { return }
             if !isReviewingURLs {
@@ -1730,6 +1762,7 @@ struct AddFilterListView: View {
             }
             return "Add"
         case .paste, .file: return "Add"
+        case .find: return "Done"
         }
     }
 
@@ -1985,6 +2018,7 @@ struct AddFilterListView: View {
         case .url: return isReviewingURLs ? newURLs.map { nameBinding(for: $0).wrappedValue } : []
         case .paste: return isReviewingText ? [userListTitle] : []
         case .file: return stagedFile != nil ? [userListTitle] : []
+        case .find: return []
         }
     }
 

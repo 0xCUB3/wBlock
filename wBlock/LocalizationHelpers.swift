@@ -309,6 +309,15 @@ extension FilterList {
         languages.contains { RegionalLanguageOption(code: $0.lowercased(), locale: locale).matches(query) }
     }
 
+    /// The filter search: name, description, URL, or a language it covers.
+    func matchesSearch(_ query: String, locale: Locale) -> Bool {
+        query.isEmpty
+            || localizedDisplayName.localizedCaseInsensitiveContains(query)
+            || localizedDisplayDescription.localizedCaseInsensitiveContains(query)
+            || url.absoluteString.localizedCaseInsensitiveContains(query)
+            || matchesLanguage(query, locale: locale)
+    }
+
     var localizedDisplayName: String {
         LocalizedStrings.text(name, comment: "Filter list name")
     }

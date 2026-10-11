@@ -181,9 +181,11 @@ class FilterListLoader {
     ]
 
     static func isRetiredBuiltIn(_ filter: FilterList) -> Bool {
-        !filter.isCustom
-            && (filter.name == "d3Host List by d3ward"
-                || retiredBuiltInURLFragments.contains { filter.url.absoluteString.contains($0) })
+        !filter.isCustom && (filter.name == "d3Host List by d3ward" || isRetiredBuiltInURL(filter.url))
+    }
+
+    static func isRetiredBuiltInURL(_ url: URL) -> Bool {
+        retiredBuiltInURLFragments.contains { url.absoluteString.contains($0) }
     }
 
     /// New built-in names and the names used by the previous catalog release.

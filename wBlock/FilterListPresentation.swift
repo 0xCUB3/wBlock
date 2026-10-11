@@ -73,12 +73,9 @@ struct FilterListPresentation: Sendable {
         let worker = Task.detached(priority: .userInitiated) {
             try Task.checkCancellation()
             let query = input.searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+            let locale = Locale(identifier: input.localeIdentifier)
             let visible = input.filters.filter { filter in
-                (!input.enabledOnly || filter.isSelected) && (query.isEmpty
-                    || filter.localizedDisplayName.localizedCaseInsensitiveContains(query)
-                    || filter.localizedDisplayDescription.localizedCaseInsensitiveContains(query)
-                    || filter.url.absoluteString.localizedCaseInsensitiveContains(query)
-                    || filter.matchesLanguage(query, locale: Locale(identifier: input.localeIdentifier)))
+                (!input.enabledOnly || filter.isSelected) && filter.matchesSearch(query, locale: locale)
             }
             let ordered = ListDisplayOrder.sorted(visible.filter { $0.category != .foreign }, order: input.order)
                 + ForeignFilterOrganizer.sortedFilters(visible.filter { $0.category == .foreign })

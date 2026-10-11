@@ -1185,3 +1185,12 @@ Para reativá-los, desative outros filtros grandes e aplique as alterações nov
 "Official Polish filters for AdBlock, uBlock Origin & AdGuard + AdGuard Polish filter. Filter list that specifically removes ads on websites in the Polish language." = "Official Polish filters for AdBlock, uBlock Origin & AdGuard + filtro AdGuard para o idioma polonês. Lista de filtros que remove especificamente anúncios em sites em língua polonesa.";
 "Privacy protection supplement for EasyList." = "Suplemento de proteção de privacidade para EasyList.";
 "Filter for all known mobile ad networks. Useful for mobile devices." = "Filtrar todas as redes de publicidade móvel conhecidas. Útil para anúncios no celular.";
+
+/* Add Filter List: Find */
+"Name, language, or topic" = "Nome, idioma ou tema";
+"Searches wBlock’s lists and AdGuard’s filter registry for Safari." = "Pesquisa as listas do wBlock e o registro de filtros do AdGuard para Safari.";
+"In wBlock" = "No wBlock";
+"AdGuard Filter Registry" = "Registro de filtros do AdGuard";
+"wBlock already includes every list in the registry." = "O wBlock já inclui todas as listas do registro.";
+"No matching lists." = "Nenhuma lista correspondente.";
+"No longer built into wBlock" = "Não vem mais integrada ao wBlock";
