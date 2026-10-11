@@ -560,7 +560,12 @@ final class CloudSyncManager: ObservableObject {
                     }
                 }
                 guard let self else { return }
-                try? await TaskSleep.sleep(for: .seconds(2))
+                do {
+                    try await TaskSleep.sleep(for: .seconds(2))
+                } catch {
+                    return
+                }
+                guard !Task.isCancelled else { return }
                 await self.uploadLatestPayload(trigger: immediateTrigger)
             }
             pendingUploadTask = task
