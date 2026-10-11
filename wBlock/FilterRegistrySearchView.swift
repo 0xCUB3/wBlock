@@ -41,6 +41,22 @@ struct FilterRegistrySearchSections: View {
             AddContentNote(text: "Searches wBlock’s lists and AdGuard’s filter registry for Safari.")
         }
         .task { await load() }
+        #if os(macOS)
+        // Column-style forms don't scroll on macOS, so the results scroll on their own.
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) { results }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.trailing, 12)
+        }
+        .frame(maxHeight: .infinity)
+        .spansFormLabelColumn()
+        #else
+        results
+        #endif
+    }
+
+    @ViewBuilder
+    private var results: some View {
         if !wBlockMatches.isEmpty {
             Section("In wBlock") {
                 ForEach(wBlockMatches) { filter in
@@ -96,6 +112,7 @@ struct FilterRegistrySearchSections: View {
             ]))
             .font(.caption2).foregroundStyle(.secondary)
         }
+        .accessibilityElement(children: .combine)
     }
 
     private func load() async {
