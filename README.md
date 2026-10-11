@@ -37,7 +37,7 @@ A free, open-source ad blocker for Safari on Mac, iPhone, iPad, and Apple Vision
 
 Safari gives ad blockers very little room. Each content blocker gets 150,000 rules and can't touch a page's JavaScript. wBlock ships five of them (750,000 rules) plus a scripts extension for everything a rule can't do. That covers scriptlets, cosmetic filters, userscripts and userstyles, an element zapper, and native video players for YouTube and most other sites.
 
-It's free and collects nothing. If a list misbehaves, you can see what it compiled into, which lines Safari threw out, and what changed on the last update.
+It's free and doesn't collect your data. If a filter list causes trouble, you can check the compiled rules and see which lines Safari couldn't use. You can also see what changed in the last update.
 
 > [!TIP]
 > Deciding between wBlock, uBlock Origin Lite, Wipr, and AdGuard? I wrote a [comparison](Adblock_Comparison.md).
@@ -48,29 +48,31 @@ It's free and collects nothing. If a list misbehaves, you can see what it compil
 
 ### Blocking
 
-- Filter lists in AdGuard syntax, compiled into Safari rules and spread across five blockers. Safari does the matching itself, and wBlock sits around 40 MB when idle.
-- Good defaults, regional lists picked from your language, annoyance and cookie-banner lists, and anything you add by URL, paste, or file.
-- Updates on a schedule you pick, hourly to weekly. Lists that publish diff patches only download what changed. On macOS a small launch agent keeps checking even when the app is closed.
+- Filter lists in AdGuard syntax, converted into Safari rules across five blockers. Safari handles the blocking. wBlock uses around 40 MB when idle.
+- Default lists to get you started and regional lists picked for your language. You can add cookie-banner and annoyance lists too, or import your own by URL, paste, or file.
+- Updates as often as you want, from hourly to weekly. If a list offers incremental updates, wBlock only downloads what changed. On macOS a small launch agent checks for updates even when the app is closed.
 - Tracking parameters like `utm_*` get stripped from links, and link shorteners get unwrapped. That's on by default.
-- A capacity bar, and a rules viewer that tells you which lines were unsupported, duplicated, or handed to the scripts extension.
+- A capacity bar so you can see how close you are to Safari's rule limit. The rules viewer shows unsupported and duplicate rules, plus those handled by the scripts extension.
 
 ### Userscripts and userstyles
 
 - A Greasemonkey-compatible engine with both `GM_*` and `GM.*`. `GM_xmlhttpRequest` only reaches hosts a script lists in `@connect`.
 - UserCSS themes (`.user.css`), including Less, Sass, and Stylus. More in [docs/USERSTYLES.md](docs/USERSTYLES.md).
-- A built-in catalog with Tube Cleaner, Player Cleaner, DeArrow, Dark Reader, Return YouTube Dislike, Bypass Paywalls Clean, AdGuard Extra, AdGuard Popup Blocker, and TwitchAdSolutions. Everything in it ships off except tinyShield, an anti-adblock defuser.
+- A built-in catalog with Tube Cleaner, Player Cleaner, DeArrow, Dark Reader, Return YouTube Dislike, Bypass Paywalls Clean, AdGuard Extra, AdGuard Popup Blocker, and TwitchAdSolutions. They're all off by default except tinyShield, which deals with anti-adblock checks.
 
 ### Native video
 
-Tube Cleaner and Player Cleaner hand a site's video back to Safari before the page paints. You get Picture-in-Picture, background audio, fullscreen, and Now Playing, same as a plain `<video>` tag.
+Tube Cleaner and Player Cleaner replace a site's custom video player with Safari's native one before the page appears. You get Picture-in-Picture, background audio, fullscreen, and Now Playing, just like a plain `<video>` tag.
 
-Tube Cleaner is the YouTube one. It keeps YouTube's own stream, puts chapters and captions in Safari's native menus, and skips sponsors through SponsorBlock with per-category settings. If you also want better titles and thumbnails, DeArrow is a separate script. Player Cleaner does the same job on video.js, JW Player, Plyr, Flowplayer, MediaElement, Clappr, Media Chrome, and shadow-root players like Archive.org's, and it remembers speed, volume, captions, and where you left off on each site.
+Tube Cleaner is for YouTube. It uses YouTube's own stream and puts chapters and captions in Safari's native menus. SponsorBlock skips sponsored segments, and you can choose which categories to skip. For better titles and thumbnails, turn on DeArrow separately.
+
+Player Cleaner handles other sites. It works with video.js, JW Player, Plyr, Flowplayer, MediaElement, Clappr, Media Chrome, and shadow-root players like Archive.org's. It remembers your speed, volume, captions, and where you left off on each site.
 
 Both update from [wBlock-userscripts](https://github.com/0xCUB3/wBlock-userscripts) on their own schedule, separate from the app. They don't block ads (the filter lists do that).
 
 ### Per-site control
 
-Click the toolbar button on any site and you get separate switches for filtering, userscripts, and autoplay, plus the element zapper. You can also limit a filter list or a userscript to certain sites, or keep it off them. Zapper rules stay editable in Settings.
+Open the Safari toolbar popup to turn filtering, userscripts, or autoplay on or off for a site. The element zapper is there too. You can choose which sites a filter list or userscript runs on and edit your zapper rules in Settings.
 
 ### Every device
 
@@ -118,7 +120,7 @@ It's one app on macOS, iOS, iPadOS, and visionOS. iCloud syncs your lists, custo
 
 ## Install
 
-- [App Store](https://apps.apple.com/us/app/wblock/id6746388723) with automatic updates.
+- [App Store](https://apps.apple.com/us/app/wblock/id6746388723). This is the easiest option if you want automatic updates.
 - Homebrew: `brew tap 0xcub3/wblock && brew install --cask wblock`
 - DMG from the [latest release](https://github.com/0xCUB3/wBlock/releases/latest).
 
@@ -128,9 +130,9 @@ On first launch wBlock walks you through turning the extensions on in Safari.
 
 ## How it works
 
-wBlock has three parts. The app downloads your lists, converts them with [SafariConverterLib](https://github.com/AdguardTeam/SafariConverterLib) 4.3.0, and splits the result across five content blockers (Ads, Privacy, Security, Foreign, Custom). Safari compiles those and applies them on its own, and no wBlock code runs while a page loads. Anything a static rule can't express goes to the wBlock Scripts extension.
+The app downloads your filter lists and converts them with [SafariConverterLib](https://github.com/AdguardTeam/SafariConverterLib) 4.3.0. It splits the rules across five content blockers: Ads, Privacy, Security, Foreign, and Custom. Safari compiles and applies those rules itself without waiting on the app. The wBlock Scripts extension handles anything a static rule can't do.
 
-Filter data lives in Protocol Buffers with LZ4 compression and is streamed to disk to keep big compiles from spiking memory. If you change one list, only the blockers that list feeds get rebuilt. Safari still has to reload them before you see the change, and no app can skip that.
+Filter data is stored in Protocol Buffers with LZ4 compression. wBlock writes it to disk as it goes so large lists don't cause big memory spikes. When you change a list, only the blockers that use it get rebuilt. Safari still has to reload them before the change takes effect.
 
 The [comparison](Adblock_Comparison.md#how-wblock-works-around-static-rules) shows the exact rule wBlock writes when you turn filtering off for a site.
 
@@ -144,9 +146,9 @@ The [comparison](Adblock_Comparison.md#how-wblock-works-around-static-rules) sho
 
 No. Pick one general-purpose blocker.
 
-Two blockers fight over the same requests and the same page. Mozilla's [webRequest docs](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/webRequest/onHeadersReceived) say that when two extensions change one response in conflicting ways, only one of them wins. uBlock Origin's README says "Do NOT use uBO with any other content blocker" ([source](https://github.com/gorhill/ublock#all-programs)), and AdGuard warns about slow loading, broken sites, and video trouble ([source](https://adguard.com/en/adguard-browser-extension/opera/overview.html)).
+Two blockers can interfere with each other on the same page. Mozilla's [webRequest docs](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/webRequest/onHeadersReceived) explain one example: if two extensions change a response in conflicting ways, only one wins. uBlock Origin also [warns against using another blocker alongside it](https://github.com/gorhill/ublock#all-programs). AdGuard [warns about slow loading, broken sites, and video trouble](https://adguard.com/en/adguard-browser-extension/opera/overview.html).
 
-If a site breaks or an ad gets through, turn off other ad blockers before reporting it. That helps identify which extension is responsible.
+Try the site with other ad blockers turned off before you file an issue. That way I can tell whether wBlock is the problem.
 
 <img width="1560" height="176" alt="Skill Issue" src="https://github.com/user-attachments/assets/b9c519bf-bbc7-40c0-bc4c-6a6d1fccb488" />
 
@@ -156,7 +158,7 @@ If a site breaks or an ad gets through, turn off other ad blockers before report
 <summary>Should I turn on more filter lists?</summary>
 <br>
 
-Usually not. The defaults already catch most ads and trackers, and other general lists mostly repeat them. Extra lists eat into Safari's rule limit and break more sites. Annoyances lists (cookie banners, popups, social widgets) and regional lists for non-English sites are worth turning on.
+Usually not. The defaults already catch most ads and trackers. Other general lists mostly repeat those rules and use up more of Safari's rule limit. They can also break sites. Add annoyance lists if you want to hide cookie banners, popups, or social widgets. Regional lists help with sites in other languages.
 
 </details>
 
@@ -180,7 +182,7 @@ Turn on TwitchAdSolutions (vaft) or AdGuard Extra in the Userscripts tab and rel
 <summary>Why don't cookie banners or scriptlets work in Private Browsing?</summary>
 <br>
 
-Safari keeps extensions off in Private Browsing until you allow each one, and cookie-banner filters mostly run as scriptlets in wBlock Scripts. In Safari → Settings → Extensions, turn on Allow in Private Browsing for wBlock Scripts and all five blockers, then reload the private window.
+Safari keeps extensions off in Private Browsing until you allow them. Most cookie-banner filters need scriptlets from wBlock Scripts. Go to Safari → Settings → Extensions and turn on Allow in Private Browsing for wBlock Scripts and all five blockers. Then reload the private window.
 
 If a banner is already gone in a normal window, you may just have a consent cookie saved there. Clear the site's cookies before you compare.
 
@@ -190,9 +192,9 @@ If a banner is already gone in a normal window, you may just have a consent cook
 <summary>How do userscript network requests work?</summary>
 <br>
 
-A script needs `@grant GM_xmlhttpRequest` (or `GM.xmlHttpRequest`), and it can only reach hosts listed in its `@connect` lines. A bare host covers its subdomains too, and `localhost`, `self`, and `*` work. Without `@connect` a script can only talk to the site it runs on. There's no per-domain prompt yet.
+A script needs `@grant GM_xmlhttpRequest` (or `GM.xmlHttpRequest`). It can only reach hosts listed in its `@connect` lines. A bare host includes its subdomains. You can also use `localhost`, `self`, or `*`. Without `@connect`, requests are limited to the site the script runs on. There's no per-domain permission prompt yet.
 
-Only HTTP and HTTPS are allowed. Redirects get checked before they're followed, and if Safari hides a redirect from the extension the request fails instead of slipping past the list. Requests don't carry your browser cookies or saved logins, and `anonymous` requests also drop cookies the script set.
+Only HTTP and HTTPS are allowed. Redirects are checked before the request follows them. If Safari hides a redirect from the extension, the request fails rather than bypassing `@connect`. Requests don't include your browser cookies or saved logins. With `anonymous`, they also leave out cookies set by the script.
 
 </details>
 
@@ -200,7 +202,7 @@ Only HTTP and HTTPS are allowed. Redirects get checked before they're followed, 
 <summary>Where are Tube Cleaner and Player Cleaner?</summary>
 <br>
 
-Top of the Userscripts tab, under General. Both ship off. Once one is on, each feature (chapters, captions, SponsorBlock, and so on) has its own switch. If Player Cleaner breaks a site, turn it off for that site from the toolbar popup.
+At the top of the Userscripts tab, under General. Both are off by default. Turn one on to choose its features, including chapters, captions, and SponsorBlock. If Player Cleaner breaks a site, you can turn it off just for that site from the toolbar popup.
 
 </details>
 
@@ -208,7 +210,9 @@ Top of the Userscripts tab, under General. Both ship off. Once one is on, each f
 <summary>How often do filters update, and does wBlock need to stay open?</summary>
 <br>
 
-As often as you set it, from hourly to weekly, or only when you hit refresh. You don't need to keep wBlock open. On macOS a launch agent checks while the app is closed (you can turn that off). On iPhone and iPad, iOS decides when to wake wBlock in the background. It wakes it less often, or not until you open it, when Background App Refresh is off or you swipe wBlock away in the app switcher.
+You can pick a schedule from hourly to weekly, or update manually. You don't need to keep wBlock open. On macOS a launch agent checks for updates while the app is closed. You can turn that off in settings.
+
+On iPhone and iPad, iOS decides when wBlock can update in the background. Updates may happen less often or wait until you open the app if Background App Refresh is off or you've swiped wBlock away in the app switcher.
 
 </details>
 
