@@ -148,6 +148,8 @@ Two blockers fight over the same requests and the same page. Mozilla's [webReque
 
 If a site breaks or an ad gets through, turn off other ad blockers before reporting it. That helps identify which extension is responsible.
 
+<img width="1560" height="176" alt="Skill Issue" src="https://github.com/user-attachments/assets/b9c519bf-bbc7-40c0-bc4c-6a6d1fccb488" />
+
 </details>
 
 <details>
