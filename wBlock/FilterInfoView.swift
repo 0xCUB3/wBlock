@@ -283,10 +283,8 @@ struct FilterRulesView: View {
             let worker = Task.detached(priority: .userInitiated) { () -> FilterRuleAnalysis in
                 var seen = Set<String>()
                 for text in earlier {
-                    guard !Task.isCancelled else { return FilterRuleAnalysis(lines: []) }
                     seen.formUnion(FilterRuleAnalysis.ruleSet(from: text, isCancelled: { Task.isCancelled }))
                 }
-                guard !Task.isCancelled else { return FilterRuleAnalysis(lines: []) }
                 return FilterRuleAnalysis.analyze(
                     content: content,
                     seenInEarlierLists: seen,

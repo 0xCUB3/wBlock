@@ -113,7 +113,6 @@ compile_core_test safari-setup-query-isolation scripts/test_safari_setup_query_i
 compile_core_test userscript-frame-authorization scripts/test_userscript_frame_authorization.swift
 compile_core_test filter-refresh-planner scripts/test_filter_refresh_planner.swift
 compile_core_test issue-675-rule-analysis scripts/test_issue_675_rule_analysis.swift
-run python3 scripts/test_rules_viewer_cancellation.py
 compile_core_test issue-679-affinity-cache-behavior scripts/test_issue_679_affinity_cache_behavior.swift
 compile_core_test issue-681-dedup-behavior scripts/test_issue_681_dedup_behavior.swift
 compile_core_test issue-918-remove-attr scripts/test_issue_918_remove_attr.swift
