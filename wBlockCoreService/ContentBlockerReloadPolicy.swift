@@ -26,6 +26,38 @@ public enum ContentBlockerReloadPolicy {
         }
     }
 
+    public typealias TargetReload = (
+        target: ContentBlockerTargetInfo, reload: ContentBlockerService.ReloadAttemptResult
+    )
+
+    /// Reloads `targets` in one pass and returns after every target has finished.
+    /// The pass is always timed: a target Safari already has still costs a state
+    /// query and a hash of its rules, so an all-skipped pass is not free.
+    public static func reloadPass(
+        _ targets: [ContentBlockerTargetInfo],
+        groupIdentifier: String,
+        maxConcurrent: Int = 1,
+        reload: (@Sendable (ContentBlockerTargetInfo) async -> ContentBlockerService.ReloadAttemptResult)? = nil,
+        onResult: (TargetReload) async -> Void = { _ in }
+    ) async -> (results: [TargetReload], durationMs: Int) {
+        let started = Date()
+        let reload = reload ?? { target in
+            await ContentBlockerService.reloadIfNeeded(
+                identifier: target.bundleIdentifier,
+                targetRulesFilename: target.rulesFilename,
+                groupIdentifier: groupIdentifier
+            )
+        }
+        var results: [TargetReload] = []
+        await boundedConcurrentForEach(targets, maxConcurrent: maxConcurrent, operation: { target in
+            (target: target, reload: await reload(target))
+        }, onResult: { item in
+            results.append(item)
+            await onResult(item)
+        })
+        return (results, Int(Date().timeIntervalSince(started) * 1000))
+    }
+
     public static func orderedTargets(
         _ targets: [ContentBlockerTargetInfo], ruleCounts: [String: Int],
         groupIdentifier: String = GroupIdentifier.shared.value

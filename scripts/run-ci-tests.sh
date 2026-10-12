@@ -181,6 +181,7 @@ compile_core_test userscript-duplicates scripts/test_userscript_duplicates.swift
 compile_core_test issue-645-compile-order scripts/test_issue_645_compile_order.swift
 compile_core_test compilation-provenance scripts/test_compilation_provenance.swift
 compile_core_test target-compilation scripts/test_target_compilation.swift
+compile_core_test reload-pass-timing scripts/test_reload_pass_timing.swift
 compile_core_test issue-729-headless-rebuild-gate scripts/test_issue_729_headless_rebuild_gate.swift
 compile_core_test foreign-filter-groups scripts/test_foreign_filter_groups.swift \
   wBlock/LocalizationHelpers.swift wBlock/FilterListLoader.swift wBlock/ConcurrentLogManager.swift wBlock/LogTimeZone.swift

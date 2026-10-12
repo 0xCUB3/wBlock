@@ -923,7 +923,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                    !BlockingPauseStore.isContentBlockingPaused(groupIdentifier: groupIdentifier),
                    reloadMarkerMatches(verified)
                 {
-                    return ReloadAttemptResult(success: true, skipped: true, attempts: 0, durationMs: 0)
+                    return ReloadAttemptResult(success: true, skipped: true, attempts: 0, durationMs: elapsedMs())
                 }
                 snapshot = verified
             }

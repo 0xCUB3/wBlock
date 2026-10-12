@@ -230,24 +230,15 @@ extension AppFilterManager {
         var skippedTargets = 0
         var failedTargets = 0
         var skippedNames: [String] = []
-        let groupIdentifier = GroupIdentifier.shared.value
-        let reloadStartTime = Date()
-
-        await boundedConcurrentForEach(targets, maxConcurrent: {
-            #if os(macOS)
-            return 3
-            #else
-            return 1
-            #endif
-        }(), operation: { target in
-            let result = await ContentBlockerService.reloadIfNeeded(
-                identifier: target.bundleIdentifier,
-                targetRulesFilename: target.rulesFilename,
-                groupIdentifier: groupIdentifier
-            )
-            return (target, result)
-        }, onResult: { item in
-            let (target, result) = item
+        #if os(macOS)
+        let maxConcurrent = 3
+        #else
+        let maxConcurrent = 1
+        #endif
+        let pass = await ContentBlockerReloadPolicy.reloadPass(
+            targets, groupIdentifier: GroupIdentifier.shared.value, maxConcurrent: maxConcurrent
+        )
+        for (target, result) in pass.results {
             if result.skipped {
                 skippedTargets += 1
                 skippedNames.append(target.displayName)
@@ -266,11 +257,7 @@ extension AppFilterManager {
                     ]
                 )
             }
-        })
-
-        let reloadDurationMs = reloadedTargets + failedTargets > 0
-            ? Int(Date().timeIntervalSince(reloadStartTime) * 1000)
-            : 0
-        return (reloadedTargets, skippedTargets, failedTargets, reloadDurationMs, skippedNames)
+        }
+        return (reloadedTargets, skippedTargets, failedTargets, pass.durationMs, skippedNames)
     }
 }

@@ -1138,20 +1138,11 @@ extension AppFilterManager {
 
                 var reloadFailures: [String] = []
                 var skippedNames: [String] = []
-                var reloadResults: [(ContentBlockerTargetInfo, ContentBlockerService.ReloadAttemptResult)] = []
-                reloadResults.reserveCapacity(platformTargets.count)
-                await boundedConcurrentForEach(ContentBlockerReloadPolicy.orderedTargets(platformTargets, ruleCounts: self.ruleCountsByExtension, groupIdentifier: groupIdentifier), maxConcurrent: 1, operation: { targetInfo in
-                    let reloadResult = await ContentBlockerService.reloadIfNeeded(
-                        identifier: targetInfo.bundleIdentifier,
-                        targetRulesFilename: targetInfo.rulesFilename,
-                        groupIdentifier: groupIdentifier
-                    )
-                    return (targetInfo, reloadResult)
-                }, onResult: { item in
-                    reloadResults.append(item)
-                })
-                reloadResults.sort { $0.0.slot < $1.0.slot }
-                for (targetInfo, result) in reloadResults {
+                let pass = await ContentBlockerReloadPolicy.reloadPass(
+                    ContentBlockerReloadPolicy.orderedTargets(platformTargets, ruleCounts: self.ruleCountsByExtension, groupIdentifier: groupIdentifier),
+                    groupIdentifier: groupIdentifier
+                )
+                for (targetInfo, result) in pass.results.sorted(by: { $0.target.slot < $1.target.slot }) {
                     if result.skipped {
                         skippedNames.append(targetInfo.displayName)
                     } else if !result.success {
@@ -1468,24 +1459,16 @@ extension AppFilterManager {
 
     func reloadContentBlockers(_ targets: [ContentBlockerTargetInfo]) async -> ReloadPhaseSummary {
         let totalCount = targets.count
-        let reloadStartTime = Date()
 
         let groupIdentifier = GroupIdentifier.shared.value
-        var collected: [(target: ContentBlockerTargetInfo, reload: ContentBlockerService.ReloadAttemptResult)] = []
-        collected.reserveCapacity(targets.count)
         var completed = 0
 
-        await boundedConcurrentForEach(ContentBlockerReloadPolicy.orderedTargets(targets, ruleCounts: self.ruleCountsByExtension, groupIdentifier: groupIdentifier), maxConcurrent: 1, operation: { target in
-            let reload = await ContentBlockerService.reloadIfNeeded(
-                identifier: target.bundleIdentifier,
-                targetRulesFilename: target.rulesFilename,
-                groupIdentifier: groupIdentifier
-            )
-            return (target, reload)
-        }, onResult: { item in
-            collected.append(item)
+        let pass = await ContentBlockerReloadPolicy.reloadPass(
+            ContentBlockerReloadPolicy.orderedTargets(targets, ruleCounts: self.ruleCountsByExtension, groupIdentifier: groupIdentifier),
+            groupIdentifier: groupIdentifier,
+            onResult: { item in
             completed += 1
-            let name = item.0.displayName
+            let name = item.target.displayName
             await MainActor.run {
                 self.processedFiltersCount = completed
                 self.applyProgressViewModel.updateCurrentFilter(name)
@@ -1498,10 +1481,7 @@ extension AppFilterManager {
         })
 
         // Preserve slot order for stable logging/UI.
-        let orderedResults = collected.sorted { $0.target.slot < $1.target.slot }
-        let reloadDurationMs = collected.contains { !$0.reload.skipped }
-            ? Int(Date().timeIntervalSince(reloadStartTime) * 1000)
-            : 0
+        let orderedResults = pass.results.sorted { $0.target.slot < $1.target.slot }
 
         var allSuccessful = true
         var metrics: [TargetReloadMetrics] = []
@@ -1572,7 +1552,7 @@ extension AppFilterManager {
             allSuccessful: allSuccessful,
             metrics: metrics,
             disabledInSafariNames: disabledInSafariNames,
-            durationMs: reloadDurationMs
+            durationMs: pass.durationMs
         )
     }
 
