@@ -40,13 +40,18 @@ public struct FilterRuleAnalysis: Sendable {
 
     /// Trimmed rule lines from `earlier`, matching the rule-identity
     /// normalisation used by conversion-time deduplication.
-    public static func ruleSet(from earlier: String) -> Set<String> {
+    public static func ruleSet(
+        from earlier: String,
+        isCancelled: @escaping () -> Bool = { false }
+    ) -> Set<String> {
         var seen = Set<String>()
-        earlier.enumerateLines { line, _ in
+        var cancelled = false
+        earlier.enumerateLines { line, shouldStop in
+            if isCancelled() { cancelled = true; shouldStop = true; return }
             let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
             if isRuleLine(trimmed) { seen.insert(ruleIdentity(trimmed)) }
         }
-        return seen
+        return cancelled ? [] : seen
     }
 
     /// Fold only case-insensitive syntax. Selector bodies, option values,
