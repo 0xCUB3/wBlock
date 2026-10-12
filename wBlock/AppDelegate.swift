@@ -68,8 +68,16 @@ private final class BackgroundTaskHandle {
 
 @MainActor
 class AppDelegate: NSObject {
+    /// SwiftUI's delegate adaptor wraps this object, so `UIApplication.shared.delegate`
+    /// is not an `AppDelegate` on iOS.
+    private(set) static weak var current: AppDelegate?
     var filterManager: AppFilterManager?
     var hasPendingApplyNotification = false
+
+    override init() {
+        super.init()
+        Self.current = self
+    }
 
     // MARK: - Background Update Constants
 
