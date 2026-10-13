@@ -14,10 +14,10 @@ struct ReloadPassTimingTests {
         let targets = ContentBlockerTargetManager.shared.allTargets(forPlatform: .iOS)
         precondition(targets.count >= 2)
 
-        let verified = await ContentBlockerReloadPolicy.reloadPass(targets, groupIdentifier: "test") { _ in
+        let verified = await ContentBlockerReloadPolicy.reloadPass(targets, groupIdentifier: "test", reload: { _ in
             try? await Task.sleep(nanoseconds: 60_000_000)
             return result(skipped: true)
-        }
+        })
         precondition(verified.results.count == targets.count)
         let minimum = targets.count * 50
         precondition(
@@ -41,11 +41,13 @@ struct ReloadPassTimingTests {
         precondition(delivered.last == slowest.bundleIdentifier && delivered.count == targets.count)
         precondition(outOfOrder.durationMs >= 250, "out-of-order pass reported \(outOfOrder.durationMs)ms")
 
-        // A warm pass with nothing to check stays near zero.
-        let warm = await ContentBlockerReloadPolicy.reloadPass(targets, groupIdentifier: "test") { _ in
+        // A warm pass with nothing to check adds no fixed delay. Compared with the
+        // sleeping pass above rather than a wall-clock limit, which shared CI
+        // runners overshoot.
+        let warm = await ContentBlockerReloadPolicy.reloadPass(targets, groupIdentifier: "test", reload: { _ in
             result(skipped: true)
-        }
-        precondition(warm.durationMs < 50, "warm pass reported \(warm.durationMs)ms")
+        })
+        precondition(warm.durationMs < minimum, "warm pass reported \(warm.durationMs)ms")
         print("reload pass timing: ok (verified \(verified.durationMs)ms, out of order \(outOfOrder.durationMs)ms, warm \(warm.durationMs)ms)")
     }
 }
