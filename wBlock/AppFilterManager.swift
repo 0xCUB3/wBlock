@@ -269,7 +269,9 @@ class AppFilterManager: ObservableObject {
                   !self.isApplyInFlight,
                   !self.pausedComponents.contains(.filters)
             else { return }
-            self.checkAndEnableFilters(forceReload: true)
+            // Applying pending edits must not double as an update check; only explicit
+            // updates and the auto-update scheduler refresh lists already on disk.
+            await self.performFilterUpdate(checkForUpdates: false, downloadMissing: true)
         }
     }
 
@@ -883,10 +885,12 @@ class AppFilterManager: ObservableObject {
         }
     }
 
-    /// `checkForUpdates: false` applies local state only: nothing is downloaded, including
-    /// selected lists that have never been fetched.
+    /// `checkForUpdates: false` skips refreshing downloaded lists. Selected lists that have never
+    /// been fetched are downloaded only when `downloadMissing` (default: `checkForUpdates`) is true.
     @discardableResult
-    func performFilterUpdate(showProgress: Bool = true, checkForUpdates: Bool = true) async -> Bool {
+    func performFilterUpdate(
+        showProgress: Bool = true, checkForUpdates: Bool = true, downloadMissing: Bool? = nil
+    ) async -> Bool {
         refreshMissingItems()
 
         let started = await performExclusiveApply {
@@ -894,7 +898,7 @@ class AppFilterManager: ObservableObject {
             self.failedReloadTargets = []
             self.showingApplyProgressSheet = showProgress
 
-            if checkForUpdates, !self.missingFilters.isEmpty || !self.missingUserScripts.isEmpty {
+            if downloadMissing ?? checkForUpdates, !self.missingFilters.isEmpty || !self.missingUserScripts.isEmpty {
                 await self.downloadMissingItemsSilently()
             }
 
