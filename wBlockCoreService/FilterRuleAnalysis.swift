@@ -13,7 +13,10 @@ internal import ContentBlockerConverter
 /// native content blocker format.
 public enum FilterRuleKind: String, CaseIterable, Sendable {
     case comment
-    case supported
+    /// Blocks and exceptions Safari applies to requests.
+    case network
+    /// Plain CSS hiding rules Safari applies.
+    case elementHiding
     case advanced
     case removeParam
     case unsupported
@@ -224,13 +227,13 @@ public struct FilterRuleAnalysis: Sendable {
             // exceptions that only exist to modify those ($jsinject).
             if let cosmetic = parsed as? CosmeticRule {
                 return cosmetic.isScript || cosmetic.isScriptlet || cosmetic.isExtendedCss || cosmetic.isInjectCss
-                    ? .advanced : .supported
+                    ? .advanced : .elementHiding
             }
             if let network = parsed as? NetworkRule, network.isWhiteList, network.isJsInject,
                !network.isDocumentWhiteList, !network.isCssExceptionRule {
                 return .advanced
             }
-            return .supported
+            return .network
         } catch {
             return .unsupported
         }

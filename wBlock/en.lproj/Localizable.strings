@@ -1017,7 +1017,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Enable All" = "Enable All";
 
 
-"Supported" = "Supported";
+"Network Rules" = "Network Rules";
+"Element Hiding" = "Element Hiding";
 "Unsupported" = "Unsupported";
 "Duplicates" = "Duplicates";
 "Comments" = "Comments";

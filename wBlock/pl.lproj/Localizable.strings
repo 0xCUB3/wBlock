@@ -1018,7 +1018,8 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Enable All" = "Włącz wszystko";
 
 
-"Supported" = "Obsługiwane";
+"Network Rules" = "Reguły sieciowe";
+"Element Hiding" = "Ukrywanie elementów";
 "Unsupported" = "Nieobsługiwane";
 "Duplicates" = "Duplikaty";
 "Comments" = "Komentarze";

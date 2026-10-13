@@ -1018,7 +1018,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Enable All" = "تفعيل الكل";
 
 
-"Supported" = "مدعومة";
+"Network Rules" = "قواعد الشبكة";
+"Element Hiding" = "إخفاء العناصر";
 "Unsupported" = "غير مدعومة";
 "Duplicates" = "مكررة";
 "Comments" = "تعليقات";

@@ -1018,7 +1018,8 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Enable All" = "Activează toate";
 
 
-"Supported" = "Acceptate";
+"Network Rules" = "Reguli de rețea";
+"Element Hiding" = "Ascunderea elementelor";
 "Unsupported" = "Neacceptate";
 "Duplicates" = "Duplicate";
 "Comments" = "Comentarii";

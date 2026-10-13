@@ -1018,7 +1018,8 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Enable All" = "Alle aktivieren";
 
 
-"Supported" = "Unterstützt";
+"Network Rules" = "Netzwerkregeln";
+"Element Hiding" = "Elemente ausblenden";
 "Unsupported" = "Nicht unterstützt";
 "Duplicates" = "Duplikate";
 "Comments" = "Kommentare";

@@ -1010,7 +1010,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Quality and Audio Toolbar" = "画質と音声のツールバー";
 "Hide Shorts" = "ショートを非表示";
 "Enable All" = "全て有効にする";
-"Supported" = "対応";
+"Network Rules" = "ネットワークルール";
+"Element Hiding" = "要素の非表示";
 "Unsupported" = "非対応";
 "Duplicates" = "重複";
 "Comments" = "コメント";

@@ -1018,7 +1018,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Enable All" = "Ενεργοποίηση όλων";
 
 
-"Supported" = "Υποστηρίζονται";
+"Network Rules" = "Κανόνες δικτύου";
+"Element Hiding" = "Απόκρυψη στοιχείων";
 "Unsupported" = "Δεν υποστηρίζονται";
 "Duplicates" = "Διπλότυπα";
 "Comments" = "Σχόλια";

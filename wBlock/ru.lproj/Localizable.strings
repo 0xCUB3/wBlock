@@ -1018,7 +1018,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Enable All" = "Включить все";
 
 
-"Supported" = "Поддерживаются";
+"Network Rules" = "Сетевые правила";
+"Element Hiding" = "Скрытие элементов";
 "Unsupported" = "Не поддерживаются";
 "Duplicates" = "Дубликаты";
 "Comments" = "Комментарии";

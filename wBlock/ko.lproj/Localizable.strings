@@ -1018,7 +1018,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Enable All" = "모두 켜기";
 
 
-"Supported" = "지원됨";
+"Network Rules" = "네트워크 규칙";
+"Element Hiding" = "요소 숨기기";
 "Unsupported" = "지원 안 됨";
 "Duplicates" = "중복";
 "Comments" = "주석";

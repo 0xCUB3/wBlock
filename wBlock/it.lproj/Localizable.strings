@@ -1018,7 +1018,8 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "Enable All" = "Attiva tutto";
 
 
-"Supported" = "Supportate";
+"Network Rules" = "Regole di rete";
+"Element Hiding" = "Elementi nascosti";
 "Unsupported" = "Non supportate";
 "Duplicates" = "Duplicate";
 "Comments" = "Commenti";

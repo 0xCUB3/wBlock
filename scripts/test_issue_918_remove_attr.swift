@@ -44,7 +44,7 @@ struct Main {
         }
 
         let analysis = FilterRuleAnalysis.analyze(content: cases[0].0 + "\nwww.reddit.com###answers-nav-button")
-        require(analysis.count(of: .advanced) == 1 && analysis.count(of: .supported) == 1,
+        require(analysis.count(of: .advanced) == 1 && analysis.count(of: .elementHiding) == 1,
                 "remove-attr must count as advanced and leave the hide rule supported")
         print("PASS: uBO remove-attr/remove-class rewritten to scriptlets")
     }

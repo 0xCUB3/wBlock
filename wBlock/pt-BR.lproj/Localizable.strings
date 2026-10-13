@@ -1018,7 +1018,8 @@ Para reativá-los, desative outros filtros grandes e aplique as alterações nov
 "Enable All" = "Ativar tudo";
 
 
-"Supported" = "Compatíveis";
+"Network Rules" = "Regras de rede";
+"Element Hiding" = "Ocultação de elementos";
 "Unsupported" = "Incompatíveis";
 "Duplicates" = "Duplicadas";
 "Comments" = "Comentários";

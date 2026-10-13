@@ -1017,7 +1017,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Enable All" = "فعال کردن همه";
 
 
-"Supported" = "پشتیبانی‌شده";
+"Network Rules" = "قوانین شبکه";
+"Element Hiding" = "پنهان‌سازی عناصر";
 "Unsupported" = "پشتیبانی‌نشده";
 "Duplicates" = "تکراری‌ها";
 "Comments" = "نظرات";

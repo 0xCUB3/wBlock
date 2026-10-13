@@ -1018,7 +1018,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Enable All" = "全部啟用";
 
 
-"Supported" = "支援";
+"Network Rules" = "網路規則";
+"Element Hiding" = "元素隱藏";
 "Unsupported" = "不支援";
 "Duplicates" = "重複";
 "Comments" = "註解";

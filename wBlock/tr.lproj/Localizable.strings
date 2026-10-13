@@ -1017,7 +1017,8 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Enable All" = "Tümünü etkinleştir";
 
 
-"Supported" = "Desteklenen";
+"Network Rules" = "Ağ kuralları";
+"Element Hiding" = "Öğe gizleme";
 "Unsupported" = "Desteklenmeyen";
 "Duplicates" = "Tekrarlanan";
 "Comments" = "Yorumlar";

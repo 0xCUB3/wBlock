@@ -1018,7 +1018,8 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Enable All" = "Összes bekapcsolása";
 
 
-"Supported" = "Támogatott";
+"Network Rules" = "Hálózati szabályok";
+"Element Hiding" = "Elemek elrejtése";
 "Unsupported" = "Nem támogatott";
 "Duplicates" = "Duplikátumok";
 "Comments" = "Megjegyzések";

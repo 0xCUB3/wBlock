@@ -1018,7 +1018,8 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Enable All" = "Tout activer";
 
 
-"Supported" = "Prises en charge";
+"Network Rules" = "Règles réseau";
+"Element Hiding" = "Masquage d’éléments";
 "Unsupported" = "Non prises en charge";
 "Duplicates" = "Doublons";
 "Comments" = "Commentaires";

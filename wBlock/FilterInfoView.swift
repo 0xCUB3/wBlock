@@ -231,7 +231,7 @@ struct FilterRulesView: View {
     @ScaledMetric(relativeTo: .caption) private var legendColumnWidth = 160
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
-    private static let highlightedKinds: [FilterRuleKind] = [.supported, .advanced, .removeParam, .unsupported, .duplicate]
+    private static let highlightedKinds: [FilterRuleKind] = [.network, .elementHiding, .advanced, .removeParam, .unsupported, .duplicate]
 
     var body: some View {
         VStack(spacing: 0) {
@@ -450,7 +450,8 @@ struct FilterRulesView: View {
     static func title(for kind: FilterRuleKind) -> String {
         switch kind {
         case .comment: return String(localized: "Comments")
-        case .supported: return String(localized: "Supported")
+        case .network: return String(localized: "Network Rules")
+        case .elementHiding: return String(localized: "Element Hiding")
         case .advanced: return String(localized: "Needs wBlock Scripts")
         case .removeParam: return String(localized: "URL Parameters")
         case .unsupported: return String(localized: "Unsupported")
@@ -461,7 +462,8 @@ struct FilterRulesView: View {
     private static func symbol(for kind: FilterRuleKind) -> String {
         switch kind {
         case .comment: return "text.quote"
-        case .supported: return "checkmark.circle"
+        case .network: return "network"
+        case .elementHiding: return "eye.slash"
         case .advanced: return "curlybraces"
         case .removeParam: return "link.badge.plus"
         case .unsupported: return "xmark.circle"
@@ -472,7 +474,8 @@ struct FilterRulesView: View {
     static func color(for kind: FilterRuleKind) -> Color {
         switch kind {
         case .comment: return .secondary
-        case .supported: return .green
+        case .network: return .green
+        case .elementHiding: return .orange
         case .advanced: return .blue
         case .removeParam: return .teal
         case .unsupported: return .red
