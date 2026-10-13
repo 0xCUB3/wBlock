@@ -27,6 +27,11 @@ struct Main {
             ("example.com##div:has(> a):not(.b)", "example.com##div:has(> a):not(.b)"),
             ("example.com##a[title=':odd(x)']", "example.com##a[title=':odd(x)']"),
             ("example.com##li:nth-child(2n+1)", "example.com##li:nth-child(2n+1)"),
+            // #975: Safari has no object type; drop it unless that would widen the rule.
+            ("||media.net^$object,script,third-party", "||media.net^$script,third-party"),
+            ("||quantserve.com^$~object,third-party", "||quantserve.com^$third-party"),
+            ("||x.com^$~object", "||x.com^"),
+            ("@@||x.com/imp;$object,domain=a.de", "@@||x.com/imp;$object,domain=a.de"),
         ]
         for (input, expected) in cases {
             let output = FilterRuleAnalysis.adGuardEquivalent(input)

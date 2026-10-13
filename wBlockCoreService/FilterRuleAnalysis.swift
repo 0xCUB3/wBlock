@@ -80,7 +80,9 @@ public struct FilterRuleAnalysis: Sendable {
     /// as the equivalent AdGuard scriptlets.
     public static func adGuardEquivalent(_ rule: String) -> String {
         let trimmed = rule.trimmingCharacters(in: .whitespaces)
-        guard let marker = ["#@#", "##"].lazy.compactMap({ trimmed.range(of: $0) }).first else { return rule }
+        guard let marker = ["#@#", "##"].lazy.compactMap({ trimmed.range(of: $0) }).first else {
+            return droppingObjectType(trimmed) ?? rule
+        }
         let exception = trimmed[marker] == "#@#"
         let body = trimmed[marker.upperBound...]
         for name in ["remove-attr", "remove-class"] where body.hasSuffix(")") {
@@ -105,6 +107,25 @@ public struct FilterRuleAnalysis: Sendable {
         }
         return rule
     }
+
+    /// Safari has no plugin resource type, so the converter rejects any rule that
+    /// names `object` (#975). Plugin requests never happen, so `~object` excludes
+    /// nothing and `object` can go from a type list. A rule left with no other
+    /// type would match everything instead of nothing, so it stays rejected.
+    private static func droppingObjectType(_ rule: String) -> String? {
+        guard let dollar = rule.lastIndex(of: "$") else { return nil }
+        let options = rule[rule.index(after: dollar)...].split(separator: ",", omittingEmptySubsequences: false)
+        let kept = options.filter { !["object", "~object"].contains($0.lowercased()) }
+        guard kept.count < options.count else { return nil }
+        if options.contains(where: { $0.lowercased() == "object" }),
+           !kept.contains(where: { resourceTypes.contains($0.lowercased()) }) { return nil }
+        return String(rule[..<dollar]) + (kept.isEmpty ? "" : "$" + kept.joined(separator: ","))
+    }
+
+    private static let resourceTypes: Set<String> = [
+        "script", "image", "stylesheet", "css", "xmlhttprequest", "xhr", "subdocument", "frame",
+        "media", "font", "websocket", "ping", "other", "document", "doc", "popup",
+    ]
 
     /// Functional pseudo-classes WebKit compiles in content blocker selectors.
     private static let nativeFunctionalPseudos: Set<String> = [
