@@ -18,6 +18,8 @@ struct AddContentSheet<Mode: AddContentMode, Content: View>: View {
     let isSubmitDisabled: Bool
     let onDismiss: () -> Void
     let onSubmit: () -> Void
+    /// Off when the primary action only closes the sheet, as Cancel would.
+    var showsCancel = true
     @ViewBuilder let content: (Mode) -> Content
     #if os(macOS)
     /// A TabView built while its sheet is still sizing lays every tab label
@@ -37,7 +39,7 @@ struct AddContentSheet<Mode: AddContentMode, Content: View>: View {
             if isSheetSized { tabs } else { Spacer() }
             HStack {
                 Spacer()
-                cancelButton.keyboardShortcut(.cancelAction)
+                if showsCancel { cancelButton.keyboardShortcut(.cancelAction) }
                 submitButton
                     .buttonStyle(.borderedProminent)
                     .keyboardShortcut(.defaultAction)
@@ -78,7 +80,9 @@ struct AddContentSheet<Mode: AddContentMode, Content: View>: View {
                 .navigationTitle(title)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItem(placement: .cancellationAction) { cancelButton }
+                    if showsCancel {
+                        ToolbarItem(placement: .cancellationAction) { cancelButton }
+                    }
                     ToolbarItem(placement: .confirmationAction) { submitButton }
                 }
         }

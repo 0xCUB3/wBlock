@@ -1373,7 +1373,9 @@ struct AddFilterListView: View {
             submitTitle: LocalizedStringKey(addButtonTitle),
             isSubmitDisabled: !canSubmit || isSaving || isImportingURLList || (isReviewingURLs && isFetchingURLMetadata),
             onDismiss: { dismiss() },
-            onSubmit: submit
+            onSubmit: submit,
+            // Find adds each list as you tap it, so Done is the only way out.
+            showsCancel: addMode != .find
         ) { mode in
             modeContent(mode)
         }
