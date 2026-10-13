@@ -338,8 +338,8 @@ struct FilterRulesView: View {
                 Label("Comments", systemImage: "text.quote")
             }
         } label: {
-            // The chevron marks it as a menu and keeps it apart from Wrap Lines'
-            // similar bars (#948); tinted while some kinds are hidden.
+            // The chevron marks it as a menu (#948) and the capsule keeps it apart
+            // from Wrap Lines' similar bars (#932); tinted while some kinds are hidden.
             HStack(spacing: 2) {
                 Image(systemName: "line.3.horizontal.decrease")
                 #if os(iOS)
@@ -356,6 +356,9 @@ struct FilterRulesView: View {
         .menuStaysOpenCompat()
         .buttonStyle(.plain)
         .fixedSize()
+        .padding(.horizontal, 8)
+        .frame(height: SourceControlMetrics.size)
+        .background(Capsule().fill(Color.secondary.opacity(0.15)))
         .accessibilityLabel("View")
         .help("View")
     }
