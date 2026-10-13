@@ -235,15 +235,15 @@ struct FilterRulesView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
+            HStack(spacing: SourceControlMetrics.spacing) {
                 Text(filter.localizedDisplayName)
                     .font(.headline)
                 Spacer()
-                SourceViewerControls(wrapsLines: $wrapsLines, onSearch: editorController.openSearch) {
+                SourceViewerControls(
+                    wrapsLines: $wrapsLines, onSearch: editorController.openSearch, onClose: { dismiss() }, isLoading: isLoading
+                ) {
                     if analysis != nil { filterMenu }
                 }
-                .disabled(isLoading)
-                SheetDoneButton { dismiss() }
             }
             .padding(16)
             Divider()

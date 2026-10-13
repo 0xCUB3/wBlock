@@ -1426,11 +1426,10 @@ private struct UserScriptSourceSheet: View {
             SourceEditorSheet(title: script.localizedDisplayName, editorController: editorController, onDone: onSave)
         } else {
             VStack(spacing: 0) {
-                HStack(spacing: 12) {
+                HStack(spacing: SourceControlMetrics.spacing) {
                     Text(script.localizedDisplayName).font(.headline).lineLimit(1)
                     Spacer()
-                    SourceViewerControls(wrapsLines: $wrapsLines, onSearch: editorController.openSearch)
-                    SheetDoneButton { dismiss() }
+                    SourceViewerControls(wrapsLines: $wrapsLines, onSearch: editorController.openSearch, onClose: { dismiss() })
                 }
                 .padding(16)
                 Divider()
