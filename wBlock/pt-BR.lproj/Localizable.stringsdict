@@ -13,9 +13,11 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>Atualização %d baixada</string>
+			<string>%d atualização baixada</string>
 			<key>other</key>
-			<string>Atualizações de %d baixadas</string>
+			<string>%d atualizações baixadas</string>
+			<key>many</key>
+			<string>%d atualizações baixadas</string>
 		</dict>
 	</dict>
 	<key>Updated %d filters</key>
@@ -32,6 +34,8 @@
 			<string>%d filtro atualizado</string>
 			<key>other</key>
 			<string>%d filtros atualizados</string>
+			<key>many</key>
+			<string>%d filtros atualizados</string>
 		</dict>
 	</dict>
 	<key>Updated %d scripts</key>
@@ -45,9 +49,11 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>Script %d atualizado</string>
+			<string>%d script atualizado</string>
 			<key>other</key>
-			<string>Scripts %d atualizados</string>
+			<string>%d scripts atualizados</string>
+			<key>many</key>
+			<string>%d scripts atualizados</string>
 		</dict>
 	</dict>
 	<key>Preparing %d extensions</key>
@@ -61,9 +67,11 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>Preparando extensão %d</string>
+			<string>Preparando %d extensão</string>
 			<key>other</key>
-			<string>Preparando extensões %d</string>
+			<string>Preparando %d extensões</string>
+			<key>many</key>
+			<string>Preparando %d extensões</string>
 		</dict>
 	</dict>
 	<key>Every %d days</key>
@@ -77,8 +85,10 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>A cada 1 dia</string>
+			<string>A cada %d dia</string>
 			<key>other</key>
+			<string>A cada %d dias</string>
+			<key>many</key>
 			<string>A cada %d dias</string>
 		</dict>
 	</dict>
@@ -93,8 +103,10 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>A cada 1 hora</string>
+			<string>A cada %d hora</string>
 			<key>other</key>
+			<string>A cada %d horas</string>
+			<key>many</key>
 			<string>A cada %d horas</string>
 		</dict>
 	</dict>

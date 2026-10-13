@@ -13,9 +13,13 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>Скачано обновление %d.</string>
+			<string>Загружено %d обновление</string>
 			<key>other</key>
-			<string>Скачано %d обновлений</string>
+			<string>Загружено %d обновления</string>
+			<key>few</key>
+			<string>Загружено %d обновления</string>
+			<key>many</key>
+			<string>Загружено %d обновлений</string>
 		</dict>
 	</dict>
 	<key>Updated %d filters</key>
@@ -49,9 +53,13 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>Обновлен скрипт %d.</string>
+			<string>Обновлён %d скрипт</string>
 			<key>other</key>
-			<string>Обновлены скрипты %d.</string>
+			<string>Обновлено %d скрипта</string>
+			<key>few</key>
+			<string>Обновлено %d скрипта</string>
+			<key>many</key>
+			<string>Обновлено %d скриптов</string>
 		</dict>
 	</dict>
 	<key>Preparing %d extensions</key>
@@ -65,9 +73,13 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>Подготовка расширения %d</string>
+			<string>Подготовка %d расширения</string>
 			<key>other</key>
-			<string>Подготовка расширений %d</string>
+			<string>Подготовка %d расширения</string>
+			<key>few</key>
+			<string>Подготовка %d расширений</string>
+			<key>many</key>
+			<string>Подготовка %d расширений</string>
 		</dict>
 	</dict>
 	<key>Every %d days</key>
@@ -81,8 +93,12 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>Каждый 1 день</string>
+			<string>Каждый %d день</string>
 			<key>other</key>
+			<string>Каждые %d дня</string>
+			<key>few</key>
+			<string>Каждые %d дня</string>
+			<key>many</key>
 			<string>Каждые %d дней</string>
 		</dict>
 	</dict>
@@ -97,8 +113,12 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>Каждый 1 час</string>
+			<string>Каждый %d час</string>
 			<key>other</key>
+			<string>Каждые %d часа</string>
+			<key>few</key>
+			<string>Каждые %d часа</string>
+			<key>many</key>
 			<string>Каждые %d часов</string>
 		</dict>
 	</dict>

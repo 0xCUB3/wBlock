@@ -871,7 +871,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "You have unapplied filter changes. Do you want to apply them before quitting?" = "Nem alkalmazott szűrőmódosítások vannak. Alkalmazni szeretné őket a kilépés előtt?";
 "Zapper rules (%d)" = "Elemeltávolító szabályok (%d)";
 "·" = "·";
-"×%d" = "Ã%d";
+"×%d" = "×%d";
 "⚠️ Auto-update: overdue (will run on next trigger)" = "⚠️ Automatikus frissítés: késésben (a következő indításkor lefut)";
 "🔄 Auto-update: currently running" = "🔄 Automatikus frissítés: folyamatban";
 "🕒 Auto-update: due now (will run on next trigger)" = "🕒 Automatikus frissítés: esedékes (a következő indításkor lefut)";

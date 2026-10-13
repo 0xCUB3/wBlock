@@ -13,9 +13,9 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>Λήφθηκε %d update</string>
+			<string>Λήφθηκε %d ενημέρωση</string>
 			<key>other</key>
-			<string>Λήφθηκε %d updates</string>
+			<string>Λήφθηκαν %d ενημερώσεις</string>
 		</dict>
 	</dict>
 	<key>Updated %d filters</key>
@@ -45,9 +45,9 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>Ενημερώθηκε %d script</string>
+			<string>Ενημερώθηκε %d κώδικας</string>
 			<key>other</key>
-			<string>Ενημερώθηκε %d scripts</string>
+			<string>Ενημερώθηκαν %d κώδικες</string>
 		</dict>
 	</dict>
 	<key>Preparing %d extensions</key>
@@ -61,9 +61,9 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>Η επέκταση %d προετοιμάζεται</string>
+			<string>Προετοιμασία %d επέκτασης</string>
 			<key>other</key>
-			<string>Οι επεκτάσεις %d προετοιμάζονται</string>
+			<string>Προετοιμασία %d επεκτάσεων</string>
 		</dict>
 	</dict>
 	<key>Every %d days</key>
@@ -77,7 +77,7 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>Κάθε 1 ημέρα</string>
+			<string>Κάθε %d ημέρα</string>
 			<key>other</key>
 			<string>Κάθε %d ημέρες</string>
 		</dict>
@@ -93,7 +93,7 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>Κάθε 1 ώρα</string>
+			<string>Κάθε %d ώρα</string>
 			<key>other</key>
 			<string>Κάθε %d ώρες</string>
 		</dict>

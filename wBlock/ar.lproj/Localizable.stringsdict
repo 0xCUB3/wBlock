@@ -13,9 +13,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>تم تنزيل تحديث %d</string>
+			<string>تم تنزيل %d تحديث</string>
 			<key>other</key>
-			<string>تم تنزيل تحديثات %d</string>
+			<string>تم تنزيل %d تحديث</string>
+			<key>zero</key>
+			<string>تم تنزيل %d تحديث</string>
+			<key>two</key>
+			<string>تم تنزيل %d تحديث</string>
+			<key>few</key>
+			<string>تم تنزيل %d تحديثات</string>
+			<key>many</key>
+			<string>تم تنزيل %d تحديثًا</string>
 		</dict>
 	</dict>
 	<key>Updated %d filters</key>
@@ -31,7 +39,15 @@
 			<key>one</key>
 			<string>تم تحديث %d فلتر</string>
 			<key>other</key>
+			<string>تم تحديث %d فلتر</string>
+			<key>zero</key>
+			<string>تم تحديث %d فلتر</string>
+			<key>two</key>
+			<string>تم تحديث %d فلتر</string>
+			<key>few</key>
 			<string>تم تحديث %d فلاتر</string>
+			<key>many</key>
+			<string>تم تحديث %d فلترًا</string>
 		</dict>
 	</dict>
 	<key>Updated %d scripts</key>
@@ -45,9 +61,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>تم تحديث البرنامج النصي %d</string>
+			<string>تم تحديث %d سكربت</string>
 			<key>other</key>
-			<string>تم تحديث %d البرامج النصية</string>
+			<string>تم تحديث %d سكربت</string>
+			<key>zero</key>
+			<string>تم تحديث %d سكربت</string>
+			<key>two</key>
+			<string>تم تحديث %d سكربت</string>
+			<key>few</key>
+			<string>تم تحديث %d سكربتات</string>
+			<key>many</key>
+			<string>تم تحديث %d سكربتًا</string>
 		</dict>
 	</dict>
 	<key>Preparing %d extensions</key>
@@ -61,9 +85,17 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>جارٍ تحضير الامتداد %d</string>
+			<string>جارٍ تجهيز %d امتداد</string>
 			<key>other</key>
-			<string>تحضير ملحقات %d</string>
+			<string>جارٍ تجهيز %d امتداد</string>
+			<key>zero</key>
+			<string>جارٍ تجهيز %d امتداد</string>
+			<key>two</key>
+			<string>جارٍ تجهيز %d امتداد</string>
+			<key>few</key>
+			<string>جارٍ تجهيز %d امتدادات</string>
+			<key>many</key>
+			<string>جارٍ تجهيز %d امتدادًا</string>
 		</dict>
 	</dict>
 	<key>Every %d days</key>
@@ -77,8 +109,16 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>كل 1 يوم</string>
+			<string>كل %d يوم</string>
 			<key>other</key>
+			<string>كل %d يوم</string>
+			<key>zero</key>
+			<string>كل %d يوم</string>
+			<key>two</key>
+			<string>كل %d يوم</string>
+			<key>few</key>
+			<string>كل %d أيام</string>
+			<key>many</key>
 			<string>كل %d يومًا</string>
 		</dict>
 	</dict>
@@ -93,8 +133,16 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>كل 1 ساعة</string>
+			<string>كل %d ساعة</string>
 			<key>other</key>
+			<string>كل %d ساعة</string>
+			<key>zero</key>
+			<string>كل %d ساعة</string>
+			<key>two</key>
+			<string>كل %d ساعة</string>
+			<key>few</key>
+			<string>كل %d ساعات</string>
+			<key>many</key>
 			<string>كل %d ساعة</string>
 		</dict>
 	</dict>

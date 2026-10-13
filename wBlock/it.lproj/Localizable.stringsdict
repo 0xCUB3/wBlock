@@ -13,9 +13,11 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>Scaricato l'aggiornamento %d</string>
+			<string>%d aggiornamento scaricato</string>
 			<key>other</key>
-			<string>Aggiornamenti %d scaricati</string>
+			<string>%d aggiornamenti scaricati</string>
+			<key>many</key>
+			<string>%d aggiornamenti scaricati</string>
 		</dict>
 	</dict>
 	<key>Updated %d filters</key>
@@ -32,6 +34,8 @@
 			<string>%d filtro aggiornato</string>
 			<key>other</key>
 			<string>%d filtri aggiornati</string>
+			<key>many</key>
+			<string>%d filtri aggiornati</string>
 		</dict>
 	</dict>
 	<key>Updated %d scripts</key>
@@ -45,9 +49,11 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>Aggiornato lo script %d</string>
+			<string>%d script aggiornato</string>
 			<key>other</key>
-			<string>Aggiornati gli script %d</string>
+			<string>%d script aggiornati</string>
+			<key>many</key>
+			<string>%d script aggiornati</string>
 		</dict>
 	</dict>
 	<key>Preparing %d extensions</key>
@@ -61,9 +67,11 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>Preparazione dell'estensione %d</string>
+			<string>Preparazione di %d estensione</string>
 			<key>other</key>
-			<string>Preparazione delle estensioni %d</string>
+			<string>Preparazione di %d estensioni</string>
+			<key>many</key>
+			<string>Preparazione di %d estensioni</string>
 		</dict>
 	</dict>
 	<key>Every %d days</key>
@@ -77,8 +85,10 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>Ogni 1 giorno</string>
+			<string>Ogni %d giorno</string>
 			<key>other</key>
+			<string>Ogni %d giorni</string>
+			<key>many</key>
 			<string>Ogni %d giorni</string>
 		</dict>
 	</dict>
@@ -93,8 +103,10 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>Ogni 1 ora</string>
+			<string>Ogni %d ora</string>
 			<key>other</key>
+			<string>Ogni %d ore</string>
+			<key>many</key>
 			<string>Ogni %d ore</string>
 		</dict>
 	</dict>

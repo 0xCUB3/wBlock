@@ -13,9 +13,9 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>已下載 %d 更新</string>
+			<string>已下載 %d 項更新</string>
 			<key>other</key>
-			<string>已下載 %d 更新</string>
+			<string>已下載 %d 項更新</string>
 		</dict>
 	</dict>
 	<key>Updated %d filters</key>
@@ -45,9 +45,9 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>更新了 %d 腳本</string>
+			<string>已更新 %d 個腳本</string>
 			<key>other</key>
-			<string>更新了 %d 腳本</string>
+			<string>已更新 %d 個腳本</string>
 		</dict>
 	</dict>
 	<key>Preparing %d extensions</key>
@@ -61,9 +61,9 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>準備 %d 擴展</string>
+			<string>正在準備 %d 個延伸功能</string>
 			<key>other</key>
-			<string>準備 %d 擴展</string>
+			<string>正在準備 %d 個延伸功能</string>
 		</dict>
 	</dict>
 	<key>Every %d days</key>
@@ -77,7 +77,7 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>每 1 天一次</string>
+			<string>每 %d 天</string>
 			<key>other</key>
 			<string>每 %d 天</string>
 		</dict>
@@ -93,7 +93,7 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>每1小時一次</string>
+			<string>每 %d 小時</string>
 			<key>other</key>
 			<string>每 %d 小時</string>
 		</dict>

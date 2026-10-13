@@ -13,9 +13,11 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>Mise à jour %d téléchargée</string>
+			<string>%d mise à jour téléchargée</string>
 			<key>other</key>
-			<string>Mises à jour %d téléchargées</string>
+			<string>%d mises à jour téléchargées</string>
+			<key>many</key>
+			<string>%d mises à jour téléchargées</string>
 		</dict>
 	</dict>
 	<key>Updated %d filters</key>
@@ -32,6 +34,8 @@
 			<string>%d filtre mis à jour</string>
 			<key>other</key>
 			<string>%d filtres mis à jour</string>
+			<key>many</key>
+			<string>%d filtres mis à jour</string>
 		</dict>
 	</dict>
 	<key>Updated %d scripts</key>
@@ -45,9 +49,11 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>Script %d mis à jour</string>
+			<string>%d script mis à jour</string>
 			<key>other</key>
-			<string>Scripts %d mis à jour</string>
+			<string>%d scripts mis à jour</string>
+			<key>many</key>
+			<string>%d scripts mis à jour</string>
 		</dict>
 	</dict>
 	<key>Preparing %d extensions</key>
@@ -61,9 +67,11 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>Préparation de l'extension %d</string>
+			<string>Préparation de %d extension</string>
 			<key>other</key>
-			<string>Préparation des extensions %d</string>
+			<string>Préparation de %d extensions</string>
+			<key>many</key>
+			<string>Préparation de %d extensions</string>
 		</dict>
 	</dict>
 	<key>Every %d days</key>
@@ -77,8 +85,10 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>Chaque 1 jour</string>
+			<string>Tous les %d jour</string>
 			<key>other</key>
+			<string>Tous les %d jours</string>
+			<key>many</key>
 			<string>Tous les %d jours</string>
 		</dict>
 	</dict>
@@ -93,8 +103,10 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>d</string>
 			<key>one</key>
-			<string>Toutes les 1 heure</string>
+			<string>Toutes les %d heure</string>
 			<key>other</key>
+			<string>Toutes les %d heures</string>
+			<key>many</key>
 			<string>Toutes les %d heures</string>
 		</dict>
 	</dict>
