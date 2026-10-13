@@ -188,6 +188,18 @@ class FilterListLoader {
         retiredBuiltInURLFragments.contains { url.absoluteString.contains($0) }
     }
 
+    /// Sources a built-in list used before it became AdGuard's list under a new
+    /// name (#958). Stored copies migrate by name, so they aren't retired.
+    private static let replacedBuiltInURLFragments = [
+        "easylist-downloads.adblockplus.org/easylistitaly.txt",  // EasyList Italy (#980)
+        "raw.githubusercontent.com/MajkiIT/polish-ads-filter/master/polish-adblock-filters/adblock.txt",  // Official Polish filters (#980)
+    ]
+
+    /// Whether a list at `url` used to be one of wBlock's built-ins.
+    static func wasBuiltInURL(_ url: URL) -> Bool {
+        isRetiredBuiltInURL(url) || replacedBuiltInURLFragments.contains { url.absoluteString.contains($0) }
+    }
+
     /// New built-in names and the names used by the previous catalog release.
     private static let filterNameMigrations: [String: [String]] = [
         "AdGuard Italian filter": ["EasyList Italy"],
