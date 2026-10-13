@@ -2069,9 +2069,8 @@ public actor SharedAutoUpdateManager {
         onResult: ((TargetCompilationResult) async -> Void)? = nil
     ) async -> [TargetCompilationResult] {
         var results: [TargetCompilationResult] = []
-        let capacity = CompilationScope.capacity(interactive: interactive)
-        await CompilationScope.$current.withValue(CompilationScope(parseWorkers: capacity.parseWorkers)) {
-        await boundedConcurrentForEach(requests, maxConcurrent: capacity.targets, operation: { request in
+        await CompilationScope.$current.withValue(CompilationScope()) {
+        await boundedConcurrentForEach(requests, maxConcurrent: CompilationScope.targetCapacity(interactive: interactive), operation: { request in
             let started = Date()
             func result(
                 outcome: ContentBlockerService.ContentBlockerTargetOutcome? = nil,
@@ -2100,6 +2099,9 @@ public actor SharedAutoUpdateManager {
                     groupIdentifier: GroupIdentifier.shared.value,
                     isCancelled: { request.isCancelled() || Task.isCancelled }
                 )
+                // A conversion frees tens of megabytes in small allocations that
+                // malloc keeps dirty; hand the empty pages back before the next.
+                malloc_zone_pressure_relief(nil, 0)
                 return result(outcome: outcome)
             } catch is CancellationError {
                 return result()

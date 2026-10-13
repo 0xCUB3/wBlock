@@ -93,7 +93,7 @@ private struct StoredTargetSourceRuleProvenance: Codable {
 }
 
 private struct SourceRuleAdmissionCounter {
-    private var seen = Set<String>()
+    private var seen = Set<RuleFingerprint>()
     private(set) var countsByFilterID: [UUID: Int] = [:]
 
     mutating func record(
@@ -105,11 +105,11 @@ private struct SourceRuleAdmissionCounter {
         if isCancelled() { throw CancellationError() }
         countsByFilterID[filterID, default: 0] += 0
         let effectiveRules = cosmeticSites.restricting(rulesText)
-        for raw in effectiveRules.split(whereSeparator: \.isNewline).map(String.init) {
+        for raw in effectiveRules.split(whereSeparator: \.isNewline) {
             if isCancelled() { throw CancellationError() }
-            let trimmed = raw.trimmingCharacters(in: .whitespaces)
+            let trimmed = String(raw).trimmingCharacters(in: .whitespaces)
             guard FilterRuleAnalysis.isRuleLine(trimmed) else { continue }
-            if seen.insert(FilterRuleAnalysis.ruleIdentity(trimmed)).inserted {
+            if seen.insert(RuleFingerprint(FilterRuleAnalysis.ruleIdentity(trimmed))).inserted {
                 countsByFilterID[filterID, default: 0] += 1
             }
         }
@@ -708,7 +708,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         try Task.checkCancellation()
         guard let data,
               !data.isEmpty,
-              (try? JSONSerialization.jsonObject(with: data) as? [[String: Any]]) != nil
+              ContentBlockerRuleArray.count(data) != nil
         else { return nil }
         return try ContentBlockerChunkedHasher.hexDigest(
             for: data,
@@ -1297,7 +1297,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
     ) throws -> ContentBlockerSaveResult {
         os_log(.info, "Saving pre-formatted JSON content blocker rules to %@", targetRulesFilename)
         let data = Data(jsonRules.utf8)
-        guard let rules = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
+        guard let ruleCount = ContentBlockerRuleArray.count(data) else {
             throw CocoaError(.fileReadCorruptFile)
         }
 
@@ -1323,7 +1323,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             }
             return outputChanged
         }
-        return ContentBlockerSaveResult(ruleCount: rules.count, outputChanged: outputChanged)
+        return ContentBlockerSaveResult(ruleCount: ruleCount, outputChanged: outputChanged)
     }
 
     public static func finalizeAndSaveContentBlockerIfWithinLimit(
@@ -1453,7 +1453,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                 containerURL: containerURL
             ),
             let baseJSON = try? String(contentsOf: baseURL, encoding: .utf8),
-            let parsedBaseCount = parsedContentBlockerRuleCount(baseJSON),
+            let parsedBaseCount = ContentBlockerRuleArray.count(baseJSON),
             let baseCount = (try? String(contentsOf: baseCountURL, encoding: .utf8))
                 .flatMap({ Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) }),
             baseCount == parsedBaseCount
@@ -1729,21 +1729,26 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             // Compatibility callers may supply a custom mapping we cannot infer.
             return [:]
         }
-        var sources: [UUID: String] = [:]
-        for filter in orderedFilters {
+        func source(_ filter: FilterList) throws -> String? {
             if isCancelled() { throw CancellationError() }
-            guard let url = SafariContentBlockerAffinityProcessor.sourceURL(for: filter, containerURL: containerURL) else { continue }
-            sources[filter.id] = try String(contentsOf: url, encoding: .utf8)
+            guard let url = SafariContentBlockerAffinityProcessor.sourceURL(for: filter, containerURL: containerURL) else { return nil }
+            return try String(contentsOf: url, encoding: .utf8)
         }
         // The result covers every blocker, and each blocker of an Apply asks
-        // for it with the same inputs.
+        // for it with the same inputs. The key holds digests, not the texts.
+        var digests: [UUID: String] = [:]
+        for filter in orderedFilters {
+            digests[filter.id] = try source(filter).map { SHA256.hash(data: Data($0.utf8)).description }
+        }
         let inputs = CrossTargetDuplicateInputs(
-            filters: orderedFilters, targets: targets, affinity: snapshot.contentsByFilterID, sources: sources
+            filters: orderedFilters, targets: targets,
+            affinity: snapshot.contentsByFilterID.mapValues { SHA256.hash(data: Data($0.utf8)).description },
+            sources: digests
         )
         func compute() throws -> [UUID: Set<String>] {
             try crossTargetDuplicateRules(
                 orderedFilters: orderedFilters, snapshot: snapshot, distribution: distribution,
-                sources: sources, targets: targets, isCancelled: isCancelled
+                source: source, targets: targets, isCancelled: isCancelled
             )
         }
         guard let scope = CompilationScope.current else { return try compute() }
@@ -1759,7 +1764,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
 
     private static func crossTargetDuplicateRules(
         orderedFilters: [FilterList], snapshot: SafariContentBlockerAffinitySnapshot,
-        distribution: [ContentBlockerTargetInfo: [FilterList]], sources: [UUID: String],
+        distribution: [ContentBlockerTargetInfo: [FilterList]], source: (FilterList) throws -> String?,
         targets: [ContentBlockerTargetInfo], isCancelled: () -> Bool
     ) throws -> [UUID: Set<String>] {
         var contexts: [ContentBlockerTargetInfo: String] = [:]
@@ -1776,12 +1781,12 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                         from: affinity, includeBaseRules: assigned.contains(filter.id), target: slot, allTargets: targets
                     )
                 } else {
-                    guard assigned.contains(filter.id), let source = sources[filter.id] else { continue }
+                    guard assigned.contains(filter.id), let source = try source(filter) else { continue }
                     text = source
                 }
                 text = FilterListSiteExclusion.restrictingAdvancedRules(text, excluding: filter.excludedSites, including: filter.selectedSites)
-                for line in text.components(separatedBy: .newlines) {
-                    let trimmed = line.trimmingCharacters(in: .whitespaces)
+                for line in text.split(whereSeparator: \.isNewline) {
+                    let trimmed = String(line).trimmingCharacters(in: .whitespaces)
                     if trimmed.hasPrefix("@@") || trimmed.contains("#@") || trimmed.contains("$badfilter") || trimmed.contains(",badfilter") || trimmed.hasPrefix("!#") {
                         exceptions.insert(FilterRuleAnalysis.ruleIdentity(trimmed))
                     }
@@ -1790,19 +1795,21 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             let digest = SHA256.hash(data: Data(exceptions.sorted().joined(separator: "\n").utf8))
             contexts[slot] = digest.map { String(format: "%02x", $0) }.joined()
         }
-        var seen: [String: ContentBlockerTargetInfo] = [:]
+        // Fingerprints, not identity strings: this sees every rule of every list.
+        struct Key: Hashable { let context: String; let rule: RuleFingerprint }
+        var seen: [Key: ContentBlockerTargetInfo] = [:]
         var excluded: [UUID: Set<String>] = [:]
         for filter in orderedFilters {
             if isCancelled() { throw CancellationError() }
             guard snapshot.content(for: filter.id) == nil,
-                  let raw = sources[filter.id], !raw.contains("!#"),
-                  let slot = owners[filter.id], let context = contexts[slot] else { continue }
+                  let slot = owners[filter.id], let context = contexts[slot],
+                  let raw = try source(filter), !raw.contains("!#") else { continue }
             let text = FilterListSiteExclusion.restrictingAdvancedRules(raw, excluding: filter.excludedSites, including: filter.selectedSites)
-            for line in text.components(separatedBy: .newlines) {
-                let trimmed = line.trimmingCharacters(in: .whitespaces)
+            for line in text.split(whereSeparator: \.isNewline) {
+                let trimmed = String(line).trimmingCharacters(in: .whitespaces)
                 guard FilterRuleAnalysis.isRuleLine(trimmed), !trimmed.hasPrefix("@@"), !trimmed.contains("#@") else { continue }
                 let identity = FilterRuleAnalysis.ruleIdentity(trimmed)
-                let key = context + "\n" + identity
+                let key = Key(context: context, rule: RuleFingerprint(identity))
                 if let owner = seen[key], owner != slot {
                     excluded[filter.id, default: []].insert(identity)
                 } else {
@@ -1864,8 +1871,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         // Text compiled into this target, and the text of lists compiled
         // elsewhere. Exceptions from the latter are replicated here when they
         // can cancel one of this target's blocks (#836).
-        var writtenSources: [String] = []
-        var otherSources: [String] = []
+        var replication = CrossTargetExceptionReplicator.Replication()
         // The largest excluded list compiles its unscoped blocks ahead of one
         // ignore rule instead of negating each of them (#925). Only one list per
         // blocker can: a second ignore would also cancel the first list's rules.
@@ -1880,7 +1886,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         // conversion lifts it back out.
         func appendIgnoreSegment(_ rules: String, for filter: FilterList) throws {
             ignoreSegment = (rules, filter.excludedSites)
-            writtenSources.append(rules)
+            try replication.addTarget(rules, isCancelled: cancellationRequested)
             try sourceRuleAdmissions.record(
                 filterID: filter.id, rulesText: rules,
                 cosmeticSites: cosmeticSites, isCancelled: cancellationRequested
@@ -1900,8 +1906,9 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             if !includeBaseRules,
                let sourceURL = SafariContentBlockerAffinityProcessor.sourceURL(for: filter, containerURL: containerURL),
                let raw = try? String(contentsOf: sourceURL, encoding: .utf8) {
-                otherSources.append(
-                    FilterListSiteExclusion.restrictingAdvancedRules(raw, excluding: filter.excludedSites, including: filter.selectedSites)
+                try replication.addCandidate(
+                    FilterListSiteExclusion.restrictingAdvancedRules(raw, excluding: filter.excludedSites, including: filter.selectedSites),
+                    isCancelled: cancellationRequested
                 )
             }
             guard includeBaseRules || hasAffinity else { continue }
@@ -1929,7 +1936,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                     isCancelled: cancellationRequested
                 )
                 guard !restricted.isEmpty else { continue }
-                if includeBaseRules { writtenSources.append(restricted) }
+                if includeBaseRules { try replication.addTarget(restricted, isCancelled: cancellationRequested) }
                 try ContentBlockerInputWriter.appendInline(
                     restricted,
                     to: fileHandle,
@@ -1948,7 +1955,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                         !duplicates.contains(FilterRuleAnalysis.ruleIdentity($0))
                     }
                     let keptText = kept.joined(separator: "\n")
-                    writtenSources.append(keptText)
+                    try replication.addTarget(keptText, isCancelled: cancellationRequested)
                     try sourceRuleAdmissions.record(
                         filterID: filter.id,
                         rulesText: keptText,
@@ -1961,7 +1968,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                     )
                 } else if filter.excludedSites.isEmpty && filter.selectedSites == nil {
                     let rawContent = try String(contentsOf: sourceURL, encoding: .utf8)
-                    writtenSources.append(rawContent)
+                    try replication.addTarget(rawContent, isCancelled: cancellationRequested)
                     try sourceRuleAdmissions.record(
                         filterID: filter.id,
                         rulesText: rawContent,
@@ -1986,7 +1993,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                     } else {
                         restricted = FilterListSiteExclusion.restrictingAdvancedRules(rawContent, excluding: filter.excludedSites, including: filter.selectedSites)
                     }
-                    writtenSources.append(restricted)
+                    try replication.addTarget(restricted, isCancelled: cancellationRequested)
                     try sourceRuleAdmissions.record(
                         filterID: filter.id,
                         rulesText: restricted,
@@ -2004,11 +2011,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             }
         }
 
-        let replicatedExceptions = try CrossTargetExceptionReplicator.replicatedExceptions(
-            targetSources: writtenSources,
-            candidateSources: otherSources,
-            isCancelled: cancellationRequested
-        )
+        let replicatedExceptions = try replication.exceptions(isCancelled: cancellationRequested)
         if !replicatedExceptions.isEmpty {
             try ContentBlockerInputWriter.appendInline(
                 "! wBlock: exceptions replicated from lists compiled into other blockers\n"
@@ -2118,7 +2121,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             containerURL: containerURL
         ),
            let baseJSON = try? String(contentsOf: baseURL, encoding: .utf8),
-           let parsedBaseCount = parsedContentBlockerRuleCount(baseJSON),
+           let parsedBaseCount = ContentBlockerRuleArray.count(baseJSON),
            let baseCount = (try? String(contentsOf: baseCountURL, encoding: .utf8))
                 .flatMap({ Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) }),
            baseCount == parsedBaseCount {
@@ -2168,13 +2171,13 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         let sites = Array(
             DisabledSitesNormalizer.normalizedDomains(from: disabledSites).prefix(limit)
         )
-        let baseCount = knownBaseCount ?? countRulesInJSON(baseJSON)
+        let baseCount = knownBaseCount ?? ContentBlockerRuleArray.count(baseJSON) ?? 0
 
         guard !sites.isEmpty else {
             if baseCount <= limit {
                 return (baseJSON, baseCount, 0)
             }
-            if let truncated = truncateContentBlockerJSON(baseJSON, to: limit) {
+            if let truncated = ContentBlockerRuleArray.truncated(baseJSON, to: limit) {
                 return (truncated.json, truncated.ruleCount, max(0, baseCount - truncated.ruleCount))
             }
             return (baseJSON, min(baseCount, limit), max(0, baseCount - limit))
@@ -2189,7 +2192,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         }
 
         let maxBase = max(limit - sites.count, 0)
-        guard let truncated = truncateContentBlockerJSON(baseJSON, to: maxBase) else {
+        guard let truncated = ContentBlockerRuleArray.truncated(baseJSON, to: maxBase) else {
             if baseCount <= maxBase {
                 return (
                     injectIgnoreRulesForDisabledSites(json: baseJSON, disabledSites: sites),
@@ -2207,43 +2210,28 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         )
     }
 
-    private static func truncateContentBlockerJSON(
-        _ json: String,
-        to maxRules: Int
-    ) -> (json: String, ruleCount: Int)? {
-        guard maxRules >= 0 else { return nil }
-        guard var rules = parseContentBlockerRules(json) else { return nil }
-        if rules.count > maxRules {
-            rules.removeLast(rules.count - maxRules)
-        }
-        guard let data = try? JSONSerialization.data(withJSONObject: rules, options: []),
-              let text = String(data: data, encoding: .utf8) else {
-            return nil
-        }
-        return (text, rules.count)
-    }
-
-    private static func parseContentBlockerRules(_ json: String) -> [[String: Any]]? {
-        guard let jsonData = json.data(using: .utf8) else { return nil }
-        return (try? JSONSerialization.jsonObject(with: jsonData) as? [[String: Any]])
-    }
-
     private static func escapeForJSONString(_ value: String) -> String {
         value
             .replacingOccurrences(of: "\\", with: "\\\\")
             .replacingOccurrences(of: "\"", with: "\\\"")
     }
 
+    /// One byte buffer passes through both rewrites; the JSON can be over 10 MB.
     static func normalizedSafariRules(_ json: String) -> String {
-        documentScopingDomainCosmetics(lowercasingTriggerDomains(json))
+        var bytes = Array(json.utf8)
+        let lowercased = lowercaseTriggerDomains(&bytes)
+        guard let scoped = documentScopingDomainCosmetics(bytes) else {
+            return lowercased ? String(decoding: bytes, as: UTF8.self) : json
+        }
+        bytes = []
+        return String(decoding: scoped, as: UTF8.self)
     }
 
     /// SafariConverterLib keeps domains as written (`Karo.Studio##…`), but WebKit rejects the whole
     /// list with "Domains must be lower case ASCII" (#898). Hostnames are case-insensitive.
     /// Scans bytes because a regex over the full JSON cost as much as the rest of
     /// the wrapper around conversion. Domains are punycoded ASCII.
-    private static func lowercasingTriggerDomains(_ json: String) -> String {
-        var bytes = Array(json.utf8)
+    private static func lowercaseTriggerDomains(_ bytes: inout [UInt8]) -> Bool {
         let key = Array(#"-domain":["#.utf8)
         var changed = false
         var index = 0
@@ -2261,7 +2249,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                 index += 1
             }
         }
-        return changed ? String(decoding: bytes, as: UTF8.self) : json
+        return changed
     }
 
     /// WebKit runs every conditional rule with a matching url-filter (`.*` for cosmetics) on each
@@ -2270,13 +2258,12 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
     /// ~10% of Speedometer on sites none of these rules match (#873). Frame-URL rules stay as they are:
     /// on a document load WebKit checks them against the frame's previous URL.
     /// Converter JSON is `{"trigger":{…},"action":{…}}`; these quoted keys cannot occur unescaped in strings.
-    private static func documentScopingDomainCosmetics(_ json: String) -> String {
+    private static func documentScopingDomainCosmetics(_ bytes: [UInt8]) -> [UInt8]? {
         let triggerStart = Array(#"{"trigger":{"#.utf8)
         let cosmeticAction = Array(#"},"action":{"type":"css-display-none""#.utf8)
         let pageConditions = ["if-domain", "unless-domain", "if-top-url", "unless-top-url"].map { Array("\"\($0)\":".utf8) }
         let resourceType = Array(#""resource-type":"#.utf8)
         let documentOnly = Array(#","resource-type":["document"]"#.utf8)
-        let bytes = Array(json.utf8)
         var output: [UInt8] = []
         output.reserveCapacity(bytes.count + bytes.count / 50)
         var trigger = 0
@@ -2299,9 +2286,9 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                 copied = index
             }
         }
-        guard copied > 0 else { return json }
+        guard copied > 0 else { return nil }
         output += bytes[copied...]
-        return String(decoding: output, as: UTF8.self)
+        return output
     }
 
     private static func disabledSiteIgnoreRuleJSON(for site: String) -> String {
@@ -2350,32 +2337,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         return "[" + parts.joined(separator: ",") + "]"
     }
 
-    /// Parses `json` once and returns its rule count, or nil when it is not a
-    /// content blocker rule array. Cache hits compare this against the `.count`
-    /// sidecar so a stale sidecar can never skip rule-limit truncation.
-    private static func parsedContentBlockerRuleCount(_ json: String) -> Int? {
-        guard let jsonData = json.data(using: .utf8),
-              let rules = try? JSONSerialization.jsonObject(with: jsonData) as? [[String: Any]]
-        else { return nil }
-        return rules.count
-    }
 
-    /// Counts the number of rules in a Safari content blocker JSON string.
-    ///
-    /// - Parameter json: Safari content blocker JSON string.
-    /// - Returns: Number of rules in the JSON array.
-    private static func countRulesInJSON(_ json: String) -> Int {
-        do {
-            guard let jsonData = json.data(using: .utf8),
-                  let rules = try JSONSerialization.jsonObject(with: jsonData) as? [[String: Any]] else {
-                return 0
-            }
-            return rules.count
-        } catch {
-            return 0
-        }
-    }
-    
     /// Publishes the filter engine built from combined advanced rules from all filter groups.
     ///
     /// - Parameters:

@@ -23,6 +23,23 @@ public enum FilterRuleKind: String, CaseIterable, Sendable {
     case duplicate
 }
 
+/// 128 bits standing for a rule identity in sets that span whole lists, which
+/// would otherwise keep a string per rule. Seeded per process; never persist it.
+struct RuleFingerprint: Hashable {
+    private let first: Int
+    private let second: Int
+
+    init(_ identity: String) {
+        var hasher = Hasher()
+        hasher.combine(identity)
+        first = hasher.finalize()
+        hasher = Hasher()
+        hasher.combine(identity.utf8.count)
+        hasher.combine(identity)
+        second = hasher.finalize()
+    }
+}
+
 public struct FilterRuleAnalysis: Sendable {
     public struct Line: Sendable {
         public let text: String

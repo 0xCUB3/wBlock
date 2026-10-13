@@ -16,6 +16,7 @@
 //  the side of inclusion while staying cheap enough for 100k-line lists.
 //
 
+import CryptoKit
 import Foundation
 
 public enum CrossTargetExceptionReplicator {
@@ -89,25 +90,46 @@ public enum CrossTargetExceptionReplicator {
         }
     }
 
-    /// Block-rule index for one target's input.
-    struct BlockIndex {
-        private(set) var patterns = Set<String>()
-        private(set) var bareHosts = Set<String>()
-        private var sortedPatterns: [String] = []
+    /// Exceptions from other blockers' lists that a target needs. Feed it
+    /// each list as it is written so no list text has to stay around.
+    struct Replication {
+        private var patterns = Set<String>()
+        private var bareHosts = Set<String>()
+        private var candidates: [[(line: String, rule: NetworkRule)]] = []
 
-        init(sources: [String], isCancelled: () -> Bool) throws {
-            for source in sources {
-                for rule in try ParsedSource.of(source, isCancelled: isCancelled).blocks {
-                    patterns.insert(rule.pattern)
-                    if rule.isBareHost, let host = rule.anchoredHost { bareHosts.insert(host) }
-                }
+        /// A list compiled into this target.
+        mutating func addTarget(_ source: String, isCancelled: () -> Bool) throws {
+            for raw in source.split(whereSeparator: \.isNewline) {
+                if isCancelled() { throw CancellationError() }
+                guard let rule = NetworkRule(line: String(raw)), !rule.isException else { continue }
+                patterns.insert(rule.pattern)
+                if rule.isBareHost, let host = rule.anchoredHost { bareHosts.insert(host) }
             }
-            sortedPatterns = patterns.sorted()
         }
 
-        var isEmpty: Bool { patterns.isEmpty }
+        /// A list compiled into another target.
+        mutating func addCandidate(_ source: String, isCancelled: () -> Bool) throws {
+            candidates.append(try CrossTargetExceptionReplicator.exceptions(of: source, isCancelled: isCancelled))
+        }
 
-        func canBeCancelled(by exception: NetworkRule) -> Bool {
+        /// Exception lines this target should also receive, in order of first
+        /// appearance and without duplicates.
+        func exceptions(isCancelled: () -> Bool) throws -> [String] {
+            guard !patterns.isEmpty else { return [] }
+            let sortedPatterns = patterns.sorted()
+            var seen = Set<String>()
+            var output: [String] = []
+            for (line, rule) in candidates.joined() {
+                if isCancelled() { throw CancellationError() }
+                guard canBeCancelled(by: rule, sortedPatterns: sortedPatterns),
+                      seen.insert(FilterRuleAnalysis.ruleIdentity(line)).inserted
+                else { continue }
+                output.append(line)
+            }
+            return output
+        }
+
+        private func canBeCancelled(by exception: NetworkRule, sortedPatterns: [String]) -> Bool {
             if patterns.contains(exception.pattern) { return true }
             guard let host = exception.anchoredHost else { return false }
 
@@ -137,78 +159,22 @@ public enum CrossTargetExceptionReplicator {
         }
     }
 
-    /// Network rules of one list text. Every blocker of an Apply parses every
-    /// other blocker's lists, so an Apply parses each text once.
-    final class ParsedSource {
-        let blocks: [NetworkRule]
-        let exceptions: [(line: String, rule: NetworkRule)]
+    private struct ExceptionsKey: Hashable { let digest: String }
 
-        private init(blocks: [NetworkRule], exceptions: [(line: String, rule: NetworkRule)]) {
-            self.blocks = blocks
-            self.exceptions = exceptions
-        }
-
-        static func of(_ source: String, isCancelled: () -> Bool) throws -> ParsedSource {
-            guard let scope = CompilationScope.current else { return try parse(source, isCancelled: isCancelled) }
-            return try scope.memoized(source) { try parse(source, isCancelled: isCancelled) }
-        }
-
-        /// Large lists split into contiguous chunks that are joined in order,
-        /// so the result is identical to a single pass.
-        private static func parse(_ source: String, isCancelled: () -> Bool) throws -> ParsedSource {
-            let lines = source.split(whereSeparator: \.isNewline)
-            let workers = lines.count < 10_000 ? 1 : CompilationScope.current?.parseWorkers ?? 1
-            var chunks = [Result<ParsedSource, Error>?](repeating: nil, count: workers)
-            let lock = NSLock()
-            withoutActuallyEscaping(isCancelled) { isCancelled in
-                DispatchQueue.concurrentPerform(iterations: workers) { chunk in
-                    let range = lines.count * chunk / workers..<lines.count * (chunk + 1) / workers
-                    let parsed = Result { try parse(lines[range], isCancelled: isCancelled) }
-                    lock.withLock { chunks[chunk] = parsed }
-                }
-            }
-            let parts = try chunks.map { try $0!.get() }
-            if isCancelled() { throw CancellationError() }
-            return parts.count == 1 ? parts[0] : ParsedSource(
-                blocks: parts.flatMap(\.blocks), exceptions: parts.flatMap(\.exceptions)
-            )
-        }
-
-        private static func parse(_ lines: ArraySlice<Substring>, isCancelled: () -> Bool) throws -> ParsedSource {
-            var blocks: [NetworkRule] = []
+    /// Network exceptions of one list text. Every other blocker of an Apply
+    /// asks for them, so an Apply parses each text once and keeps only these.
+    private static func exceptions(of source: String, isCancelled: () -> Bool) throws -> [(line: String, rule: NetworkRule)] {
+        func parse() throws -> [(line: String, rule: NetworkRule)] {
             var exceptions: [(line: String, rule: NetworkRule)] = []
-            for raw in lines {
+            for raw in source.split(whereSeparator: \.isNewline) {
                 if isCancelled() { throw CancellationError() }
                 let line = String(raw).trimmingCharacters(in: .whitespaces)
-                guard let rule = NetworkRule(line: line) else { continue }
-                if rule.isException { exceptions.append((line, rule)) } else { blocks.append(rule) }
+                guard line.hasPrefix("@@"), let rule = NetworkRule(line: line) else { continue }
+                exceptions.append((line, rule))
             }
-            return ParsedSource(blocks: blocks, exceptions: exceptions)
+            return exceptions
         }
-    }
-
-    /// Exception lines from `candidateSources` that a target compiling
-    /// `targetSources` should also receive, in rule-identity order of first
-    /// appearance and without duplicates.
-    public static func replicatedExceptions(
-        targetSources: [String],
-        candidateSources: [String],
-        isCancelled: () -> Bool = { false }
-    ) throws -> [String] {
-        let index = try BlockIndex(sources: targetSources, isCancelled: isCancelled)
-        guard !index.isEmpty else { return [] }
-
-        var seen = Set<String>()
-        var output: [String] = []
-        for source in candidateSources {
-            for (line, rule) in try ParsedSource.of(source, isCancelled: isCancelled).exceptions {
-                if isCancelled() { throw CancellationError() }
-                guard index.canBeCancelled(by: rule),
-                      seen.insert(FilterRuleAnalysis.ruleIdentity(line)).inserted
-                else { continue }
-                output.append(line)
-            }
-        }
-        return output
+        guard let scope = CompilationScope.current else { return try parse() }
+        return try scope.memoized(ExceptionsKey(digest: SHA256.hash(data: Data(source.utf8)).description), parse)
     }
 }
