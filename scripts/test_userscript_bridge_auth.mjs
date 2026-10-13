@@ -94,7 +94,7 @@ function buildContentScriptSandbox(
     const inlineProbe = c.textContent.match(/^document\.documentElement\.setAttribute\('([^']+)', '1'\)$/);
     if (inlineProbe) {
       docEl.setAttribute(inlineProbe[1], "1");
-    } else if (c.textContent) {
+    } else if (c.textContent && c.tagName !== "STYLE") {
       appendedScripts.push(c.textContent);
     }
     return c;
@@ -431,6 +431,7 @@ const darkReaderScript = {
   content: darkReaderContent,
   sourceURL: darkReaderSourceURL,
   injectInto: "content",
+  grant: ["GM_xmlhttpRequest"],
   contentDigest: darkReaderDigest,
 };
 const malformedContentCache = JSON.stringify({ version: 1, savedAt: Date.now(), scripts: [{ ...darkReaderScript, contentDigest: "" }] });
@@ -469,9 +470,12 @@ const darkReaderSandbox = buildContentScriptSandbox(
     return { ok: true };
   },
 );
+darkReaderSandbox.matchMedia = () => ({ matches: true });
 vm.createContext(darkReaderSandbox);
 vm.runInContext(source, darkReaderSandbox, { filename: "userscript-injector-dark-reader-content.js" });
 await tick();
+const darkReaderGuard = darkReaderSandbox.document.head.children.find((c) => c.textContent.includes("#181a1b"));
+check("dark root is painted while Dark Reader awaits validation", !!darkReaderGuard?.parentNode);
 const darkReaderActions = darkReaderSandbox.__sentMessages.map((m) => m.action);
 check("exact Dark Reader content candidate validates before getUserScripts", darkReaderActions[0] === "validateUserScriptExecution" && darkReaderActions[1] === "getUserScripts");
 check("Dark Reader validation includes the digest of its exact cached bytes", darkReaderSandbox.__sentMessages[0]?.contentDigest === darkReaderDigest);
@@ -479,6 +483,7 @@ check("content warm start does not execute before validation", darkReaderSandbox
 resolveDarkReaderValidation({ ok: true });
 for (let i = 0; i < 10; i++) await tick();
 check("content warm start executes after validation succeeds", darkReaderSandbox.__darkReaderContentExecuted === true);
+check("dark root guard is gone once Dark Reader runs", darkReaderGuard?.parentNode === null);
 check("content warm start has no released XHR privilege before reconciliation", !darkReaderSandbox.__sentMessages.some((m) => m.action === "gmXmlhttpRequest"));
 
 let resolveRejectedValidation;
@@ -486,8 +491,10 @@ const rejectedValidation = new Promise((resolve) => { resolveRejectedValidation 
 const rejectedDarkReaderSandbox = buildContentScriptSandbox(
   JSON.stringify({ version: 1, savedAt: Date.now(), scripts: [darkReaderScript] }),
   [], "https://example.com/page", [], false,
-  (msg) => msg.action === "validateUserScriptExecution" ? rejectedValidation : new Promise(() => {}),
+  (msg) => msg.action === "validateUserScriptExecution" ? rejectedValidation
+    : msg.action === "getUserScripts" ? { userScripts: [] } : new Promise(() => {}),
 );
+rejectedDarkReaderSandbox.matchMedia = () => ({ matches: true });
 vm.createContext(rejectedDarkReaderSandbox);
 vm.runInContext(source, rejectedDarkReaderSandbox, { filename: "userscript-injector-dark-reader-rejected.js" });
 await tick();
@@ -495,6 +502,7 @@ resolveRejectedValidation({ ok: false, error: "userscript-integrity-mismatch" })
 await tick();
 await tick();
 check("digest rejection prevents content warm execution", rejectedDarkReaderSandbox.__darkReaderContentExecuted !== true);
+check("dark root guard is gone once the reply has no Dark Reader", !rejectedDarkReaderSandbox.document.head.children.some((c) => c.textContent.includes("#181a1b") && c.parentNode));
 
 let resolveStaleValidation;
 const staleValidation = new Promise((resolve) => { resolveStaleValidation = resolve; });
