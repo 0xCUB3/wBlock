@@ -24,8 +24,10 @@ struct RegionalListLanguagesField: View {
         if category == .foreign {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Languages").font(.caption).foregroundStyle(.secondary)
-                RegionalLanguagePickerView(selectedLanguages: $languages, options: RegionalLanguageOption.assignable())
+                RegionalLanguagePickerView(selectedLanguages: $languages, options: RegionalLanguageOption.assignable(),
+                                           usesFieldBackground: true)
             }
+            .padding(.top, 8)
             .spansFormLabelColumn()
         }
     }
@@ -37,6 +39,8 @@ struct RegionalListLanguagesField: View {
 struct RegionalLanguagePickerView: View {
     @Binding var selectedLanguages: Set<String>
     let options: [RegionalLanguageOption]
+    /// In a form the picker matches the text fields above it (#971).
+    var usesFieldBackground = false
 
     @State private var searchQuery = ""
 
@@ -116,10 +120,28 @@ struct RegionalLanguagePickerView: View {
                         }
                     }
                 }
-                .frame(height: CGFloat(min(matchingOptions.count, 5)) * rowHeight)
+                // Shrinks below five rows when the sheet has less room left.
+                .frame(minHeight: rowHeight, idealHeight: resultsHeight, maxHeight: resultsHeight)
             }
         }
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+        .background(background)
+    }
+
+    private var resultsHeight: CGFloat { CGFloat(min(matchingOptions.count, 5)) * rowHeight }
+
+    @ViewBuilder
+    private var background: some View {
+        let shape = RoundedRectangle(cornerRadius: 12)
+        #if os(macOS)
+        if usesFieldBackground {
+            shape.fill(Color(nsColor: .textBackgroundColor))
+                .overlay(shape.stroke(Color(nsColor: .separatorColor), lineWidth: 1))
+        } else {
+            shape.fill(.regularMaterial)
+        }
+        #else
+        shape.fill(.regularMaterial)
+        #endif
     }
 
     @ScaledMetric(relativeTo: .body) private var rowHeight: CGFloat = 37

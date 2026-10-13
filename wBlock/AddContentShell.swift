@@ -45,7 +45,9 @@ struct AddContentSheet<Mode: AddContentMode, Content: View>: View {
             .controlSize(.large)
         }
         .padding(20)
-        .frame(minWidth: 540, idealWidth: 560, minHeight: 480, idealHeight: 520)
+        // A fixed size: a columns form doesn't scroll, so a sheet sized to its
+        // content grew while language results appeared (#971).
+        .frame(width: 560, height: 520)
         .interactiveDismissDisabled(isLoading)
         .task {
             await Task.yield()
