@@ -37,16 +37,44 @@ fi
 signing_args=()
 if [[ "${CI:-}" == "true" ]]; then signing_args+=(CODE_SIGNING_ALLOWED=NO); fi
 CORE_DERIVED_DATA="$WBLOCK_DERIVED_DATA"
-run xcodebuild -project wBlock.xcodeproj \
+echo "[test] building wBlockCoreService"
+xcodebuild -project wBlock.xcodeproj \
   -scheme wBlockCoreService \
   -configuration Debug \
   -destination 'generic/platform=macOS' \
   -derivedDataPath "$CORE_DERIVED_DATA" \
   "${signing_args[@]}" \
-  build >/dev/null
+  build > "$TMP/core-build.log" 2>&1 &
+core_build=$!
 CORE_PRODUCTS="$CORE_DERIVED_DATA/Build/Products/Debug"
 export WBLOCK_CORE_PRODUCTS="$CORE_PRODUCTS"
-run python3 scripts/test_issue_684_external_refresh.py
+COMPILER_BUNDLES=(
+  WBLOCK_LESS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/less.min.js"
+  WBLOCK_SASS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/sass/wblock-sass-1.104.0.min.js"
+  WBLOCK_STYLUS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/stylus/stylus-jsc.js"
+  WBLOCK_POSTCSS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/postcss-nested/wblock-postcss-nested.js"
+)
+
+# Native tests are queued as scripts in $TMP/jobs and run in parallel. Jobs of
+# kind "core" start once the wBlockCoreService build above has finished.
+mkdir "$TMP/jobs"
+job_count=0
+job() {
+  local kind="$1" name="$2"
+  job_count=$((job_count + 1))
+  JOB="$TMP/jobs/$(printf %03d "$job_count").$kind.sh"
+  printf 'set -euo pipefail\ncd %q\necho %q\n' "$ROOT" "[test] $name" > "$JOB"
+}
+step() {
+  printf '%q ' "$@" >> "$JOB"
+  echo >> "$JOB"
+}
+queue() {
+  job "$1" "${*:2}"
+  step "${@:2}"
+}
+
+queue core python3 scripts/test_issue_684_external_refresh.py
 
 compile_core_test() {
   local name="$1"
@@ -61,22 +89,22 @@ compile_core_test() {
       cat "$test"
     } > "$test_source"
   fi
-  echo "[test] $name ($test)"
-  swiftc -parse-as-library \
+  job core "$name ($test)"
+  step swiftc -parse-as-library \
     -F "$CORE_PRODUCTS" -I "$CORE_PRODUCTS" -L "$CORE_PRODUCTS" \
     -framework wBlockCoreService \
     -Xlinker -rpath -Xlinker "$CORE_PRODUCTS" \
     "$@" "$test_source" -o "$TMP/$name"
-  "$TMP/$name"
+  step "$TMP/$name"
 }
 
 compile_direct_test() {
-  local name="$1"
+  local name="$1" kind=direct
   shift
-  local test="${!#}"
-  echo "[test] $name ($test)"
-  swiftc -parse-as-library "$@" -o "$TMP/$name"
-  "$TMP/$name"
+  [[ "$*" == *"$CORE_PRODUCTS"* ]] && kind=core
+  job "$kind" "$name (${!#})"
+  step swiftc -parse-as-library "$@" -o "$TMP/$name"
+  step "$TMP/$name"
 }
 
 # Standalone Foundation and AppKit tests.
@@ -275,8 +303,8 @@ compile_direct_test userscript-download \
   wBlockCoreService/UserScriptContentValidation.swift \
   wBlockCoreService/UserScriptDownload.swift \
   scripts/test_userscript_download.swift
-echo "[test] userstyle-parsing-matching (scripts/test_userstyle_parsing_and_matching.swift)"
-swiftc -parse-as-library -D DEBUG \
+job direct "userstyle-parsing-matching (scripts/test_userstyle_parsing_and_matching.swift)"
+step swiftc -parse-as-library -D DEBUG \
   wBlockCoreService/FilterListCategory.swift \
   wBlockCoreService/UserScript.swift \
   wBlockCoreService/BuiltInUserScripts.swift \
@@ -289,87 +317,71 @@ swiftc -parse-as-library -D DEBUG \
   wBlockCoreService/UserStyleCompilerExecutionHost.swift \
   wBlockCoreService/UserStyleRemoteImportInliner.swift \
   scripts/test_userstyle_parsing_and_matching.swift -o "$TMP/userstyle-parsing-matching"
-WBLOCK_LESS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/less.min.js" \
-WBLOCK_SASS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/sass/wblock-sass-1.104.0.min.js" \
-WBLOCK_STYLUS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/stylus/stylus-jsc.js" \
-WBLOCK_POSTCSS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/postcss-nested/wblock-postcss-nested.js" \
-  "$TMP/userstyle-parsing-matching"
+step env "${COMPILER_BUNDLES[@]}" "$TMP/userstyle-parsing-matching"
 
 # This one intentionally remains a script-mode compile: its top-level semaphore
 # loop is the test's executable entry point.
-echo "[test] packaged-compilers (scripts/test_issue_511_packaged_compilers.swift)"
-swiftc -F "$CORE_PRODUCTS" -I "$CORE_PRODUCTS" -L "$CORE_PRODUCTS" \
+job core "packaged-compilers (scripts/test_issue_511_packaged_compilers.swift)"
+step swiftc -F "$CORE_PRODUCTS" -I "$CORE_PRODUCTS" -L "$CORE_PRODUCTS" \
   -framework wBlockCoreService -Xlinker -rpath -Xlinker "$CORE_PRODUCTS" \
   scripts/test_issue_511_packaged_compilers.swift -o "$TMP/packaged-compilers"
-WBLOCK_LESS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/less.min.js" \
-WBLOCK_SASS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/sass/wblock-sass-1.104.0.min.js" \
-WBLOCK_STYLUS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/stylus/stylus-jsc.js" \
-WBLOCK_POSTCSS_BUNDLE="$ROOT/wBlockCoreService/Resources/UserStyleCompiler/postcss-nested/wblock-postcss-nested.js" \
-  "$TMP/packaged-compilers"
+step env "${COMPILER_BUNDLES[@]}" "$TMP/packaged-compilers"
 
 # Safari uses template tinting, so disabled toolbar icons need a distinct alpha mask.
-run swift scripts/test_action_icon_masks.swift
+queue direct swift scripts/test_action_icon_masks.swift
 
 for test in scripts/test_*.sh; do
   if [[ "$test" == scripts/test_rules_viewer_ui.sh || "$test" == scripts/test_apply_sheet_presentation.sh ]]; then
     # These parameterized suites run in the simulator job in CI.
     if [[ -n "${WBLOCK_UI_TEST_SIMULATOR:-}" ]]; then
-      run bash "$test" "$WBLOCK_UI_TEST_SIMULATOR"
+      queue direct bash "$test" "$WBLOCK_UI_TEST_SIMULATOR"
     else
       echo "[test] $test runs separately; set WBLOCK_UI_TEST_SIMULATOR to include it locally"
     fi
   else
-    run bash "$test"
+    queue direct bash "$test"
   fi
 done
 
-compile_and_run() {
-  local name="$1"
-  shift
-  echo "[test] $name"
-  swiftc -parse-as-library "$@" -o "$TMP/$name"
-  "$TMP/$name"
-}
-
-compile_and_run adguard-syntax \
+compile_direct_test adguard-syntax \
   wBlock/AdGuardSyntaxHighlighter.swift \
   scripts/test_adguard_syntax_highlighter.swift
 
-compile_and_run userscript-content-validation \
+compile_direct_test userscript-content-validation \
   wBlockCoreService/UserScriptContentValidation.swift \
   scripts/test_userscript_content_validation.swift
 
-compile_and_run userscript-file-storage \
+compile_direct_test userscript-file-storage \
   wBlockCoreService/UserScriptFileStorage.swift \
   scripts/test_userscript_file_storage.swift
 
-compile_and_run filter-diff \
+compile_direct_test filter-diff \
   wBlockCoreService/FilterDiffUpdater.swift \
   scripts/test_filter_diff_updater.swift
 
-compile_and_run include-resolution \
+compile_direct_test include-resolution \
   wBlockCoreService/IncludeResolver.swift \
   wBlockCoreService/FilterPreprocessor.swift \
   wBlockCoreService/ConditionalEvaluator.swift \
   wBlockCoreService/PlatformConstants.swift \
   scripts/test_include_resolver_url_encoding.swift
 
-compile_and_run pause-store \
+compile_direct_test pause-store \
   wBlockCoreService/GroupIdentifier.swift \
   wBlockCoreService/BlockingPauseStore.swift \
   scripts/test_issue_508_pause_store.swift
 
-compile_and_run pending-filter-update-revisions \
+compile_direct_test pending-filter-update-revisions \
   wBlockCoreService/GroupIdentifier.swift \
   wBlockCoreService/PendingFilterUpdateRevisions.swift \
   scripts/test_pending_filter_update_revisions.swift
 
-compile_and_run staged-filter-downloads \
+compile_direct_test staged-filter-downloads \
   wBlockCoreService/GroupIdentifier.swift \
   wBlockCoreService/StagedFilterDownloads.swift \
   scripts/test_staged_filter_downloads.swift
 
-compile_and_run bounded-concurrency \
+compile_direct_test bounded-concurrency \
   wBlockCoreService/AsyncConcurrency.swift \
   scripts/test_bounded_concurrent_compact_map.swift
 
@@ -378,4 +390,35 @@ compile_core_test filter-validation scripts/test_filter_list_validation.swift
 compile_core_test filter-remote-metadata-policy scripts/test_filter_list_remote_metadata_policy.swift
 compile_core_test remote-filter-metadata scripts/test_remote_filter_list_metadata_loader.swift
 
-echo "All CI tests passed"
+JOBS="${WBLOCK_TEST_JOBS:-$(sysctl -n hw.ncpu)}"
+run_jobs() {
+  local file
+  for file in "$TMP"/jobs/*."$1".sh; do
+    [[ -e "$file" ]] || continue
+    while (( $(jobs -rp | wc -l) >= JOBS )); do sleep 0.05; done
+    {
+      local started=$SECONDS
+      if bash "$file" > "${file%.sh}.log" 2>&1; then status=PASS; else status=FAIL; touch "${file%.sh}.failed"; fi
+      echo "$status $(head -1 "${file%.sh}.log" | sed 's/^\[test\] //') ($((SECONDS - started))s)"
+    } &
+  done
+}
+run_jobs direct
+if wait "$core_build"; then
+  run_jobs core
+else
+  tail -40 "$TMP/core-build.log"
+  touch "$TMP/core-build.failed"
+fi
+wait
+
+failed=0
+for log in "$TMP"/jobs/*.log; do
+  [[ -e "${log%.log}.failed" ]] || continue
+  failed=$((failed + 1))
+  echo "=== FAILED: $(head -1 "$log")"
+  cat "$log"
+done
+if [[ -e "$TMP/core-build.failed" ]]; then echo "wBlockCoreService build failed; core tests did not run"; exit 1; fi
+if (( failed > 0 )); then echo "$failed of $job_count native tests failed"; exit 1; fi
+echo "All $job_count native tests passed"
