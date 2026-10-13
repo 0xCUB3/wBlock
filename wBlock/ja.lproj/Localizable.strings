@@ -1132,7 +1132,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps." = "サイトを指定しないルールで、すべてのサイトの要素を非表示にします。オフにすると、サイト別の非表示は残り、特に重いウェブアプリでページが軽くなります。";
 "AdGuard Italian filter" = "AdGuard イタリア語フィルター";
 "AdGuard Polish filter" = "AdGuard ポーランド語フィルター";
-"EasyList + AdGuard English filter. This filter is necessary for quality ad blocking." = "EasyListとAdGuardベースフィルタを合わせたフィルタです。このフィルタは品質の高い広告ブロックに必要です。";
+"EasyList + AdGuard English filter. This filter is necessary for quality ad blocking." = "EasyListとAdGuard English filterを合わせたフィルタです。このフィルタは品質の高い広告ブロックに必要です。";
 "The most comprehensive list of various online counters and web analytics tools. Use this filter if you do not want your actions on the Internet to be tracked." = "最も幅広い様々なオンラインカウンターおよびウェブ分析ツールのリスト。インターネット上での操作を追跡されたくない場合は、このフィルタをご利用ください。";
 "Filter that enhances privacy by removing tracking parameters from URLs." = "URLからトラッキング（追跡）パラメーターを除去し、プライバシーを向上させるフィルタ。";
 "Automatically removes unnecessary '$' and '&' values from URLs, making them easier to copy from the URL bar and pasting elsewhere as links. Already included in Dandelion Sprout's Annoyances List." = "URLから不要な「$」や「&」値を自動的に削除し、URLバーからコピーして他の場所にリンクとして貼り付けやすくします。既に Dandelion Sprout の Annoyances List にも含まれています。";
