@@ -87,7 +87,7 @@ struct OnboardingView: View {
         } else {
             // Auto-detect from system preferred languages
             let systemLangs = Locale.preferredLanguages.compactMap {
-                Locale(identifier: $0).languageCode?.lowercased()
+                Locale(identifier: $0).languageCode.map(RegionalLanguageOption.canonicalCode)
             }
             // A system language no regional list covers is picked as Other (#935).
             let covered = Set(filterManager.filterLists.filter { $0.category == .foreign }

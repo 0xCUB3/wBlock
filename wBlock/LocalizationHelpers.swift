@@ -43,6 +43,7 @@ struct RegionalLanguageOption: Identifiable, Hashable {
         "fa": ["Farsi", "Dari", "پارسی", "دری", "فارسي", "پارسي"],
         "fil": ["Tagalog"],
         "ms": ["Bahasa Malaysia"],
+        "zh": ["Cantonese", "Mandarin", "Shanghainese", "粵語", "粤语", "廣東話", "广东话", "普通话", "國語"],
     ]
 
     /// Each language's own name in every script the system writes it in, so
@@ -102,9 +103,19 @@ struct RegionalLanguageOption: Identifiable, Hashable {
         options(for: filters.filter { $0.category == .foreign }.flatMap(\.languages), locale: locale)
     }
 
+    /// Chinese varieties share Chinese regional lists, so they pick Chinese
+    /// rather than listing separately (#951). Distinct languages such as the
+    /// Sámi ones stay separate.
+    private static let chineseVarieties: Set<String> = ["cdo", "cjy", "cmn", "cpx", "czh", "gan", "hak", "hsn", "lzh", "mnp", "nan", "wuu", "yue"]
+
+    static func canonicalCode(_ code: String) -> String {
+        let code = code.lowercased()
+        return chineseVarieties.contains(code) ? "zh" : code
+    }
+
     static func options(for codes: [String], locale: Locale) -> [RegionalLanguageOption] {
         var seen = Set<String>()
-        return codes.map { $0.lowercased() }.filter { seen.insert($0).inserted }.map {
+        return codes.map(canonicalCode).filter { seen.insert($0).inserted }.map {
             RegionalLanguageOption(code: $0, locale: locale)
         }
         .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
