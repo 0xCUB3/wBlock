@@ -58,7 +58,7 @@ struct FilterRegistrySearchSections: View {
     @ViewBuilder
     private var results: some View {
         if !wBlockMatches.isEmpty {
-            Section("In wBlock") {
+            Section {
                 ForEach(wBlockMatches) { filter in
                     HStack {
                         row(filter, note: nil)
@@ -71,9 +71,11 @@ struct FilterRegistrySearchSections: View {
                         .labelsHidden()
                     }
                 }
+            } header: {
+                sectionHeader("In wBlock")
             }
         }
-        Section("AdGuard Filter Registry") {
+        Section {
             if registryLists.isEmpty, isLoading {
                 ProgressView().controlSize(.small)
             } else if registryLists.isEmpty, let loadError {
@@ -95,7 +97,19 @@ struct FilterRegistrySearchSections: View {
                     }
                 }
             }
+        } header: {
+            sectionHeader("AdGuard Filter Registry")
         }
+    }
+
+    /// macOS lays these sections out in a plain stack, where a default header
+    /// reads like another list name (#981).
+    private func sectionHeader(_ title: LocalizedStringKey) -> some View {
+        Text(title)
+            #if os(macOS)
+            .font(.title3.weight(.semibold))
+            .padding(.top, 4)
+            #endif
     }
 
     private func row(_ filter: FilterList, note: String?) -> some View {
