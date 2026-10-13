@@ -50,7 +50,7 @@
 "%@ rules" = "%@ قانون";
 "%@ source → %@ expanded rules" = "%@ منبع → %@ قانون گسترش‌یافته";
 "(%@) source rules)" = "(%@) قانون منبع)";
-"(\\(sourceCount.formatted()) source rules)" = "(\\(sourceCount.formatted()) قانون منبع)";
+"(\\(sourceCount.formatted()) source rules)" = "\U200F(\\(sourceCount.formatted()) قانون منبع)";
 "(empty rule)" = "(قانون خالی)";
 "(pending)" = "(در انتظار)";
 "1." = "1.";
@@ -58,7 +58,7 @@
 "2." = "2.";
 "7d" = "7d";
 "Autoplay on" = "پخش خودکار روشن";
-"\\(filteredEntries.count) entries" = "\\(filteredEntries.count) ورودی";
+"\\(filteredEntries.count) entries" = "\U200F\\(filteredEntries.count) ورودی";
 "\\(index + 1)." = "\\(index + 1).";
 "\\(Int(refreshProgress * 100))%" = "\\(Int(refreshProgress * 100))%";
 "\\(level.emoji) \\(level.localizedName)" = "\\(level.emoji) \\(level.localizedName)";
@@ -192,7 +192,7 @@
 "Blocks banners promoting mobile app downloads." = "بنرهای تبلیغاتی دانلود برنامه‌های موبایل را مسدود می‌کند.";
 "Blocks cookie consent notices on web pages." = "اعلان‌های موافقت با کوکی را در صفحات وب مسدود می‌کند.";
 "Blocks miscellaneous irritating elements not covered by other filters." = "عناصر آزاردهندهٔ متفرقه‌ای را که توسط سایر فیلترها پوشش داده نشده‌اند، مسدود می‌کند.";
-"Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "Safari نمی‌تواند قوانین اسکریپت درون‌خطی این فهرست را اعمال کند. برای سایت‌های انگلیسی‌زبان پشتیبانی‌شده، Bypass Paywalls Clean را در Userscripts فعال کنید.";
+"Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "قوانین اسکریپت درون‌خطی این فهرست را Safari نمی‌تواند اعمال کند. برای سایت‌های انگلیسی‌زبان پشتیبانی‌شده، Bypass Paywalls Clean را در Userscripts فعال کنید.";
 "Blocks pop-up ads on web pages." = "تبلیغات پاپ‌آپ را در صفحات وب مسدود می‌کند.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "پاپ‌آپ‌های تبلیغاتی، ثبت‌نام خبرنامه و درخواست‌های اعلان را مسدود می‌کند.";
 "Blocks social media content on webpages." = "محتوای شبکه‌های اجتماعی را در صفحات وب مسدود می‌کند.";
@@ -288,13 +288,13 @@
 "due now" = "موعد فرا رسیده";
 "Due soon catch-up" = "جبران موارد نزدیک به موعد";
 "Duplicate Userscripts Found" = "اسکریپت‌های کاربر تکراری پیدا شدند";
-"EasyList China + AdGuard Chinese filter. Filter list that specifically removes ads on websites in Chinese language." = "EasyList چین + فیلتر چینی AdGuard. فهرست فیلتری که به‌طور خاص تبلیغات را در وب‌سایت‌های به زبان چینی حذف می‌کند.";
-"EasyList Czech and Slovak" = "EasyList چک و اسلواکی";
-"EasyList Dutch + AdGuard Dutch filter. Filter list that specifically removes ads on websites in Dutch language." = "EasyList هلند + فیلتر هلندی AdGuard. فهرست فیلتری که به‌طور خاص تبلیغات را در وب‌سایت‌های به زبان هلندی حذف می‌کند.";
-"EasyList Germany + AdGuard German filter. Filter list that specifically removes ads on websites in German language." = "EasyList آلمان + فیلتر آلمانی AdGuard. فهرست فیلتری که به‌طور خاص تبلیغات را در وب‌سایت‌های به زبان آلمانی حذف می‌کند.";
-"EasyList Hebrew" = "EasyList عبری";
-"EasyList Lithuania" = "EasyList لیتوانی";
-"EasyList Thailand" = "EasyList تایلند";
+"EasyList China + AdGuard Chinese filter. Filter list that specifically removes ads on websites in Chinese language." = "\U200FEasyList چین + فیلتر چینی AdGuard. فهرست فیلتری که به‌طور خاص تبلیغات را در وب‌سایت‌های به زبان چینی حذف می‌کند.";
+"EasyList Czech and Slovak" = "\U200FEasyList چک و اسلواکی";
+"EasyList Dutch + AdGuard Dutch filter. Filter list that specifically removes ads on websites in Dutch language." = "\U200FEasyList هلند + فیلتر هلندی AdGuard. فهرست فیلتری که به‌طور خاص تبلیغات را در وب‌سایت‌های به زبان هلندی حذف می‌کند.";
+"EasyList Germany + AdGuard German filter. Filter list that specifically removes ads on websites in German language." = "\U200FEasyList آلمان + فیلتر آلمانی AdGuard. فهرست فیلتری که به‌طور خاص تبلیغات را در وب‌سایت‌های به زبان آلمانی حذف می‌کند.";
+"EasyList Hebrew" = "\U200FEasyList عبری";
+"EasyList Lithuania" = "\U200FEasyList لیتوانی";
+"EasyList Thailand" = "\U200FEasyList تایلند";
 "EasyPrivacy" = "EasyPrivacy";
 "Edit" = "ویرایش";
 "Edit Filter List" = "ویرایش فهرست";
@@ -333,7 +333,7 @@
 "Expired %@" = "منقضی‌شده %@";
 "Export" = "برون‌بری";
 "Export failed: %@" = "برون‌بری ناموفق بود: %@";
-"The contents of local filter list \"%@\" are unavailable. Recover the list on the original device and create a new backup." = "محتوای فهرست فیلتر محلی \"%@\" در دسترس نیست. فهرست را در دستگاه اصلی بازیابی کنید و یک نسخهٔ پشتیبان جدید بسازید.";
+"The contents of local filter list \"%@\" are unavailable. Recover the list on the original device and create a new backup." = "محتوای فهرست فیلتر محلی \U2068\"%@\"\U2069 در دسترس نیست. فهرست را در دستگاه اصلی بازیابی کنید و یک نسخهٔ پشتیبان جدید بسازید.";
 "The backup has no usable contents for these lists. They will be skipped when restoring. %@" = "نسخهٔ پشتیبان هیچ محتوای قابل استفاده‌ای برای این فهرست‌ها ندارد. هنگام بازیابی از آن‌ها صرف‌نظر خواهد شد. %@";
 "Export Settings" = "برون‌بری تنظیمات";
 "Extension Slots" = "جایگاه‌های افزونه";
@@ -367,7 +367,7 @@
 "%@ turned off in Safari. Enable them in Safari settings to load the applied rules." = "%@ در Safari خاموش است. آن‌ها را در تنظیمات Safari فعال کنید تا قوانین اعمال‌شده بارگیری شوند.";
 "%d URL parameter rules were dropped: Safari allows at most %d." = "%d قانون پارامتر URL نادیده گرفته شد: Safari حداکثر %d قانون را مجاز می‌داند.";
 "Skipped reload for extensions turned off in Safari" = "از بارگیری مجدد افزونه‌های خاموش‌شده در Safari صرف‌نظر شد";
-"wBlock launched" = "wBlock اجرا شد";
+"wBlock launched" = "\U200FwBlock اجرا شد";
 "Failed to reload content blocker" = "بارگیری مجدد مسدودکنندهٔ محتوا ناموفق بود";
 "Failed to update disabled sites for blocker" = "به‌روزرسانی سایت‌های غیرفعال برای مسدودکننده ناموفق بود";
 "Failed to save downloaded filter" = "ذخیرهٔ فیلتر دانلودشده ناموفق بود";
@@ -390,7 +390,7 @@
 "Filter list that specifically removes ads on websites in Spanish, Portuguese, and Brazilian Portuguese languages." = "فهرست فیلتری که به‌طور خاص تبلیغات را در وب‌سایت‌های به زبان‌های اسپانیایی، پرتغالی و پرتغالی برزیلی حذف می‌کند.";
 "Filter list that specifically removes ads on websites in Turkish language." = "فهرست فیلتری که به‌طور خاص تبلیغات را در وب‌سایت‌های به زبان ترکی حذف می‌کند.";
 "Filter list updated. Apply changes to enable it." = "فهرست فیلتر به‌روزرسانی شد. برای فعال کردن آن، تغییرات را اعمال کنید.";
-"Filter list with this URL already exists: %@" = "فهرست فیلتر با این URL از قبل وجود دارد: %@";
+"Filter list with this URL already exists: %@" = "فهرست فیلتر با این URL از قبل وجود دارد: \U2068%@\U2069";
 "Filter list with URL already exists" = "فهرست فیلتر با این URL از قبل وجود دارد";
 "Filter name" = "نام فیلتر";
 "Filter that aims to remove regional Swedish ads, tracking, social media, annoyances, sponsored articles etc." = "فیلتری با هدف حذف تبلیغات منطقه‌ای سوئدی، ردیابی، شبکه‌های اجتماعی، مزاحمت‌ها، مقاله‌های تبلیغاتی و غیره.";
@@ -453,12 +453,12 @@
 "Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns." = "بلوک متادیتا // ==UserScript== (یا /* ==UserStyle== */ برای استایل‌های کاربر) را درج کنید تا wBlock بتواند نام و الگوهای URL را بخواند.";
 "IndianList" = "IndianList";
 "Info" = "اطلاعات";
-"Info.plist missing" = "Info.plist یافت نشد";
+"Info.plist missing" = "\U200FInfo.plist یافت نشد";
 "Initialized with %d filter list(s)." = "با %d فهرست فیلتر راه‌اندازی شد.";
 "International" = "بین‌المللی";
 "Invalid" = "نامعتبر";
 "Invalid URL provided for new filter list" = "نشانی URL ارائه‌شده برای فهرست فیلتر جدید نامعتبر است";
-"Invalid URL provided: %@" = "نشانی URL ارائه‌شده نامعتبر است: %@";
+"Invalid URL provided: %@" = "نشانی URL ارائه‌شده نامعتبر است: \U2068%@\U2069";
 "iOS background refresh is best-effort; checks may run later than scheduled." = "به‌روزرسانی پس‌زمینه در iOS تضمینی نیست؛ بررسی‌ها ممکن است دیرتر از زمان‌بندی اجرا شوند.";
 "It will be enabled automatically." = "به‌طور خودکار فعال خواهد شد.";
 "KAD - Anti-Scam" = "KAD - Anti-Scam";
@@ -475,7 +475,7 @@
 "Line %d isn’t a valid http(s) filter URL." = "خط %d یک نشانی URL فیلتر http(s) معتبر نیست.";
 "filterslists-KO" = "filterslists-KO";
 "Liste AR" = "Liste AR";
-"Liste FR + AdGuard French filter. Filter list that specifically removes ads on websites in French language." = "Liste FR + AdGuard French filter. فهرست فیلتری که به‌طور خاص تبلیغات وب‌سایت‌های فرانسوی‌زبان را حذف می‌کند.";
+"Liste FR + AdGuard French filter. Filter list that specifically removes ads on websites in French language." = "\U200FListe FR + AdGuard French filter. فهرست فیلتری که به‌طور خاص تبلیغات وب‌سایت‌های فرانسوی‌زبان را حذف می‌کند.";
 "Load full content" = "بارگیری کل محتوا";
 "Loaded local version for filter" = "نسخهٔ محلی برای فیلتر بارگیری شد";
 "Loading metadata…" = "در حال بارگیری فراداده…";
@@ -630,8 +630,8 @@
 "Rule Limit Warning" = "هشدار محدودیت قوانین";
 "Rules" = "قوانین";
 "Run on this site" = "اجرا در این سایت";
-"Safari limits each content blocker extension to %@ rules.\\nTotal capacity (all wBlock blockers): %@ rules.\\n\\n%@\\n\\nwBlock distributes your enabled filter lists across multiple blockers to maximize capacity, but you may still hit Safari's limits if you enable too many large lists." = "Safari هر افزونهٔ مسدودکنندهٔ محتوا را به %@ قانون محدود می‌کند.\\nظرفیت کل (تمام مسدودکننده‌های wBlock): %@ قانون.\\n\\n%@\\n\\nwBlock فهرست‌های فیلتر فعال شما را میان چندین مسدودکننده توزیع می‌کند تا ظرفیت به حداکثر برسد، اما در صورت فعال‌سازی فهرست‌های بزرگ بسیار، ممکن است همچنان به محدودیت‌های Safari برسید.";
-"Safari limits each Content Blocker extension to 150,000 rules. wBlock automatically balances and compiles rules across all 5 slots." = "Safari هر افزونهٔ مسدودکنندهٔ محتوا را به 150,000 قانون محدود می‌کند. wBlock به‌طور خودکار قوانین را در هر 5 جایگاه متعادل و کامپایل می‌کند.";
+"Safari limits each content blocker extension to %@ rules.\\nTotal capacity (all wBlock blockers): %@ rules.\\n\\n%@\\n\\nwBlock distributes your enabled filter lists across multiple blockers to maximize capacity, but you may still hit Safari's limits if you enable too many large lists." = "هر افزونهٔ مسدودکنندهٔ محتوا را Safari به %@ قانون محدود می‌کند.\\nظرفیت کل (تمام مسدودکننده‌های wBlock): %@ قانون.\\n\\n%@\\n\\nفهرست‌های فیلتر فعال شما را wBlock میان چندین مسدودکننده توزیع می‌کند تا ظرفیت به حداکثر برسد، اما در صورت فعال‌سازی فهرست‌های بزرگ بسیار، ممکن است همچنان به محدودیت‌های Safari برسید.";
+"Safari limits each Content Blocker extension to 150,000 rules. wBlock automatically balances and compiles rules across all 5 slots." = "هر افزونهٔ مسدودکنندهٔ محتوا را Safari به 150,000 قانون محدود می‌کند. wBlock به‌طور خودکار قوانین را در هر 5 جایگاه متعادل و کامپایل می‌کند.";
 "Safari Rule Capacity" = "ظرفیت قوانین Safari";
 "Safari Rules" = "قوانین Safari";
 "Safari → Settings → Extensions" = "Safari → Settings → Extensions";
@@ -749,7 +749,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "این کار انتخاب‌های فیلتر کنونی، فهرست مجاز و قوانین حذف‌کنندهٔ عنصر شما را با تنظیمات پشتیبان‌گیری‌شده جایگزین می‌کند.";
 "This will reset all filters, userscripts, and preferences." = "این کار همهٔ فیلترها، اسکریپت‌های کاربر و اولویت‌ها را بازنشانی می‌کند.";
 "Timed out" = "مهلت زمانی تمام شد";
-"tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield به مسدود کردن تبلیغات دوباره درج‌شده توسط Ad-Shield در سایت‌های منطبق کمک می‌کند.";
+"tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "در سایت‌های منطبق، tinyShield به مسدود کردن تبلیغات دوباره درج‌شده توسط Ad-Shield کمک می‌کند.";
 "Lets ad blockers quickly resist Ad-Shield, which reinserts ads on matching sites after filter lists hide them." = "به مسدودکننده‌های تبلیغات امکان می‌دهد سریعاً در برابر Ad-Shield مقاومت کنند، که پس از پنهان شدن تبلیغات توسط فهرست‌های فیلتر، دوباره آن‌ها را در سایت‌های منطبق درج می‌کند.";
 "Title" = "عنوان";
 "Title (optional)" = "عنوان (اختیاری)";
@@ -831,7 +831,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "wBlock Scripts must be enabled and set to 'Always Allow on All Websites' for userscripts and advanced blocking." = "برای اسکریپت‌های کاربر و مسدودسازی پیشرفته، باید wBlock Scripts فعال باشد و روی «Always Allow on All Websites» تنظیم شود.";
 "wBlock Scripts must be enabled and set to 'Always Allow on All Websites' to block YouTube ads." = "برای مسدود کردن تبلیغات YouTube، باید wBlock Scripts فعال باشد و روی «Always Allow on All Websites» تنظیم شود.";
 "wBlock Version" = "نسخهٔ wBlock";
-"wBlock will fetch and enable the script automatically." = "wBlock اسکریپت را به‌طور خودکار دریافت و فعال خواهد کرد.";
+"wBlock will fetch and enable the script automatically." = "اسکریپت را wBlock به‌طور خودکار دریافت و فعال خواهد کرد.";
 "We don't have language data for %@. Try enabling filters manually if you see regional ads." = "ما داده‌های زبانی برای %@ نداریم. اگر تبلیغات منطقه‌ای را می‌بینید، فیلترها را به‌صورت دستی فعال کنید.";
 "We don't have regional filters for %@." = "ما فیلترهای منطقه‌ای برای %@ نداریم.";
 "We found an existing wBlock configuration in iCloud (%@). You can skip onboarding and use that instead." = "ما یک پیکربندی موجود wBlock در iCloud (%@) پیدا کردیم. می‌توانید از آشنایی اولیه صرف‌نظر کرده و در عوض از آن استفاده کنید.";
@@ -900,7 +900,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Choose File" = "انتخاب فایل";
 "Change File" = "تغییر فایل";
 "Local imports won't auto-update; re-import to replace." = "موارد واردشدهٔ محلی به‌طور خودکار به‌روزرسانی نمی‌شوند؛ برای جایگزینی دوباره وارد کنید.";
-"AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard Extra تبلیغات Twitch را مسدود می‌کند و موارد پیچیدهٔ ضد مسدودکنندهٔ تبلیغات را مدیریت می‌نماید.";
+"AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "تبلیغات Twitch را AdGuard Extra مسدود می‌کند و موارد پیچیدهٔ ضد مسدودکنندهٔ تبلیغات را مدیریت می‌نماید.";
 "Blocks Twitch ads with the vaft script from TwitchAdSolutions." = "تبلیغات Twitch را با اسکریپت vaft از TwitchAdSolutions مسدود می‌کند.";
 
 /* Issue 508 UI */
@@ -927,7 +927,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Use a valid http:// or https:// URL" = "از یک نشانی URL معتبر با http:// یا https:// استفاده کنید";
 "Include a host name" = "شامل نام میزبان باشد";
 "Do not use a userscript URL ending in .js, .mjs, or .cjs" = "از URL اسکریپت کاربر که به .js، .mjs یا .cjs ختم می‌شود استفاده نکنید";
-"wBlock will fetch and enable the filter list automatically" = "wBlock فهرست فیلتر را به‌طور خودکار دریافت و فعال می‌کند";
+"wBlock will fetch and enable the filter list automatically" = "فهرست فیلتر را wBlock به‌طور خودکار دریافت و فعال می‌کند";
 /* Issue 508 UI follow-up */
 "Starts with http:// or https://" = "با http:// یا https:// شروع شود";
 "Ends with .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = "به .js، .user.js، .user.css، .less، .sass، .scss، .styl یا .pcss ختم شود";
@@ -954,8 +954,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Couldn't read the selected file." = "خواندن فایل انتخاب‌شده امکان‌پذیر نبود.";
 "The file is empty." = "فایل خالی است.";
 "Not a userscript or userstyle: missing metadata block." = "اسکریپت کاربر یا استایل کاربر نیست: بلوک فراداده وجود ندارد.";
-"This userstyle needs the \"%@\" preprocessor, which isn't supported yet." = "این استایل کاربر به پیش‌پردازندهٔ \"%@\" نیاز دارد که هنوز پشتیبانی نمی‌شود.";
-"This style file requires the \"%@\" preprocessor, but declares \"%@\"." = "این فایل استایل به پیش‌پردازندهٔ \"%@\" نیاز دارد، اما \"%@\" را اعلام می‌کند.";
+"This userstyle needs the \"%@\" preprocessor, which isn't supported yet." = "این استایل کاربر به پیش‌پردازندهٔ \U2068\"%@\"\U2069 نیاز دارد که هنوز پشتیبانی نمی‌شود.";
+"This style file requires the \"%@\" preprocessor, but declares \"%@\"." = "این فایل استایل به پیش‌پردازندهٔ \U2068\"%@\"\U2069 نیاز دارد، اما \U2068\"%@\"\U2069 را اعلام می‌کند.";
 "Couldn't compile this userstyle: %@" = "کامپایل این استایل کاربر امکان‌پذیر نبود: %@";
 "Unknown compiler error." = "خطای ناشناختهٔ کامپایلر.";
 "Couldn't save the edited source." = "ذخیرهٔ کد منبع ویرایش‌شده امکان‌پذیر نبود.";
@@ -989,8 +989,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Show Original on Hover" = "نمایش تصویر اصلی هنگام نگه داشتن اشاره‌گر";
 "About DeArrow" = "دربارهٔ DeArrow";
 "Donate to DeArrow" = "کمک مالی به DeArrow";
-"DeArrow: On" = "DeArrow: روشن";
-"DeArrow: Off" = "DeArrow: خاموش";
+"DeArrow: On" = "\U200FDeArrow: روشن";
+"DeArrow: Off" = "\U200FDeArrow: خاموش";
 "Check for Filter Updates" = "بررسی به‌روزرسانی‌های فیلتر";
 "Check for Userscript Updates" = "بررسی به‌روزرسانی‌های اسکریپت کاربر";
 "Download" = "دانلود";
@@ -1041,7 +1041,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Keep original thumbnails for these YouTube channels." = "حفظ تصاویر بندانگشتی اصلی برای این کانال‌های YouTube.";
 
-"Channel URL, @handle, or channel ID" = "URL کانال، handle@ یا شناسهٔ کانال";
+"Channel URL, @handle, or channel ID" = "\U200FURL کانال، handle@ یا شناسهٔ کانال";
 
 "Type" = "نوع";
 
@@ -1116,7 +1116,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Next update" = "به‌روزرسانی بعدی";
 "Enable Experimental Filter?" = "فیلتر آزمایشی فعال شود؟";
 "Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "فیلترهای آزمایشی قوانین جدید را قبل از رسیدن به فهرست‌های اصلی آزمایش می‌کنند و ممکن است کارکرد وب‌سایت‌ها را مختل کنند. آن‌ها را تنها در صورتی فعال کنید که با یافتن و گزارش اشکالات مشکلی ندارید.";
-"Enable HaGeZi Multi Pro Mini?" = "HaGeZi Multi Pro Mini فعال شود؟";
+"Enable HaGeZi Multi Pro Mini?" = "\U200FHaGeZi Multi Pro Mini فعال شود؟";
 "HaGeZi Multi Pro Mini is a DNS blocklist, not a filter list designed specifically for ad blockers. It may be less stable than the other lists and can cause more false positives that break websites." = "فهرست HaGeZi Multi Pro Mini یک فهرست مسدودسازی DNS است، نه یک فهرست فیلتر که مخصوص مسدودکننده‌های تبلیغات طراحی شده باشد. ممکن است پایداری کمتری نسبت به سایر فهرست‌ها داشته باشد و باعث موارد مثبت کاذب بیشتری شود که وب‌سایت‌ها را دچار اختلال می‌کنند.";
 "Reset Ordering" = "بازنشانی ترتیب";
 "Reset" = "بازنشانی";
@@ -1200,6 +1200,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Searches wBlock’s lists and AdGuard’s filter registry for Safari." = "فهرست‌های wBlock و ثبت فیلتر AdGuard برای Safari را جستجو می‌کند.";
 "In wBlock" = "در wBlock";
 "AdGuard Filter Registry" = "ثبت فیلتر AdGuard";
-"wBlock already includes every list in the registry." = "wBlock در حال حاضر شامل همهٔ فهرست‌های موجود در ثبت است.";
+"wBlock already includes every list in the registry." = "در حال حاضر wBlock شامل همهٔ فهرست‌های موجود در ثبت است.";
 "No matching lists." = "فهرست منطبقی یافت نشد.";
 "No longer built into wBlock" = "دیگر در wBlock گنجانده نشده است";
