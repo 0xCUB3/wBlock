@@ -1170,7 +1170,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Blocks irritating elements that do not fall under popular categories of annoyances, such as website promotional offers and restrictions on copying and text selection." = "웹사이트 프로모션 행사나 복사 및 텍스트 선택 제한과 같이 일반적인 성가신 요소 범주에 속하지 않는 거슬리는 요소를 차단합니다.";
 "Blocks annoying third-party widgets: online assistants, live support chats, etc." = "성가신 제3자 위젯을 차단합니다. 온라인 도우미, 실시간 지원 채팅 등. AdGuard 방해 요소 필터에 이미 포함되어 있습니다.";
 "Filter for social media widgets such as 'Like' and 'Share' buttons and more." = "웹 사이트의 소셜 미디어 위젯을 차단합니다. (\"좋아요\" 버튼 등)";
-"A filter list that hides website features which use generative AI and AI-generated content." = "생성형 AI 및 AI 생성 콘텐츠를 사용하는 웹사이트 기능을 숨기는 필터 목록입니다.";
+"Hides website features that use generative AI and AI-generated content." = "생성형 AI 및 AI 생성 콘텐츠를 사용하는 웹사이트 기능을 숨깁니다.";
 "This filter blocks tracking pixels in email clients." = "이 필터는 이메일 클라이언트에서 추적 픽셀을 차단합니다.";
 "Prevents public Internet sites from digging into your LAN files." = "사이트가 로컬 네트워크에서 파일에 액세스하는 것을 방지합니다.";
 "Blocks more malware than most other major anti-malware lists - domains and URL patterns used in malware redirection chains, IP addresses that are solely used by malware, PUP nags, and a few scammers. Already included in Dandelion Sprout's Annoyances List." = "대부분의 주요 악성코드 차단 목록보다 더 많은 악성코드를 차단합니다. 악성코드 리디렉션 체인에 사용되는 도메인 및 URL 패턴, 악성코드 전용 IP 주소, PUP(잠재적으로 원하지 않는 프로그램) 알림, 그리고 일부 사기꾼을 차단합니다. 이미 Dandelion Sprout's Annoyances List에 포함되어 있습니다.";

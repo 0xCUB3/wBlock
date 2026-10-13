@@ -367,7 +367,7 @@ class FilterListLoader {
                 id: UUID(), name: "Stevo's AI Blocklist",
                 url: Self.stevoAIBlocklistURL, category: FilterListCategory.annoyances,
                 description:
-                    "A filter list that hides website features which use generative AI and AI-generated content."
+                    "Hides website features that use generative AI and AI-generated content."
             ),
             FilterList(
                 id: UUID(), name: "AdGuard Mail Tracking Protection Filter",

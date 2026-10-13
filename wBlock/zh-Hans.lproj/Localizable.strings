@@ -1170,7 +1170,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Blocks irritating elements that do not fall under popular categories of annoyances, such as website promotional offers and restrictions on copying and text selection." = "拦截不属于常见干扰类别的烦人元素，例如网站促销优惠，以及对复制和文本选择的限制。";
 "Blocks annoying third-party widgets: online assistants, live support chats, etc." = "拦截恼人的第三方小工具，包括在线助手、实时支持聊天等等。";
 "Filter for social media widgets such as 'Like' and 'Share' buttons and more." = "此过滤器用于社交媒体小部件（“点赞”按钮及类似的元素）。";
-"A filter list that hides website features which use generative AI and AI-generated content." = "用于隐藏使用生成式 AI 及 AI 生成内容的网站功能的过滤器列表。";
+"Hides website features that use generative AI and AI-generated content." = "隐藏使用生成式 AI 及 AI 生成内容的网站功能。";
 "This filter blocks tracking pixels in email clients." = "此过滤器用于拦截邮件客户端中的跟踪像素";
 "Prevents public Internet sites from digging into your LAN files." = "防止公共互联网网站窃取局域网文件。";
 "Blocks more malware than most other major anti-malware lists - domains and URL patterns used in malware redirection chains, IP addresses that are solely used by malware, PUP nags, and a few scammers. Already included in Dandelion Sprout's Annoyances List." = "相比多数主流反恶意软件列表，本列表具备更全面的拦截能力，其覆盖范围包括：恶意软件重定向链中的域名与 URL 模式、恶意软件专属 IP 地址、潜在不受欢迎程序（PUP）弹窗及部分欺诈网站。该列表功能已集成于 Dandelion Sprout‘s Annoyances List 中。";
