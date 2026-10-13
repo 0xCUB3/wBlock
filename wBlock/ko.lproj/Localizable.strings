@@ -337,6 +337,8 @@
 "The backup has no usable contents for these lists. They will be skipped when restoring. %@" = "백업에 다음 목록의 사용 가능한 내용이 없습니다. 복원 시 건너뜁니다. %@";
 "Export Settings" = "설정 내보내기";
 "Extension Slots" = "확장 프로그램 슬롯";
+"Rule Types" = "규칙 유형";
+"Network and element hiding rules count toward Safari's limit. wBlock Scripts applies its rules on its own, and URL parameter rules have a separate limit of %@." = "네트워크 및 요소 숨기기 규칙은 Safari 한도에 포함됩니다. wBlock Scripts는 자체적으로 규칙을 적용하며, URL 매개변수 규칙에는 별도로 %@개의 한도가 있습니다.";
 "Extensions" = "확장 프로그램";
 "Extensive blocklist targeting ads, trackers, and other unwanted content." = "광고, 추적기 및 기타 원치 않는 콘텐츠를 타겟팅하는 광범위한 차단 목록입니다.";
 "Failed" = "실패";

@@ -337,6 +337,8 @@
 "The backup has no usable contents for these lists. They will be skipped when restoring. %@" = "Yedek, bu listeler için kullanılabilir içerik barındırmıyor. Geri yükleme sırasında bu listeler atlanacak. %@";
 "Export Settings" = "Ayarları dışa aktar";
 "Extension Slots" = "Genişletme Modülleri";
+"Rule Types" = "Kural türleri";
+"Network and element hiding rules count toward Safari's limit. wBlock Scripts applies its rules on its own, and URL parameter rules have a separate limit of %@." = "Ağ ve öğe gizleme kuralları Safari sınırına dahildir. wBlock Scripts kendi kurallarını ayrıca uygular ve URL parametresi kurallarının ayrı bir %@ sınırı vardır.";
 "Extensions" = "Genişletmeler";
 "Extensive blocklist targeting ads, trackers, and other unwanted content." = "Reklamları, izleyicileri ve diğer istenmeyen içerikleri hedefleyen kapsamlı engelleme listesi.";
 "Failed" = "Başarısız";

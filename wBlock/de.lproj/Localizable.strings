@@ -337,6 +337,8 @@
 "The backup has no usable contents for these lists. They will be skipped when restoring. %@" = "Das Backup enthält keine verwendbaren Inhalte für diese Listen. Sie werden bei der Wiederherstellung übersprungen. %@";
 "Export Settings" = "Einstellungen exportieren";
 "Extension Slots" = "Erweiterungs-Slots";
+"Rule Types" = "Regeltypen";
+"Network and element hiding rules count toward Safari's limit. wBlock Scripts applies its rules on its own, and URL parameter rules have a separate limit of %@." = "Netzwerk- und Ausblenderegeln zählen zum Safari-Limit. wBlock Scripts wendet seine Regeln selbst an, und für URL-Parameter-Regeln gilt ein eigenes Limit von %@.";
 "Extensions" = "Erweiterungen";
 "Extensive blocklist targeting ads, trackers, and other unwanted content." = "Umfangreiche Sperrliste gegen Werbung, Tracker und andere unerwünschte Inhalte.";
 "Failed" = "Fehlgeschlagen";

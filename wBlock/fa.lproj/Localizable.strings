@@ -337,6 +337,8 @@
 "The backup has no usable contents for these lists. They will be skipped when restoring. %@" = "نسخهٔ پشتیبان هیچ محتوای قابل استفاده‌ای برای این فهرست‌ها ندارد. هنگام بازیابی از آن‌ها صرف‌نظر خواهد شد. %@";
 "Export Settings" = "برون‌بری تنظیمات";
 "Extension Slots" = "جایگاه‌های افزونه";
+"Rule Types" = "انواع قوانین";
+"Network and element hiding rules count toward Safari's limit. wBlock Scripts applies its rules on its own, and URL parameter rules have a separate limit of %@." = "قوانین شبکه و پنهان‌سازی عناصر در محدودیت Safari شمرده می‌شوند. wBlock Scripts قوانین خود را جداگانه اعمال می‌کند و قوانین پارامترهای URL محدودیت جداگانه‌ای برابر %@ دارند.";
 "Extensions" = "افزونه‌ها";
 "Extensive blocklist targeting ads, trackers, and other unwanted content." = "فهرست مسدودسازی گسترده با هدف قرار دادن تبلیغات، ردیاب‌ها و سایر محتواهای ناخواسته.";
 "Failed" = "ناموفق";

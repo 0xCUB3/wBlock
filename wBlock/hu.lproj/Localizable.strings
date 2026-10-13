@@ -337,6 +337,8 @@
 "The backup has no usable contents for these lists. They will be skipped when restoring. %@" = "A biztonsági mentés nem tartalmaz használható tartalmat ezekhez a listákhoz. A visszaállítás során kimaradnak. %@";
 "Export Settings" = "Beállítások exportálása";
 "Extension Slots" = "Bővítményhelyek";
+"Rule Types" = "Szabálytípusok";
+"Network and element hiding rules count toward Safari's limit. wBlock Scripts applies its rules on its own, and URL parameter rules have a separate limit of %@." = "A hálózati és elemelrejtő szabályok beleszámítanak a Safari korlátjába. A wBlock Scripts saját maga alkalmazza a szabályait, az URL-paraméter-szabályokra pedig külön %@ korlát vonatkozik.";
 "Extensions" = "Bővítmények";
 "Extensive blocklist targeting ads, trackers, and other unwanted content." = "Kiterjedt tiltólista hirdetések, nyomkövetők és egyéb nem kívánt tartalmak célzására.";
 "Failed" = "Sikertelen";

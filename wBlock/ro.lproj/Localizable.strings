@@ -337,6 +337,8 @@
 "The backup has no usable contents for these lists. They will be skipped when restoring. %@" = "Copia de rezervă nu conține date utilizabile pentru aceste liste. Vor fi omise la restaurare. %@";
 "Export Settings" = "Exportă setările";
 "Extension Slots" = "Sloturi de extensie";
+"Rule Types" = "Tipuri de reguli";
+"Network and element hiding rules count toward Safari's limit. wBlock Scripts applies its rules on its own, and URL parameter rules have a separate limit of %@." = "Regulile de rețea și de ascundere a elementelor se numără în limita Safari. wBlock Scripts își aplică singur regulile, iar regulile pentru parametrii URL au o limită separată de %@.";
 "Extensions" = "Extensii";
 "Extensive blocklist targeting ads, trackers, and other unwanted content." = "Lista extinsă de blocare care vizează reclame, instrumente de urmărire și alt conținut nedorit.";
 "Failed" = "Eșuat";

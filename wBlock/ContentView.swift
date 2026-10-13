@@ -2275,6 +2275,7 @@ struct EditUserListView: View {
 struct RuleCapacityPopoverView: View {
     @ObservedObject var filterManager: AppFilterManager
     @Environment(\.dismiss) private var dismiss
+    @State private var applied: AppliedRuleCounts?
 
     private var targets: [ContentBlockerTargetInfo] {
         ContentBlockerTargetManager.shared.allTargets(forPlatform: filterManager.currentPlatform)
@@ -2396,6 +2397,29 @@ struct RuleCapacityPopoverView: View {
             .padding(12)
             .liquidGlassCompat(cornerRadius: 12, material: .regularMaterial)
 
+            if let applied, totalUsed > 0 {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Rule Types")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .textCase(.uppercase)
+                    ruleTypeRow(.network, count: max(0, totalUsed - applied.elementHiding))
+                    ruleTypeRow(.elementHiding, count: applied.elementHiding)
+                    ruleTypeRow(.advanced, title: "wBlock Scripts", count: applied.scripts)
+                    ruleTypeRow(.removeParam, count: applied.urlParameters, limit: RemoveParamDNRRuleGenerator.maxGeneratedRules)
+                    Text(
+                        LocalizedStrings.format(
+                            "Network and element hiding rules count toward Safari's limit. wBlock Scripts applies its rules on its own, and URL parameter rules have a separate limit of %@.",
+                            comment: "Rule capacity popover: which rule types count toward which limit",
+                            RemoveParamDNRRuleGenerator.maxGeneratedRules.formatted()
+                        )
+                    )
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+
             VStack(alignment: .leading, spacing: 10) {
                 Text("Extension Slots")
                     .font(.caption.weight(.semibold))
@@ -2434,6 +2458,26 @@ struct RuleCapacityPopoverView: View {
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
                 .fixedSize(horizontal: false, vertical: true)
+        }
+        .task(id: totalUsed) {
+            let targets = targets
+            applied = await Task.detached(priority: .userInitiated) {
+                AppliedRuleCounts.load(targets: targets, groupIdentifier: GroupIdentifier.shared.value)
+            }.value
+        }
+    }
+
+    private func ruleTypeRow(_ kind: FilterRuleKind, title: String? = nil, count: Int, limit: Int? = nil) -> some View {
+        HStack(spacing: 8) {
+            Circle()
+                .fill(FilterRulesView.color(for: kind))
+                .frame(width: 8, height: 8)
+            Text(title ?? FilterRulesView.title(for: kind))
+                .font(.subheadline)
+            Spacer()
+            Text(limit.map { "\(count.formatted()) / \($0.formatted())" } ?? count.formatted())
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.secondary)
         }
     }
 }

@@ -179,6 +179,57 @@ enum RuleText {
     static func needsLowercasing(_ text: Substring) -> Bool {
         text.utf8.contains { $0 >= 0x80 || ($0 >= 0x41 && $0 <= 0x5A) }
     }
+
+    /// Non-overlapping byte-for-byte occurrences of `needle` in `data`.
+    static func count(of needle: String, in data: Data) -> Int {
+        var needle = needle
+        return needle.withUTF8 { needle in
+            data.withUnsafeBytes { haystack in
+                guard let base = haystack.baseAddress, needle.count > 0 else { return 0 }
+                var count = 0
+                var offset = 0
+                while let found = memmem(base + offset, haystack.count - offset, needle.baseAddress, needle.count) {
+                    count += 1
+                    offset = base.distance(to: UnsafeRawPointer(found)) + needle.count
+                }
+                return count
+            }
+        }
+    }
+}
+
+/// Applied rules by kind, counted from the files Safari and wBlock Scripts
+/// load (#978). Network rules are the Safari total less element hiding.
+public struct AppliedRuleCounts: Sendable, Equatable {
+    /// `css-display-none` rules across the content blockers.
+    public let elementHiding: Int
+    /// Scriptlets, scripts, and extended CSS that wBlock Scripts applies.
+    public let scripts: Int
+    /// URL parameter and redirect rules, capped at `RemoveParamDNRRuleGenerator.maxGeneratedRules`.
+    public let urlParameters: Int
+
+    public static func load(targets: [ContentBlockerTargetInfo], groupIdentifier: String) -> AppliedRuleCounts {
+        let container = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier)
+        var elementHiding = 0
+        var scripts = 0
+        for target in targets {
+            if let url = container?.appendingPathComponent(target.rulesFilename),
+               let data = try? Data(contentsOf: url, options: .alwaysMapped) {
+                // A quote inside a selector is escaped, so this only matches action types.
+                elementHiding += RuleText.count(of: "\"css-display-none\"", in: data)
+            }
+            if let advanced = ContentBlockerIncrementalCache.loadCachedAdvancedRules(
+                targetRulesFilename: target.rulesFilename, groupIdentifier: groupIdentifier, containerURL: container
+            ) {
+                // Only \n ends a rule here; scriptlet arguments may hold other line breaks.
+                scripts += advanced.split(separator: "\n").filter { !RuleText.trimmed($0, newlines: true).isEmpty }.count
+            }
+        }
+        let urlParameters = RemoveParamDNRRuleGenerator.loadRulesPayload(
+            groupIdentifier: groupIdentifier, offset: 0, limit: 1
+        )["count"] as? Int ?? 0
+        return AppliedRuleCounts(elementHiding: elementHiding, scripts: scripts, urlParameters: urlParameters)
+    }
 }
 
 /// 128 bits standing for a rule identity in sets that span whole lists, which

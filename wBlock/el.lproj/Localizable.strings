@@ -337,6 +337,8 @@
 "The backup has no usable contents for these lists. They will be skipped when restoring. %@" = "Το αντίγραφο ασφαλείας δεν περιέχει χρησιμοποιήσιμο περιεχόμενο για αυτές τις λίστες. Θα παραλειφθούν κατά την επαναφορά. %@";
 "Export Settings" = "Εξαγωγή ρυθμίσεων";
 "Extension Slots" = "Θέσεις επέκτασης";
+"Rule Types" = "Τύποι κανόνων";
+"Network and element hiding rules count toward Safari's limit. wBlock Scripts applies its rules on its own, and URL parameter rules have a separate limit of %@." = "Οι κανόνες δικτύου και απόκρυψης στοιχείων μετρούν στο όριο του Safari. Το wBlock Scripts εφαρμόζει τους κανόνες του μόνο του, και οι κανόνες παραμέτρων URL έχουν ξεχωριστό όριο %@.";
 "Extensions" = "Επεκτάσεις";
 "Extensive blocklist targeting ads, trackers, and other unwanted content." = "Εκτεταμένη λίστα αποκλεισμού που στοχεύει διαφημίσεις, προγράμματα παρακολούθησης και άλλο ανεπιθύμητο περιεχόμενο.";
 "Failed" = "Απέτυχε";

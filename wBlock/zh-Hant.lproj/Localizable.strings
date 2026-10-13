@@ -337,6 +337,8 @@
 "The backup has no usable contents for these lists. They will be skipped when restoring. %@" = "備份中沒有這些清單的可用內容。還原時將略過它們。%@";
 "Export Settings" = "匯出設定";
 "Extension Slots" = "延伸功能插槽";
+"Rule Types" = "規則類型";
+"Network and element hiding rules count toward Safari's limit. wBlock Scripts applies its rules on its own, and URL parameter rules have a separate limit of %@." = "網路規則與元素隱藏規則會計入 Safari 的上限。wBlock Scripts 會自行套用其規則，URL 參數規則另有 %@ 條的上限。";
 "Extensions" = "延伸功能";
 "Extensive blocklist targeting ads, trackers, and other unwanted content." = "針對廣告、追蹤器和其他不需要內容的大型封鎖清單。";
 "Failed" = "失敗";
