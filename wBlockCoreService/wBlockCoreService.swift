@@ -105,10 +105,10 @@ private struct SourceRuleAdmissionCounter {
         if isCancelled() { throw CancellationError() }
         countsByFilterID[filterID, default: 0] += 0
         let effectiveRules = cosmeticSites.restricting(rulesText)
-        for raw in effectiveRules.split(whereSeparator: \.isNewline) {
+        try RuleText.forEachLine(effectiveRules) { raw in
             if isCancelled() { throw CancellationError() }
-            let trimmed = String(raw).trimmingCharacters(in: .whitespaces)
-            guard FilterRuleAnalysis.isRuleLine(trimmed) else { continue }
+            let trimmed = RuleText.trimmed(raw)
+            guard FilterRuleAnalysis.isRuleLine(trimmed) else { return }
             if seen.insert(RuleFingerprint(FilterRuleAnalysis.ruleIdentity(trimmed))).inserted {
                 countsByFilterID[filterID, default: 0] += 1
             }
@@ -390,8 +390,8 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         var result: [String] = []
         result.reserveCapacity(lines.count)
         for line in lines {
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-            guard FilterRuleAnalysis.isRuleLine(trimmed), !trimmed.hasPrefix("!#") else {
+            let trimmed = RuleText.trimmed(line)
+            guard FilterRuleAnalysis.isRuleLine(trimmed) else {
                 result.append(line)
                 continue
             }
@@ -1785,9 +1785,10 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                     text = source
                 }
                 text = FilterListSiteExclusion.restrictingAdvancedRules(text, excluding: filter.excludedSites, including: filter.selectedSites)
-                for line in text.split(whereSeparator: \.isNewline) {
-                    let trimmed = String(line).trimmingCharacters(in: .whitespaces)
-                    if trimmed.hasPrefix("@@") || trimmed.contains("#@") || trimmed.contains("$badfilter") || trimmed.contains(",badfilter") || trimmed.hasPrefix("!#") {
+                RuleText.forEachLine(text) { line in
+                    let trimmed = RuleText.trimmed(line)
+                    if trimmed.utf8.starts(with: "@@".utf8) || trimmed.utf8.starts(with: "!#".utf8)
+                        || RuleText.contains(trimmed, "#@") || RuleText.contains(trimmed, "$badfilter") || RuleText.contains(trimmed, ",badfilter") {
                         exceptions.insert(FilterRuleAnalysis.ruleIdentity(trimmed))
                     }
                 }
@@ -1803,11 +1804,12 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             if isCancelled() { throw CancellationError() }
             guard snapshot.content(for: filter.id) == nil,
                   let slot = owners[filter.id], let context = contexts[slot],
-                  let raw = try source(filter), !raw.contains("!#") else { continue }
+                  let raw = try source(filter), !RuleText.contains(raw, "!#") else { continue }
             let text = FilterListSiteExclusion.restrictingAdvancedRules(raw, excluding: filter.excludedSites, including: filter.selectedSites)
-            for line in text.split(whereSeparator: \.isNewline) {
-                let trimmed = String(line).trimmingCharacters(in: .whitespaces)
-                guard FilterRuleAnalysis.isRuleLine(trimmed), !trimmed.hasPrefix("@@"), !trimmed.contains("#@") else { continue }
+            RuleText.forEachLine(text) { line in
+                let trimmed = RuleText.trimmed(line)
+                guard FilterRuleAnalysis.isRuleLine(trimmed), !trimmed.utf8.starts(with: "@@".utf8),
+                      !RuleText.contains(trimmed, "#@") else { return }
                 let identity = FilterRuleAnalysis.ruleIdentity(trimmed)
                 let key = Key(context: context, rule: RuleFingerprint(identity))
                 if let owner = seen[key], owner != slot {
@@ -1951,7 +1953,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                 if let duplicates = exclusions[filter.id], !duplicates.isEmpty {
                     let raw = try String(contentsOf: sourceURL, encoding: .utf8)
                     let restricted = FilterListSiteExclusion.restrictingAdvancedRules(raw, excluding: filter.excludedSites, including: filter.selectedSites)
-                    let kept = restricted.components(separatedBy: .newlines).filter {
+                    let kept = RuleText.lines(restricted, emptyLines: .keptPerScalar).filter {
                         !duplicates.contains(FilterRuleAnalysis.ruleIdentity($0))
                     }
                     let keptText = kept.joined(separator: "\n")
@@ -2861,11 +2863,17 @@ extension ContentBlockerService {
 
         // Important: many filter lists use CRLF, which Swift can treat as a single `Character`.
         // Splitting on "\n" alone may fail and yield a single giant line, resulting in 0 converted rules.
-        let lines = deduplicatedRuleLines(
-            filterRules.split(whereSeparator: \.isNewline).flatMap {
-                FilterRuleAnalysis.adGuardEquivalent(String($0)).split(separator: "\n").map(String.init)
+        var rewritten: [String] = []
+        RuleText.forEachLine(filterRules) { line in
+            let rule = FilterRuleAnalysis.adGuardEquivalent(String(line))
+            if rule.utf8.contains(0x0A) {
+                rewritten += rule.split(separator: "\n").map(String.init)
+            } else {
+                rewritten.append(rule)
             }
-        )
+        }
+        let lines = deduplicatedRuleLines(rewritten)
+        rewritten = []
         if cancellationRequested() {
             throw CancellationError()
         }

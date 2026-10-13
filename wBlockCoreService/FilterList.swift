@@ -227,8 +227,8 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
     /// Counts effective (non-comment, non-header, non-empty) rules in filter content.
     public static func countRules(in content: String) -> Int {
         var count = 0
-        content.enumerateLines { line, _ in
-            if FilterRuleAnalysis.isRuleLine(line.trimmingCharacters(in: .whitespacesAndNewlines)) { count += 1 }
+        RuleText.forEachLine(content) { line in
+            if FilterRuleAnalysis.isRuleLine(RuleText.trimmed(line, newlines: true)) { count += 1 }
         }
         return count
     }

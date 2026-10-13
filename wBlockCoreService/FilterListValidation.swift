@@ -229,7 +229,7 @@ public enum FilterListContentValidator {
         // filter hosts and may occur in network, option, or cosmetic rules.
         var scannedLines = 0
         var sawFilterSyntax = false
-        for line in content.components(separatedBy: .newlines) {
+        for line in RuleText.lines(content, emptyLines: .keptPerScalar, limit: 100) {
             guard scannedLines < 100 else { break }
             scannedLines += 1
 

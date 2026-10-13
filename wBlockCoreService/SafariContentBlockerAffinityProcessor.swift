@@ -73,16 +73,16 @@ public enum SafariContentBlockerAffinityProcessor {
            let synthesized = contentWrappingCustomExceptionRules(in: rawContent) {
             return synthesized
         }
-        return rawContent.contains(directivePrefix) ? rawContent : nil
+        return RuleText.contains(rawContent, directivePrefix) ? rawContent : nil
     }
 
     /// Wraps top-level `@@` exception rules in `!#safari_cb_affinity(all)`
     /// blocks. Returns `nil` when the content has no top-level exceptions.
     private static func contentWrappingCustomExceptionRules(in content: String) -> String? {
-        guard content.contains("@@") else { return nil }
+        guard RuleText.contains(content, "@@") else { return nil }
 
         let openDirectivePrefix = directivePrefix + "("
-        let lines = content.components(separatedBy: .newlines)
+        let lines = RuleText.lines(content, emptyLines: .keptPerScalar).map(String.init)
         var output: [String] = []
         output.reserveCapacity(lines.count + 8)
         var insideExplicitBlock = false
@@ -254,7 +254,7 @@ public enum SafariContentBlockerAffinityProcessor {
             ? defaultContentBlockerType(for: target)
             : excludedDefaultContentBlockerType(for: targetTypes)
         let groupedRules = AffinityRulesGrouper.group(rules: [
-            (defaultType, content.components(separatedBy: .newlines))
+            (defaultType, RuleText.lines(content, emptyLines: .keptPerScalar).map(String.init))
         ])
         if isCancelled?() == true {
             throw CancellationError()

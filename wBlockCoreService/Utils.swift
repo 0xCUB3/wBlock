@@ -33,7 +33,7 @@ public enum FilterListMetadataParser {
         var version: String?
         var scannedLines = 0
 
-        for line in content.split(whereSeparator: \.isNewline) {
+        for line in RuleText.lines(content, limit: maxLines ?? .max) {
             let trimmedLine = line.trimmingCharacters(in: .whitespaces)
 
             if title == nil {
@@ -180,8 +180,8 @@ public enum FilterListContentProcessing {
         from content: String,
         onStrip: ((String) -> Void)? = nil
     ) -> String {
-        let lines = content.split(omittingEmptySubsequences: false, whereSeparator: { $0.isNewline })
-            .map { ($0, $0.trimmingCharacters(in: .whitespacesAndNewlines)) }
+        let lines = RuleText.lines(content, emptyLines: .kept)
+            .map { ($0, String(RuleText.trimmed($0, newlines: true))) }
         // Converted as-is, a bare hostname is a substring match anywhere in the URL.
         // Only anchor it when the whole list is hostnames, since ABP lists use
         // hostname-shaped substrings such as `_werbung.php` on purpose.
@@ -213,6 +213,12 @@ public enum FilterListContentProcessing {
     /// The hostnames of a hosts-file line, or nil when the line is not one.
     /// Loopback names such as `localhost` map to an empty list.
     public static func hostsEntryHosts(_ trimmedLine: String) -> [String]? {
+        // An address, then whitespace before the first name.
+        let utf8 = trimmedLine.utf8
+        guard let first = utf8.first,
+              (first >= 0x30 && first <= 0x3A) || ((first | 0x20) >= 0x61 && (first | 0x20) <= 0x66),
+              utf8.contains(where: { $0 == 0x20 || $0 == 0x09 || $0 >= 0x80 })
+        else { return nil }
         let entry = trimmedLine.split(separator: "#", maxSplits: 1, omittingEmptySubsequences: false)[0]
         let fields = entry.split(whereSeparator: \.isWhitespace).map(String.init)
         guard fields.count >= 2, matches(hostsAddress, fields[0]) else { return nil }

@@ -27,52 +27,55 @@ public enum CrossTargetExceptionReplicator {
         /// `host` for `||host`-anchored patterns without wildcards.
         let anchoredHost: String?
 
-        init?(line: String) {
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-            guard FilterRuleAnalysis.isRuleLine(trimmed), !trimmed.hasPrefix("!#") else { return nil }
-            if trimmed.contains("##") || trimmed.contains("#@") || trimmed.contains("#?#")
-                || trimmed.contains("#$#") || trimmed.contains("#%#") {
+        init?(line: Substring) {
+            let trimmed = RuleText.trimmed(line)
+            guard FilterRuleAnalysis.isRuleLine(trimmed) else { return nil }
+            if trimmed.utf8.contains(UInt8(ascii: "#")),
+               ["##", "#@", "#?#", "#$#", "#%#"].contains(where: { RuleText.contains(trimmed, $0) }) {
                 return nil
             }
             let identity = FilterRuleAnalysis.ruleIdentity(trimmed)
-            isException = identity.hasPrefix("@@")
-            let body = isException ? String(identity.dropFirst(2)) : identity
+            let utf8 = identity.utf8
+            isException = utf8.starts(with: "@@".utf8)
+            let body = isException ? identity[utf8.index(utf8.startIndex, offsetBy: 2)...] : identity[...]
             guard !body.isEmpty else { return nil }
 
             var pattern = body
-            var options = ""
-            if body.hasPrefix("/") {
+            var options = body[body.endIndex...]
+            let bytes = body.utf8
+            if bytes.first == UInt8(ascii: "/") {
                 var escaped = false
                 var close: String.Index?
-                for index in body.indices.dropFirst() {
+                for index in bytes.indices.dropFirst() {
                     if escaped { escaped = false; continue }
-                    if body[index] == "\\" { escaped = true; continue }
-                    if body[index] == "/" { close = index; break }
+                    if bytes[index] == UInt8(ascii: "\\") { escaped = true; continue }
+                    if bytes[index] == UInt8(ascii: "/") { close = index; break }
                 }
                 if let close {
-                    let end = body.index(after: close)
-                    pattern = String(body[..<end])
-                    if end < body.endIndex, body[end] == "$" {
-                        options = String(body[body.index(after: end)...])
+                    let end = bytes.index(after: close)
+                    pattern = body[..<end]
+                    if end < bytes.endIndex, bytes[end] == UInt8(ascii: "$") {
+                        options = body[bytes.index(after: end)...]
                     }
                 }
-            } else if let dollar = body.firstIndex(of: "$") {
-                pattern = String(body[..<dollar])
-                options = String(body[body.index(after: dollar)...])
+            } else if let dollar = bytes.firstIndex(of: UInt8(ascii: "$")) {
+                pattern = body[..<dollar]
+                options = body[bytes.index(after: dollar)...]
             }
             guard !pattern.isEmpty else { return nil }
             // Only the DNR generator understands these; the converter drops them.
-            if options.contains("removeparam") || options.contains("urltransform") { return nil }
-            self.pattern = pattern
+            if RuleText.contains(options, "removeparam") || RuleText.contains(options, "urltransform") { return nil }
+            self.pattern = String(pattern)
 
-            guard pattern.hasPrefix("||"), !pattern.contains("*") else {
+            let patternBytes = pattern.utf8
+            guard patternBytes.starts(with: "||".utf8), !patternBytes.contains(UInt8(ascii: "*")) else {
                 anchoredHost = nil
                 return
             }
-            let rest = pattern.dropFirst(2)
-            let hostEnd = rest.firstIndex { "^/$|?".contains($0) } ?? rest.endIndex
-            let host = String(rest[..<hostEnd])
-            anchoredHost = host.contains(".") ? host : nil
+            let rest = pattern[patternBytes.index(patternBytes.startIndex, offsetBy: 2)...]
+            let hostEnd = rest.utf8.firstIndex { "^/$|?".utf8.contains($0) } ?? rest.endIndex
+            let host = rest[..<hostEnd]
+            anchoredHost = host.utf8.contains(UInt8(ascii: ".")) ? String(host) : nil
         }
 
         /// True when the rule matches a whole host: `||host^`, `||host`, `||host/`.
@@ -99,9 +102,9 @@ public enum CrossTargetExceptionReplicator {
 
         /// A list compiled into this target.
         mutating func addTarget(_ source: String, isCancelled: () -> Bool) throws {
-            for raw in source.split(whereSeparator: \.isNewline) {
+            try RuleText.forEachLine(source) { raw in
                 if isCancelled() { throw CancellationError() }
-                guard let rule = NetworkRule(line: String(raw)), !rule.isException else { continue }
+                guard let rule = NetworkRule(line: raw), !rule.isException else { return }
                 patterns.insert(rule.pattern)
                 if rule.isBareHost, let host = rule.anchoredHost { bareHosts.insert(host) }
             }
@@ -166,11 +169,11 @@ public enum CrossTargetExceptionReplicator {
     private static func exceptions(of source: String, isCancelled: () -> Bool) throws -> [(line: String, rule: NetworkRule)] {
         func parse() throws -> [(line: String, rule: NetworkRule)] {
             var exceptions: [(line: String, rule: NetworkRule)] = []
-            for raw in source.split(whereSeparator: \.isNewline) {
+            try RuleText.forEachLine(source) { raw in
                 if isCancelled() { throw CancellationError() }
-                let line = String(raw).trimmingCharacters(in: .whitespaces)
-                guard line.hasPrefix("@@"), let rule = NetworkRule(line: line) else { continue }
-                exceptions.append((line, rule))
+                let line = RuleText.trimmed(raw)
+                guard line.utf8.starts(with: "@@".utf8), let rule = NetworkRule(line: line) else { return }
+                exceptions.append((String(line), rule))
             }
             return exceptions
         }

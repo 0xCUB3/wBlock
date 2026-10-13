@@ -143,7 +143,7 @@ extension RemoveParamDNRRuleGenerator {
     private static func lines(containing needle: String, in contents: String) -> [Substring] {
         var result: [Substring] = []
         var searchStart = contents.startIndex
-        while let match = contents.range(of: needle, range: searchStart..<contents.endIndex) {
+        while let match = RuleText.range(of: needle, in: contents[searchStart...]) {
             let line = contents.lineRange(for: match)
             result.append(contents[line].trimmingTrailingNewlines)
             searchStart = line.upperBound

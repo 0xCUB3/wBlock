@@ -23,6 +23,164 @@ public enum FilterRuleKind: String, CaseIterable, Sendable {
     case duplicate
 }
 
+/// List text handled as UTF-8 bytes. Lists run to hundreds of thousands of
+/// lines, and Character-based splitting, trimming and searching took most of
+/// an update. Results match the Character-based calls they replace.
+enum RuleText {
+    enum EmptyLines {
+        /// `split(whereSeparator: \.isNewline)`
+        case omitted
+        /// `split(omittingEmptySubsequences: false, whereSeparator: \.isNewline)`
+        case kept
+        /// `components(separatedBy: .newlines)`, where CRLF holds an empty line.
+        case keptPerScalar
+    }
+
+    /// The lines of `text`, split exactly as the call named by `emptyLines`, up to `limit`.
+    static func forEachLine(
+        _ text: String, emptyLines: EmptyLines = .omitted, limit: Int = .max, _ body: (Substring) throws -> Void
+    ) rethrows {
+        guard limit > 0 else { return }
+        let keepingEmpty = emptyLines != .omitted
+        var emitted = 0
+        var text = text
+        text.makeContiguousUTF8()
+        let utf8 = text.utf8
+        func line(_ from: Int, _ to: Int) -> Substring {
+            text[utf8.index(utf8.startIndex, offsetBy: from)..<utf8.index(utf8.startIndex, offsetBy: to)]
+        }
+        let scanned: Void? = try utf8.withContiguousStorageIfAvailable { bytes in
+            var start = 0
+            var index = 0
+            while index < bytes.count {
+                let byte = bytes[index]
+                let width: Int
+                if byte == 0x0D, emptyLines == .kept, index + 1 < bytes.count, bytes[index + 1] == 0x0A {
+                    width = 2
+                } else if byte >= 0x0A && byte <= 0x0D {
+                    width = 1
+                } else if byte == 0xC2, index + 1 < bytes.count, bytes[index + 1] == 0x85 {
+                    width = 2
+                } else if byte == 0xE2, index + 2 < bytes.count, bytes[index + 1] == 0x80,
+                          bytes[index + 2] == 0xA8 || bytes[index + 2] == 0xA9 {
+                    width = 3
+                } else {
+                    index += 1
+                    continue
+                }
+                if keepingEmpty || index > start {
+                    try body(line(start, index))
+                    emitted += 1
+                    if emitted == limit { return }
+                }
+                index += width
+                start = index
+            }
+            if keepingEmpty || bytes.count > start { try body(line(start, bytes.count)) }
+        }
+        guard scanned == nil else { return }
+        let pieces: [Substring]
+        switch emptyLines {
+        case .omitted: pieces = text.split(whereSeparator: \.isNewline)
+        case .kept: pieces = text.split(omittingEmptySubsequences: false, whereSeparator: \.isNewline)
+        case .keptPerScalar: pieces = text.components(separatedBy: .newlines).map { $0[...] }
+        }
+        for piece in pieces.prefix(limit) { try body(piece) }
+    }
+
+    static func lines(_ text: String, emptyLines: EmptyLines = .omitted, limit: Int = .max) -> [Substring] {
+        var lines: [Substring] = []
+        forEachLine(text, emptyLines: emptyLines, limit: limit) { lines.append($0) }
+        return lines
+    }
+
+    /// `trimmingCharacters(in: .whitespaces)`, or `.whitespacesAndNewlines`.
+    static func trimmed(_ text: String, newlines: Bool = false) -> Substring {
+        trimmed(text[...], newlines: newlines)
+    }
+
+    static func trimmed(_ text: Substring, newlines: Bool = false) -> Substring {
+        let utf8 = text.utf8
+        func isSpace(_ byte: UInt8) -> Bool {
+            byte == 0x20 || byte == 0x09 || (newlines && byte >= 0x0A && byte <= 0x0D)
+        }
+        var start = utf8.startIndex
+        var end = utf8.endIndex
+        while start < end, isSpace(utf8[start]) { utf8.formIndex(after: &start) }
+        while start < end, isSpace(utf8[utf8.index(before: end)]) { utf8.formIndex(before: &end) }
+        // Other whitespace is never ASCII.
+        if start < end, utf8[start] >= 0x80 || utf8[utf8.index(before: end)] >= 0x80 {
+            return text[start..<end].trimmingCharacters(in: newlines ? .whitespacesAndNewlines : .whitespaces)[...]
+        }
+        return text[start..<end]
+    }
+
+    static func contains<S: StringProtocol>(_ text: S, _ needle: String) -> Bool where S.SubSequence == Substring {
+        range(of: needle, in: text) != nil
+    }
+
+    /// The first byte-for-byte occurrence of `needle`.
+    static func range<S: StringProtocol>(of needle: String, in text: S) -> Range<String.Index>? where S.SubSequence == Substring {
+        let utf8 = text.utf8
+        let offset: Int?? = utf8.withContiguousStorageIfAvailable { haystack in
+            var needle = needle
+            return needle.withUTF8 { needle -> Int? in
+                guard needle.count > 0 else { return 0 }
+                guard haystack.count >= needle.count, let base = haystack.baseAddress,
+                      let found = memmem(base, haystack.count, needle.baseAddress, needle.count)
+                else { return nil }
+                return base.distance(to: found.assumingMemoryBound(to: UInt8.self))
+            }
+        }
+        let start: String.Index
+        if let offset {
+            guard let offset else { return nil }
+            start = utf8.index(utf8.startIndex, offsetBy: offset)
+        } else {
+            guard let found = utf8.indices.first(where: { utf8[$0...].starts(with: needle.utf8) }) else { return nil }
+            start = found
+        }
+        return start..<utf8.index(start, offsetBy: needle.utf8.count)
+    }
+
+    /// Whether `text` holds `needle`, ignoring ASCII case. `needle` is lowercase ASCII.
+    static func containsIgnoringASCIICase<S: StringProtocol>(_ text: S, _ needle: StaticString) -> Bool {
+        let target = UnsafeBufferPointer(start: needle.utf8Start, count: needle.utf8CodeUnitCount)
+        func search(_ bytes: UnsafeBufferPointer<UInt8>) -> Bool {
+            guard bytes.count >= target.count else { return target.isEmpty }
+            var start = 0
+            while start <= bytes.count - target.count {
+                var matched = 0
+                while matched < target.count {
+                    let byte = bytes[start + matched]
+                    guard (byte >= 0x41 && byte <= 0x5A ? byte | 0x20 : byte) == target[matched] else { break }
+                    matched += 1
+                }
+                if matched == target.count { return true }
+                start += 1
+            }
+            return false
+        }
+        if let found = text.utf8.withContiguousStorageIfAvailable(search) { return found }
+        return Array(text.utf8).withUnsafeBufferPointer(search)
+    }
+
+    /// `lowercased()`, without allocating when nothing changes case.
+    static func lowercased(_ text: Substring) -> String {
+        var hasUpper = false
+        for byte in text.utf8 {
+            if byte >= 0x80 { return text.lowercased() }
+            if byte >= 0x41 && byte <= 0x5A { hasUpper = true }
+        }
+        guard hasUpper else { return String(text) }
+        return String(decoding: text.utf8.map { $0 >= 0x41 && $0 <= 0x5A ? $0 | 0x20 : $0 }, as: UTF8.self)
+    }
+
+    static func needsLowercasing(_ text: Substring) -> Bool {
+        text.utf8.contains { $0 >= 0x80 || ($0 >= 0x41 && $0 <= 0x5A) }
+    }
+}
+
 /// 128 bits standing for a rule identity in sets that span whole lists, which
 /// would otherwise keep a string per rule. Seeded per process; never persist it.
 struct RuleFingerprint: Hashable {
@@ -77,21 +235,30 @@ public struct FilterRuleAnalysis: Sendable {
     /// Fold only case-insensitive syntax. Selector bodies, option values,
     /// regular expressions and match-case URL patterns keep their spelling.
     public static func ruleIdentity(_ raw: String) -> String {
-        let rule = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        let cosmeticMarkers = ["##", "#@#", "#?#", "#@?#", "#$#", "#@$#", "#%#", "#@%#", "#$?#", "#@$?#"]
-        if let marker = rule.firstIndex(of: "#"),
-           cosmeticMarkers.contains(where: { rule[marker...].hasPrefix($0) }) {
-            return rule[..<marker].contains("/") ? rule : rule[..<marker].lowercased() + rule[marker...]
+        ruleIdentity(raw[...])
+    }
+
+    private static let cosmeticMarkers = ["##", "#@#", "#?#", "#@?#", "#$#", "#@$#", "#%#", "#@%#", "#$?#", "#@$?#"]
+
+    static func ruleIdentity(_ raw: Substring) -> String {
+        let rule = RuleText.trimmed(raw, newlines: true)
+        let bytes = rule.utf8
+        if let marker = bytes.firstIndex(of: UInt8(ascii: "#")),
+           cosmeticMarkers.contains(where: { rule.utf8[marker...].starts(with: $0.utf8) }) {
+            let domains = rule[..<marker]
+            return domains.utf8.contains(UInt8(ascii: "/")) ? String(rule) : RuleText.lowercased(domains) + rule[marker...]
         }
-        let exception = rule.hasPrefix("@@") ? "@@" : ""
-        let body = exception.isEmpty ? rule : String(rule.dropFirst(2))
-        let pieces = body.split(separator: "$", maxSplits: 1, omittingEmptySubsequences: false)
-        let pattern = String(pieces[0])
-        let options = pieces.count > 1 ? String(pieces[1]) : nil
+        let isException = bytes.starts(with: "@@".utf8)
+        let body = isException ? rule[bytes.index(bytes.startIndex, offsetBy: 2)...] : rule
+        let dollar = body.utf8.firstIndex(of: UInt8(ascii: "$")) ?? body.endIndex
+        let pattern = body[..<dollar]
         // Regex escapes such as \\D and \\d have different meanings.
-        guard !pattern.hasPrefix("/"),
-              !(options?.split(separator: ",").contains("match-case") ?? false) else { return rule }
-        return exception + pattern.lowercased() + (options.map { "$" + $0 } ?? "")
+        guard RuleText.needsLowercasing(pattern), pattern.utf8.first != UInt8(ascii: "/"),
+              !body[dollar...].utf8.dropFirst().split(separator: UInt8(ascii: ",")).contains(where: {
+                  $0.elementsEqual("match-case".utf8)
+              })
+        else { return String(rule) }
+        return (isException ? "@@" : "") + RuleText.lowercased(pattern) + body[dollar...]
     }
 
     /// uBO's `##selector:remove-attr(name)` and `:remove-class(name)` read
@@ -99,12 +266,17 @@ public struct FilterRuleAnalysis: Sendable {
     /// selector and invalidates every sibling rule there (#918). Rewrite them
     /// as the equivalent AdGuard scriptlets.
     public static func adGuardEquivalent(_ rule: String) -> String {
-        let trimmed = rule.trimmingCharacters(in: .whitespaces)
-        guard let marker = ["#@#", "##"].lazy.compactMap({ trimmed.range(of: $0) }).first else {
+        let trimmed = String(RuleText.trimmed(rule))
+        guard let marker = RuleText.range(of: "#@#", in: trimmed) ?? RuleText.range(of: "##", in: trimmed) else {
+            // Only these options are rewritten outside cosmetic rules.
+            guard !trimmed.utf8.allSatisfy({ $0 < 0x80 }) || RuleText.containsIgnoringASCIICase(trimmed, "denyallow")
+                || RuleText.containsIgnoringASCIICase(trimmed, "object") else { return rule }
             return expandingDenyAllow(trimmed) ?? droppingObjectType(trimmed) ?? rule
         }
         let exception = trimmed[marker] == "#@#"
         let body = trimmed[marker.upperBound...]
+        // Both rewrites below need a parenthesis or a shadow-DOM combinator.
+        guard body.utf8.contains(UInt8(ascii: "(")) || RuleText.contains(body, ">>>") else { return rule }
         for name in ["remove-attr", "remove-class"] where body.hasSuffix(")") {
             guard let pseudo = body.range(of: ":\(name)(", options: .backwards) else { continue }
             let selector = body[..<pseudo.lowerBound].trimmingCharacters(in: .whitespaces)
@@ -194,10 +366,14 @@ public struct FilterRuleAnalysis: Sendable {
         return false
     }
 
-    public static func isRuleLine(_ trimmed: String) -> Bool {
-        if trimmed.isEmpty || trimmed.hasPrefix("!") || trimmed.hasPrefix("[") { return false }
+    public static func isRuleLine<S: StringProtocol>(_ trimmed: S) -> Bool {
+        let utf8 = trimmed.utf8
+        guard let first = utf8.first, first != UInt8(ascii: "!"), first != UInt8(ascii: "[") else { return false }
         // "# comment" lines in hosts-style lists, but not "##selector" rules.
-        if trimmed.hasPrefix("# ") || trimmed == "#" { return false }
+        if first == UInt8(ascii: "#") {
+            let second = utf8.dropFirst().first
+            if second == nil || second == UInt8(ascii: " ") { return false }
+        }
         return true
     }
 

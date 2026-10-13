@@ -358,10 +358,8 @@ public enum RemoveParamDNRRuleGenerator {
 
     static func extractRemoveParamLines(from contents: String) -> String {
         var result = ""
-        for rawLine in contents.split(whereSeparator: \.isNewline) {
-            guard rawLine.range(of: "removeparam", options: .caseInsensitive) != nil else {
-                continue
-            }
+        RuleText.forEachLine(contents) { rawLine in
+            guard RuleText.containsIgnoringASCIICase(rawLine, "removeparam") else { return }
             result.append(contentsOf: rawLine)
             result.append("\n")
         }
