@@ -32,6 +32,11 @@ struct Main {
             ("||quantserve.com^$~object,third-party", "||quantserve.com^$third-party"),
             ("||x.com^$~object", "||x.com^"),
             ("@@||x.com/imp;$object,domain=a.de", "@@||x.com/imp;$object,domain=a.de"),
+            // #975: Safari can't exclude request domains; allowed domains become exceptions.
+            ("$script,third-party,denyallow=a.net|b.com,domain=s.com",
+             "$script,third-party,domain=s.com\n@@||a.net^$script,third-party,domain=s.com\n@@||b.com^$script,third-party,domain=s.com"),
+            ("||x.com^$image,denyallow=a.net,domain=s.com", "||x.com^$image,denyallow=a.net,domain=s.com"),
+            ("$script,denyallow=a.net", "$script,denyallow=a.net"),
         ]
         for (input, expected) in cases {
             let output = FilterRuleAnalysis.adGuardEquivalent(input)

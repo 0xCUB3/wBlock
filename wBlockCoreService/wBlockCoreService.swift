@@ -2900,7 +2900,9 @@ extension ContentBlockerService {
         // Important: many filter lists use CRLF, which Swift can treat as a single `Character`.
         // Splitting on "\n" alone may fail and yield a single giant line, resulting in 0 converted rules.
         let lines = deduplicatedRuleLines(
-            filterRules.split(whereSeparator: \.isNewline).map { FilterRuleAnalysis.adGuardEquivalent(String($0)) }
+            filterRules.split(whereSeparator: \.isNewline).flatMap {
+                FilterRuleAnalysis.adGuardEquivalent(String($0)).split(separator: "\n").map(String.init)
+            }
         )
         if cancellationRequested() {
             throw CancellationError()

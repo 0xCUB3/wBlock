@@ -140,6 +140,16 @@ struct RemoveParamDNRRuleGeneratorTests {
         expectEqual(unscoped.condition.domains, nil, "unscoped domains")
         expectEqual(unscoped.condition.requestDomains, nil, "unscoped request domains")
 
+        // #975: denyallow lists request domains the rule must not touch.
+        let denyAllow = RemoveParamDNRRuleGenerator.generateRules(from: """
+        $removeparam=eid,doc,denyallow=b.example|a.example,domain=site.example
+        ||x.example^$removeparam=utm,to=~c.example,denyallow=a.example
+        ||y.example^$removeparam=utm,denyallow=~a.example
+        """)
+        expectEqual(denyAllow.rules.count, 2, "negated denyallow is skipped")
+        expectEqual(denyAllow.rules[0].condition.excludedRequestDomains, ["a.example", "b.example"], "denyallow excluded")
+        expectEqual(denyAllow.rules[1].condition.excludedRequestDomains, ["a.example", "c.example"], "denyallow merges with to")
+
         let documentAliases = RemoveParamDNRRuleGenerator.generateRules(from: """
         ||doc.example^$removeparam=utm,doc
         ||document.example^$removeparam=utm,document

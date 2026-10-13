@@ -81,7 +81,7 @@ public struct FilterRuleAnalysis: Sendable {
     public static func adGuardEquivalent(_ rule: String) -> String {
         let trimmed = rule.trimmingCharacters(in: .whitespaces)
         guard let marker = ["#@#", "##"].lazy.compactMap({ trimmed.range(of: $0) }).first else {
-            return droppingObjectType(trimmed) ?? rule
+            return expandingDenyAllow(trimmed) ?? droppingObjectType(trimmed) ?? rule
         }
         let exception = trimmed[marker] == "#@#"
         let body = trimmed[marker.upperBound...]
@@ -120,6 +120,27 @@ public struct FilterRuleAnalysis: Sendable {
         if options.contains(where: { $0.lowercased() == "object" }),
            !kept.contains(where: { resourceTypes.contains($0.lowercased()) }) { return nil }
         return String(rule[..<dollar]) + (kept.isEmpty ? "" : "$" + kept.joined(separator: ","))
+    }
+
+    /// Content blockers can't exclude request domains from a block rule, so the
+    /// converter rejects `denyallow` (#975). A pattern-less, site-scoped block
+    /// with `denyallow=a.com|b.com` becomes the block plus one exception per
+    /// allowed domain under the same options, one rule per line. An exception
+    /// also lifts other lists' blocks of those domains on those sites, so only
+    /// pattern-less rules are expanded; a pattern would widen it further.
+    private static func expandingDenyAllow(_ rule: String) -> String? {
+        guard !rule.hasPrefix("@@"), let dollar = rule.lastIndex(of: "$"),
+              ["", "*"].contains(rule[..<dollar]) else { return nil }
+        let options = rule[rule.index(after: dollar)...].split(separator: ",").map(String.init)
+        guard let deny = options.first(where: { $0.lowercased().hasPrefix("denyallow=") }),
+              options.contains(where: { $0.lowercased().hasPrefix("domain=") }),
+              !options.contains(where: { $0.lowercased().hasPrefix("removeparam") }) else { return nil }
+        let domains = deny.dropFirst("denyallow=".count).split(separator: "|")
+        guard !domains.isEmpty, domains.allSatisfy({
+            RemoveParamDNRRuleGenerator.isSupportedDomain($0.lowercased())
+        }) else { return nil }
+        let suffix = "$" + options.filter { $0 != deny }.joined(separator: ",")
+        return ([suffix] + domains.map { "@@||\($0)^" + suffix }).joined(separator: "\n")
     }
 
     private static let resourceTypes: Set<String> = [
@@ -182,7 +203,9 @@ public struct FilterRuleAnalysis: Sendable {
                 lines.append(Line(text: raw, kind: .duplicate))
                 return
             }
-            lines.append(Line(text: raw, kind: classify(adGuardEquivalent(trimmed), safariVersion: safariVersion)))
+            let rewritten = adGuardEquivalent(trimmed).split(separator: "\n").map(String.init)
+            let kinds = rewritten.map { classify($0, safariVersion: safariVersion) }
+            lines.append(Line(text: raw, kind: kinds.first { $0 == .unsupported } ?? kinds[0]))
         }
         if stop { return FilterRuleAnalysis(lines: []) }
         return FilterRuleAnalysis(lines: lines)

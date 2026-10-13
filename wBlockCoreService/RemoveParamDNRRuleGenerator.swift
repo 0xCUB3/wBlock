@@ -22,7 +22,7 @@ public enum RemoveParamDNRRuleGenerator {
     public static let maxGeneratedRules = min(ruleIDLimit - ruleIDBase, 30_000)
     private static let urlFilterSpecialCharacters = CharacterSet(charactersIn: "|*^")
     private static let skippedOptionNames: Set<String> = [
-        "app", "cname", "content", "cookie", "csp", "denyallow", "header",
+        "app", "cname", "content", "cookie", "csp", "header",
         "hls", "jsonprune", "permissions", "redirect", "referrerpolicy",
         "removeheader", "replace", "strict1p", "strict3p", "urlblock", "webrtc"
     ]
@@ -34,7 +34,7 @@ public enum RemoveParamDNRRuleGenerator {
     /// bare-domain syntax that this generator cannot interpret; skipping
     /// the rule avoids generating a global `v`-stripping rule.
     private static let recognizedOptionNames: Set<String> = [
-        "removeparam", "domain", "to", "third-party", "~third-party",
+        "removeparam", "domain", "to", "denyallow", "third-party", "~third-party",
         "match-case", "important", "badfilter",
         "doc", "document", "main_frame", "subdocument", "sub_frame",
         "stylesheet", "script", "image", "font", "object",
@@ -622,15 +622,19 @@ public enum RemoveParamDNRRuleGenerator {
         }
 
         guard let domains = parseDomainOption(named: "domain", from: optionPairs),
-              let toDomains = parseDomainOption(named: "to", from: optionPairs)
+              let toDomains = parseDomainOption(named: "to", from: optionPairs),
+              // `denyallow=a.com` means the same as `to=~a.com` (#975).
+              let denyAllow = parseDomainOption(named: "denyallow", from: optionPairs),
+              denyAllow.excluded.isEmpty
         else {
             return nil
         }
+        let excludedRequestDomains = (toDomains.excluded + denyAllow.included).sorted()
         if !domains.included.isEmpty { condition.domains = domains.included }
         if !domains.excluded.isEmpty { condition.excludedDomains = domains.excluded }
 
         if !toDomains.included.isEmpty { condition.requestDomains = toDomains.included }
-        if !toDomains.excluded.isEmpty { condition.excludedRequestDomains = toDomains.excluded }
+        if !excludedRequestDomains.isEmpty { condition.excludedRequestDomains = excludedRequestDomains }
 
         if optionPairs.contains(where: { $0.name == "third-party" }) {
             condition.domainType = "thirdParty"
