@@ -551,8 +551,8 @@
 "Paste" = "جای‌گذاری";
 "Paste from Clipboard" = "جای‌گذاری از کلیپ‌بورد";
 "Paste one or more filter URLs, one per line." = "یک یا چند نشانی URL فیلتر را جای‌گذاری کنید، هر کدام در یک خط.";
-"Paste the direct .user.js link. wBlock will download and install it for you." = "پیوند مستقیم .user.js را جای‌گذاری کنید. wBlock آن را برای شما بارگیری و نصب خواهد کرد.";
-"Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you." = "پیوند مستقیم .user.js، .js، .user.css، .less، .sass، .scss، .styl یا .pcss را جای‌گذاری کنید. wBlock آن را برای شما بارگیری و نصب خواهد کرد.";
+"Paste the direct .user.js link. wBlock will download and install it for you." = "پیوند مستقیم \U2068.user.js\U2069 را جای‌گذاری کنید. wBlock آن را برای شما بارگیری و نصب خواهد کرد.";
+"Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you." = "پیوند مستقیم \U2068.user.js\U2069، \U2068.js\U2069، \U2068.user.css\U2069، \U2068.less\U2069، \U2068.sass\U2069، \U2068.scss\U2069، \U2068.styl\U2069 یا \U2068.pcss\U2069 را جای‌گذاری کنید. wBlock آن را برای شما بارگیری و نصب خواهد کرد.";
 "Pause Blocking" = "توقف موقت مسدودسازی";
 "Paused Components" = "مؤلفه‌های متوقف‌شده";
 "Pausing blocking..." = "در حال توقف موقت مسدودسازی...";
@@ -569,8 +569,8 @@
 "Process completed with reload issues" = "فرآیند با مشکلاتی در بارگیری مجدد به پایان رسید";
 "Progress" = "پیشرفت";
 "Protects against suspicious URLs, phishing sites, and unwanted software." = "از شما در برابر نشانی‌های URL مشکوک، سایت‌های فیشینگ و نرم‌افزارهای ناخواسته محافظت می‌کند.";
-"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = "یک پیوند معتبر http:// یا https:// ارائه دهید که به .js، .user.js، .user.css، .less، .sass، .scss، .styl یا .pcss ختم شود";
-"Provide a valid https:// link ending in .user.js" = "یک پیوند معتبر https:// ارائه دهید که به .user.js ختم شود";
+"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = "یک پیوند معتبر \U2068http://\U2069 یا \U2068https://\U2069 ارائه دهید که به \U2068.js\U2069، \U2068.user.js\U2069، \U2068.user.css\U2069، \U2068.less\U2069، \U2068.sass\U2069، \U2068.scss\U2069، \U2068.styl\U2069 یا \U2068.pcss\U2069 ختم شود";
+"Provide a valid https:// link ending in .user.js" = "یک پیوند معتبر \U2068https://\U2069 ارائه دهید که به \U2068.user.js\U2069 ختم شود";
 "Psst! You forgot something!" = "پست! چیزی را فراموش کردید!";
 "Quit Without Applying" = "خروج بدون اعمال";
 "Reading Files" = "در حال خواندن فایل‌ها";
@@ -696,7 +696,7 @@
 "Successfully downloaded custom filter" = "فیلتر سفارشی با موفقیت بارگیری شد";
 "Successfully updated script" = "اسکریپت با موفقیت به‌روزرسانی شد";
 "Summary" = "خلاصه";
-"Supports .user.js, .js, .user.css, and .less files. Local imports won't auto-update; re-import to replace." = "از فایل‌های .user.js، .js، .user.css و .less پشتیبانی می‌کند. موارد واردشدهٔ محلی به‌طور خودکار به‌روزرسانی نمی‌شوند؛ برای جایگزینی دوباره وارد کنید.";
+"Supports .user.js, .js, .user.css, and .less files. Local imports won't auto-update; re-import to replace." = "از فایل‌های \U2068.user.js\U2069، \U2068.js\U2069، \U2068.user.css\U2069 و \U2068.less\U2069 پشتیبانی می‌کند. موارد واردشدهٔ محلی به‌طور خودکار به‌روزرسانی نمی‌شوند؛ برای جایگزینی دوباره وارد کنید.";
 "Sync" = "همگام‌سازی";
 "Sync across devices" = "همگام‌سازی میان دستگاه‌ها";
 "Sync Now" = "همگام‌سازی اکنون";
@@ -924,13 +924,13 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Privacy Policy" = "سیاست حفظ حریم خصوصی";
 
 /* Issue 508 UI */
-"Use a valid http:// or https:// URL" = "از یک نشانی URL معتبر با http:// یا https:// استفاده کنید";
+"Use a valid http:// or https:// URL" = "از یک نشانی URL معتبر با \U2068http://\U2069 یا \U2068https://\U2069 استفاده کنید";
 "Include a host name" = "شامل نام میزبان باشد";
-"Do not use a userscript URL ending in .js, .mjs, or .cjs" = "از URL اسکریپت کاربر که به .js، .mjs یا .cjs ختم می‌شود استفاده نکنید";
+"Do not use a userscript URL ending in .js, .mjs, or .cjs" = "از URL اسکریپت کاربر که به \U2068.js\U2069، \U2068.mjs\U2069 یا \U2068.cjs\U2069 ختم می‌شود استفاده نکنید";
 "wBlock will fetch and enable the filter list automatically" = "فهرست فیلتر را wBlock به‌طور خودکار دریافت و فعال می‌کند";
 /* Issue 508 UI follow-up */
-"Starts with http:// or https://" = "با http:// یا https:// شروع شود";
-"Ends with .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = "به .js، .user.js، .user.css، .less، .sass، .scss، .styl یا .pcss ختم شود";
+"Starts with http:// or https://" = "با \U2068http://\U2069 یا \U2068https://\U2069 شروع شود";
+"Ends with .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = "به \U2068.js\U2069، \U2068.user.js\U2069، \U2068.user.css\U2069، \U2068.less\U2069، \U2068.sass\U2069، \U2068.scss\U2069، \U2068.styl\U2069 یا \U2068.pcss\U2069 ختم شود";
 "Hosted on a trusted source" = "در منبعی مورد اعتماد میزبانی شده باشد";
 
 "The file must include userscript or userstyle metadata." = "فایل باید شامل فرادادهٔ اسکریپت کاربر یا استایل کاربر باشد.";
@@ -950,7 +950,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Temporarily pause selected components without changing their enabled settings." = "توقف موقت بخش‌های انتخاب‌شده بدون تغییر تنظیمات فعال بودن آن‌ها.";
 
 /* Userstyle compiler diagnostics */
-"Choose a .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss file." = "یک فایل .user.js، .js، .user.css، .less، .sass، .scss، .styl یا .pcss انتخاب کنید.";
+"Choose a .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss file." = "یک فایل \U2068.user.js\U2069، \U2068.js\U2069، \U2068.user.css\U2069، \U2068.less\U2069، \U2068.sass\U2069، \U2068.scss\U2069، \U2068.styl\U2069 یا \U2068.pcss\U2069 انتخاب کنید.";
 "Couldn't read the selected file." = "خواندن فایل انتخاب‌شده امکان‌پذیر نبود.";
 "The file is empty." = "فایل خالی است.";
 "Not a userscript or userstyle: missing metadata block." = "اسکریپت کاربر یا استایل کاربر نیست: بلوک فراداده وجود ندارد.";
