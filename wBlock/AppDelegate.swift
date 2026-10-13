@@ -462,7 +462,9 @@ extension AppDelegate: UIApplicationDelegate {
         guard !BlockingPauseStore.isPaused(.filters) else { return }
 
         // Run opportunistic updates only when app is active (not during background launches).
-        Task {
+        // The catch-up recompiles every list. At the UI's inherited priority it
+        // stalled scrolling for seconds right after launch, so it yields the CPU.
+        Task(priority: .utility) {
             let status = await SharedAutoUpdateManager.shared.nextScheduleStatus()
             let isDueSoon = if let remaining = status.remaining { remaining < dueSoonThresholdSeconds } else { false }
 
