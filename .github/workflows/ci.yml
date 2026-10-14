@@ -166,4 +166,10 @@ jobs:
             -destination '${{ matrix.destination }}' \
             -derivedDataPath "$DERIVED_DATA" \
             CODE_SIGNING_ALLOWED=NO \
-            build
+            build 2>&1 | tee "$RUNNER_TEMP/build.log"
+          # Swift 5 mode only warns when code uses an API newer than the
+          # deployment target, and that code crashes on older systems.
+          if grep -E 'warning: .*is only available in (iOS|macOS) ' "$RUNNER_TEMP/build.log" | sort -u | grep .; then
+            echo "::error::Code needs a newer OS than the deployment target (see warnings above)."
+            exit 1
+          fi
