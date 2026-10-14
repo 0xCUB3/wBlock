@@ -101,13 +101,26 @@ private struct SearchableCompatModifier: ViewModifier {
         #endif
     }
 
+    /// iOS 27's minimized toolbar search can't be closed reliably: its close
+    /// button loses taps to the toolbar items beside it, and a second open
+    /// leaves a blank field with no close button (#984). There the search bar
+    /// stays under the toolbar instead.
+    private var minimizesSearch: Bool {
+        #if os(iOS)
+        if #available(iOS 27.0, *) { return false }
+        return horizontalSizeClass != .regular
+        #else
+        return false
+        #endif
+    }
+
     @ViewBuilder
     func body(content: Content) -> some View {
         if #available(iOS 26.0, macOS 26.0, *) {
             content
                 .searchable(text: text, isPresented: isPresented, placement: placement, prompt: prompt)
                 #if os(iOS)
-                .searchToolbarBehavior(horizontalSizeClass == .regular ? .automatic : .minimize)
+                .searchToolbarBehavior(minimizesSearch ? .minimize : .automatic)
                 #endif
                 .modifier(SearchKeyboardDismissal(isPresented: isPresented))
         } else if #available(iOS 17.0, macOS 14.0, *) {
