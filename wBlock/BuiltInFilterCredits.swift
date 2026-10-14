@@ -23,12 +23,12 @@ enum BuiltInFilterCredits {
 
     private static let adGuard = credit("AdGuard", "https://github.com/AdguardTeam/AdguardFilters")
     private static let hagezi = credit("hagezi", "https://github.com/hagezi/dns-blocklists")
-    private static let dandelionSprout = credit("DandelionSprout, iam-py-test", "https://github.com/DandelionSprout/adfilt")
+    private static let dandelionSprout = credit("DandelionSprout", "https://github.com/DandelionSprout/adfilt")
 
     private static let byName: [String: Credit] = [
         "HaGeZi Referral Allowlist": hagezi,
         "HaGeZi Multi Pro Mini": hagezi,
-        "Actually Legitimate URL Shortener Tool": dandelionSprout,
+        "Actually Legitimate URL Shortener Tool": credit("iam-py-test, DandelionSprout", "https://github.com/DandelionSprout/adfilt"),
         "Dandelion Sprout's Anti-Malware List": dandelionSprout,
         "Dandelion Sprout's Nordic Filters": dandelionSprout,
         "Dandelion Sprout's Serbo-Croatian List": dandelionSprout,
