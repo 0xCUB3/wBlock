@@ -4,7 +4,7 @@
 
 "Apply on" = "適用先";
 "No sites selected. This list will not apply." = "サイトが選択されていません。このリストは適用されません。";
-"Sites include their subdomains. Apply changes to update filtering." = "サイトにはサブドメインも含まれます。変更を適用してフィルタリングをアップデートしてください。";
+"Sites include their subdomains. Apply changes to update filtering." = "サイトにはサブドメインも含まれます。変更を適用してフィルターリングをアップデートしてください。";
 "Run on" = "実行するサイト";
 "All matching sites" = "条件に一致する全てのサイト";
 "Only selected sites" = "選択したサイトのみ";
@@ -231,7 +231,7 @@
 "Community-maintained options for additional regional coverage." = "地域カバーを強化するコミュニティ管理オプション。";
 "Completed" = "完了";
 "Conditional check failed" = "条件チェックに失敗しました";
-"Content filtering" = "コンテンツフィルタリング";
+"Content filtering" = "コンテンツフィルターリング";
 "Continue" = "続ける";
 "Continue Setup" = "設定を続行";
 "Controls the time zone used when displaying and exporting log timestamps." = "ログのタイムスタンプ表示およびエクスポートに使用するタイムゾーンを設定します。";
@@ -402,7 +402,7 @@
 "CERT Polska's list of dangerous domains that impersonate real sites to steal data or money." = "実在するサイトになりすましてデータや金銭を盗む危険なドメインをまとめた CERT Polska のリスト。";
 "Filter Update" = "フィルターアップデート";
 "FilterApply" = "フィルター適用";
-"Filtering off" = "フィルタリングオフ";
+"Filtering off" = "フィルターリングオフ";
 "Filters" = "フィルター";
 "Filters: %d / Userscripts: %d" = "フィルター: %d / ユーザースクリプト: %d";
 "Filters and scripts applied successfully." = "フィルターとスクリプトが正常に適用されました。";
@@ -683,7 +683,7 @@
 "Fallbacks" = "代替URL";
 "If the source URL fails, wBlock tries these URLs in order." = "ソースURLにアクセスできない場合、wBlockはこれらのURLを順番に試します。";
 "No fallback URLs are configured for this list." = "このリストには代替URLが設定されていません。";
-"Regional lists add language-specific coverage to the default filters for English and international sites. If your language is missing, no separate regional list is available." = "地域別リストは、英語および国際的なサイト向けのデフォルトフィルターに、言語固有のフィルタリングを追加します。言語が見つからない場合、その言語専用の地域別リストはありません。";
+"Regional lists add language-specific coverage to the default filters for English and international sites. If your language is missing, no separate regional list is available." = "地域別リストは、英語および国際的なサイト向けのデフォルトフィルターに、言語固有のフィルターリングを追加します。言語が見つからない場合、その言語専用の地域別リストはありません。";
 "Start Fresh" = "最初から始める";
 "Started %@" = "開始 %@";
 "Starting conversion..." = "変換を開始しています...";
@@ -975,7 +975,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Dark" = "ダーク";
 "Light" = "ライト";
 "%@ → %@ Safari rules" = "%@ → Safariルール %@ 件";
-"Cosmetic Filtering" = "コスメティックフィルタリング";
+"Cosmetic Filtering" = "コスメティックフィルターリング";
 "Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU." = "広告の枠やその他のページ要素を CSS で非表示にします。オフにするとネットワークブロックのみになり、ルール数と CPU 使用量が減ります。";
 "Enable DeArrow" = "DeArrowを有効にする";
 "Replace Titles" = "タイトルを置き換える";
@@ -1082,8 +1082,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Reset Ordering" = "並び順をリセット";
 "Reset" = "リセット";
 "Return built-in lists and userscripts to their default categories and order, and move custom ones to Other." = "内蔵のリストとユーザースクリプトをデフォルトのカテゴリと順序に戻し、カスタムのものを「その他」に移動します。";
-"No sites selected. Cosmetic filtering will not apply." = "サイトが選択されていません。コスメティックフィルタリングは適用されません。";
-"Cosmetic filtering will not apply on these sites. Network blocking still applies." = "これらのサイトではコスメティックフィルタリングは適用されません。ネットワークブロックは引き続き適用されます。";
+"No sites selected. Cosmetic filtering will not apply." = "サイトが選択されていません。コスメティックフィルターリングは適用されません。";
+"Cosmetic filtering will not apply on these sites. Network blocking still applies." = "これらのサイトではコスメティックフィルターリングは適用されません。ネットワークブロックは引き続き適用されます。";
 "When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device." = "オンにすると、ユーザースクリプトの有効／無効の状態がiCloud経由で同期されます。オフにすると、このデバイス上だけに保存されます。";
 "Rule Capacity" = "ルール容量";
 "Next Update" = "次回のアップデート";
@@ -1130,37 +1130,37 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps." = "サイトを指定しないルールで、すべてのサイトの要素を非表示にします。オフにすると、サイト別の非表示は残り、特に重いウェブアプリでページが軽くなります。";
 "AdGuard Italian filter" = "AdGuard イタリア語フィルター";
 "AdGuard Polish filter" = "AdGuard ポーランド語フィルター";
-"EasyList + AdGuard English filter. This filter is necessary for quality ad blocking." = "EasyListとAdGuardベースフィルタを合わせたフィルタです。このフィルタは品質の高い広告ブロックに必要です。";
-"The most comprehensive list of various online counters and web analytics tools. Use this filter if you do not want your actions on the Internet to be tracked." = "最も幅広い様々なオンラインカウンターおよびウェブ分析ツールのリスト。インターネット上での操作を追跡されたくない場合は、このフィルタをご利用ください。";
-"Filter that enhances privacy by removing tracking parameters from URLs." = "URLからトラッキング（追跡）パラメーターを除去し、プライバシーを向上させるフィルタ。";
+"EasyList + AdGuard English filter. This filter is necessary for quality ad blocking." = "EasyListとAdGuardベースフィルターを合わせたフィルターです。このフィルターは品質の高い広告ブロックに必要です。";
+"The most comprehensive list of various online counters and web analytics tools. Use this filter if you do not want your actions on the Internet to be tracked." = "最も幅広い様々なオンラインカウンターおよびウェブ分析ツールのリスト。インターネット上での操作を追跡されたくない場合は、このフィルターをご利用ください。";
+"Filter that enhances privacy by removing tracking parameters from URLs." = "URLからトラッキング（追跡）パラメーターを除去し、プライバシーを向上させるフィルター。";
 "Automatically removes unnecessary '$' and '&' values from URLs, making them easier to copy from the URL bar and pasting elsewhere as links. Already included in Dandelion Sprout's Annoyances List." = "URLから不要な「$」や「&」値を自動的に削除し、URLバーからコピーして他の場所にリンクとして貼り付けやすくします。既に Dandelion Sprout の Annoyances List にも含まれています。";
 "Blocks cookie notices on web pages." = "ウェブページで表示されるCookie（クッキー）使用同意通知をブロックします。";
 "Blocks all kinds of pop-ups that are not necessary for websites' operation according to our Filter policy." = "AdGuardのフィルターポリシーに従って、Webサイトの動作に関係ないポップアップをすべてブロックします。";
 "Blocks irritating banners that promote mobile apps of websites." = "Webサイトのモバイルアプリを宣伝する迷惑なバナーをブロックします。";
 "Blocks irritating elements that do not fall under popular categories of annoyances, such as website promotional offers and restrictions on copying and text selection." = "一般的な迷惑要素カテゴリに該当しない要素（テキストのコピーや選択が制限されている場合やウェブサイトの自己宣伝広告など）をブロックします。";
 "Blocks annoying third-party widgets: online assistants, live support chats, etc." = "オンラインアシスタント、ライブサポートチャットなど、迷惑なサードパーティウィジェットをブロックします。";
-"Filter for social media widgets such as 'Like' and 'Share' buttons and more." = "SNSウィジェット用フィルタ(いいね! ボタンなど)。";
+"Filter for social media widgets such as 'Like' and 'Share' buttons and more." = "SNSウィジェット用フィルター(いいね! ボタンなど)。";
 "Hides website features that use generative AI and AI-generated content." = "生成AIとAI生成コンテンツを使用しているウェブサイト機能を非表示にします。";
-"This filter blocks tracking pixels in email clients." = "メールクライアント内のトラッキングピクセルをブロックしてくれるフィルタです。";
+"This filter blocks tracking pixels in email clients." = "メールクライアント内のトラッキングピクセルをブロックしてくれるフィルターです。";
 "Prevents public Internet sites from digging into your LAN files." = "パブリックインターネットサイトが LAN ファイルにアクセスするのを防ぎます。";
 "Blocks more malware than most other major anti-malware lists - domains and URL patterns used in malware redirection chains, IP addresses that are solely used by malware, PUP nags, and a few scammers. Already included in Dandelion Sprout's Annoyances List." = "他の主要なマルウェア対策リストよりも多くのマルウェアをブロックします。マルウェアのリダイレクトチェーンで使用されるドメインやURLパターン、マルウェアによってのみ使用されるIPアドレス、PUPの迷惑要素、そしていくつかの詐欺師もブロック対象に入っています。※このリストは、既に「Dandelion Sprout\\'s Annoyances List」に含まれています。";
 "Filter that blocks ads, trackers, and other nasty things." = "広告やトラッカー（追跡ソフト）などのような嫌なものをブロックするフィルター。";
 "Removes anti-adblock warnings and other obtrusive messages." = "アンチアドブロック警告（「広告ブロックをオフにしないとこのサイトは見れません」など）やその他の妨害メッセージを削除します。";
-"Filter that unblocks search ads in Google, DuckDuckGo, Bing, or Yahoo and self-promotion on websites." = "Google、DuckDuckGo、Bing、Yahooの検索広告とサイトの自己宣伝広告をブロック解除するフィルタ。";
-"Filter designed to test certain hazardous filtering rules before they are added to the basic filters." = "特定の危険なフィルタリングルールを基本フィルタに追加する前にテストするように設計されたフィルタです。";
-"Additional filter list for websites in Indonesian and Malay." = "インドネシア語およびマレー語サイト用、補足フィルタリストです。";
+"Filter that unblocks search ads in Google, DuckDuckGo, Bing, or Yahoo and self-promotion on websites." = "Google、DuckDuckGo、Bing、Yahooの検索広告とサイトの自己宣伝広告をブロック解除するフィルター。";
+"Filter designed to test certain hazardous filtering rules before they are added to the basic filters." = "特定の危険なフィルターリングルールを基本フィルターに追加する前にテストするように設計されたフィルターです。";
+"Additional filter list for websites in Indonesian and Malay." = "インドネシア語およびマレー語サイト用、補足フィルターリストです。";
 "EasyList Italy + AdGuard Italian filter. Filter list that specifically removes ads on websites in the Italian language." = "EasyList Italy + AdGuardイタリア語フィルター。イタリア語のウェブサイト上の広告を特化して削除するフィルターリスト。";
-"Hufilter. Filter list that specifically removes ads, privacy threats, and security risks on websites in the Hungarian language." = "Hufilter。ハンガリー語ウェブサイト上の広告・プライバシー脅威・セキュリティリスクをするための専用フィルタリスト。";
+"Hufilter. Filter list that specifically removes ads, privacy threats, and security risks on websites in the Hungarian language." = "Hufilter。ハンガリー語ウェブサイト上の広告・プライバシー脅威・セキュリティリスクをするための専用フィルターリスト。";
 "The filterslist-KO Classic filter list for AdGuard blocks ads and disables anti-adblock scripts on Korean-language websites and apps." = "AdGuard用のfilterslist-KO Classic filter list は、韓国語ウェブサイトやアプリ上の広告をブロックし、広告ブロック対策スクリプトを無効にします。";
 "Official Polish filters for AdBlock, uBlock Origin & AdGuard + AdGuard Polish filter. Filter list that specifically removes ads on websites in the Polish language." = "Official Polish filters for AdBlock, uBlock Origin & AdGuard＋AdGuardポーランド語フィルター。ポーランド語のウェブサイト上の広告を削除することに特化したフィルターリスト。";
-"Privacy protection supplement for EasyList." = "EasyList用のプライバシー保護補足フィルタ。";
-"Filter for all known mobile ad networks. Useful for mobile devices." = "すべての既知のモバイル広告ネットワーク用フィルタ。モバイル端末に有用です。";
+"Privacy protection supplement for EasyList." = "EasyList用のプライバシー保護補足フィルター。";
+"Filter for all known mobile ad networks. Useful for mobile devices." = "すべての既知のモバイル広告ネットワーク用フィルター。モバイル端末に有用です。";
 
 /* Add Filter List: Find */
 "Name, language, or topic" = "名前、言語、またはトピック";
-"Searches wBlock’s lists and AdGuard’s filter registry for Safari." = "wBlockのリストとAdGuardのSafari向けフィルタレジストリを検索します。";
+"Searches wBlock’s lists and AdGuard’s filter registry for Safari." = "wBlockのリストとAdGuardのSafari向けフィルターレジストリを検索します。";
 "In wBlock" = "wBlock内";
-"AdGuard Filter Registry" = "AdGuardフィルタレジストリ";
+"AdGuard Filter Registry" = "AdGuardフィルターレジストリ";
 "wBlock already includes every list in the registry." = "wBlockにはレジストリのすべてのリストがすでに含まれています。";
 "No matching lists." = "一致するリストはありません。";
 "No longer built into wBlock" = "wBlockには内蔵されなくなりました";
