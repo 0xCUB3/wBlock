@@ -3,7 +3,7 @@
 //  - keep syntax highlighting on for typical userscripts instead of disabling
 //    it whenever a single line exceeds 8192 chars; only drop it for genuinely
 //    large documents, and fall back to a stream highlighter rather than none.
-import { EditorState, Compartment, Transaction } from "@codemirror/state";
+import { EditorState, EditorSelection, Compartment, Transaction } from "@codemirror/state";
 import {
   EditorView,
   ViewPlugin,
@@ -83,7 +83,8 @@ function theme() {
     ".cm-content": { padding: "12px", minHeight: "100%", caretColor: "var(--cm-caret)" },
     ".cm-cursor, .cm-dropCursor": { borderLeftColor: "var(--cm-caret)" },
     ".cm-selectionBackground": { backgroundColor: "var(--cm-selection)" },
-    ".cm-gutters": { backgroundColor: "var(--cm-gutter-background)", color: "var(--cm-gutter-foreground)", border: "none", paddingRight: "8px" },
+    // Line numbers select their line on tap; they aren't text to select (#975).
+    ".cm-gutters": { backgroundColor: "var(--cm-gutter-background)", color: "var(--cm-gutter-foreground)", border: "none", paddingRight: "8px", userSelect: "none", WebkitUserSelect: "none", cursor: "default" },
     ".cm-activeLine": { backgroundColor: "var(--cm-active-line)" },
     ".cm-activeLineGutter": { backgroundColor: "var(--cm-active-line)" },
     ".cm-search": { backgroundColor: "var(--cm-panel-background)", borderBottom: "1px solid var(--cm-border)", padding: "8px 12px", color: "var(--cm-foreground)" },
@@ -153,11 +154,47 @@ function streamHighlight(language) {
   ];
 }
 
+// iOS keeps drawing its own selection beside CodeMirror's drawn one, and the
+// two drift apart (#975). Touch devices use the native selection alone.
+const isTouch = navigator.maxTouchPoints > 0;
+
+function isWholeLine(state, range) {
+  if (range.empty) return false;
+  const line = state.doc.lineAt(range.from);
+  return range.from === line.from && range.to === line.to;
+}
+
+// Clicking a line number selects that line. Further clicks add lines while
+// only whole lines are selected; a double click keeps just the one line. The
+// native iOS selection is a single range, so there a click extends it instead.
+function selectLine(view, line, event) {
+  const { state } = view;
+  const range = EditorSelection.range(line.from, line.to);
+  const ranges = state.selection.ranges;
+  const extending = event.detail < 2 && line.from < line.to && ranges.every((r) => isWholeLine(state, r));
+  let selection;
+  if (!extending) {
+    selection = EditorSelection.create([range]);
+  } else if (isTouch) {
+    const from = Math.min(ranges[0].from, line.from);
+    const to = Math.max(ranges[ranges.length - 1].to, line.to);
+    selection = EditorSelection.create([EditorSelection.range(from, to)]);
+  } else {
+    const kept = ranges.filter((r) => r.from !== line.from);
+    selection = kept.length === ranges.length
+      ? EditorSelection.create([...ranges, range], ranges.length)
+      : kept.length ? EditorSelection.create(kept, kept.length - 1) : EditorSelection.single(line.from);
+  }
+  view.dispatch({ selection, userEvent: "select.pointer" });
+  view.focus();
+  return true;
+}
+
 function baseExtensions() {
   return [
     history(),
-    lineNumbers(),
-    drawSelection(),
+    lineNumbers({ domEventHandlers: { mousedown: selectLine } }),
+    isTouch ? [] : drawSelection(),
     highlightActiveLine(),
     highlightActiveLineGutter(),
     highlightSpecialChars(),
