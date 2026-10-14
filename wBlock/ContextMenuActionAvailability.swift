@@ -19,6 +19,7 @@ enum UserScriptContextMenuAction: String {
     case viewContent
     case editContent
     case editInfo
+    case matchPatterns
     case download
     case moveTo
     case deleteScript

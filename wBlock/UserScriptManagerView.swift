@@ -244,12 +244,18 @@ struct UserScriptManagerView: View {
                 .infoSheetPresentationCompat()
         }
         .sheet(item: $selectedScript, onDismiss: refreshScripts) { selection in
-            UserScriptContentView(
-                scriptId: selection.id,
-                userScriptManager: userScriptManager,
-                startsEditing: selection.action == .editContent,
-                metadataOnly: selection.action == .editInfo
-            )
+            if selection.action == .matchPatterns {
+                if let script = userScriptManager.userScript(withId: selection.id) {
+                    ScriptMatchPatternsSheet(script: script)
+                }
+            } else {
+                UserScriptContentView(
+                    scriptId: selection.id,
+                    userScriptManager: userScriptManager,
+                    startsEditing: selection.action == .editContent,
+                    metadataOnly: selection.action == .editInfo
+                )
+            }
         }
         .infoPresentation(item: $selectedCategoryInfo, content: scriptCategoryInfoContent)
         .onAppear {
@@ -1253,7 +1259,7 @@ struct UserScriptInfoView: View {
         )
         InfoActionList {
             if !script.matches.isEmpty {
-                ScriptMatchPatternsButton(script: script) { showingPatterns = true }
+                ScriptMatchPatternsButton(script: script) { perform(.matchPatterns) { showingPatterns = true } }
             }
             if actions.contains(.settings) {
                 InfoActionRow("Settings", systemImage: "gearshape") { perform(.settings) { showingSettings = true } }
