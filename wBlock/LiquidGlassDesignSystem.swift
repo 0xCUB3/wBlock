@@ -109,7 +109,7 @@ struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
                         ToolbarItem(placement: .topBarTrailing) {
                             Button {
                                 searchText = ""
-                                focusRequest = false
+                                withAnimation(.smooth) { focusRequest = false }
                             } label: {
                                 Label("Close", systemImage: "xmark")
                             }
@@ -123,7 +123,7 @@ struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
                         ToolbarSpacer(.fixed, placement: .topBarTrailing)
                         if horizontalSizeClass != .regular {
                             ToolbarItem(placement: .topBarTrailing) {
-                                Button { focusRequest = true } label: {
+                                Button { withAnimation(.smooth) { focusRequest = true } } label: {
                                     Label("Search", systemImage: "magnifyingglass")
                                 }
                             }
