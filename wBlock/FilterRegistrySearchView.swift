@@ -5,10 +5,11 @@ import wBlockCoreService
 /// AdGuard's Safari filter registry that wBlock doesn't have yet.
 struct FilterRegistrySearchSections: View {
     @ObservedObject var filterManager: AppFilterManager
+    /// Owned by the Add sheet so Back from a list's review keeps the search (#987).
+    @Binding var query: String
     let onAdd: (AdGuardRegistryList) -> Void
 
     @Environment(\.locale) private var locale
-    @State private var query = ""
     @State private var registryLists: [AdGuardRegistryList] = []
     @State private var isLoading = false
     @State private var loadError: String?
@@ -119,11 +120,9 @@ struct FilterRegistrySearchSections: View {
                 Text(verbatim: filter.localizedDisplayDescription)
                     .font(.caption).foregroundStyle(.secondary).lineLimit(2)
             }
-            Text(verbatim: ContentRowMetadata.summary([
-                filter.category.localizedName,
-                filter.localizedLanguageNames().joined(separator: ", "),
-                note,
-            ]))
+            // No languages: the registry lists them for only some regional
+            // lists, so a few rows stood out (#987). Search still matches them.
+            Text(verbatim: ContentRowMetadata.summary([filter.category.localizedName, note]))
             .font(.caption2).foregroundStyle(.secondary)
         }
         .accessibilityElement(children: .combine)

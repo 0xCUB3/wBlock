@@ -1341,6 +1341,9 @@ struct AddFilterListView: View {
     }
 
     @State private var addMode: AddMode = .url
+    @State private var findQuery = ""
+    /// The URL review was opened from Find, so Back returns there (#987).
+    @State private var isReviewingFromFind = false
 
 
     private var parsedURLInput: FilterListURLParseResult {
@@ -1407,6 +1410,7 @@ struct AddFilterListView: View {
             fetchMetadataForCurrentURLs()
         }
         .onChangeCompat(of: addMode) { _, mode in
+            if mode != .url { isReviewingFromFind = false }
             cancelURLListImport()
             if mode == .url { fetchMetadataForCurrentURLs() } else {
                 metadataFetchTask?.cancel()
@@ -1473,6 +1477,7 @@ struct AddFilterListView: View {
                         isReviewingURLs = false
                         metadataFetchTask?.cancel()
                         isFetchingURLMetadata = false
+                        if isReviewingFromFind { addMode = .find }
                     }
                     if isFetchingURLMetadata { ProgressView().controlSize(.small) }
                 } footer: {
@@ -1522,7 +1527,7 @@ struct AddFilterListView: View {
                 if stagedFile != nil { duplicateNameNote(for: userListTitle) }
             }
         case .find:
-            FilterRegistrySearchSections(filterManager: filterManager, onAdd: review)
+            FilterRegistrySearchSections(filterManager: filterManager, query: $findQuery, onAdd: review)
         }
     }
 
@@ -1535,6 +1540,7 @@ struct AddFilterListView: View {
         urlCategories[url.absoluteString] = list.filter.category
         urlLanguages[url.absoluteString] = Set(list.filter.languages)
         addMode = .url
+        isReviewingFromFind = true
         let input = urlEntryMode == .single
             ? url.absoluteString
             : UserScriptURLSupport.appendingPastedURLs(url.absoluteString, to: urlInput)
