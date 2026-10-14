@@ -28,14 +28,13 @@ struct FilterCategoryInfoView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(alignment: .top) {
+        InfoSheetContainer {
+            InfoSheetHeader {
                 Text(category.localizedName)
                     .font(.title2.weight(.semibold))
                     .fixedSize(horizontal: false, vertical: true)
-                Spacer(minLength: 8)
-                SheetDoneButton { dismiss() }
-            }
+            } onDismiss: { dismiss() }
+        } content: {
 
             Text(LocalizedStringKey(FilterCategorySupport.descriptionKey(for: category)))
                 .foregroundStyle(.secondary)
@@ -69,8 +68,6 @@ struct FilterCategoryInfoView: View {
                 }
             }
 
-            Spacer()
-
             Button("Reset to Default") {
                 onReset()
                 dismiss()
@@ -78,8 +75,9 @@ struct FilterCategoryInfoView: View {
             .buttonStyle(.borderedProminent)
             .frame(maxWidth: .infinity)
         }
-        .padding(20)
-        .infoSheetChromeCompat { dismiss() }
+        #if os(macOS)
+        .frame(width: 420)
+        #endif
     }
 
 }

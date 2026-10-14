@@ -9,14 +9,13 @@ struct UserScriptCategoryInfoView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(alignment: .top) {
+        InfoSheetContainer {
+            InfoSheetHeader {
                 Text(LocalizedStringKey(category.rawValue))
                     .font(.title2.weight(.semibold))
                     .fixedSize(horizontal: false, vertical: true)
-                Spacer(minLength: 8)
-                SheetDoneButton { dismiss() }
-            }
+            } onDismiss: { dismiss() }
+        } content: {
 
             Text(LocalizedStringKey(category.descriptionKey))
                 .foregroundStyle(.secondary)
@@ -36,8 +35,6 @@ struct UserScriptCategoryInfoView: View {
                 }
             }
 
-            Spacer()
-
             Button("Reset to Default") {
                 onReset()
                 dismiss()
@@ -45,7 +42,8 @@ struct UserScriptCategoryInfoView: View {
             .buttonStyle(.borderedProminent)
             .frame(maxWidth: .infinity)
         }
-        .padding(20)
-        .infoSheetChromeCompat { dismiss() }
+        #if os(macOS)
+        .frame(width: 420)
+        #endif
     }
 }
