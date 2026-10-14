@@ -134,10 +134,10 @@ struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
                 }
                 .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { contentWidth = $0 }
         } else {
+            // No `if` here: ToolbarContentBuilder can't branch before iOS 16 and
+            // crashes on iOS 15. An EmptyView apply leaves the item empty.
             content.toolbar {
-                if hasApply {
-                    ToolbarItem(placement: .navigationBarLeading) { apply() }
-                }
+                ToolbarItem(placement: .navigationBarLeading) { apply() }
                 ToolbarItem(placement: .navigationBarTrailing) { filter }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     if horizontalSizeClass != .regular {

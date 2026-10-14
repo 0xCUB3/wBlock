@@ -80,8 +80,9 @@ struct AddContentSheet<Mode: AddContentMode, Content: View>: View {
                 .navigationTitle(title)
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    if showsCancel {
-                        ToolbarItem(placement: .cancellationAction) { cancelButton }
+                    // Branch inside the item: ToolbarContentBuilder can't before iOS 16.
+                    ToolbarItem(placement: .cancellationAction) {
+                        if showsCancel { cancelButton }
                     }
                     ToolbarItem(placement: .confirmationAction) { submitButton }
                 }
