@@ -47,6 +47,7 @@ struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
     @ViewBuilder let apply: () -> Apply
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @State private var contentWidth: CGFloat = 0
     #endif
 
     private var hasApply: Bool { Apply.self != EmptyView.self }
@@ -98,19 +99,40 @@ struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
         }
         #else
         if #available(iOS 26.0, *) {
-            content.toolbar {
-                if hasApply {
-                    ToolbarItem(placement: .topBarLeading) { apply() }
-                        .toolbarVisibilityPriorityCompat(.high)
+            content
+                .toolbar {
+                    if horizontalSizeClass != .regular, focusRequest {
+                        ToolbarItem(placement: .topBarLeading) {
+                            CompactToolbarSearchField(text: $searchText, prompt: searchPrompt)
+                                .frame(width: max(0, contentWidth - 104), height: 36, alignment: .leading)
+                        }
+                        ToolbarItem(placement: .topBarTrailing) {
+                            Button {
+                                searchText = ""
+                                focusRequest = false
+                            } label: {
+                                Label("Close", systemImage: "xmark")
+                            }
+                        }
+                    } else {
+                        if hasApply {
+                            ToolbarItem(placement: .topBarLeading) { apply() }
+                                .toolbarVisibilityPriorityCompat(.high)
+                        }
+                        ToolbarItem(placement: .topBarTrailing) { filter }
+                        ToolbarSpacer(.fixed, placement: .topBarTrailing)
+                        if horizontalSizeClass != .regular {
+                            ToolbarItem(placement: .topBarTrailing) {
+                                Button { focusRequest = true } label: {
+                                    Label("Search", systemImage: "magnifyingglass")
+                                }
+                            }
+                            ToolbarSpacer(.fixed, placement: .topBarTrailing)
+                        }
+                        ToolbarItem(placement: .topBarTrailing) { primary() }
+                    }
                 }
-                ToolbarItem(placement: .topBarTrailing) { filter }
-                ToolbarSpacer(.fixed, placement: .topBarTrailing)
-                if horizontalSizeClass != .regular {
-                    DefaultToolbarItem(kind: .search, placement: .topBarTrailing)
-                    ToolbarSpacer(.fixed, placement: .topBarTrailing)
-                }
-                ToolbarItem(placement: .topBarTrailing) { primary() }
-            }
+                .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { contentWidth = $0 }
         } else {
             content.toolbar {
                 if hasApply {
@@ -130,6 +152,41 @@ struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
         #endif
     }
 }
+
+#if os(iOS)
+/// iPhone search on iOS 26 and later: a field that replaces the toolbar
+/// buttons until Close. The system's minimized toolbar search can't be closed
+/// reliably on iOS 27: its X loses taps to the neighboring buttons, and a
+/// second open leaves a blank field with no X (#984).
+private struct CompactToolbarSearchField: View {
+    @Binding var text: String
+    let prompt: LocalizedStringKey
+    @FocusState private var isFocused: Bool
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+            TextField(prompt, text: $text)
+                .focused($isFocused)
+                .submitLabel(.search)
+                .autocorrectionDisabled()
+                .textInputAutocapitalization(.never)
+            if !text.isEmpty {
+                Button { text = "" } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text("Clear"))
+            }
+        }
+        .padding(.horizontal, 12)
+        .onAppear { isFocused = true }
+    }
+}
+#endif
 
 #if os(macOS)
 /// Toolbar for pages pushed inside the navigation stack (Site Settings,
