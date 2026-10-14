@@ -37,6 +37,11 @@ struct Main {
              "$script,third-party,domain=s.com\n@@||a.net^$script,third-party,domain=s.com\n@@||b.com^$script,third-party,domain=s.com"),
             ("||x.com^$image,denyallow=a.net,domain=s.com", "||x.com^$image,denyallow=a.net,domain=s.com"),
             ("$script,denyallow=a.net", "$script,denyallow=a.net"),
+            // #975: whitespace then # starts a uBO comment in network rules, but not in a regex.
+            ("||ls.apple.com^$badfilter  # apple maps", "||ls.apple.com^$badfilter"),
+            ("||x.com^$~object\t# note", "||x.com^"),
+            ("/ads #x/$script", "/ads #x/$script"),
+            ("||x.com/#anchor", "||x.com/#anchor"),
         ]
         for (input, expected) in cases {
             let output = FilterRuleAnalysis.adGuardEquivalent(input)

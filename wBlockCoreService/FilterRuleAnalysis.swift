@@ -319,6 +319,9 @@ public struct FilterRuleAnalysis: Sendable {
     public static func adGuardEquivalent(_ rule: String) -> String {
         let trimmed = String(RuleText.trimmed(rule))
         guard let marker = RuleText.range(of: "#@#", in: trimmed) ?? RuleText.range(of: "##", in: trimmed) else {
+            if let comment = inlineCommentStart(trimmed) {
+                return adGuardEquivalent(String(RuleText.trimmed(trimmed[..<comment])))
+            }
             // Only these options are rewritten outside cosmetic rules.
             guard !trimmed.utf8.allSatisfy({ $0 < 0x80 }) || RuleText.containsIgnoringASCIICase(trimmed, "denyallow")
                 || RuleText.containsIgnoringASCIICase(trimmed, "object") else { return rule }
@@ -349,6 +352,16 @@ public struct FilterRuleAnalysis: Sendable {
             return trimmed[..<marker.lowerBound] + (exception ? "#@?#" : "#?#") + body
         }
         return rule
+    }
+
+    /// uBO reads whitespace then `#` in a network rule as the start of a comment,
+    /// and lists like `||ls.apple.com^$badfilter  # apple maps` rely on it. The
+    /// converter took the comment as part of the options and rejected the rule
+    /// (#975). URL patterns can't hold whitespace, but a regex pattern can.
+    private static func inlineCommentStart(_ rule: String) -> String.Index? {
+        guard !rule.hasPrefix("/"), !rule.hasPrefix("@@/") else { return nil }
+        let space = RuleText.range(of: " #", in: rule) ?? RuleText.range(of: "\t#", in: rule)
+        return space?.lowerBound
     }
 
     /// Safari has no plugin resource type, so the converter rejects any rule that
