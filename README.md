@@ -25,6 +25,7 @@ A free, open-source ad blocker for Safari on Mac, iPhone, iPad, and Apple Vision
 ![Platforms](https://img.shields.io/badge/macOS_12.3+_|_iOS_15.4+_|_visionOS_1.0+-gray?style=flat&logo=apple&logoColor=white)
 ![License](https://img.shields.io/badge/GPL--3.0-gray?style=flat&label=license)
 [![Discord](https://img.shields.io/badge/Discord-5865F2?style=flat&logo=discord&logoColor=white)](https://discord.gg/Y3yTFPpbXr)
+[![Featured on FMHY](https://img.shields.io/badge/featured_on-FMHY-3E1E56?style=flat&logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZmlsbD0id2hpdGUiIGQ9Ik01IDIuNSAyMSAxMiA1IDIxLjV6Ii8+PC9zdmc+)](https://fmhy.net/beginners-guide#browsers)
 [![Mentioned in Open-Source iOS Apps](https://awesome.re/mentioned-badge.svg)](https://github.com/dkhamsing/open-source-ios-apps)
 
 <br>
