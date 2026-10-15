@@ -35,12 +35,24 @@
             return !!(node && (node.localName === 'video' || node.localName === 'audio'));
         }
 
+        // Camera and call previews play a live MediaStream the page just asked
+        // the user for, which is not autoplay (#988).
+        function isLiveStream(media) {
+            try {
+                var src = media.srcObject;
+                return !!(src && typeof src.getTracks === 'function');
+            } catch (e) {
+                return false;
+            }
+        }
+
         // The unlocked state is mirrored into a DOM attribute so that the
         // page-world gate and an isolated-world gate agree on it even though
         // expandos and WeakSets do not cross worlds.
         function isUnlocked(media) {
             if (disabled) return true;
             if (!media) return false;
+            if (isLiveStream(media)) return true;
             try { if (media._wblockNoAutoplayUnlocked) return true; } catch (e) { /* ignore */ }
             try {
                 if (media.getAttribute && media.getAttribute('data-wblock-no-autoplay-unlocked') === '1') return true;
@@ -59,9 +71,15 @@
 
         function disarm(media) {
             if (disabled || !isMedia(media) || isUnlocked(media)) return;
+            // Remember a stripped autoplay so a live stream assigned later
+            // still starts on its own.
+            var wanted = false;
+            try {
+                wanted = media.hasAttribute('autoplay') || media.getAttribute('data-wblock-no-autoplay') === 'autoplay';
+            } catch (e) { /* ignore */ }
             try { media.autoplay = false; } catch (e) { /* ignore */ }
             try { media.removeAttribute('autoplay'); } catch (e) { /* ignore */ }
-            try { media.setAttribute('data-wblock-no-autoplay', '1'); } catch (e) { /* ignore */ }
+            try { media.setAttribute('data-wblock-no-autoplay', wanted ? 'autoplay' : '1'); } catch (e) { /* ignore */ }
         }
 
         function pauseIfLocked(media) {
@@ -183,6 +201,7 @@
                         if (!isUnlocked(this) && value) {
                             autoplayDesc.set.call(this, false);
                             try { this.removeAttribute('autoplay'); } catch (e) { /* ignore */ }
+                            try { this.setAttribute('data-wblock-no-autoplay', 'autoplay'); } catch (e) { /* ignore */ }
                             return;
                         }
                         autoplayDesc.set.call(this, value);
@@ -208,7 +227,14 @@
         // shadow roots go.
         var roots = [];
         function onLoadStart(event) {
-            disarm(event.target);
+            var media = event.target;
+            if (isMedia(media) && isLiveStream(media)) {
+                try {
+                    if (media.getAttribute('data-wblock-no-autoplay') === 'autoplay') media.autoplay = true;
+                } catch (e) { /* ignore */ }
+                return;
+            }
+            disarm(media);
         }
 
         function guardRoot(root) {

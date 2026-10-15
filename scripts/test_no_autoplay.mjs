@@ -292,6 +292,14 @@ async function playResult(media) {
   const other = env.makeMedia("video");
   check("unlocking one media does not unlock others", (await playResult(other)) === "NotAllowedError");
 
+  // #988: a camera preview is a live stream, not autoplay.
+  const camera = env.makeMedia("video");
+  camera.autoplay = true;
+  camera.srcObject = { getTracks: () => [] };
+  env.dispatch("loadstart", { target: camera });
+  check("live stream keeps the autoplay it asked for", camera.hasAttribute("autoplay") && camera.autoplay === true);
+  check("live stream plays natively", (await playResult(camera)) === "ok" && camera.playedNatively);
+
   await settle();
   check("authoritative check keeps the hint set while enabled", env.localStore.get(HINT_KEY) === "1");
 }
@@ -378,7 +386,7 @@ async function playResult(media) {
   late.paused = false;
   env.dispatch("loadstart", { target: late });
   check("loadstart disarms media added later",
-    !late.hasAttribute("autoplay") && late.getAttribute("data-wblock-no-autoplay") === "1");
+    !late.hasAttribute("autoplay") && late.getAttribute("data-wblock-no-autoplay") === "autoplay");
   env.dispatch("playing", { target: late });
   check("playing pauses media that started anyway", late.pauseCalls > 0 && late.paused);
 
