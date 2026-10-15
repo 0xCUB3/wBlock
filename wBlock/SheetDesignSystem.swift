@@ -74,6 +74,7 @@ extension View {
         ScrollView {
             self.frame(maxWidth: .infinity, alignment: .leading)
         }
+        .opaqueSheetBackgroundCompat()
         #else
         InfoContentScrollView { self }.frame(width: 420)
         #endif
@@ -149,9 +150,10 @@ private struct InfoSheetScrollOffset: PreferenceKey {
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
 }
 
-private extension View {
+extension View {
     /// iPad form sheets are glass on iOS 26, so the green toggles beneath tinted
-    /// them in dark mode (cameren, Discord). Match the opaque iPhone sheet.
+    /// them in dark mode, and their text flashed from gray to its real color as
+    /// the glass settled (cameren, Discord). Match the opaque iPhone sheet.
     @ViewBuilder
     func opaqueSheetBackgroundCompat() -> some View {
         if #available(iOS 16.4, *) {
@@ -160,7 +162,9 @@ private extension View {
             self
         }
     }
+}
 
+private extension View {
     /// Content offset measured against the top inset. On iPad form sheets the
     /// content's frame never goes negative while the header inset covers it,
     /// so the frame test alone left the title unfrosted over the rows (#916).
