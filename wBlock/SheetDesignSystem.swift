@@ -129,6 +129,8 @@ struct InfoSheetContainer<Header: View, Content: View>: View {
         }
         #if os(macOS)
         .infoPopoverHeightCap()
+        #else
+        .opaqueSheetBackgroundCompat()
         #endif
     }
 
@@ -148,6 +150,17 @@ private struct InfoSheetScrollOffset: PreferenceKey {
 }
 
 private extension View {
+    /// iPad form sheets are glass on iOS 26, so the green toggles beneath tinted
+    /// them in dark mode (cameren, Discord). Match the opaque iPhone sheet.
+    @ViewBuilder
+    func opaqueSheetBackgroundCompat() -> some View {
+        if #available(iOS 16.4, *) {
+            presentationBackground(Color(uiColor: .systemBackground))
+        } else {
+            self
+        }
+    }
+
     /// Content offset measured against the top inset. On iPad form sheets the
     /// content's frame never goes negative while the header inset covers it,
     /// so the frame test alone left the title unfrosted over the rows (#916).
