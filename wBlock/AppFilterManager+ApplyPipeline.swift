@@ -697,7 +697,12 @@ extension AppFilterManager {
                 disabledSites: disabledSites,
                 affinitySnapshot: affinitySnapshot,
                 orderedFilters: orderedSelectedFilters,
-                extraRulesText: targetInfo.slot == 5 ? generatedZapperRulesText : nil,
+                extraRulesText: targetInfo.slot == 5
+                    ? BuiltInBlockRules.extraRulesText(
+                        filtersEnabled: !allSelectedFilters.isEmpty,
+                        zapperRulesText: generatedZapperRulesText
+                    )
+                    : nil,
                 deadline: nil,
                 minimumTime: 0,
                 isCancelled: isConversionCancelled
