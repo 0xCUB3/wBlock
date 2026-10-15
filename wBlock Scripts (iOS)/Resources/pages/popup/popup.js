@@ -475,6 +475,19 @@ async function startFilterUpdate() {
     }
 }
 
+// Hands the app URL to the page's tab. Navigating the popup itself works on
+// iPhone, but an iPad popover opens it as an empty new tab instead.
+async function openAppToUpdateFilters() {
+    const url = 'wblockapp://update-filters';
+    const tab = await getActiveTab();
+    if (!hasTabId(tab)) {
+        window.location.href = url;
+        return;
+    }
+    await browser.tabs.update(tab.id, { url });
+    window.close();
+}
+
 function hasTabId(tab) {
     return Boolean(tab && tab.id !== undefined && tab.id !== null);
 }
@@ -1456,7 +1469,9 @@ function setupListeners() {
     if (updateFiltersButton) {
         updateFiltersButton.addEventListener('click', () => {
             if (updateFiltersButton.dataset.openInApp === 'true') {
-                window.location.href = 'wblockapp://update-filters';
+                openAppToUpdateFilters().catch((error) => {
+                    console.error('[wBlock] Could not open wBlock:', error);
+                });
                 return;
             }
             startFilterUpdate().catch((error) => {
