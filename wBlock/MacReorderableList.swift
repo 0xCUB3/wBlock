@@ -109,6 +109,7 @@ final class MacReorderableOutlineView: NSOutlineView {
     // then fights AppKit and stutters. Reconcile once the gesture ends.
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
+        installKeyScrollMonitor()
         // Remove only these names: NSTableView registers its own observers on self.
         let names = [NSScrollView.willStartLiveScrollNotification, NSScrollView.didEndLiveScrollNotification]
         names.forEach { NotificationCenter.default.removeObserver(self, name: $0, object: nil) }
@@ -116,6 +117,55 @@ final class MacReorderableOutlineView: NSOutlineView {
         names.forEach {
             NotificationCenter.default.addObserver(self, selector: #selector(liveScrollChanged), name: $0, object: scroll)
         }
+    }
+
+    // Rows host SwiftUI controls, so the outline is rarely first responder and
+    // the keyboard would not scroll the page. Arrow keys, Page Up/Down,
+    // Home/End, and Command with Up/Down scroll it unless text is being edited.
+    private var keyMonitor: Any?
+
+    private func installKeyScrollMonitor() {
+        if let keyMonitor { NSEvent.removeMonitor(keyMonitor) }
+        keyMonitor = nil
+        guard window != nil else { return }
+        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self, self.scroll(for: event) else { return event }
+            return nil
+        }
+    }
+
+    private func scroll(for event: NSEvent) -> Bool {
+        guard let window, event.window === window, window.attachedSheet == nil, !isHiddenOrHasHiddenAncestor,
+              !(window.firstResponder is NSText || window.firstResponder is NSTextField),
+              let scroll = enclosingScrollView else { return false }
+        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        guard flags.isSubset(of: [.command, .function, .numericPad]) else { return false }
+        let command = flags.contains(.command)
+        let clip = scroll.contentView
+        let visible = clip.bounds
+        let line = max(scroll.verticalLineScroll, 40)
+        let page = max(visible.height - line, line)
+        let far = (scroll.documentView?.frame.height ?? 0) + visible.height
+        let delta: CGFloat
+        switch (event.keyCode, command) {
+        case (126, false): delta = -line
+        case (125, false): delta = line
+        case (116, false): delta = -page
+        case (121, false): delta = page
+        case (126, true), (115, false): delta = -far
+        case (125, true), (119, false): delta = far
+        default: return false
+        }
+        var target = visible
+        target.origin.y += delta
+        let origin = clip.constrainBoundsRect(target).origin
+        guard abs(origin.y - visible.origin.y) > 0.5 else { return true }
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.12
+            clip.animator().setBoundsOrigin(origin)
+        }
+        scroll.reflectScrolledClipView(clip)
+        return true
     }
 
     @objc private func liveScrollChanged(_ note: Notification) {
