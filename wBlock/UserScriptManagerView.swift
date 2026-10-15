@@ -152,6 +152,7 @@ struct UserScriptManagerView: View {
     @State private var selectedScript: SelectedUserScript?
     @State private var selectedScriptInfo: SelectedUserScript?
     @State private var selectedScriptSettings: SelectedUserScript?
+    @State private var selectedScriptPatterns: SelectedUserScript?
     @State private var showOnlyEnabled = false
     @State private var searchText = ""
     @State private var showSearch = false
@@ -243,19 +244,19 @@ struct UserScriptManagerView: View {
             UserScriptSettingsView(scriptID: selection.id, userScriptManager: userScriptManager)
                 .infoSheetPresentationCompat()
         }
-        .sheet(item: $selectedScript, onDismiss: refreshScripts) { selection in
-            if selection.action == .matchPatterns {
-                if let script = userScriptManager.userScript(withId: selection.id) {
-                    ScriptMatchPatternsSheet(script: script)
-                }
-            } else {
-                UserScriptContentView(
-                    scriptId: selection.id,
-                    userScriptManager: userScriptManager,
-                    startsEditing: selection.action == .editContent,
-                    metadataOnly: selection.action == .editInfo
-                )
+        // Opens from the row's info button like Fallbacks, not mid-window (#956).
+        .infoPresentation(item: $selectedScriptPatterns) { selection in
+            if let script = userScriptManager.userScript(withId: selection.id) {
+                ScriptMatchPatternsSheet(script: script).infoSheetPresentationCompat()
             }
+        }
+        .sheet(item: $selectedScript, onDismiss: refreshScripts) { selection in
+            UserScriptContentView(
+                scriptId: selection.id,
+                userScriptManager: userScriptManager,
+                startsEditing: selection.action == .editContent,
+                metadataOnly: selection.action == .editInfo
+            )
         }
         .infoPresentation(item: $selectedCategoryInfo, content: scriptCategoryInfoContent)
         .onAppear {
@@ -568,7 +569,11 @@ struct UserScriptManagerView: View {
             },
             onAction: macOSWindowAction { action in
                 let routed = SelectedUserScript(id: selection.id, action: action)
-                if action == .settings { selectedScriptSettings = routed } else { selectedScript = routed }
+                switch action {
+                case .settings: selectedScriptSettings = routed
+                case .matchPatterns: selectedScriptPatterns = routed
+                default: selectedScript = routed
+                }
             }
         ).tallInfoSheetPresentationCompat()
     }
