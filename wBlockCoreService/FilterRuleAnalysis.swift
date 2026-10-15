@@ -329,8 +329,16 @@ public struct FilterRuleAnalysis: Sendable {
         }
         let exception = trimmed[marker] == "#@#"
         let body = trimmed[marker.upperBound...]
-        // Both rewrites below need a parenthesis or a shadow-DOM combinator.
-        guard body.utf8.contains(UInt8(ascii: "(")) || RuleText.contains(body, ">>>") else { return rule }
+        // The rewrites below need a parenthesis, a style block, or a shadow-DOM combinator.
+        guard body.utf8.contains(where: { $0 == UInt8(ascii: "(") || $0 == UInt8(ascii: "{") })
+            || RuleText.contains(body, ">>>") else { return rule }
+        // `##selector { style }` is CSS injection. As a hiding rule the style block
+        // landed in the site's merged selector, and Safari rejected all of it (#918).
+        if body.hasSuffix("}"), let brace = unquotedIndex(of: "{", in: body) {
+            let selector = body[..<brace]
+            let extended = selector.contains(">>>") || hasUnknownFunctionalPseudo(selector)
+            return trimmed[..<marker.lowerBound] + (exception ? "#@" : "#") + (extended ? "$?#" : "$#") + body
+        }
         for name in ["remove-attr", "remove-class"] where body.hasSuffix(")") {
             guard let pseudo = body.range(of: ":\(name)(", options: .backwards) else { continue }
             let selector = body[..<pseudo.lowerBound].trimmingCharacters(in: .whitespaces)
@@ -409,6 +417,16 @@ public struct FilterRuleAnalysis: Sendable {
         "has", "is", "not", "where", "matches", "lang", "dir",
         "nth-child", "nth-last-child", "nth-of-type", "nth-last-of-type",
     ]
+
+    private static func unquotedIndex(of target: Character, in text: Substring) -> String.Index? {
+        var quote: Character?
+        for index in text.indices {
+            let character = text[index]
+            if let open = quote { if character == open { quote = nil }; continue }
+            if character == "\"" || character == "'" { quote = character } else if character == target { return index }
+        }
+        return nil
+    }
 
     private static func hasUnknownFunctionalPseudo<S: StringProtocol>(_ selector: S) -> Bool {
         var quote: Character?

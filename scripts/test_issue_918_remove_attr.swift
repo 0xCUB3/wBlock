@@ -27,6 +27,12 @@ struct Main {
             ("example.com##div:has(> a):not(.b)", "example.com##div:has(> a):not(.b)"),
             ("example.com##a[title=':odd(x)']", "example.com##a[title=':odd(x)']"),
             ("example.com##li:nth-child(2n+1)", "example.com##li:nth-child(2n+1)"),
+            // A style block makes a CSS injection rule, not a hiding selector.
+            ("www.reddit.com##[slot=\"comment\"] p > a[href^=\"/a/\"] {pointer-events: none !important}",
+             "www.reddit.com#$#[slot=\"comment\"] p > a[href^=\"/a/\"] {pointer-events: none !important}"),
+            ("example.com#@#.a { color: red }", "example.com#@$#.a { color: red }"),
+            ("example.com##.a:upward(2) { color: red }", "example.com#$?#.a:upward(2) { color: red }"),
+            ("example.com##a[title='{x}']", "example.com##a[title='{x}']"),
             // #975: Safari has no object type; drop it unless that would widen the rule.
             ("||media.net^$object,script,third-party", "||media.net^$script,third-party"),
             ("||quantserve.com^$~object,third-party", "||quantserve.com^$third-party"),
