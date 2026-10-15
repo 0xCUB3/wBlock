@@ -1072,8 +1072,17 @@ struct ContentModifiers: ViewModifier {
     // host mid-dismissal crashed UIKit on iOS 16.
     @State private var onboardingSettled = true
 
+    // iOS shows the no-updates result in the progress sheet, as a card like the macOS alert sheet.
+    private var noUpdatesInSheet: Bool {
+        #if os(iOS)
+        filterManager.showingNoUpdatesAlert
+        #else
+        false
+        #endif
+    }
+
     private var progressSheetPresented: Bool {
-        onboardingSettled && (filterManager.showingApplyProgressSheet
+        onboardingSettled && (filterManager.showingApplyProgressSheet || noUpdatesInSheet
             || (filterManager.isLoading && !filterManager.suppressBlockingOverlay))
     }
 
@@ -1087,6 +1096,7 @@ struct ContentModifiers: ViewModifier {
                 set: { presented in
                     if !presented && !filterManager.isLoading {
                         filterManager.showingApplyProgressSheet = false
+                        filterManager.showingNoUpdatesAlert = false
                     }
                 }
             ), onDismiss: { progressSheetSettled = true }) {
@@ -1098,7 +1108,7 @@ struct ContentModifiers: ViewModifier {
                     )
                 } else {
                     UpdateCheckProgressView(filterManager: filterManager)
-                        .interactiveDismissDisabled()
+                        .interactiveDismissDisabled(!noUpdatesInSheet)
                 }
             }
             .onChangeCompat(of: progressSheetPresented) { _, presented in
@@ -1109,7 +1119,7 @@ struct ContentModifiers: ViewModifier {
                 if presented { onboardingSettled = false }
             }
             .alert("No Updates Found", isPresented: Binding(
-                get: { filterManager.showingNoUpdatesAlert && !progressSheetPresented && progressSheetSettled },
+                get: { filterManager.showingNoUpdatesAlert && !noUpdatesInSheet && !progressSheetPresented && progressSheetSettled },
                 set: { if !$0 { filterManager.showingNoUpdatesAlert = false } }
             )) {
                 Button("OK") {}

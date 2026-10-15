@@ -11,7 +11,47 @@ struct UpdateCheckProgressView: View {
         return "\(progress.completed.formatted()) / \(progress.total.formatted())"
     }
 
-    private var content: some View {
+    @ViewBuilder private var content: some View {
+        Group {
+            #if os(iOS)
+            if filterManager.showingNoUpdatesAlert {
+                noUpdates
+            } else {
+                progress
+            }
+            #else
+            progress
+            #endif
+        }
+        .padding(24)
+        .frame(idealWidth: 380, maxWidth: 440)
+    }
+
+    #if os(iOS)
+    private var noUpdates: some View {
+        HStack(spacing: 16) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("No Updates Found")
+                    .font(.headline)
+                Text("You're already using the latest filters.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+            Button("OK") { filterManager.showingNoUpdatesAlert = false }
+                .buttonStyle(.bordered)
+        }
+        .frame(maxHeight: .infinity)
+        .task {
+            // Dismisses itself; swiping down or tapping outside closes it sooner.
+            try? await Task.sleep(nanoseconds: 4_000_000_000)
+            filterManager.showingNoUpdatesAlert = false
+        }
+    }
+    #endif
+
+    private var progress: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .firstTextBaseline) {
                 Text(filterManager.statusDescription)
@@ -27,8 +67,6 @@ struct UpdateCheckProgressView: View {
             ProgressView(value: filterManager.updateCheckProgress.map { Double($0.fraction) })
                 .progressViewStyle(.linear)
         }
-        .padding(24)
-        .frame(idealWidth: 380, maxWidth: 440)
     }
 
     var body: some View {
