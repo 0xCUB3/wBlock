@@ -2281,7 +2281,6 @@ struct EditUserListView: View {
 struct RuleCapacityPopoverView: View {
     @ObservedObject var filterManager: AppFilterManager
     @Environment(\.dismiss) private var dismiss
-    @State private var applied: AppliedRuleCounts?
 
     private var targets: [ContentBlockerTargetInfo] {
         ContentBlockerTargetManager.shared.allTargets(forPlatform: filterManager.currentPlatform)
@@ -2403,7 +2402,7 @@ struct RuleCapacityPopoverView: View {
             .padding(12)
             .liquidGlassCompat(cornerRadius: 12, material: .regularMaterial)
 
-            if let applied, totalUsed > 0 {
+            if let applied = filterManager.appliedRuleCounts, totalUsed > 0 {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Rule Types")
                         .font(.caption.weight(.semibold))
@@ -2467,9 +2466,10 @@ struct RuleCapacityPopoverView: View {
         }
         .task(id: totalUsed) {
             let targets = targets
-            applied = await Task.detached(priority: .userInitiated) {
+            let loaded = await Task.detached(priority: .userInitiated) {
                 AppliedRuleCounts.load(targets: targets, groupIdentifier: GroupIdentifier.shared.value)
             }.value
+            if filterManager.appliedRuleCounts != loaded { filterManager.appliedRuleCounts = loaded }
         }
     }
 

@@ -65,6 +65,9 @@ class AppFilterManager: ObservableObject {
     // Per-extension rule count tracking (extension bundle ID -> Safari rule count)
     // This is the source of truth since extensions can serve multiple categories
     @Published var ruleCountsByExtension: [String: Int] = [:]
+    /// Rule type breakdown for the capacity sheet. Kept here because SwiftUI rebuilds
+    /// the sheet on every app switch, and view state would reset and make it flicker.
+    @Published var appliedRuleCounts: AppliedRuleCounts?
     @Published var extensionsApproachingLimit: Set<String> = []
     @Published var showingRuleLimitWarningAlert = false
     @Published var ruleLimitWarningMessage = ""
