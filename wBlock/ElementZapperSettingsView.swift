@@ -120,6 +120,9 @@ struct ElementZapperSettingsView: View {
             }
         }
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+        // Rows opening mid-animation stay inside the card instead of
+        // fading in over the window behind it.
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
     private func domainHeader(_ domain: String) -> some View {
