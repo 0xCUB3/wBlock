@@ -551,7 +551,7 @@ struct SettingsView: View {
 
     @ViewBuilder
     private var autoUpdateDiagnosticsDetail: some View {
-        List {
+        diagnosticsContainer {
             Section {
                 #if os(macOS)
                 diagnosticDetailView(title: "Background Update Agent", detail: launchAgentStatusLine)
@@ -596,6 +596,21 @@ struct SettingsView: View {
         }
     }
 
+    /// macOS shows the diagnostics in the same cards as Settings; a plain
+    /// List left an empty band and a divider above the first row.
+    @ViewBuilder
+    private func diagnosticsContainer<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        #if os(macOS)
+        if #available(macOS 15.0, *) {
+            MacSettingsCardList { EmptyView() } content: { content() }
+        } else {
+            Form { content() }.groupedFormStyleCompat()
+        }
+        #else
+        List { content() }
+        #endif
+    }
+
     @ViewBuilder
     private func backgroundTaskDiagnosticsView(
         title: String,
@@ -603,7 +618,7 @@ struct SettingsView: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(LocalizedStringKey(title))
-                .font(.caption)
+                .font(.subheadline)
                 .foregroundStyle(.secondary)
             Text(
                 String.localizedStringWithFormat(
@@ -623,17 +638,17 @@ struct SettingsView: View {
                 )
             )
         }
-        .font(.footnote)
+        .font(.body)
     }
 
     @ViewBuilder
     private func diagnosticDetailView(title: String, detail: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(LocalizedStringKey(title))
-                .font(.caption)
+                .font(.subheadline)
                 .foregroundStyle(.secondary)
             Text(detail)
-                .font(.footnote)
+                .font(.body)
         }
     }
 
