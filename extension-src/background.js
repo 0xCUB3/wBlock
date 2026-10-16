@@ -2,7 +2,7 @@ function _defineProperty2(e, r, t) { return (r = _toPropertyKey(r)) in e ? Objec
 function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == typeof i ? i : i + ""; }
 function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != typeof i) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
 /*
- * WebExtension v1.0.4 (build date: Sat, 29 Aug 2026 16:52:53 GMT)
+ * WebExtension v1.0.4 (build date: Fri, 16 Oct 2026 21:22:52 GMT)
  * (c) 2026 ameshkov
  * Released under the ISC license
  * https://github.com/ameshkov/safari-blocker
@@ -11,22 +11,40 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   'use strict';
 
   /**
-   * @adguard/extended-css - v2.1.1 - Thu Dec 19 2024
-   * https://github.com/AdguardTeam/ExtendedCss#homepage
-   * Copyright (c) 2024 AdGuard. Licensed GPL-3.0
+   * @adguard/extended-css - v2.3.0 - Thu Oct 15 2026
+   * https://github.com/AdGuardSoftwareLimited/ext-extended-css#readme
+   * Copyright (c) 2026 AdGuard. Licensed GPL-3.0
    */
-  function _defineProperty(obj, key, value) {
-    if (key in obj) {
-      Object.defineProperty(obj, key, {
-        value: value,
-        enumerable: true,
-        configurable: true,
-        writable: true
-      });
-    } else {
-      obj[key] = value;
+  function _typeof(o) {
+    "@babel/helpers - typeof";
+
+    return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (o) {
+      return typeof o;
+    } : function (o) {
+      return o && "function" == typeof Symbol && o.constructor === Symbol && o !== Symbol.prototype ? "symbol" : typeof o;
+    }, _typeof(o);
+  }
+  function toPrimitive(t, r) {
+    if ("object" != _typeof(t) || !t) return t;
+    var e = t[Symbol.toPrimitive];
+    if (void 0 !== e) {
+      var i = e.call(t, r || "default");
+      if ("object" != _typeof(i)) return i;
+      throw new TypeError("@@toPrimitive must return a primitive value.");
     }
-    return obj;
+    return ("string" === r ? String : Number)(t);
+  }
+  function toPropertyKey(t) {
+    var i = toPrimitive(t, "string");
+    return "symbol" == _typeof(i) ? i : i + "";
+  }
+  function _defineProperty(e, r, t) {
+    return (r = toPropertyKey(r)) in e ? Object.defineProperty(e, r, {
+      value: t,
+      enumerable: !0,
+      configurable: !0,
+      writable: !0
+    }) : e[r] = t, e;
   }
   ({
     /**
@@ -57,7 +75,6 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * We do not want to apply rules on every mutation so we use this helper to make sure
    * that there is only one call in the given amount of time.
    */
-
   class ThrottleWrapper {
     /**
      * Creates new ThrottleWrapper.
@@ -69,10 +86,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       this.callback = callback;
       this.executeCallback = this.executeCallback.bind(this);
     }
-    /**
-     * Calls the {@link callback} function and update bounded throttle wrapper properties.
-     */
 
+    /**
+     * Calls the `this.callback` function and update bounded throttle wrapper properties.
+     */
     executeCallback() {
       this.lastRunTime = performance.now();
       if (isNumber(this.timerId)) {
@@ -81,6 +98,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
       this.callback();
     }
+
     /**
      * Schedules the {@link executeCallback} function execution via setTimeout.
      * It may triggered by MutationObserver job which may occur too ofter, so we limit the function execution:
@@ -89,12 +107,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
      *
      * 2. If {@link lastRunTime} is set, we need to check the time elapsed time since the last call. If it is
      * less than {@link ThrottleWrapper.THROTTLE_DELAY_MS}, we schedule the function execution after the remaining time.
-     * 
-     * Otherwise, we execute the function asynchronously to ensure that it is executed 
-     * in the correct order with respect to DOM events, by deferring its execution until after 
+     *
+     * Otherwise, we execute the function asynchronously to ensure that it is executed
+     * in the correct order with respect to DOM events, by deferring its execution until after
      * those tasks have completed.
      */
-
     run() {
       if (isNumber(this.timerId)) {
         // there is a pending execution scheduled
@@ -107,12 +124,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
           return;
         }
       }
+
       /**
        * We use `setTimeout` instead `requestAnimationFrame`
        * here because requestAnimationFrame can be delayed for a long time
        * when the browser saves battery or the engine is heavily loaded.
        */
-
       this.timerId = window.setTimeout(this.executeCallback);
     }
   }
@@ -25551,7 +25568,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   };
 
   /*
-   * SafariExtension v4.3.0 (build date: Thu, 04 Jun 2026 09:19:32 GMT)
+   * SafariExtension v4.3.1 (build date: Thu, 15 Oct 2026 16:24:42 GMT)
    * (c) 2026 Adguard Software Ltd.
    * Released under the GPL-3.0 license
    * https://github.com/AdguardTeam/SafariConverterLib/tree/master/Extension
@@ -25691,7 +25708,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
    * that can be redefined via `setLogger`.
    */
   const log$1 = new ProxyLogger();
-  const version = "4.3.0";
+  const version = "4.3.1";
 
   /**
    * @file Contains common constants and helper functions.

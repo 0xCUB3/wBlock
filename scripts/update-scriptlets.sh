@@ -4,6 +4,7 @@ set -euo pipefail
 # Usage: ./scripts/update-scriptlets.sh [safari-extension-version] [scriptlets-version]
 # Example: ./scripts/update-scriptlets.sh 4.3.0
 # Example: ./scripts/update-scriptlets.sh 4.2.1 2.3.0   (override scriptlets)
+# Example: ./scripts/update-scriptlets.sh 4.3.1 "" 2.3.0   (override extended-css)
 # If no version argument is given, the script auto-detects npm latest.
 #
 # Flow: the fresh upstream build is spliced into the unminified sources in
@@ -45,15 +46,16 @@ else
   VERSION="$(npm view @adguard/safari-extension version)"
 fi
 
-SCRIPTLETS_OVERRIDE=""
-if [[ $# -ge 2 ]]; then
-  SCRIPTLETS_OVERRIDE="$2"
-fi
+SCRIPTLETS_OVERRIDE="${2:-}"
+EXTENDED_CSS_OVERRIDE="${3:-}"
 
 echo ""
 echo -e "${BOLD}Target: @adguard/safari-extension ${VERSION}${RESET}"
 if [[ -n "${SCRIPTLETS_OVERRIDE}" ]]; then
   echo -e "${BOLD}Scriptlets override: @adguard/scriptlets ${SCRIPTLETS_OVERRIDE}${RESET}"
+fi
+if [[ -n "${EXTENDED_CSS_OVERRIDE}" ]]; then
+  echo -e "${BOLD}ExtendedCss override: @adguard/extended-css ${EXTENDED_CSS_OVERRIDE}${RESET}"
 fi
 echo ""
 warn "Review the version above. Press Ctrl-C within 5 seconds to abort."
@@ -98,19 +100,20 @@ sed -i '' \
 
 success "Updated webext/package.json"
 
-# Apply scriptlets override if specified
-if [[ -n "${SCRIPTLETS_OVERRIDE}" ]]; then
-  info "Overriding @adguard/scriptlets to ${SCRIPTLETS_OVERRIDE}..."
+# Apply dependency overrides if specified
+for override in "@adguard/scriptlets=${SCRIPTLETS_OVERRIDE}" "@adguard/extended-css=${EXTENDED_CSS_OVERRIDE}"; do
+  name="${override%%=*}"; version="${override#*=}"
+  [[ -n "${version}" ]] || continue
   node -e "
     const fs = require('fs');
     const pkg = JSON.parse(fs.readFileSync('${WEBEXT_PKG}', 'utf8'));
     pkg.pnpm = pkg.pnpm || {};
     pkg.pnpm.overrides = pkg.pnpm.overrides || {};
-    pkg.pnpm.overrides['@adguard/scriptlets'] = '${SCRIPTLETS_OVERRIDE}';
+    pkg.pnpm.overrides['${name}'] = '${version}';
     fs.writeFileSync('${WEBEXT_PKG}', JSON.stringify(pkg, null, 2) + '\n');
   "
-  success "Added pnpm override for @adguard/scriptlets@${SCRIPTLETS_OVERRIDE}"
-fi
+  success "Added pnpm override for ${name}@${version}"
+done
 
 # ---------------------------------------------------------------------------
 # Step 3: Build webext (produces dist/background.js, dist/content.js)
