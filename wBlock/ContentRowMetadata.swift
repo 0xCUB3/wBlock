@@ -115,6 +115,9 @@ struct InfoCategoryRow<Category: Hashable & Identifiable>: View {
                         Text(name(category)).tag(category)
                     }
                 }
+                // Inline, or macOS nests the choices under a "Category" submenu.
+                .pickerStyle(.inline)
+                .labelsHidden()
             } label: {
                 HStack(spacing: 6) {
                     Text(name(selection))
