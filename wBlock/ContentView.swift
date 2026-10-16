@@ -1354,6 +1354,8 @@ struct AddFilterListView: View {
     @State private var findQuery = ""
     /// The URL review was opened from Find, so Back returns there (#987).
     @State private var isReviewingFromFind = false
+    /// URL tab text from before Find staged a list, restored on the way back.
+    @State private var urlInputBeforeFind = ""
 
 
     private var parsedURLInput: FilterListURLParseResult {
@@ -1420,7 +1422,11 @@ struct AddFilterListView: View {
             fetchMetadataForCurrentURLs()
         }
         .onChangeCompat(of: addMode) { _, mode in
-            if mode != .url { isReviewingFromFind = false }
+            if mode != .url && isReviewingFromFind {
+                isReviewingFromFind = false
+                isReviewingURLs = false
+                urlInput = urlInputBeforeFind
+            }
             cancelURLListImport()
             if mode == .url { fetchMetadataForCurrentURLs() } else {
                 metadataFetchTask?.cancel()
@@ -1549,6 +1555,7 @@ struct AddFilterListView: View {
             URLMetadata(title: list.filter.name, description: list.filter.description)
         urlCategories[url.absoluteString] = list.filter.category
         urlLanguages[url.absoluteString] = Set(list.filter.languages)
+        if !isReviewingFromFind { urlInputBeforeFind = urlInput }
         addMode = .url
         isReviewingFromFind = true
         let input = urlEntryMode == .single
