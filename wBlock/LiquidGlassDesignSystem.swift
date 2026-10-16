@@ -261,7 +261,7 @@ private struct CompactToolbarButtonStyle: ButtonStyle {
             .padding(.horizontal, isTextLabel ? 10 : 0)
             .contentShape(Rectangle())
             // Background windows gray their toolbar, as native items do.
-            .foregroundStyle(controlActiveState == .inactive ? .secondary : .primary)
+            .foregroundStyle(controlActiveState == .inactive ? .tertiary : .primary)
             .background(Color.primary.opacity(isEnabled ? (configuration.isPressed ? 0.12 : (isHovered ? 0.08 : 0)) : 0), in: .capsule)
             .opacity(isEnabled ? (configuration.isPressed ? 0.6 : 1) : 0.35)
             .onHover { isHovered = $0 }
@@ -398,7 +398,7 @@ struct InlineGlassSearchField: View {
                     .labelStyle(.iconOnly)
                     .font(.system(size: 13))
                     .fixedSize()
-                    .foregroundStyle(text.isEmpty ? (controlActiveState == .inactive ? Color.secondary : Color.primary) : Color.accentColor)
+                    .foregroundStyle(text.isEmpty ? (controlActiveState == .inactive ? Color.primary.opacity(0.25) : Color.primary) : Color.accentColor)
                     .contentTransition(.identity)
                     .frame(width: 20, height: 36)
                     .padding(.horizontal, 8)
