@@ -171,7 +171,10 @@ if (window.wBlockUserscriptInjectorHasRun) {
             this.documentRootPromise = null; // earliest safe page-world injection point
             this.rydPrefetchEnabled = false;
             this.menuCommandSequence = 0;
-            this.userScriptRequestRetryDelays = [500, 1500, 4000, 8000];
+            // Short, even steps: a failure that clears after 2 s should not
+            // wait for an 8 s slot. The old 0.5/1.5/4/8 s ladder turned four
+            // quick failures into a 14 s late injection (#991).
+            this.userScriptRequestRetryDelays = [250, 500, 1000, 1000, 1000, 1000, 2000, 2000, 2000, 2000, 2000];
             wBlockLog('[wBlock] UserScriptEngine constructor called.');
             this.init();
         }
@@ -984,6 +987,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 wBlockError('[wBlock] Failed to request userscripts:', error);
                 return;
             }
+            wBlockError(`[wBlock] Userscript request ${attempt + 1} failed, retrying in ${delay} ms:`, error);
 
             setTimeout(() => {
                 if (generation === this.documentStartRequestGeneration) {
