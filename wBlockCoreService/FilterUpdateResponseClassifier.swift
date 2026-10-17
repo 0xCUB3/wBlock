@@ -55,8 +55,13 @@ public enum FilterUpdateResponseClassifier {
         statusCode == 403 || statusCode == 404 || statusCode == 408 || statusCode == 429 || statusCode >= 500
     }
 
+    /// Saved lists are normalized (LF line endings, unsupported directives dropped),
+    /// so the remote body is compared in that form. Comparing raw bytes reported
+    /// every CRLF list as changed whenever the server sent a 200 instead of a 304.
     public static func contentDiffers(remoteData: Data, localData: Data?) -> Bool {
         guard let localData else { return true }
-        return remoteData != localData
+        guard remoteData != localData else { return false }
+        let remoteText = String(decoding: remoteData, as: UTF8.self)
+        return Data(FilterListContentProcessing.normalizedContent(from: remoteText).utf8) != localData
     }
 }
