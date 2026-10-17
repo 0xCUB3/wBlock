@@ -29,6 +29,11 @@ extension Notification.Name {
     /// Scoped update checks (#657): filters only or userscripts only.
     static let wBlockCheckFilterUpdatesRequest = Notification.Name("wBlockCheckFilterUpdatesRequest")
     static let wBlockCheckScriptUpdatesRequest = Notification.Name("wBlockCheckScriptUpdatesRequest")
+    /// macOS menu bar items (#999). The tab request carries the tab index.
+    static let wBlockSelectTabRequest = Notification.Name("wBlockSelectTabRequest")
+    static let wBlockUpdateRequest = Notification.Name("wBlockUpdateRequest")
+    static let wBlockToggleEnabledOnlyRequest = Notification.Name("wBlockToggleEnabledOnlyRequest")
+    static let wBlockShowLogsRequest = Notification.Name("wBlockShowLogsRequest")
 }
 #if os(iOS)
 @MainActor

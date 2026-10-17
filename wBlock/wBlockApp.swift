@@ -117,6 +117,12 @@ struct wBlockApp: App {
         #endif
         #if os(macOS)
         .commands {
+            // The Settings tab is wBlock's settings window; ⌘, goes there
+            // rather than opening a second copy of it (#999).
+            CommandGroup(replacing: .appSettings) {
+                Button("Settings…") { post(.wBlockSelectTabRequest, 2) }
+                    .keyboardShortcut(",", modifiers: .command)
+            }
             CommandGroup(after: .appInfo) {
                 Button("Restart Onboarding") {
                     showingRestartConfirmation = true
@@ -140,7 +146,32 @@ struct wBlockApp: App {
                 }
                 .keyboardShortcut("l", modifiers: .command)
             }
+            CommandGroup(before: .toolbar) {
+                Button("Filters") { post(.wBlockSelectTabRequest, 0) }
+                    .keyboardShortcut("1", modifiers: .command)
+                Button("Userscripts") { post(.wBlockSelectTabRequest, 1) }
+                    .keyboardShortcut("2", modifiers: .command)
+                Button("Settings") { post(.wBlockSelectTabRequest, 2) }
+                    .keyboardShortcut("3", modifiers: .command)
+                Divider()
+                Button("Show Enabled Only") { post(.wBlockToggleEnabledOnlyRequest) }
+                    .keyboardShortcut("e", modifiers: [.command, .option])
+                Divider()
+            }
+            CommandGroup(after: .windowList) {
+                Divider()
+                Button("Logs") { post(.wBlockShowLogsRequest) }
+                    .keyboardShortcut("l", modifiers: [.command, .option])
+            }
+            CommandGroup(replacing: .help) {
+                Link("FAQ", destination: SettingsView.faqURL)
+                Link("Report Issues", destination: SettingsView.reportIssueURL)
+                Link("Contact Us", destination: SettingsView.contactURL)
+                Link("Source Code", destination: SettingsView.sourceCodeURL)
+            }
             CommandMenu("Updates") {
+                Button("Update") { post(.wBlockUpdateRequest) }
+                    .keyboardShortcut("r", modifiers: .command)
                 Button("Check for Filter Updates") {
                     NotificationCenter.default.post(name: .wBlockCheckFilterUpdatesRequest, object: nil)
                 }
@@ -149,8 +180,16 @@ struct wBlockApp: App {
                     NotificationCenter.default.post(name: .wBlockCheckScriptUpdatesRequest, object: nil)
                 }
                 .keyboardShortcut("r", modifiers: [.command, .option, .shift])
+                Divider()
+                Button("Apply Without Checking for Updates") { filterManager.forceApplyChanges() }
+                Divider()
+                Menu("Pause Blocking") { PauseBlockingControls(filterManager: filterManager) }
             }
         }
         #endif
+    }
+
+    private func post(_ name: Notification.Name, _ object: Int? = nil) {
+        NotificationCenter.default.post(name: name, object: object)
     }
 }

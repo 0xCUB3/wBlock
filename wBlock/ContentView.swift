@@ -67,6 +67,7 @@ struct ContentView: View {
     /// arrives before that tab has been built is still honored on appear.
     @State private var addUserScriptRequest = 0
     @State private var userScriptSearchRequest = 0
+    @State private var showingLogs = false
     @Environment(\.scenePhase) var scenePhase
 
     private var enabledListsCount: Int {
@@ -112,6 +113,9 @@ struct ContentView: View {
     /// attached hardware keyboard.
     private var keyboardShortcutHandlers: some View {
         Group {
+            // macOS gets these from the menu bar (wBlockApp.commands), so the
+            // hidden buttons only exist for iPad/iPhone hardware keyboards.
+            #if os(iOS)
             Button {
                 guard !filterManager.isLoading,
                     !filterManager.showingApplyProgressSheet
@@ -143,9 +147,6 @@ struct ContentView: View {
             }
             .keyboardShortcut("3", modifiers: .command)
 
-            // macOS gets these from the menu bar (wBlockApp.commands), so the
-            // hidden buttons only exist for iPad/iPhone hardware keyboards.
-            #if os(iOS)
             Button {
                 NotificationCenter.default.post(name: .wBlockAddFilterListRequest, object: nil)
             } label: {
@@ -268,6 +269,28 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: .wBlockCheckScriptUpdatesRequest)) { _ in
             checkForUpdates(scope: .scripts)
         }
+        .onReceive(NotificationCenter.default.publisher(for: .wBlockSelectTabRequest)) { note in
+            if let tab = note.object as? Int { selectedTab = tab }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .wBlockUpdateRequest)) { _ in
+            guard !filterManager.isLoading, !filterManager.showingApplyProgressSheet else { return }
+            applyPendingChanges()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .wBlockToggleEnabledOnlyRequest)) { _ in
+            if selectedTab == 0 { showOnlyEnabledLists.toggle() }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .wBlockShowLogsRequest)) { _ in
+            showingLogs = true
+        }
+        #if os(macOS)
+        .sheet(isPresented: $showingLogs) {
+            SheetContainer {
+                SheetHeader(title: "Logs") { showingLogs = false }
+                LogsView()
+            }
+            .frame(width: 700, height: 500)
+        }
+        #endif
         .alert("Error", isPresented: $showingFilterDownloadError) {
             Button("OK", role: .cancel) {}
         } message: {

@@ -272,6 +272,11 @@ struct UserScriptManagerView: View {
             searchText = ""
             showSearch = false
         }
+        .onReceive(NotificationCenter.default.publisher(for: .wBlockToggleEnabledOnlyRequest)) { _ in
+            guard tabSelection.value == 1 else { return }
+            showOnlyEnabled.toggle()
+            ProtobufDataManager.shared.setUserScriptShowEnabledOnly(showOnlyEnabled)
+        }
         // task(id:) runs on appear too, so a request sent while this tab was
         // not yet built is still honored once it is.
         .task(id: addRequest) {
