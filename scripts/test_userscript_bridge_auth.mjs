@@ -108,7 +108,7 @@ function buildContentScriptSandbox(
   sandbox.top = sandbox;
   sandbox.self = sandbox;
   const pageURL = new URL(href);
-  sandbox.location = { href, hostname: pageURL.hostname, protocol: pageURL.protocol };
+  sandbox.location = { href, hostname: pageURL.hostname, protocol: pageURL.protocol, pathname: pageURL.pathname };
   sandbox.addEventListener = (type, fn) => { if (type === "message") windowMessageListeners.push(fn); };
   sandbox.removeEventListener = () => {};
   sandbox.postMessage = () => {};
@@ -1010,6 +1010,37 @@ await tubeSandbox.__onMessage({type:'wblock:clearDocumentStartSessionCache'});
 vm.runInContext(`__fire({type:'wblock-gm-storage-delete',key:'wblock.tubeCleaner.sponsorBlock',requestId:'delete',bridgeId:'known'})`, tubeSandbox);
 await tick();
 check('legacy page storage delete has no native route', !tubeSandbox.__sentMessages.some(m => m.action === 'deleteUserScriptStorageValue'));
+
+// AdGuard Popup Blocker hooks page globals, so it runs in MAIN with bounded list storage.
+const popupBlocker = { ...fakeScript, id:'official-popup-blocker', sourceURL:'https://userscripts.adtidy.org/release/popup-blocker/2.5/popupblocker.user.js',
+  matches:['https://*/*'], grant:['GM_getValue','GM_setValue','GM_deleteValue','GM_listValues','GM_getResourceURL','unsafeWindow'],
+  storageSnapshot: { allowed:JSON.stringify('other.com'), silenced:JSON.stringify(''), '#id':JSON.stringify('abc123'), secret:'must-not-reach-page' },
+  content:'window.__popupHooks = true;' };
+async function popupBlockerSandbox(href, script = popupBlocker) {
+  const base = appendedScripts.length;
+  const sandbox = buildContentScriptSandbox(null, [script], href);
+  vm.createContext(sandbox); vm.runInContext(source, sandbox); await tick(); await tick();
+  sandbox.__listeners = windowMessageListeners;
+  vm.runInContext(`globalThis.__fire = data => { for (const fn of __listeners) fn({source: window,data}); };`, sandbox);
+  const writes = () => sandbox.__sentMessages.filter(m => m.action === 'setUserScriptStorageValue');
+  return { sandbox, wrapper: appendedScripts.slice(base).find(code => code.includes('__popupHooks')) || '', writes };
+}
+const pbPage = await popupBlockerSandbox('https://ads.test/page');
+check('Popup Blocker runs in the page with only its list snapshot', pbPage.wrapper.includes('__popupHooks')
+  && pbPage.wrapper.includes('other.com') && !pbPage.wrapper.includes('must-not-reach-page'));
+const pbOwnNameOnly = await popupBlockerSandbox('https://ads.test/page', { ...popupBlocker, sourceURL:'https://evil.test/popupblocker.user.js', name:'AdGuard Popup Blocker' });
+check('a lookalike Popup Blocker stays isolated', pbOwnNameOnly.wrapper === '' && pbOwnNameOnly.sandbox.__popupHooks === true);
+vm.runInContext(`__fire({type:'wblock:popup-blocker-storage',key:'allowed',rawValue:JSON.stringify('evil-ads.test,ads.test')})`, pbPage.sandbox);
+await tick();
+check('an ordinary page may allow only its own host', pbPage.writes().length === 1 && pbPage.writes()[0].scriptId === popupBlocker.id
+  && JSON.parse(pbPage.writes()[0].rawValue) === 'other.com,ads.test');
+vm.runInContext(`__fire({type:'wblock:popup-blocker-storage',key:'secret',rawValue:'"x"'}); __fire({type:'wblock:popup-blocker-storage',key:'#id',rawValue:'"replaced"'}); __fire({type:'wblock:popup-blocker-storage',key:'ver',rawValue:'"1"'})`, pbPage.sandbox);
+await new Promise(resolve => setTimeout(resolve, 300));
+check('Popup Blocker cannot write other keys or replace its instance ID', pbPage.writes().length === 1);
+const pbOptions = await popupBlockerSandbox('https://popupblocker.adguard.com/options.html');
+vm.runInContext(`__fire({type:'wblock:popup-blocker-storage',key:'silenced',rawValue:JSON.stringify('a.test,B.test')})`, pbOptions.sandbox);
+await tick();
+check('the options page edits whole lists', pbOptions.writes().length === 1 && JSON.parse(pbOptions.writes()[0].rawValue) === 'a.test,b.test');
 
 // Sandboxed scripts feature-detect unsafeWindow to pick their page bridge (KISS Translator).
 for (const [grants, expected] of [[['GM.setValue', 'GM_getValue'], 'undefined'], [['GM.setValue', 'unsafeWindow'], 'object']]) {

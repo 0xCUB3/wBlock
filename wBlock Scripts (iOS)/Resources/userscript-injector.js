@@ -94,8 +94,52 @@ function usesPageOnlyNetwork(script) {
     return script.injectInto !== 'content' && grants.includes('unsafewindow')
         && grants.every(grant => ['none', 'unsafewindow', 'gm_info', 'gm.info', 'gm_xmlhttprequest', 'gm.xmlhttprequest'].includes(grant));
 }
+// AdGuard Popup Blocker patches page globals (window.open, click) and exports its
+// options API there, so it must run in MAIN. Its page storage persists only bounded
+// allow/silence lists, and ordinary pages may change only their own host.
+const POPUP_BLOCKER_URL = 'https://userscripts.adtidy.org/release/popup-blocker/2.5/popupblocker.user.js';
+const POPUP_BLOCKER_ID = /^[A-Za-z0-9+/=]{1,64}$/;
+function isPopupBlockerPageScript(script) {
+    return script && script.isLocal === false && script.sourceURL === POPUP_BLOCKER_URL
+        && (script.grant || []).every(grant => ['unsafewindow', 'gm_getvalue', 'gm_setvalue', 'gm_deletevalue',
+            'gm_listvalues', 'gm_getresourceurl'].includes(String(grant).toLowerCase()));
+}
+function isPopupBlockerOptionsPage() {
+    return location.protocol === 'https:' && location.hostname === 'popupblocker.adguard.com'
+        && /\/options\.html$/.test(location.pathname || '');
+}
+function popupBlockerHosts(value) {
+    if (typeof value !== 'string' || value.length > 65536) return null;
+    return [...new Set(value.toLowerCase().split(','))].filter(host => /^[a-z0-9.-]{1,253}$/.test(host)).slice(0, 2000);
+}
+function popupBlockerStorage(snapshot) {
+    const state = {};
+    for (const key of ['allowed', 'silenced', '#id']) {
+        try {
+            const value = JSON.parse((snapshot || {})[key]);
+            if (key === '#id' ? typeof value === 'string' && POPUP_BLOCKER_ID.test(value) : popupBlockerHosts(value)) {
+                state[key] = key === '#id' ? value : popupBlockerHosts(value).join(',');
+            }
+        } catch (_) { /* Missing or malformed values start empty. */ }
+    }
+    return state;
+}
+function pageStorageSnapshot(script) {
+    // No arbitrary stored value is exposed to the page.
+    if (isTubeCleanerPageScript(script)) {
+        try {
+            const parsed = boundedTubeSettings(JSON.parse((script.storageSnapshot || {})[TUBE_SETTINGS_KEY]));
+            if (parsed) return { [TUBE_SETTINGS_KEY]: JSON.stringify(parsed) };
+        } catch (_) { /* Fall through to an empty snapshot. */ }
+        return {};
+    }
+    if (!isPopupBlockerPageScript(script)) return {};
+    // Version 3 skips migrations, which would delete and rewrite every key.
+    return Object.fromEntries([['ver', '3'], ...Object.entries(popupBlockerStorage(script.storageSnapshot))]
+        .map(([key, value]) => [key, JSON.stringify(value)]));
+}
 function requiresIsolatedGM(script) {
-    return !isTubeCleanerPageScript(script) && !usesPageOnlyNetwork(script) && (script.grant || []).some(grant => {
+    return !isTubeCleanerPageScript(script) && !isPopupBlockerPageScript(script) && !usesPageOnlyNetwork(script) && (script.grant || []).some(grant => {
         const name = String(grant).toLowerCase();
         return name.startsWith('gm') && name !== 'gm_info' && name !== 'gm.info';
     });
@@ -215,7 +259,8 @@ if (window.wBlockUserscriptInjectorHasRun) {
             const generation = ++this.documentStartRequestGeneration;
             this.pendingScripts = [];
             this.tubeCleanerSettingsScript = null;
-            this.pendingTubeSettings = null;
+            this.popupBlockerScript = null;
+            this.pendingPageWrites.clear();
             this.scriptPayloadPromises.clear();
             this.warmStartValidationPromises.clear();
             this.injectingScripts.clear();
@@ -291,37 +336,68 @@ if (window.wBlockUserscriptInjectorHasRun) {
 
         setupStorageBridge() {
             this.tubeCleanerSettingsScript = null;
-            this.pendingTubeSettings = null;
-            this.tubeSettingsWriting = false;
+            this.popupBlockerScript = null;
+            this.pendingPageWrites = new Map();
+            this.pageWritesFlushing = false;
             window.addEventListener('message', event => {
-                if (event.source !== window || !event.data || event.data.type !== 'wblock:tube-preferences') return;
-                const script = this.tubeCleanerSettingsScript;
-                if (!script || !isTubeCleanerPageScript(script)) return;
-                const settings = boundedTubeSettings(event.data.settings);
-                if (!settings) return;
-                // This preference is intentionally page-writable, like localStorage.
-                // Coalesce floods; the page cannot choose an action, key or identity.
-                this.pendingTubeSettings = { script, settings, generation: this.documentStartRequestGeneration };
-                if (!this.tubeSettingsWriting) this.flushTubeSettings();
+                if (event.source !== window || !event.data) return;
+                const write = event.data.type === 'wblock:tube-preferences' ? this.tubePreferenceWrite(event.data)
+                    : event.data.type === 'wblock:popup-blocker-storage' ? this.popupBlockerWrite(event.data) : null;
+                if (!write) return;
+                // These values are intentionally page-writable, like localStorage.
+                // Coalesce floods; the page cannot choose an action, script or identity.
+                this.pendingPageWrites.set(write.key, { ...write, generation: this.documentStartRequestGeneration });
+                if (!this.pageWritesFlushing) this.flushPageWrites();
             });
         }
 
-        async flushTubeSettings() {
-            this.tubeSettingsWriting = true;
+        tubePreferenceWrite(data) {
+            const script = this.tubeCleanerSettingsScript;
+            const settings = script && isTubeCleanerPageScript(script) && boundedTubeSettings(data.settings);
+            return settings ? { script, key: TUBE_SETTINGS_KEY, rawValue: JSON.stringify(settings) } : null;
+        }
+
+        popupBlockerWrite(data) {
+            const script = this.popupBlockerScript;
+            if (!script || !isPopupBlockerPageScript(script) || typeof data.rawValue !== 'string') return null;
+            let value;
+            try { value = JSON.parse(data.rawValue); } catch (_) { return null; }
+            const state = this.popupBlockerState;
+            if (data.key === '#id') {
+                // The instance ID is generated once and never replaced.
+                if (state['#id'] || typeof value !== 'string' || !POPUP_BLOCKER_ID.test(value)) return null;
+                state['#id'] = value;
+            } else if (data.key === 'allowed' || data.key === 'silenced') {
+                const hosts = popupBlockerHosts(value);
+                if (!hosts) return null;
+                if (isPopupBlockerOptionsPage()) {
+                    state[data.key] = hosts.join(',');
+                } else {
+                    const host = location.hostname.toLowerCase();
+                    const others = popupBlockerHosts(state[data.key] || '').filter(entry => entry !== host);
+                    state[data.key] = (hosts.includes(host) ? [...others, host] : others).join(',');
+                }
+            } else {
+                return null;
+            }
+            return { script, key: data.key, rawValue: JSON.stringify(state[data.key]) };
+        }
+
+        async flushPageWrites() {
+            this.pageWritesFlushing = true;
             try {
-                while (this.pendingTubeSettings) {
-                    const { script, settings, generation } = this.pendingTubeSettings;
-                    this.pendingTubeSettings = null;
-                    if (generation !== this.documentStartRequestGeneration) continue;
+                for (let next; (next = this.pendingPageWrites.values().next().value);) {
+                    this.pendingPageWrites.delete(next.key);
+                    if (next.generation !== this.documentStartRequestGeneration) continue;
                     try {
                         await this.sendNativeRequest('setUserScriptStorageValue', {
-                            scriptId: script.id, key: TUBE_SETTINGS_KEY, rawValue: JSON.stringify(settings)
+                            scriptId: next.script.id, key: next.key, rawValue: next.rawValue
                         });
-                    } catch (_) { /* Local playback preferences still work offline. */ }
+                    } catch (_) { /* Page-local settings still work offline. */ }
                     await new Promise(resolve => setTimeout(resolve, 250));
                 }
             } finally {
-                this.tubeSettingsWriting = false;
+                this.pageWritesFlushing = false;
             }
         }
 
@@ -1327,6 +1403,10 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 if (!warmStart && injectInto !== 'content' && isTubeCleanerPageScript(fullScript)) {
                     this.tubeCleanerSettingsScript = fullScript;
                 }
+                if (!warmStart && injectInto !== 'content' && isPopupBlockerPageScript(fullScript)) {
+                    this.popupBlockerScript = fullScript;
+                    this.popupBlockerState = popupBlockerStorage(fullScript.storageSnapshot);
+                }
                 if (injectInto === 'content') {
                     // Execute directly in content script context (CSP-safe)
                     this.injectInContentContext(fullScript);
@@ -1471,18 +1551,9 @@ if (window.wBlockUserscriptInjectorHasRun) {
         wrapUserScript(script, context = 'page') {
             // Serialize resources and shared storage state for injection
             const resourcesJSON = script.resources ? JSON.stringify(script.resources) : '{}';
-            let pageSettings = null;
-            if (context !== 'content' && isTubeCleanerPageScript(script)) {
-                try {
-                    const parsed = boundedTubeSettings(JSON.parse((script.storageSnapshot || {})[TUBE_SETTINGS_KEY]));
-                    if (parsed) pageSettings = JSON.stringify(parsed);
-                } catch (_) { /* No arbitrary stored value is exposed to the page. */ }
-            }
-            const storageSnapshotJSON = context === 'content'
-                ? JSON.stringify(script.storageSnapshot || {})
-                : JSON.stringify(pageSettings ? { [TUBE_SETTINGS_KEY]: pageSettings } : {});
             const isContentContext = context === 'content';
-            const exposePageGlobals = !isContentContext && script.name === 'AdGuard Popup Blocker';
+            const storageSnapshotJSON = JSON.stringify(isContentContext ? script.storageSnapshot || {} : pageStorageSnapshot(script));
+            const exposePageGlobals = !isContentContext && isPopupBlockerPageScript(script);
             const exposeGMGlobals = isContentContext || exposePageGlobals;
             const exposeGMGlobalsPrefix = exposePageGlobals
                 ? `if (location.hostname === 'popupblocker.adguard.com' && location.pathname.endsWith('/options.html')) {`
@@ -1857,6 +1928,11 @@ if (window.wBlockUserscriptInjectorHasRun) {
             catch (_) { /* Invalid preference updates have no native effect. */ }
             return;
         }
+        ` : ''}
+        ${isPopupBlockerPageScript(script) ? `
+        // The content world decides what persists; deletes only run in migrations.
+        if (kind === 'set') window.postMessage({ type: 'wblock:popup-blocker-storage', key, rawValue }, '*');
+        return;
         ` : ''}
         if (!storageBridgeId) {
             if (typeof onFailure === 'function') {
