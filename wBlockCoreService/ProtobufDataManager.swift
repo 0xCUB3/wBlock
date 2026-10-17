@@ -164,7 +164,6 @@ private func mergeSettings(
     mergeField(&local.lastUpdateCheck, baseline: baseline.lastUpdateCheck, persisted: persisted.lastUpdateCheck)
     mergeField(&local.showAdvancedFeatures, baseline: baseline.showAdvancedFeatures, persisted: persisted.showAdvancedFeatures)
     mergeField(&local.appVersion, baseline: baseline.appVersion, persisted: persisted.appVersion)
-    mergeField(&local.lastTerminologySanitizationVersion, baseline: baseline.lastTerminologySanitizationVersion, persisted: persisted.lastTerminologySanitizationVersion)
     mergeField(&local.hasEnabledContentBlockers_p, baseline: baseline.hasEnabledContentBlockers_p, persisted: persisted.hasEnabledContentBlockers_p)
     mergeField(&local.hasEnabledPlatformExtension_p, baseline: baseline.hasEnabledPlatformExtension_p, persisted: persisted.hasEnabledPlatformExtension_p)
     mergeField(&local.hasSetAllWebsitesPermission_p, baseline: baseline.hasSetAllWebsitesPermission_p, persisted: persisted.hasSetAllWebsitesPermission_p)
@@ -1556,7 +1555,6 @@ public class ProtobufDataManager: ObservableObject {
     private let dataFileName = "wblock_data.pb"
     private let backupFileName = "wblock_data_backup.pb"
     private let dataVersionFileName = "wblock_data.version"
-    private let terminologySanitizationVersion = 1 // Increment this to re-run sanitization
     private var lastLoadedDataFileModificationDate: Date?
     private var lastLoadedDataVersion: Int64 = 0
     private var initialLoadTask: Task<Void, Never>?
@@ -1883,12 +1881,6 @@ public class ProtobufDataManager: ObservableObject {
                 if needsSave {
                     await saveDataImmediately()
                 }
-
-                // Check if terminology sanitization is needed
-                if appData.settings.lastTerminologySanitizationVersion < terminologySanitizationVersion {
-                    logger.info("🧹 Running terminology sanitization (version \(self.terminologySanitizationVersion))...")
-                    await sanitizeStoredTerminology()
-                }
             } else {
                 try await loadOrInitializeMissingMain()
             }
@@ -2115,101 +2107,4 @@ public class ProtobufDataManager: ObservableObject {
             return false
         }
     }
-    
-    // MARK: - Terminology Sanitization
-
-    // Pre-compiled regex patterns for efficiency (compiled once, reused many times)
-    private static let sanitizationRegexes: [(regex: NSRegularExpression, replacement: String)] = {
-        let patterns: [(pattern: String, replacement: String)] = [
-            ("malicious", "suspicious"),
-            ("malware", "unwanted software"),
-            ("spyware", "tracking software"),
-            ("harmful", "unwanted"),
-            ("dangerous", "risky")
-        ]
-
-        return patterns.compactMap { pattern, replacement in
-            guard let regex = try? NSRegularExpression(
-                pattern: "\\b\(pattern)\\b",
-                options: [.caseInsensitive]
-            ) else { return nil }
-            return (regex, replacement)
-        }
-    }()
-
-    /// Efficiently sanitizes stored filter list names and descriptions to remove Apple-flagged terminology
-    private func sanitizeStoredTerminology() async {
-        let startTime = Date()
-
-        // Work directly on MainActor to avoid full copy
-        await MainActor.run {
-            var modifiedCount = 0
-
-            // Sanitize filter list names AND descriptions
-            for index in appData.filterLists.indices {
-                // Sanitize name/title
-                let originalName = appData.filterLists[index].name
-                let sanitizedName = sanitizeText(originalName)
-                if sanitizedName != originalName {
-                    appData.filterLists[index].name = sanitizedName
-                    modifiedCount += 1
-                }
-
-                // Sanitize description
-                let originalDescription = appData.filterLists[index].description_p
-                let sanitizedDescription = sanitizeText(originalDescription)
-                if sanitizedDescription != originalDescription {
-                    appData.filterLists[index].description_p = sanitizedDescription
-                    modifiedCount += 1
-                }
-            }
-
-            // Sanitize userscript names AND descriptions
-            for index in appData.userScripts.indices {
-                // Sanitize name/title
-                let originalName = appData.userScripts[index].name
-                let sanitizedName = sanitizeText(originalName)
-                if sanitizedName != originalName {
-                    appData.userScripts[index].name = sanitizedName
-                    modifiedCount += 1
-                }
-
-                // Sanitize description
-                let originalDescription = appData.userScripts[index].description_p
-                let sanitizedDescription = sanitizeText(originalDescription)
-                if sanitizedDescription != originalDescription {
-                    appData.userScripts[index].description_p = sanitizedDescription
-                    modifiedCount += 1
-                }
-            }
-
-            // Update sanitization version
-            appData.settings.lastTerminologySanitizationVersion = Int32(terminologySanitizationVersion)
-
-            let duration = Date().timeIntervalSince(startTime)
-            logger.info("✅ Terminology sanitization completed in \(String(format: "%.2f", duration))s (\(modifiedCount) items updated)")
-        }
-
-        // Save once after all modifications
-        await saveDataImmediately()
-    }
-
-    /// Sanitizes text by replacing Apple-flagged terminology using pre-compiled regexes
-    private func sanitizeText(_ text: String) -> String {
-        guard !text.isEmpty else { return text }
-
-        var sanitized = text
-        for (regex, replacement) in Self.sanitizationRegexes {
-            let range = NSRange(sanitized.startIndex..<sanitized.endIndex, in: sanitized)
-            sanitized = regex.stringByReplacingMatches(
-                in: sanitized,
-                options: [],
-                range: range,
-                withTemplate: replacement
-            )
-        }
-
-        return sanitized
-    }
-
 }

@@ -11,11 +11,7 @@ import wBlockCoreService
 @MainActor
 enum WBlockLaunchSetup {
     static func run() async {
-        let dataManager = ProtobufDataManager.shared
-        await dataManager.waitUntilLoaded()
-        await dataManager.migrateLegacyFilterURLs()
-        await dataManager.migrateAnnoyancesFilterToSplitFilters()
-        // Categories are user-owned; catalog corrections must not undo moves or edits.
+        await ProtobufDataManager.shared.waitUntilLoaded()
         await UserScriptManager.shared.waitUntilReady()
     }
 }
