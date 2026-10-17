@@ -255,10 +255,6 @@
     "message": "차단을 다시 시작하려면 wBlock을 여세요. 앱이 실행 중이어야 합니다.",
     "description": "Shown when the containing app is unavailable while resuming blocking."
   },
-  "popup_filter_update_label": {
-    "message": "필터",
-    "description": "Section label for the popup filter update action."
-  },
   "popup_button_update_filters": {
     "message": "필터 업데이트",
     "description": "Button label for starting a background filter update from the popup."

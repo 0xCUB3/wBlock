@@ -255,10 +255,6 @@
     "message": "Engellemeyi sürdürmek için wBlock’u açın. Uygulama çalışıyor olmalı.",
     "description": "Shown when the containing app is unavailable while resuming blocking."
   },
-  "popup_filter_update_label": {
-    "message": "Filtreler",
-    "description": "Section label for the popup filter update action."
-  },
   "popup_button_update_filters": {
     "message": "Filtreleri Güncelle",
     "description": "Button label for starting a background filter update from the popup."

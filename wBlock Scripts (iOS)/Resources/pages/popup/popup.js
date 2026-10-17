@@ -1245,13 +1245,6 @@ function isNativeNoAutoplayState(response) {
     );
 }
 
-// With a host, native `enabled` is the effective per-site answer; the global
-// switch comes from `globalEnabled` when the host reports it (#835).
-function globalNoAutoplayEnabled(state) {
-    if (state && typeof state.globalEnabled === 'boolean') return state.globalEnabled;
-    return Boolean(state && state.enabled);
-}
-
 async function readNoAutoplayLocalCache(siteHost) {
     const keys = [NO_AUTOPLAY_ENABLED_KEY];
     if (siteHost) keys.push(noAutoplayAllowKey(siteHost));

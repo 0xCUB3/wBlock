@@ -146,26 +146,6 @@ final class ZapperRuleManager: ObservableObject {
         disabledDomains.contains(hostname)
     }
 
-    /// Flips the per-host kill switch and refreshes local state.
-    func setDisabled(_ disabled: Bool, forDomain hostname: String) {
-        Task { @MainActor in
-            await performMutation {
-                await ProtobufDataManager.shared.setZapperRulesDisabled(disabled, forHost: hostname)
-                self.publishStateFromDataManager()
-            }
-        }
-    }
-
-    /// Re-inserts a previously deleted rule and refreshes local state.
-    func restoreRule(_ rule: String, forDomain hostname: String, at index: Int) {
-        Task { @MainActor in
-            await performMutation {
-                await ProtobufDataManager.shared.restoreZapperRule(rule, forHost: hostname, at: index)
-                self.publishStateFromDataManager()
-            }
-        }
-    }
-
     private func refreshFromDisk() async {
         await ProtobufDataManager.shared.waitUntilLoaded()
         _ = await ProtobufDataManager.shared.refreshFromDiskIfModified(forceRead: true)

@@ -255,10 +255,6 @@
     "message": "Откройте wBlock, чтобы возобновить блокировку. Приложение должно быть запущено.",
     "description": "Shown when the containing app is unavailable while resuming blocking."
   },
-  "popup_filter_update_label": {
-    "message": "Фильтры",
-    "description": "Section label for the popup filter update action."
-  },
   "popup_button_update_filters": {
     "message": "Обновить фильтры",
     "description": "Button label for starting a background filter update from the popup."

@@ -255,10 +255,6 @@
     "message": "Öffne wBlock, um das Blockieren fortzusetzen. Die App muss ausgeführt werden.",
     "description": "Shown when the containing app is unavailable while resuming blocking."
   },
-  "popup_filter_update_label": {
-    "message": "Filter",
-    "description": "Section label for the popup filter update action."
-  },
   "popup_button_update_filters": {
     "message": "Filter aktualisieren",
     "description": "Button label for starting a background filter update from the popup."

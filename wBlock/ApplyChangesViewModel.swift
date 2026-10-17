@@ -331,14 +331,6 @@ class ApplyChangesViewModel: ObservableObject {
             state.currentScriptName = ""
         }
     }
-
-    private func updatePhase(_ phase: ApplyChangesPhase, mutate: (inout ApplyChangesPhaseProgress) -> Void) {
-        guard let index = state.phases.firstIndex(where: { $0.phase == phase }) else { return }
-        var mutablePhases = state.phases
-        mutate(&mutablePhases[index])
-        state.phases = mutablePhases
-    }
-
 }
 
 

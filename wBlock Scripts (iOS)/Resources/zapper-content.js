@@ -1351,27 +1351,6 @@
     if (state.ui.statusText) state.ui.statusText.textContent = t('zapper_status_off', undefined, 'Element Zapper: Off');
   }
 
-  async function refreshRulesFromNativeIfNeeded() {
-    const currentHost = safeHostname();
-    if (!currentHost) return;
-
-    if (state.host !== currentHost) {
-      state.host = currentHost;
-    }
-
-    const nativeState = await fetchRulesFromNative(state.host);
-    if (!nativeState || !Array.isArray(nativeState.rules)) return;
-
-    const inheritedChanged = rulesSignature(state.inheritedRules) !== rulesSignature(nativeState.inheritedRules);
-    state.inheritedRules = nativeState.inheritedRules;
-    const wasDisabled = state.rulesDisabled;
-    state.rulesDisabled = nativeState.disabled === true;
-    if (inheritedChanged || state.rulesDisabled !== wasDisabled || rulesSignature(nativeState.rules) !== rulesSignature(state.rules)) {
-      state.rules = nativeState.rules;
-      await applyRulesToPage(state.rules);
-    }
-  }
-
   function startRuleSyncLoop() {
     if (ruleSyncIntervalId !== null) return;
     if (window.top !== window) return;

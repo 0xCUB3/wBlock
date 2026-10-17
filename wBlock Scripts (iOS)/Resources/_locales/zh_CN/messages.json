@@ -255,10 +255,6 @@
     "message": "请打开 wBlock 以恢复阻止功能。应用必须正在运行。",
     "description": "Shown when the containing app is unavailable while resuming blocking."
   },
-  "popup_filter_update_label": {
-    "message": "过滤器",
-    "description": "Section label for the popup filter update action."
-  },
   "popup_button_update_filters": {
     "message": "更新过滤器",
     "description": "Button label for starting a background filter update from the popup."

@@ -850,9 +850,6 @@ public class ProtobufDataManager: ObservableObject {
     }
 
 
-    public var whitelistLastUpdated: Int64 {
-        appData.whitelist.lastUpdated
-    }
     public var selectedBlockingLevel: String {
         appData.settings.selectedBlockingLevel
     }
@@ -887,11 +884,6 @@ public class ProtobufDataManager: ObservableObject {
     /// Indicates if all extensions have been set to "Allow on All Websites"
     public var hasSetAllWebsitesPermission: Bool {
         appData.settings.hasSetAllWebsitesPermission_p
-    }
-
-    /// Indicates if the critical setup checklist has been completed
-    public var hasCompletedCriticalSetup: Bool {
-        hasEnabledContentBlockers && hasEnabledPlatformExtension && hasSetAllWebsitesPermission
     }
 
     @MainActor
@@ -1029,11 +1021,6 @@ public class ProtobufDataManager: ObservableObject {
             data.autoUpdate.isRunning = value
             data.autoUpdate.runningSinceTimestamp = value ? nowTimestamp : 0
         }
-    }
-
-    /// Timestamp when auto-update started running
-    public var autoUpdateRunningSinceTimestamp: Int64 {
-        appData.autoUpdate.runningSinceTimestamp
     }
 
     /// Get ETag for a specific filter UUID
@@ -1575,10 +1562,7 @@ public class ProtobufDataManager: ObservableObject {
     
     // MARK: - Published Properties
     @Published var appData = Wblock_Data_AppData()
-    
-    var publicAppData: Wblock_Data_AppData {
-        appData
-    }
+
     @Published public private(set) var isLoading = true
     @Published public private(set) var lastError: Error?
 

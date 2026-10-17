@@ -255,10 +255,6 @@
     "message": "ブロックを再開するにはwBlockを開いてください。アプリが起動している必要があります。",
     "description": "Shown when the containing app is unavailable while resuming blocking."
   },
-  "popup_filter_update_label": {
-    "message": "フィルター",
-    "description": "Section label for the popup filter update action."
-  },
   "popup_button_update_filters": {
     "message": "フィルターを更新",
     "description": "Button label for starting a background filter update from the popup."

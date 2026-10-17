@@ -486,11 +486,6 @@ public actor SharedAutoUpdateManager {
         return await MainActor.run { manager.autoUpdateIsRunning }
     }
 
-    private func getAutoUpdateRunningSinceTimestamp() async -> Int64 {
-        let manager = await getDataManager()
-        return await MainActor.run { manager.autoUpdateRunningSinceTimestamp }
-    }
-
     private func getFilterEtag(_ uuid: String) async -> String? {
         let manager = await getDataManager()
         return await MainActor.run { manager.getFilterEtag(uuid) }
@@ -2361,14 +2356,6 @@ public actor SharedAutoUpdateManager {
             return String(format: "%.1f KB", Double(bytes) / 1024.0)
         }
         return String(format: "%.1f MB", Double(bytes) / (1024.0 * 1024.0))
-    }
-
-    private nonisolated static func fileSizeBytes(at url: URL) -> Int64 {
-        guard let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
-              let size = attrs[.size] as? NSNumber else {
-            return 0
-        }
-        return size.int64Value
     }
 
 
