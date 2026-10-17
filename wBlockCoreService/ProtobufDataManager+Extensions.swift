@@ -242,7 +242,7 @@ extension ProtobufDataManager {
     public func removeUserScript(withId id: UUID) async {
         let changed = await updateDataImmediately(userScriptsAreAuthoritative: true) { data in
             guard let script = data.userScripts.first(where: { $0.id == id.uuidString }),
-                  !BuiltInUserScripts.allProtectedURLs.contains(script.url)
+                  !BuiltInUserScripts.protectedURLs.contains(script.url)
             else { return }
             data.userScripts.removeAll { $0.id == id.uuidString }
             data.userScriptDisabledHosts.removeValue(forKey: id.uuidString)

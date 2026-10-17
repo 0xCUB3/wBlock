@@ -31,14 +31,11 @@ struct SiteComponentDisablePolicyTest {
         check(HostMatcher.override(host: "a.b.test", allowedSites: [" B.TEST "], blockedSites: ["b.test"]) == false, "normalization must precede specificity comparison")
 
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        let suite = "wblock-autoplay-tests-\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suite)!
         defer {
             try? FileManager.default.removeItem(at: directory)
-            defaults.removePersistentDomain(forName: suite)
         }
         let manager = ProtobufDataManager.makeIsolatedForTesting(
-            dataDirectoryURL: directory, standardDefaults: defaults, groupDefaults: defaults
+            dataDirectoryURL: directory
         )
         _ = await manager.setNoAutoplayEnabled(true)
         _ = await manager.setAutoplayAllowed(true, onHost: "*.bandcamp.com")
@@ -54,7 +51,7 @@ struct SiteComponentDisablePolicyTest {
         check(manager.noAutoplayAllowedSites == ["bandcamp.com"], "no redundant child allow entry")
 
         let reloaded = ProtobufDataManager.makeIsolatedForTesting(
-            dataDirectoryURL: directory, standardDefaults: defaults, groupDefaults: defaults
+            dataDirectoryURL: directory
         )
         _ = await reloaded.refreshFromDiskIfModified(forceRead: true)
         check(reloaded.isNoAutoplayEnabled, "global policy persists")

@@ -7,15 +7,12 @@ struct ZapperRuleEditingTests {
     @MainActor
     static func main() async throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        let suite = "wblock-zapper-edit-tests-\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suite)!
         defer {
             try? FileManager.default.removeItem(at: directory)
-            defaults.removePersistentDomain(forName: suite)
         }
         func manager() -> ProtobufDataManager {
             ProtobufDataManager.makeIsolatedForTesting(
-                dataDirectoryURL: directory, standardDefaults: defaults, groupDefaults: defaults
+                dataDirectoryURL: directory
             )
         }
         let app = manager()
@@ -77,7 +74,7 @@ struct ZapperRuleEditingTests {
         let blockedPath = directory.appendingPathComponent("not-a-directory")
         try Data("blocked".utf8).write(to: blockedPath)
         let failing = ProtobufDataManager.makeIsolatedForTesting(
-            dataDirectoryURL: blockedPath, standardDefaults: defaults, groupDefaults: defaults
+            dataDirectoryURL: blockedPath
         )
         let failedEdit = await failing.replaceZapperRule(".old", with: ".new", forHost: host)
         precondition(!failedEdit, "Disk failures must not report a successful edit")

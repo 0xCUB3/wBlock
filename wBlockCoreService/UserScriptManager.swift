@@ -163,8 +163,6 @@ public class UserScriptManager: ObservableObject {
     @Published public private(set) var tubeCleanerFeatures = TubeCleanerDeArrowPreference.features()
     @Published public private(set) var playerCleanerFeatures = PlayerCleanerPreference.features()
 
-    private let userScriptSiteDisabledDefaultsKey = "userScriptDisabledHostsByID"
-    private let legacyPopupBlockerMigrationDefaultsKey = "didCompleteLegacyPopupBlockerMigration"
     private let sharedContainerIdentifier = GroupIdentifier.shared.value
     private let dataManager = ProtobufDataManager.shared
     private let sharedDefaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
@@ -641,7 +639,7 @@ public class UserScriptManager: ObservableObject {
 
     public func isDefaultUserScript(_ userScript: UserScript) -> Bool {
         guard let urlString = userScript.url?.absoluteString else { return false }
-        return BuiltInUserScripts.allProtectedURLs.contains(urlString)
+        return BuiltInUserScripts.protectedURLs.contains(urlString)
     }
 
     public func isEnabledByDefault(_ userScript: UserScript) -> Bool {
@@ -1149,7 +1147,6 @@ public class UserScriptManager: ObservableObject {
         logger.info("🔧 Setting up UserScriptManager...")
         checkAndCreateUserScriptsFolder()
         await loadUserScripts()
-        await migrateUserScriptSiteExceptionsIfNeeded()
         prefetchDefaultUserScriptMetadataIfNeeded()
         logger.info("✅ UserScriptManager initialized with \(self.userScripts.count) userscript(s)")
         statusDescription = "Initialized with \(userScripts.count) userscript(s)."
@@ -1251,7 +1248,7 @@ public class UserScriptManager: ObservableObject {
     /// Repairs the narrowly scoped first-install race before onboarding can observe it.
     /// Generic duplicate records continue through the existing confirmation flow.
     private func repairDuplicateBuiltInUserScriptsIfNeeded() async {
-        let protectedIdentities = Set(BuiltInUserScripts.allProtectedURLs.compactMap {
+        let protectedIdentities = Set(BuiltInUserScripts.protectedURLs.compactMap {
             UserScriptPersistence.canonicalRemoteURLIdentity($0, isLocal: false)
         })
         var scriptsByIdentity: [String: [UserScript]] = [:]
@@ -1354,9 +1351,6 @@ public class UserScriptManager: ObservableObject {
         startupPersistDeferral = StartupPersistDeferral()
         await repairDuplicateBuiltInUserScriptsIfNeeded()
         await removeRetiredYouTubeAdBlockIfNeeded()
-        await migrateLegacyBundledUserScriptsIfNeeded()
-        await migrateLegacyPopupBlockerIfNeeded()
-        await migrateLegacyTinyShieldVariantsIfNeeded()
 
         // Always check for missing default scripts first
         await checkAndAddMissingDefaultScripts()
@@ -1535,7 +1529,7 @@ public class UserScriptManager: ObservableObject {
             let script = userScripts[index]
 
             // Check if this is a default script that needs downloading
-            let isDefaultScript = script.url.map { BuiltInUserScripts.allProtectedURLs.contains($0.absoluteString) } ?? false
+            let isDefaultScript = script.url.map { BuiltInUserScripts.protectedURLs.contains($0.absoluteString) } ?? false
 
             guard isDefaultScript else { continue }
             guard script.isEnabled else { continue }
@@ -1588,103 +1582,6 @@ public class UserScriptManager: ObservableObject {
         }
     }
 
-    private func migrateLegacyBundledUserScriptsIfNeeded() async {
-        var didChange = false
-
-        for (legacyURL, canonicalURLString) in BuiltInUserScripts.legacyBundledURLsByCanonical {
-            guard let canonicalURL = URL(string: canonicalURLString),
-                  let legacy = userScripts.first(where: { $0.url?.absoluteString == legacyURL })
-            else { continue }
-
-            // Prefer an already-canonical record when one survives. Its enabled state
-            // is an explicit configured choice and must not be promoted by migration.
-            // If it does not exist, retain the legacy UUID so per-site state survives.
-            let canonicalWasConfigured = userScripts.contains {
-                $0.url?.absoluteString == canonicalURLString
-            }
-            let retainedID = userScripts.first(where: {
-                $0.url?.absoluteString == canonicalURLString
-            })?.id ?? legacy.id
-            guard let retainedIndex = userScripts.firstIndex(where: { $0.id == retainedID }) else {
-                continue
-            }
-            if !canonicalWasConfigured {
-                userScripts[retainedIndex].isEnabled = userScripts.contains {
-                    $0.url?.absoluteString == legacyURL && $0.isEnabled
-                }
-            }
-
-            if userScripts[retainedIndex].content.isEmpty,
-               let diskContent = readUserScriptContent(userScripts[retainedIndex]),
-               !diskContent.isEmpty {
-                userScripts[retainedIndex].replaceContentAndParseMetadata(diskContent)
-                userScripts[retainedIndex].resourceContents =
-                    readUserScriptResources(userScripts[retainedIndex]) ?? [:]
-            }
-
-            let duplicateIDs = userScripts.compactMap { script -> UUID? in
-                guard script.id != retainedID,
-                      script.url?.absoluteString == legacyURL
-                        || script.url?.absoluteString == canonicalURLString
-                else { return nil }
-                return script.id
-            }
-            var mergedSiteAccess = dataManager.userScriptSiteAccess(forScriptID: retainedID.uuidString)
-            var mergedDisabledHosts = Set(
-                dataManager.getUserScriptDisabledHosts(forScriptID: retainedID.uuidString)
-            )
-
-            for duplicateID in duplicateIDs {
-                guard let duplicateIndex = userScripts.firstIndex(where: {
-                    $0.id == duplicateID
-                }), let currentRetainedIndex = userScripts.firstIndex(where: {
-                    $0.id == retainedID
-                }) else { continue }
-                let duplicate = userScripts[duplicateIndex]
-                mergedSiteAccess = mergedSiteAccess.intersecting(dataManager.userScriptSiteAccess(forScriptID: duplicateID.uuidString))
-                mergedDisabledHosts.formUnion(
-                    dataManager.getUserScriptDisabledHosts(forScriptID: duplicateID.uuidString)
-                )
-                if userScripts[currentRetainedIndex].content.isEmpty {
-                    let duplicateContent = duplicate.content.isEmpty
-                        ? readUserScriptContent(duplicate)
-                        : duplicate.content
-                    if let duplicateContent, !duplicateContent.isEmpty {
-                        userScripts[currentRetainedIndex].replaceContentAndParseMetadata(duplicateContent)
-                        userScripts[currentRetainedIndex].resourceContents = duplicate.resourceContents.isEmpty
-                            ? (readUserScriptResources(duplicate) ?? [:])
-                            : duplicate.resourceContents
-                    }
-                }
-
-                removeUserScriptFile(duplicate)
-                userScripts.remove(at: duplicateIndex)
-                await dataManager.setUserScriptDisabledHosts(
-                    [], forScriptID: duplicateID.uuidString
-                )
-                didChange = true
-            }
-
-            guard let currentIndex = userScripts.firstIndex(where: {
-                $0.id == retainedID
-            }) else { continue }
-            userScripts[currentIndex].url = canonicalURL
-            userScripts[currentIndex].updatesAutomatically = true
-            if !userScripts[currentIndex].content.isEmpty {
-                _ = writeUserScriptFiles(userScripts[currentIndex])
-            }
-            await dataManager.setUserScriptSiteAccess(mergedSiteAccess, forScriptID: retainedID.uuidString)
-            await dataManager.setUserScriptDisabledHosts(
-                mergedDisabledHosts.sorted(), forScriptID: retainedID.uuidString
-            )
-            didChange = true
-        }
-
-        if didChange {
-            await persistUserScriptsNow(authoritative: true)
-        }
-    }
-
     private func isRetiredYouTubeClassicScript(_ script: UserScript) -> Bool {
         script.url.map(RetiredUserScriptSources.isYouTubeClassic) ?? false
     }
@@ -1704,139 +1601,6 @@ public class UserScriptManager: ObservableObject {
                 || isRetiredYouTubeClassicScript(script)
         }
         await persistUserScriptsNow(authoritative: true)
-    }
-
-    @MainActor
-    private func migrateLegacyPopupBlockerIfNeeded() async {
-        // One-shot migration: installs that shipped the beta popup blocker as the default
-        // are cleaned up once, but a beta URL the user adds deliberately afterwards is
-        // never removed again (issue reported by cameren: the app deleted the beta link
-        // on every relaunch).
-        guard !sharedDefaults.bool(forKey: legacyPopupBlockerMigrationDefaultsKey) else { return }
-
-        guard let stableURL = URL(string: BuiltInUserScripts.popupBlockerStableURL) else {
-            logger.error("❌ Invalid stable popup blocker URL: \(BuiltInUserScripts.popupBlockerStableURL)")
-            return
-        }
-
-        sharedDefaults.set(true, forKey: legacyPopupBlockerMigrationDefaultsKey)
-
-        let legacyIndices = userScripts.indices.filter {
-            userScripts[$0].url?.absoluteString == BuiltInUserScripts.legacyPopupBlockerBetaURL
-        }
-
-        guard !legacyIndices.isEmpty else { return }
-
-        logger.info("🔁 Migrating \(legacyIndices.count) legacy popup blocker userscript(s) to stable")
-
-        var didChange = false
-        var needsStableDownload = false
-        var scriptsToDeleteFromDisk: [UserScript] = []
-        let legacyWasEnabled = legacyIndices.contains { userScripts[$0].isEnabled }
-
-        for legacyIndex in legacyIndices.sorted(by: >) {
-            guard userScripts.indices.contains(legacyIndex) else { continue }
-
-            let legacyScript = userScripts[legacyIndex]
-
-            if let stableIndex = userScripts.firstIndex(where: {
-                $0.id != legacyScript.id
-                    && $0.url?.absoluteString == BuiltInUserScripts.popupBlockerStableURL
-            }) {
-                // A surviving stable record is already configured. Do not let a legacy
-                // migration override its explicit disabled choice.
-                needsStableDownload = needsStableDownload || userScripts[stableIndex].isEnabled
-                scriptsToDeleteFromDisk.append(legacyScript)
-                userScripts.remove(at: legacyIndex)
-                didChange = true
-                continue
-            }
-
-            userScripts[legacyIndex].name = BuiltInUserScripts.popupBlockerName
-            userScripts[legacyIndex].url = stableURL
-            userScripts[legacyIndex].isEnabled = legacyWasEnabled
-            userScripts[legacyIndex].description = "Default userscript"
-            userScripts[legacyIndex].version = ""
-            userScripts[legacyIndex].updateURL = nil
-            userScripts[legacyIndex].downloadURL = nil
-            userScripts[legacyIndex].content = ""
-            userScripts[legacyIndex].resourceContents = [:]
-
-            scriptsToDeleteFromDisk.append(legacyScript)
-            needsStableDownload = needsStableDownload || legacyScript.isEnabled
-            didChange = true
-        }
-
-        guard didChange else { return }
-
-        for script in scriptsToDeleteFromDisk {
-            removeUserScriptFile(script)
-        }
-
-        await persistUserScriptsNow(authoritative: true)
-
-        if needsStableDownload {
-            // The one-shot migration flag is already set. Write the migrated
-            // records now, even during startup deferral, so a kill during the
-            // download below cannot leave the flag set with the beta URL still
-            // stored, which would skip this migration forever.
-            let wasDeferring = startupPersistDeferral != nil
-            await flushStartupPersistDeferral()
-            if wasDeferring {
-                startupPersistDeferral = StartupPersistDeferral()
-            }
-            await downloadMissingDefaultScripts()
-        }
-    }
-
-    private func migrateLegacyTinyShieldVariantsIfNeeded() async {
-        let legacyIndices = userScripts.indices.filter {
-            userScripts[$0].url?.absoluteString.hasPrefix(BuiltInUserScripts.legacyTinyShieldGroupedURLPrefix) == true
-        }
-        guard !legacyIndices.isEmpty else { return }
-
-        let fullIndex = userScripts.firstIndex {
-            $0.url?.absoluteString == BuiltInUserScripts.tinyShieldURL
-        }
-        var retainedIndex = fullIndex ?? legacyIndices[0]
-        let anyLegacyEnabled = legacyIndices.contains { userScripts[$0].isEnabled }
-        var scriptsToDeleteFromDisk: [UserScript] = []
-        if fullIndex == nil {
-            // No canonical record survived: migrate one legacy record in place so the
-            // consolidated legacy choice becomes the configured canonical choice.
-            let legacyScript = userScripts[retainedIndex]
-            userScripts[retainedIndex].url = URL(string: BuiltInUserScripts.tinyShieldURL)
-            userScripts[retainedIndex].name = "tinyShield"
-            userScripts[retainedIndex].description = BuiltInUserScripts.tinyShieldDescription
-            userScripts[retainedIndex].version = ""
-            userScripts[retainedIndex].updateURL = nil
-            userScripts[retainedIndex].downloadURL = nil
-            userScripts[retainedIndex].content = ""
-            userScripts[retainedIndex].resourceContents = [:]
-            scriptsToDeleteFromDisk.append(legacyScript)
-        }
-        userScripts[retainedIndex].isEnabled = userScripts[retainedIndex].isEnabled || anyLegacyEnabled
-
-        let duplicateIDs = legacyIndices.compactMap { index -> UUID? in
-            guard userScripts.indices.contains(index), index != retainedIndex else { return nil }
-            return userScripts[index].id
-        }
-        for id in duplicateIDs {
-            guard let index = indexOfUserScript(withId: id) else { continue }
-            removeUserScriptFile(userScripts[index])
-            userScripts.remove(at: index)
-            if index < retainedIndex { retainedIndex -= 1 }
-        }
-
-        for script in scriptsToDeleteFromDisk {
-            removeUserScriptFile(script)
-        }
-
-        await persistUserScriptsNow(authoritative: true)
-
-        if userScripts[retainedIndex].isEnabled {
-            await downloadMissingDefaultScripts()
-        }
     }
 
     private func shouldPrefetchMetadata(for userScript: UserScript) -> Bool {
@@ -3808,22 +3572,6 @@ public class UserScriptManager: ObservableObject {
         let saved = await dataManager.setUserScriptSiteAccess(access, forScriptID: scriptID.uuidString)
         if saved { recordScriptMutation(scriptID) }
         return saved
-    }
-
-    /// One-time move of the legacy UserDefaults exceptions map into protobuf,
-    /// so backup/sync/UI all read one store. Idempotent: the key is removed after merge.
-    private func migrateUserScriptSiteExceptionsIfNeeded() async {
-        guard let legacy = sharedDefaults.dictionary(forKey: userScriptSiteDisabledDefaultsKey) as? [String: [String]] else {
-            return
-        }
-        for (scriptID, hosts) in legacy {
-            let normalized = DisabledSitesNormalizer.normalizedDomains(from: hosts)
-            guard !normalized.isEmpty else { continue }
-            let merged = Set(normalized).union(dataManager.getUserScriptDisabledHosts(forScriptID: scriptID))
-            await dataManager.setUserScriptDisabledHosts(merged.sorted(), forScriptID: scriptID)
-        }
-        sharedDefaults.removeObject(forKey: userScriptSiteDisabledDefaultsKey)
-        logger.info("✅ Migrated per-site userscript exceptions to protobuf (\(legacy.count) script(s))")
     }
 
     /// Confirms removal of pending duplicate userscripts

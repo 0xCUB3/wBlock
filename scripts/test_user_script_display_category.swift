@@ -47,21 +47,18 @@ struct UserScriptDisplayCategoryTests {
         }
 
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        let suite = "wblock-category-tests-\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suite)!
         defer {
             try? FileManager.default.removeItem(at: directory)
-            defaults.removePersistentDomain(forName: suite)
         }
         let manager = ProtobufDataManager.makeIsolatedForTesting(
-            dataDirectoryURL: directory, standardDefaults: defaults, groupDefaults: defaults
+            dataDirectoryURL: directory
         )
         var script = UserScript(name: "Experimental", url: URL(string: "https://example.com/experimental.js"))
         script.category = .scriptExperimental
         let saved = await manager.updateUserScripts([script])
         check(saved, "persist category")
         let reloaded = ProtobufDataManager.makeIsolatedForTesting(
-            dataDirectoryURL: directory, standardDefaults: defaults, groupDefaults: defaults
+            dataDirectoryURL: directory
         )
         _ = await reloaded.refreshFromDiskIfModified(forceRead: true)
         check(reloaded.getUserScripts().first?.category == .scriptExperimental, "disk persistence")

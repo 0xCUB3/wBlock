@@ -35,12 +35,6 @@ struct UserScriptDisplayMetadataTests {
                 }
             }
         }
-        for (legacy, canonical) in BuiltInUserScripts.legacyBundledURLsByCanonical {
-            var script = UserScript(name: "Old name", url: URL(string: legacy), content: header())
-            script.parseMetadata()
-            expect(script.description == BuiltInUserScripts.definition(for: URL(string: canonical))!.description,
-                   "legacy bundled identities share curated metadata")
-        }
         var custom = UserScript(name: "Fallback", url: URL(string: "https://example.com/custom.user.js"), content: header())
         custom.parseMetadata()
         expect(custom.name == "Header name" && custom.description == "Header description", "custom imports use header metadata")

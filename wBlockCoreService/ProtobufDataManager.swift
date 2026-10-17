@@ -1701,12 +1701,9 @@ public class ProtobufDataManager: ObservableObject {
     private let fileManager = FileManager.default
     private let diskStore = ProtobufDiskStore()
     private let dataDirectoryOverride: URL?
-    private let legacyStandardDefaults: UserDefaults
-    private let legacyGroupDefaults: UserDefaults
     private let dataFileName = "wblock_data.pb"
     private let backupFileName = "wblock_data_backup.pb"
     private let dataVersionFileName = "wblock_data.version"
-    private let migrationFileName = "migration_completed.flag"
     private let terminologySanitizationVersion = 1 // Increment this to re-run sanitization
     private var lastLoadedDataFileModificationDate: Date?
     private var lastLoadedDataVersion: Int64 = 0
@@ -1811,22 +1808,12 @@ public class ProtobufDataManager: ObservableObject {
         getDataDirectoryURL().appendingPathComponent(dataVersionFileName)
     }()
     
-    private lazy var migrationFlagURL: URL = {
-        getDataDirectoryURL().appendingPathComponent(migrationFileName)
-    }()
-    
     // MARK: - Initialization
     init(
         dataDirectoryOverride: URL? = nil,
-        legacyStandardDefaults: UserDefaults = .standard,
-        legacyGroupDefaults: UserDefaults? = nil,
         startInitialLoad: Bool = true
     ) {
         self.dataDirectoryOverride = dataDirectoryOverride
-        self.legacyStandardDefaults = legacyStandardDefaults
-        self.legacyGroupDefaults = legacyGroupDefaults
-            ?? UserDefaults(suiteName: GroupIdentifier.shared.value)
-            ?? .standard
         logger.info("🔧 ProtobufDataManager initializing...")
         setupDataDirectory()
         guard startInitialLoad else { return }
@@ -1844,14 +1831,10 @@ public class ProtobufDataManager: ObservableObject {
 
     #if DEBUG
     public static func makeIsolatedForTesting(
-        dataDirectoryURL: URL,
-        standardDefaults: UserDefaults,
-        groupDefaults: UserDefaults
+        dataDirectoryURL: URL
     ) -> ProtobufDataManager {
         ProtobufDataManager(
             dataDirectoryOverride: dataDirectoryURL,
-            legacyStandardDefaults: standardDefaults,
-            legacyGroupDefaults: groupDefaults,
             startInitialLoad: false
         )
     }
@@ -2006,64 +1989,11 @@ public class ProtobufDataManager: ObservableObject {
         }
     }
 
-    // MARK: - Legacy Migration Sanitization
-
-    private static let defaultAutoUpdateIntervalHours: Double = 6.0
-    private static let minimumAutoUpdateIntervalHours: Double = 1.0
-    private static let maximumAutoUpdateIntervalHours: Double = 24.0 * 7.0
-
-    private static func sanitizeAutoUpdateIntervalHours(_ value: Double) -> Double {
-        guard value.isFinite else { return defaultAutoUpdateIntervalHours }
-        guard value > 0 else { return defaultAutoUpdateIntervalHours }
-        return min(max(value, minimumAutoUpdateIntervalHours), maximumAutoUpdateIntervalHours)
-    }
-
-    private static func sanitizeEpochSecondsToInt64(_ value: Double) -> Int64 {
-        guard value.isFinite else { return 0 }
-        guard value > 0 else { return 0 }
-        if value >= Double(Int64.max) { return Int64.max }
-        return Int64(value)
-    }
-    
     // MARK: - Data Loading
     public func loadData() async {
         isLoading = true
-        let migrationFlagExists = await diskStore.fileExists(at: migrationFlagURL)
-        var freshMigrationAttempt = false
-        
+
         do {
-            // A valid canonical store always wins over legacy defaults. Only migrate
-            // legacy data when no protobuf main exists. Initialization itself is one
-            // coordinated compare-and-create transaction, so concurrent first-launch
-            // processes cannot overwrite whichever valid canonical store appears first.
-            if !migrationFlagExists {
-                if await diskStore.fileExists(at: dataFileURL) {
-                    let existing = try await diskStore.readAppData(from: dataFileURL)
-                    appData = existing.appData
-                    lastSavedData = existing.rawData
-                    lastLoadedDataFileModificationDate = existing.modificationDate
-                    lastLoadedDataVersion = await diskStore.dataVersion(for: dataVersionFileURL)
-                    try await diskStore.writeData(Data(), to: migrationFlagURL)
-                } else {
-                    freshMigrationAttempt = true
-                    logger.info("🔄 Starting migration from UserDefaults/SwiftData...")
-                    let migratedData = await migratedLegacyData()
-                    let initialized = try await diskStore.initializeIfAbsent(
-                        appData: migratedData,
-                        dataURL: dataFileURL,
-                        backupURL: backupFileURL,
-                        versionURL: dataVersionFileURL
-                    )
-                    appData = initialized.appData
-                    lastSavedData = initialized.rawData
-                    lastLoadedDataFileModificationDate = initialized.modificationDate
-                    lastLoadedDataVersion = initialized.version
-                    try await diskStore.writeData(Data(), to: migrationFlagURL)
-                    logger.info("✅ Migration completed")
-                    freshMigrationAttempt = false
-                }
-            }
-            
             // Load protobuf data
             if await diskStore.fileExists(at: dataFileURL) {
                 let loaded = try await diskStore.readAppData(from: dataFileURL)
@@ -2115,13 +2045,7 @@ public class ProtobufDataManager: ObservableObject {
             logger.error("❌ Failed to load data: \(error)")
             lastError = error
 
-            if freshMigrationAttempt {
-                // Never replace a failed migration with defaults or stamp the flag.
-                // Leaving both absent makes the migration retryable on the next launch.
-                logger.error("Legacy migration did not persist; leaving migration retryable")
-            } else {
-                await recoverAfterLoadFailure()
-            }
+            await recoverAfterLoadFailure()
         }
         
         isLoading = false
@@ -2436,325 +2360,4 @@ public class ProtobufDataManager: ObservableObject {
         return sanitized
     }
 
-    // MARK: - Migration from Legacy Storage
-    private func migratedLegacyData() async -> Wblock_Data_AppData {
-        logger.info("🔄 Migrating from UserDefaults and SwiftData...")
-
-        let groupDefaults = legacyGroupDefaults
-        var migratedData = Wblock_Data_AppData()
-
-        // Migrate app settings
-        migratedData.settings.hasCompletedOnboarding_p = legacyStandardDefaults.bool(forKey: "hasCompletedOnboarding")
-        migratedData.settings.selectedBlockingLevel = legacyStandardDefaults.string(forKey: "selectedBlockingLevel") ?? "recommended"
-
-        // Migrate badge counter setting (from App Group UserDefaults)
-        if groupDefaults.object(forKey: "isBadgeCounterEnabled") != nil {
-            migratedData.settings.isBadgeCounterEnabled = groupDefaults.bool(forKey: "isBadgeCounterEnabled")
-        } else {
-            migratedData.settings.isBadgeCounterEnabled = true  // Default to enabled
-        }
-
-        // Migrate auto-update settings (from App Group UserDefaults)
-        if groupDefaults.object(forKey: "autoUpdateEnabled") != nil {
-            migratedData.autoUpdate.enabled = groupDefaults.bool(forKey: "autoUpdateEnabled")
-        } else {
-            migratedData.autoUpdate.enabled = true  // Default to enabled
-        }
-
-        migratedData.autoUpdate.intervalHours = Self.sanitizeAutoUpdateIntervalHours(
-            groupDefaults.object(forKey: "autoUpdateIntervalHours") as? Double
-                ?? Self.defaultAutoUpdateIntervalHours
-        )
-        migratedData.autoUpdate.lastCheckTime = Self.sanitizeEpochSecondsToInt64(
-            groupDefaults.double(forKey: "autoUpdateLastCheckTime")
-        )
-        migratedData.autoUpdate.lastSuccessfulTime = Self.sanitizeEpochSecondsToInt64(
-            groupDefaults.double(forKey: "autoUpdateLastSuccessful")
-        )
-        migratedData.autoUpdate.nextEligibleTime = Self.sanitizeEpochSecondsToInt64(
-            groupDefaults.double(forKey: "autoUpdateNextEligibleTime")
-        )
-        migratedData.autoUpdate.forceNext = groupDefaults.bool(forKey: "autoUpdateForceNext")
-        migratedData.autoUpdate.isRunning = groupDefaults.bool(forKey: "autoUpdateIsRunning")
-        migratedData.autoUpdate.runningSinceTimestamp = Self.sanitizeEpochSecondsToInt64(
-            groupDefaults.double(forKey: "autoUpdateIsRunningTimestamp")
-        )
-
-        // Migrate filter ETags and Last-Modified headers
-        // Scan through all keys looking for filterEtag_ and filterLastModified_ prefixes
-        for key in groupDefaults.dictionaryRepresentation().keys {
-            if key.hasPrefix("filterEtag_") {
-                let uuid = String(key.dropFirst("filterEtag_".count))
-                if let etag = groupDefaults.string(forKey: key) {
-                    migratedData.autoUpdate.filterEtags[uuid] = etag
-                }
-            } else if key.hasPrefix("filterLastModified_") {
-                let uuid = String(key.dropFirst("filterLastModified_".count))
-                if let lastModified = groupDefaults.string(forKey: key) {
-                    migratedData.autoUpdate.filterLastModified[uuid] = lastModified
-                }
-            }
-        }
-
-        // Migrate tab blocked requests (from App Group UserDefaults)
-        if let tabDataJSON = groupDefaults.data(forKey: "tabBlockedRequests"),
-           let tabDataDict = try? JSONDecoder().decode([String: LegacyTabData].self, from: tabDataJSON) {
-            for (tabId, legacyTab) in tabDataDict {
-                var tabData = Wblock_Data_TabData()
-                tabData.blockedCount = Int32(legacyTab.blockedCount)
-                tabData.isDisabled = legacyTab.isDisabled
-                tabData.host = legacyTab.host
-                tabData.lastUpdated = Int64(Date().timeIntervalSince1970)
-                migratedData.extensionData.tabBlockedRequests[tabId] = tabData
-            }
-            migratedData.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
-        }
-
-        // Migrate zapper rules from UserDefaults
-        for key in groupDefaults.dictionaryRepresentation().keys {
-            if key.hasPrefix("zapperRules_") {
-                let hostname = String(key.dropFirst("zapperRules_".count))
-                if let rules = groupDefaults.stringArray(forKey: key) {
-                    let filtered = rules.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
-                    if !filtered.isEmpty {
-                        var ruleList = Wblock_Data_ZapperRuleList()
-                        ruleList.selectors = filtered
-                        migratedData.extensionData.zapperRulesByHost[hostname] = ruleList
-                    }
-                }
-            }
-        }
-
-        // Migrate filter lists
-        await migrateFilterLists(from: groupDefaults, to: &migratedData)
-
-        // Migrate userscripts
-        await migrateUserScripts(from: groupDefaults, to: &migratedData)
-
-        // Migrate whitelist data
-        migratedData.whitelist.disabledSites = groupDefaults.stringArray(forKey: "disabledSites") ?? []
-        migratedData.whitelist.lastUpdated = Int64(Date().timeIntervalSince1970)
-
-        // Migrate rule counts
-        migratedData.ruleCounts.lastRuleCount = Int32(groupDefaults.integer(forKey: "lastRuleCount"))
-
-        if let ruleCountsData = groupDefaults.data(forKey: "ruleCountsByCategory"),
-           let ruleCounts = try? JSONDecoder().decode([String: Int].self, from: ruleCountsData) {
-            for (category, count) in ruleCounts {
-                migratedData.ruleCounts.ruleCountsByCategory[category] = Int32(count)
-            }
-        }
-
-        if let categoriesData = groupDefaults.data(forKey: "categoriesApproachingLimit"),
-           let categories = try? JSONDecoder().decode([String].self, from: categoriesData) {
-            migratedData.ruleCounts.categoriesApproachingLimit = categories
-        }
-
-        logger.info("✅ Migration completed successfully")
-        return migratedData
-    }
-    
-    private func migrateFilterLists(from userDefaults: UserDefaults, to appData: inout Wblock_Data_AppData) async {
-        // Migrate main filter lists
-        if let data = userDefaults.data(forKey: "filterLists"),
-           let filterLists = try? JSONDecoder().decode([LegacyFilterList].self, from: data) {
-            
-            for filterList in filterLists {
-                let inferredIsCustom = inferLegacyCustomStatus(for: filterList)
-
-                var protoFilterList = Wblock_Data_FilterListData()
-                protoFilterList.id = filterList.id.uuidString
-                protoFilterList.name = filterList.name
-                protoFilterList.url = filterList.url.absoluteString
-                protoFilterList.category = mapFilterListCategory(filterList.category)
-                protoFilterList.isSelected = filterList.isSelected
-                protoFilterList.description_p = filterList.description
-                protoFilterList.version = filterList.version
-                if let sourceRuleCount = filterList.sourceRuleCount {
-                    protoFilterList.sourceRuleCount = Int32(sourceRuleCount)
-                }
-                protoFilterList.lastUpdated = Int64(Date().timeIntervalSince1970)
-                protoFilterList.isCustom = inferredIsCustom
-                protoFilterList.userProvidedName = inferredIsCustom && isRemoteLegacyURL(filterList.url)
-                protoFilterList.userProvidedDescription = inferredIsCustom
-                    && isRemoteLegacyURL(filterList.url)
-                    && isLegacyUserProvidedDescription(filterList.description)
-
-                appendOrMergeMigratedFilterList(protoFilterList, to: &appData)
-            }
-        }
-        
-        // Migrate custom filter lists
-        if let data = userDefaults.data(forKey: "customFilterLists"),
-           let customFilterLists = try? JSONDecoder().decode([LegacyFilterList].self, from: data) {
-            
-            for filterList in customFilterLists {
-                var protoFilterList = Wblock_Data_FilterListData()
-                protoFilterList.id = filterList.id.uuidString
-                protoFilterList.name = filterList.name
-                protoFilterList.url = filterList.url.absoluteString
-                protoFilterList.category = mapFilterListCategory(filterList.category)
-                protoFilterList.isSelected = filterList.isSelected
-                protoFilterList.description_p = filterList.description
-                protoFilterList.version = filterList.version
-                if let sourceRuleCount = filterList.sourceRuleCount {
-                    protoFilterList.sourceRuleCount = Int32(sourceRuleCount)
-                }
-                protoFilterList.lastUpdated = Int64(Date().timeIntervalSince1970)
-                protoFilterList.isCustom = true
-                protoFilterList.userProvidedName = isRemoteLegacyURL(filterList.url)
-                protoFilterList.userProvidedDescription = isRemoteLegacyURL(filterList.url)
-                    && isLegacyUserProvidedDescription(filterList.description)
-
-                appendOrMergeMigratedFilterList(protoFilterList, to: &appData)
-            }
-        }
-    }
-
-    private func appendOrMergeMigratedFilterList(
-        _ protoFilterList: Wblock_Data_FilterListData,
-        to appData: inout Wblock_Data_AppData
-    ) {
-        if let existingIndex = appData.filterLists.firstIndex(where: { $0.id == protoFilterList.id }) {
-            if protoFilterList.isCustom {
-                appData.filterLists[existingIndex].isCustom = true
-            }
-            return
-        }
-
-        appData.filterLists.append(protoFilterList)
-    }
-
-    private func isRemoteLegacyURL(_ url: URL) -> Bool {
-        guard let scheme = url.scheme?.lowercased() else { return false }
-        return scheme == "http" || scheme == "https"
-    }
-
-    private func isLegacyUserProvidedDescription(_ description: String) -> Bool {
-        let trimmed = description.trimmingCharacters(in: .whitespacesAndNewlines)
-        return !trimmed.isEmpty && trimmed != "User-added filter list."
-    }
-
-    private func inferLegacyCustomStatus(for filterList: LegacyFilterList) -> Bool {
-        if filterList.isCustom == true || filterList.category == .custom {
-            return true
-        }
-
-        if isInlineUserListURL(filterList.url) {
-            return true
-        }
-
-        let normalizedDescription = filterList.description
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .lowercased()
-        return normalizedDescription == "user-added filter list."
-            || normalizedDescription == "user-added filter list"
-            || normalizedDescription == "user list."
-            || normalizedDescription == "user list"
-    }
-
-    private func isInlineUserListURL(_ url: URL) -> Bool {
-        url.scheme?.lowercased() == "wblock"
-            && url.host?.lowercased() == "userlist"
-    }
-    
-    private func migrateUserScripts(from userDefaults: UserDefaults, to appData: inout Wblock_Data_AppData) async {
-        if let data = userDefaults.data(forKey: "userScripts"),
-           let userScripts = try? JSONDecoder().decode([LegacyUserScript].self, from: data) {
-            
-            for userScript in userScripts {
-                var protoUserScript = Wblock_Data_UserScriptData()
-                protoUserScript.id = userScript.id.uuidString
-                protoUserScript.name = userScript.name
-                protoUserScript.url = userScript.url?.absoluteString ?? ""
-                protoUserScript.isEnabled = userScript.isEnabled
-                protoUserScript.description_p = userScript.description
-                protoUserScript.version = userScript.version
-                protoUserScript.matches = userScript.matches
-                protoUserScript.excludeMatches = userScript.excludeMatches
-                protoUserScript.includes = userScript.includes
-                protoUserScript.excludes = userScript.excludes
-                protoUserScript.runAt = userScript.runAt
-                protoUserScript.injectInto = userScript.injectInto
-                protoUserScript.grant = userScript.grant
-                protoUserScript.isLocal = userScript.isLocal
-                protoUserScript.updateURL = userScript.updateURL ?? ""
-                protoUserScript.downloadURL = userScript.downloadURL ?? ""
-                protoUserScript.updatesAutomatically = true
-                protoUserScript.content = userScript.content
-                protoUserScript.lastUpdated = Int64(Date().timeIntervalSince1970)
-                
-                appData.userScripts.append(protoUserScript)
-            }
-        }
-    }
-    
-    private func mapFilterListCategory(_ category: LegacyFilterListCategory) -> Wblock_Data_FilterListCategory {
-        switch category {
-        case .all: return .all
-        case .ads: return .ads
-        case .privacy: return .privacy
-        case .security: return .security
-        case .multipurpose: return .multipurpose
-        case .annoyances: return .annoyances
-        case .experimental: return .experimental
-        case .custom: return .custom
-        case .foreign: return .foreign
-        case .scripts: return .scripts
-        case .allowlists: return .allowlists
-        }
-    }
-}
-
-// MARK: - Legacy Data Structures for Migration
-private struct LegacyFilterList: Codable {
-    let id: UUID
-    var name: String
-    var url: URL
-    var category: LegacyFilterListCategory
-    var isSelected: Bool
-    var description: String
-    var version: String
-    var sourceRuleCount: Int?
-    var isCustom: Bool?
-}
-
-private enum LegacyFilterListCategory: String, Codable, CaseIterable {
-    case all = "All"
-    case ads = "Ads"
-    case privacy = "Privacy"
-    case security = "Security"
-    case multipurpose = "Multipurpose"
-    case annoyances = "Annoyances"
-    case experimental = "Experimental"
-    case custom = "Custom"
-    case foreign = "Foreign"
-    case scripts = "Scripts"
-    case allowlists = "Allowlists"
-}
-
-private struct LegacyUserScript: Codable {
-    let id: UUID
-    var name: String
-    var url: URL?
-    var isEnabled: Bool
-    var description: String
-    var version: String
-    var matches: [String]
-    var excludeMatches: [String]
-    var includes: [String]
-    var excludes: [String]
-    var runAt: String
-    var injectInto: String
-    var grant: [String]
-    var isLocal: Bool
-    var updateURL: String?
-    var downloadURL: String?
-    var content: String
-}
-
-private struct LegacyTabData: Codable {
-    var blockedCount: Int
-    var isDisabled: Bool
-    var host: String
 }

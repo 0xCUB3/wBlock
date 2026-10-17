@@ -32,12 +32,8 @@ enum BuiltInUserScripts {
     static let popupBlockerName = "AdGuard Popup Blocker"
     static let popupBlockerStableURL =
         "https://userscripts.adtidy.org/release/popup-blocker/2.5/popupblocker.user.js"
-    static let legacyPopupBlockerBetaURL =
-        "https://userscripts.adtidy.org/beta/popup-blocker/2.5/popupblocker.user.js"
     static let tinyShieldURL =
         "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/tinyShield.user.js"
-    static let legacyTinyShieldGroupedURLPrefix =
-        "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/grouped/"
     static let tinyShieldDescription =
         "Lets ad blockers quickly resist Ad-Shield, which reinserts ads on matching sites after filter lists hide them."
     static let retiredYouTubeAdBlockURL =
@@ -50,11 +46,6 @@ enum BuiltInUserScripts {
     static let darkReaderURL = DarkReaderAppearancePreference.scriptURL
     static let darkReaderDescription =
         "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)."
-    static let legacyBundledURLsByCanonical: [String: String] = [
-        "https://bundled.wblock.invalid/tube-cleaner.user.js": tubeCleanerURL,
-        "https://bundled.wblock.invalid/player-cleaner.user.js": playerCleanerURL,
-        "https://bundled.wblock.invalid/dark-reader.user.js": darkReaderURL,
-    ]
     static let tubeCleanerDescription =
         "Gives YouTube Safari-native controls, chapters, SponsorBlock skipping, picture-in-picture, background playback, quality selection, and audio-only mode."
     static let playerCleanerDescription =
@@ -136,8 +127,6 @@ enum BuiltInUserScripts {
     ]
 
     static let protectedURLs = Set(definitions.map(\.url))
-    static let legacyProtectedURLs = Set(legacyBundledURLsByCanonical.keys)
-    static let allProtectedURLs = protectedURLs.union(legacyProtectedURLs)
     static let displayRoleByURL = Dictionary(uniqueKeysWithValues: definitions.compactMap { definition in
         definition.displayRole.map { (definition.url, $0) }
     })
@@ -153,8 +142,7 @@ enum BuiltInUserScripts {
 
     static func definition(for url: URL?) -> BuiltInUserScriptDefinition? {
         guard let source = url?.absoluteString else { return nil }
-        let canonical = legacyBundledURLsByCanonical[source] ?? source
-        return definitions.first { $0.url == canonical }
+        return definitions.first { $0.url == source }
     }
 
     /// Catalog keys keep curated metadata localizable; uncataloged descriptions use the header.

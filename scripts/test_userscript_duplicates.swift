@@ -59,15 +59,12 @@ struct UserScriptDuplicateTests {
 
     static func testPersistence(scripts: [UserScript]) async throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("wblock-duplicates-\(UUID())")
-        let suite = "test.wblock.duplicates.\(UUID())"
-        let defaults = UserDefaults(suiteName: suite)!
         defer {
             try? FileManager.default.removeItem(at: root)
-            defaults.removePersistentDomain(forName: suite)
         }
         func manager() -> ProtobufDataManager {
             ProtobufDataManager.makeIsolatedForTesting(
-                dataDirectoryURL: root, standardDefaults: defaults, groupDefaults: defaults
+                dataDirectoryURL: root
             )
         }
         let store = manager()

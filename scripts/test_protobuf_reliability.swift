@@ -16,10 +16,10 @@ struct ProtobufReliabilityTests {
         await testUnchangedMetadataPreservesForegroundDownload(root: root.appendingPathComponent("untouched-metadata"))
         await testSourceTimestampOwnership(root: root.appendingPathComponent("source-timestamp"))
         await testInlineFilterSelection(root: root.appendingPathComponent("inline-filters"))
-        await testDurableMigrationAndCorruptionRecovery(root: root.appendingPathComponent("recovery"))
+        await testCorruptionRecovery(root: root.appendingPathComponent("recovery"))
         await testMissingMainAndScriptTimestamp(root: root.appendingPathComponent("missing-main"))
         await testCorruptMainWithoutBackup(root: root.appendingPathComponent("no-backup-recovery"))
-        await testMigrationFailureAndCanonicalPrecedence(root: root.appendingPathComponent("migration-failure"))
+        await testInitialization(root: root.appendingPathComponent("migration-failure"))
         await testThreeWayDeletionAndInsertion(root: root.appendingPathComponent("merge"))
         await testConditionalCloudDisabledHosts(root: root.appendingPathComponent("cloud-disabled-hosts"))
         await testSelectedSites(root: root.appendingPathComponent("selected-sites"))
@@ -30,10 +30,7 @@ struct ProtobufReliabilityTests {
     }
 
     private static func testFilterAutomaticUpdates(root: URL) async {
-        let suite = "test.wblock.filter-updates.\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suite)!
-        defer { defaults.removePersistentDomain(forName: suite) }
-        let writer = await makeManager(root: root, standard: defaults, group: defaults)
+        let writer = await makeManager(root: root)
         await writer.loadData()
         let lists = [false, true].map { custom in
             FilterList(name: custom ? "Custom" : "Built-in",
@@ -41,7 +38,7 @@ struct ProtobufReliabilityTests {
                        category: .ads, isCustom: custom, isSelected: true)
         }
         await writer.updateFilterLists(lists)
-        let background = await makeManager(root: root, standard: defaults, group: defaults)
+        let background = await makeManager(root: root)
         await background.loadData()
         expect(background.getFilterLists().count == lists.count, "both list kinds must persist")
         expect(background.getFilterLists().allSatisfy(\.updatesAutomatically),
@@ -52,7 +49,7 @@ struct ProtobufReliabilityTests {
         var metadata = background.getFilterLists()
         for index in metadata.indices { metadata[index].version = "2" }
         await background.updateFilterLists(metadata)
-        let restarted = await makeManager(root: root, standard: defaults, group: defaults)
+        let restarted = await makeManager(root: root)
         await restarted.loadData()
         expect(restarted.getFilterLists().count == lists.count, "metadata saves must retain both lists")
         expect(restarted.getFilterLists().allSatisfy { !$0.updatesAutomatically && $0.version == "2" },
@@ -60,30 +57,27 @@ struct ProtobufReliabilityTests {
         var enabled = restarted.getFilterLists()
         for index in enabled.indices { enabled[index].updatesAutomatically = true }
         await restarted.updateFilterLists(enabled)
-        let verifier = await makeManager(root: root, standard: defaults, group: defaults)
+        let verifier = await makeManager(root: root)
         await verifier.loadData()
         expect(verifier.getFilterLists().allSatisfy(\.updatesAutomatically), "re-enabling must persist")
         await restarted.removeFilterList(withId: lists[1].id)
         verifier.setUserScriptShowEnabledOnly(true)
         await verifier.saveDataImmediately()
-        let afterDeletion = await makeManager(root: root, standard: defaults, group: defaults)
+        let afterDeletion = await makeManager(root: root)
         await afterDeletion.loadData()
         expect(!afterDeletion.getFilterLists().contains { $0.id == lists[1].id },
                "a stale writer must not resurrect a removed subscription")
     }
 
     private static func testCustomRegionalLanguages(root: URL) async {
-        let suite = "test.wblock.custom-languages.\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suite)!
-        defer { defaults.removePersistentDomain(forName: suite) }
         let custom = FilterList(name: "Custom", url: URL(string: "https://example.com/fa.txt")!,
                                 category: .foreign, isCustom: true, isSelected: true, languages: ["fa", "ps"])
         let builtIn = FilterList(name: "Built-in", url: URL(string: "https://example.com/de.txt")!,
                                  category: .foreign, isSelected: true, languages: ["de"])
-        let writer = await makeManager(root: root, standard: defaults, group: defaults)
+        let writer = await makeManager(root: root)
         await writer.loadData()
         await writer.updateFilterLists([custom, builtIn])
-        let reloaded = await makeManager(root: root, standard: defaults, group: defaults)
+        let reloaded = await makeManager(root: root)
         await reloaded.loadData()
         expect(reloaded.getFilterLists().first { $0.id == custom.id }?.languages == ["fa", "ps"],
                "custom regional languages must persist across launches")
@@ -92,10 +86,7 @@ struct ProtobufReliabilityTests {
     }
 
     private static func testBackgroundMetadataPreservesConfiguration(root: URL) async {
-        let suite = "test.wblock.filter-metadata.\(UUID())"
-        let defaults = UserDefaults(suiteName: suite)!
-        defer { defaults.removePersistentDomain(forName: suite) }
-        let background = await makeManager(root: root, standard: defaults, group: defaults)
+        let background = await makeManager(root: root)
         await background.loadData()
         let filter = FilterList(name: "Remote title", url: URL(string: "https://example.com/list.txt")!,
                                 category: .custom, isCustom: true, isSelected: true)
@@ -110,7 +101,7 @@ struct ProtobufReliabilityTests {
         let firstSave = await background.updateFilterMetadata(downloaded, baseline: downloadBaseline)
         expect(firstSave, "first metadata save")
 
-        let editor = await makeManager(root: root, standard: defaults, group: defaults)
+        let editor = await makeManager(root: root)
         await editor.loadData()
         var edited = editor.getFilterLists()
         edited[0].category = .privacy
@@ -139,7 +130,7 @@ struct ProtobufReliabilityTests {
         let secondSave = await background.updateFilterMetadata(downloaded, baseline: admissionBaseline)
         expect(secondSave, "second metadata save after compilation")
 
-        let restarted = await makeManager(root: root, standard: defaults, group: defaults)
+        let restarted = await makeManager(root: root)
         await restarted.loadData()
         let result = restarted.getFilterLists().first { $0.id == filter.id }!
         expect(result.category == .privacy && result.name == "My title" && result.hasUserProvidedName,
@@ -184,17 +175,14 @@ struct ProtobufReliabilityTests {
     }
 
     private static func testUnchangedMetadataPreservesForegroundDownload(root: URL) async {
-        let suite = "test.wblock.untouched-metadata.\(UUID())"
-        let defaults = UserDefaults(suiteName: suite)!
-        defer { defaults.removePersistentDomain(forName: suite) }
-        let background = await makeManager(root: root, standard: defaults, group: defaults)
+        let background = await makeManager(root: root)
         await background.loadData()
         var old = FilterList(name: "Untouched", url: URL(string: "https://example.com/untouched.txt")!,
                              category: .ads, isCustom: true, isSelected: true)
         old.version = "v1"; old.sourceRuleCount = 100; old.uniqueRuleCount = 90
         await background.updateFilterLists([old])
         let baseline = background.getFilterLists()
-        let foreground = await makeManager(root: root, standard: defaults, group: defaults)
+        let foreground = await makeManager(root: root)
         await foreground.loadData()
         var downloaded = foreground.getFilterLists()
         downloaded[0].version = "v2"
@@ -220,10 +208,7 @@ struct ProtobufReliabilityTests {
     }
 
     private static func testSourceTimestampOwnership(root: URL) async {
-        let suite = "test.wblock.source-timestamp.\(UUID())"
-        let defaults = UserDefaults(suiteName: suite)!
-        defer { defaults.removePersistentDomain(forName: suite) }
-        let manager = await makeManager(root: root, standard: defaults, group: defaults)
+        let manager = await makeManager(root: root)
         await manager.loadData()
         var seed = FilterList(name: "Unversioned", url: URL(string: "https://example.com/unversioned.txt")!,
                               category: .custom, isCustom: true)
@@ -249,7 +234,7 @@ struct ProtobufReliabilityTests {
         configured[0].lastUpdated = nil
         let configurationSave = await manager.updateFilterLists(configured)
         expect(configurationSave, "configuration with an absent date persists")
-        let restarted = await makeManager(root: root, standard: defaults, group: defaults)
+        let restarted = await makeManager(root: root)
         await restarted.loadData()
         expect(restarted.getFilterLists()[0].sourceRuleCount == 11
                && restarted.getFilterLists()[0].lastUpdated == fetchedAt,
@@ -257,20 +242,17 @@ struct ProtobufReliabilityTests {
     }
 
     private static func testInlineFilterSelection(root: URL) async {
-        let suite = "test.wblock.inline.\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suite)!
-        defer { defaults.removePersistentDomain(forName: suite) }
         let id = UUID()
         let url = URL(string: "wblock://userlist/\(id.uuidString)")!
         var filter = FilterList(id: id, name: "User Rules", url: url,
                                 category: .custom, isCustom: true, isSelected: true)
-        var manager = await makeManager(root: root, standard: defaults, group: defaults)
+        var manager = await makeManager(root: root)
         await manager.loadData()
         for selected in [true, false, true] {
             filter.isSelected = selected
             let saved = await manager.updateFilterLists([filter])
             expect(saved, "inline filter must persist")
-            manager = await makeManager(root: root, standard: defaults, group: defaults)
+            manager = await makeManager(root: root)
             await manager.loadData()
             let loaded = manager.getFilterLists().first { $0.id == id }!
             expect(loaded.url == url && loaded.isInlineUserList, "restart must retain the local rules address")
@@ -293,7 +275,7 @@ struct ProtobufReliabilityTests {
         filter.isSelected = true
         let enabledLegacySave = await manager.updateFilterLists([filter])
         expect(enabledLegacySave, "legacy enabled placeholder fixture must persist")
-        manager = await makeManager(root: root, standard: defaults, group: defaults)
+        manager = await makeManager(root: root)
         await manager.loadData()
         let recoveredEnabled = manager.getFilterLists().first { $0.id == id }!
         expect(recoveredEnabled.url == url && recoveredEnabled.isInlineUserList,
@@ -307,7 +289,7 @@ struct ProtobufReliabilityTests {
         let file = root.appendingPathComponent("wblock_data.pb")
         let bytes = try! Data(contentsOf: file)
         try! (bytes + bytes).write(to: file, options: .atomic)
-        manager = await makeManager(root: root, standard: defaults, group: defaults)
+        manager = await makeManager(root: root)
         await manager.loadData()
         expect(manager.getFilterLists().count == 1, "repeated stored identities must collapse before reaching any reader")
         let recovered = manager.getFilterLists().first { $0.id == id }!
@@ -318,7 +300,7 @@ struct ProtobufReliabilityTests {
         var builtIn = FilterList(name: "Built-in", url: URL(string: "https://example.com/builtin.txt")!, category: .custom)
         let movedSaved = await manager.updateFilterLists([filter, builtIn])
         expect(movedSaved, "category move must persist")
-        manager = await makeManager(root: root, standard: defaults, group: defaults)
+        manager = await makeManager(root: root)
         await manager.loadData()
         let moved = manager.getFilterLists().first { $0.id == builtIn.id }!
         expect(moved.category == .custom && !moved.isCustom, "Custom placement must not change built-in ownership")
@@ -326,7 +308,7 @@ struct ProtobufReliabilityTests {
             builtIn.selectedSites = selected
             let saved = await manager.updateFilterLists([filter, builtIn])
             expect(saved, "selected-site mode must persist")
-            manager = await makeManager(root: root, standard: defaults, group: defaults)
+            manager = await makeManager(root: root)
             await manager.loadData()
             expect(manager.getFilterLists().first { $0.id == builtIn.id }?.selectedSites == selected,
                    "protobuf must distinguish all sites from an empty selected-site list")
@@ -345,19 +327,19 @@ struct ProtobufReliabilityTests {
     }
 
     private static func testMissingMainAndScriptTimestamp(root: URL) async {
-        let suite = "test.wblock.protobuf.restart.\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suite)!
-        defer { defaults.removePersistentDomain(forName: suite) }
-        defaults.set("recover-me", forKey: "selectedBlockingLevel")
-        let first = await makeManager(root: root, standard: defaults, group: defaults)
+        let first = await makeManager(root: root)
         await first.loadData()
+        await first.setSelectedBlockingLevel("recover-me")
+        _ = await first.saveDataImmediately()
+        await first.setSelectedBlockingLevel("newer")
+        _ = await first.saveDataImmediately()
         let main = root.appendingPathComponent("wblock_data.pb")
         let backup = root.appendingPathComponent("wblock_data_backup.pb")
         let knownGood = try! Data(contentsOf: backup)
         try! Data([0xff, 0x00, 0xff]).write(to: main, options: .atomic)
         // Restart at the old implementation's quarantine/replace crash boundary.
         try! FileManager.default.moveItem(at: main, to: main.appendingPathExtension("corrupt"))
-        let restarted = await makeManager(root: root, standard: defaults, group: defaults)
+        let restarted = await makeManager(root: root)
         await restarted.loadData()
         expect(restarted.selectedBlockingLevel == "recover-me", "missing main must recover backup settings")
         expect((try! Data(contentsOf: backup)) == knownGood, "restart must not overwrite good backup with defaults")
@@ -370,11 +352,8 @@ struct ProtobufReliabilityTests {
     }
 
     private static func testUserScriptMetadataOverrides(root: URL) async {
-        let suite = "test.wblock.protobuf.metadata-overrides.\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suite)!
-        defer { defaults.removePersistentDomain(forName: suite) }
 
-        let first = await makeManager(root: root, standard: defaults, group: defaults)
+        let first = await makeManager(root: root)
         await first.loadData()
         var script = UserScript(name: "Metadata overrides", url: URL(string: "https://example.com/metadata.user.js"))
         script.metadataAuthorOverride = "Local author"
@@ -384,7 +363,7 @@ struct ProtobufReliabilityTests {
         let updateSaved = await first.updateUserScripts([script])
         expect(updateSaved, "metadata overrides must persist through update")
 
-        let updated = await makeManager(root: root, standard: defaults, group: defaults)
+        let updated = await makeManager(root: root)
         await updated.loadData()
         let loaded = updated.getUserScripts().first { $0.id == script.id }!
         expect(loaded.metadataAuthorOverride == "Local author" && loaded.author == "Local author", "author override must survive update restart")
@@ -396,7 +375,7 @@ struct ProtobufReliabilityTests {
         script.homepage = script.metadataHomepageOverride
         let replacementSaved = await updated.replaceUserScripts([script])
         expect(replacementSaved, "metadata overrides must persist through replacement")
-        let replaced = await makeManager(root: root, standard: defaults, group: defaults)
+        let replaced = await makeManager(root: root)
         await replaced.loadData()
         let replacement = replaced.getUserScripts().first { $0.id == script.id }!
         expect(replacement.metadataAuthorOverride == "Replacement author" && replacement.author == "Replacement author", "author override must survive replacement restart")
@@ -404,10 +383,7 @@ struct ProtobufReliabilityTests {
     }
 
     private static func testSelectedSites(root: URL) async {
-        let suite = "test.wblock.selected-sites.\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suite)!
-        defer { defaults.removePersistentDomain(forName: suite) }
-        let first = await makeManager(root: root, standard: defaults, group: defaults)
+        let first = await makeManager(root: root)
         await first.loadData()
         let script = UserScript(name: "Selected sites", url: URL(string: "https://example.com/test.user.js"))
         let id = script.id.uuidString
@@ -415,7 +391,7 @@ struct ProtobufReliabilityTests {
         expect(first.userScriptSiteAccess(forScriptID: id).allows(host: "any.example"), "legacy scripts remain unrestricted")
         let empty = UserScriptSiteAccess(onlySelectedSites: true)
         _ = await first.setUserScriptSiteAccess(empty, forScriptID: id)
-        let second = await makeManager(root: root, standard: defaults, group: defaults)
+        let second = await makeManager(root: root)
         await second.loadData()
         expect(second.getUserScriptAllowedHosts()[id] == [], "empty allowlist survives protobuf round trip")
         expect(!second.userScriptSiteAccess(forScriptID: id).allows(host: "example.com"), "empty selected mode runs nowhere")
@@ -443,16 +419,8 @@ struct ProtobufReliabilityTests {
     }
 
     private static func testConditionalCloudDisabledHosts(root: URL) async {
-        let standardSuite = "test.wblock.protobuf.cloudhosts.standard.\(UUID().uuidString)"
-        let groupSuite = "test.wblock.protobuf.cloudhosts.group.\(UUID().uuidString)"
-        let standard = UserDefaults(suiteName: standardSuite)!
-        let group = UserDefaults(suiteName: groupSuite)!
-        defer {
-            standard.removePersistentDomain(forName: standardSuite)
-            group.removePersistentDomain(forName: groupSuite)
-        }
 
-        let first = await makeManager(root: root, standard: standard, group: group)
+        let first = await makeManager(root: root)
         await first.loadData()
         let changedScript = UserScript(name: "Changed", url: URL(string: "https://example.com/changed.user.js"))
         let unchangedScript = UserScript(name: "Unchanged", url: URL(string: "https://example.com/unchanged.user.js"))
@@ -468,7 +436,7 @@ struct ProtobufReliabilityTests {
         ]
         await first.setAllUserScriptDisabledHosts(baseline)
 
-        let second = await makeManager(root: root, standard: standard, group: group)
+        let second = await makeManager(root: root)
         await second.loadData()
         await second.setUserScriptDisabledHosts(["popup-newer.example"], forScriptID: changedID)
         await second.removeUserScript(withId: deletedScript.id)
@@ -484,7 +452,7 @@ struct ProtobufReliabilityTests {
         )
         expect(cloudApplied, "conditional Cloud disabled-host mutation should complete")
 
-        let verifier = await makeManager(root: root, standard: standard, group: group)
+        let verifier = await makeManager(root: root)
         await verifier.loadData()
         let final = verifier.getUserScriptDisabledHosts()
         expect(final[changedID] == ["popup-newer.example"],
@@ -502,16 +470,8 @@ struct ProtobufReliabilityTests {
     }
 
     private static func testCorruptMainWithoutBackup(root: URL) async {
-        let standardSuite = "test.wblock.protobuf.no-backup.standard.\(UUID().uuidString)"
-        let groupSuite = "test.wblock.protobuf.no-backup.group.\(UUID().uuidString)"
-        let standard = UserDefaults(suiteName: standardSuite)!
-        let group = UserDefaults(suiteName: groupSuite)!
-        defer {
-            standard.removePersistentDomain(forName: standardSuite)
-            group.removePersistentDomain(forName: groupSuite)
-        }
 
-        let manager = await makeManager(root: root, standard: standard, group: group)
+        let manager = await makeManager(root: root)
         await manager.loadData()
         let dataURL = root.appendingPathComponent("wblock_data.pb")
         let backupURL = root.appendingPathComponent("wblock_data_backup.pb")
@@ -523,40 +483,21 @@ struct ProtobufReliabilityTests {
         let repairedBytes = try! Data(contentsOf: dataURL)
         expect(repairedBytes != corruptBytes, "no-backup corruption recovery must install a valid fallback canonical inside recovery")
         expect(FileManager.default.fileExists(atPath: backupURL.path), "fallback recovery must seed a new known-good backup")
-        let restarted = await makeManager(root: root, standard: standard, group: group)
+        let restarted = await makeManager(root: root)
         await restarted.loadData()
         let restartedLevel = await restarted.selectedBlockingLevel
         expect(restartedLevel == "recommended", "fallback canonical must survive restart")
     }
 
-    private static func testDurableMigrationAndCorruptionRecovery(root: URL) async {
-        let standardSuite = "test.wblock.protobuf.standard.\(UUID().uuidString)"
-        let groupSuite = "test.wblock.protobuf.group.\(UUID().uuidString)"
-        let standard = UserDefaults(suiteName: standardSuite)!
-        let group = UserDefaults(suiteName: groupSuite)!
-        defer {
-            standard.removePersistentDomain(forName: standardSuite)
-            group.removePersistentDomain(forName: groupSuite)
-        }
-        standard.set(true, forKey: "hasCompletedOnboarding")
-        standard.set("legacy-level", forKey: "selectedBlockingLevel")
-        group.set(false, forKey: "autoUpdateEnabled")
-
-        let manager = await makeManager(root: root, standard: standard, group: group)
+    private static func testCorruptionRecovery(root: URL) async {
+        let manager = await makeManager(root: root)
         await manager.loadData()
-        let migratedOnboarding = await manager.hasCompletedOnboarding
-        let migratedLevel = await manager.selectedBlockingLevel
-        let migratedAutoUpdate = await manager.autoUpdateEnabled
-        expect(migratedOnboarding, "legacy onboarding state must survive first migration")
-        expect(migratedLevel == "legacy-level", "legacy settings must be durably migrated before defaults")
-        expect(!migratedAutoUpdate, "legacy auto-update setting must survive first migration")
-
+        await manager.setSelectedBlockingLevel("backup-level")
+        _ = await manager.saveDataImmediately()
         let dataURL = root.appendingPathComponent("wblock_data.pb")
         let backupURL = root.appendingPathComponent("wblock_data_backup.pb")
-        let flagURL = root.appendingPathComponent("migration_completed.flag")
-        expect(FileManager.default.fileExists(atPath: dataURL.path), "migration must persist main data")
+        expect(FileManager.default.fileExists(atPath: dataURL.path), "initialization must persist main data")
         expect(FileManager.default.fileExists(atPath: backupURL.path), "first durable write must seed last-known-good backup")
-        expect(FileManager.default.fileExists(atPath: flagURL.path), "migration flag must follow durable data")
 
         await manager.setSelectedBlockingLevel("newer-level")
         let savedNewer = await manager.saveDataImmediately()
@@ -576,98 +517,44 @@ struct ProtobufReliabilityTests {
 
         await manager.loadData()
         let recoveredLevel = await manager.selectedBlockingLevel
-        expect(recoveredLevel == "legacy-level", "corrupt main must recover previous known-good backup")
+        expect(recoveredLevel == "backup-level", "corrupt main must recover previous known-good backup")
         await manager.setSelectedBlockingLevel("after-recovery")
         let savedAfterRecovery = await manager.saveDataImmediately()
         expect(savedAfterRecovery, "recovered store must remain writable")
 
-        let restarted = await makeManager(root: root, standard: standard, group: group)
+        let restarted = await makeManager(root: root)
         await restarted.loadData()
         let restartedLevel = await restarted.selectedBlockingLevel
         expect(restartedLevel == "after-recovery", "mutation after repair must survive restart")
     }
 
-    private static func testMigrationFailureAndCanonicalPrecedence(root: URL) async {
-        let standardSuite = "test.wblock.protobuf.failure.standard.\(UUID().uuidString)"
-        let groupSuite = "test.wblock.protobuf.failure.group.\(UUID().uuidString)"
-        let standard = UserDefaults(suiteName: standardSuite)!
-        let group = UserDefaults(suiteName: groupSuite)!
-        defer {
-            standard.removePersistentDomain(forName: standardSuite)
-            group.removePersistentDomain(forName: groupSuite)
-        }
-
+    private static func testInitialization(root: URL) async {
         try! FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         try! FileManager.default.setAttributes([.posixPermissions: 0o500], ofItemAtPath: root.path)
-        let failing = await makeManager(root: root, standard: standard, group: group)
+        let failing = await makeManager(root: root)
         await failing.loadData()
-        let failedMain = root.appendingPathComponent("wblock_data.pb")
-        let failedFlag = root.appendingPathComponent("migration_completed.flag")
-        expect(!FileManager.default.fileExists(atPath: failedMain.path), "failed migration must not create defaults/main")
-        expect(!FileManager.default.fileExists(atPath: failedFlag.path), "failed migration must not stamp completion flag")
+        expect(failing.lastError != nil, "failed initialization must report its error")
+        expect(!FileManager.default.fileExists(atPath: root.appendingPathComponent("wblock_data.pb").path),
+               "failed initialization must not create a partial store")
         try! FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: root.path)
 
-        standard.set("legacy-poison", forKey: "selectedBlockingLevel")
-        let seed = await makeManager(root: root, standard: standard, group: group)
-        await seed.loadData()
-        await seed.setSelectedBlockingLevel("canonical")
-        let canonicalSaved = await seed.saveDataImmediately()
-        expect(canonicalSaved, "canonical seed must persist")
-        try? FileManager.default.removeItem(at: failedFlag)
-
-        standard.set("legacy-should-not-win", forKey: "selectedBlockingLevel")
-        let canonicalReader = await makeManager(root: root, standard: standard, group: group)
-        await canonicalReader.loadData()
-        let canonicalLevel = await canonicalReader.selectedBlockingLevel
-        expect(canonicalLevel == "canonical", "existing canonical store must win when migration flag is missing")
-        expect(FileManager.default.fileExists(atPath: failedFlag.path), "valid canonical store should restamp missing migration flag")
-
-        await testConcurrentInitialization(root: root.appendingPathComponent("concurrent-init"))
-    }
-
-    private static func testConcurrentInitialization(root: URL) async {
-        let standardSuiteA = "test.wblock.protobuf.concurrent.standard.a.\(UUID().uuidString)"
-        let standardSuiteB = "test.wblock.protobuf.concurrent.standard.b.\(UUID().uuidString)"
-        let groupSuiteA = "test.wblock.protobuf.concurrent.group.a.\(UUID().uuidString)"
-        let groupSuiteB = "test.wblock.protobuf.concurrent.group.b.\(UUID().uuidString)"
-        let standardA = UserDefaults(suiteName: standardSuiteA)!
-        let standardB = UserDefaults(suiteName: standardSuiteB)!
-        let groupA = UserDefaults(suiteName: groupSuiteA)!
-        let groupB = UserDefaults(suiteName: groupSuiteB)!
-        defer {
-            standardA.removePersistentDomain(forName: standardSuiteA)
-            standardB.removePersistentDomain(forName: standardSuiteB)
-            groupA.removePersistentDomain(forName: groupSuiteA)
-            groupB.removePersistentDomain(forName: groupSuiteB)
-        }
-        standardA.set("candidate-a", forKey: "selectedBlockingLevel")
-        standardB.set("candidate-b", forKey: "selectedBlockingLevel")
-
-        let managerA = await makeManager(root: root, standard: standardA, group: groupA)
-        let managerB = await makeManager(root: root, standard: standardB, group: groupB)
+        let managerA = await makeManager(root: root)
+        let managerB = await makeManager(root: root)
         async let loadA: Void = managerA.loadData()
         async let loadB: Void = managerB.loadData()
         _ = await (loadA, loadB)
-
-        let finalA = await managerA.selectedBlockingLevel
-        let finalB = await managerB.selectedBlockingLevel
-        expect(finalA == finalB, "concurrent initializers must converge on one canonical store")
-        expect(finalA == "candidate-a" || finalA == "candidate-b", "canonical store must be one complete migration candidate")
-        expect(FileManager.default.fileExists(atPath: root.appendingPathComponent("migration_completed.flag").path),
-               "migration flag must be written only after coordinated canonical initialization")
+        expect(managerA.selectedBlockingLevel == managerB.selectedBlockingLevel,
+               "concurrent initializers must converge on one canonical store")
+        await managerA.setSelectedBlockingLevel("canonical")
+        let saved = await managerA.saveDataImmediately()
+        expect(saved, "initialized store must remain writable")
+        await managerB.loadData()
+        expect(managerB.selectedBlockingLevel == "canonical", "relaunch must preserve canonical data")
     }
 
     private static func testThreeWayDeletionAndInsertion(root: URL) async {
-        let standardSuite = "test.wblock.protobuf.merge.standard.\(UUID().uuidString)"
-        let groupSuite = "test.wblock.protobuf.merge.group.\(UUID().uuidString)"
-        let standard = UserDefaults(suiteName: standardSuite)!
-        let group = UserDefaults(suiteName: groupSuite)!
-        defer {
-            standard.removePersistentDomain(forName: standardSuite)
-            group.removePersistentDomain(forName: groupSuite)
-        }
 
-        let seed = await makeManager(root: root, standard: standard, group: group)
+        let seed = await makeManager(root: root)
         await seed.loadData()
         let base = FilterList(
             name: "Base",
@@ -677,8 +564,8 @@ struct ProtobufReliabilityTests {
         )
         await seed.updateFilterLists([base])
 
-        let deleter = await makeManager(root: root, standard: standard, group: group)
-        let staleWriter = await makeManager(root: root, standard: standard, group: group)
+        let deleter = await makeManager(root: root)
+        let staleWriter = await makeManager(root: root)
         await deleter.loadData()
         await staleWriter.loadData()
         await deleter.removeFilterList(withId: base.id)
@@ -686,14 +573,14 @@ struct ProtobufReliabilityTests {
         let staleSave = await staleWriter.saveDataImmediately()
         expect(staleSave, "stale unrelated writer must save")
 
-        let deletionVerifier = await makeManager(root: root, standard: standard, group: group)
+        let deletionVerifier = await makeManager(root: root)
         await deletionVerifier.loadData()
         let deletionResult = await deletionVerifier.getFilterLists()
         expect(deletionResult.isEmpty, "stale save must not resurrect externally deleted filter")
 
         await deletionVerifier.updateFilterLists([base])
-        let inserter = await makeManager(root: root, standard: standard, group: group)
-        let staleCollectionWriter = await makeManager(root: root, standard: standard, group: group)
+        let inserter = await makeManager(root: root)
+        let staleCollectionWriter = await makeManager(root: root)
         await inserter.loadData()
         await staleCollectionWriter.loadData()
         let inserted = FilterList(
@@ -704,7 +591,7 @@ struct ProtobufReliabilityTests {
         await inserter.updateFilterLists([base, inserted])
         await staleCollectionWriter.updateFilterLists([base])
 
-        let insertionVerifier = await makeManager(root: root, standard: standard, group: group)
+        let insertionVerifier = await makeManager(root: root)
         await insertionVerifier.loadData()
         let insertionResult = await insertionVerifier.getFilterLists()
         let ids = Set(insertionResult.map(\.id))
@@ -712,17 +599,14 @@ struct ProtobufReliabilityTests {
     }
 
     private static func testLegacyBpcURLMigration(root: URL) async {
-        let suite = "test.wblock.bpc.\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suite)!
-        defer { defaults.removePersistentDomain(forName: suite) }
         let gitflic = URL(string: "https://gitflic.ru/project/magnolia1234/bypass-paywalls-clean-filters/blob/raw?file=bpc-paywall-filter.txt")!
         let custom = FilterList(name: "BPC", url: gitflic, category: .custom, isCustom: true, isSelected: true)
         let builtIn = FilterList(name: "Bypass Paywalls Clean Filter", url: gitflic, category: .annoyances)
-        let seed = await makeManager(root: root, standard: defaults, group: defaults)
+        let seed = await makeManager(root: root)
         await seed.loadData()
         _ = await seed.updateFilterLists([custom, builtIn])
 
-        let restarted = await makeManager(root: root, standard: defaults, group: defaults)
+        let restarted = await makeManager(root: root)
         await restarted.loadData()
         let lists = restarted.getFilterLists()
         expect(lists.first { $0.id == custom.id }?.url == gitflic, "a user-added gitflic BPC list must keep its URL (#871)")
@@ -733,12 +617,9 @@ struct ProtobufReliabilityTests {
     /// A setting still waiting on the save debounce must survive the next
     /// update after another process wrote the store.
     private static func testDebouncedEditSurvivesExternalWrite(root: URL) async {
-        let suite = "test.wblock.debounced-edit.\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suite)!
-        defer { defaults.removePersistentDomain(forName: suite) }
-        let app = await makeManager(root: root, standard: defaults, group: defaults)
+        let app = await makeManager(root: root)
         await app.loadData()
-        let ext = await makeManager(root: root, standard: defaults, group: defaults)
+        let ext = await makeManager(root: root)
         await ext.loadData()
         await app.setIsForeignFiltersExpanded(true)
         await ext.setZapperRules(forHost: "example.com", rules: ["#ad"])
@@ -747,16 +628,8 @@ struct ProtobufReliabilityTests {
         expect(app.getZapperRules(forHost: "example.com") == ["#ad"], "the external write must still be merged in")
     }
 
-    private static func makeManager(
-        root: URL,
-        standard: UserDefaults,
-        group: UserDefaults
-    ) async -> ProtobufDataManager {
-        ProtobufDataManager.makeIsolatedForTesting(
-            dataDirectoryURL: root,
-            standardDefaults: standard,
-            groupDefaults: group
-        )
+    private static func makeManager(root: URL) async -> ProtobufDataManager {
+        ProtobufDataManager.makeIsolatedForTesting(dataDirectoryURL: root)
     }
 
     private static func expect(_ condition: @autoclosure () -> Bool, _ message: String) {
