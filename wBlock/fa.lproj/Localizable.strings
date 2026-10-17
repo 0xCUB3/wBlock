@@ -452,7 +452,6 @@
 "Imported userscript from file" = "اسکریپت کاربر از فایل درون‌ریزی شد";
 "Importing…" = "در حال درون‌ریزی…";
 "in %@ (%@)" = "در %@ (%@)";
-"Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns." = "بلوک متادیتا // ==UserScript== (یا /* ==UserStyle== */ برای استایل‌های کاربر) را درج کنید تا wBlock بتواند نام و الگوهای URL را بخواند.";
 "IndianList" = "IndianList";
 "Info" = "اطلاعات";
 "Info.plist missing" = "\U200FInfo.plist یافت نشد";

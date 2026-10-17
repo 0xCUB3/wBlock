@@ -1996,7 +1996,7 @@ struct AddUserScriptView: View {
                             .focused($textInputFocused)
                             .accessibilityLabel(Text("Script Content"))
                     } footer: {
-                        AddContentNote(text: metadataRequirementText, error: editorImportError)
+                        AddContentNote(error: editorImportError)
                     }
             }
         case .file:
@@ -2015,10 +2015,6 @@ struct AddUserScriptView: View {
                 AddContentNote(text: "Local imports won't auto-update; re-import to replace.", error: fileImportError)
             }
         }
-    }
-
-    private var metadataRequirementText: LocalizedStringKey {
-        "Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns."
     }
 
     private var userScriptMetaFields: some View {

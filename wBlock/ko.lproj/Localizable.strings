@@ -452,7 +452,6 @@
 "Imported userscript from file" = "파일에서 유저스크립트를 가져왔습니다";
 "Importing…" = "가져오는 중…";
 "in %@ (%@)" = "%@ 후 (%@)";
-"Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns." = "wBlock이 이름과 URL 패턴을 읽을 수 있도록 // ==UserScript== 메타데이터 블록(또는 유저스타일의 경우 /* ==UserStyle== */)을 포함하세요.";
 "IndianList" = "IndianList";
 "Info" = "정보";
 "Info.plist missing" = "Info.plist가 없습니다";

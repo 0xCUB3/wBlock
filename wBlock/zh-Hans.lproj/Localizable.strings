@@ -452,7 +452,6 @@
 "Imported userscript from file" = "已从文件导入用户脚本";
 "Importing…" = "正在导入…";
 "in %@ (%@)" = "%@后（%@）";
-"Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns." = "包含 // ==UserScript== 元数据块（或用于用户样式的 /* ==UserStyle== */），以便 wBlock 读取名称和 URL 模式。";
 "IndianList" = "IndianList";
 "Info" = "信息";
 "Info.plist missing" = "缺少 Info.plist";

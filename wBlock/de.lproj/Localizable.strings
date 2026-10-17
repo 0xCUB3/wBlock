@@ -452,7 +452,6 @@
 "Imported userscript from file" = "Benutzerskript aus Datei importiert";
 "Importing…" = "Wird importiert…";
 "in %@ (%@)" = "in %@ (%@)";
-"Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns." = "Füge den Metadatenblock // ==UserScript== (oder /* ==UserStyle== */ für Benutzerstile) ein, damit wBlock den Namen und die URL-Muster lesen kann.";
 "IndianList" = "IndianList";
 "Info" = "Info";
 "Info.plist missing" = "Info.plist fehlt";

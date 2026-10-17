@@ -452,7 +452,6 @@
 "Imported userscript from file" = "Kullanıcı betiği dosyadan içe aktarıldı";
 "Importing…" = "İçe aktarılıyor…";
 "in %@ (%@)" = "%@ sonra (%@)";
-"Include the // ==UserScript== metadata block (or /* ==UserStyle== */ for userstyles) so wBlock can read the name and URL patterns." = "wBlock'un adı ve URL kalıplarını okuyabilmesi için // ==UserScript== meta veri bloğunu (veya kullanıcı stilleri için /* ==UserStyle== */) ekleyin.";
 "IndianList" = "IndianList";
 "Info" = "Bilgi";
 "Info.plist missing" = "Info.plist eksik";
