@@ -295,7 +295,6 @@ final class CloudSyncManager: ObservableObject {
 
         if !enabled {
             deferredSyncTrigger = nil
-            saveSyncBase(nil)
             return
         }
 
@@ -709,7 +708,6 @@ final class CloudSyncManager: ObservableObject {
             let stableLocal = try await stableLocalPayloadAndMutationBaseline()
             let localPayload = stableLocal.payload
             let localMutationBaseline = stableLocal.baseline
-            let localUpdatedAt = localPayload.updatedAt
 
             guard let remoteRecord = try await fetchRecord() else {
                 setStatus(.uploading)
@@ -718,7 +716,6 @@ final class CloudSyncManager: ObservableObject {
             }
 
             let remoteContentHash = remoteRecord["contentHash"] as? String
-            let remoteUpdatedAt = (remoteRecord["updatedAt"] as? Date)?.timeIntervalSince1970
             if let remoteContentHash, remoteContentHash == localPayload.contentHash {
                 markUpToDate(from: localPayload, acknowledging: additionsAtStart)
                 return
@@ -733,14 +730,12 @@ final class CloudSyncManager: ObservableObject {
                 markUpToDate(from: localPayload, acknowledging: additionsAtStart)
                 return
             }
+            // Direction follows what changed since this device last agreed with iCloud, never
+            // wall-clock stamps: a device that only drifted while idle (an expired tombstone,
+            // an app update) stamps its stale snapshot as newest (#995). Without a base there
+            // is no telling a local edit from staleness, so iCloud wins.
             let base = loadSyncBase()
-            let direction = CloudSyncDirection.resolve(
-                remoteHash: remotePayload.contentHash,
-                baseHash: base?.contentHash,
-                localUpdatedAt: localUpdatedAt,
-                remoteUpdatedAt: remoteUpdatedAt ?? remotePayload.updatedAt
-            )
-            guard direction == .download else {
+            if let base, remotePayload.contentHash == base.contentHash {
                 setStatus(.uploading)
                 await uploadLatestPayload(trigger: "\(trigger)-LocalNewer", withinSyncSession: true)
                 return
