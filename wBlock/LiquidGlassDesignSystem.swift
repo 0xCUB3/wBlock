@@ -799,6 +799,8 @@ extension View {
                     Text(title).font(.headline).fixedSize()
                 }
                 .sharedBackgroundVisibility(.hidden)
+                // The first thing to go in a narrow window, ahead of the tabs.
+                .toolbarVisibilityPriorityCompat(.low)
             }
         } else {
             toolbar {

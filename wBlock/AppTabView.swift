@@ -37,7 +37,7 @@ struct AppTabView<Filters: View, Userscripts: View, Settings: View>: View {
                 .tabItem { Label("Settings", systemImage: "gear") }
         }
         #if os(macOS)
-        .frame(minWidth: 480, idealWidth: 540, minHeight: 550, idealHeight: 720)
+        .frame(minWidth: MacTabWindow.minimumWidth, idealWidth: max(540, MacTabWindow.minimumWidth), minHeight: 550, idealHeight: 720)
         #endif
     }
 
@@ -69,3 +69,20 @@ struct AppTabView<Filters: View, Userscripts: View, Settings: View>: View {
     }
     #endif
 }
+
+#if os(macOS)
+enum MacTabWindow {
+    /// Narrow enough for the toolbar and no narrower. Below it AppKit moved
+    /// the tab picker into the overflow menu and packed the other buttons
+    /// against it (#1000). The picker's segments share the widest title's
+    /// width, about 1.2 times its width at the system font size, so longer
+    /// localized titles widen the window instead of hiding the tabs.
+    static let minimumWidth: CGFloat = {
+        let font = NSFont.systemFont(ofSize: NSFont.systemFontSize)
+        let widestTitle = ["Filters", "Userscripts", "Settings"]
+            .map { (String(localized: String.LocalizationValue($0)) as NSString).size(withAttributes: [.font: font]).width }
+            .max() ?? 0
+        return max(480, (290 + 3 * 1.2 * widestTitle).rounded(.up))
+    }()
+}
+#endif
