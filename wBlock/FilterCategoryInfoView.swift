@@ -61,10 +61,7 @@ struct FilterCategoryInfoView: View {
                     Text(category == .foreign ? "Choose a language to see its lists." : "No default filters")
                         .foregroundStyle(.secondary)
                 } else {
-                    ForEach(recommendedFilterNames, id: \.self) { name in
-                        Label(LocalizedStringKey(name), systemImage: "checkmark.circle")
-                            .foregroundStyle(.secondary)
-                    }
+                    RecommendedNamesList(names: recommendedFilterNames)
                 }
             }
 
@@ -80,4 +77,20 @@ struct FilterCategoryInfoView: View {
         #endif
     }
 
+}
+
+/// Plain bullets: a checkmark beside each name read as "enabled", which these
+/// recommendations may not be (#999).
+struct RecommendedNamesList: View {
+    let names: [String]
+
+    var body: some View {
+        ForEach(names, id: \.self) { name in
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(verbatim: "•")
+                Text(LocalizedStringKey(name))
+            }
+            .foregroundStyle(.secondary)
+        }
+    }
 }

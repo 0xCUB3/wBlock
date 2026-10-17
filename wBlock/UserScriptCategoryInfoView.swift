@@ -28,10 +28,7 @@ struct UserScriptCategoryInfoView: View {
                     Text("No default scripts")
                         .foregroundStyle(.secondary)
                 } else {
-                    ForEach(defaultScriptNames, id: \.self) { name in
-                        Label(LocalizedStringKey(name), systemImage: "checkmark.circle")
-                            .foregroundStyle(.secondary)
-                    }
+                    RecommendedNamesList(names: defaultScriptNames)
                 }
             }
 
