@@ -13,6 +13,18 @@ extension AppFilterManager {
         return capacity > 0 ? min(Double(lastRuleCount) / Double(capacity), 1.0) : 0.0
     }
 
+    /// Counted here, off the main thread, whenever the Safari total changes,
+    /// so Rule Capacity opens with its Rule Types already filled in (#999).
+    func refreshAppliedRuleCounts() {
+        let targets = ContentBlockerTargetManager.shared.allTargets(forPlatform: currentPlatform)
+        Task { @MainActor in
+            let loaded = await Task.detached(priority: .utility) {
+                AppliedRuleCounts.load(targets: targets, groupIdentifier: GroupIdentifier.shared.value)
+            }.value
+            if appliedRuleCounts != loaded { appliedRuleCounts = loaded }
+        }
+    }
+
     func loadSavedRuleCounts() {
         // Load last known rule count from protobuf data
         lastRuleCount = dataManager.lastRuleCount

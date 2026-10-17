@@ -2499,13 +2499,6 @@ struct RuleCapacityPopoverView: View {
                 .foregroundStyle(.tertiary)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .task(id: totalUsed) {
-            let targets = targets
-            let loaded = await Task.detached(priority: .userInitiated) {
-                AppliedRuleCounts.load(targets: targets, groupIdentifier: GroupIdentifier.shared.value)
-            }.value
-            if filterManager.appliedRuleCounts != loaded { filterManager.appliedRuleCounts = loaded }
-        }
     }
 
     private func ruleTypeRow(_ kind: FilterRuleKind, title: String? = nil, count: Int, limit: Int? = nil) -> some View {

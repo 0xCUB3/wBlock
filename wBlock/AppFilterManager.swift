@@ -34,7 +34,9 @@ class AppFilterManager: ObservableObject {
     @Published var statusDescription: String = LocalizedStrings.text("Ready.", comment: "Filter manager idle status")
     @Published var lastConversionTime: String = LocalizedStrings.text("N/A", comment: "Unavailable metric placeholder")
     @Published var lastReloadTime: String = LocalizedStrings.text("N/A", comment: "Unavailable metric placeholder")
-    @Published var lastRuleCount: Int = 0
+    @Published var lastRuleCount: Int = 0 {
+        didSet { if lastRuleCount != oldValue { refreshAppliedRuleCounts() } }
+    }
     @Published var hasError: Bool = false
     /// Content blockers that did not reload on the last apply (#648). Cleared on
     /// the next apply and once a targeted retry succeeds.
