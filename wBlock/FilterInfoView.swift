@@ -16,6 +16,7 @@ struct FilterInfoView: View {
     @State private var showingMetadataEditor = false
     @State private var showingSettings = false
     @State private var showingRules = false
+    @State private var showingFallbacks = false
     @State private var confirmingDelete = false
     @State private var cachedMetadata = ContentInfoMetadata()
     @State private var cachedByteCount: Int?
@@ -47,6 +48,12 @@ struct FilterInfoView: View {
         }
         .sheet(isPresented: $showingSettings) {
             FilterSettingsView(filter: liveFilter, filterManager: filterManager)
+                .infoSheetPresentationCompat()
+        }
+        // From the view's root like the other sheets: attached to the row's
+        // button, the sheet's X sometimes did nothing on iOS (#999).
+        .sheet(isPresented: $showingFallbacks) {
+            FilterFallbacksView(filter: liveFilter, urls: FilterListURLMirror.fallbackURLs(for: liveFilter.url))
                 .infoSheetPresentationCompat()
         }
         .sheet(isPresented: $showingRules) {
@@ -111,10 +118,7 @@ struct FilterInfoView: View {
                         InfoMetadataRow(title: "Source URL", value: liveFilter.url.absoluteString, url: liveFilter.url)
                         HStack {
                             CopyURLButton(url: liveFilter.url)
-                            FilterFallbacksButton(
-                                filter: liveFilter,
-                                onShow: onAction.map { _ in { perform(.fallbacks) {} } }
-                            )
+                            FilterFallbacksButton { perform(.fallbacks) { showingFallbacks = true } }
                         }
                     }
                 }

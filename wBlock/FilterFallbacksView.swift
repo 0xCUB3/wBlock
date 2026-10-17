@@ -1,26 +1,18 @@
 import SwiftUI
 import wBlockCoreService
 
-/// Uses the same resolved fallback chain as foreground and background downloads.
+/// Opens the list's fallbacks. The owner presents them: macOS from the
+/// window, since a sheet on a popover strands the window dimmed when a click
+/// outside closes the popover (#956), and iOS from the info sheet's root.
 struct FilterFallbacksButton: View {
-    let filter: FilterList
-    /// Presents from the window instead. A sheet on a macOS popover strands
-    /// the window dimmed when a click outside closes the popover (#956).
-    var onShow: (() -> Void)? = nil
-    @State private var showingFallbacks = false
+    let onShow: () -> Void
 
     var body: some View {
-        Button {
-            if let onShow { onShow() } else { showingFallbacks = true }
-        } label: {
+        Button(action: onShow) {
             Label("Fallbacks", systemImage: "point.topleft.down.curvedto.point.bottomright.up")
         }
         .buttonStyle(.bordered)
         .controlSize(.small)
-        .sheet(isPresented: $showingFallbacks) {
-            FilterFallbacksView(filter: filter, urls: FilterListURLMirror.fallbackURLs(for: filter.url))
-                .infoSheetPresentationCompat()
-        }
     }
 }
 
