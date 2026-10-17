@@ -212,7 +212,6 @@
 "Conditional check failed" = "Αποτυχία υπό όρους ελέγχου";
 "Content filtering" = "Φιλτράρισμα περιεχομένου";
 "Continue" = "Συνέχεια";
-"Controls the time zone used when displaying and exporting log timestamps." = "Ελέγχει τη ζώνη ώρας που χρησιμοποιείται κατά την εμφάνιση και την εξαγωγή χρονοσφραγίδων καταγραφής.";
 "Conversion" = "Μετατροπή";
 "Conversion phase summary" = "Σύνοψη φάσης μετατροπής";
 "Converted rules, but one or more extensions failed to reload after 5 attempts." = "Οι κανόνες μετατράπηκαν, αλλά μία ή περισσότερες επεκτάσεις απέτυχαν να επαναφορτωθούν μετά από 5 προσπάθειες.";
@@ -241,7 +240,6 @@
 "Disabled sites changed, fast rebuilding content blockers" = "Οι απενεργοποιημένοι ιστότοποι άλλαξαν, γρήγορη αναδημιουργία αποκλειστών περιεχομένου";
 "Disabled sites monitor unavailable (no protobuf data directory)" = "Η παρακολούθηση απενεργοποιημένων ιστότοπων δεν είναι διαθέσιμη (δεν υπάρχει κατάλογος δεδομένων protobuf)";
 "Disabled sites updated successfully in %@ (fast update #%d)" = "Οι απενεργοποιημένοι ιστότοποι ενημερώθηκαν με επιτυχία στο %@ (γρήγορη ενημέρωση #%d)";
-"Display" = "Εμφάνιση";
 "Done" = "Ολοκληρώθηκε";
 "Close" = "Κλείσιμο";
 "Downloaded" = "Λήφθηκε";
@@ -1035,3 +1033,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Filter Logs" = "Φιλτράρισμα αρχείων καταγραφής";
 "Apply Anyway" = "Εφαρμογή ούτως ή άλλως";
+"General" = "Γενικά";
+"Jump to Section" = "Μετάβαση σε ενότητα";
+"Clear Logs?" = "Εκκαθάριση αρχείων καταγραφής;";
+"This deletes every log entry." = "Αυτό διαγράφει όλες τις καταχωρίσεις καταγραφής.";
+"Settings…" = "Ρυθμίσεις…";

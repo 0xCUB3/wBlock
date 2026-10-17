@@ -212,7 +212,6 @@
 "Conditional check failed" = "بررسی شرطی ناموفق بود";
 "Content filtering" = "فیلتر کردن محتوا";
 "Continue" = "ادامه";
-"Controls the time zone used when displaying and exporting log timestamps." = "منطقهٔ زمانی مورد استفاده هنگام نمایش و برون‌بری برچسب‌های زمانی گزارش را کنترل می‌کند.";
 "Conversion" = "تبدیل";
 "Conversion phase summary" = "خلاصهٔ مرحلهٔ تبدیل";
 "Converted rules, but one or more extensions failed to reload after 5 attempts." = "قوانین تبدیل شدند، اما بارگیری مجدد یک یا چند افزونه پس از ۵ بار تلاش ناموفق بود.";
@@ -241,7 +240,6 @@
 "Disabled sites changed, fast rebuilding content blockers" = "سایت‌های غیرفعال تغییر کردند، بازسازی سریع مسدودکننده‌های محتوا";
 "Disabled sites monitor unavailable (no protobuf data directory)" = "ناظر سایت‌های غیرفعال در دسترس نیست (پوشهٔ دادهٔ protobuf وجود ندارد)";
 "Disabled sites updated successfully in %@ (fast update #%d)" = "سایت‌های غیرفعال با موفقیت در %@ به‌روزرسانی شدند (به‌روزرسانی سریع شمارهٔ %d)";
-"Display" = "نمایش";
 "Done" = "انجام شد";
 "Close" = "بستن";
 "Downloaded" = "دانلود شد";
@@ -1044,3 +1042,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Filter Logs" = "پالایش گزارش‌ها";
 "Apply Anyway" = "در هر صورت اعمال شود";
+"General" = "عمومی";
+"Jump to Section" = "رفتن به بخش";
+"Clear Logs?" = "گزارش‌ها پاک شوند؟";
+"This deletes every log entry." = "این کار همهٔ ورودی‌های گزارش را حذف می‌کند.";
+"Settings…" = "تنظیمات…";

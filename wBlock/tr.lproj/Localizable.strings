@@ -212,7 +212,6 @@
 "Conditional check failed" = "Koşullu denetim başarısız oldu";
 "Content filtering" = "İçerik filtreleme";
 "Continue" = "Devam";
-"Controls the time zone used when displaying and exporting log timestamps." = "Günlük zaman damgaları görüntülenirken ve dışa aktarılırken kullanılan saat dilimini kontrol eder.";
 "Conversion" = "Dönüşüm";
 "Conversion phase summary" = "Dönüştürme süreci özeti";
 "Converted rules, but one or more extensions failed to reload after 5 attempts." = "Kurallar dönüştürüldü, ancak bir veya daha fazla genişletme 5 denemenin ardından yeniden yüklenemedi.";
@@ -241,7 +240,6 @@
 "Disabled sites changed, fast rebuilding content blockers" = "Devre dışı bırakılan siteler değişti, içerik engelleyiciler hızlıca yeniden oluşturuluyor";
 "Disabled sites monitor unavailable (no protobuf data directory)" = "Devre dışı bırakılan sitelerde izleme kullanılamıyor (protobuf veri dizini bulunamadı)";
 "Disabled sites updated successfully in %@ (fast update #%d)" = "Devre dışı bırakılan siteler %@ içinde başarıyla güncellendi (hızlı güncelleme #%d)";
-"Display" = "Görüntüleme";
 "Done" = "Bitti";
 "Close" = "Kapat";
 "Downloaded" = "İndirildi";
@@ -1044,3 +1042,8 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 
 "Filter Logs" = "Günlükleri filtrele";
 "Apply Anyway" = "Yine de uygula";
+"General" = "Genel";
+"Jump to Section" = "Bölüme git";
+"Clear Logs?" = "Günlükler temizlensin mi?";
+"This deletes every log entry." = "Bu, tüm günlük kayıtlarını siler.";
+"Settings…" = "Ayarlar…";

@@ -212,7 +212,6 @@
 "Conditional check failed" = "条件チェックに失敗しました";
 "Content filtering" = "コンテンツフィルタリング";
 "Continue" = "続ける";
-"Controls the time zone used when displaying and exporting log timestamps." = "ログのタイムスタンプ表示およびエクスポートに使用するタイムゾーンを設定します。";
 "Conversion" = "変換";
 "Conversion phase summary" = "変換フェーズの概要";
 "Converted rules, but one or more extensions failed to reload after 5 attempts." = "ルールは変換されましたが、5回試行した後も1つ以上の機能拡張の再読み込みに失敗しました。";
@@ -241,7 +240,6 @@
 "Disabled sites changed, fast rebuilding content blockers" = "無効化サイトが変更されたため、コンテンツブロッカーを高速再ビルドしています";
 "Disabled sites monitor unavailable (no protobuf data directory)" = "無効化サイトの監視を利用できません（protobuf データディレクトリがありません）";
 "Disabled sites updated successfully in %@ (fast update #%d)" = "無効化されたサイトが %@ で正常にアップデートされました (高速アップデート #%d)";
-"Display" = "表示";
 "Done" = "完了";
 "Close" = "閉じる";
 "Downloaded" = "ダウンロード済み";
@@ -1004,3 +1002,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Filter Logs" = "ログを絞り込む";
 "Apply Anyway" = "このまま適用";
+"General" = "一般";
+"Jump to Section" = "セクションへ移動";
+"Clear Logs?" = "ログを消去しますか？";
+"This deletes every log entry." = "すべてのログ項目が削除されます。";
+"Settings…" = "設定…";

@@ -212,7 +212,6 @@
 "Conditional check failed" = "Conditional check failed";
 "Content filtering" = "Content filtering";
 "Continue" = "Continue";
-"Controls the time zone used when displaying and exporting log timestamps." = "Controls the time zone used when displaying and exporting log timestamps.";
 "Conversion" = "Conversion";
 "Conversion phase summary" = "Conversion phase summary";
 "Converted rules, but one or more extensions failed to reload after 5 attempts." = "Converted rules, but one or more extensions failed to reload after 5 attempts.";
@@ -241,7 +240,6 @@
 "Disabled sites changed, fast rebuilding content blockers" = "Disabled sites changed, fast rebuilding content blockers";
 "Disabled sites monitor unavailable (no protobuf data directory)" = "Disabled sites monitor unavailable (no protobuf data directory)";
 "Disabled sites updated successfully in %@ (fast update #%d)" = "Disabled sites updated successfully in %@ (fast update #%d)";
-"Display" = "Display";
 "Done" = "Done";
 "Close" = "Close";
 "Downloaded" = "Downloaded";
@@ -1044,3 +1042,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Filter Logs" = "Filter Logs";
 "Apply Anyway" = "Apply Anyway";
+"General" = "General";
+"Jump to Section" = "Jump to Section";
+"Clear Logs?" = "Clear Logs?";
+"This deletes every log entry." = "This deletes every log entry.";
+"Settings…" = "Settings…";

@@ -212,7 +212,6 @@
 "Conditional check failed" = "Verificarea condiționată a eșuat";
 "Content filtering" = "Filtrarea conținutului";
 "Continue" = "Continuă";
-"Controls the time zone used when displaying and exporting log timestamps." = "Controlează fusul orar folosit la afișarea și exportarea marcajelor temporale ale jurnalului.";
 "Conversion" = "Conversie";
 "Conversion phase summary" = "Rezumat faza de conversie";
 "Converted rules, but one or more extensions failed to reload after 5 attempts." = "Regulile au fost convertite, dar una sau mai multe extensii nu s-au reîncărcat după 5 încercări.";
@@ -241,7 +240,6 @@
 "Disabled sites changed, fast rebuilding content blockers" = "Site-urile dezactivate s-au schimbat, reconstruire rapidă a blocantelor de conținut";
 "Disabled sites monitor unavailable (no protobuf data directory)" = "Monitorul site-urilor dezactivate nu este disponibil (fără director de date protobuf)";
 "Disabled sites updated successfully in %@ (fast update #%d)" = "Site-uri dezactivate actualizate cu succes în %@ (actualizare rapidă #%d)";
-"Display" = "Afișare";
 "Done" = "Gata";
 "Close" = "Închide";
 "Downloaded" = "Descărcat";
@@ -1035,3 +1033,8 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 
 "Filter Logs" = "Filtrează jurnalele";
 "Apply Anyway" = "Aplică oricum";
+"General" = "General";
+"Jump to Section" = "Salt la secțiune";
+"Clear Logs?" = "Ștergi jurnalele?";
+"This deletes every log entry." = "Aceasta șterge toate intrările din jurnal.";
+"Settings…" = "Setări…";

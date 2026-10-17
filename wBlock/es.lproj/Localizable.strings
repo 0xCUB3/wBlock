@@ -212,7 +212,6 @@
 "Conditional check failed" = "Falló la comprobación condicional";
 "Content filtering" = "Filtrado de contenido";
 "Continue" = "Continuar";
-"Controls the time zone used when displaying and exporting log timestamps." = "Controla la zona horaria usada al mostrar y exportar las marcas de tiempo de los registros.";
 "Conversion" = "Conversión";
 "Conversion phase summary" = "Resumen de la fase de conversión";
 "Converted rules, but one or more extensions failed to reload after 5 attempts." = "Se convirtieron las reglas, pero una o más extensiones no se recargaron tras 5 intentos.";
@@ -241,7 +240,6 @@
 "Disabled sites changed, fast rebuilding content blockers" = "Sitios desactivados modificados, recompilando bloqueadores de contenido rápidamente";
 "Disabled sites monitor unavailable (no protobuf data directory)" = "El monitor de sitios desactivados no está disponible (no hay directorio de datos protobuf)";
 "Disabled sites updated successfully in %@ (fast update #%d)" = "Sitios desactivados actualizados correctamente en %@ (actualización rápida #%d)";
-"Display" = "Visualización";
 "Done" = "Listo";
 "Close" = "Cerrar";
 "Downloaded" = "Descargado";
@@ -1035,3 +1033,8 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 
 "Filter Logs" = "Filtrar registros";
 "Apply Anyway" = "Aplicar de todos modos";
+"General" = "General";
+"Jump to Section" = "Ir a la sección";
+"Clear Logs?" = "¿Borrar los registros?";
+"This deletes every log entry." = "Esto elimina todas las entradas del registro.";
+"Settings…" = "Configuración…";

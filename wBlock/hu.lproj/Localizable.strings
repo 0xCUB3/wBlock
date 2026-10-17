@@ -212,7 +212,6 @@
 "Conditional check failed" = "A feltételes ellenőrzés sikertelen";
 "Content filtering" = "Tartalomszűrés";
 "Continue" = "Folytatás";
-"Controls the time zone used when displaying and exporting log timestamps." = "A napló időbélyegzőinek megjelenítéséhez és exportálásához használt időzónát állítja be.";
 "Conversion" = "Konverzió";
 "Conversion phase summary" = "A konvertálási fázis összegzése";
 "Converted rules, but one or more extensions failed to reload after 5 attempts." = "A szabályok konvertálva lettek, de egy vagy több bővítmény 5 próbálkozás után sem töltődött újra.";
@@ -241,7 +240,6 @@
 "Disabled sites changed, fast rebuilding content blockers" = "A letiltott webhelyek megváltoztak, a tartalomblokkolók gyors újraépítése";
 "Disabled sites monitor unavailable (no protobuf data directory)" = "A letiltott webhelyek figyelése nem érhető el (nincs protobuf adatkönyvtár)";
 "Disabled sites updated successfully in %@ (fast update #%d)" = "A letiltott webhelyek sikeresen frissítve a %@-ben (gyors frissítés #%d)";
-"Display" = "Megjelenítés";
 "Done" = "Kész";
 "Close" = "Bezárás";
 "Downloaded" = "Letöltve";
@@ -1035,3 +1033,8 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 
 "Filter Logs" = "Naplók szűrése";
 "Apply Anyway" = "Alkalmazás mindenképp";
+"General" = "Általános";
+"Jump to Section" = "Ugrás szakaszhoz";
+"Clear Logs?" = "Törlöd a naplókat?";
+"This deletes every log entry." = "Ez minden naplóbejegyzést töröl.";
+"Settings…" = "Beállítások…";

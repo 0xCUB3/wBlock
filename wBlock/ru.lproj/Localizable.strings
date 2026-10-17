@@ -212,7 +212,6 @@
 "Conditional check failed" = "Условная проверка не удалась";
 "Content filtering" = "Фильтрация содержимого";
 "Continue" = "Продолжить";
-"Controls the time zone used when displaying and exporting log timestamps." = "Определяет часовой пояс для отображения и экспорта меток времени журналов.";
 "Conversion" = "Конвертация";
 "Conversion phase summary" = "Сводка фазы конвертации";
 "Converted rules, but one or more extensions failed to reload after 5 attempts." = "Правила преобразованы, но одно или несколько расширений не удалось перезагрузить после 5 попыток.";
@@ -241,7 +240,6 @@
 "Disabled sites changed, fast rebuilding content blockers" = "Отключённые сайты изменены — быстрая перестройка блокировщиков контента";
 "Disabled sites monitor unavailable (no protobuf data directory)" = "Монитор отключённых сайтов недоступен (нет каталога данных protobuf)";
 "Disabled sites updated successfully in %@ (fast update #%d)" = "Отключенные сайты успешно обновлены в %@ (быстрое обновление #%d)";
-"Display" = "Отображение";
 "Done" = "Готово";
 "Close" = "Закрыть";
 "Downloaded" = "Загружено";
@@ -1035,3 +1033,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Filter Logs" = "Фильтр журналов";
 "Apply Anyway" = "Всё равно применить";
+"General" = "Основные";
+"Jump to Section" = "Перейти к разделу";
+"Clear Logs?" = "Очистить журнал?";
+"This deletes every log entry." = "Все записи журнала будут удалены.";
+"Settings…" = "Настройки…";

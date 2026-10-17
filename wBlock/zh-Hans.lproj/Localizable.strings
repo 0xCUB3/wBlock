@@ -212,7 +212,6 @@
 "Conditional check failed" = "条件检查失败";
 "Content filtering" = "内容过滤";
 "Continue" = "继续";
-"Controls the time zone used when displaying and exporting log timestamps." = "控制显示和导出日志时间戳时使用的时区。";
 "Conversion" = "转换";
 "Conversion phase summary" = "转换阶段摘要";
 "Converted rules, but one or more extensions failed to reload after 5 attempts." = "规则已转换，但有一个或多个扩展在 5 次尝试后仍未能重新加载。";
@@ -241,7 +240,6 @@
 "Disabled sites changed, fast rebuilding content blockers" = "停用网站已更改，正在快速重建内容拦截器";
 "Disabled sites monitor unavailable (no protobuf data directory)" = "停用网站监视器不可用（无 protobuf 数据目录）";
 "Disabled sites updated successfully in %@ (fast update #%d)" = "已禁用网站已在 %@ 内成功更新（快速更新 #%d）";
-"Display" = "显示";
 "Done" = "完成";
 "Close" = "关闭";
 "Downloaded" = "已下载";
@@ -1035,3 +1033,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Filter Logs" = "过滤日志";
 "Apply Anyway" = "仍然应用";
+"General" = "通用";
+"Jump to Section" = "跳到部分";
+"Clear Logs?" = "清除日志？";
+"This deletes every log entry." = "这会删除所有日志条目。";
+"Settings…" = "设置…";

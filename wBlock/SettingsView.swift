@@ -8,14 +8,13 @@ struct SettingsView: View {
     @ObservedObject private var dataManager = ProtobufDataManager.shared
     @ObservedObject private var syncManager = CloudSyncManager.shared
     private static let autoUpdateIntervalPresets: [Double] = [1, 2, 4, 6, 12, 24, 48, 72, 168]
-    private static let reportIssueURL = URL(string: "https://github.com/0xCUB3/wBlock/issues/new/choose")!
+    static let reportIssueURL = URL(string: "https://github.com/0xCUB3/wBlock/issues/new/choose")!
     private static let developerURL = URL(string: "https://github.com/0xCUB3")!
-    private static let sourceCodeURL = URL(string: "https://github.com/0xCUB3/wBlock")!
+    static let sourceCodeURL = URL(string: "https://github.com/0xCUB3/wBlock")!
     private static let licenseURL = URL(string: "https://www.gnu.org/licenses/gpl-3.0.html")!
     private static let privacyPolicyURL = URL(string: "https://github.com/0xCUB3/wBlock/blob/main/PRIVACY_POLICY.md")!
-    private static let faqURL = URL(string: "https://github.com/0xCUB3/wBlock#faq")!
-    private static let contactURL = URL(string: "https://discord.gg/5kmuEbwsut")!
-    @AppStorage(LogTimeZonePreference.storageKey) private var logTimeZoneIdentifier: String = LogTimeZonePreference.deviceIdentifier
+    static let faqURL = URL(string: "https://github.com/0xCUB3/wBlock#faq")!
+    static let contactURL = URL(string: "https://discord.gg/5kmuEbwsut")!
     @State private var nextScheduleLine = String(localized: "Waiting")
     /// Short form of the schedule for the Next Update pill.
     @State private var nextUpdateValue = String(localized: "Waiting")
@@ -36,6 +35,7 @@ struct SettingsView: View {
     @State private var showingSyncAdoptPrompt = false
     @State private var syncAdoptTimestamp: String?
     @State private var showingRuleCapacity = false
+    @State private var scrollTarget: SettingsSection?
     @AppStorage(AppAppearance.storageKey) private var appearance = AppAppearance.system
     #if os(iOS)
         @State private var backupDocument: BackupDocument? = nil
@@ -222,33 +222,31 @@ struct SettingsView: View {
         )
     }
 
-    #if os(iOS)
+    /// Autoplay and Appearance lead Settings; the site pages follow under
+    /// Websites (#999).
     @ViewBuilder
-    private var displaySection: some View {
+    private var generalSection: some View {
         Section {
+            Toggle("Autoplay", isOn: autoplayBinding)
             appearancePicker
+            #if os(iOS)
             if PortraitOrientationLock.isAvailable {
                 Toggle("Lock Portrait Orientation", isOn: $lockPortraitOrientation)
                     .onChangeCompat(of: lockPortraitOrientation) { _ in
                         PortraitOrientationLock.apply()
                     }
             }
+            #endif
         } header: {
-            Text("Display")
+            sectionHeader(.general)
         } footer: {
+            #if os(iOS)
             if PortraitOrientationLock.isAvailable {
                 Text("Keeps the app in portrait even if the device is rotated.")
             }
+            #endif
         }
     }
-    #else
-    @ViewBuilder
-    private var displaySection: some View {
-        Section("Display") {
-            appearancePicker
-        }
-    }
-    #endif
 
     private var appearancePicker: some View {
         Picker("Appearance", selection: $appearance) {
@@ -268,9 +266,7 @@ struct SettingsView: View {
 
     @ViewBuilder
     private var websitesSection: some View {
-        Section("Websites") {
-            Toggle("Autoplay", isOn: autoplayBinding)
-
+        Section {
             NavigationLink {
                 SiteSettingsView(filterManager: filterManager)
                     .swipeBackNavigationCompat()
@@ -284,14 +280,17 @@ struct SettingsView: View {
             } label: {
                 SettingsRowLabel("Element Zapper", systemImage: "wand.and.stars", accessory: .push)
             }
+        } header: {
+            sectionHeader(.websites)
         }
     }
 
     @ViewBuilder
     private var advancedSection: some View {
-        Section("Advanced") {
+        Section {
             NavigationLink {
                 LogsView()
+                    .macToolbarTitle("Logs")
                     .swipeBackNavigationCompat()
             } label: {
                 SettingsRowLabel("View Logs", systemImage: "doc.text.magnifyingglass", accessory: .push)
@@ -299,9 +298,9 @@ struct SettingsView: View {
 
             cosmeticFilteringControls
 
-            logTimestampControls
-
             backupButtons
+        } header: {
+            sectionHeader(.advanced)
         }
     }
 
@@ -315,26 +314,16 @@ struct SettingsView: View {
         }
     }
 
-    private var logTimestampControls: some View {
-        Toggle(isOn: usesDeviceTimeZoneBinding) {
-            rowLabel(
-                "Sync Timestamps with Device Time Zone",
-                detail: Text("Controls the time zone used when displaying and exporting log timestamps.")
-            )
-        }
-        .onChangeCompat(of: logTimeZoneIdentifier) { _ in
-            LogDateFormatters.configureIfNeeded()
-        }
-    }
-
     /// A title over a footnote, the two-line label System Settings gives rows
     /// that need a sentence of explanation.
     private func rowLabel(_ title: LocalizedStringKey, detail: Text) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
+            // Plain gray: .secondary took the button's red or blue tint and
+            // was hard to read under the Reset rows on iOS (#999).
             detail
                 .font(.footnote)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.secondary)
         }
         #if os(macOS)
         .padding(.vertical, 4)
@@ -347,7 +336,7 @@ struct SettingsView: View {
 
     @ViewBuilder
     private var helpSection: some View {
-        Section("Help") {
+        Section {
             Link(destination: Self.faqURL) {
                 SettingsRowLabel("FAQ", systemImage: "questionmark.circle", accessory: .external)
             }
@@ -358,6 +347,8 @@ struct SettingsView: View {
                 SettingsRowLabel("Contact Us", systemImage: "bubble.left", accessory: .external)
             }
             openSafariSettingsButton
+        } header: {
+            sectionHeader(.help)
         }
     }
 
@@ -421,26 +412,42 @@ struct SettingsView: View {
                 }
                 #endif
 
-                StatCard(
-                    title: "Next Update",
-                    value: nextUpdateValue,
-                    icon: "clock.arrow.circlepath",
-                    valueColor: autoUpdateEnabled ? .primary : .secondary,
-                    compact: compact
-                )
-
-                if syncManager.isCloudKitAvailable {
+                pillButton(to: .autoUpdate) {
                     StatCard(
-                        title: "iCloud Sync",
-                        value: syncPillValue(now: context.date),
-                        icon: syncManager.status == .error ? "exclamationmark.icloud" : "icloud",
-                        valueColor: syncManager.status == .error ? .red
-                            : (syncManager.isEnabled ? .primary : .secondary),
+                        title: "Next Update",
+                        value: nextUpdateValue,
+                        icon: "clock.arrow.circlepath",
+                        valueColor: autoUpdateEnabled ? .primary : .secondary,
                         compact: compact
                     )
                 }
+
+                if syncManager.isCloudKitAvailable {
+                    pillButton(to: .sync) {
+                        StatCard(
+                            title: "iCloud Sync",
+                            value: syncPillValue(now: context.date),
+                            icon: syncManager.status == .error ? "exclamationmark.icloud" : "icloud",
+                            valueColor: syncManager.status == .error ? .red
+                                : (syncManager.isEnabled ? .primary : .secondary),
+                            compact: compact
+                        )
+                    }
+                }
             }
         }
+    }
+
+    /// A pill that scrolls to the section it summarizes (#999).
+    private func pillButton<Label: View>(to section: SettingsSection, @ViewBuilder label: () -> Label) -> some View {
+        Button { scrollTarget = section } label: {
+            label()
+                #if os(iOS)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                #endif
+        }
+        .buttonStyle(.plain)
+        .noFocusRingCompat()
     }
 
     private func syncPillValue(now: Date) -> String {
@@ -539,7 +546,7 @@ struct SettingsView: View {
                 SettingsRowLabel("Background Diagnostics", systemImage: "stethoscope", accessory: .push)
             }
         } header: {
-            Text("Auto-Update")
+            sectionHeader(.autoUpdate)
         } footer: {
             #if os(iOS)
             if autoUpdateEnabled {
@@ -586,10 +593,7 @@ struct SettingsView: View {
                 #endif
             }
         }
-        .navigationTitle("Background Diagnostics")
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
+        .pageTitle("Background Diagnostics")
         .task {
             _ = await dataManager.refreshFromDiskIfModified(forceRead: true)
             await updateScheduleLine(shouldTriggerOverdue: false)
@@ -714,7 +718,7 @@ struct SettingsView: View {
                 #endif
             }
         } header: {
-            Text("Sync")
+            sectionHeader(.sync)
         } footer: {
             if !syncManager.isCloudKitAvailable {
                 Text("This GitHub/Homebrew build cannot use iCloud Sync. The App Store/TestFlight build can.")
@@ -735,12 +739,22 @@ struct SettingsView: View {
 
     @ToolbarContentBuilder
     private var pauseBlockingToolbar: some ToolbarContent {
+        ToolbarItem(placement: .primaryAction) {
+            Menu {
+                ForEach(SettingsSection.allCases, id: \.self) { section in
+                    Button(section.title) { scrollTarget = section }
+                }
+            } label: {
+                Label("Jump to Section", systemImage: "list.bullet")
+            }
+            .help("Jump to Section")
+        }
         ToolbarItem(placement: .primaryAction) { PauseBlockingMenu(filterManager: filterManager) }
     }
 
     @ViewBuilder
     private var aboutSection: some View {
-        Section("About") {
+        Section {
             CompatibleLabeledContent("Version") {
                 Text(
                     Bundle.main.infoDictionary?["CFBundleShortVersionString"]
@@ -759,21 +773,9 @@ struct SettingsView: View {
             Link(destination: Self.privacyPolicyURL) {
                 SettingsRowLabel("Privacy Policy", systemImage: "hand.raised", accessory: .external)
             }
+        } header: {
+            sectionHeader(.about)
         }
-    }
-
-    private var usesDeviceTimeZoneBinding: Binding<Bool> {
-        Binding(
-            get: { logTimeZoneIdentifier.isEmpty },
-            set: { newValue in
-                if newValue {
-                    logTimeZoneIdentifier = LogTimeZonePreference.deviceIdentifier
-                } else if logTimeZoneIdentifier.isEmpty {
-                    logTimeZoneIdentifier = TimeZone.current.identifier
-                }
-                LogDateFormatters.configureIfNeeded()
-            }
-        )
     }
 
     @ViewBuilder
@@ -831,68 +833,87 @@ struct SettingsView: View {
             .disabled(isRestarting)
             #endif
         } header: {
-            Text("Reset")
+            sectionHeader(.reset)
         }
     }
 
     @ViewBuilder
     private var settingsContent: some View {
-        #if os(iOS)
         CompatibleNavigationStack {
-            List {
-                Section {
-                    statusPills
-                        .unifiedTabCardSectionRow()
-                }
-                websitesSection
-                displaySection
-                autoUpdateSection
-                syncSection
-                advancedSection
-                helpSection
-                aboutSection
-                dangerZoneSection
+            // Section headers carry ids, so the pills and the section menu
+            // can scroll to them in a page that has grown long (#999).
+            ScrollViewReader { proxy in
+                settingsList
+                    .toolbar { pauseBlockingToolbar }
+                    .onChangeCompat(of: scrollTarget) { _, target in
+                        guard let target else { return }
+                        withAnimation { proxy.scrollTo(target, anchor: Self.sectionScrollAnchor) }
+                        scrollTarget = nil
+                    }
             }
-            .unifiedTabListStyle()
-            .navigationTitle("Settings")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { pauseBlockingToolbar }
         }
+    }
+
+    @ViewBuilder
+    private var settingsList: some View {
+        #if os(iOS)
+        List {
+            Section {
+                statusPills
+                    .unifiedTabCardSectionRow()
+            }
+            settingsSections
+        }
+        .unifiedTabListStyle()
+        .navigationTitle("Settings")
+        .navigationBarTitleDisplayMode(.inline)
         #else
         // Settings fills the window in the same cards as Filters and
         // Userscripts. A grouped Form capped the content to a narrow centered
         // column. Older macOS keeps the Form since the card list needs
         // section introspection from macOS 15.
-        CompatibleNavigationStack {
-            Group {
-                if #available(macOS 15.0, *) {
-                    MacSettingsCardList { statusPills } content: { settingsSections }
-                } else {
-                    VStack(spacing: 0) {
-                        statusPills.padding(.vertical, 16)
-                        Form { settingsSections }
-                            .groupedFormStyleCompat()
-                    }
-                }
+        if #available(macOS 15.0, *) {
+            MacSettingsCardList { statusPills } content: { settingsSections }
+        } else {
+            VStack(spacing: 0) {
+                statusPills.padding(.vertical, 16)
+                Form { settingsSections }
+                    .groupedFormStyleCompat()
             }
-            .toolbar { pauseBlockingToolbar }
         }
         #endif
     }
 
-    #if os(macOS)
+    /// An iOS List scrolls a section's first row to the top of its frame,
+    /// behind the translucent bar, so the target sits a header's height lower.
+    #if os(iOS)
+    private static let sectionScrollAnchor = UnitPoint(x: 0.5, y: 0.17)
+    #else
+    private static let sectionScrollAnchor = UnitPoint.top
+    #endif
+
+    /// The scroll target: the header in the Mac card list, which draws
+    /// headers as plain views, and the whole section in an iOS List, where a
+    /// header id scrolled to the wrong place.
+    private func sectionHeader(_ section: SettingsSection) -> some View {
+        #if os(macOS)
+        Text(section.title).id(section)
+        #else
+        Text(section.title)
+        #endif
+    }
+
     @ViewBuilder
     private var settingsSections: some View {
-        websitesSection
-        displaySection
-        autoUpdateSection
-        syncSection
-        advancedSection
-        helpSection
-        aboutSection
-        dangerZoneSection
+        generalSection.settingsAnchor(.general)
+        websitesSection.settingsAnchor(.websites)
+        autoUpdateSection.settingsAnchor(.autoUpdate)
+        syncSection.settingsAnchor(.sync)
+        advancedSection.settingsAnchor(.advanced)
+        helpSection.settingsAnchor(.help)
+        aboutSection.settingsAnchor(.about)
+        dangerZoneSection.settingsAnchor(.reset)
     }
-    #endif
 
     private func handleAutoUpdateConfigChange() async {
         await SharedAutoUpdateManager.shared.resetScheduleAfterConfigurationChange()
@@ -1417,5 +1438,34 @@ struct PauseBlockingMenu: View {
             Label(title, systemImage: isPaused ? "pause.circle.fill" : "pause.circle")
         }
         .help(title)
+    }
+}
+
+/// Settings' sections in page order, for the section menu and the pills.
+enum SettingsSection: CaseIterable, Hashable {
+    case general, websites, autoUpdate, sync, advanced, help, about, reset
+
+    var title: LocalizedStringKey {
+        switch self {
+        case .general: return "General"
+        case .websites: return "Websites"
+        case .autoUpdate: return "Auto-Update"
+        case .sync: return "Sync"
+        case .advanced: return "Advanced"
+        case .help: return "Help"
+        case .about: return "About"
+        case .reset: return "Reset"
+        }
+    }
+}
+
+private extension View {
+    @ViewBuilder
+    func settingsAnchor(_ section: SettingsSection) -> some View {
+        #if os(iOS)
+        id(section)
+        #else
+        self
+        #endif
     }
 }

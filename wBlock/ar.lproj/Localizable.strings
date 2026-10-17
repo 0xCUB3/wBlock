@@ -212,7 +212,6 @@
 "Conditional check failed" = "فشل الفحص الشرطي";
 "Content filtering" = "تصفية المحتوى";
 "Continue" = "متابعة";
-"Controls the time zone used when displaying and exporting log timestamps." = "يتحكم بالمنطقة الزمنية المستخدمة عند عرض طوابع السجل الزمنية وتصديرها.";
 "Conversion" = "التحويل";
 "Conversion phase summary" = "ملخص مرحلة التحويل";
 "Converted rules, but one or more extensions failed to reload after 5 attempts." = "تم تحويل القواعد، لكن تعذّر إعادة تحميل امتداد واحد أو أكثر بعد 5 محاولات.";
@@ -241,7 +240,6 @@
 "Disabled sites changed, fast rebuilding content blockers" = "تغيّرت المواقع المعطّلة، يتم إعادة بناء أدوات حظر المحتوى بسرعة";
 "Disabled sites monitor unavailable (no protobuf data directory)" = "مراقب المواقع المعطّلة غير متاح (لا يوجد دليل بيانات protobuf)";
 "Disabled sites updated successfully in %@ (fast update #%d)" = "تم تحديث المواقع المعطلة بنجاح في %@ (تحديث سريع #%d)";
-"Display" = "العرض";
 "Done" = "تم";
 "Close" = "إغلاق";
 "Downloaded" = "تم التنزيل";
@@ -1035,3 +1033,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Filter Logs" = "تصفية السجلات";
 "Apply Anyway" = "تطبيق على أي حال";
+"General" = "عام";
+"Jump to Section" = "الانتقال إلى قسم";
+"Clear Logs?" = "مسح السجلات؟";
+"This deletes every log entry." = "سيؤدي هذا إلى حذف كل إدخالات السجل.";
+"Settings…" = "الإعدادات…";
