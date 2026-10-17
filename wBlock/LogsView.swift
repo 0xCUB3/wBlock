@@ -102,8 +102,9 @@ struct LogsView: View {
             .navigationTitle("Logs")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                if let onDismiss {
-                    ToolbarItem(placement: .cancellationAction) {
+                // A conditional ToolbarItem needs iOS 16; a conditional view inside one doesn't.
+                ToolbarItem(placement: .cancellationAction) {
+                    if let onDismiss {
                         SheetDoneButton(action: onDismiss)
                     }
                 }
