@@ -59,14 +59,4 @@ public struct UserScriptDisplayCategorySupport {
             return .other
         }
     }
-
-    public static func orderedGroups<T>(
-        _ items: [T],
-        category: (T) -> UserScriptDisplayCategory
-    ) -> [(category: UserScriptDisplayCategory, items: [T])] {
-        UserScriptDisplayCategory.allCases.compactMap { displayCategory in
-            let matching = items.filter { category($0) == displayCategory }
-            return matching.isEmpty ? nil : (displayCategory, matching)
-        }
-    }
 }

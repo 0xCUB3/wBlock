@@ -221,7 +221,7 @@ struct ContentView: View {
                 .infoSheetPresentationCompat()
         }
         .infoPresentation(item: $selectedFilterFallbacks) { filter in
-            FilterFallbacksView(filter: filter, urls: FilterCatalogRemote.fallbacks(for: filter))
+            FilterFallbacksView(filter: filter, urls: FilterListURLMirror.fallbackURLs(for: filter.url))
                 .infoSheetPresentationCompat()
         }
         .sheet(item: $selectedFilterRules) { filter in
@@ -1125,14 +1125,6 @@ struct ContentModifiers: ViewModifier {
                 Button("OK") {}
             } message: {
                 Text("You're already using the latest filters.")
-            }
-            .alert(
-                filterManager.ruleLimitWarningTitle,
-                isPresented: $filterManager.showingRuleLimitWarningAlert
-            ) {
-                Button("OK") {}
-            } message: {
-                Text(filterManager.ruleLimitWarningMessage)
             }
             .alert("Filters Auto-Disabled", isPresented: $filterManager.showingAutoDisabledAlert) {
                 Button("OK") {}

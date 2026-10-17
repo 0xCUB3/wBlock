@@ -46,11 +46,9 @@ struct ZapperRuleEditingTests {
         let synced = await browser.synchronizeZapperRules(forHost: host, rules: [".first", ".old", ".last", ".new-browser-rule"])
         precondition(synced == expected + [".new-browser-rule"], "Stale sync must retain the edit and suppress the old selector")
         precondition(browser.isZapperDisabled(forHost: host))
-        let consumed = await browser.consumeZapperPendingDeletions(forHost: host)
-        precondition(consumed.isEmpty, "Successful sync acknowledges pending deletions")
 
         _ = await app.refreshFromDiskIfModified(forceRead: true)
-        await browser.addZapperRule(".concurrent", forHost: host)
+        await browser.setZapperRules(forHost: host, rules: browser.getZapperRules(forHost: host) + [".concurrent"])
         let secondEdit = await app.replaceZapperRule(expected[1], with: ".edited-again", forHost: host)
         precondition(secondEdit)
         precondition(app.getZapperRules(forHost: host).contains(".concurrent"))

@@ -293,19 +293,6 @@ extension View {
         }
     }
 
-    @ViewBuilder
-    func glassButtonStyleCompat() -> some View {
-        #if os(iOS)
-        if #available(iOS 26.0, *) {
-            buttonStyle(.glass)
-        } else {
-            buttonStyle(.borderless)
-        }
-        #else
-        buttonStyle(.borderless)
-        #endif
-    }
-
     /// Plain-styled card and icon buttons on macOS otherwise keep a blue focus
     /// ring after a click, which reads as a stray highlight.
     @ViewBuilder
@@ -405,12 +392,6 @@ extension CompatibleLabeledContent where Label == Text {
         self.init(content: content) {
             Text(titleKey)
         }
-    }
-}
-
-extension AnyTransition {
-    static var blurReplaceCompat: AnyTransition {
-        .opacity.combined(with: .scale(scale: 0.98))
     }
 }
 

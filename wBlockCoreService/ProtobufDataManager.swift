@@ -1031,17 +1031,6 @@ public class ProtobufDataManager: ObservableObject {
         }
     }
 
-    /// Refreshes the running timestamp without re-writing unrelated auto-update fields.
-    /// Used by heartbeat paths to avoid heavier state mutations.
-    @MainActor
-    public func refreshAutoUpdateRunningTimestamp(minimumIntervalSeconds: Int64 = 45) async {
-        guard appData.autoUpdate.isRunning else { return }
-        let nowTimestamp = Int64(Date().timeIntervalSince1970)
-        let previous = appData.autoUpdate.runningSinceTimestamp
-        guard previous == 0 || (nowTimestamp - previous) >= minimumIntervalSeconds else { return }
-        await updateDataImmediately { $0.autoUpdate.runningSinceTimestamp = nowTimestamp }
-    }
-
     /// Timestamp when auto-update started running
     public var autoUpdateRunningSinceTimestamp: Int64 {
         appData.autoUpdate.runningSinceTimestamp
@@ -1052,11 +1041,6 @@ public class ProtobufDataManager: ObservableObject {
         appData.autoUpdate.filterEtags[uuid]
     }
 
-    @MainActor
-    public func setFilterEtag(_ uuid: String, etag: String?) async {
-        await setFilterValidators(uuid, etag: etag, lastModified: nil, updateLastModified: false)
-    }
-
     /// Get Last-Modified header for a specific filter UUID
     public func getFilterLastModified(_ uuid: String) -> String? {
         appData.autoUpdate.filterLastModified[uuid]
@@ -1065,15 +1049,10 @@ public class ProtobufDataManager: ObservableObject {
     /// Every stored Last-Modified header, keyed by filter UUID string.
     public var filterLastModified: [String: String] { appData.autoUpdate.filterLastModified }
 
-    @MainActor
-    public func setFilterLastModified(_ uuid: String, lastModified: String?) async {
-        await setFilterValidators(uuid, etag: nil, lastModified: lastModified, updateETag: false)
-    }
-
     /// Sets both ETag and Last-Modified validators for a filter in a single write.
     @MainActor
     public func setFilterValidators(_ uuid: String, etag: String?, lastModified: String?) async {
-        await setFilterValidators(uuid, etag: etag, lastModified: lastModified, updateETag: true, updateLastModified: true)
+        await setFilterValidators([uuid: (etag, lastModified)])
     }
 
     /// Unix time of the last successful conditional check for a filter UUID.
@@ -1125,32 +1104,6 @@ public class ProtobufDataManager: ObservableObject {
                 }
 
                 if let lastModified = update.lastModified {
-                    data.autoUpdate.filterLastModified[uuid] = lastModified
-                } else {
-                    data.autoUpdate.filterLastModified.removeValue(forKey: uuid)
-                }
-            }
-        }
-    }
-
-    @MainActor
-    private func setFilterValidators(
-        _ uuid: String,
-        etag: String?,
-        lastModified: String?,
-        updateETag: Bool = true,
-        updateLastModified: Bool = true
-    ) async {
-        await updateDataImmediately { data in
-            if updateETag {
-                if let etag = etag {
-                    data.autoUpdate.filterEtags[uuid] = etag
-                } else {
-                    data.autoUpdate.filterEtags.removeValue(forKey: uuid)
-                }
-            }
-            if updateLastModified {
-                if let lastModified = lastModified {
                     data.autoUpdate.filterLastModified[uuid] = lastModified
                 } else {
                     data.autoUpdate.filterLastModified.removeValue(forKey: uuid)
@@ -1366,23 +1319,6 @@ public class ProtobufDataManager: ObservableObject {
         }
     }
 
-    /// Adds a single selector to the host's list if not already present.
-    /// Also clears any matching pending deletion (the user re-created a previously deleted rule).
-    @MainActor
-    public func addZapperRule(_ selector: String, forHost host: String) async {
-        let trimmed = selector.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        await updateDataImmediately { data in
-            var ruleList = data.extensionData.zapperRulesByHost[host] ?? Wblock_Data_ZapperRuleList()
-            if !ruleList.selectors.contains(trimmed) {
-                ruleList.selectors.append(trimmed)
-            }
-            ruleList.pendingDeletions.removeAll { $0 == trimmed }
-            data.extensionData.zapperRulesByHost[host] = ruleList
-            data.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
-        }
-    }
-
     /// Replaces a saved selector in place, preserving site state and retiring the old selector.
     /// The disk transaction checks the original again so a stale editor cannot recreate a deleted rule.
     @MainActor
@@ -1477,54 +1413,6 @@ public class ProtobufDataManager: ObservableObject {
                 changed = true
             }
             if changed { data.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970) }
-        }
-    }
-
-    /// Returns and clears pending deletions for a host. Used by the sync handler to
-    /// filter out rules deleted from the app before the extension could be notified.
-    @MainActor
-    public func consumeZapperPendingDeletions(forHost host: String) async -> [String] {
-        pendingSaveTask?.cancel()
-
-        do {
-            let mutation = try await diskStore.mutateAppDataAtomically(
-                at: dataFileURL,
-                backupURL: backupFileURL,
-                versionURL: dataVersionFileURL
-            ) { data in
-                guard var ruleList = data.extensionData.zapperRulesByHost[host],
-                      !ruleList.pendingDeletions.isEmpty else {
-                    return [String]()
-                }
-
-                let deletions = ruleList.pendingDeletions
-                ruleList.pendingDeletions.removeAll()
-
-                if ruleList.selectors.isEmpty {
-                    data.extensionData.zapperRulesByHost.removeValue(forKey: host)
-                } else {
-                    data.extensionData.zapperRulesByHost[host] = ruleList
-                }
-                data.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
-                return deletions
-            }
-
-            appData = mutation.appData
-            lastSavedData = mutation.rawData
-            lastLoadedDataFileModificationDate = mutation.modificationDate
-            lastLoadedDataVersion = mutation.version
-            lastError = nil
-
-            if mutation.didWrite {
-                logger.info("✅ Saved protobuf data (\(mutation.rawData.count) bytes)")
-                didSaveDataSubject.send()
-            }
-
-            return mutation.result
-        } catch {
-            logger.error("❌ Failed to consume pending zapper deletions: \(error.localizedDescription)")
-            lastError = error
-            return []
         }
     }
 

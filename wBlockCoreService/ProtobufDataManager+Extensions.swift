@@ -283,21 +283,6 @@ extension ProtobufDataManager {
         UserScriptManager.invalidateDocumentStartExecutionCache()
     }
     
-    public func addWhitelistedDomain(_ domain: String) async {
-        await persistWhitelistedDomains { disabledSites in
-            guard !disabledSites.contains(domain) else { return false }
-            disabledSites.append(domain)
-            return true
-        }
-    }
-    
-    public func removeWhitelistedDomain(_ domain: String) async {
-        await persistWhitelistedDomains { disabledSites in
-            disabledSites.removeAll { $0 == domain }
-            return true
-        }
-    }
-    
     public func setWhitelistedDomains(_ domains: [String]) async {
         await persistWhitelistedDomains { disabledSites in
             disabledSites = domains
@@ -437,30 +422,6 @@ extension ProtobufDataManager {
         }
     }
 
-    // MARK: - App Settings
-    public func updateAppSettings(
-        hasCompletedOnboarding: Bool? = nil,
-        selectedBlockingLevel: String? = nil,
-        showAdvancedFeatures: Bool? = nil
-    ) async {
-        var updatedData = appData
-        
-        if let hasCompletedOnboarding = hasCompletedOnboarding {
-            updatedData.settings.hasCompletedOnboarding_p = hasCompletedOnboarding
-        }
-        
-        if let selectedBlockingLevel = selectedBlockingLevel {
-            updatedData.settings.selectedBlockingLevel = selectedBlockingLevel
-        }
-        
-        if let showAdvancedFeatures = showAdvancedFeatures {
-            updatedData.settings.showAdvancedFeatures = showAdvancedFeatures
-        }
-        
-        appData = updatedData
-        saveData()
-    }
-    
     // MARK: - Rule Count Management
     public func updateRuleCounts(
         lastRuleCount: Int? = nil,

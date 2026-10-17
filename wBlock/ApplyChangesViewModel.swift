@@ -90,10 +90,6 @@ struct ApplyChangesState: Equatable {
         ApplyChangesPhaseProgress(phase: $0, status: .pending)
     }
     var summary: ApplyChangesSummary? = nil
-
-    var totalUpdatesFound: Int {
-        filterUpdatesFound + scriptsUpdatedCount
-    }
 }
 
 private extension ClosedRange where Bound == Double {

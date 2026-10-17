@@ -18,7 +18,6 @@ struct FilterListPresentationTests {
                                     description: "Already included in Regional", languages: ["fr"], trustLevel: "full")
         precondition(ForeignFilterOrganizer.isRecommended(regional))
         precondition(!ForeignFilterOrganizer.isRecommended(superseded))
-        precondition(regional.localizedLanguageNames(locale: Locale(identifier: "en")) == ["French", "German"])
         precondition(regional.nativeLanguageNames() == ["Deutsch", "français"])
         precondition(regional.nativeLanguageNames(among: ["fr"]) == ["français"])
         let filters = [a, privacy, b, superseded, regional]

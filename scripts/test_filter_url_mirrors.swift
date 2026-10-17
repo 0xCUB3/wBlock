@@ -4,35 +4,8 @@ import wBlockCoreService
 @main struct CatalogTest {
     static func main() {
         func check(_ value: Bool, _ message: String) { if !value { fputs("FAIL: \(message)\n", stderr); exit(1) } }
-        let target = URL(string: "https://example.com/list.txt")!
-        let old = URL(string: "https://github.com/old/list.txt")!
-        let data = Data("""
-        {"schemaVersion":1,"lists":[
-          {"name":"List","url":"https://example.com/list.txt","fallbacks":["https://cdn.example/list.txt"],"replaceFrom":["https://github.com/old/list.txt"]},
-          {"name":"Skipped","url":"https://not-built-in.example/list.txt","fallbacks":[],"replaceFrom":["https://github.com/ignored.txt"]},
-          {"name":"Kept","url":"https://other.example/list.txt","fallbacks":[]}
-        ]}
-        """.utf8)
-        let overlay = FilterCatalogOverlay.parse(data, defaultURLs: [target])
-        check(overlay?.lists.count == 2, "invalid replacement target only skips entry")
-        check(overlay?.fallbacks(for: FilterList(name: "List", url: target, category: .ads)).isEmpty == true, "untrusted overlay fallback stripped")
-        let input = [FilterList(name: "List", url: old, category: .ads)]
-        check(overlay?.applyReplacements(to: input, defaultURLs: [target]).first?.url == target, "replacement applied")
-        let customOld = [FilterList(name: "Mine", url: old, category: .custom, isCustom: true)]
-        check(overlay?.applyReplacements(to: customOld, defaultURLs: [target]).first?.url == old, "custom list keeps its URL")
-
         let safari = URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/2_optimized.txt")!
         let track = URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_17_TrackParam/filter.txt")!
-        let forbiddenData = Data("""
-        {"schemaVersion":1,"lists":[
-          {"name":"Base","url":"\(safari.absoluteString)","fallbacks":["https://filters.adtidy.org/ios/filters/2.txt"]},
-          {"name":"Track","url":"\(track.absoluteString)","fallbacks":["https://filters.adtidy.org/ios/filters/17.txt"]}
-        ]}
-        """.utf8)
-        let forbidden = FilterCatalogOverlay.parse(forbiddenData, defaultURLs: [safari, track])!
-        check(!forbidden.fallbacks(for: FilterList(name: "Base", url: safari, category: .ads)).contains { $0.path.contains("/ios/filters/") }, "ios fallback stripped")
-        check(forbidden.fallbacks(for: FilterList(name: "Track", url: track, category: .ads)).allSatisfy { $0.host != "filters.adtidy.org" }, "filter 17 adtidy fallback stripped")
-
         let safariMirrors = FilterListURLMirror.fallbackURLs(for: safari).map(\.absoluteString)
         check(safariMirrors.contains("https://filters.adtidy.org/extension/safari/filters/2_optimized.txt"), "adtidy mirror")
         check(safariMirrors.contains("https://cdn.jsdelivr.net/gh/AdguardTeam/FiltersRegistry@master/platforms/extension/safari/filters/2_optimized.txt"), "jsdelivr mirror")
@@ -59,14 +32,6 @@ import wBlockCoreService
         check(FilterListURLMirror.fallbackURLs(for: track).allSatisfy { $0.host == "cdn.jsdelivr.net" }, "filter 17 mirror")
         check(FilterListURLMirror.fallbackURLs(for: URL(string: "https://cdn.jsdelivr.net/gh/a/b@main/x.txt")!).isEmpty, "no duplicate jsdelivr")
 
-        let extraJs = "https://cdn.jsdelivr.net/gh/AdguardTeam/FiltersRegistry@master/platforms/extension/safari/filters/2.txt"
-        let mixedJSON = """
-        {"schemaVersion":1,"lists":[{"name":"AdGuard Base Filter","url":"\(safari.absoluteString)","fallbacks":["https://evil.example/x.txt","\(extraJs)"]}]}
-        """
-        let mixed = FilterCatalogOverlay.parse(Data(mixedJSON.utf8), defaultURLs: [safari])!
-        let mixedFallbacks = mixed.fallbacks(for: FilterList(name: "AdGuard Base Filter", url: safari, category: .ads))
-        check(!mixedFallbacks.contains { $0.host == "evil.example" }, "attacker overlay fallback stripped")
-        check(!mixedFallbacks.contains { $0.absoluteString == extraJs }, "full fallback cannot replace optimized source")
         for filename in ["2.txt", "2_optimized.txt"] {
             let cdn = URL(string: "https://filters.adtidy.org/extension/safari/filters/\(filename)")!
             let registry = URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/\(filename)")!
@@ -80,29 +45,6 @@ import wBlockCoreService
         let wrongList = URL(string: "https://cdn.jsdelivr.net/gh/AdguardTeam/FiltersRegistry@master/platforms/extension/safari/filters/3_optimized.txt")!
         check(!FilterListURLMirror.allowsFallback(primary: safari, fallback: wrongList), "mirror keeps list identity")
         check(FilterListURLMirror.fallbackURLs(for: URL(string: "https://filters.adtidy.org/unknown.txt")!).isEmpty, "unknown CDN path has no inferred mirror")
-        let generated = FilterListURLMirror.fallbackURLs(for: safari)
-        let orderedJSON = """
-        {"schemaVersion":1,"lists":[{"name":"Base","url":"\(safari)","fallbacks":["\(generated[1])","\(generated[0])","\(generated[1])"]}]}
-        """
-        let ordered = FilterCatalogOverlay.parse(Data(orderedJSON.utf8), defaultURLs: [safari])!
-        let builtIn = FilterList(name: "Base", url: safari, category: .ads)
-        check(ordered.fallbacks(for: builtIn) == generated.reversed(), "explicit order precedes inferred mirrors without duplicates")
-        FilterCatalogRemote.install(ordered)
-        check(FilterCatalogRemote.fallbacks(for: builtIn) == ordered.fallbacks(for: builtIn), "presentation and downloader share resolved chain")
-        var customCopy = builtIn
-        customCopy.isCustom = true
-        check(FilterCatalogRemote.fallbacks(for: customCopy) == generated, "overlay ordering does not change custom lists")
-        FilterCatalogRemote.install(nil)
-
-        let custom = FilterList(name: "AdGuard Base Filter", url: URL(string: "https://example.com/custom.txt")!, category: .ads, isCustom: true)
-        check(!mixed.fallbacks(for: custom).contains { $0.host == "filters.adtidy.org" }, "custom list does not inherit built-in fallbacks")
-        check(FilterCatalogRemote.fallbacks(for: custom) == FilterListURLMirror.fallbackURLs(for: custom.url), "custom remote fallbacks are mirrors only")
-
-        let http = Data("{\"schemaVersion\":1,\"lists\":[{\"name\":\"bad\",\"url\":\"http://example.com/list.txt\"}]}".utf8)
-        check(FilterCatalogOverlay.parse(http, defaultURLs: []) == nil, "http rejected")
-        let empty = FilterCatalogOverlay.parse(Data("{\"schemaVersion\":1,\"lists\":[]}".utf8), defaultURLs: [])
-        check(empty?.lists.isEmpty == true, "empty overlay")
-        check(FilterCatalogOverlay.parse(Data("{\"schemaVersion\":2,\"lists\":[]}".utf8), defaultURLs: []) == nil, "schema")
         print("PASS")
     }
 }

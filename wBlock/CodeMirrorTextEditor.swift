@@ -11,7 +11,6 @@ struct CodeMirrorDocumentAnalysis: Equatable {
 
 @MainActor
 final class CodeMirrorEditorController: ObservableObject {
-    fileprivate let initialText: String
     fileprivate let isUserStyle: Bool
     fileprivate var documentText: String
     fileprivate var lineKinds: [Int: String] = [:]
@@ -26,7 +25,6 @@ final class CodeMirrorEditorController: ObservableObject {
     @Published private(set) var canRedo = false
 
     init(text: String, isUserStyle: Bool = false) {
-        self.initialText = text
         self.isUserStyle = isUserStyle
         self.documentText = text
     }
@@ -46,14 +44,6 @@ final class CodeMirrorEditorController: ObservableObject {
 
     func focus() {
         bridge?.focus()
-    }
-
-    func discardChanges() {
-        documentText = initialText
-        lineKinds = [:]
-        isDocumentClean = true
-        updateDirtyState(false)
-        bridge?.resetDocument(to: initialText, lineKinds: [:], markClean: true)
     }
 
     func replaceText(_ text: String, lineKinds: [Int: String] = [:], markClean: Bool = false) {

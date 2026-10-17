@@ -76,11 +76,6 @@ public enum UserStyleSupport {
         return nil
     }
 
-    public static func expectedPreprocessorMismatch(for url: URL, declared: String) -> Bool {
-        guard let expected = expectedPreprocessor(for: url) else { return false }
-        return UserStylePreprocessorService.normalize(declared) != expected
-    }
-
     /// Preprocessors wBlock can apply natively or compile in the bounded offline
     /// WebKit compiler host. PostCSS is the fixed nested-plugin backend only.
     public static func isPreprocessorSupported(_ preprocessor: String) -> Bool {

@@ -51,7 +51,6 @@
 "%@ source → %@ expanded rules" = "%@ 条源规则 → %@ 条展开规则";
 "(%@) source rules)" = "(%@) 条源规则)";
 "(\\(sourceCount.formatted()) source rules)" = "(\\(sourceCount.formatted()) 条源规则)";
-"(empty rule)" = "(空规则)";
 "(pending)" = "(待处理)";
 "1." = "1.";
 "1h" = "1小时";
@@ -79,13 +78,11 @@
 "Add Filter" = "添加过滤器";
 "Add Filter List" = "添加过滤器列表";
 "Add Filter List…" = "添加过滤器列表…";
-"Add Mode" = "添加模式";
 "Add URLs" = "添加 URL";
 "Add Userscript or Userstyle" = "添加用户脚本或用户样式";
 "Add Userscript or Userstyle…" = "添加用户脚本或用户样式…";
 "Add userscripts and userstyles to customize your browsing experience" = "添加用户脚本和用户样式，自定义你的浏览体验";
 "Added custom filter" = "已添加自定义过滤器";
-"Added sites are whitelisted: wBlock is completely turned off on them." = "添加的网站会列入白名单：wBlock 会在这些网站上完全关闭。";
 "Added user list" = "已添加用户列表";
 "Added userscript from editor" = "已从编辑器添加用户脚本";
 "Adding new userscript from URL" = "正在从 URL 添加新的用户脚本";
@@ -121,7 +118,6 @@
 "AdGuard Widgets" = "AdGuard Widgets";
 "Ads" = "广告";
 "Advanced engine publish failed" = "发布高级引擎失败";
-"After downloading, filter lists will be applied automatically." = "下载后，将自动应用过滤器列表。";
 "All" = "全部";
 "all" = "全部";
 "All Categories" = "所有类别";
@@ -169,22 +165,14 @@
 "Balanced defaults." = "平衡的默认设置。";
 "Base and mobile filters only." = "仅基础和移动过滤器。";
 "Base filter only." = "仅基础过滤器。";
-"Baseline Userscripts" = "基础用户脚本";
-"Baseline userscripts are enabled by default. You can adjust them here." = "基础用户脚本默认启用。你可以在这里调整。";
-"Best default" = "最佳默认选项";
 "Beta" = "Beta";
 "Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "Beta 用户脚本仍在测试中，可能会破坏页面或出现异常行为。你可以随时将其关闭。";
 "BGAppRefresh" = "后台应用程序刷新";
 "BGProcessing" = "后台处理";
 "Blocked requests (%d)" = "已拦截请求 (%d)";
 "Blocked: %d" = "已拦截：%d";
-"Blocked: 0" = "已拦截：0";
-"Blocked: 1" = "已拦截：1";
-"Blockers near the per-extension limit:" = "接近单个扩展规则上限的拦截器：";
 "Blocking" = "拦截";
 "Blocking is paused" = "拦截已暂停";
-"Blocking is paused. Content blockers are emptied until you turn this back on." = "拦截已暂停。所有过滤器、用户脚本和样式都将保持关闭，直到你重新开启。";
-"Blocking is paused. Tap Resume to re-enable." = "拦截已暂停。点击“恢复”以重新启用所有拦截。";
 "Blocking Level: %@" = "拦截级别：%@";
 "Blocking paused" = "拦截已暂停";
 "Blocking resumed" = "拦截已恢复";
@@ -211,7 +199,6 @@
 "Check for Updates" = "检查更新";
 "Checked %@" = "已检查 %@";
 "Checked %@ ago" = "%@ 前已检查";
-"Checked just now" = "刚刚检查";
 "Checking background agent…" = "正在检查后台代理…";
 "Checking for Updates" = "正在检查更新";
 "Checking for updates..." = "正在检查更新";
@@ -219,21 +206,12 @@
 "Checking for script updates..." = "正在检查脚本更新";
 "Checking for script updates... (%d/%d)" = "正在检查脚本更新 (%d/%d)";
 "Checks for wBlock filter updates and applies them when available." = "检查 wBlock 过滤器更新，并在有可用更新时应用。";
-"Choose File…" = "选择文件…";
-"Choose optional userscripts. These are disabled by default." = "选择可选用户脚本。它们默认关闭。";
-"Choose which filters and scripts to download, then apply changes." = "选择要下载的过滤器和脚本，然后应用更改。";
-"Choose your preferred blocking level. You can adjust enabled filters later." = "选择你偏好的拦截级别。你可以稍后调整已启用的过滤器。";
 "Clear" = "清除";
-"Click an element on the page to hide it." = "点击页面上的元素以将其隐藏。";
 "close" = "关闭";
-"Close search" = "关闭搜索";
-"Community options" = "社区选项";
-"Community-maintained options for additional regional coverage." = "由社区维护的额外地区覆盖选项。";
 "Completed" = "已完成";
 "Conditional check failed" = "条件检查失败";
 "Content filtering" = "内容过滤";
 "Continue" = "继续";
-"Continue Setup" = "继续设置";
 "Controls the time zone used when displaying and exporting log timestamps." = "控制显示和导出日志时间戳时使用的时区。";
 "Conversion" = "转换";
 "Conversion phase summary" = "转换阶段摘要";
@@ -243,11 +221,8 @@
 "Copy URL" = "复制 URL";
 "Copied" = "已复制";
 "Could not resolve URL from dropped item." = "无法从拖放的项目解析 URL。";
-"Country or region" = "国家或地区";
 "Country: %@" = "国家：%@";
-"Critical Setup Required" = "需要关键设置";
 "current match" = "当前匹配";
-"Current Safari rules: %@" = "当前 Safari 规则：%@";
 "Current Safari rules: %@ (near limit)" = "当前 Safari 规则：%@（接近限制）";
 "Custom" = "自定义";
 "Custom Filter" = "自定义过滤器";
@@ -255,17 +230,13 @@
 "Dandelion Sprout's Nordic Filters" = "Dandelion Sprout's Nordic Filters";
 "Dandelion Sprout's Serbo-Croatian List" = "Dandelion Sprout's Serbo-Croatian List";
 "Debug" = "调试";
-"Default filters for balanced blocking and compatibility." = "用于平衡拦截效果与兼容性的默认过滤器。";
 "Deferred" = "已推迟";
 "Delete" = "删除";
-"Drop here to move" = "拖放到此处以移动";
 "Move to" = "移动到";
 "Delete Added List" = "删除列表";
 "Description" = "描述";
-"Description (optional)" = "描述（可选）";
 "Device timezone" = "设备时区";
 "Disable" = "禁用";
-"Disable on this site" = "在此网站禁用";
 "Disabled" = "已禁用";
 "Disabled sites changed, fast rebuilding content blockers" = "停用网站已更改，正在快速重建内容拦截器";
 "Disabled sites monitor unavailable (no protobuf data directory)" = "停用网站监视器不可用（无 protobuf 数据目录）";
@@ -273,18 +244,13 @@
 "Display" = "显示";
 "Done" = "完成";
 "Close" = "关闭";
-"Download Script" = "下载脚本";
 "Downloaded" = "已下载";
 "Downloaded %d update" = "已下载 %d 个更新";
 "Downloaded %d updates" = "已下载 %d 个更新";
-"Downloaded content does not appear to be a valid filter list" = "下载的内容似乎不是有效的过滤器列表";
 "Downloaded updates before applying" = "应用前已下载更新";
 "Downloading %d update(s)..." = "正在下载 %d 个更新...";
-"Downloading and applying filter lists…" = "正在下载并应用过滤器列表…";
-"Downloading filter updates..." = "正在下载过滤器更新...";
 "Downloading selected scripts..." = "正在下载所选脚本...";
 "Downloading selected updates..." = "正在下载所选更新...";
-"Downloading Updates" = "正在下载更新";
 "due now" = "现在到期";
 "Due soon catch-up" = "即将到期的补跑";
 "Duplicate Userscripts Found" = "发现重复的用户脚本";
@@ -298,8 +264,6 @@
 "EasyPrivacy" = "EasyPrivacy";
 "Edit" = "编辑";
 "Edit Filter List" = "编辑列表";
-"Edit Name" = "重命名列表";
-"Edit User List" = "编辑列表";
 "Editor" = "编辑器";
 "Use Editor" = "使用编辑器";
 "Element zapper" = "元素清除器";
@@ -307,18 +271,12 @@
 "Enable 'wBlock Scripts' → Always Allow on Every Website" = "启用 'wBlock Scripts' → 在每个网站上始终允许";
 "Enable all 5 Content Blocker extensions" = "启用全部 5 个内容拦截扩展";
 "Enable Beta Userscript?" = "启用 Beta 用户脚本？";
-"Enable extra fixes and finish setup." = "启用额外修复并完成设置。";
 "Enable the Safari extensions so wBlock can block ads and run userscripts." = "启用 Safari 扩展，以便 wBlock 可以拦截广告并运行用户脚本。";
-"Enable the Safari extensions so wBlock can block ads." = "启用 Safari 扩展，以便 wBlock 可以拦截广告。";
 "Enabled" = "已启用";
 "Enabled Lists" = "已启用列表";
-"Enter a valid http(s) URL to a .txt, .list, or .json filter." = "请输入指向 .txt、.list 或 .json 过滤器的有效 http(s) URL。";
-"Enter Domain" = "输入域名";
 "Error" = "错误";
-"Error checking update for filter" = "检查过滤器更新时出错";
 "Error checking update for script" = "检查脚本更新时出错";
 "Error fetching filter" = "获取过滤器时出错";
-"Error fetching script" = "获取脚本时出错";
 "Estonian List" = "Estonian List";
 "Every %@" = "每 %@";
 "Every %d days" = "每 %d 天";
@@ -342,7 +300,6 @@
 "Extensions" = "扩展";
 "Extensive blocklist targeting ads, trackers, and other unwanted content." = "针对广告、跟踪器和其他不需要的内容的广泛阻止列表。";
 "Failed" = "失败";
-"Failed reading user list file" = "读取用户列表文件失败";
 "Failed saving user list" = "保存用户列表失败";
 "Failed saving user list edits" = "保存用户列表编辑失败";
 "Failed to access shared storage." = "无法访问共享存储。";
@@ -351,18 +308,13 @@
 "Failed to clear extensions and advanced engine" = "清除扩展和高级引擎失败";
 "Failed to clear filter engine during onboarding reset" = "引导重置期间清除过滤器引擎失败";
 "Failed to convert rules for blocker" = "转换拦截器的规则失败";
-"Failed to create backup." = "无法创建备份。";
-"Failed to decode filter content" = "解码过滤器内容失败";
 "Failed to download custom filter" = "下载自定义过滤器失败";
 "Failed to export logs" = "导出日志失败";
 "Failed to fetch filter - HTTP error" = "获取过滤器失败 - HTTP 错误";
-"Failed to fetch script" = "获取脚本失败";
 "Failed to import dropped userscript" = "导入拖放的用户脚本失败";
 "Failed to load dropped item" = "加载拖放的项目失败";
 "Failed to prepare removeparam DNR rules" = "准备 removeparam DNR 规则失败";
-"Failed to process one or more pre-apply filter updates" = "处理应用前的一个或多个过滤器更新失败";
 "Failed to read backup: %@" = "无法读取备份：%@";
-"Failed to read file." = "读取文件失败。";
 "Failed to read filter content" = "读取过滤器内容失败";
 "Failed to read local content for rule counting" = "读取本地内容以统计规则失败";
 "Failed to reload %@." = "无法重新加载 %@。";
@@ -383,10 +335,8 @@
 "Fast applying disabled sites changes without full conversion" = "快速应用停用网站的更改，无需完整转换";
 "Fast disabled sites update completed" = "停用网站快速更新已完成";
 "File" = "文件";
-"File Information" = "文件信息";
 "Filter '%@' added successfully. Apply changes to enable it." = "过滤器“%@”添加成功。应用更改以启用它。";
 "Filter Apply" = "应用过滤器";
-"Filter Auto-Update" = "过滤器自动更新";
 "Filter for ad blocking on Estonian sites." = "爱沙尼亚网站上的广告拦截过滤器。";
 "Filter list not found." = "未找到过滤器列表。";
 "Filter list that specifically removes ads on websites in Spanish, Portuguese, and Brazilian Portuguese languages." = "专门移除西班牙语、葡萄牙语和巴西葡萄牙语网站上广告的过滤器列表。";
@@ -407,19 +357,15 @@
 "Filtering off" = "过滤已关闭";
 "Filters" = "过滤器";
 "Filters: %d / Userscripts: %d" = "过滤器：%d / 用户脚本：%d";
-"Filters and scripts applied successfully." = "过滤器和脚本已成功应用。";
-"Filters applied successfully." = "过滤器已成功应用。";
 "Filters Auto-Disabled" = "过滤器已自动禁用";
 "Filters update in the background, but timing is approximate. Force-quitting wBlock from the app switcher may prevent background updates until you reopen the app." = "过滤器会在后台更新，但时间只能大致保证。从应用切换器强制退出 wBlock 可能会阻止后台更新，直到你重新打开应用。";
 "FilterUpdate" = "过滤器更新";
 "Find" = "查找";
 "Finnish ad blocking filter list." = "芬兰广告拦截过滤器列表。";
-"For complete ad blocking" = "用于完整广告拦截";
 "Foreground Catch-up" = "前台补跑";
 "Foreign" = "外语";
 "Found %d update(s) available." = "发现 %d 个可用更新。";
 "Frellwit's Swedish Filter" = "Frellwit's Swedish Filter";
-"Full content loaded" = "完整内容已加载";
 "go" = "跳转";
 "Go to line" = "跳转到行";
 "Greek AdBlock Filter" = "Greek AdBlock Filter";
@@ -427,7 +373,6 @@
 "HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Handles advanced anti-adblock cases that filter rules miss." = "处理过滤规则遗漏的高级反广告拦截案例。";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "隐藏页内弹出窗口、横幅和其他不需要的页面元素。";
-"Highlighting disabled for performance" = "为提升性能已禁用高亮";
 "Hold for 3 seconds to apply without checking for updates." = "按住 3 秒即可在不检查更新的情况下应用。";
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
@@ -441,7 +386,6 @@
 "iCloud Sync doesn't have permission to write to your iCloud account." = "iCloud 同步无权写入你的 iCloud 账户。";
 "iCloud Sync hit an iCloud server error. Try again in a moment." = "iCloud 同步遇到 iCloud 服务器错误。请稍后再试。";
 "iCloud Sync is temporarily unavailable. Try again in a moment." = "iCloud 同步暂时不可用。请稍后再试。";
-"If you close wBlock with unapplied changes, we'll send a gentle nudge so nothing gets forgotten." = "如果你在有未应用更改时关闭 wBlock，我们会发送温和提醒，避免遗漏。";
 "If you use Private Browsing, also enable Allow in Private Browsing for wBlock Scripts and the 5 content blockers. Cookie notices and other scriptlets will not run in Private windows without it." = "如果使用私人浏览，请同时为 wBlock Scripts 和全部 5 个内容拦截器启用“在私人浏览中允许”。否则 Cookie 提示和其他 scriptlet 不会在私人窗口中运行。";
 "Ignoring invalid filter response" = "正在忽略无效的过滤器响应";
 "Import" = "导入";
@@ -449,117 +393,84 @@
 "Import failed: %@" = "导入失败：%@";
 "Import File" = "导入文件";
 "Import Settings" = "导入设置";
-"Imported userscript from file" = "已从文件导入用户脚本";
 "Importing…" = "正在导入…";
 "in %@ (%@)" = "%@后（%@）";
 "IndianList" = "IndianList";
 "Info" = "信息";
 "Info.plist missing" = "缺少 Info.plist";
 "Initialized with %d filter list(s)." = "已使用 %d 个过滤器列表初始化。";
-"International" = "国际";
 "Invalid" = "无效";
 "Invalid URL provided for new filter list" = "为新过滤器列表提供的 URL 无效";
 "Invalid URL provided: %@" = "提供的 URL 无效：%@";
-"iOS background refresh is best-effort; checks may run later than scheduled." = "iOS 后台刷新采用尽力而为机制，检查可能会比计划时间更晚运行。";
-"It will be enabled automatically." = "它将自动启用。";
 "KAD - Anti-Scam" = "KAD - Anti-Scam";
 "Keep All" = "全部保留";
 "Keeps filters updating when wBlock isn't running. Turn off to avoid a persistent login item; updates will then only run while wBlock is open." = "在 wBlock 未运行时也保持过滤器更新。关闭可避免常驻登录项；此后更新仅在 wBlock 打开时运行。";
 "Keeps the app in portrait even if the device is rotated." = "即使旋转设备，也保持应用为竖屏。";
 "Languages: %@" = "语言：%@";
 "Languages: \\(languageSummary)" = "语言：\\(languageSummary)";
-"Large file - scrolling may be slow" = "文件较大，滚动可能较慢";
 "last updated %@" = "上次更新 %@";
-"Last: Never" = "上次：从未";
 "Latvian List" = "Latvian List";
 "Line %d isn’t a valid filter rule." = "第 %d 行不是有效的过滤规则。";
 "Line %d isn’t a valid http(s) filter URL." = "第 %d 行不是有效的 http(s) 过滤器 URL。";
 "filterslists-KO" = "filterslists-KO";
 "Liste AR" = "Liste AR";
 "Liste FR + AdGuard French filter. Filter list that specifically removes ads on websites in French language." = "Liste FR + AdGuard French filter。专门移除法语网站上广告的过滤器列表。";
-"Load full content" = "加载完整内容";
 "Loaded local version for filter" = "已加载过滤器的本地版本";
 "Loading metadata…" = "正在加载元数据…";
-"Loading script metadata…" = "正在加载脚本元数据…";
-"Loading userscripts…" = "正在加载用户脚本…";
 "Local Import" = "本地导入";
 "Lock Portrait Orientation" = "锁定竖屏方向";
 "Logs" = "日志";
-"Logs cleared" = "日志已清除";
 "Logs will appear here as the app runs" = "应用运行时日志将显示在这里";
 "Content will be checked when you tap Add." = "轻点“添加”时将检查内容。";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "match case" = "区分大小写";
 "Minimal" = "最小";
 "Missing conversion result for blocker" = "缺少拦截器的转换结果";
-"More lists rarely means better blocking: most overlap with the recommended defaults and mainly use up rule capacity. Annoyances and regional filters are the main exceptions." = "更多列表很少意味着更好的拦截：大多数列表与推荐的默认列表重叠，主要只是占用规则容量。烦人元素过滤器和地区过滤器是主要的例外。";
 "Multipurpose" = "多用途";
 "N/A" = "N/A";
 "Name" = "名称";
 "Near Safari limit: %@" = "接近 Safari 限制：%@";
 "Network" = "网络";
 "never" = "从不";
-"Never checked" = "从未检查";
 "Next" = "下一步";
 "next" = "下一个";
 "Next: %@" = "下次：%@";
 "Next: \\(compactStatusLine)" = "下次：\\(compactStatusLine)";
-"Next: Loading…" = "下次：正在加载…";
-"Next: review matching filters." = "下一步：检查匹配的过滤器。";
 "No advanced rules found, clearing filter engine" = "未找到高级规则，正在清除过滤器引擎";
 "No background run recorded" = "没有记录到后台运行";
-"No blocked requests yet." = "尚无已拦截请求。";
 "No Content Available" = "无可用内容";
 "No description provided by the script metadata." = "脚本元数据未提供描述。";
-"No download URL for script" = "脚本没有下载 URL";
 "No filter lists selected. Clearing rules from all extensions." = "未选择过滤器列表。清除所有扩展中的规则。";
 "No filters selected - clearing all extensions" = "未选择过滤器 - 正在清除所有扩展";
 "No foreground catch-up recorded" = "没有记录到前台补跑";
 "No logs found" = "未找到日志";
 "No matching extensions for selected filters." = "所选过滤器没有匹配的扩展。";
 "No matching userscripts" = "没有匹配的用户脚本";
-"No regional filters available. However, the default filter lists already cover English and international sites." = "没有可用的地区性过滤器。不过，默认过滤器列表已覆盖英文和国际网站。";
-"No regional filters needed. The default filter lists already cover English and international sites." = "不需要地区性过滤器。默认过滤器列表已覆盖英文和国际网站。";
-"No regional userscripts available. However, the default userscripts already cover English and international sites." = "没有可用的地区性用户脚本。不过，默认用户脚本已覆盖英文和国际网站。";
-"No regional userscripts needed. The default userscripts already cover English and international sites." = "不需要地区性用户脚本。默认用户脚本已覆盖英文和国际网站。";
-"No script updates" = "没有脚本更新";
-"No silent push received yet" = "尚未收到静默推送";
 "No Site Settings" = "没有网站设置";
 "No submit attempt yet" = "尚未尝试提交";
 "No updates available" = "没有可用更新";
 "No updates available." = "没有可用的更新。";
 "No Updates Found" = "未找到更新";
 "No Userscripts" = "没有用户脚本";
-"No userscripts selected" = "未选择用户脚本";
-"No zapper rules for this site." = "此网站暂无元素清除器规则。";
 "None" = "无";
 "Not Downloaded" = "未下载";
-"Not recorded" = "未记录";
-"Not selected" = "未选择";
 "Not synced yet" = "尚未同步";
-"Notify me" = "通知我";
 "OK" = "确定";
 "on line" = "在第";
 "Online Security Filter" = "Online Security Filter";
-"Only AdGuard Base filter. Lightest protection, best compatibility." = "仅启用 AdGuard Base filter。防护最轻，兼容性最佳。";
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "仅有适用于 %@ 的社区维护列表。若你能接受，请启用它们。";
-"Only community-maintained lists available. Enable them if you're comfortable." = "目前只有社区维护的列表可用。如果你愿意，可以启用它们。";
 "Only pasted user lists can be edited." = "只能编辑粘贴的用户列表。";
 "Open Login Items" = "打开登录项";
 "Open Safari Settings" = "打开 Safari 设置";
 "Other" = "其他";
 "Overdue catch-up" = "逾期补跑";
 "Paste" = "粘贴";
-"Paste from Clipboard" = "从剪贴板粘贴";
 "Paste one or more filter URLs, one per line." = "粘贴一个或多个过滤器 URL，每行一个。";
-"Paste the direct .user.js link. wBlock will download and install it for you." = "粘贴直接的 .user.js 链接。wBlock 会为你下载并安装。";
-"Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you." = "粘贴直接的 .user.js、.js、.user.css、.less、.sass、.scss、.styl 或 .pcss 链接。wBlock 会为你下载并安装。";
 "Pause Blocking" = "暂停拦截";
 "Paused Components" = "已暂停的组件";
 "Pausing blocking..." = "正在暂停拦截…";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";
 "Dandelion Sprout's Anti-Malware List" = "Dandelion Sprout's Anti-Malware List";
-"Pick your base blocking level." = "选择你的基础拦截级别。";
 "Prepared removeparam DNR rules" = "已准备 removeparam DNR 规则";
 "Preparing %d extension" = "正在准备 %d 个扩展";
 "Preparing %d extensions" = "正在准备 %d 个扩展";
@@ -571,7 +482,6 @@
 "Progress" = "进度";
 "Protects against suspicious URLs, phishing sites, and unwanted software." = "防范可疑 URL、网络钓鱼站点和不需要的软件。";
 "Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = "提供以 .js、.user.js、.user.css、.less、.sass、.scss、.styl 或 .pcss 结尾的有效 http:// 或 https:// 链接";
-"Provide a valid https:// link ending in .user.js" = "请提供以 .user.js 结尾的有效 https:// 链接";
 "Psst! You forgot something!" = "嘘！你忘了点什么！";
 "Quit Without Applying" = "退出且不应用";
 "Reading Files" = "正在读取文件";
@@ -584,7 +494,6 @@
 "Refresh" = "刷新";
 "Regional" = "地区";
 "Regional & Language" = "地区与语言";
-"Regional filters" = "地区过滤器";
 "Regional filters: %@" = "地区过滤器：%@";
 "Registered" = "已注册";
 "Registration: %@" = "注册：%@";
@@ -593,8 +502,6 @@
 "Reload phase summary" = "重新加载阶段摘要";
 "Reloading Extensions" = "正在重新加载扩展";
 "Reloading Safari extensions..." = "正在重新加载 Safari 扩展...";
-"Reminder notifications" = "提醒通知";
-"Reminders" = "提醒";
 "Remove" = "移除";
 "Remove Older Versions" = "移除旧版本";
 "Removed custom filter" = "已移除自定义过滤器";
@@ -605,17 +512,13 @@
 "replace all" = "全部替换";
 "replaced $ matches" = "已替换 $ 处匹配";
 "replaced match on line $" = "已替换第 $ 行的匹配";
-"Report an Issue" = "报告问题";
 "Required for userscripts, advanced ad blocking, and cleaner features" = "用户脚本、高级广告拦截和清理功能所必需";
-"Required for YouTube ad blocking and much more" = "YouTube 广告拦截及更多功能所必需";
 "The selected file is too large. Maximum size is 10 MB." = "所选文件太大。最大大小为 10 MB。";
-"Requirements" = "要求";
 "Reset Site Settings" = "重置网站设置";
 "Resetting…" = "正在重置…";
 "Restart" = "重新启动";
 "Restart Onboarding" = "重新开始引导";
 "Restart Onboarding?" = "重新开始引导？";
-"Restart Onboarding…" = "重新开始引导…";
 "Restarting…" = "正在重启…";
 "Restore" = "恢复";
 "Restore from backup…" = "从备份恢复…";
@@ -623,15 +526,11 @@
 "Resume" = "恢复";
 "Resume Blocking" = "恢复拦截";
 "Return of the YouTube Dislike." = "YouTube “不喜欢”数的回归。";
-"Review your choices and apply settings." = "确认你的选择并应用设置。";
 "road-block light" = "road-block light";
 "Romanian ad blocking filter subscription." = "罗马尼亚广告拦截过滤器订阅。";
-"Rule deleted" = "规则已删除";
 "Rule limit exceeded for blocker" = "拦截器的规则上限已超出";
-"Rule Limit Warning" = "规则限制警告";
 "Rules" = "规则";
 "Run on this site" = "在此网站运行";
-"Safari limits each content blocker extension to %@ rules.\\nTotal capacity (all wBlock blockers): %@ rules.\\n\\n%@\\n\\nwBlock distributes your enabled filter lists across multiple blockers to maximize capacity, but you may still hit Safari's limits if you enable too many large lists." = "Safari 将每个内容拦截器扩展限制为 %@ 条规则。\\n总容量（所有 wBlock 拦截器）：%@ 条规则。\\n\\n%@\\n\\nwBlock 将启用的过滤器列表分布在多个拦截器之间，以最大限度地提高容量，但如果启用太多大型列表，你仍然可能会达到 Safari 的限制。";
 "Safari limits each Content Blocker extension to 150,000 rules. wBlock automatically balances and compiles rules across all 5 slots." = "Safari 将每个内容拦截器扩展限制为 150,000 条规则。wBlock 会自动在所有 5 个槽位中平衡并编译规则。";
 "Safari Rule Capacity" = "Safari 规则容量";
 "Safari Rules" = "Safari 规则";
@@ -641,7 +540,6 @@
 "Scheduler error" = "调度器错误";
 "Scheduling: %@" = "调度：%@";
 "Script Content" = "脚本内容";
-"Script or Style URL" = "脚本或样式 URL";
 "Scripts" = "脚本";
 "Search" = "搜索";
 "Search filters" = "搜索过滤器";
@@ -649,27 +547,19 @@
 "Search scripts" = "搜索脚本";
 "Security" = "安全";
 "Select any userscripts you want to enable. These add extra features or fixes. You can always add more in the settings later." = "选择你想启用的用户脚本。它们可提供额外功能或修复。你也可以稍后在设置中继续添加。";
-"Select the languages (one or more) you browse websites in. wBlock only uses this to recommend regional ad filters." = "选择你浏览网站时使用的一种或多种语言。wBlock 只会用它来推荐地区性广告过滤器。";
 "Select the languages you browse in. wBlock will automatically recommend matching regional filters and features." = "选择你浏览网页所用的语言。wBlock 将自动推荐匹配的地区过滤器和功能。";
-"Send me reminders about unapplied changes" = "在有未应用更改时提醒我";
 "Set up wBlock" = "设置 wBlock";
 "Setting userscript enabled state" = "正在设置用户脚本的启用状态";
 "Settings" = "设置";
 "Settings → Apps → Safari → Extensions" = "设置 → 应用 → Safari → 扩展";
 "Setup Instructions" = "设置说明";
-"Ships with the app" = "随应用提供";
-"Show blocked item count in toolbar" = "在工具栏中显示已拦截项数量";
 "Show Enabled Only" = "仅显示已启用项";
-"Show preview only" = "仅显示预览";
 "Showing preview (%@ of %@)" = "显示预览（%@ / %@）";
 "Showing preview (%@) of %@))" = "显示预览 (%@) / %@))";
 "Showing preview (\\(formatFileSize(previewLength)) of \\(formatFileSize(script.content.count)))" = "显示预览 (\\(formatFileSize(previewLength)) / \\(formatFileSize(script.content.count)))";
-"Silent Push" = "静默推送";
 "Site Settings" = "网站设置";
 "Size:" = "大小：";
-"Skip for now" = "暂时跳过";
 "Skipped overlapping apply request" = "已跳过重叠的应用请求";
-"Skipped pause request while apply is in progress" = "应用进行中，已跳过暂停请求";
 "Skipping update signal due to non-filter response body" = "因响应正文不是过滤器，跳过更新信号";
 "Some filters were automatically disabled because Safari's rule limits were exceeded." = "由于超过 Safari 的规则限制，一些过滤器已被自动禁用。";
 "Some pre-apply filter updates failed; continuing with available lists" = "部分应用前过滤器更新失败；将使用可用列表继续";
@@ -681,7 +571,6 @@
 "Fallbacks" = "备用 URL";
 "If the source URL fails, wBlock tries these URLs in order." = "如果来源 URL 访问失败，wBlock 会依次尝试这些 URL。";
 "No fallback URLs are configured for this list." = "此列表未配置备用 URL。";
-"Regional lists add language-specific coverage to the default filters for English and international sites. If your language is missing, no separate regional list is available." = "地区列表在适用于英语和国际网站的默认过滤器基础上，添加针对特定语言的过滤规则。如果找不到你的语言，说明没有单独的地区列表可用。";
 "Start Fresh" = "重新开始";
 "Started %@" = "已开始 %@";
 "Starting conversion..." = "正在开始转换...";
@@ -697,11 +586,9 @@
 "Successfully downloaded custom filter" = "已成功下载自定义过滤器";
 "Successfully updated script" = "已成功更新脚本";
 "Summary" = "摘要";
-"Supports .user.js, .js, .user.css, and .less files. Local imports won't auto-update; re-import to replace." = "支持 .user.js、.js、.user.css 和 .less 文件。本地导入不会自动更新；重新导入即可替换。";
 "Sync" = "同步";
 "Sync across devices" = "跨设备同步";
 "Sync Now" = "立即同步";
-"Sync settings across devices" = "跨设备同步设置";
 "Sync Timestamps with Device Time Zone" = "将时间戳与设备时区同步";
 "Sync Userscript Enabled States" = "同步用户脚本启用状态";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "在设备间同步你的过滤器选择、自定义列表、用户脚本和白名单。";
@@ -717,15 +604,10 @@
 "Synced just now" = "刚刚同步";
 "Synced today at %@" = "今天 %@ 已同步";
 "Synced yesterday at %@" = "昨天 %@ 已同步";
-"Syncing iCloud configuration…" = "正在同步 iCloud 配置…";
 "System" = "系统";
-"Tap to review userscript guidelines." = "点按以查看用户脚本指南。";
 "Auto-update: %@" = "自动更新：%@";
-"Tell us where you browse so we can enable the right regional filters." = "告诉我们你主要浏览哪些地区，以便启用合适的地区过滤器。";
-"Temporarily disable all content blockers without turning them off in Safari Settings." = "暂时关闭所有拦截（内容拦截器、用户脚本和样式），而无需在 Safari 设置中关闭扩展。";
 "That doesn't look like a filter list." = "这看起来不像一个过滤器列表。";
 "That name is already used by another filter list." = "该名称已被其他过滤器列表使用。";
-"That title is already used by another filter list." = "该标题已被其他过滤器列表使用。";
 "The %@ userscript requires the %@" = "%@ 用户脚本需要 %@";
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "\\(bypassScript.name) 用户脚本需要 \\(filterName)";
 "The following filters were automatically disabled:
@@ -738,30 +620,22 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 如需重新启用这些过滤器，请禁用其他较大的过滤器，然后再次应用更改。";
 "The following filters were automatically disabled:\\n\\n%@\\n\\nTo re-enable these filters, disable other large filters and apply changes again." = "以下过滤器已自动禁用：\\n\\n%@\\n\\n要重新启用这些过滤器，请禁用其他大型过滤器并再次应用更改。";
-"These filters add extra blocking power for your languages on top of the default lists, which already cover English and international sites. You can fine-tune them later." = "这些过滤器会在默认列表之外，为你的语言提供额外的拦截能力；默认列表已覆盖英文和国际网站。稍后可再微调。";
-"These lists are community-maintained. Enable them if you still see regional ads." = "这些列表由社区维护。如果你仍看到地区性广告，请启用它们。";
-"This doesn't change the app's display language, which always follows your device settings." = "这不会更改应用的显示语言；显示语言始终跟随你的设备设置。";
 "This list covers websites for Norway, Denmark, Iceland, Danish territories, and the Sami indigenous population." = "该列表涵盖挪威、丹麦、冰岛、丹麦领土和萨米原住民的网站。";
 "This may take a while" = "这可能需要一些时间";
 "This removes all settings for %@." = "这将移除 %@ 的所有设置。";
 "This removes the whitelist entry, userscript exceptions, and zapper rules for %@." = "这会移除 %@ 的白名单条目、用户脚本例外和元素清除器规则。";
-"This script hasn't been downloaded yet." = "此脚本尚未下载。";
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "这将移除所有过滤器、用户脚本和偏好设置，然后重新启动引导流程。";
-"This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "这将用备份中的设置替换你当前的过滤器选择、白名单和元素清除器规则。";
 "This will reset all filters, userscripts, and preferences." = "这将重置所有过滤器、用户脚本和偏好设置。";
 "Timed out" = "超时";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield 可帮助拦截 Ad-Shield 在匹配站点上重新插入的广告。";
 "Lets ad blockers quickly resist Ad-Shield, which reinserts ads on matching sites after filter lists hide them." = "让广告拦截器快速对抗 Ad-Shield；它会在过滤器列表隐藏广告后，在匹配的网站上重新插入广告。";
 "Title" = "标题";
-"Title (optional)" = "标题（可选）";
 "Title is required." = "必须填写名称。";
-"Titles will be created from each URL." = "将为每个 URL 创建标题。";
 "Too many pending tasks" = "待处理任务过多";
 "Total Capacity" = "总容量";
 "Trace" = "跟踪";
 "Trust: %@" = "信任度：%@";
 "Trust: \\(trust.capitalized)" = "信任度：\\(trust.capitalized)";
-"Tune filters for your country and language." = "根据你的国家/地区和语言调整过滤器。";
 "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "关闭此项可在 wBlock 批量或按计划更新脚本时保留当前版本。";
 "Unable to access shared container" = "无法访问共享容器";
 "Unapplied Filter Changes" = "未应用的过滤器更改";
@@ -776,7 +650,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Update & Apply" = "更新并应用";
 "Update Filters" = "更新过滤器";
 "Update Interval" = "更新间隔";
-"Update Script" = "更新脚本";
 "Update wBlock Filters" = "更新 wBlock 过滤器";
 "Updated %d script" = "已更新 %d 个脚本";
 "Updated %d scripts" = "已更新 %d 个脚本";
@@ -784,15 +657,12 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Updated %d/%d extensions in %@" = "已在 %@ 内更新 %d/%d 个扩展";
 "Updated custom filter list" = "已更新自定义过滤器列表";
 "Updates" = "更新";
-"Updates Paused" = "更新已暂停";
 "Updating disabled sites..." = "正在更新已禁用的网站...";
-"Updating Scripts" = "正在检查用户脚本更新";
 "Updating…" = "正在更新…";
 "URL" = "URL";
 "URL Patterns (%@)" = "URL 模式 (%@)";
 "URL Patterns (%d)" = "URL 模式 (%d)";
 "URL Patterns (\\(script.matches.count))" = "URL 模式 (\\(script.matches.count))";
-"URL requirements" = "URL 要求";
 "URLs" = "URL";
 "Use existing iCloud setup?" = "使用现有的 iCloud 设置？";
 "Use iCloud Setup" = "使用 iCloud 设置";
@@ -822,22 +692,15 @@ To re-enable these filters, disable other large filters and apply changes again.
 "View Content" = "查看内容";
 "View Logs" = "查看日志";
 "Waiting" = "等待中";
-"Waiting for activity" = "等待活动";
-"Waiting for iOS background wake or app open" = "等待 iOS 后台唤醒或打开应用";
 "Warning" = "警告";
 "wBlock" = "wBlock";
-"wBlock application appeared" = "wBlock 应用已出现";
 "wBlock filter update started." = "wBlock 过滤器更新已开始。";
-"wBlock Scripts must be enabled and set to 'Allow' on all websites to block YouTube ads." = "必须启用 wBlock Scripts 并将其设置为在所有网站上“允许”以拦截 YouTube 广告。";
 "wBlock Scripts must be enabled and set to 'Always Allow on All Websites' for userscripts and advanced blocking." = "要使用用户脚本和高级拦截，必须启用 wBlock Scripts 并将其设置为“在所有网站上始终允许”。";
-"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' to block YouTube ads." = "必须启用 wBlock Scripts 并将其设置为“在所有网站上始终允许”以拦截 YouTube 广告。";
-"wBlock Version" = "wBlock 版本";
 "wBlock will fetch and enable the script automatically." = "wBlock 会自动获取并启用该脚本。";
 "We don't have language data for %@. Try enabling filters manually if you see regional ads." = "我们没有 %@ 的语言数据。如果你看到地区性广告，请尝试手动启用过滤器。";
 "We don't have regional filters for %@." = "我们没有适用于 %@ 的地区过滤器。";
 "We found an existing wBlock configuration in iCloud (%@). You can skip onboarding and use that instead." = "我们在 iCloud (%@) 中找到现有的 wBlock 配置。你可以跳过引导并直接使用它。";
 "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "我们在 iCloud (\\(remoteConfigUpdatedAtText)) 中找到现有的 wBlock 配置。你可以跳过引导并直接使用它。";
-"We found an existing wBlock configuration in iCloud. You can skip onboarding and use that instead." = "我们在 iCloud 中找到现有的 wBlock 配置。你可以跳过引导并直接使用它。";
 "Web extension %@" = "网页扩展 %@";
 "Blocks advertisements and other promotional page elements." = "拦截广告及其他页面推广元素。";
 "Blocks trackers, analytics, and other privacy-invasive requests." = "拦截跟踪器、分析工具及其他侵犯隐私的请求。";
@@ -864,7 +727,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "On" = "开";
 "Off" = "关";
 "You're already using the latest filters." = "你已经在使用最新的过滤器。";
-"You can always add regional filters later from Settings." = "你随时都可以稍后在设置中添加地区过滤器。";
 "You have unapplied filter changes in wBlock. Tap to apply them now!" = "你在 wBlock 中有未应用的过滤器更改。点按立即应用！";
 "You have unapplied filter changes. Do you want to apply them before quitting?" = "你有未应用的过滤器更改。要在退出前应用它们吗？";
 "Zapper rules (%d)" = "元素清除器规则 (%d)";
@@ -908,11 +770,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Disable Essential Filter?" = "要停用必要过滤器吗？";
 "Replace Existing Content?" = "要替换现有内容吗？";
 "Clear Element Zapper Rules?" = "要清除元素清除器规则吗？";
-"Clear All" = "全部清除";
 "This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "此推荐过滤器是 wBlock 基本保护的一部分。停用后，拦截范围可能会缩小。";
-"Pasting will replace the existing editor content." = "粘贴会替换编辑器中的现有内容。";
 "Pasting will replace the existing content." = "粘贴会替换现有内容。";
-"This removes all saved element zapper rules from every site." = "这会删除所有网站中保存的元素清除器规则。";
 "Clear Element Zapper Rules" = "清除元素清除器规则";
 "Advanced" = "高级";
 "Help" = "帮助";
@@ -925,17 +784,10 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Privacy Policy" = "隐私政策";
 
 /* Issue 508 UI */
-"Use a valid http:// or https:// URL" = "使用有效的 http:// 或 https:// URL";
-"Include a host name" = "包含主机名";
-"Do not use a userscript URL ending in .js, .mjs, or .cjs" = "不要使用以 .js、.mjs 或 .cjs 结尾的用户脚本 URL";
 "wBlock will fetch and enable the filter list automatically" = "wBlock 将自动获取并启用过滤器列表";
 
 /* Issue 508 UI follow-up */
-"Starts with http:// or https://" = "以 http:// 或 https:// 开头";
-"Ends with .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = "以 .js、.user.js、.user.css、.less、.sass、.scss、.styl 或 .pcss 结尾";
-"Hosted on a trusted source" = "托管在可信来源";
 
-"The file must include userscript or userstyle metadata." = "文件必须包含用户脚本或用户样式元数据。";
 
 "Failed to clear downloaded content; apply again to retry." = "无法清除已下载的内容；请重新应用以重试。";
 "Failed to resume blocking." = "无法恢复拦截。";
@@ -949,7 +801,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Beta userscripts and scripts that are still being evaluated or may change." = "仍在评估中或可能发生变化的 Beta 用户脚本和脚本。";
 "Enabled Userscripts & Userstyles" = "已启用的用户脚本和用户样式";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "只要有选定组件处于暂停状态，暂停拦截就会开启。恢复后将还原所有组件。";
-"Temporarily pause selected components without changing their enabled settings." = "暂时暂停选定组件，不更改其启用设置。";
 
 /* Userstyle compiler diagnostics */
 "Choose a .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss file." = "选择一个 .user.js、.js、.user.css、.less、.sass、.scss、.styl 或 .pcss 文件。";
@@ -963,7 +814,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Couldn't save the edited source." = "无法保存编辑后的源代码。";
 "Userstyle source exceeds the 2 MiB limit." = "用户样式源代码超过 2 MiB 限制。";
 "Userstyle compiler resource is missing." = "缺少用户样式编译器资源。";
-"Userstyle compiler resource failed to load." = "无法加载用户样式编译器资源。";
 "Userstyle compiler input could not be serialized." = "无法序列化用户样式编译器输入。";
 "Userstyle compiler returned an invalid response." = "用户样式编译器返回了无效响应。";
 "Userstyle compiler returned no CSS." = "用户样式编译器未返回 CSS。";
@@ -975,8 +825,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Userstyle compiler timed out." = "用户样式编译器超时。";
 "Userstyle compiler must not run on the main thread." = "用户样式编译器不得在主线程上运行。";
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "面向 wBlock 的 MIT 许可证 Dark Reader API 引擎（测试版；不含完整的网站修复数据库）。";
-"Follow System Appearance" = "跟随系统外观";
-"When off, Dark Reader keeps websites dark in Light Mode." = "关闭后，Dark Reader 会在浅色模式下仍保持网站为深色。";
 "Follow System" = "跟随系统";
 "Always Dark" = "始终深色";
 "Dark" = "深色";
@@ -984,15 +832,12 @@ To re-enable these filters, disable other large filters and apply changes again.
 "%@ → %@ Safari rules" = "%@ → %@ 条 Safari 规则";
 "Cosmetic Filtering" = "外观过滤";
 "Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU." = "使用 CSS 隐藏广告占位符和其他页面元素。关闭后仅保留网络拦截，规则更少，占用 CPU 也更少。";
-"Enable DeArrow" = "启用 DeArrow";
 "Replace Titles" = "替换标题";
 "Replace Thumbnails" = "替换缩略图";
 "Random Frame When No Thumbnail" = "无缩略图时使用随机画面";
 "Show Original on Hover" = "悬停时显示原始内容";
 "About DeArrow" = "关于 DeArrow";
 "Donate to DeArrow" = "向 DeArrow 捐款";
-"DeArrow: On" = "DeArrow：开";
-"DeArrow: Off" = "DeArrow：关";
 "Check for Filter Updates" = "检查过滤器更新";
 "Check for Userscript Updates" = "检查用户脚本更新";
 "Download" = "下载";
@@ -1032,7 +877,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Last Successful Update" = "上次成功更新";
 
-"Site Actions" = "网站操作";
 
 "Pause All Components" = "暂停所有组件";
 
@@ -1056,7 +900,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Automatic" = "自动";
 
-"This script will not run on these sites. Other scripts still run." = "此脚本不会在这些网站上运行。其他脚本仍会运行。";
 
 "Operation details" = "操作详情";
 
@@ -1066,21 +909,15 @@ To re-enable these filters, disable other large filters and apply changes again.
 "URL entry mode" = "URL 输入模式";
 "Single URL" = "单个 URL";
 "Bulk URLs" = "批量 URL";
-"Enter URLs to edit each list’s name and description." = "输入 URL 以编辑每个列表的名称和描述。";
-"Names and descriptions" = "名称和描述";
 "Paste URL" = "粘贴 URL";
 "Paste URLs" = "粘贴 URL";
 
 "%@ submitted at last apply" = "上次应用时提交了 %@ 条";
 
-"Submitted at last apply" = "上次应用时提交";
 
 "Source rules submitted to the converter at last apply, not Safari’s final rule count." = "上次应用时提交给转换器的源规则，而非 Safari 的最终规则数量。";
-"Failed to persist pending filter update revision" = "无法保存待应用的过滤器更新";
 
-"Paste non-empty plain text and review it before adding." = "粘贴非空的纯文本，并在添加前检查。";
 
-"Choose a non-empty text file and review it before adding." = "选择非空的文本文件，并在添加前检查。";
 
 /* Filter update reliability */
 "A wBlock filter update is already in progress." = "wBlock 过滤器更新已在进行中。";
@@ -1104,7 +941,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Applies filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "应用过滤器列表和 scriptlet。用户脚本、元素清除器和自动播放有各自的开关。";
 "Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches. Each site includes its subdomains." = "已添加的网站会跳过过滤器列表和 scriptlet。用户脚本、元素清除器和自动播放有各自的开关。每个网站都包括其子域名。";
 "Websites" = "网站";
-"Restart…" = "重新启动…";
 "Next update: %@" = "下次更新：%@";
 "Next update" = "下次更新";
 "Enable Experimental Filter?" = "启用实验性过滤器？";
@@ -1125,7 +961,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Due Now" = "即将更新";
 "Capacity" = "容量";
 
-"Reset…" = "重置…";
 "Languages" = "语言";
 "Paste or type filter rules." = "粘贴或输入过滤规则。";
 

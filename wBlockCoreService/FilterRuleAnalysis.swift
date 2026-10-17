@@ -312,10 +312,8 @@ public struct FilterRuleAnalysis: Sendable {
         return (isException ? "@@" : "") + RuleText.lowercased(pattern) + body[dollar...]
     }
 
-    /// uBO's `##selector:remove-attr(name)` and `:remove-class(name)` read
-    /// as plain CSS to the converter, which merges them into the site's hiding
-    /// selector and invalidates every sibling rule there (#918). Rewrite them
-    /// as the equivalent AdGuard scriptlets.
+    /// Route unsupported uBO selectors through ExtendedCss instead of Safari's
+    /// merged hiding selector, and normalize unsupported network-rule options.
     public static func adGuardEquivalent(_ rule: String) -> String {
         let trimmed = String(RuleText.trimmed(rule))
         guard let marker = RuleText.range(of: "#@#", in: trimmed) ?? RuleText.range(of: "##", in: trimmed) else {
@@ -338,20 +336,6 @@ public struct FilterRuleAnalysis: Sendable {
             let selector = body[..<brace]
             let extended = selector.contains(">>>") || hasUnknownFunctionalPseudo(selector)
             return trimmed[..<marker.lowerBound] + (exception ? "#@" : "#") + (extended ? "$?#" : "$#") + body
-        }
-        for name in ["remove-attr", "remove-class"] where body.hasSuffix(")") {
-            guard let pseudo = body.range(of: ":\(name)(", options: .backwards) else { continue }
-            let selector = body[..<pseudo.lowerBound].trimmingCharacters(in: .whitespaces)
-            let argument = body[pseudo.upperBound...].dropLast().trimmingCharacters(in: .whitespaces)
-            // Regex arguments have no scriptlet form; they run as extended CSS below.
-            guard !selector.isEmpty, !argument.isEmpty, !argument.hasPrefix("/"),
-                  !argument.contains("("), !argument.contains(")") else { break }
-            let quoted = { (value: String) in
-                "'" + value.replacingOccurrences(of: "\\", with: "\\\\")
-                    .replacingOccurrences(of: "'", with: "\\'") + "'"
-            }
-            return trimmed[..<marker.lowerBound] + (exception ? "#@%#" : "#%#")
-                + "//scriptlet(\(quoted(name)), \(quoted(argument)), \(quoted(selector)))"
         }
         // Syntax Safari's CSS engine does not know, anywhere in the selector
         // (#949), would be merged into the site's shared hiding selector, and

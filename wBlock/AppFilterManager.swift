@@ -69,9 +69,6 @@ class AppFilterManager: ObservableObject {
     /// the sheet on every app switch, and view state would reset and make it flicker.
     @Published var appliedRuleCounts: AppliedRuleCounts?
     @Published var extensionsApproachingLimit: Set<String> = []
-    @Published var showingRuleLimitWarningAlert = false
-    @Published var ruleLimitWarningMessage = ""
-    @Published var ruleLimitWarningTitle = ""
 
     // Performance tracking
     @Published var lastFastUpdateTime: String = LocalizedStrings.text("N/A", comment: "Unavailable metric placeholder")
@@ -497,9 +494,6 @@ class AppFilterManager: ObservableObject {
         availableScriptUpdates = []
         ruleCountsByExtension = [:]
         extensionsApproachingLimit = []
-        showingRuleLimitWarningAlert = false
-        ruleLimitWarningMessage = ""
-        ruleLimitWarningTitle = ""
         lastRuleCount = 0
         lastFastUpdateTime = LocalizedStrings.text("N/A", comment: "Unavailable metric placeholder")
         fastUpdateCount = 0
@@ -667,16 +661,6 @@ class AppFilterManager: ObservableObject {
 
         var migratedFilterLists = loader.migrateFilterURLs(in: storedFilterLists)
         let defaultLists = loader.getDefaultFilterLists()
-        // Catalog metadata is deliberately fetched after hydration. The baked-in
-        // derivation remains available immediately and does not alter setup state.
-        let defaultURLs = Set(defaultLists.map(\.url))
-        FilterCatalogRemote.loadCached(defaultURLs: defaultURLs)
-        if let overlay = FilterCatalogRemote.cached() {
-            migratedFilterLists = overlay.applyReplacements(to: migratedFilterLists, defaultURLs: defaultURLs)
-        }
-        Task.detached(priority: .utility) {
-            await FilterCatalogRemote.fetch(using: URLSession.shared, defaultURLs: defaultURLs)
-        }
         for defaultFilter in defaultLists {
             loader.migrateBuiltInFilterFilesIfNeeded(defaultFilter)
         }
@@ -967,42 +951,5 @@ class AppFilterManager: ObservableObject {
         saveFilterListsCoalesced()
         refreshPendingChanges()
         return true
-    }
-
-    // MARK: - Rule limit UX
-
-    func showRuleLimitWarning() {
-        let ruleLimitPerBlocker = ContentBlockerService.safariContentBlockerRuleLimit
-        let platformTargets = ContentBlockerTargetManager.shared.allTargets(forPlatform: currentPlatform)
-        let totalCapacity = platformTargets.count * ruleLimitPerBlocker
-
-        let totalRules = lastRuleCount
-        guard totalRules >= totalCapacity else { return }
-
-        var message = ""
-        let currentRulesLine = LocalizedStrings.format(
-            "Current Safari rules: %@",
-            comment: "Rule limit warning current rules line",
-            totalRules.formatted()
-        )
-
-        message = LocalizedStrings.format(
-            "Safari limits each content blocker extension to %@ rules.\nTotal capacity (all wBlock blockers): %@ rules.\n\n%@\n\nwBlock distributes your enabled filter lists across multiple blockers to maximize capacity, but you may still hit Safari's limits if you enable too many large lists.",
-            comment: "Rule limit warning body",
-            ruleLimitPerBlocker.formatted(),
-            totalCapacity.formatted(),
-            currentRulesLine
-        )
-
-        message += "\n\n"
-        message += LocalizedStrings.text(
-            "More lists rarely means better blocking: most overlap with the recommended defaults and mainly use up rule capacity. Annoyances and regional filters are the main exceptions.",
-            comment: "Rule limit warning footer note about extra lists"
-        )
-
-        // The guard above already ensures we are at or over the total capacity.
-        ruleLimitWarningTitle = LocalizedStrings.text("Rule Limit Warning", comment: "Rule limit warning title")
-        ruleLimitWarningMessage = message
-        showingRuleLimitWarningAlert = true
     }
 }

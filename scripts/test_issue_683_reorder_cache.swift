@@ -59,7 +59,8 @@ struct ReorderCacheTests {
         let reordered = try compile([b, a], [d, b, c, a])
         precondition(reordered.reusedCachedBase, "reordering assigned and affinity lists must hit cache")
         precondition(first.safariRulesCount == reordered.safariRulesCount)
-        ContentBlockerIncrementalCache.invalidateInputSignature(
+        ContentBlockerIncrementalCache.saveInputSignature(
+            "force-rebuild",
             targetRulesFilename: target.rulesFilename,
             groupIdentifier: group,
             containerURL: container

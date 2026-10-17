@@ -1513,7 +1513,6 @@ public actor SharedAutoUpdateManager {
     private func checkAndFetchUpdates(filters: [FilterList]) async throws -> UpdateFetchResult {
         try Task.checkCancellation()
         let remoteFilters = filters.filter(\.canUpdateAutomatically)
-        FilterCatalogRemote.loadCached(defaultURLs: Set(remoteFilters.map { $0.url }))
 
         guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value) else {
             throw AutoUpdateError.sharedContainerUnavailable
@@ -1603,7 +1602,7 @@ public actor SharedAutoUpdateManager {
         do {
             let result = try await FilterListFetchChain.fetch(
                 session: urlSession, primaryURL: filter.url,
-                fallbackURLs: FilterCatalogRemote.fallbacks(for: filter),
+                fallbackURLs: FilterListURLMirror.fallbackURLs(for: filter.url),
                 etag: etag, lastModified: lastModified, timeout: 30)
             let data = result.data
             let http = result.response

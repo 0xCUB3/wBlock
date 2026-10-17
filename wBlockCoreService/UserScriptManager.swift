@@ -2698,11 +2698,6 @@ public class UserScriptManager: ObservableObject {
         return newUserScript
     }
 
-    public func toggleUserScript(_ userScript: UserScript) async {
-        guard let state = userScriptToggleState(for: userScript.id) else { return }
-        await setUserScript(userScript, isEnabled: !state.desired)
-    }
-
     /// Sets the enabled state for a userscript explicitly (idempotent).
     /// The intent is recorded before any download so a newer intent can cancel it.
     public func setUserScript(

@@ -51,7 +51,6 @@
 "%@ source → %@ expanded rules" = "%@ reguli sursă → %@ reguli extinse";
 "(%@) source rules)" = "(%@) reguli sursă)";
 "(\\(sourceCount.formatted()) source rules)" = "(\\(sourceCount.formatted()) reguli sursă)";
-"(empty rule)" = "(regulă goală)";
 "(pending)" = "(în așteptare)";
 "1." = "1.";
 "1h" = "1h";
@@ -79,13 +78,11 @@
 "Add Filter" = "Adaugă filtru";
 "Add Filter List" = "Adaugă listă de filtre";
 "Add Filter List…" = "Adaugă listă de filtre…";
-"Add Mode" = "Mod adăugare";
 "Add URLs" = "Adaugă URL-uri";
 "Add Userscript or Userstyle" = "Adaugă script de utilizator sau stil de utilizator";
 "Add Userscript or Userstyle…" = "Adaugă script de utilizator sau stil de utilizator…";
 "Add userscripts and userstyles to customize your browsing experience" = "Adaugă scripturi de utilizator și stiluri de utilizator pentru a-ți personaliza experiența de navigare";
 "Added custom filter" = "Filtru personalizat adăugat";
-"Added sites are whitelisted: wBlock is completely turned off on them." = "Site-urile adăugate sunt în lista albă: wBlock este complet dezactivat pe ele.";
 "Added user list" = "Listă de utilizator adăugată";
 "Added userscript from editor" = "Script de utilizator adăugat din editor";
 "Adding new userscript from URL" = "Se adaugă un script de utilizator nou din URL";
@@ -121,7 +118,6 @@
 "AdGuard Widgets" = "AdGuard Widgets";
 "Ads" = "Reclame";
 "Advanced engine publish failed" = "Publicarea motorului avansat a eșuat";
-"After downloading, filter lists will be applied automatically." = "După descărcare, listele de filtre vor fi aplicate automat.";
 "All" = "Toate";
 "all" = "toate";
 "All Categories" = "Toate categoriile";
@@ -169,22 +165,14 @@
 "Balanced defaults." = "Setări implicite echilibrate.";
 "Base and mobile filters only." = "Doar filtrele de bază și mobil.";
 "Base filter only." = "Doar filtrul de bază.";
-"Baseline Userscripts" = "Scripturi de utilizator de bază";
-"Baseline userscripts are enabled by default. You can adjust them here." = "Scripturile de utilizator de bază sunt activate implicit. Le poți ajusta aici.";
-"Best default" = "Cea mai bună opțiune implicită";
 "Beta" = "Beta";
 "Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "Scripturile de utilizator beta sunt încă în testare și pot strica pagini sau se pot comporta neașteptat. Le poți dezactiva oricând.";
 "BGAppRefresh" = "Actualizează aplicația de fundal";
 "BGProcessing" = "Procesare în fundal";
 "Blocked requests (%d)" = "Solicitări blocate (%d)";
 "Blocked: %d" = "Blocate: %d";
-"Blocked: 0" = "Blocate: 0";
-"Blocked: 1" = "Blocat: 1";
-"Blockers near the per-extension limit:" = "Blocante aproape de limita per extensie:";
 "Blocking" = "Blocare";
 "Blocking is paused" = "Blocarea este în pauză";
-"Blocking is paused. Content blockers are emptied until you turn this back on." = "Blocarea este în pauză. Toate filtrele, scripturile de utilizator și stilurile rămân dezactivate până le reactivezi.";
-"Blocking is paused. Tap Resume to re-enable." = "Blocarea este în pauză. Atinge Reia pentru a reactiva toată blocarea.";
 "Blocking Level: %@" = "Nivel de blocare: %@";
 "Blocking paused" = "Blocare în pauză";
 "Blocking resumed" = "Blocare reluată";
@@ -211,7 +199,6 @@
 "Check for Updates" = "Verifică actualizările";
 "Checked %@" = "Verificat %@";
 "Checked %@ ago" = "Verificat acum %@";
-"Checked just now" = "Verificat chiar acum";
 "Checking background agent…" = "Se verifică agentul de fundal…";
 "Checking for Updates" = "Se verifică actualizările";
 "Checking for updates..." = "Se verifică actualizări";
@@ -219,21 +206,12 @@
 "Checking for script updates..." = "Se verifică actualizările scripturilor";
 "Checking for script updates... (%d/%d)" = "Se verifică actualizările scripturilor (%d/%d)";
 "Checks for wBlock filter updates and applies them when available." = "Verifică actualizările filtrelor wBlock și le aplică atunci când sunt disponibile.";
-"Choose File…" = "Alege fișier…";
-"Choose optional userscripts. These are disabled by default." = "Alege scripturi de utilizator opționale. Sunt dezactivate implicit.";
-"Choose which filters and scripts to download, then apply changes." = "Alege ce filtre și scripturi să descarci, apoi aplică modificările.";
-"Choose your preferred blocking level. You can adjust enabled filters later." = "Alege nivelul de blocare preferat. Poți ajusta ulterior filtrele activate.";
 "Clear" = "Șterge";
-"Click an element on the page to hide it." = "Fă clic pe un element din pagină pentru a-l ascunde.";
 "close" = "închide";
-"Close search" = "Închide căutarea";
-"Community options" = "Opțiuni ale comunității";
-"Community-maintained options for additional regional coverage." = "Opțiuni întreținute de comunitate pentru acoperire regională suplimentară.";
 "Completed" = "Finalizat";
 "Conditional check failed" = "Verificarea condiționată a eșuat";
 "Content filtering" = "Filtrarea conținutului";
 "Continue" = "Continuă";
-"Continue Setup" = "Continuă configurarea";
 "Controls the time zone used when displaying and exporting log timestamps." = "Controlează fusul orar folosit la afișarea și exportarea marcajelor temporale ale jurnalului.";
 "Conversion" = "Conversie";
 "Conversion phase summary" = "Rezumat faza de conversie";
@@ -243,11 +221,8 @@
 "Copy URL" = "Copiază URL-ul";
 "Copied" = "Copiat";
 "Could not resolve URL from dropped item." = "URL-ul nu a putut fi rezolvat din elementul plasat.";
-"Country or region" = "Țară sau regiune";
 "Country: %@" = "Țară: %@";
-"Critical Setup Required" = "Configurare critică necesară";
 "current match" = "potrivirea curentă";
-"Current Safari rules: %@" = "Reguli Safari actuale: %@";
 "Current Safari rules: %@ (near limit)" = "Reguli Safari actuale: %@ (aproape limită)";
 "Custom" = "Personalizat";
 "Custom Filter" = "Filtru personalizat";
@@ -255,17 +230,13 @@
 "Dandelion Sprout's Nordic Filters" = "Dandelion Sprout's Nordic Filters";
 "Dandelion Sprout's Serbo-Croatian List" = "Dandelion Sprout's Serbo-Croatian List";
 "Debug" = "Depanare";
-"Default filters for balanced blocking and compatibility." = "Filtre implicite pentru blocare echilibrată și compatibilitate.";
 "Deferred" = "Amânată";
 "Delete" = "Șterge";
-"Drop here to move" = "Plasează aici pentru a muta";
 "Move to" = "Mută în";
 "Delete Added List" = "Șterge lista";
 "Description" = "Descriere";
-"Description (optional)" = "Descriere (opțional)";
 "Device timezone" = "Fusul orar al dispozitivului";
 "Disable" = "Dezactivează";
-"Disable on this site" = "Dezactivează pe acest site";
 "Disabled" = "Dezactivat";
 "Disabled sites changed, fast rebuilding content blockers" = "Site-urile dezactivate s-au schimbat, reconstruire rapidă a blocantelor de conținut";
 "Disabled sites monitor unavailable (no protobuf data directory)" = "Monitorul site-urilor dezactivate nu este disponibil (fără director de date protobuf)";
@@ -273,18 +244,13 @@
 "Display" = "Afișare";
 "Done" = "Gata";
 "Close" = "Închide";
-"Download Script" = "Descarcă scriptul";
 "Downloaded" = "Descărcat";
 "Downloaded %d update" = "S-a descărcat %d actualizare";
 "Downloaded %d updates" = "S-au descărcat %d actualizări";
-"Downloaded content does not appear to be a valid filter list" = "Conținutul descărcat nu pare a fi o listă de filtre validă";
 "Downloaded updates before applying" = "Actualizări descărcate înainte de aplicare";
 "Downloading %d update(s)..." = "Se descarcă %d actualizări...";
-"Downloading and applying filter lists…" = "Se descarcă și se aplică listele de filtre…";
-"Downloading filter updates..." = "Se descarcă actualizările filtrelor...";
 "Downloading selected scripts..." = "Se descarcă scripturile selectate...";
 "Downloading selected updates..." = "Se descarcă actualizările selectate...";
-"Downloading Updates" = "Descărcarea actualizărilor";
 "due now" = "scadent acum";
 "Due soon catch-up" = "Recuperare scadentă în curând";
 "Duplicate Userscripts Found" = "Au fost găsite scripturi de utilizator duplicate";
@@ -298,8 +264,6 @@
 "EasyPrivacy" = "EasyPrivacy";
 "Edit" = "Editează";
 "Edit Filter List" = "Editează lista";
-"Edit Name" = "Redenumește lista";
-"Edit User List" = "Editează lista";
 "Editor" = "Editor";
 "Use Editor" = "Folosește editorul";
 "Element zapper" = "Eliminator de elemente";
@@ -307,18 +271,12 @@
 "Enable 'wBlock Scripts' → Always Allow on Every Website" = "Activează 'wBlock Scripts' → Permite întotdeauna pe fiecare site web";
 "Enable all 5 Content Blocker extensions" = "Activează toate cele 5 extensii de tip blocant de conținut";
 "Enable Beta Userscript?" = "Activezi scriptul de utilizator beta?";
-"Enable extra fixes and finish setup." = "Activează remedieri suplimentare și finalizează configurarea.";
 "Enable the Safari extensions so wBlock can block ads and run userscripts." = "Activează extensiile Safari ca wBlock să poată bloca reclamele și să ruleze scripturi de utilizator.";
-"Enable the Safari extensions so wBlock can block ads." = "Activează extensiile Safari pentru ca wBlock să poată bloca reclamele.";
 "Enabled" = "Activat";
 "Enabled Lists" = "Liste activate";
-"Enter a valid http(s) URL to a .txt, .list, or .json filter." = "Introdu un URL http(s) valid către un filtru .txt, .list sau .json.";
-"Enter Domain" = "Introdu domeniul";
 "Error" = "Eroare";
-"Error checking update for filter" = "Eroare la verificarea actualizării filtrului";
 "Error checking update for script" = "Eroare la verificarea actualizării scriptului";
 "Error fetching filter" = "Eroare la preluarea filtrului";
-"Error fetching script" = "Eroare la preluarea scriptului";
 "Estonian List" = "Estonian List";
 "Every %@" = "La fiecare %@";
 "Every %d days" = "La fiecare %d zile";
@@ -342,7 +300,6 @@
 "Extensions" = "Extensii";
 "Extensive blocklist targeting ads, trackers, and other unwanted content." = "Lista extinsă de blocare care vizează reclame, instrumente de urmărire și alt conținut nedorit.";
 "Failed" = "Eșuat";
-"Failed reading user list file" = "Citirea fișierului listei de utilizator a eșuat";
 "Failed saving user list" = "Salvarea listei de utilizator a eșuat";
 "Failed saving user list edits" = "Salvarea modificărilor din lista de utilizator a eșuat";
 "Failed to access shared storage." = "Nu s-a putut accesa spațiul de stocare partajat.";
@@ -351,18 +308,13 @@
 "Failed to clear extensions and advanced engine" = "Ștergerea extensiilor și a motorului avansat a eșuat";
 "Failed to clear filter engine during onboarding reset" = "Ștergerea motorului de filtre la resetarea configurării inițiale a eșuat";
 "Failed to convert rules for blocker" = "Conversia regulilor pentru blocant a eșuat";
-"Failed to create backup." = "Nu s-a putut crea copia de rezervă.";
-"Failed to decode filter content" = "Decodarea conținutului filtrului a eșuat";
 "Failed to download custom filter" = "Descărcarea filtrului personalizat a eșuat";
 "Failed to export logs" = "Exportarea jurnalelor a eșuat";
 "Failed to fetch filter - HTTP error" = "Preluarea filtrului a eșuat - eroare HTTP";
-"Failed to fetch script" = "Preluarea scriptului a eșuat";
 "Failed to import dropped userscript" = "Importarea scriptului de utilizator plasat a eșuat";
 "Failed to load dropped item" = "Încărcarea elementului plasat a eșuat";
 "Failed to prepare removeparam DNR rules" = "Pregătirea regulilor DNR removeparam a eșuat";
-"Failed to process one or more pre-apply filter updates" = "Procesarea uneia sau a mai multor actualizări de filtre înainte de aplicare a eșuat";
 "Failed to read backup: %@" = "Nu s-a putut citi copia de rezervă: %@";
-"Failed to read file." = "Nu s-a putut citi fișierul.";
 "Failed to read filter content" = "Citirea conținutului filtrului a eșuat";
 "Failed to read local content for rule counting" = "Citirea conținutului local pentru numărarea regulilor a eșuat";
 "Failed to reload %@." = "Nu s-a putut reîncărca %@.";
@@ -383,10 +335,8 @@
 "Fast applying disabled sites changes without full conversion" = "Aplicare rapidă a modificărilor site-urilor dezactivate fără conversie completă";
 "Fast disabled sites update completed" = "Actualizarea rapidă a site-urilor dezactivate s-a încheiat";
 "File" = "Fișier";
-"File Information" = "Informații despre fișier";
 "Filter '%@' added successfully. Apply changes to enable it." = "Filtrul „%@” a fost adăugat cu succes. Aplică modificările pentru a-l activa.";
 "Filter Apply" = "Aplicare filtre";
-"Filter Auto-Update" = "Actualizare automată filtre";
 "Filter for ad blocking on Estonian sites." = "Filtru pentru blocarea reclamelor pe site-urile din Estonia.";
 "Filter list not found." = "Lista de filtre nu a fost găsită.";
 "Filter list that specifically removes ads on websites in Spanish, Portuguese, and Brazilian Portuguese languages." = "Listă de filtre care elimină în mod specific reclamele de pe site-urile web în limbile spaniolă, portugheză și portugheză braziliană.";
@@ -407,19 +357,15 @@
 "Filtering off" = "Filtrarea dezactivată";
 "Filters" = "Filtre";
 "Filters: %d / Userscripts: %d" = "Filtre: %d / Scripturi de utilizator: %d";
-"Filters and scripts applied successfully." = "Filtrele și scripturile au fost aplicate cu succes.";
-"Filters applied successfully." = "Filtrele au fost aplicate cu succes.";
 "Filters Auto-Disabled" = "Filtre dezactivate automat";
 "Filters update in the background, but timing is approximate. Force-quitting wBlock from the app switcher may prevent background updates until you reopen the app." = "Filtrele se actualizează în fundal, dar momentul este aproximativ. Închiderea forțată a wBlock din comutatorul de aplicații poate împiedica actualizările de fundal până când redeschizi aplicația.";
 "FilterUpdate" = "Actualizare filtre";
 "Find" = "Găsește";
 "Finnish ad blocking filter list." = "Listă de filtre finlandeză pentru blocarea reclamelor.";
-"For complete ad blocking" = "Pentru blocarea completă a reclamelor";
 "Foreground Catch-up" = "Recuperare în prim-plan";
 "Foreign" = "Străine";
 "Found %d update(s) available." = "S-au găsit %d actualizări disponibile.";
 "Frellwit's Swedish Filter" = "Frellwit's Swedish Filter";
-"Full content loaded" = "Conținutul complet a fost încărcat";
 "go" = "Salt";
 "Go to line" = "Salt la linia";
 "Greek AdBlock Filter" = "Greek AdBlock Filter";
@@ -427,7 +373,6 @@
 "HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Handles advanced anti-adblock cases that filter rules miss." = "Gestionează cazurile avansate anti-adblock pe care regulile de filtrare le ratează.";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "Ascunde ferestrele pop-up din pagină, bannere și alte elemente nedorite ale paginii.";
-"Highlighting disabled for performance" = "Evidențiere dezactivată pentru performanță";
 "Hold for 3 seconds to apply without checking for updates." = "Ține apăsat 3 secunde pentru a aplica fără a verifica actualizările.";
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
@@ -441,7 +386,6 @@
 "iCloud Sync doesn't have permission to write to your iCloud account." = "Sincronizarea iCloud nu are permisiunea de a scrie în contul tău iCloud.";
 "iCloud Sync hit an iCloud server error. Try again in a moment." = "Sincronizarea iCloud a întâmpinat o eroare de server iCloud. Încearcă din nou peste un moment.";
 "iCloud Sync is temporarily unavailable. Try again in a moment." = "Sincronizarea iCloud este temporar indisponibilă. Încearcă din nou peste un moment.";
-"If you close wBlock with unapplied changes, we'll send a gentle nudge so nothing gets forgotten." = "Dacă închizi wBlock cu modificări neaplicate, îți vom trimite o reamintire discretă ca să nu uiți nimic.";
 "If you use Private Browsing, also enable Allow in Private Browsing for wBlock Scripts and the 5 content blockers. Cookie notices and other scriptlets will not run in Private windows without it." = "Dacă folosești Navigarea privată, activează și Permite în Navigarea privată pentru wBlock Scripts și cele 5 blocante de conținut. Altfel, notificările cookie și celelalte scriptleturi nu vor rula în ferestrele private.";
 "Ignoring invalid filter response" = "Se ignoră răspunsul de filtru nevalid";
 "Import" = "Importă";
@@ -449,117 +393,84 @@
 "Import failed: %@" = "Importul a eșuat: %@";
 "Import File" = "Importă fișier";
 "Import Settings" = "Importă setările";
-"Imported userscript from file" = "Script de utilizator importat din fișier";
 "Importing…" = "Se importă…";
 "in %@ (%@)" = "în %@ (%@)";
 "IndianList" = "IndianList";
 "Info" = "Informații";
 "Info.plist missing" = "Lipsește Info.plist";
 "Initialized with %d filter list(s)." = "Inițializat cu %d liste de filtre.";
-"International" = "Internaționale";
 "Invalid" = "Nevalid";
 "Invalid URL provided for new filter list" = "URL nevalid pentru noua listă de filtre";
 "Invalid URL provided: %@" = "URL nevalid furnizat: %@";
-"iOS background refresh is best-effort; checks may run later than scheduled." = "Actualizarea în fundal pe iOS este de tip best-effort; verificările pot rula mai târziu decât era programat.";
-"It will be enabled automatically." = "Va fi activat automat.";
 "KAD - Anti-Scam" = "KAD - Anti-Scam";
 "Keep All" = "Păstrează tot";
 "Keeps filters updating when wBlock isn't running. Turn off to avoid a persistent login item; updates will then only run while wBlock is open." = "Menține filtrele actualizate când wBlock nu rulează. Dezactivează pentru a evita un element de conectare persistent; actualizările vor rula atunci doar cât timp wBlock este deschis.";
 "Keeps the app in portrait even if the device is rotated." = "Păstrează aplicația în modul portret chiar dacă dispozitivul este rotit.";
 "Languages: %@" = "Limbi: %@";
 "Languages: \\(languageSummary)" = "Limbi: \\(languageSummary)";
-"Large file - scrolling may be slow" = "Fișier mare - derularea poate fi lentă";
 "last updated %@" = "actualizat ultima dată %@";
-"Last: Never" = "Ultima: Niciodată";
 "Latvian List" = "Latvian List";
 "Line %d isn’t a valid filter rule." = "Linia %d nu este o regulă de filtru validă.";
 "Line %d isn’t a valid http(s) filter URL." = "Linia %d nu este un URL de filtru http(s) valid.";
 "filterslists-KO" = "filterslists-KO";
 "Liste AR" = "Liste AR";
 "Liste FR + AdGuard French filter. Filter list that specifically removes ads on websites in French language." = "Liste FR + AdGuard French filter. Listă de filtre care elimină în mod specific reclamele de pe site-urile web în limba franceză.";
-"Load full content" = "Încarcă conținutul complet";
 "Loaded local version for filter" = "Versiunea locală a filtrului a fost încărcată";
 "Loading metadata…" = "Se încarcă metadatele…";
-"Loading script metadata…" = "Se încarcă metadatele scriptului…";
-"Loading userscripts…" = "Se încarcă scripturile de utilizator…";
 "Local Import" = "Import local";
 "Lock Portrait Orientation" = "Blochează orientarea portret";
 "Logs" = "Jurnale";
-"Logs cleared" = "Jurnale șterse";
 "Logs will appear here as the app runs" = "Jurnalele vor apărea aici pe măsură ce aplicația rulează";
 "Content will be checked when you tap Add." = "Conținutul va fi verificat când apeși Adaugă.";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "match case" = "ține cont de majuscule";
 "Minimal" = "Minim";
 "Missing conversion result for blocker" = "Lipsește rezultatul conversiei pentru blocant";
-"More lists rarely means better blocking: most overlap with the recommended defaults and mainly use up rule capacity. Annoyances and regional filters are the main exceptions." = "Mai multe liste înseamnă rareori o blocare mai bună: majoritatea se suprapun cu listele implicite recomandate și consumă în principal capacitatea de reguli. Filtrele pentru elemente enervante și cele regionale sunt principalele excepții.";
 "Multipurpose" = "Polivalent";
 "N/A" = "N/A";
 "Name" = "Nume";
 "Near Safari limit: %@" = "Aproape de limita Safari: %@";
 "Network" = "Rețea";
 "never" = "niciodată";
-"Never checked" = "Nu a fost verificat niciodată";
 "Next" = "Următorul";
 "next" = "următorul";
 "Next: %@" = "Următorul: %@";
 "Next: \\(compactStatusLine)" = "Următorul: \\(compactStatusLine)";
-"Next: Loading…" = "Următorul: Se încarcă…";
-"Next: review matching filters." = "Următorul pas: verifică filtrele potrivite.";
 "No advanced rules found, clearing filter engine" = "Nu s-au găsit reguli avansate, ștergerea motorului de filtre";
 "No background run recorded" = "Nicio rulare în fundal înregistrată";
-"No blocked requests yet." = "Nicio solicitare blocată încă.";
 "No Content Available" = "Niciun conținut disponibil";
 "No description provided by the script metadata." = "Metadatele scriptului nu oferă o descriere.";
-"No download URL for script" = "Niciun URL de descărcare pentru script";
 "No filter lists selected. Clearing rules from all extensions." = "Nu au fost selectate liste de filtre. Ștergerea regulilor din toate extensiile.";
 "No filters selected - clearing all extensions" = "Niciun filtru selectat - ștergerea tuturor extensiilor";
 "No foreground catch-up recorded" = "Nicio recuperare în prim-plan înregistrată";
 "No logs found" = "Nu s-au găsit jurnale";
 "No matching extensions for selected filters." = "Nu există extensii potrivite pentru filtrele selectate.";
 "No matching userscripts" = "Niciun script de utilizator potrivit";
-"No regional filters available. However, the default filter lists already cover English and international sites." = "Nu există filtre regionale disponibile. Totuși, listele de filtre implicite acoperă deja site-urile în engleză și internaționale.";
-"No regional filters needed. The default filter lists already cover English and international sites." = "Nu sunt necesare filtre regionale. Listele de filtre implicite acoperă deja site-urile în engleză și internaționale.";
-"No regional userscripts available. However, the default userscripts already cover English and international sites." = "Nu există scripturi de utilizator regionale disponibile. Totuși, scripturile de utilizator implicite acoperă deja site-urile în engleză și internaționale.";
-"No regional userscripts needed. The default userscripts already cover English and international sites." = "Nu sunt necesare scripturi de utilizator regionale. Scripturile de utilizator implicite acoperă deja site-urile în engleză și internaționale.";
-"No script updates" = "Nicio actualizare de scripturi";
-"No silent push received yet" = "Nu a fost primit încă niciun push silențios";
 "No Site Settings" = "Nicio setare de site";
 "No submit attempt yet" = "Nicio încercare de trimitere încă";
 "No updates available" = "Nicio actualizare disponibilă";
 "No updates available." = "Nu există actualizări disponibile.";
 "No Updates Found" = "Nu s-au găsit actualizări";
 "No Userscripts" = "Niciun script de utilizator";
-"No userscripts selected" = "Niciun script de utilizator selectat";
-"No zapper rules for this site." = "Nu există reguli ale Eliminatorului de elemente pentru acest site.";
 "None" = "Niciunul";
 "Not Downloaded" = "Nedescărcat";
-"Not recorded" = "Neînregistrat";
-"Not selected" = "Neselectat";
 "Not synced yet" = "Încă nesincronizat";
-"Notify me" = "Anunță-mă";
 "OK" = "OK";
 "on line" = "la linia";
 "Online Security Filter" = "Online Security Filter";
-"Only AdGuard Base filter. Lightest protection, best compatibility." = "Doar filtrul AdGuard Base. Cea mai ușoară protecție, cea mai bună compatibilitate.";
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "Pentru %@ sunt disponibile doar liste menținute de comunitate. Activează-le dacă te simți confortabil.";
-"Only community-maintained lists available. Enable them if you're comfortable." = "Sunt disponibile doar liste întreținute de comunitate. Activează-le dacă ești confortabil cu asta.";
 "Only pasted user lists can be edited." = "Numai listele de utilizator lipite pot fi editate.";
 "Open Login Items" = "Deschide Elementele de conectare";
 "Open Safari Settings" = "Deschide setările Safari";
 "Other" = "Altă limbă";
 "Overdue catch-up" = "Recuperare întârziată";
 "Paste" = "Lipește";
-"Paste from Clipboard" = "Lipește din clipboard";
 "Paste one or more filter URLs, one per line." = "Lipește unul sau mai multe URL-uri de filtru, câte unul pe linie.";
-"Paste the direct .user.js link. wBlock will download and install it for you." = "Lipește linkul direct .user.js. wBlock îl va descărca și instala pentru tine.";
-"Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you." = "Lipește linkul direct .user.js, .js, .user.css, .less, .sass, .scss, .styl sau .pcss. wBlock îl va descărca și instala.";
 "Pause Blocking" = "Pauză blocare";
 "Paused Components" = "Componente în pauză";
 "Pausing blocking..." = "Se pune pe pauză blocarea...";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";
 "Dandelion Sprout's Anti-Malware List" = "Dandelion Sprout's Anti-Malware List";
-"Pick your base blocking level." = "Alege nivelul de bază pentru blocare.";
 "Prepared removeparam DNR rules" = "Reguli DNR removeparam pregătite";
 "Preparing %d extension" = "Se pregătește %d extensie";
 "Preparing %d extensions" = "Se pregătesc %d extensii";
@@ -571,7 +482,6 @@
 "Progress" = "Progres";
 "Protects against suspicious URLs, phishing sites, and unwanted software." = "Protejează împotriva adreselor URL suspecte, a site-urilor de phishing și a software-ului nedorit.";
 "Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = "Furnizează un link http:// sau https:// valid, care se termină în .js, .user.js, .user.css, .less, .sass, .scss, .styl sau .pcss";
-"Provide a valid https:// link ending in .user.js" = "Furnizează un link https:// valid care se termină în .user.js";
 "Psst! You forgot something!" = "Psst! Ai uitat ceva!";
 "Quit Without Applying" = "Ieși fără a aplica";
 "Reading Files" = "Se citesc fișierele";
@@ -584,7 +494,6 @@
 "Refresh" = "Reîmprospătează";
 "Regional" = "Regionale";
 "Regional & Language" = "Regionale și limbă";
-"Regional filters" = "Filtre regionale";
 "Regional filters: %@" = "Filtre regionale: %@";
 "Registered" = "Înregistrat";
 "Registration: %@" = "Înregistrare: %@";
@@ -593,8 +502,6 @@
 "Reload phase summary" = "Rezumat faza de reîncărcare";
 "Reloading Extensions" = "Se reîncarcă extensiile";
 "Reloading Safari extensions..." = "Se reîncarcă extensiile Safari...";
-"Reminder notifications" = "Notificări de reamintire";
-"Reminders" = "Mementouri";
 "Remove" = "Elimină";
 "Remove Older Versions" = "Elimină versiunile mai vechi";
 "Removed custom filter" = "Filtru personalizat eliminat";
@@ -605,17 +512,13 @@
 "replace all" = "înlocuiește toate";
 "replaced $ matches" = "$ potriviri înlocuite";
 "replaced match on line $" = "potrivire înlocuită la linia $";
-"Report an Issue" = "Raportează o problemă";
 "Required for userscripts, advanced ad blocking, and cleaner features" = "Necesar pentru scripturi de utilizator, blocare avansată a reclamelor și funcții de curățare";
-"Required for YouTube ad blocking and much more" = "Necesar pentru blocarea reclamelor YouTube și multe altele";
 "The selected file is too large. Maximum size is 10 MB." = "Fișierul selectat este prea mare. Dimensiunea maximă este de 10 MB.";
-"Requirements" = "Cerințe";
 "Reset Site Settings" = "Resetează setările site-ului";
 "Resetting…" = "Se resetează…";
 "Restart" = "Repornește";
 "Restart Onboarding" = "Repornește configurarea inițială";
 "Restart Onboarding?" = "Repornești configurarea inițială?";
-"Restart Onboarding…" = "Repornește configurarea inițială…";
 "Restarting…" = "Se repornește…";
 "Restore" = "Restaurează";
 "Restore from backup…" = "Restaurează din copia de rezervă…";
@@ -623,15 +526,11 @@
 "Resume" = "Reia";
 "Resume Blocking" = "Reia blocarea";
 "Return of the YouTube Dislike." = "Return of the YouTube Dislike.";
-"Review your choices and apply settings." = "Revizuiește opțiunile și aplică setările.";
 "road-block light" = "road-block light";
 "Romanian ad blocking filter subscription." = "Abonament la filtrul românesc de blocare a reclamelor.";
-"Rule deleted" = "Regulă ștearsă";
 "Rule limit exceeded for blocker" = "Limita de reguli depășită pentru blocant";
-"Rule Limit Warning" = "Avertisment privind limita regulilor";
 "Rules" = "Reguli";
 "Run on this site" = "Rulează pe acest site";
-"Safari limits each content blocker extension to %@ rules.\\nTotal capacity (all wBlock blockers): %@ rules.\\n\\n%@\\n\\nwBlock distributes your enabled filter lists across multiple blockers to maximize capacity, but you may still hit Safari's limits if you enable too many large lists." = "Safari limitează fiecare extensie de tip blocant de conținut la %@ reguli.\\nCapacitate totală (toate blocantele wBlock): %@ reguli.\\n\\n%@\\n\\nwBlock distribuie listele de filtre activate în mai multe blocante pentru a maximiza capacitatea, dar poți atinge totuși limitele Safari dacă activezi prea multe liste mari.";
 "Safari limits each Content Blocker extension to 150,000 rules. wBlock automatically balances and compiles rules across all 5 slots." = "Safari limitează fiecare extensie de tip blocant de conținut la 150.000 de reguli. wBlock echilibrează și compilează automat regulile pe toate cele 5 sloturi.";
 "Safari Rule Capacity" = "Capacitate reguli Safari";
 "Safari Rules" = "Reguli Safari";
@@ -641,7 +540,6 @@
 "Scheduler error" = "Eroare de planificare";
 "Scheduling: %@" = "Programare: %@";
 "Script Content" = "Conținut script";
-"Script or Style URL" = "URL script sau stil de utilizator";
 "Scripts" = "Scripturi";
 "Search" = "Caută";
 "Search filters" = "Caută filtre";
@@ -649,27 +547,19 @@
 "Search scripts" = "Caută scripturi";
 "Security" = "Securitate";
 "Select any userscripts you want to enable. These add extra features or fixes. You can always add more in the settings later." = "Selectează scripturile de utilizator pe care vrei să le activezi. Acestea adaugă funcții sau remedieri suplimentare. Poți adăuga oricând altele mai târziu din setări.";
-"Select the languages (one or more) you browse websites in. wBlock only uses this to recommend regional ad filters." = "Selectează limbile (una sau mai multe) în care navighezi pe site-uri. wBlock folosește această informație doar pentru a recomanda filtre regionale pentru reclame.";
 "Select the languages you browse in. wBlock will automatically recommend matching regional filters and features." = "Selectează limbile în care navighezi. wBlock va recomanda automat filtrele regionale și funcțiile potrivite.";
-"Send me reminders about unapplied changes" = "Trimite-mi reamintiri despre modificările neaplicate";
 "Set up wBlock" = "Configurează wBlock";
 "Setting userscript enabled state" = "Se setează starea de activare a scriptului de utilizator";
 "Settings" = "Setări";
 "Settings → Apps → Safari → Extensions" = "Configurări → Aplicații → Safari → Extensii";
 "Setup Instructions" = "Instrucțiuni de configurare";
-"Ships with the app" = "Livrat odată cu aplicația";
-"Show blocked item count in toolbar" = "Afișează numărul de elemente blocate în bara de instrumente";
 "Show Enabled Only" = "Arată doar elementele activate";
-"Show preview only" = "Afișează doar previzualizarea";
 "Showing preview (%@ of %@)" = "Se afișează previzualizarea (%@ din %@)";
 "Showing preview (%@) of %@))" = "Se afișează previzualizarea (%@) din %@))";
 "Showing preview (\\(formatFileSize(previewLength)) of \\(formatFileSize(script.content.count)))" = "Se afișează previzualizarea (\\(formatFileSize(previewLength)) din \\(formatFileSize(script.content.count)))";
-"Silent Push" = "Push silențios";
 "Site Settings" = "Setări site";
 "Size:" = "Dimensiune:";
-"Skip for now" = "Omite momentan";
 "Skipped overlapping apply request" = "Cerere de aplicare suprapusă omisă";
-"Skipped pause request while apply is in progress" = "Cerere de pauză omisă cât timp aplicarea este în curs";
 "Skipping update signal due to non-filter response body" = "Se ignoră semnalul de actualizare deoarece corpul răspunsului nu este un filtru";
 "Some filters were automatically disabled because Safari's rule limits were exceeded." = "Unele filtre au fost dezactivate automat deoarece au fost depășite limitele de reguli Safari.";
 "Some pre-apply filter updates failed; continuing with available lists" = "Unele actualizări de filtre dinaintea aplicării au eșuat; se continuă cu listele disponibile";
@@ -681,7 +571,6 @@
 "Fallbacks" = "URL-uri alternative";
 "If the source URL fails, wBlock tries these URLs in order." = "Dacă URL-ul sursă nu funcționează, wBlock încearcă aceste URL-uri în ordine.";
 "No fallback URLs are configured for this list." = "Nu sunt configurate URL-uri alternative pentru această listă.";
-"Regional lists add language-specific coverage to the default filters for English and international sites. If your language is missing, no separate regional list is available." = "Listele regionale adaugă acoperire specifică limbii la filtrele implicite pentru site-uri în engleză și internaționale. Dacă limba ta lipsește, nu este disponibilă o listă regională separată.";
 "Start Fresh" = "Pornește de la zero";
 "Started %@" = "Pornit %@";
 "Starting conversion..." = "Se începe conversia...";
@@ -697,11 +586,9 @@
 "Successfully downloaded custom filter" = "Filtrul personalizat a fost descărcat";
 "Successfully updated script" = "Scriptul a fost actualizat";
 "Summary" = "Rezumat";
-"Supports .user.js, .js, .user.css, and .less files. Local imports won't auto-update; re-import to replace." = "Acceptă fișiere .user.js, .js, .user.css și .less. Importurile locale nu se actualizează automat; reimportă pentru înlocuire.";
 "Sync" = "Sincronizare";
 "Sync across devices" = "Sincronizare între dispozitive";
 "Sync Now" = "Sincronizează acum";
-"Sync settings across devices" = "Sincronizează setările între dispozitive";
 "Sync Timestamps with Device Time Zone" = "Sincronizează marcajele temporale cu fusul orar al dispozitivului";
 "Sync Userscript Enabled States" = "Sincronizează stările de activare ale scripturilor de utilizator";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "Sincronizează între dispozitive selecțiile de filtre, listele personalizate, scripturile de utilizator și lista albă.";
@@ -717,15 +604,10 @@
 "Synced just now" = "Sincronizat chiar acum";
 "Synced today at %@" = "Sincronizat astăzi la %@";
 "Synced yesterday at %@" = "Sincronizat ieri la %@";
-"Syncing iCloud configuration…" = "Se sincronizează configurația iCloud…";
 "System" = "Sistem";
-"Tap to review userscript guidelines." = "Atinge pentru a consulta ghidul pentru scripturi de utilizator.";
 "Auto-update: %@" = "Actualizare automată: %@";
-"Tell us where you browse so we can enable the right regional filters." = "Spune-ne unde navighezi ca să putem activa filtrele regionale potrivite.";
-"Temporarily disable all content blockers without turning them off in Safari Settings." = "Dezactivează temporar toată blocarea (blocante de conținut, scripturi de utilizator și stiluri) fără să oprești extensiile din Setările Safari.";
 "That doesn't look like a filter list." = "Nu arată ca o listă de filtre.";
 "That name is already used by another filter list." = "Acest nume este deja folosit de altă listă de filtre.";
-"That title is already used by another filter list." = "Acest titlu este deja folosit de altă listă de filtre.";
 "The %@ userscript requires the %@" = "Scriptul de utilizator %@ necesită %@";
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "Scriptul de utilizator \\(bypassScript.name) necesită \\(filterName)";
 "The following filters were automatically disabled:
@@ -738,30 +620,22 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modificările.";
 "The following filters were automatically disabled:\\n\\n%@\\n\\nTo re-enable these filters, disable other large filters and apply changes again." = "Următoarele filtre au fost dezactivate automat:\\n\\n%@\\n\\nPentru a reactiva aceste filtre, dezactivează alte filtre mari și aplică din nou modificările.";
-"These filters add extra blocking power for your languages on top of the default lists, which already cover English and international sites. You can fine-tune them later." = "Aceste filtre adaugă putere suplimentară de blocare pentru limbile tale pe lângă listele de filtre implicite, care acoperă deja site-urile în engleză și internaționale. Le poți ajusta mai târziu.";
-"These lists are community-maintained. Enable them if you still see regional ads." = "Aceste liste sunt menținute de comunitate. Activează-le dacă încă vezi reclame regionale.";
-"This doesn't change the app's display language, which always follows your device settings." = "Aceasta nu schimbă limba de afișare a aplicației, care urmează întotdeauna setările dispozitivului.";
 "This list covers websites for Norway, Denmark, Iceland, Danish territories, and the Sami indigenous population." = "Această listă acoperă site-uri web pentru Norvegia, Danemarca, Islanda, teritoriile daneze și populația indigenă Sami.";
 "This may take a while" = "Acest lucru poate dura ceva timp";
 "This removes all settings for %@." = "Aceasta elimină toate setările pentru %@.";
 "This removes the whitelist entry, userscript exceptions, and zapper rules for %@." = "Aceasta elimină intrarea din lista albă, excepțiile pentru scripturi de utilizator și regulile Eliminatorului de elemente pentru %@.";
-"This script hasn't been downloaded yet." = "Acest script nu a fost încă descărcat.";
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "Aceasta va elimina toate filtrele, scripturile de utilizator și preferințele, apoi va relansa configurarea inițială.";
-"This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "Aceasta va înlocui selecțiile actuale de filtre, lista albă și regulile Eliminatorului de elemente cu setările din copia de rezervă.";
 "This will reset all filters, userscripts, and preferences." = "Acest lucru va reseta toate filtrele, scripturile de utilizator și preferințele.";
 "Timed out" = "Timp expirat";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield ajută la blocarea reclamelor reintroduse de Ad-Shield pe site-urile corespunzătoare.";
 "Lets ad blockers quickly resist Ad-Shield, which reinserts ads on matching sites after filter lists hide them." = "Permite blocantelor de reclame să reziste rapid la Ad-Shield, care reinserează reclame pe site-urile corespunzătoare după ce listele de filtre le ascund.";
 "Title" = "Titlu";
-"Title (optional)" = "Titlu (opțional)";
 "Title is required." = "Numele este obligatoriu.";
-"Titles will be created from each URL." = "Titlurile vor fi create din fiecare URL.";
 "Too many pending tasks" = "Prea multe sarcini în așteptare";
 "Total Capacity" = "Capacitate totală";
 "Trace" = "Urmărire";
 "Trust: %@" = "Încredere: %@";
 "Trust: \\(trust.capitalized)" = "Încredere: \\(trust.capitalized)";
-"Tune filters for your country and language." = "Ajustează filtrele pentru țara și limba ta.";
 "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Dezactivează această opțiune pentru a păstra versiunea curentă când wBlock actualizează scripturile în masă sau după un program.";
 "Unable to access shared container" = "Nu se poate accesa containerul partajat";
 "Unapplied Filter Changes" = "Modificări neaplicate ale filtrelor";
@@ -776,7 +650,6 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Update & Apply" = "Actualizează și aplică";
 "Update Filters" = "Actualizează filtrele";
 "Update Interval" = "Interval de actualizare";
-"Update Script" = "Actualizează scriptul";
 "Update wBlock Filters" = "Actualizează filtrele wBlock";
 "Updated %d script" = "S-a actualizat %d script";
 "Updated %d scripts" = "S-au actualizat %d scripturi";
@@ -784,15 +657,12 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Updated %d/%d extensions in %@" = "%d/%d extensii actualizate în %@";
 "Updated custom filter list" = "Listă de filtre personalizată actualizată";
 "Updates" = "Actualizări";
-"Updates Paused" = "Actualizări în pauză";
 "Updating disabled sites..." = "Se actualizează site-urile dezactivate...";
-"Updating Scripts" = "Se verifică actualizările scripturilor de utilizator";
 "Updating…" = "Se actualizează…";
 "URL" = "URL";
 "URL Patterns (%@)" = "Modele URL (%@)";
 "URL Patterns (%d)" = "Modele URL (%d)";
 "URL Patterns (\\(script.matches.count))" = "Modele URL (\\(script.matches.count))";
-"URL requirements" = "Cerințe URL";
 "URLs" = "URL-uri";
 "Use existing iCloud setup?" = "Folosești configurarea iCloud existentă?";
 "Use iCloud Setup" = "Folosește configurarea iCloud";
@@ -822,22 +692,15 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "View Content" = "Vezi conținutul";
 "View Logs" = "Vezi jurnalele";
 "Waiting" = "În așteptare";
-"Waiting for activity" = "În așteptarea activității";
-"Waiting for iOS background wake or app open" = "În așteptarea trezirii iOS în fundal sau a deschiderii aplicației";
 "Warning" = "Avertisment";
 "wBlock" = "wBlock";
-"wBlock application appeared" = "Aplicația wBlock a apărut";
 "wBlock filter update started." = "Actualizarea filtrelor wBlock a început.";
-"wBlock Scripts must be enabled and set to 'Allow' on all websites to block YouTube ads." = "wBlock Scripts trebuie să fie activat și setat la 'Permite' pe toate site-urile web pentru a bloca reclamele YouTube.";
 "wBlock Scripts must be enabled and set to 'Always Allow on All Websites' for userscripts and advanced blocking." = "wBlock Scripts trebuie să fie activat și setat la 'Permite întotdeauna pe toate site-urile web' pentru scripturi de utilizator și blocare avansată.";
-"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' to block YouTube ads." = "wBlock Scripts trebuie să fie activat și setat la 'Permite întotdeauna pe toate site-urile web' pentru a bloca reclamele YouTube.";
-"wBlock Version" = "Versiune wBlock";
 "wBlock will fetch and enable the script automatically." = "wBlock va prelua și activa scriptul automat.";
 "We don't have language data for %@. Try enabling filters manually if you see regional ads." = "Nu avem date de limbă pentru %@. Încearcă să activezi manual filtrele dacă vezi reclame regionale.";
 "We don't have regional filters for %@." = "Nu avem filtre regionale pentru %@.";
 "We found an existing wBlock configuration in iCloud (%@). You can skip onboarding and use that instead." = "Am găsit o configurație wBlock existentă în iCloud (%@). Poți sări peste configurarea inițială și să o folosești pe aceea.";
 "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "Am găsit o configurație wBlock existentă în iCloud (\\(remoteConfigUpdatedAtText)). Poți sări peste configurarea inițială și să o folosești pe aceea.";
-"We found an existing wBlock configuration in iCloud. You can skip onboarding and use that instead." = "Am găsit o configurație wBlock existentă în iCloud. Poți sări peste configurarea inițială și să o folosești pe aceea.";
 "Web extension %@" = "Extensie web %@";
 "Blocks advertisements and other promotional page elements." = "Blochează reclamele și alte elemente promoționale ale paginilor.";
 "Blocks trackers, analytics, and other privacy-invasive requests." = "Blochează instrumentele de urmărire, analizele și alte solicitări care afectează confidențialitatea.";
@@ -864,7 +727,6 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "On" = "Activat";
 "Off" = "Dezactivat";
 "You're already using the latest filters." = "Folosești deja cele mai recente filtre.";
-"You can always add regional filters later from Settings." = "Poți adăuga oricând filtre regionale mai târziu din Setări.";
 "You have unapplied filter changes in wBlock. Tap to apply them now!" = "Ai modificări de filtre neaplicate în wBlock. Atinge pentru a le aplica acum!";
 "You have unapplied filter changes. Do you want to apply them before quitting?" = "Ai modificări de filtre neaplicate. Vrei să le aplici înainte de a ieși?";
 "Zapper rules (%d)" = "Reguli ale Eliminatorului de elemente (%d)";
@@ -908,11 +770,8 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Disable Essential Filter?" = "Dezactivezi filtrul esențial?";
 "Replace Existing Content?" = "Înlocuiești conținutul existent?";
 "Clear Element Zapper Rules?" = "Ștergi regulile Eliminatorului de elemente?";
-"Clear All" = "Șterge tot";
 "This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "Acest filtru recomandat face parte din protecția esențială a wBlock. Dezactivarea lui poate reduce acoperirea blocării.";
-"Pasting will replace the existing editor content." = "Lipirea va înlocui conținutul existent al editorului.";
 "Pasting will replace the existing content." = "Lipirea va înlocui conținutul existent.";
-"This removes all saved element zapper rules from every site." = "Aceasta elimină de pe toate site-urile regulile Eliminatorului de elemente salvate.";
 "Clear Element Zapper Rules" = "Șterge regulile Eliminatorului de elemente";
 "Advanced" = "Avansat";
 "Help" = "Ajutor";
@@ -925,17 +784,10 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Privacy Policy" = "Politica de confidențialitate";
 
 /* Issue 508 UI */
-"Use a valid http:// or https:// URL" = "Folosește un URL http:// sau https:// valid";
-"Include a host name" = "Include un nume de gazdă";
-"Do not use a userscript URL ending in .js, .mjs, or .cjs" = "Nu folosi un URL de script de utilizator care se termină în .js, .mjs sau .cjs";
 "wBlock will fetch and enable the filter list automatically" = "wBlock va descărca și activa automat lista de filtre";
 
 /* Issue 508 UI follow-up */
-"Starts with http:// or https://" = "Începe cu http:// sau https://";
-"Ends with .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = "Se termină în .js, .user.js, .user.css, .less, .sass, .scss, .styl sau .pcss";
-"Hosted on a trusted source" = "Găzduit pe o sursă de încredere";
 
-"The file must include userscript or userstyle metadata." = "Fișierul trebuie să includă metadate de script de utilizator sau de stil de utilizator.";
 
 "Failed to clear downloaded content; apply again to retry." = "Conținutul descărcat nu a putut fi eliminat; aplică din nou pentru a reîncerca.";
 "Failed to resume blocking." = "Reluarea blocării a eșuat.";
@@ -949,7 +801,6 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Beta userscripts and scripts that are still being evaluated or may change." = "Scripturi de utilizator beta și scripturi care sunt încă evaluate sau se pot schimba.";
 "Enabled Userscripts & Userstyles" = "Scripturi și stiluri de utilizator activate";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "Pauza blocării este activă cât timp orice componentă selectată este pusă pe pauză. Reluarea reactivează toate componentele.";
-"Temporarily pause selected components without changing their enabled settings." = "Pune temporar pe pauză componentele selectate fără a le modifica starea de activare.";
 
 /* Userstyle compiler diagnostics */
 "Choose a .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss file." = "Alege un fișier .user.js, .js, .user.css, .less, .sass, .scss, .styl sau .pcss.";
@@ -963,7 +814,6 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Couldn't save the edited source." = "Sursa editată nu a putut fi salvată.";
 "Userstyle source exceeds the 2 MiB limit." = "Sursa stilului de utilizator depășește limita de 2 MiB.";
 "Userstyle compiler resource is missing." = "Lipsește resursa compilatorului de stiluri de utilizator.";
-"Userstyle compiler resource failed to load." = "Resursa compilatorului de stiluri de utilizator nu a putut fi încărcată.";
 "Userstyle compiler input could not be serialized." = "Intrarea compilatorului de stiluri de utilizator nu a putut fi serializată.";
 "Userstyle compiler returned an invalid response." = "Compilatorul de stiluri de utilizator a returnat un răspuns nevalid.";
 "Userstyle compiler returned no CSS." = "Compilatorul de stiluri de utilizator nu a returnat CSS.";
@@ -975,8 +825,6 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Userstyle compiler timed out." = "Compilatorul de stiluri de utilizator a depășit limita de timp.";
 "Userstyle compiler must not run on the main thread." = "Compilatorul de stiluri de utilizator nu trebuie să ruleze pe firul principal.";
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "Motorul API Dark Reader, licențiat MIT, pentru wBlock (beta; fără baza completă de remedieri pentru site-uri).";
-"Follow System Appearance" = "Urmează aspectul sistemului";
-"When off, Dark Reader keeps websites dark in Light Mode." = "Când este dezactivat, Dark Reader păstrează site-urile întunecate în modul luminos.";
 "Follow System" = "Urmează sistemul";
 "Always Dark" = "Întotdeauna întunecat";
 "Dark" = "Întunecat";
@@ -984,15 +832,12 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "%@ → %@ Safari rules" = "%@ → %@ reguli Safari";
 "Cosmetic Filtering" = "Filtrare cosmetică";
 "Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU." = "Ascunde spațiile pentru reclame și alte elemente ale paginii prin CSS. Dezactivat, rămâne doar blocarea de rețea, care folosește mai puține reguli și mai puțin procesor.";
-"Enable DeArrow" = "Activează DeArrow";
 "Replace Titles" = "Înlocuiește titlurile";
 "Replace Thumbnails" = "Înlocuiește miniaturile";
 "Random Frame When No Thumbnail" = "Cadru aleatoriu fără miniatură";
 "Show Original on Hover" = "Arată originalul la trecerea cursorului";
 "About DeArrow" = "Despre DeArrow";
 "Donate to DeArrow" = "Donează pentru DeArrow";
-"DeArrow: On" = "DeArrow: activat";
-"DeArrow: Off" = "DeArrow: dezactivat";
 "Check for Filter Updates" = "Verifică actualizările filtrelor";
 "Check for Userscript Updates" = "Verifică actualizările scripturilor de utilizator";
 "Download" = "Descarcă";
@@ -1032,7 +877,6 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 
 "Last Successful Update" = "Ultima actualizare reușită";
 
-"Site Actions" = "Acțiuni pentru site-uri";
 
 "Pause All Components" = "Întrerupe toate componentele";
 
@@ -1056,7 +900,6 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 
 "Automatic" = "Automat";
 
-"This script will not run on these sites. Other scripts still run." = "Acest script nu va rula pe aceste site-uri. Celelalte scripturi vor continua să ruleze.";
 
 "Operation details" = "Detaliile operațiunii";
 
@@ -1066,21 +909,15 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "URL entry mode" = "Mod de introducere URL";
 "Single URL" = "URL unic";
 "Bulk URLs" = "URL-uri în bloc";
-"Enter URLs to edit each list’s name and description." = "Introdu URL-uri pentru a edita numele și descrierea fiecărei liste.";
-"Names and descriptions" = "Nume și descrieri";
 "Paste URL" = "Lipește URL";
 "Paste URLs" = "Lipește URL-uri";
 
 "%@ submitted at last apply" = "%@ trimise la ultima aplicare";
 
-"Submitted at last apply" = "Trimise la ultima aplicare";
 
 "Source rules submitted to the converter at last apply, not Safari’s final rule count." = "Reguli sursă trimise convertorului la ultima aplicare, nu numărul final de reguli Safari.";
-"Failed to persist pending filter update revision" = "Actualizarea în așteptare a filtrului nu a putut fi salvată";
 
-"Paste non-empty plain text and review it before adding." = "Lipește text simplu care nu este gol și verifică-l înainte de adăugare.";
 
-"Choose a non-empty text file and review it before adding." = "Alege un fișier text care nu este gol și verifică-l înainte de adăugare.";
 
 /* Filter update reliability */
 "A wBlock filter update is already in progress." = "O actualizare a filtrelor wBlock este deja în curs.";
@@ -1104,7 +941,6 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Applies filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Aplică listele de filtre și scriptleturile. Scripturile de utilizator, Eliminatorul de elemente și redarea automată au comutatoare proprii.";
 "Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches. Each site includes its subdomains." = "Site-urile adăugate ocolesc listele de filtre și scriptleturile. Scripturile de utilizator, Eliminatorul de elemente și redarea automată au comutatoare proprii. Fiecare site își include subdomeniile.";
 "Websites" = "Site-uri";
-"Restart…" = "Repornește…";
 "Next update: %@" = "Următoarea actualizare: %@";
 "Next update" = "Următoarea actualizare";
 "Enable Experimental Filter?" = "Activezi filtrul experimental?";
@@ -1125,7 +961,6 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Due Now" = "Acum";
 "Capacity" = "Capacitate";
 
-"Reset…" = "Resetează…";
 "Languages" = "Limbi";
 "Paste or type filter rules." = "Lipește sau scrie reguli de filtrare.";
 

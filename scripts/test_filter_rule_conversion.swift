@@ -1,5 +1,4 @@
-// #918: a uBO :remove-attr()/:remove-class() rule must not break other
-// hiding rules for the same site.
+// Unsupported uBO syntax must not invalidate Safari's merged hiding selectors.
 import Foundation
 import wBlockCoreService
 
@@ -12,9 +11,9 @@ struct Main {
     static func main() {
         let cases: [(String, String)] = [
             ("www.reddit.com##reddit-search-small[expanded-composer-enabled]:remove-attr(expanded-composer-enabled)",
-             "www.reddit.com#%#//scriptlet('remove-attr', 'expanded-composer-enabled', 'reddit-search-small[expanded-composer-enabled]')"),
+             "www.reddit.com#?#reddit-search-small[expanded-composer-enabled]:remove-attr(expanded-composer-enabled)"),
             ("example.com#@#div[data-x='y']:remove-class(a|b)",
-             "example.com#@%#//scriptlet('remove-class', 'a|b', 'div[data-x=\\'y\\']')"),
+             "example.com#@?#div[data-x='y']:remove-class(a|b)"),
             ("example.com##a:remove-attr(/^data-/)", "example.com#?#a:remove-attr(/^data-/)"),
             ("example.com###answers-nav-button", "example.com###answers-nav-button"),
             // Unknown pseudo-classes would poison the merged selector; they run as extended CSS.
@@ -57,6 +56,6 @@ struct Main {
         let analysis = FilterRuleAnalysis.analyze(content: cases[0].0 + "\nwww.reddit.com###answers-nav-button")
         require(analysis.count(of: .advanced) == 1 && analysis.count(of: .elementHiding) == 1,
                 "remove-attr must count as advanced and leave the hide rule supported")
-        print("PASS: uBO remove-attr/remove-class rewritten to scriptlets")
+        print("PASS: uBO conversion and ExtendedCss routing")
     }
 }

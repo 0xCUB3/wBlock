@@ -51,7 +51,6 @@
 "%@ source → %@ expanded rules" = "%@ forrásszabály → %@ kibontott szabály";
 "(%@) source rules)" = "(%@) forrásszabály)";
 "(\\(sourceCount.formatted()) source rules)" = "(\\(sourceCount.formatted()) forrásszabály)";
-"(empty rule)" = "(üres szabály)";
 "(pending)" = "(függőben)";
 "1." = "1.";
 "1h" = "1h";
@@ -79,13 +78,11 @@
 "Add Filter" = "Szűrő hozzáadása";
 "Add Filter List" = "Szűrőlista hozzáadása";
 "Add Filter List…" = "Szűrőlista hozzáadása…";
-"Add Mode" = "Hozzáadási mód";
 "Add URLs" = "URL-ek hozzáadása";
 "Add Userscript or Userstyle" = "Felhasználói szkript vagy felhasználói stílus hozzáadása";
 "Add Userscript or Userstyle…" = "Felhasználói szkript vagy felhasználói stílus hozzáadása…";
 "Add userscripts and userstyles to customize your browsing experience" = "Adj hozzá felhasználói szkripteket és stílusokat a böngészési élmény testreszabásához";
 "Added custom filter" = "Egyéni szűrő hozzáadva";
-"Added sites are whitelisted: wBlock is completely turned off on them." = "A hozzáadott webhelyek engedélyezőlistára kerülnek: a wBlock teljesen kikapcsol rajtuk.";
 "Added user list" = "Felhasználói lista hozzáadva";
 "Added userscript from editor" = "Felhasználói szkript hozzáadva a szerkesztőből";
 "Adding new userscript from URL" = "Új felhasználói szkript hozzáadása URL-ből";
@@ -121,7 +118,6 @@
 "AdGuard Widgets" = "AdGuard Widgets";
 "Ads" = "Hirdetések";
 "Advanced engine publish failed" = "A speciális motor közzététele sikertelen";
-"After downloading, filter lists will be applied automatically." = "A letöltés után a szűrőlisták automatikusan alkalmazásra kerülnek.";
 "All" = "Összes";
 "all" = "összes";
 "All Categories" = "Összes kategória";
@@ -169,22 +165,14 @@
 "Balanced defaults." = "Kiegyensúlyozott alapbeállítások.";
 "Base and mobile filters only." = "Csak az alap és a mobil szűrő.";
 "Base filter only." = "Csak az alap szűrő.";
-"Baseline Userscripts" = "Alapvető felhasználói szkriptek";
-"Baseline userscripts are enabled by default. You can adjust them here." = "Az alapvető felhasználói szkriptek alapértelmezés szerint engedélyezve vannak. Itt tudod őket módosítani.";
-"Best default" = "Legjobb alapértelmezett";
 "Beta" = "Beta";
 "Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "A beta userscriptek még tesztelés alatt állnak, ezért elronthatnak oldalakat vagy váratlanul viselkedhetnek. Bármikor kikapcsolhatod őket.";
 "BGAppRefresh" = "Háttér alkalmazás frissítése";
 "BGProcessing" = "Háttérfeldolgozás";
 "Blocked requests (%d)" = "Blokkolt kérések (%d)";
 "Blocked: %d" = "Blokkolva: %d";
-"Blocked: 0" = "Blokkolva: 0";
-"Blocked: 1" = "Blokkolva: 1";
-"Blockers near the per-extension limit:" = "A kiterjesztésenkénti korlát közelében lévő blokkolók:";
 "Blocking" = "Blokkolás";
 "Blocking is paused" = "A blokkolás szünetelve";
-"Blocking is paused. Content blockers are emptied until you turn this back on." = "A blokkolás szünetelve. Minden szűrő, userscript és stílus kikapcsolva marad, amíg újra be nem kapcsolod.";
-"Blocking is paused. Tap Resume to re-enable." = "A blokkolás szünetelve. Koppints a Folytatás gombra az összes blokkolás újraengedélyezéséhez.";
 "Blocking Level: %@" = "Blokkolási szint: %@";
 "Blocking paused" = "Blokkolás szünetelve";
 "Blocking resumed" = "Blokkolás folytatva";
@@ -211,7 +199,6 @@
 "Check for Updates" = "Frissítések keresése";
 "Checked %@" = "Ellenőrizve: %@";
 "Checked %@ ago" = "Ellenőrizve %@ ezelőtt";
-"Checked just now" = "Ellenőrizve épp most";
 "Checking background agent…" = "Háttérügynök ellenőrzése…";
 "Checking for Updates" = "Frissítések keresése";
 "Checking for updates..." = "Frissítések keresése";
@@ -219,21 +206,12 @@
 "Checking for script updates..." = "Szkriptfrissítések keresése";
 "Checking for script updates... (%d/%d)" = "Szkriptfrissítések keresése (%d/%d)";
 "Checks for wBlock filter updates and applies them when available." = "Ellenőrzi a wBlock szűrőfrissítéseit, és ha elérhetők, alkalmazza őket.";
-"Choose File…" = "Fájl kiválasztása…";
-"Choose optional userscripts. These are disabled by default." = "Válassz opcionális felhasználói szkripteket. Ezek alapértelmezetten le vannak tiltva.";
-"Choose which filters and scripts to download, then apply changes." = "Válaszd ki a letöltendő szűrőket és szkripteket, majd alkalmazd a módosításokat.";
-"Choose your preferred blocking level. You can adjust enabled filters later." = "Válaszd ki a kívánt blokkolási szintet. A későbbiekben módosíthatod az engedélyezett szűrőket.";
 "Clear" = "Törlés";
-"Click an element on the page to hide it." = "Kattints egy elemre az oldalon az elrejtéséhez.";
 "close" = "bezárás";
-"Close search" = "Keresés bezárása";
-"Community options" = "Közösségi lehetőségek";
-"Community-maintained options for additional regional coverage." = "Közösség által karbantartott lehetőségek további regionális lefedettséghez.";
 "Completed" = "Befejezve";
 "Conditional check failed" = "A feltételes ellenőrzés sikertelen";
 "Content filtering" = "Tartalomszűrés";
 "Continue" = "Folytatás";
-"Continue Setup" = "Beállítás folytatása";
 "Controls the time zone used when displaying and exporting log timestamps." = "A napló időbélyegzőinek megjelenítéséhez és exportálásához használt időzónát állítja be.";
 "Conversion" = "Konverzió";
 "Conversion phase summary" = "A konvertálási fázis összegzése";
@@ -243,11 +221,8 @@
 "Copy URL" = "URL másolása";
 "Copied" = "Másolva";
 "Could not resolve URL from dropped item." = "Nem sikerült feloldani az URL-t az ejtett elemből.";
-"Country or region" = "Ország vagy régió";
 "Country: %@" = "Ország: %@";
-"Critical Setup Required" = "Kritikus beállítás szükséges";
 "current match" = "aktuális találat";
-"Current Safari rules: %@" = "A jelenlegi Safari szabályok: %@";
 "Current Safari rules: %@ (near limit)" = "A Safari jelenlegi szabályai: %@ (közel a határértékhez)";
 "Custom" = "Egyéni";
 "Custom Filter" = "Egyéni szűrő";
@@ -255,17 +230,13 @@
 "Dandelion Sprout's Nordic Filters" = "Dandelion Sprout's Nordic Filters";
 "Dandelion Sprout's Serbo-Croatian List" = "Dandelion Sprout's Serbo-Croatian List";
 "Debug" = "Hibakeresés";
-"Default filters for balanced blocking and compatibility." = "Alapértelmezett szűrők kiegyensúlyozott blokkoláshoz és kompatibilitáshoz.";
 "Deferred" = "Elhalasztva";
 "Delete" = "Törlés";
-"Drop here to move" = "Ejtsd ide az áthelyezéshez";
 "Move to" = "Áthelyezés ide";
 "Delete Added List" = "Lista törlése";
 "Description" = "Leírás";
-"Description (optional)" = "Leírás (opcionális)";
 "Device timezone" = "Eszköz időzónája";
 "Disable" = "Letiltás";
-"Disable on this site" = "Letiltás ezen a webhelyen";
 "Disabled" = "Letiltva";
 "Disabled sites changed, fast rebuilding content blockers" = "A letiltott webhelyek megváltoztak, a tartalomblokkolók gyors újraépítése";
 "Disabled sites monitor unavailable (no protobuf data directory)" = "A letiltott webhelyek figyelése nem érhető el (nincs protobuf adatkönyvtár)";
@@ -273,18 +244,13 @@
 "Display" = "Megjelenítés";
 "Done" = "Kész";
 "Close" = "Bezárás";
-"Download Script" = "Szkript letöltése";
 "Downloaded" = "Letöltve";
 "Downloaded %d update" = "%d frissítés letöltve";
 "Downloaded %d updates" = "%d frissítés letöltve";
-"Downloaded content does not appear to be a valid filter list" = "A letöltött tartalom nem tűnik érvényes szűrőlistának";
 "Downloaded updates before applying" = "Frissítések letöltve az alkalmazás előtt";
 "Downloading %d update(s)..." = "%d frissítés(ek) letöltése...";
-"Downloading and applying filter lists…" = "Szűrőlisták letöltése és alkalmazása…";
-"Downloading filter updates..." = "Szűrőfrissítések letöltése...";
 "Downloading selected scripts..." = "Downloading selected scripts...";
 "Downloading selected updates..." = "Downloading selected updates...";
-"Downloading Updates" = "Frissítések letöltése";
 "due now" = "most esedékes";
 "Due soon catch-up" = "Hamarosan esedékes felzárkózás";
 "Duplicate Userscripts Found" = "Ismétlődő felhasználói szkriptek találhatók";
@@ -298,8 +264,6 @@
 "EasyPrivacy" = "EasyPrivacy";
 "Edit" = "Szerkesztés";
 "Edit Filter List" = "Lista szerkesztése";
-"Edit Name" = "Lista átnevezése";
-"Edit User List" = "Lista szerkesztése";
 "Editor" = "Editor";
 "Use Editor" = "Szerkesztő használata";
 "Element zapper" = "Elemeltávolító";
@@ -307,18 +271,12 @@
 "Enable 'wBlock Scripts' → Always Allow on Every Website" = "Engedélyezd a 'wBlock Scripts' bővítményt → Mindig engedélyezve minden webhelyen";
 "Enable all 5 Content Blocker extensions" = "Engedélyezd mind az 5 tartalomblokkoló bővítményt";
 "Enable Beta Userscript?" = "Beta userscript engedélyezése?";
-"Enable extra fixes and finish setup." = "Engedélyezd az extra javításokat, és fejezd be a beállítást.";
 "Enable the Safari extensions so wBlock can block ads and run userscripts." = "Engedélyezd a Safari-bővítményeket, hogy a wBlock blokkolhassa a hirdetéseket és futtathasson userscripteket.";
-"Enable the Safari extensions so wBlock can block ads." = "Engedélyezze a Safari bővítményeket, hogy a wBlock blokkolhassa a hirdetéseket.";
 "Enabled" = "Engedélyezve";
 "Enabled Lists" = "Engedélyezett listák";
-"Enter a valid http(s) URL to a .txt, .list, or .json filter." = "Adj meg egy érvényes http(s) URL-t egy .txt, .list vagy .json szűrőhöz.";
-"Enter Domain" = "Domain megadása";
 "Error" = "Hiba";
-"Error checking update for filter" = "Hiba a szűrő frissítésének ellenőrzésekor";
 "Error checking update for script" = "Hiba a szkript frissítésének ellenőrzésekor";
 "Error fetching filter" = "Hiba a szűrő lekérésekor";
-"Error fetching script" = "Hiba a szkript lekérésekor";
 "Estonian List" = "Estonian List";
 "Every %@" = "Minden %@";
 "Every %d days" = "%d naponta";
@@ -342,7 +300,6 @@
 "Extensions" = "Bővítmények";
 "Extensive blocklist targeting ads, trackers, and other unwanted content." = "Kiterjedt tiltólista hirdetések, nyomkövetők és egyéb nem kívánt tartalmak célzására.";
 "Failed" = "Sikertelen";
-"Failed reading user list file" = "A felhasználólista-fájl olvasása sikertelen";
 "Failed saving user list" = "A felhasználói lista mentése sikertelen";
 "Failed saving user list edits" = "A felhasználólista szerkesztéseinek mentése sikertelen";
 "Failed to access shared storage." = "Nem sikerült elérni a megosztott tárhelyet.";
@@ -351,18 +308,13 @@
 "Failed to clear extensions and advanced engine" = "A kiterjesztések és a speciális motor törlése sikertelen";
 "Failed to clear filter engine during onboarding reset" = "A szűrőmotor törlése sikertelen a bevezetés visszaállításakor";
 "Failed to convert rules for blocker" = "A blokkoló szabályainak konvertálása sikertelen";
-"Failed to create backup." = "Nem sikerült létrehozni a biztonsági mentést.";
-"Failed to decode filter content" = "A szűrőtartalom dekódolása sikertelen";
 "Failed to download custom filter" = "Az egyéni szűrő letöltése sikertelen";
 "Failed to export logs" = "A naplók exportálása sikertelen";
 "Failed to fetch filter - HTTP error" = "A szűrő lekérése sikertelen - HTTP hiba";
-"Failed to fetch script" = "A szkript lekérése sikertelen";
 "Failed to import dropped userscript" = "Az ejtett felhasználói szkript importálása sikertelen";
 "Failed to load dropped item" = "Az ejtett elem betöltése sikertelen";
 "Failed to prepare removeparam DNR rules" = "A removeparam DNR-szabályok előkészítése sikertelen";
-"Failed to process one or more pre-apply filter updates" = "Egy vagy több alkalmazás előtti szűrőfrissítés feldolgozása sikertelen";
 "Failed to read backup: %@" = "Nem sikerült beolvasni a biztonsági mentést: %@";
-"Failed to read file." = "Nem sikerült beolvasni a fájlt.";
 "Failed to read filter content" = "A szűrőtartalom olvasása sikertelen";
 "Failed to read local content for rule counting" = "A helyi tartalom olvasása a szabályok számlálásához sikertelen";
 "Failed to reload %@." = "A %@ újratöltése sikertelen.";
@@ -383,10 +335,8 @@
 "Fast applying disabled sites changes without full conversion" = "A letiltott webhelyek változásainak gyors alkalmazása teljes konvertálás nélkül";
 "Fast disabled sites update completed" = "A letiltott webhelyek gyors frissítése befejeződött";
 "File" = "Fájl";
-"File Information" = "Fájlinformációk";
 "Filter '%@' added successfully. Apply changes to enable it." = "A „%@” szűrő sikeresen hozzáadva. Alkalmazza a módosításokat az engedélyezéséhez.";
 "Filter Apply" = "Szűrők alkalmazása";
-"Filter Auto-Update" = "Szűrők automatikus frissítése";
 "Filter for ad blocking on Estonian sites." = "Szűrő hirdetésblokkoláshoz az észt webhelyeken.";
 "Filter list not found." = "Szűrőlista nem található.";
 "Filter list that specifically removes ads on websites in Spanish, Portuguese, and Brazilian Portuguese languages." = "Szűrőlista, amely kifejezetten eltávolítja a hirdetéseket a spanyol, portugál és brazil portugál nyelvű webhelyekről.";
@@ -407,19 +357,15 @@
 "Filtering off" = "Szűrés kikapcsolva";
 "Filters" = "Szűrők";
 "Filters: %d / Userscripts: %d" = "Szűrők: %d / Felhasználói szkriptek: %d";
-"Filters and scripts applied successfully." = "Filters and scripts applied successfully.";
-"Filters applied successfully." = "A szűrők sikeresen alkalmazva.";
 "Filters Auto-Disabled" = "Szűrők automatikusan letiltva";
 "Filters update in the background, but timing is approximate. Force-quitting wBlock from the app switcher may prevent background updates until you reopen the app." = "A szűrők a háttérben frissülnek, de az időzítés nem pontos. Ha kényszerítve bezárod a wBlockot az alkalmazásváltóban, a háttérfrissítések elmaradhatnak, amíg újra meg nem nyitod az appot.";
 "FilterUpdate" = "Szűrő frissítése";
 "Find" = "Keresés";
 "Finnish ad blocking filter list." = "Finn hirdetésblokkoló szűrőlista.";
-"For complete ad blocking" = "Teljes hirdetésblokkoláshoz";
 "Foreground Catch-up" = "Előtérbeli felzárkózás";
 "Foreign" = "Nemzetközi";
 "Found %d update(s) available." = "Elérhető %d frissítés(ek)et találtunk.";
 "Frellwit's Swedish Filter" = "Frellwit's Swedish Filter";
-"Full content loaded" = "Teljes tartalom betöltve";
 "go" = "Ugrás";
 "Go to line" = "Ugrás sorra";
 "Greek AdBlock Filter" = "Greek AdBlock Filter";
@@ -427,7 +373,6 @@
 "HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Handles advanced anti-adblock cases that filter rules miss." = "Kezeli a fejlett hirdetésblokkolás-ellenes eseteket, amelyek kihagyják a szabályokat.";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "Elrejti az oldalon belüli felugró ablakokat, szalaghirdetéseket és egyéb nem kívánt oldalelemeket.";
-"Highlighting disabled for performance" = "Kiemelés letiltva a teljesítmény érdekében";
 "Hold for 3 seconds to apply without checking for updates." = "Tartsd lenyomva 3 másodpercig a frissítések ellenőrzése nélküli alkalmazáshoz.";
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
@@ -441,7 +386,6 @@
 "iCloud Sync doesn't have permission to write to your iCloud account." = "Az iCloud Sync nem jogosult arra, hogy az Ön iCloud-fiókjába írjon.";
 "iCloud Sync hit an iCloud server error. Try again in a moment." = "Az iCloud Sync iCloud szerverhibába ütközött. Próbálja újra egy pillanat múlva.";
 "iCloud Sync is temporarily unavailable. Try again in a moment." = "Az iCloud Sync átmenetileg nem érhető el. Próbálja újra egy pillanat múlva.";
-"If you close wBlock with unapplied changes, we'll send a gentle nudge so nothing gets forgotten." = "Ha nem alkalmazott módosításokkal zárod be a wBlockot, küldünk egy finom emlékeztetőt, hogy semmi ne maradjon el.";
 "If you use Private Browsing, also enable Allow in Private Browsing for wBlock Scripts and the 5 content blockers. Cookie notices and other scriptlets will not run in Private windows without it." = "Ha Privát böngészést használsz, kapcsold be a Privát böngészésben engedélyezést a wBlock Scripts és az 5 tartalomblokkoló számára is. Cookie-figyelmeztetések és más scriptletek e nélkül nem futnak a privát ablakokban.";
 "Ignoring invalid filter response" = "Érvénytelen szűroválasz figyelmen kívül hagyása";
 "Import" = "Importálás";
@@ -449,120 +393,86 @@
 "Import failed: %@" = "Importálás sikertelen: %@";
 "Import File" = "Fájl importálása";
 "Import Settings" = "Beállítások importálása";
-"Imported userscript from file" = "Felhasználói szkript importálva fájlból";
 "Importing…" = "Importálás…";
 "in %@ (%@)" = "%@ területen (%@)";
 "IndianList" = "IndianList";
 "Info" = "Információ";
 "Info.plist missing" = "Hiányzik az Info.plist";
 "Initialized with %d filter list(s)." = "%d szűrőlistával inicializálva.";
-"International" = "Nemzetközi";
 "Invalid" = "Érvénytelen";
 "Invalid URL provided for new filter list" = "Érvénytelen URL az új szűrőlistához";
 "Invalid URL provided: %@" = "Érvénytelen URL-cím: %@";
-"iOS background refresh is best-effort; checks may run later than scheduled." = "Az iOS háttérfrissítés nem garantált; az ellenőrzések a tervezettnél később is futhatnak.";
-"It will be enabled automatically." = "Automatikusan engedélyezve lesz.";
 "KAD - Anti-Scam" = "KAD - Anti-Scam";
 "Keep All" = "Összes megtartása";
 "Keeps filters updating when wBlock isn't running. Turn off to avoid a persistent login item; updates will then only run while wBlock is open." = "Naprakészen tartja a szűrőket akkor is, amikor a wBlock nem fut. Kapcsolja ki, ha nem szeretne állandó bejelentkezési elemet; a frissítések ekkor csak a wBlock megnyitása alatt futnak.";
 "Keeps the app in portrait even if the device is rotated." = "Álló helyzetben tartja az appot akkor is, ha elforgatod a készüléket.";
 "Languages: %@" = "Nyelvek: %@";
 "Languages: \\(languageSummary)" = "Nyelvek: \\(languageSummary)";
-"Large file - scrolling may be slow" = "Nagy fájl - a görgetés lassú lehet";
 "last updated %@" = "utoljára frissítve: %@";
-"Last: Never" = "Utolsó: soha";
 "Latvian List" = "Latvian List";
 "Line %d isn’t a valid filter rule." = "A(z) %d. sor nem érvényes szűrőszabály.";
 "Line %d isn’t a valid http(s) filter URL." = "A(z) %d. sor nem érvényes http(s) szűrő URL.";
 "filterslists-KO" = "filterslists-KO";
 "Liste AR" = "Liste AR";
 "Liste FR + AdGuard French filter. Filter list that specifically removes ads on websites in French language." = "List FR + AdGuard francia szűrő. Szűrőlista, amely kifejezetten eltávolítja a hirdetéseket a francia nyelvű webhelyekről.";
-"Load full content" = "Teljes tartalom betöltése";
 "Loaded local version for filter" = "A szűrő helyi verziója betöltve";
 "Loading metadata…" = "Metaadatok betöltése…";
-"Loading script metadata…" = "Szkriptmetaadatok betöltése…";
-"Loading userscripts…" = "Felhasználói szkriptek betöltése…";
 "Local Import" = "Helyi import";
 "Lock Portrait Orientation" = "Álló tájolás rögzítése";
 "Logs" = "Naplók";
-"Logs cleared" = "Naplók törölve";
 "Logs will appear here as the app runs" = "A naplók itt jelennek meg az alkalmazás futása közben";
 "Content will be checked when you tap Add." = "A tartalmat a Hozzáadás gomb megérintésekor ellenőrizzük.";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "match case" = "kis- és nagybetű";
 "Minimal" = "Minimális";
 "Missing conversion result for blocker" = "Hiányzik a blokkoló konvertálási eredménye";
-"More lists rarely means better blocking: most overlap with the recommended defaults and mainly use up rule capacity. Annoyances and regional filters are the main exceptions." = "A több lista ritkán jelent jobb blokkolást: a legtöbb átfedésben van az ajánlott alapértelmezett listákkal, és főleg a szabálykapacitást fogyasztja. A zavaró elemek szűrői és a regionális szűrők a fő kivételek.";
 "Multipurpose" = "Többcélú";
 "N/A" = "N/A";
 "Name" = "Név";
 "Near Safari limit: %@" = "Közel a Safari korlátjához: %@";
 "Network" = "Hálózat";
 "never" = "soha";
-"Never checked" = "Soha nem ellenőrizve";
 "Next" = "Következő";
 "next" = "következő";
 "Next: %@" = "Következő: %@";
 "Next: \\(compactStatusLine)" = "Következő: \\(compactStatusLine)";
-"Next: Loading…" = "Következő: Betöltés…";
-"Next: review matching filters." = "Next: review matching filters.";
 "No advanced rules found, clearing filter engine" = "Nem találhatók speciális szabályok, a szűrőmotor törlése";
 "No background run recorded" = "Nincs rögzített háttérfutás";
-"No blocked requests yet." = "Még nincsenek blokkolt kérések.";
 "No Content Available" = "Nincs elérhető tartalom";
 "No description provided by the script metadata." = "A szkript metaadatai nem tartalmaznak leírást.";
-"No download URL for script" = "Nincs letöltési URL a szkripthez";
 "No filter lists selected. Clearing rules from all extensions." = "Nincsenek kiválasztva szűrőlisták. Szabályok törlése az összes bővítményről.";
 "No filters selected - clearing all extensions" = "Nincsenek kiválasztott szűrők – az összes kiterjesztés törlése";
 "No foreground catch-up recorded" = "Nincs rögzített előtérbeli felzárkózás";
 "No logs found" = "Nem találhatók naplók";
 "No matching extensions for selected filters." = "Nincsenek megfelelő bővítmények a kiválasztott szűrőknek.";
 "No matching userscripts" = "Nincs egyező felhasználói szkript";
-"No regional filters available. However, the default filter lists already cover English and international sites." = "Nincsenek elérhető regionális szűrők. Az alapértelmezett szűrőlisták azonban már lefedik az angol és a nemzetközi oldalakat.";
-"No regional filters needed. The default filter lists already cover English and international sites." = "Nincs szükség regionális szűrőkre. Az alapértelmezett szűrőlisták már lefedik az angol és a nemzetközi oldalakat.";
-"No regional userscripts available. However, the default userscripts already cover English and international sites." = "Nincsenek elérhető regionális felhasználói szkriptek. Az alapértelmezett felhasználói szkriptek azonban már lefedik az angol és a nemzetközi oldalakat.";
-"No regional userscripts needed. The default userscripts already cover English and international sites." = "Nincs szükség regionális felhasználói szkriptekre. Az alapértelmezett felhasználói szkriptek már lefedik az angol és a nemzetközi oldalakat.";
-"No script updates" = "Nincsenek szkriptfrissítések";
-"No silent push received yet" = "Még nem érkezett csendes push";
 "No Site Settings" = "Nincsenek webhelybeállítások";
 "No submit attempt yet" = "Még nem történt beküldési kísérlet";
 "No updates available" = "Nincsenek elérhető frissítések";
 "No updates available." = "Nincsenek frissítések.";
 "No Updates Found" = "Nem található frissítés";
 "No Userscripts" = "Nincsenek felhasználói szkriptek";
-"No userscripts selected" = "Nincs felhasználói szkript kiválasztva";
-"No zapper rules for this site." = "Ehhez a webhelyhez nincs elemeltávolító szabály.";
 "None" = "Nincs";
 "Not Downloaded" = "Nincs letöltve";
-"Not recorded" = "Nincs rögzítve";
-"Not selected" = "Nincs kiválasztva";
 "Not synced yet" = "Még nincs szinkronizálva";
-"Notify me" = "Értesítsen";
 "OK" = "OK";
 "on line" = "a(z) sorban";
 "Online Security Filter" = "Online Security Filter";
-"Only AdGuard Base filter. Lightest protection, best compatibility." = "Csak az AdGuard Base szűrő. A legkönnyebb védelem, legjobb kompatibilitás.";
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "%@ esetén csak közösség által karbantartott listák érhetők el. Engedélyezd őket, ha ez számodra megfelelő.";
-"Only community-maintained lists available. Enable them if you're comfortable." = "Csak közösség által karbantartott listák érhetők el. Engedélyezd őket, ha ez számodra megfelelő.";
 "Only pasted user lists can be edited." = "Csak a beillesztett felhasználói listák szerkeszthetők.";
 "Open Login Items" = "Bejelentkezési elemek megnyitása";
 "Open Safari Settings" = "Safari beállítások megnyitása";
 "Other" = "Egyéb";
 "Overdue catch-up" = "Túllépett felzárkózás";
 "Paste" = "Beillesztés";
-"Paste from Clipboard" = "Beillesztés vágólapról";
 "Paste one or more filter URLs, one per line." = "Illesszen be egy vagy több szűrő URL-t, soronként egyet.";
-"Paste the direct .user.js link. wBlock will download and install it for you." = "Illeszd be a közvetlen .user.js linket. A wBlock letölti és telepíti neked.";
-"Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you." = "Illeszd be a közvetlen .user.js-, .js-, .user.css-, .less-, .sass-, .scss-, .styl- vagy .pcss-hivatkozást. A wBlock letölti és telepíti.";
 "Pause Blocking" = "Blokkolás szüneteltetése";
 "Paused Components" = "Szüneteltetett összetevők";
 "Enabled Userscripts & Userstyles" = "Engedélyezett felhasználói szkriptek és stílusok";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "A blokkolás szünetel, amíg legalább egy kiválasztott összetevő szüneteltetve van. A folytatás minden összetevőt visszaállít.";
-"Temporarily pause selected components without changing their enabled settings." = "A kiválasztott összetevők ideiglenes szüneteltetése az engedélyezési beállításaik módosítása nélkül.";
 "Pausing blocking..." = "Blokkolás szüneteltetése…";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";
 "Dandelion Sprout's Anti-Malware List" = "Dandelion Sprout's Anti-Malware List";
-"Pick your base blocking level." = "Válaszd ki az alap blokkolási szintet.";
 "Prepared removeparam DNR rules" = "removeparam DNR-szabályok előkészítve";
 "Preparing %d extension" = "%d bővítmény előkészítése";
 "Preparing %d extensions" = "%d bővítmény előkészítése";
@@ -574,7 +484,6 @@
 "Progress" = "Folyamat";
 "Protects against suspicious URLs, phishing sites, and unwanted software." = "Védelmet nyújt a gyanús URL-ek, adathalász webhelyek és nem kívánt szoftverek ellen.";
 "Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = "Adj meg érvényes http:// vagy https:// hivatkozást, amely .js, .user.js, .user.css, .less, .sass, .scss, .styl vagy .pcss végű";
-"Provide a valid https:// link ending in .user.js" = "Adj meg egy érvényes, .user.js végű https:// hivatkozást";
 "Psst! You forgot something!" = "Pszt! Elfelejtettél valamit!";
 "Quit Without Applying" = "Kilépés jelentkezés nélkül";
 "Reading Files" = "Fájlok olvasása";
@@ -587,7 +496,6 @@
 "Refresh" = "Frissítés";
 "Regional" = "Regionális";
 "Regional & Language" = "Regionális és nyelvi";
-"Regional filters" = "Regionális szűrők";
 "Regional filters: %@" = "Regionális szűrők: %@";
 "Registered" = "Regisztrálva";
 "Registration: %@" = "Regisztráció: %@";
@@ -596,8 +504,6 @@
 "Reload phase summary" = "Az újratöltési fázis összegzése";
 "Reloading Extensions" = "Bővítmények újratöltése";
 "Reloading Safari extensions..." = "Safari bővítmények újratöltése...";
-"Reminder notifications" = "Emlékeztető értesítések";
-"Reminders" = "Emlékeztetők";
 "Remove" = "Eltávolítás";
 "Remove Older Versions" = "Régebbi verziók eltávolítása";
 "Removed custom filter" = "Egyéni szűrő eltávolítva";
@@ -608,17 +514,13 @@
 "replace all" = "összes cseréje";
 "replaced $ matches" = "$ találat cserélve";
 "replaced match on line $" = "találat cserélve a(z) $ sorban";
-"Report an Issue" = "Hiba bejelentése";
 "Required for userscripts, advanced ad blocking, and cleaner features" = "Szükséges a userscriptekhez, a fejlett hirdetésblokkoláshoz és a tisztító funkciókhoz";
-"Required for YouTube ad blocking and much more" = "Szükséges a YouTube hirdetésblokkoláshoz és sok máshoz";
 "The selected file is too large. Maximum size is 10 MB." = "A kiválasztott fájl túl nagy. A maximális méret 10 MB.";
-"Requirements" = "Követelmények";
 "Reset Site Settings" = "Webhelybeállítások visszaállítása";
 "Resetting…" = "Resetingâ¦";
 "Restart" = "Újraindítás";
 "Restart Onboarding" = "Beállítás újraindítása";
 "Restart Onboarding?" = "Kezdő beállítás újraindítása?";
-"Restart Onboarding…" = "Kezdő beállítás újraindítása…";
 "Restarting…" = "Újraindítás…";
 "Restore" = "Visszaállítás";
 "Restore from backup…" = "Visszaállítás biztonsági másolatból…";
@@ -626,15 +528,11 @@
 "Resume" = "Folytatás";
 "Resume Blocking" = "Blokkolás folytatása";
 "Return of the YouTube Dislike." = "A YouTube nemtetszés visszatérése.";
-"Review your choices and apply settings." = "Ellenőrizd a választásaidat, és alkalmazd a beállításokat.";
 "road-block light" = "road-block light";
 "Romanian ad blocking filter subscription." = "Román hirdetésblokkoló szűrő előfizetés.";
-"Rule deleted" = "Szabály törölve";
 "Rule limit exceeded for blocker" = "A blokkoló szabálykorlátja túllépve";
-"Rule Limit Warning" = "Figyelmeztetés a szabály korlátozására";
 "Rules" = "Szabályok";
 "Run on this site" = "Futtatás ezen a webhelyen";
-"Safari limits each content blocker extension to %@ rules.\\nTotal capacity (all wBlock blockers): %@ rules.\\n\\n%@\\n\\nwBlock distributes your enabled filter lists across multiple blockers to maximize capacity, but you may still hit Safari's limits if you enable too many large lists." = "A Safari az egyes tartalomblokkoló-bővítményeket %@ szabályokra korlátozza.\\nTeljes kapacitás (minden wBlock blokkoló): %@ szabályok.\\n\\n%@\\n\\nwBlock több blokkoló között osztja el az engedélyezett szűrőlistákat a kapacitás maximalizálása érdekében, de előfordulhat, hogy a Safari túl sok korlátot is elér, ha engedélyezi.";
 "Safari limits each Content Blocker extension to 150,000 rules. wBlock automatically balances and compiles rules across all 5 slots." = "A Safari minden tartalomblokkoló bővítményt 150 000 szabályra korlátoz. A wBlock automatikusan kiegyensúlyozza és lefordítja a szabályokat mind az 5 helyen.";
 "Safari Rule Capacity" = "Safari szabálykapacitás";
 "Safari Rules" = "Safari szabályok";
@@ -644,7 +542,6 @@
 "Scheduler error" = "Ütemezőhiba";
 "Scheduling: %@" = "Ütemezés: %@";
 "Script Content" = "Szkript tartalma";
-"Script or Style URL" = "Szkript- vagy felhasználói stílus URL";
 "Scripts" = "Szkriptek";
 "Search" = "Keresés";
 "Search filters" = "Szűrők keresése";
@@ -652,27 +549,19 @@
 "Search scripts" = "Szkriptek keresése";
 "Security" = "Biztonság";
 "Select any userscripts you want to enable. These add extra features or fixes. You can always add more in the settings later." = "Válaszd ki az engedélyezni kívánt felhasználói szkripteket. Ezek extra funkciókat vagy javításokat adnak. Később bármikor hozzáadhatsz többet a beállításokban.";
-"Select the languages (one or more) you browse websites in. wBlock only uses this to recommend regional ad filters." = "Válaszd ki, milyen nyelveken (egy vagy több) böngészel webhelyeket. A wBlock ezt csak regionális hirdetésszűrők ajánlásához használja.";
 "Select the languages you browse in. wBlock will automatically recommend matching regional filters and features." = "Válassza ki a böngészési nyelveket. A wBlock automatikusan ajánlja a megfelelő regionális szűrőket és funkciókat.";
-"Send me reminders about unapplied changes" = "Küldj emlékeztetőt a nem alkalmazott módosításokról";
 "Set up wBlock" = "wBlock beállítása";
 "Setting userscript enabled state" = "A felhasználói szkript engedélyezési állapotának beállítása";
 "Settings" = "Beállítások";
 "Settings → Apps → Safari → Extensions" = "Beállítások → Alkalmazások → Safari → Bővítmények";
 "Setup Instructions" = "Beállítási útmutató";
-"Ships with the app" = "Az appal együtt érkezik";
-"Show blocked item count in toolbar" = "Blokkolt elemek számának megjelenítése az eszköztáron";
 "Show Enabled Only" = "Csak az engedélyezettek";
-"Show preview only" = "Csak az előnézet megjelenítése";
 "Showing preview (%@ of %@)" = "Előnézet megjelenítése (%@/%@)";
 "Showing preview (%@) of %@))" = "Előnézet megjelenítése (%@) / %@))";
 "Showing preview (\\(formatFileSize(previewLength)) of \\(formatFileSize(script.content.count)))" = "Előnézet megjelenítése (\\(formatFileSize(previewLength)) / \\(formatFileSize(script.content.count)))";
-"Silent Push" = "Csendes push";
 "Site Settings" = "Webhelybeállítások";
 "Size:" = "Méret:";
-"Skip for now" = "Kihagyás most";
 "Skipped overlapping apply request" = "Skipped overlapping apply request";
-"Skipped pause request while apply is in progress" = "Skipped pause request while apply is in progress";
 "Skipping update signal due to non-filter response body" = "A frissítési jelzés kihagyása, mert a válasz törzse nem szűrő";
 "Some filters were automatically disabled because Safari's rule limits were exceeded." = "Néhány szűrőt automatikusan letiltottunk, mert a Safari szabálykorlátait túllépték.";
 "Some pre-apply filter updates failed; continuing with available lists" = "Some pre-apply filter updates failed; continuing with available lists";
@@ -684,7 +573,6 @@
 "Fallbacks" = "Tartalék URL-ek";
 "If the source URL fails, wBlock tries these URLs in order." = "Ha a forrás URL nem működik, a wBlock sorban megpróbálja ezeket az URL-eket.";
 "No fallback URLs are configured for this list." = "Ehhez a listához nincsenek beállítva tartalék URL-ek.";
-"Regional lists add language-specific coverage to the default filters for English and international sites. If your language is missing, no separate regional list is available." = "A regionális listák nyelvspecifikus lefedettséggel egészítik ki az angol és nemzetközi oldalak alapértelmezett szűrőit. Ha a nyelve nem szerepel, nem érhető el hozzá külön regionális lista.";
 "Start Fresh" = "Tiszta indulás";
 "Started %@" = "Elindult %@";
 "Starting conversion..." = "Konverzió indítása...";
@@ -700,11 +588,9 @@
 "Successfully downloaded custom filter" = "Az egyéni szűrő letöltése sikeres";
 "Successfully updated script" = "A szkript frissítése sikeres";
 "Summary" = "Összegzés";
-"Supports .user.js, .js, .user.css, and .less files. Local imports won't auto-update; re-import to replace." = "Támogatja a .user.js, .js, .user.css és .less fájlokat. A helyi importok nem frissülnek automatikusan; az új import felülírja őket.";
 "Sync" = "Szinkronizálás";
 "Sync across devices" = "Szinkronizálás az eszközök között";
 "Sync Now" = "Szinkronizálás most";
-"Sync settings across devices" = "Beállítások szinkronizálása az eszközök között";
 "Sync Timestamps with Device Time Zone" = "Időbélyegek szinkronizálása az eszköz időzónájával";
 "Sync Userscript Enabled States" = "Userscript-bekapcsolási állapotok szinkronizálása";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "Szinkronizáld az eszközök között a szűrőválasztásaidat, egyéni listáidat, felhasználói szkriptjeidet és az engedélyezőlistádat.";
@@ -720,15 +606,10 @@
 "Synced just now" = "Épp most szinkronizálva";
 "Synced today at %@" = "Ma %@-kor szinkronizálva";
 "Synced yesterday at %@" = "Tegnap %@-kor szinkronizálva";
-"Syncing iCloud configuration…" = "iCloud-konfiguráció szinkronizálása…";
 "System" = "Rendszer";
-"Tap to review userscript guidelines." = "Koppints a felhasználói szkript irányelveinek megtekintéséhez.";
 "Auto-update: %@" = "Automatikus frissítés: %@";
-"Tell us where you browse so we can enable the right regional filters." = "Mondd meg, hol böngészel, hogy a megfelelő regionális szűrőket tudjuk engedélyezni.";
-"Temporarily disable all content blockers without turning them off in Safari Settings." = "Az összes blokkolás (tartalomblokkolók, userscriptek, stílusok) ideiglenes kikapcsolása a Safari Beállításokban való kikapcsolásuk nélkül.";
 "That doesn't look like a filter list." = "Ez nem úgy néz ki, mint egy szűrőlista.";
 "That name is already used by another filter list." = "Ezt a nevet már használja egy másik szűrőlista.";
-"That title is already used by another filter list." = "Ezt a címet már használja egy másik szűrőlista.";
 "The %@ userscript requires the %@" = "A(z) %@ felhasználói szkripthez szükséges ez: %@";
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "A(z) \\(bypassScript.name) felhasználói szkripthez szükséges ez: \\(filterName)";
 "The following filters were automatically disabled:
@@ -741,30 +622,22 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd újra a módosításokat.";
 "The following filters were automatically disabled:\\n\\n%@\\n\\nTo re-enable these filters, disable other large filters and apply changes again." = "A következő szűrőket a rendszer automatikusan letiltotta:\\n\\n%@\\n\\nA szűrők újbóli engedélyezéséhez tiltsa le a többi nagy szűrőt, és alkalmazza újra a módosításokat.";
-"These filters add extra blocking power for your languages on top of the default lists, which already cover English and international sites. You can fine-tune them later." = "Ezek a szűrők az alapértelmezett szűrőlistákon felül további blokkolási erőt adnak a nyelveidhez; az alapértelmezett listák már lefedik az angol és a nemzetközi oldalakat. Később finomhangolhatod őket.";
-"These lists are community-maintained. Enable them if you still see regional ads." = "Ezeket a listákat a közösség tartja karban. Engedélyezd őket, ha továbbra is látsz regionális hirdetéseket.";
-"This doesn't change the app's display language, which always follows your device settings." = "Ez nem módosítja az app megjelenítési nyelvét, az mindig az eszköz beállításait követi.";
 "This list covers websites for Norway, Denmark, Iceland, Danish territories, and the Sami indigenous population." = "Ez a lista Norvégia, Dánia, Izland, dán területek és a számi bennszülött lakosság webhelyeit tartalmazza.";
 "This may take a while" = "Ez eltarthat egy ideig";
 "This removes all settings for %@." = "Ez eltávolítja %@ összes beállítását.";
 "This removes the whitelist entry, userscript exceptions, and zapper rules for %@." = "Ez eltávolítja %@ engedélyezőlista-bejegyzését, felhasználói szkript kivételeit és elemeltávolító szabályait.";
-"This script hasn't been downloaded yet." = "Ezt a szkriptet még nem töltötted le.";
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "Ez eltávolít minden szűrőt, felhasználói szkriptet és beállítást, majd újraindítja a kezdő beállítási folyamatot.";
-"This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "Ez a biztonsági mentésben lévő beállításokkal lecseréli a jelenlegi szűrőválasztásaidat, az engedélyezőlistádat és az elemeltávolító szabályaidat.";
 "This will reset all filters, userscripts, and preferences." = "Ez visszaállít minden szűrőt, felhasználói szkriptet és beállítást.";
 "Timed out" = "Időtúllépés";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "A tinyShield segít blokkolni az Ad-Shield által a megfelelő oldalakra újra beillesztett hirdetéseket.";
 "Lets ad blockers quickly resist Ad-Shield, which reinserts ads on matching sites after filter lists hide them." = "Lehetővé teszi, hogy a reklámblokkolók gyorsan ellenálljanak az Ad-Shieldnek, amely a szűrőlisták által elrejtett hirdetéseket visszahelyezi az érintett oldalakon.";
 "Title" = "Cím";
-"Title (optional)" = "Cím (opcionális)";
 "Title is required." = "A név megadása kötelező.";
-"Titles will be created from each URL." = "A címek minden URL-ből létrejönnek.";
 "Too many pending tasks" = "Túl sok függő feladat";
 "Total Capacity" = "Teljes kapacitás";
 "Trace" = "Nyomkövetés";
 "Trust: %@" = "Megbízhatóság: %@";
 "Trust: \\(trust.capitalized)" = "Megbízhatóság: \\(trust.capitalized)";
-"Tune filters for your country and language." = "Hangold a szűrőket az országodhoz és nyelvedhez.";
 "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Kapcsold ki, ha meg akarod tartani a jelenlegi verziót, amikor a wBlock tömegesen vagy ütemezetten frissíti a szkripteket.";
 "Unable to access shared container" = "Nem érhető el a megosztott konténer";
 "Unapplied Filter Changes" = "Nem alkalmazott szűrőmódosítások";
@@ -779,7 +652,6 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Update & Apply" = "Frissítés és alkalmazás";
 "Update Filters" = "Update Filters";
 "Update Interval" = "Frissítési időköz";
-"Update Script" = "Szkript frissítése";
 "Update wBlock Filters" = "Update wBlock Filters";
 "Updated %d script" = "%d szkript frissítve";
 "Updated %d scripts" = "%d szkript frissítve";
@@ -787,15 +659,12 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Updated %d/%d extensions in %@" = "Frissített %d/%d bővítmények a %@-ben";
 "Updated custom filter list" = "Az egyéni szűrőlista frissítve";
 "Updates" = "Frissítések";
-"Updates Paused" = "Frissítések szüneteltetve";
 "Updating disabled sites..." = "Letiltott webhelyek frissítése...";
-"Updating Scripts" = "Felhasználói szkriptfrissítések keresése";
 "Updating…" = "Frissítés…";
 "URL" = "URL";
 "URL Patterns (%@)" = "URL minták (%@)";
 "URL Patterns (%d)" = "URL-minták (%d)";
 "URL Patterns (\\(script.matches.count))" = "URL minták (\\(script.matches.count))";
-"URL requirements" = "URL követelmények";
 "URLs" = "URL-ek";
 "Use existing iCloud setup?" = "Meglévő iCloud-beállítás használata?";
 "Use iCloud Setup" = "iCloud beállítás használata";
@@ -825,22 +694,15 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "View Content" = "Tartalom megtekintése";
 "View Logs" = "Naplók megtekintése";
 "Waiting" = "Várakozás";
-"Waiting for activity" = "Várakozás tevékenységre";
-"Waiting for iOS background wake or app open" = "Várakozás iOS háttérfelébresztésre vagy az alkalmazás megnyitására";
 "Warning" = "Figyelmeztetés";
 "wBlock" = "wBlock";
-"wBlock application appeared" = "A wBlock alkalmazás megjelent";
 "wBlock filter update started." = "wBlock filter update started.";
-"wBlock Scripts must be enabled and set to 'Allow' on all websites to block YouTube ads." = "A wBlock Scripts engedélyezve kell legyen és 'Engedélyezés' állapotra állítva minden webhelyen a YouTube hirdetések blokkolásához.";
 "wBlock Scripts must be enabled and set to 'Always Allow on All Websites' for userscripts and advanced blocking." = "A userscriptekhez és a fejlett blokkoláshoz a wBlock Scripts-et engedélyezni kell, és „Mindig engedélyezés minden webhelyen” értékre kell állítani.";
-"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' to block YouTube ads." = "A wBlock Scripts engedélyezve kell legyen és 'Mindig engedélyezve minden webhelyen' állapotra állítva a YouTube hirdetések blokkolásához.";
-"wBlock Version" = "wBlock verzió";
 "wBlock will fetch and enable the script automatically." = "A wBlock automatikusan letölti és engedélyezi a szkriptet.";
 "We don't have language data for %@. Try enabling filters manually if you see regional ads." = "Nincs nyelvi adatunk ehhez: %@. Ha regionális hirdetéseket látsz, próbáld kézzel engedélyezni a szűrőket.";
 "We don't have regional filters for %@." = "Nincsenek regionális szűrőink ehhez: %@.";
 "We found an existing wBlock configuration in iCloud (%@). You can skip onboarding and use that instead." = "Találtunk egy meglévő wBlock konfigurációt az iCloudban (%@). Kihagyhatod a kezdő beállítást, és ezt használhatod.";
 "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "Találtunk egy meglévő wBlock konfigurációt az iCloudban (\\(remoteConfigUpdatedAtText)). Kihagyhatod a kezdő beállítást, és ezt használhatod.";
-"We found an existing wBlock configuration in iCloud. You can skip onboarding and use that instead." = "Találtunk egy meglévő wBlock konfigurációt az iCloudban. Kihagyhatod a kezdő beállítást, és ezt használhatod.";
 "Web extension %@" = "Webes kiterjesztés %@";
 "Blocks advertisements and other promotional page elements." = "Blokkolja a hirdetéseket és az oldalak egyéb promóciós elemeit.";
 "Blocks trackers, analytics, and other privacy-invasive requests." = "Blokkolja a nyomkövetőket, az elemzéseket és az adatvédelmet sértő kéréseket.";
@@ -867,7 +729,6 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "On" = "Be";
 "Off" = "Ki";
 "You're already using the latest filters." = "Már a legújabb szűrőket használod.";
-"You can always add regional filters later from Settings." = "A regionális szűrőket később is bármikor hozzáadhatod a Beállításokban.";
 "You have unapplied filter changes in wBlock. Tap to apply them now!" = "Nem alkalmazott szűrőmódosításaid vannak a wBlockban. Koppints most az alkalmazáshoz!";
 "You have unapplied filter changes. Do you want to apply them before quitting?" = "Nem alkalmazott szűrőmódosítások vannak. Alkalmazni szeretné őket a kilépés előtt?";
 "Zapper rules (%d)" = "Elemeltávolító szabályok (%d)";
@@ -911,11 +772,8 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Disable Essential Filter?" = "Letiltja az alapvető szűrőt?";
 "Replace Existing Content?" = "Lecseréli a meglévő tartalmat?";
 "Clear Element Zapper Rules?" = "Törli az Element Zapper szabályait?";
-"Clear All" = "Összes törlése";
 "This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "Ez az ajánlott szűrő a wBlock alapvető védelmének része. Kikapcsolása csökkentheti a blokkolás lefedettségét.";
-"Pasting will replace the existing editor content." = "A beillesztés lecseréli a szerkesztő meglévő tartalmát.";
 "Pasting will replace the existing content." = "A beillesztés lecseréli a meglévő tartalmat.";
-"This removes all saved element zapper rules from every site." = "Ez eltávolítja az összes mentett Element Zapper-szabályt minden webhelyről.";
 "Clear Element Zapper Rules" = "Element Zapper-szabályok törlése";
 "Advanced" = "Speciális";
 "Help" = "Súgó";
@@ -928,17 +786,10 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Privacy Policy" = "Adatvédelmi irányelvek";
 
 /* Issue 508 UI */
-"Use a valid http:// or https:// URL" = "Érvényes http:// vagy https:// URL-t használj";
-"Include a host name" = "Adj meg állomásnevet";
-"Do not use a userscript URL ending in .js, .mjs, or .cjs" = "Ne használj .js, .mjs vagy .cjs végződésű Userscript URL-t";
 "wBlock will fetch and enable the filter list automatically" = "A wBlock automatikusan letölti és engedélyezi a szűrőlistát";
 
 /* Issue 508 UI follow-up */
-"Starts with http:// or https://" = "http:// vagy https:// előtaggal kezdődik";
-"Ends with .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = ".js, .user.js, .user.css, .less, .sass, .scss, .styl vagy .pcss végű";
-"Hosted on a trusted source" = "Megbízható forrásról származik";
 
-"The file must include userscript or userstyle metadata." = "A fájlnak userscript- vagy userstyle-metaadatokat kell tartalmaznia.";
 
 "Failed to clear downloaded content; apply again to retry." = "Nem sikerült törölni a letöltött tartalmat; az újrapróbálkozáshoz alkalmazza ismét a módosításokat.";
 "Failed to resume blocking." = "Nem sikerült folytatni a blokkolást.";
@@ -963,7 +814,6 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Couldn't save the edited source." = "A szerkesztett forrás mentése sikertelen.";
 "Userstyle source exceeds the 2 MiB limit." = "A userstyle forrása meghaladja a 2 MiB-os korlátot.";
 "Userstyle compiler resource is missing." = "Hiányzik a userstyle fordítóerőforrása.";
-"Userstyle compiler resource failed to load." = "A userstyle fordítóerőforrásának betöltése sikertelen.";
 "Userstyle compiler input could not be serialized." = "A userstyle fordítóbemenete nem szerializálható.";
 "Userstyle compiler returned an invalid response." = "A userstyle fordítója érvénytelen választ adott.";
 "Userstyle compiler returned no CSS." = "A userstyle fordítója nem adott vissza CSS-t.";
@@ -975,8 +825,6 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Userstyle compiler timed out." = "A felhasználói stílus fordítási ideje lejárt.";
 "Userstyle compiler must not run on the main thread." = "A felhasználói stílus fordítója nem futhat a fő szálon.";
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "A Dark Reader MIT-licencelt API-motorja a wBlockhoz (béta; a teljes webhelyjavítási adatbázis nélkül).";
-"Follow System Appearance" = "Rendszermegjelenés követése";
-"When off, Dark Reader keeps websites dark in Light Mode." = "Kikapcsolva a Dark Reader világos módban is sötéten tartja a webhelyeket.";
 "Follow System" = "Rendszert követ";
 "Always Dark" = "Mindig sötét";
 "Dark" = "Sötét";
@@ -984,15 +832,12 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "%@ → %@ Safari rules" = "%@ → %@ Safari-szabály";
 "Cosmetic Filtering" = "Kozmetikai szűrés";
 "Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU." = "CSS-sel elrejti a hirdetéshelyeket és más oldalelemeket. Kikapcsolva csak a hálózati blokkolás marad, amely kevesebb szabályt és kevesebb CPU-t használ.";
-"Enable DeArrow" = "DeArrow bekapcsolása";
 "Replace Titles" = "Címek cseréje";
 "Replace Thumbnails" = "Bélyegképek cseréje";
 "Random Frame When No Thumbnail" = "Véletlen képkocka bélyegkép nélkül";
 "Show Original on Hover" = "Eredeti mutatása rámutatáskor";
 "About DeArrow" = "A DeArrow névjegye";
 "Donate to DeArrow" = "Támogasd a DeArrow-t";
-"DeArrow: On" = "DeArrow: be";
-"DeArrow: Off" = "DeArrow: ki";
 "Check for Filter Updates" = "Szűrőfrissítések keresése";
 "Check for Userscript Updates" = "Felhasználói szkript frissítések keresése";
 "Download" = "Letöltés";
@@ -1032,7 +877,6 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 
 "Last Successful Update" = "Utolsó sikeres frissítés";
 
-"Site Actions" = "Webhelyműveletek";
 
 "Pause All Components" = "Összes összetevő szüneteltetése";
 
@@ -1056,7 +900,6 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 
 "Automatic" = "Automatikus";
 
-"This script will not run on these sites. Other scripts still run." = "Ez a szkript nem fut ezeken a webhelyeken. A többi szkript továbbra is fut.";
 
 "Operation details" = "Művelet részletei";
 
@@ -1066,21 +909,15 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "URL entry mode" = "URL-beviteli mód";
 "Single URL" = "Egy URL";
 "Bulk URLs" = "Több URL";
-"Enter URLs to edit each list’s name and description." = "Adjon meg URL-eket az egyes listák nevének és leírásának szerkesztéséhez.";
-"Names and descriptions" = "Nevek és leírások";
 "Paste URL" = "URL beillesztése";
 "Paste URLs" = "URL-ek beillesztése";
 
 "%@ submitted at last apply" = "%@ elküldve a legutóbbi alkalmazáskor";
 
-"Submitted at last apply" = "Elküldve a legutóbbi alkalmazáskor";
 
 "Source rules submitted to the converter at last apply, not Safari’s final rule count." = "Az utolsó alkalmazáskor az átalakítónak elküldött forrásszabályok, nem a Safari végleges szabályszáma.";
-"Failed to persist pending filter update revision" = "Nem sikerült menteni a függőben lévő szűrőfrissítést";
 
-"Paste non-empty plain text and review it before adding." = "Illesszen be nem üres egyszerű szöveget, és ellenőrizze a hozzáadás előtt.";
 
-"Choose a non-empty text file and review it before adding." = "Válasszon egy nem üres szövegfájlt, és ellenőrizze a hozzáadás előtt.";
 
 /* Filter update reliability */
 "A wBlock filter update is already in progress." = "Már folyamatban van egy wBlock-szűrőfrissítés.";
@@ -1104,7 +941,6 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Applies filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Szűrőlistákat és scriptleteket alkalmaz. A userscriptek, a zapper és az automatikus lejátszás külön kapcsolóval rendelkeznek.";
 "Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches. Each site includes its subdomains." = "A hozzáadott webhelyek kihagyják a szűrőlistákat és scriptleteket. A userscriptek, a zapper és az automatikus lejátszás külön kapcsolóval rendelkeznek. Minden webhely az aldomainjeire is vonatkozik.";
 "Websites" = "Webhelyek";
-"Restart…" = "Újraindítás…";
 "Next update: %@" = "Következő frissítés: %@";
 "Next update" = "Következő frissítés";
 "Enable Experimental Filter?" = "Engedélyezed a kísérleti szűrőt?";
@@ -1125,7 +961,6 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Due Now" = "Esedékes";
 "Capacity" = "Kapacitás";
 
-"Reset…" = "Visszaállítás…";
 "Languages" = "Nyelvek";
 "Paste or type filter rules." = "Illessz be vagy írj be szűrőszabályokat.";
 

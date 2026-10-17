@@ -51,7 +51,6 @@
 "%@ source → %@ expanded rules" = "%@ Quellregeln → %@ expandierte Regeln";
 "(%@) source rules)" = "(%@) Quellregeln)";
 "(\\(sourceCount.formatted()) source rules)" = "(\\(sourceCount.formatted()) Quellregeln)";
-"(empty rule)" = "(leere Regel)";
 "(pending)" = "(ausstehend)";
 "1." = "1.";
 "1h" = "1h";
@@ -79,13 +78,11 @@
 "Add Filter" = "Filter hinzufügen";
 "Add Filter List" = "Filterliste hinzufügen";
 "Add Filter List…" = "Filterliste hinzufügen…";
-"Add Mode" = "Hinzufügemodus";
 "Add URLs" = "URLs hinzufügen";
 "Add Userscript or Userstyle" = "Benutzerskript oder Benutzerstil hinzufügen";
 "Add Userscript or Userstyle…" = "Benutzerskript oder Benutzerstil hinzufügen…";
 "Add userscripts and userstyles to customize your browsing experience" = "Füge Benutzerskripte und Benutzerstile hinzu, um dein Surferlebnis anzupassen";
 "Added custom filter" = "Benutzerdefinierten Filter hinzugefügt";
-"Added sites are whitelisted: wBlock is completely turned off on them." = "Hinzugefügte Websites stehen auf der Ausnahmeliste: wBlock ist dort vollständig deaktiviert.";
 "Added user list" = "Benutzerliste hinzugefügt";
 "Added userscript from editor" = "Benutzerskript aus Editor hinzugefügt";
 "Adding new userscript from URL" = "Neues Benutzerskript wird über eine URL hinzugefügt";
@@ -121,7 +118,6 @@
 "AdGuard Widgets" = "AdGuard Widgets";
 "Ads" = "Werbung";
 "Advanced engine publish failed" = "Bereitstellen der erweiterten Engine fehlgeschlagen";
-"After downloading, filter lists will be applied automatically." = "Nach dem Herunterladen werden Filterlisten automatisch angewendet.";
 "All" = "Alle";
 "all" = "alle";
 "All Categories" = "Alle Kategorien";
@@ -169,22 +165,14 @@
 "Balanced defaults." = "Ausgewogene Standardeinstellungen.";
 "Base and mobile filters only." = "Nur Basis- und Mobilfilter.";
 "Base filter only." = "Nur Basisfilter.";
-"Baseline Userscripts" = "Basis-Benutzerskripte";
-"Baseline userscripts are enabled by default. You can adjust them here." = "Basis-Benutzerskripte sind standardmäßig aktiviert. Du kannst sie hier anpassen.";
-"Best default" = "Beste Voreinstellung";
 "Beta" = "Beta";
 "Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "Beta-Benutzerskripte werden noch getestet und können Seiten beeinträchtigen oder sich unerwartet verhalten. Du kannst sie jederzeit wieder deaktivieren.";
 "BGAppRefresh" = "BGAppRefresh";
 "BGProcessing" = "BGProcessing";
 "Blocked requests (%d)" = "Blockierte Anfragen (%d)";
 "Blocked: %d" = "Blockiert: %d";
-"Blocked: 0" = "Blockiert: 0";
-"Blocked: 1" = "Blockiert: 1";
-"Blockers near the per-extension limit:" = "Blocker nahe dem Limit pro Erweiterung:";
 "Blocking" = "Blockierung";
 "Blocking is paused" = "Blockieren ist pausiert";
-"Blocking is paused. Content blockers are emptied until you turn this back on." = "Blockieren ist pausiert. Alle Filter, Benutzerskripte und Benutzerstile bleiben deaktiviert, bis du dies wieder aktivierst.";
-"Blocking is paused. Tap Resume to re-enable." = "Blockieren ist pausiert. Tippe auf „Fortsetzen“, um es wieder zu aktivieren.";
 "Blocking Level: %@" = "Blockierungsstufe: %@";
 "Blocking paused" = "Blockieren pausiert";
 "Blocking resumed" = "Blockieren fortgesetzt";
@@ -211,7 +199,6 @@
 "Check for Updates" = "Auf Updates prüfen";
 "Checked %@" = "Geprüft %@";
 "Checked %@ ago" = "Vor %@ geprüft";
-"Checked just now" = "Gerade eben geprüft";
 "Checking background agent…" = "Hintergrundagent wird geprüft…";
 "Checking for Updates" = "Suche nach Updates";
 "Checking for updates..." = "Suche nach Updates...";
@@ -219,21 +206,12 @@
 "Checking for script updates..." = "Suche nach Skript-Updates...";
 "Checking for script updates... (%d/%d)" = "Suche nach Skript-Updates... (%d/%d)";
 "Checks for wBlock filter updates and applies them when available." = "Prüft auf wBlock-Filter-Updates und wendet sie an, wenn sie verfügbar sind.";
-"Choose File…" = "Datei auswählen…";
-"Choose optional userscripts. These are disabled by default." = "Wähle optionale Benutzerskripte. Diese sind standardmäßig deaktiviert.";
-"Choose which filters and scripts to download, then apply changes." = "Wähle, welche Filter und Skripte heruntergeladen werden sollen, und wende dann die Änderungen an.";
-"Choose your preferred blocking level. You can adjust enabled filters later." = "Wähle deine bevorzugte Blockierungsstufe. Aktivierte Filter kannst du später anpassen.";
 "Clear" = "Löschen";
-"Click an element on the page to hide it." = "Klicke auf ein Element auf der Seite, um es auszublenden.";
 "close" = "schließen";
-"Close search" = "Suche schließen";
-"Community options" = "Community-Optionen";
-"Community-maintained options for additional regional coverage." = "Von der Community gepflegte Optionen für zusätzliche regionale Abdeckung.";
 "Completed" = "Abgeschlossen";
 "Conditional check failed" = "Bedingte Prüfung fehlgeschlagen";
 "Content filtering" = "Inhaltsfilterung";
 "Continue" = "Fortfahren";
-"Continue Setup" = "Einrichtung fortsetzen";
 "Controls the time zone used when displaying and exporting log timestamps." = "Legt die Zeitzone für die Anzeige und den Export von Protokoll-Zeitstempeln fest.";
 "Conversion" = "Konvertierung";
 "Conversion phase summary" = "Zusammenfassung der Konvertierungsphase";
@@ -243,11 +221,8 @@
 "Copy URL" = "URL kopieren";
 "Copied" = "Kopiert";
 "Could not resolve URL from dropped item." = "URL des abgelegten Elements konnte nicht ermittelt werden.";
-"Country or region" = "Land oder Region";
 "Country: %@" = "Land: %@";
-"Critical Setup Required" = "Wichtige Einrichtung erforderlich";
 "current match" = "aktueller Treffer";
-"Current Safari rules: %@" = "Aktuelle Safari-Regeln: %@";
 "Current Safari rules: %@ (near limit)" = "Aktuelle Safari-Regeln: %@ (nahe dem Limit)";
 "Custom" = "Benutzerdefiniert";
 "Custom Filter" = "Benutzerdefinierter Filter";
@@ -255,17 +230,13 @@
 "Dandelion Sprout's Nordic Filters" = "Dandelion Sprout's Nordic Filters";
 "Dandelion Sprout's Serbo-Croatian List" = "Dandelion Sprout's Serbo-Croatian List";
 "Debug" = "Debug";
-"Default filters for balanced blocking and compatibility." = "Standardfilter für ausgewogenes Blockieren und Kompatibilität.";
 "Deferred" = "Zurückgestellt";
 "Delete" = "Löschen";
-"Drop here to move" = "Zum Verschieben hier ablegen";
 "Move to" = "Verschieben nach";
 "Delete Added List" = "Hinzugefügte Liste löschen";
 "Description" = "Beschreibung";
-"Description (optional)" = "Beschreibung (optional)";
 "Device timezone" = "Gerätezeitzone";
 "Disable" = "Deaktivieren";
-"Disable on this site" = "Auf dieser Website deaktivieren";
 "Disabled" = "Deaktiviert";
 "Disabled sites changed, fast rebuilding content blockers" = "Deaktivierte Websites geändert – Inhaltsblocker werden schnell neu erstellt";
 "Disabled sites monitor unavailable (no protobuf data directory)" = "Überwachung deaktivierter Websites nicht verfügbar (kein Protobuf-Datenverzeichnis)";
@@ -273,18 +244,13 @@
 "Display" = "Anzeige";
 "Done" = "Fertig";
 "Close" = "Schließen";
-"Download Script" = "Skript herunterladen";
 "Downloaded" = "Heruntergeladen";
 "Downloaded %d update" = "%d Update heruntergeladen";
 "Downloaded %d updates" = "%d Updates heruntergeladen";
-"Downloaded content does not appear to be a valid filter list" = "Heruntergeladener Inhalt scheint keine gültige Filterliste zu sein";
 "Downloaded updates before applying" = "Updates vor dem Anwenden heruntergeladen";
 "Downloading %d update(s)..." = "%d Update(s) werden heruntergeladen...";
-"Downloading and applying filter lists…" = "Filterlisten werden heruntergeladen und angewendet…";
-"Downloading filter updates..." = "Filter-Updates werden heruntergeladen...";
 "Downloading selected scripts..." = "Ausgewählte Skripte werden heruntergeladen...";
 "Downloading selected updates..." = "Ausgewählte Updates werden heruntergeladen...";
-"Downloading Updates" = "Updates werden heruntergeladen";
 "due now" = "jetzt fällig";
 "Due soon catch-up" = "Bald fälliges Nachholen";
 "Duplicate Userscripts Found" = "Doppelte Benutzerskripte gefunden";
@@ -298,8 +264,6 @@
 "EasyPrivacy" = "EasyPrivacy";
 "Edit" = "Bearbeiten";
 "Edit Filter List" = "Filterliste bearbeiten";
-"Edit Name" = "Liste umbenennen";
-"Edit User List" = "Benutzerliste bearbeiten";
 "Editor" = "Editor";
 "Use Editor" = "Editor verwenden";
 "Element zapper" = "Element-Zapper";
@@ -307,18 +271,12 @@
 "Enable 'wBlock Scripts' → Always Allow on Every Website" = "Aktiviere „wBlock Scripts“ → „Auf allen Websites immer erlauben“";
 "Enable all 5 Content Blocker extensions" = "Aktiviere alle 5 Inhaltsblocker-Erweiterungen";
 "Enable Beta Userscript?" = "Beta-Benutzerskript aktivieren?";
-"Enable extra fixes and finish setup." = "Aktiviere zusätzliche Fixes und schließe die Einrichtung ab.";
 "Enable the Safari extensions so wBlock can block ads and run userscripts." = "Aktiviere die Safari-Erweiterungen, damit wBlock Werbung blockieren und Benutzerskripte ausführen kann.";
-"Enable the Safari extensions so wBlock can block ads." = "Aktiviere die Safari-Erweiterungen, damit wBlock Werbung blockieren kann.";
 "Enabled" = "Aktiviert";
 "Enabled Lists" = "Aktivierte Listen";
-"Enter a valid http(s) URL to a .txt, .list, or .json filter." = "Gib eine gültige http(s)-URL zu einem .txt-, .list- oder .json-Filter ein.";
-"Enter Domain" = "Domain eingeben";
 "Error" = "Fehler";
-"Error checking update for filter" = "Fehler beim Prüfen des Filter-Updates";
 "Error checking update for script" = "Fehler beim Prüfen des Skript-Updates";
 "Error fetching filter" = "Fehler beim Abrufen des Filters";
-"Error fetching script" = "Fehler beim Abrufen des Skripts";
 "Estonian List" = "Estonian List";
 "Every %@" = "Alle %@";
 "Every %d days" = "Alle %d Tage";
@@ -342,7 +300,6 @@
 "Extensions" = "Erweiterungen";
 "Extensive blocklist targeting ads, trackers, and other unwanted content." = "Umfangreiche Sperrliste gegen Werbung, Tracker und andere unerwünschte Inhalte.";
 "Failed" = "Fehlgeschlagen";
-"Failed reading user list file" = "Lesen der Benutzerlistendatei fehlgeschlagen";
 "Failed saving user list" = "Speichern der Benutzerliste fehlgeschlagen";
 "Failed saving user list edits" = "Speichern der Benutzerlisten-Bearbeitungen fehlgeschlagen";
 "Failed to access shared storage." = "Zugriff auf den gemeinsamen Speicher fehlgeschlagen.";
@@ -351,18 +308,13 @@
 "Failed to clear extensions and advanced engine" = "Leeren der Erweiterungen und der erweiterten Engine fehlgeschlagen";
 "Failed to clear filter engine during onboarding reset" = "Leeren der Filter-Engine beim Zurücksetzen der Einrichtung fehlgeschlagen";
 "Failed to convert rules for blocker" = "Konvertierung der Regeln für den Blocker fehlgeschlagen";
-"Failed to create backup." = "Backup konnte nicht erstellt werden.";
-"Failed to decode filter content" = "Decodierung des Filterinhalts fehlgeschlagen";
 "Failed to download custom filter" = "Herunterladen des benutzerdefinierten Filters fehlgeschlagen";
 "Failed to export logs" = "Export der Protokolle fehlgeschlagen";
 "Failed to fetch filter - HTTP error" = "Filter konnte nicht abgerufen werden – HTTP-Fehler";
-"Failed to fetch script" = "Skript konnte nicht abgerufen werden";
 "Failed to import dropped userscript" = "Importieren des abgelegten Benutzerskripts fehlgeschlagen";
 "Failed to load dropped item" = "Abgelegtes Element konnte nicht geladen werden";
 "Failed to prepare removeparam DNR rules" = "Vorbereitung der removeparam DNR-Regeln fehlgeschlagen";
-"Failed to process one or more pre-apply filter updates" = "Verarbeitung einer oder mehrerer Filter-Updates vor dem Anwenden fehlgeschlagen";
 "Failed to read backup: %@" = "Backup konnte nicht gelesen werden: %@";
-"Failed to read file." = "Datei konnte nicht gelesen werden.";
 "Failed to read filter content" = "Lesen des Filterinhalts fehlgeschlagen";
 "Failed to read local content for rule counting" = "Lesen des lokalen Inhalts für Regelzählung fehlgeschlagen";
 "Failed to reload %@." = "%@ konnte nicht neu geladen werden.";
@@ -383,10 +335,8 @@
 "Fast applying disabled sites changes without full conversion" = "Schnelles Anwenden der Änderungen deaktivierter Websites ohne vollständige Konvertierung";
 "Fast disabled sites update completed" = "Schnelle Aktualisierung deaktivierter Websites abgeschlossen";
 "File" = "Datei";
-"File Information" = "Dateiinformationen";
 "Filter '%@' added successfully. Apply changes to enable it." = "Filter „%@“ erfolgreich hinzugefügt. Wende die Änderungen an, um ihn zu aktivieren.";
 "Filter Apply" = "Filter anwenden";
-"Filter Auto-Update" = "Automatische Filter-Updates";
 "Filter for ad blocking on Estonian sites." = "Filter gegen Werbung auf estnischen Websites.";
 "Filter list not found." = "Filterliste nicht gefunden.";
 "Filter list that specifically removes ads on websites in Spanish, Portuguese, and Brazilian Portuguese languages." = "Filterliste, die gezielt Werbung auf Websites in den Sprachen Spanisch, Portugiesisch und Brasilianisches Portugiesisch entfernt.";
@@ -407,19 +357,15 @@
 "Filtering off" = "Filterung aus";
 "Filters" = "Filter";
 "Filters: %d / Userscripts: %d" = "Filter: %d / Benutzerskripte: %d";
-"Filters and scripts applied successfully." = "Filter und Skripte erfolgreich angewendet.";
-"Filters applied successfully." = "Filter erfolgreich angewendet.";
 "Filters Auto-Disabled" = "Filter automatisch deaktiviert";
 "Filters update in the background, but timing is approximate. Force-quitting wBlock from the app switcher may prevent background updates until you reopen the app." = "Filter werden im Hintergrund aktualisiert, der Zeitpunkt ist aber nur ungefähr. Wenn du wBlock im App-Umschalter zwangsweise beendest, kann das Hintergrundaktualisierungen verhindern, bis du die App erneut öffnest.";
 "FilterUpdate" = "FilterUpdate";
 "Find" = "Suchen";
 "Finnish ad blocking filter list." = "Finnische Filterliste gegen Werbung.";
-"For complete ad blocking" = "Für vollständige Werbeblockierung";
 "Foreground Catch-up" = "Nachholen im Vordergrund";
 "Foreign" = "Länderspezifisch";
 "Found %d update(s) available." = "Es wurde(n) %d Update(s) gefunden.";
 "Frellwit's Swedish Filter" = "Frellwit's Swedish Filter";
-"Full content loaded" = "Vollständiger Inhalt geladen";
 "go" = "Los";
 "Go to line" = "Gehe zu Zeile";
 "Greek AdBlock Filter" = "Greek AdBlock Filter";
@@ -427,7 +373,6 @@
 "HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Handles advanced anti-adblock cases that filter rules miss." = "Behandelt komplexe Anti-Adblock-Fälle, die von Filterregeln nicht erfasst werden.";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "Blendet In-Page-Pop-ups, Banner und andere unerwünschte Seitenelemente aus.";
-"Highlighting disabled for performance" = "Hervorhebung aus Leistungsgründen deaktiviert";
 "Hold for 3 seconds to apply without checking for updates." = "3 Sekunden gedrückt halten, um ohne Update-Prüfung anzuwenden.";
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
@@ -441,7 +386,6 @@
 "iCloud Sync doesn't have permission to write to your iCloud account." = "iCloud Sync hat keine Berechtigung, auf dein iCloud-Konto zu schreiben.";
 "iCloud Sync hit an iCloud server error. Try again in a moment." = "Bei iCloud Sync ist ein iCloud-Serverfehler aufgetreten. Versuche es gleich noch einmal.";
 "iCloud Sync is temporarily unavailable. Try again in a moment." = "iCloud Sync ist vorübergehend nicht verfügbar. Versuche es gleich noch einmal.";
-"If you close wBlock with unapplied changes, we'll send a gentle nudge so nothing gets forgotten." = "Wenn du wBlock mit nicht angewendeten Änderungen schließt, schicken wir dir eine sanfte Erinnerung, damit nichts vergessen wird.";
 "If you use Private Browsing, also enable Allow in Private Browsing for wBlock Scripts and the 5 content blockers. Cookie notices and other scriptlets will not run in Private windows without it." = "Wenn du den Privaten Modus nutzt, aktiviere außerdem „In „Privates Surfen“ erlauben“ für wBlock Scripts und die 5 Inhaltsblocker. Cookie-Hinweise und andere Scriptlets laufen in privaten Fenstern sonst nicht.";
 "Ignoring invalid filter response" = "Ungültige Filterantwort wird ignoriert";
 "Import" = "Importieren";
@@ -449,120 +393,86 @@
 "Import failed: %@" = "Import fehlgeschlagen: %@";
 "Import File" = "Datei importieren";
 "Import Settings" = "Einstellungen importieren";
-"Imported userscript from file" = "Benutzerskript aus Datei importiert";
 "Importing…" = "Wird importiert…";
 "in %@ (%@)" = "in %@ (%@)";
 "IndianList" = "IndianList";
 "Info" = "Info";
 "Info.plist missing" = "Info.plist fehlt";
 "Initialized with %d filter list(s)." = "Mit %d Filterliste(n) initialisiert.";
-"International" = "International";
 "Invalid" = "Ungültig";
 "Invalid URL provided for new filter list" = "Ungültige URL für neue Filterliste angegeben";
 "Invalid URL provided: %@" = "Ungültige URL angegeben: %@";
-"iOS background refresh is best-effort; checks may run later than scheduled." = "Die iOS-Hintergrundaktualisierung ist nicht garantiert; Prüfungen können später als geplant laufen.";
-"It will be enabled automatically." = "Es wird automatisch aktiviert.";
 "KAD - Anti-Scam" = "KAD - Anti-Scam";
 "Keep All" = "Alle behalten";
 "Keeps filters updating when wBlock isn't running. Turn off to avoid a persistent login item; updates will then only run while wBlock is open." = "Hält Filter aktuell, auch wenn wBlock nicht läuft. Deaktivieren, um kein dauerhaftes Anmeldeobjekt zu verwenden; Updates laufen dann nur, während wBlock geöffnet ist.";
 "Keeps the app in portrait even if the device is rotated." = "Hält die App im Hochformat, auch wenn das Gerät gedreht wird.";
 "Languages: %@" = "Sprachen: %@";
 "Languages: \\(languageSummary)" = "Sprachen: \\(languageSummary)";
-"Large file - scrolling may be slow" = "Große Datei - Scrollen kann langsam sein";
 "last updated %@" = "zuletzt aktualisiert %@";
-"Last: Never" = "Zuletzt: Nie";
 "Latvian List" = "Latvian List";
 "Line %d isn’t a valid filter rule." = "Zeile %d ist keine gültige Filterregel.";
 "Line %d isn’t a valid http(s) filter URL." = "Zeile %d ist keine gültige http(s)-Filter-URL.";
 "filterslists-KO" = "filterslists-KO";
 "Liste AR" = "Liste AR";
 "Liste FR + AdGuard French filter. Filter list that specifically removes ads on websites in French language." = "Liste FR + AdGuard French filter. Filterliste, die gezielt Werbung auf französischsprachigen Websites entfernt.";
-"Load full content" = "Vollständigen Inhalt laden";
 "Loaded local version for filter" = "Lokale Version des Filters geladen";
 "Loading metadata…" = "Metadaten werden geladen…";
-"Loading script metadata…" = "Skript-Metadaten werden geladen…";
-"Loading userscripts…" = "Benutzerskripte werden geladen…";
 "Local Import" = "Lokaler Import";
 "Lock Portrait Orientation" = "Hochformat fixieren";
 "Logs" = "Protokolle";
-"Logs cleared" = "Protokolle gelöscht";
 "Logs will appear here as the app runs" = "Protokolle erscheinen hier, während die App läuft";
 "Content will be checked when you tap Add." = "Der Inhalt wird geprüft, wenn du auf „Hinzufügen“ tippst.";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "match case" = "Groß-/Kleinschreibung";
 "Minimal" = "Minimal";
 "Missing conversion result for blocker" = "Konvertierungsergebnis für Blocker fehlt";
-"More lists rarely means better blocking: most overlap with the recommended defaults and mainly use up rule capacity. Annoyances and regional filters are the main exceptions." = "Mehr Listen bedeuten selten besseres Blockieren: Die meisten überschneiden sich mit den empfohlenen Standardlisten und verbrauchen vor allem Regelkapazität. Filter für Belästigungen und regionale Filter sind die wichtigsten Ausnahmen.";
 "Multipurpose" = "Mehrzweck";
 "N/A" = "k. A.";
 "Name" = "Name";
 "Near Safari limit: %@" = "Nahe am Safari-Limit: %@";
 "Network" = "Netzwerk";
 "never" = "nie";
-"Never checked" = "Nie geprüft";
 "Next" = "Weiter";
 "next" = "nächste";
 "Next: %@" = "Als Nächstes: %@";
 "Next: \\(compactStatusLine)" = "Als Nächstes: \\(compactStatusLine)";
-"Next: Loading…" = "Als Nächstes: Wird geladen…";
-"Next: review matching filters." = "Als Nächstes: passende Filter prüfen.";
 "No advanced rules found, clearing filter engine" = "Keine erweiterten Regeln gefunden – Filter-Engine wird geleert";
 "No background run recorded" = "Kein Hintergrundlauf aufgezeichnet";
-"No blocked requests yet." = "Noch keine blockierten Anfragen.";
 "No Content Available" = "Kein Inhalt verfügbar";
 "No description provided by the script metadata." = "Die Skript-Metadaten enthalten keine Beschreibung.";
-"No download URL for script" = "Keine Download-URL für Skript";
 "No filter lists selected. Clearing rules from all extensions." = "Keine Filterlisten ausgewählt. Regeln werden aus allen Erweiterungen entfernt.";
 "No filters selected - clearing all extensions" = "Keine Filter ausgewählt – alle Erweiterungen werden geleert";
 "No foreground catch-up recorded" = "Kein Nachholen im Vordergrund aufgezeichnet";
 "No logs found" = "Keine Protokolle gefunden";
 "No matching extensions for selected filters." = "Keine passenden Erweiterungen für ausgewählte Filter.";
 "No matching userscripts" = "Keine passenden Benutzerskripte";
-"No regional filters available. However, the default filter lists already cover English and international sites." = "Keine regionalen Filter verfügbar. Die Standardfilterlisten decken englische und internationale Websites jedoch bereits ab.";
-"No regional filters needed. The default filter lists already cover English and international sites." = "Keine regionalen Filter nötig. Die Standardfilterlisten decken englische und internationale Websites bereits ab.";
-"No regional userscripts available. However, the default userscripts already cover English and international sites." = "Keine regionalen Benutzerskripte verfügbar. Die Standard-Benutzerskripte decken englische und internationale Websites jedoch bereits ab.";
-"No regional userscripts needed. The default userscripts already cover English and international sites." = "Keine regionalen Benutzerskripte nötig. Die Standard-Benutzerskripte decken englische und internationale Websites bereits ab.";
-"No script updates" = "Keine Skript-Updates";
-"No silent push received yet" = "Noch kein stiller Push empfangen";
 "No Site Settings" = "Keine Website-Einstellungen";
 "No submit attempt yet" = "Noch kein Übermittlungsversuch";
 "No updates available" = "Keine Updates verfügbar";
 "No updates available." = "Keine Updates verfügbar.";
 "No Updates Found" = "Keine Updates gefunden";
 "No Userscripts" = "Keine Benutzerskripte";
-"No userscripts selected" = "Keine Benutzerskripte ausgewählt";
-"No zapper rules for this site." = "Keine Zapper-Regeln für diese Website.";
 "None" = "Keine";
 "Not Downloaded" = "Nicht heruntergeladen";
-"Not recorded" = "Nicht aufgezeichnet";
-"Not selected" = "Nicht ausgewählt";
 "Not synced yet" = "Noch nicht synchronisiert";
-"Notify me" = "Benachrichtige mich";
 "OK" = "OK";
 "on line" = "in Zeile";
 "Online Security Filter" = "Online Security Filter";
-"Only AdGuard Base filter. Lightest protection, best compatibility." = "Nur der AdGuard Base filter. Leichtester Schutz, beste Kompatibilität.";
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "Für %@ sind nur von der Community gepflegte Listen verfügbar. Aktiviere sie, wenn du damit einverstanden bist.";
-"Only community-maintained lists available. Enable them if you're comfortable." = "Es sind nur von der Community gepflegte Listen verfügbar. Aktiviere sie, wenn dir das recht ist.";
 "Only pasted user lists can be edited." = "Nur eingefügte Benutzerlisten können bearbeitet werden.";
 "Open Login Items" = "Anmeldeobjekte öffnen";
 "Open Safari Settings" = "Safari-Einstellungen öffnen";
 "Other" = "Sonstige";
 "Overdue catch-up" = "Überfälliges Nachholen";
 "Paste" = "Einfügen";
-"Paste from Clipboard" = "Aus der Zwischenablage einfügen";
 "Paste one or more filter URLs, one per line." = "Füge eine oder mehrere Filter-URLs ein, eine pro Zeile.";
-"Paste the direct .user.js link. wBlock will download and install it for you." = "Füge den direkten .user.js-Link ein. wBlock lädt ihn herunter und installiert ihn für dich.";
-"Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you." = "Füge den direkten .user.js-, .js-, .user.css-, .less-, .sass-, .scss-, .styl- oder .pcss-Link ein. wBlock lädt ihn herunter und installiert ihn für dich.";
 "Pause Blocking" = "Blockieren pausieren";
 "Paused Components" = "Pausierte Komponenten";
 "Enabled Userscripts & Userstyles" = "Aktivierte Benutzerskripte und Benutzerstile";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "„Blockieren pausieren“ ist aktiv, solange eine ausgewählte Komponente pausiert ist. „Fortsetzen“ aktiviert alle Komponenten wieder.";
-"Temporarily pause selected components without changing their enabled settings." = "Ausgewählte Komponenten vorübergehend pausieren, ohne ihre Aktivierungseinstellungen zu ändern.";
 "Pausing blocking..." = "Blockieren wird pausiert...";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";
 "Dandelion Sprout's Anti-Malware List" = "Dandelion Sprout's Anti-Malware List";
-"Pick your base blocking level." = "Wähle deine grundlegende Blockierungsstufe.";
 "Prepared removeparam DNR rules" = "removeparam DNR-Regeln vorbereitet";
 "Preparing %d extension" = "%d Erweiterung wird vorbereitet";
 "Preparing %d extensions" = "%d Erweiterungen werden vorbereitet";
@@ -574,7 +484,6 @@
 "Progress" = "Fortschritt";
 "Protects against suspicious URLs, phishing sites, and unwanted software." = "Schützt vor verdächtigen URLs, Phishing-Websites und unerwünschter Software.";
 "Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = "Gib einen gültigen http://- oder https://-Link ein, der auf .js, .user.js, .user.css, .less, .sass, .scss, .styl oder .pcss endet";
-"Provide a valid https:// link ending in .user.js" = "Gib einen gültigen https://-Link ein, der auf .user.js endet";
 "Psst! You forgot something!" = "Psst! Du hast etwas vergessen!";
 "Quit Without Applying" = "Ohne Anwenden beenden";
 "Reading Files" = "Dateien werden gelesen";
@@ -587,7 +496,6 @@
 "Refresh" = "Aktualisieren";
 "Regional" = "Regional";
 "Regional & Language" = "Region & Sprache";
-"Regional filters" = "Regionale Filter";
 "Regional filters: %@" = "Regionale Filter: %@";
 "Registered" = "Registriert";
 "Registration: %@" = "Registrierung: %@";
@@ -596,8 +504,6 @@
 "Reload phase summary" = "Zusammenfassung der Neu-Laden-Phase";
 "Reloading Extensions" = "Erweiterungen werden neu geladen";
 "Reloading Safari extensions..." = "Safari-Erweiterungen werden neu geladen...";
-"Reminder notifications" = "Erinnerungsbenachrichtigungen";
-"Reminders" = "Erinnerungen";
 "Remove" = "Entfernen";
 "Remove Older Versions" = "Ältere Versionen entfernen";
 "Removed custom filter" = "Benutzerdefinierten Filter entfernt";
@@ -608,17 +514,13 @@
 "replace all" = "alle ersetzen";
 "replaced $ matches" = "$ Treffer ersetzt";
 "replaced match on line $" = "Treffer in Zeile $ ersetzt";
-"Report an Issue" = "Problem melden";
 "Required for userscripts, advanced ad blocking, and cleaner features" = "Erforderlich für Benutzerskripte, erweiterte Werbeblockierung und Cleaner-Funktionen";
-"Required for YouTube ad blocking and much more" = "Erforderlich für YouTube-Werbeblockierung und vieles mehr";
 "The selected file is too large. Maximum size is 10 MB." = "Die ausgewählte Datei ist zu groß. Die maximale Größe beträgt 10 MB.";
-"Requirements" = "Voraussetzungen";
 "Reset Site Settings" = "Website-Einstellungen zurücksetzen";
 "Resetting…" = "Wird zurückgesetzt…";
 "Restart" = "Neu starten";
 "Restart Onboarding" = "Einführung neu starten";
 "Restart Onboarding?" = "Einführung neu starten?";
-"Restart Onboarding…" = "Einführung neu starten…";
 "Restarting…" = "Wird neu gestartet…";
 "Restore" = "Wiederherstellen";
 "Restore from backup…" = "Aus Backup wiederherstellen…";
@@ -626,15 +528,11 @@
 "Resume" = "Fortsetzen";
 "Resume Blocking" = "Blockieren fortsetzen";
 "Return of the YouTube Dislike." = "Bringt den YouTube-Dislike-Zähler zurück.";
-"Review your choices and apply settings." = "Überprüfe deine Auswahl und wende die Einstellungen an.";
 "road-block light" = "road-block light";
 "Romanian ad blocking filter subscription." = "Rumänische Filterliste gegen Werbung.";
-"Rule deleted" = "Regel gelöscht";
 "Rule limit exceeded for blocker" = "Regellimit für Blocker überschritten";
-"Rule Limit Warning" = "Regellimit-Warnung";
 "Rules" = "Regeln";
 "Run on this site" = "Auf dieser Website ausführen";
-"Safari limits each content blocker extension to %@ rules.\\nTotal capacity (all wBlock blockers): %@ rules.\\n\\n%@\\n\\nwBlock distributes your enabled filter lists across multiple blockers to maximize capacity, but you may still hit Safari's limits if you enable too many large lists." = "Safari beschränkt jede Inhaltsblocker-Erweiterung auf %@ Regeln.\\nGesamtkapazität (alle wBlock-Blocker): %@ Regeln.\\n\\n%@\\n\\nwBlock verteilt deine aktivierten Filterlisten auf mehrere Blocker, um die Kapazität zu maximieren. Du kannst jedoch trotzdem an die Grenzen von Safari stoßen, wenn du zu viele große Listen aktivierst.";
 "Safari limits each Content Blocker extension to 150,000 rules. wBlock automatically balances and compiles rules across all 5 slots." = "Safari beschränkt jede Inhaltsblocker-Erweiterung auf 150.000 Regeln. wBlock verteilt und kompiliert die Regeln automatisch auf alle 5 Slots.";
 "Safari Rule Capacity" = "Safari-Regelkapazität";
 "Safari Rules" = "Safari-Regeln";
@@ -644,7 +542,6 @@
 "Scheduler error" = "Planungsfehler";
 "Scheduling: %@" = "Planung: %@";
 "Script Content" = "Skriptinhalt";
-"Script or Style URL" = "Skript- oder Stil-URL";
 "Scripts" = "Skripte";
 "Search" = "Suchen";
 "Search filters" = "Filter suchen";
@@ -652,27 +549,19 @@
 "Search scripts" = "Skripte suchen";
 "Security" = "Sicherheit";
 "Select any userscripts you want to enable. These add extra features or fixes. You can always add more in the settings later." = "Wähle die Benutzerskripte aus, die du aktivieren möchtest. Diese fügen zusätzliche Funktionen oder Korrekturen hinzu. Du kannst später in den Einstellungen jederzeit weitere hinzufügen.";
-"Select the languages (one or more) you browse websites in. wBlock only uses this to recommend regional ad filters." = "Wähle die Sprachen (eine oder mehrere) aus, in denen du Websites besuchst. wBlock nutzt das nur, um regionale Werbefilter zu empfehlen.";
 "Select the languages you browse in. wBlock will automatically recommend matching regional filters and features." = "Wähle die Sprachen aus, in denen du surfst. wBlock empfiehlt automatisch passende regionale Filter und Funktionen.";
-"Send me reminders about unapplied changes" = "Sende mir Erinnerungen zu nicht angewendeten Änderungen";
 "Set up wBlock" = "wBlock einrichten";
 "Setting userscript enabled state" = "Aktivierungsstatus des Benutzerskripts wird gesetzt";
 "Settings" = "Einstellungen";
 "Settings → Apps → Safari → Extensions" = "Einstellungen → Apps → Safari → Erweiterungen";
 "Setup Instructions" = "Einrichtungsanweisungen";
-"Ships with the app" = "Wird mit der App geliefert";
-"Show blocked item count in toolbar" = "Anzahl blockierter Elemente in der Symbolleiste anzeigen";
 "Show Enabled Only" = "Nur Aktivierte anzeigen";
-"Show preview only" = "Nur Vorschau anzeigen";
 "Showing preview (%@ of %@)" = "Vorschau wird angezeigt (%@ von %@)";
 "Showing preview (%@) of %@))" = "Vorschau (%@) von %@))";
 "Showing preview (\\(formatFileSize(previewLength)) of \\(formatFileSize(script.content.count)))" = "Vorschau (\\(formatFileSize(previewLength)) von \\(formatFileSize(script.content.count)))";
-"Silent Push" = "Stiller Push";
 "Site Settings" = "Website-Einstellungen";
 "Size:" = "Größe:";
-"Skip for now" = "Vorerst überspringen";
 "Skipped overlapping apply request" = "Überlappende Anwenden-Anfrage übersprungen";
-"Skipped pause request while apply is in progress" = "Pause-Anfrage übersprungen, da gerade angewendet wird";
 "Skipping update signal due to non-filter response body" = "Update-Signal übersprungen, da der Antwortkörper kein Filter ist";
 "Some filters were automatically disabled because Safari's rule limits were exceeded." = "Einige Filter wurden automatisch deaktiviert, weil die Regellimits von Safari überschritten wurden.";
 "Some pre-apply filter updates failed; continuing with available lists" = "Einige Filter-Updates vor dem Anwenden sind fehlgeschlagen; es wird mit den verfügbaren Listen fortgefahren";
@@ -684,7 +573,6 @@
 "Fallbacks" = "Ersatz-URLs";
 "If the source URL fails, wBlock tries these URLs in order." = "Wenn die Quell-URL fehlschlägt, versucht wBlock diese URLs der Reihe nach.";
 "No fallback URLs are configured for this list." = "Für diese Liste sind keine Ersatz-URLs eingerichtet.";
-"Regional lists add language-specific coverage to the default filters for English and international sites. If your language is missing, no separate regional list is available." = "Regionale Listen ergänzen die Standardfilter für englische und internationale Websites um sprachspezifische Regeln. Wenn deine Sprache fehlt, ist keine eigene regionale Liste verfügbar.";
 "Start Fresh" = "Neu beginnen";
 "Started %@" = "Gestartet %@";
 "Starting conversion..." = "Konvertierung wird gestartet...";
@@ -700,11 +588,9 @@
 "Successfully downloaded custom filter" = "Benutzerdefinierten Filter erfolgreich heruntergeladen";
 "Successfully updated script" = "Skript erfolgreich aktualisiert";
 "Summary" = "Zusammenfassung";
-"Supports .user.js, .js, .user.css, and .less files. Local imports won't auto-update; re-import to replace." = "Unterstützt .user.js-, .js-, .user.css- und .less-Dateien. Lokale Importe werden nicht automatisch aktualisiert; importiere sie zum Ersetzen erneut.";
 "Sync" = "Synchronisierung";
 "Sync across devices" = "Geräteübergreifend synchronisieren";
 "Sync Now" = "Jetzt synchronisieren";
-"Sync settings across devices" = "Einstellungen geräteübergreifend synchronisieren";
 "Sync Timestamps with Device Time Zone" = "Zeitstempel mit der Gerätezeitzone synchronisieren";
 "Sync Userscript Enabled States" = "Aktivierungsstatus von Benutzerskripten synchronisieren";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "Synchronisiere deine Filterauswahl, benutzerdefinierte Listen, Benutzerskripte und Ausnahmeliste geräteübergreifend.";
@@ -720,15 +606,10 @@
 "Synced just now" = "Gerade eben synchronisiert";
 "Synced today at %@" = "Heute um %@ synchronisiert";
 "Synced yesterday at %@" = "Gestern um %@ synchronisiert";
-"Syncing iCloud configuration…" = "iCloud-Konfiguration wird synchronisiert…";
 "System" = "System";
-"Tap to review userscript guidelines." = "Tippe, um die Benutzerskript-Richtlinien anzusehen.";
 "Auto-update: %@" = "Automatische Aktualisierung: %@";
-"Tell us where you browse so we can enable the right regional filters." = "Sag uns, wo du surfst, damit wir die richtigen regionalen Filter aktivieren können.";
-"Temporarily disable all content blockers without turning them off in Safari Settings." = "Alle Inhaltsblocker vorübergehend deaktivieren, ohne sie in den Safari-Einstellungen auszuschalten.";
 "That doesn't look like a filter list." = "Das sieht nicht nach einer Filterliste aus.";
 "That name is already used by another filter list." = "Dieser Name wird bereits von einer anderen Filterliste verwendet.";
-"That title is already used by another filter list." = "Dieser Titel wird bereits von einer anderen Filterliste verwendet.";
 "The %@ userscript requires the %@" = "Das Benutzerskript %@ erfordert %@";
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "Das Benutzerskript \\(bypassScript.name) erfordert \\(filterName)";
 "The following filters were automatically disabled:
@@ -741,30 +622,22 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende die Änderungen erneut an.";
 "The following filters were automatically disabled:\\n\\n%@\\n\\nTo re-enable these filters, disable other large filters and apply changes again." = "Die folgenden Filter wurden automatisch deaktiviert:\\n\\n%@\\n\\nUm diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende die Änderungen erneut an.";
-"These filters add extra blocking power for your languages on top of the default lists, which already cover English and international sites. You can fine-tune them later." = "Diese Filter sorgen zusätzlich zu den Standardfilterlisten, die englische und internationale Websites bereits abdecken, für mehr Blockierleistung in deinen Sprachen. Du kannst sie später feinabstimmen.";
-"These lists are community-maintained. Enable them if you still see regional ads." = "Diese Listen werden von der Community gepflegt. Aktiviere sie, wenn du weiterhin regionale Werbung siehst.";
-"This doesn't change the app's display language, which always follows your device settings." = "Das ändert nicht die Anzeigesprache der App. Sie folgt immer den Einstellungen deines Geräts.";
 "This list covers websites for Norway, Denmark, Iceland, Danish territories, and the Sami indigenous population." = "Diese Liste umfasst Websites für Norwegen, Dänemark, Island, dänische Gebiete und die indigene Bevölkerung der Sami.";
 "This may take a while" = "Das kann eine Weile dauern";
 "This removes all settings for %@." = "Dadurch werden alle Einstellungen für %@ entfernt.";
 "This removes the whitelist entry, userscript exceptions, and zapper rules for %@." = "Dies entfernt den Ausnahmelisten-Eintrag, Benutzerskript-Ausnahmen und Zapper-Regeln für %@.";
-"This script hasn't been downloaded yet." = "Dieses Skript wurde noch nicht heruntergeladen.";
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "Dadurch werden alle Filter, Benutzerskripte und Einstellungen entfernt und der Einführungsablauf neu gestartet.";
-"This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "Dadurch werden deine aktuellen Filterauswahlen, die Ausnahmeliste und die Element-Zapper-Regeln durch die gesicherten Einstellungen ersetzt.";
 "This will reset all filters, userscripts, and preferences." = "Dadurch werden alle Filter, Benutzerskripte und Einstellungen zurückgesetzt.";
 "Timed out" = "Zeitüberschreitung";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield hilft, Werbung zu blockieren, die von Ad-Shield auf passenden Websites erneut eingefügt wird.";
 "Lets ad blockers quickly resist Ad-Shield, which reinserts ads on matching sites after filter lists hide them." = "Hilft Werbeblockern, Ad-Shield schnell auszuhebeln, das Werbung auf passenden Websites wieder einfügt, nachdem Filterlisten sie ausgeblendet haben.";
 "Title" = "Titel";
-"Title (optional)" = "Titel (optional)";
 "Title is required." = "Ein Titel ist erforderlich.";
-"Titles will be created from each URL." = "Titel werden aus jeder URL erstellt.";
 "Too many pending tasks" = "Zu viele ausstehende Aufgaben";
 "Total Capacity" = "Gesamtkapazität";
 "Trace" = "Trace";
 "Trust: %@" = "Vertrauensstufe: %@";
 "Trust: \\(trust.capitalized)" = "Vertrauensstufe: \\(trust.capitalized)";
-"Tune filters for your country and language." = "Passe Filter für dein Land und deine Sprache an.";
 "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Schalte dies aus, um die aktuelle Version zu behalten, wenn wBlock Skripte gesammelt oder nach Zeitplan aktualisiert.";
 "Unable to access shared container" = "Auf den gemeinsamen Container kann nicht zugegriffen werden";
 "Unapplied Filter Changes" = "Nicht angewendete Filteränderungen";
@@ -779,7 +652,6 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Update & Apply" = "Aktualisieren & Anwenden";
 "Update Filters" = "Filter aktualisieren";
 "Update Interval" = "Aktualisierungsintervall";
-"Update Script" = "Skript aktualisieren";
 "Update wBlock Filters" = "wBlock-Filter aktualisieren";
 "Updated %d script" = "%d Skript aktualisiert";
 "Updated %d scripts" = "%d Skripte aktualisiert";
@@ -787,15 +659,12 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Updated %d/%d extensions in %@" = "%d/%d Erweiterungen in %@ aktualisiert";
 "Updated custom filter list" = "Benutzerdefinierte Filterliste aktualisiert";
 "Updates" = "Aktualisierungen";
-"Updates Paused" = "Updates pausiert";
 "Updating disabled sites..." = "Deaktivierte Websites werden aktualisiert...";
-"Updating Scripts" = "Skripte werden aktualisiert";
 "Updating…" = "Wird aktualisiert…";
 "URL" = "URL";
 "URL Patterns (%@)" = "URL-Muster (%@)";
 "URL Patterns (%d)" = "URL-Muster (%d)";
 "URL Patterns (\\(script.matches.count))" = "URL-Muster (\\(script.matches.count))";
-"URL requirements" = "URL-Anforderungen";
 "URLs" = "URLs";
 "Use existing iCloud setup?" = "Vorhandene iCloud-Konfiguration verwenden?";
 "Use iCloud Setup" = "iCloud-Konfiguration verwenden";
@@ -825,22 +694,15 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "View Content" = "Inhalt anzeigen";
 "View Logs" = "Protokolle anzeigen";
 "Waiting" = "Warten";
-"Waiting for activity" = "Warten auf Aktivität";
-"Waiting for iOS background wake or app open" = "Warten auf iOS-Hintergrundaktivierung oder App-Öffnung";
 "Warning" = "Warnung";
 "wBlock" = "wBlock";
-"wBlock application appeared" = "wBlock-Anwendung erschienen";
 "wBlock filter update started." = "wBlock-Filteraktualisierung gestartet.";
-"wBlock Scripts must be enabled and set to 'Allow' on all websites to block YouTube ads." = "wBlock Scripts muss aktiviert und auf allen Websites auf „Erlauben“ gesetzt sein, um YouTube-Werbung zu blockieren.";
 "wBlock Scripts must be enabled and set to 'Always Allow on All Websites' for userscripts and advanced blocking." = "wBlock Scripts muss aktiviert und auf „Auf allen Websites immer erlauben“ gesetzt sein, damit Benutzerskripte und erweiterte Blockierung funktionieren.";
-"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' to block YouTube ads." = "wBlock Scripts muss aktiviert und auf „Auf allen Websites immer erlauben“ gesetzt sein, um YouTube-Werbung zu blockieren.";
-"wBlock Version" = "wBlock-Version";
 "wBlock will fetch and enable the script automatically." = "wBlock lädt das Skript automatisch herunter und aktiviert es.";
 "We don't have language data for %@. Try enabling filters manually if you see regional ads." = "Wir haben keine Sprachdaten für %@. Versuche, Filter manuell zu aktivieren, wenn du regionale Werbung siehst.";
 "We don't have regional filters for %@." = "Wir haben keine regionalen Filter für %@.";
 "We found an existing wBlock configuration in iCloud (%@). You can skip onboarding and use that instead." = "Wir haben eine vorhandene wBlock-Konfiguration in iCloud (%@) gefunden. Du kannst die Einführung überspringen und stattdessen diese verwenden.";
 "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "Wir haben eine vorhandene wBlock-Konfiguration in iCloud (\\(remoteConfigUpdatedAtText)) gefunden. Du kannst die Einführung überspringen und stattdessen diese verwenden.";
-"We found an existing wBlock configuration in iCloud. You can skip onboarding and use that instead." = "Wir haben eine vorhandene wBlock-Konfiguration in iCloud gefunden. Du kannst die Einführung überspringen und stattdessen diese verwenden.";
 "Web extension %@" = "Web-Erweiterung %@";
 "Blocks advertisements and other promotional page elements." = "Blockiert Werbung und andere werbliche Seitenelemente.";
 "Blocks trackers, analytics, and other privacy-invasive requests." = "Blockiert Tracker, Analysedienste und andere Anfragen, die in die Privatsphäre eingreifen.";
@@ -867,7 +729,6 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "On" = "Ein";
 "Off" = "Aus";
 "You're already using the latest filters." = "Du verwendest bereits die neuesten Filter.";
-"You can always add regional filters later from Settings." = "Du kannst regionale Filter später jederzeit in den Einstellungen hinzufügen.";
 "You have unapplied filter changes in wBlock. Tap to apply them now!" = "Du hast nicht angewendete Filteränderungen in wBlock. Tippe, um sie jetzt anzuwenden!";
 "You have unapplied filter changes. Do you want to apply them before quitting?" = "Du hast nicht angewendete Filteränderungen. Möchtest du sie vor dem Beenden anwenden?";
 "Zapper rules (%d)" = "Zapper-Regeln (%d)";
@@ -911,11 +772,8 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Disable Essential Filter?" = "Wichtigen Filter deaktivieren?";
 "Replace Existing Content?" = "Vorhandenen Inhalt ersetzen?";
 "Clear Element Zapper Rules?" = "Element-Zapper-Regeln löschen?";
-"Clear All" = "Alle löschen";
 "This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "Dieser empfohlene Filter gehört zum grundlegenden Schutz von wBlock. Das Deaktivieren kann den Blockierschutz verringern.";
-"Pasting will replace the existing editor content." = "Beim Einfügen wird der vorhandene Editorinhalt ersetzt.";
 "Pasting will replace the existing content." = "Beim Einfügen wird der vorhandene Inhalt ersetzt.";
-"This removes all saved element zapper rules from every site." = "Dadurch werden alle gespeicherten Element-Zapper-Regeln von jeder Website entfernt.";
 "Clear Element Zapper Rules" = "Element-Zapper-Regeln löschen";
 "Advanced" = "Erweitert";
 "Help" = "Hilfe";
@@ -928,17 +786,10 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Privacy Policy" = "Datenschutzerklärung";
 
 /* Issue 508 UI */
-"Use a valid http:// or https:// URL" = "Verwende eine gültige http://- oder https://-URL";
-"Include a host name" = "Gib einen Hostnamen an";
-"Do not use a userscript URL ending in .js, .mjs, or .cjs" = "Verwende keine Benutzerskript-URL mit der Endung .js, .mjs oder .cjs";
 "wBlock will fetch and enable the filter list automatically" = "wBlock lädt die Filterliste automatisch herunter und aktiviert sie";
 
 /* Issue 508 UI follow-up */
-"Starts with http:// or https://" = "Beginnt mit http:// oder https://";
-"Ends with .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = "Endet mit .js, .user.js, .user.css, .less, .sass, .scss, .styl oder .pcss";
-"Hosted on a trusted source" = "Von einer vertrauenswürdigen Quelle gehostet";
 
-"The file must include userscript or userstyle metadata." = "Die Datei muss Metadaten für ein Benutzerskript oder einen Benutzerstil enthalten.";
 
 "Failed to clear downloaded content; apply again to retry." = "Der heruntergeladene Inhalt konnte nicht gelöscht werden; wende die Änderungen erneut an, um es noch einmal zu versuchen.";
 "Failed to resume blocking." = "Blockieren konnte nicht fortgesetzt werden.";
@@ -963,7 +814,6 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Couldn't save the edited source." = "Die bearbeitete Quelle konnte nicht gespeichert werden.";
 "Userstyle source exceeds the 2 MiB limit." = "Die Benutzerstil-Quelle überschreitet das Limit von 2 MiB.";
 "Userstyle compiler resource is missing." = "Die Benutzerstil-Compilerressource fehlt.";
-"Userstyle compiler resource failed to load." = "Die Benutzerstil-Compilerressource konnte nicht geladen werden.";
 "Userstyle compiler input could not be serialized." = "Die Eingabe für den Benutzerstil-Compiler konnte nicht serialisiert werden.";
 "Userstyle compiler returned an invalid response." = "Der Benutzerstil-Compiler gab eine ungültige Antwort zurück.";
 "Userstyle compiler returned no CSS." = "Der Benutzerstil-Compiler gab kein CSS zurück.";
@@ -975,8 +825,6 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Userstyle compiler timed out." = "Zeitüberschreitung beim Benutzerstil-Compiler.";
 "Userstyle compiler must not run on the main thread." = "Der Benutzerstil-Compiler darf nicht im Hauptthread ausgeführt werden.";
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "Die MIT-lizenzierte Dark-Reader-API-Engine für wBlock (Beta; ohne die vollständige Website-Fix-Datenbank).";
-"Follow System Appearance" = "Systemdarstellung folgen";
-"When off, Dark Reader keeps websites dark in Light Mode." = "Wenn deaktiviert, hält Dark Reader Websites auch im hellen Modus dunkel.";
 "Follow System" = "System folgen";
 "Always Dark" = "Immer dunkel";
 "Dark" = "Dunkel";
@@ -984,15 +832,12 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "%@ → %@ Safari rules" = "%@ → %@ Safari-Regeln";
 "Cosmetic Filtering" = "Kosmetisches Filtern";
 "Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU." = "Blendet Werbeplatzhalter und andere Seitenelemente per CSS aus. Ist dies deaktiviert, bleibt nur das Netzwerk-Blockieren, das weniger Regeln und weniger CPU benötigt.";
-"Enable DeArrow" = "DeArrow aktivieren";
 "Replace Titles" = "Titel ersetzen";
 "Replace Thumbnails" = "Vorschaubilder ersetzen";
 "Random Frame When No Thumbnail" = "Zufälliges Einzelbild, wenn kein Vorschaubild vorhanden";
 "Show Original on Hover" = "Original beim Überfahren anzeigen";
 "About DeArrow" = "Über DeArrow";
 "Donate to DeArrow" = "An DeArrow spenden";
-"DeArrow: On" = "DeArrow: Ein";
-"DeArrow: Off" = "DeArrow: Aus";
 "Check for Filter Updates" = "Auf Filter-Updates prüfen";
 "Check for Userscript Updates" = "Auf Benutzerskript-Updates prüfen";
 "Download" = "Herunterladen";
@@ -1032,7 +877,6 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 
 "Last Successful Update" = "Letztes erfolgreiches Update";
 
-"Site Actions" = "Website-Aktionen";
 
 "Pause All Components" = "Alle Komponenten pausieren";
 
@@ -1056,7 +900,6 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 
 "Automatic" = "Automatisch";
 
-"This script will not run on these sites. Other scripts still run." = "Dieses Skript wird auf diesen Websites nicht ausgeführt. Andere Skripte werden weiterhin ausgeführt.";
 
 "Operation details" = "Vorgangsdetails";
 
@@ -1066,21 +909,15 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "URL entry mode" = "URL-Eingabemodus";
 "Single URL" = "Einzelne URL";
 "Bulk URLs" = "Mehrere URLs";
-"Enter URLs to edit each list’s name and description." = "Gib URLs ein, um den Namen und die Beschreibung jeder Liste zu bearbeiten.";
-"Names and descriptions" = "Namen und Beschreibungen";
 "Paste URL" = "URL einfügen";
 "Paste URLs" = "URLs einfügen";
 
 "%@ submitted at last apply" = "%@ beim letzten Anwenden übergeben";
 
-"Submitted at last apply" = "Beim letzten Anwenden übergeben";
 
 "Source rules submitted to the converter at last apply, not Safari’s final rule count." = "Quellregeln, die beim letzten Anwenden an den Konverter übergeben wurden, nicht die endgültige Regelanzahl in Safari.";
-"Failed to persist pending filter update revision" = "Das ausstehende Filter-Update konnte nicht gespeichert werden";
 
-"Paste non-empty plain text and review it before adding." = "Füge nicht leeren Klartext ein und prüfe ihn vor dem Hinzufügen.";
 
-"Choose a non-empty text file and review it before adding." = "Wähle eine nicht leere Textdatei und prüfe sie vor dem Hinzufügen.";
 
 /* Filter update reliability */
 "A wBlock filter update is already in progress." = "Eine wBlock-Filteraktualisierung läuft bereits.";
@@ -1104,7 +941,6 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Applies filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Wendet Filterlisten und Scriptlets an. Benutzerskripte, der Zapper und Autoplay haben eigene Schalter.";
 "Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches. Each site includes its subdomains." = "Hinzugefügte Websites überspringen Filterlisten und Scriptlets. Benutzerskripte, der Zapper und Autoplay haben eigene Schalter. Jede Website schließt ihre Subdomains ein.";
 "Websites" = "Websites";
-"Restart…" = "Neu starten…";
 "Next update: %@" = "Nächstes Update: %@";
 "Next update" = "Nächstes Update";
 "Enable Experimental Filter?" = "Experimentellen Filter aktivieren?";
@@ -1125,7 +961,6 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Due Now" = "Jetzt fällig";
 "Capacity" = "Kapazität";
 
-"Reset…" = "Zurücksetzen…";
 "Languages" = "Sprachen";
 "Paste or type filter rules." = "Filterregeln einfügen oder eingeben.";
 

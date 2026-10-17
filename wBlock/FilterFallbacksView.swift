@@ -17,7 +17,7 @@ struct FilterFallbacksButton: View {
         }
         .buttonStyle(.borderless)
         .sheet(isPresented: $showingFallbacks) {
-            FilterFallbacksView(filter: filter, urls: FilterCatalogRemote.fallbacks(for: filter))
+            FilterFallbacksView(filter: filter, urls: FilterListURLMirror.fallbackURLs(for: filter.url))
                 .infoSheetPresentationCompat()
         }
     }

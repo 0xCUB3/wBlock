@@ -107,12 +107,6 @@ public enum FilterDirectivePolicy {
         "safari_cb_affinity",
     ]
 
-    public static func shouldPreserveDirective(_ trimmedLine: String) -> Bool {
-        guard let directiveName = preprocessorDirectiveName(in: trimmedLine) else { return false }
-
-        return preservedDirectiveNames.contains(directiveName)
-    }
-
     public static func shouldStripUnsupportedDirective(_ trimmedLine: String) -> Bool {
         guard let directiveName = preprocessorDirectiveName(in: trimmedLine) else { return false }
 
@@ -392,22 +386,6 @@ public enum ContentBlockerIncrementalCache {
 
         guard let data = try? JSONEncoder().encode(state) else { return }
         try? data.write(to: url, options: .atomic)
-    }
-
-    public static func invalidateInputSignature(
-        targetRulesFilename: String,
-        groupIdentifier: String,
-        containerURL: URL? = nil
-    ) {
-        guard let url = stateFileURL(
-            targetRulesFilename: targetRulesFilename,
-            groupIdentifier: groupIdentifier,
-            containerURL: containerURL
-        ) else {
-            return
-        }
-
-        try? FileManager.default.removeItem(at: url)
     }
 
     /// A cache hit is valid only when every artifact needed to reproduce the

@@ -134,8 +134,6 @@ compile_direct_test shared-auto-update-lease \
 # explicitly; the remaining tests use the freshly built core framework.
 compile_core_test apply-progress-presentation scripts/test_apply_progress_presentation.swift \
   wBlock/ApplyChangesViewModel.swift
-compile_core_test apply-update-counts scripts/test_apply_update_counts.swift \
-  wBlock/ApplyChangesViewModel.swift
 compile_core_test safari-setup-query-isolation scripts/test_safari_setup_query_isolation.swift \
   wBlock/SafariExtensionSetupSupport.swift
 compile_core_test userscript-frame-authorization scripts/test_userscript_frame_authorization.swift
@@ -143,7 +141,7 @@ compile_core_test filter-refresh-planner scripts/test_filter_refresh_planner.swi
 compile_core_test issue-675-rule-analysis scripts/test_issue_675_rule_analysis.swift
 compile_core_test issue-679-affinity-cache-behavior scripts/test_issue_679_affinity_cache_behavior.swift
 compile_core_test issue-681-dedup-behavior scripts/test_issue_681_dedup_behavior.swift
-compile_core_test issue-918-remove-attr scripts/test_issue_918_remove_attr.swift
+compile_core_test filter-rule-conversion scripts/test_filter_rule_conversion.swift
 compile_core_test issue-836-cross-target-exceptions scripts/test_issue_836_cross_target_exceptions.swift
 compile_core_test issue-681-url-identity scripts/test_issue_681_url_identity.swift
 compile_core_test issue-683-reorder-cache scripts/test_issue_683_reorder_cache.swift \
@@ -216,7 +214,7 @@ compile_core_test foreign-filter-groups scripts/test_foreign_filter_groups.swift
 compile_core_test filter-list-presentation scripts/test_filter_list_presentation.swift \
   wBlock/FilterListPresentation.swift wBlock/ListDisplayOrder.swift wBlock/ContentRowMetadata.swift \
   wBlock/LocalizationHelpers.swift wBlock/FilterListLoader.swift wBlock/ConcurrentLogManager.swift wBlock/LogTimeZone.swift
-compile_core_test filter-catalog-remote scripts/test_filter_catalog_remote.swift
+compile_core_test filter-url-mirrors scripts/test_filter_url_mirrors.swift
 compile_core_test filter-catalog-migrations scripts/test_filter_catalog_migrations.swift \
   wBlock/FilterListLoader.swift wBlock/FilterListSetup.swift wBlock/LocalizationHelpers.swift \
   wBlock/ConcurrentLogManager.swift wBlock/LogTimeZone.swift

@@ -301,12 +301,6 @@ enum LocalizedFormatting {
 }
 
 extension FilterList {
-    func localizedLanguageNames(locale: Locale = .appCurrent) -> [String] {
-        Set(languages.map { $0.lowercased() }).map {
-            locale.localizedString(forLanguageCode: $0) ?? $0.uppercased()
-        }.sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
-    }
-
     /// Each language in its own name, as the language picker shows it (#940).
     /// `among` limits the list to the languages the user selected.
     func nativeLanguageNames(among selected: Set<String>? = nil) -> [String] {

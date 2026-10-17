@@ -51,7 +51,6 @@
 "%@ source → %@ expanded rules" = "소스 규칙 %@개 → 확장 규칙 %@개";
 "(%@) source rules)" = "(%@) 소스 규칙)";
 "(\\(sourceCount.formatted()) source rules)" = "(\\(sourceCount.formatted()) 소스 규칙)";
-"(empty rule)" = "(빈 규칙)";
 "(pending)" = "(대기 중)";
 "1." = "1.";
 "1h" = "1시간";
@@ -79,13 +78,11 @@
 "Add Filter" = "필터 추가";
 "Add Filter List" = "필터 목록 추가";
 "Add Filter List…" = "필터 목록 추가…";
-"Add Mode" = "추가 모드";
 "Add URLs" = "URL 추가";
 "Add Userscript or Userstyle" = "유저스크립트 또는 유저스타일 추가";
 "Add Userscript or Userstyle…" = "유저스크립트 또는 유저스타일 추가…";
 "Add userscripts and userstyles to customize your browsing experience" = "유저스크립트와 유저스타일을 추가하여 브라우징 경험을 맞춤 설정하세요";
 "Added custom filter" = "맞춤 필터를 추가했습니다";
-"Added sites are whitelisted: wBlock is completely turned off on them." = "추가한 사이트는 허용 목록에 등록되어 wBlock이 완전히 꺼집니다.";
 "Added user list" = "사용자 목록을 추가했습니다";
 "Added userscript from editor" = "편집기에서 유저스크립트를 추가했습니다";
 "Adding new userscript from URL" = "URL에서 새 유저스크립트를 추가합니다";
@@ -121,7 +118,6 @@
 "AdGuard Widgets" = "AdGuard Widgets";
 "Ads" = "광고";
 "Advanced engine publish failed" = "고급 엔진 게시에 실패했습니다";
-"After downloading, filter lists will be applied automatically." = "다운로드 후 필터 목록이 자동으로 적용됩니다.";
 "All" = "전체";
 "all" = "전체";
 "All Categories" = "모든 카테고리";
@@ -169,22 +165,14 @@
 "Balanced defaults." = "균형 잡힌 기본 설정.";
 "Base and mobile filters only." = "기본 및 모바일 필터만 사용.";
 "Base filter only." = "기본 필터만 사용.";
-"Baseline Userscripts" = "기본 유저스크립트";
-"Baseline userscripts are enabled by default. You can adjust them here." = "기본 유저스크립트는 기본적으로 활성화되어 있습니다. 여기에서 조정할 수 있습니다.";
-"Best default" = "최적 기본값";
 "Beta" = "Beta";
 "Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "베타 유저스크립트는 아직 테스트 중이라 페이지가 깨지거나 예기치 않게 동작할 수 있습니다. 언제든지 끌 수 있습니다.";
 "BGAppRefresh" = "백그라운드 앱 새로 고침";
 "BGProcessing" = "백그라운드 처리";
 "Blocked requests (%d)" = "차단된 요청 (%d)";
 "Blocked: %d" = "차단됨: %d";
-"Blocked: 0" = "차단됨: 0";
-"Blocked: 1" = "차단됨: 1";
-"Blockers near the per-extension limit:" = "확장 프로그램당 한도에 근접한 차단기:";
 "Blocking" = "차단";
 "Blocking is paused" = "차단이 일시정지되었습니다";
-"Blocking is paused. Content blockers are emptied until you turn this back on." = "차단이 일시정지되었습니다. 다시 켤 때까지 모든 필터, 유저스크립트 및 스타일이 꺼진 채로 유지됩니다.";
-"Blocking is paused. Tap Resume to re-enable." = "차단이 일시정지되었습니다. 다시 시작을 눌러 모든 차단을 활성화하세요.";
 "Blocking Level: %@" = "차단 수준: %@";
 "Blocking paused" = "차단 일시정지됨";
 "Blocking resumed" = "차단이 다시 시작됨";
@@ -211,7 +199,6 @@
 "Check for Updates" = "업데이트 확인";
 "Checked %@" = "%@ 확인됨";
 "Checked %@ ago" = "%@ 전 확인됨";
-"Checked just now" = "방금 확인됨";
 "Checking background agent…" = "백그라운드 에이전트 확인 중…";
 "Checking for Updates" = "업데이트 확인 중";
 "Checking for updates..." = "업데이트 확인 중";
@@ -219,21 +206,12 @@
 "Checking for script updates..." = "스크립트 업데이트 확인 중";
 "Checking for script updates... (%d/%d)" = "스크립트 업데이트 확인 중 (%d/%d)";
 "Checks for wBlock filter updates and applies them when available." = "wBlock 필터 업데이트를 확인하고 있으면 적용합니다.";
-"Choose File…" = "파일 선택…";
-"Choose optional userscripts. These are disabled by default." = "선택적 유저스크립트를 고르세요. 기본적으로 비활성화되어 있습니다.";
-"Choose which filters and scripts to download, then apply changes." = "다운로드할 필터와 스크립트를 선택한 다음 변경 사항을 적용하세요.";
-"Choose your preferred blocking level. You can adjust enabled filters later." = "선호하는 차단 수준을 선택하세요. 나중에 활성화된 필터를 조정할 수 있습니다.";
 "Clear" = "지우기";
-"Click an element on the page to hide it." = "페이지에서 숨길 요소를 클릭하세요.";
 "close" = "닫기";
-"Close search" = "검색 닫기";
-"Community options" = "커뮤니티 옵션";
-"Community-maintained options for additional regional coverage." = "추가 지역 커버리지를 위한 커뮤니티 유지 옵션.";
 "Completed" = "완료됨";
 "Conditional check failed" = "조건 검사에 실패했습니다";
 "Content filtering" = "콘텐츠 필터링";
 "Continue" = "계속";
-"Continue Setup" = "설정 계속하기";
 "Controls the time zone used when displaying and exporting log timestamps." = "로그 타임스탬프를 표시하고 내보낼 때 사용하는 시간대를 설정합니다.";
 "Conversion" = "변환";
 "Conversion phase summary" = "변환 단계 요약";
@@ -243,11 +221,8 @@
 "Copy URL" = "URL 복사";
 "Copied" = "복사됨";
 "Could not resolve URL from dropped item." = "놓은 항목에서 URL을 확인할 수 없습니다.";
-"Country or region" = "국가 또는 지역";
 "Country: %@" = "국가: %@";
-"Critical Setup Required" = "중요 설정 필요";
 "current match" = "현재 일치";
-"Current Safari rules: %@" = "현재 Safari 규칙: %@";
 "Current Safari rules: %@ (near limit)" = "현재 Safari 규칙: %@(한도에 가까움)";
 "Custom" = "사용자 지정";
 "Custom Filter" = "맞춤 필터";
@@ -255,17 +230,13 @@
 "Dandelion Sprout's Nordic Filters" = "Dandelion Sprout's Nordic Filters";
 "Dandelion Sprout's Serbo-Croatian List" = "Dandelion Sprout's Serbo-Croatian List";
 "Debug" = "디버그";
-"Default filters for balanced blocking and compatibility." = "균형 잡힌 차단과 호환성을 위한 기본 필터입니다.";
 "Deferred" = "연기됨";
 "Delete" = "삭제";
-"Drop here to move" = "여기에 놓아 이동";
 "Move to" = "이동";
 "Delete Added List" = "목록 삭제";
 "Description" = "설명";
-"Description (optional)" = "설명 (선택 사항)";
 "Device timezone" = "기기 시간대";
 "Disable" = "비활성화";
-"Disable on this site" = "이 사이트에서 비활성화";
 "Disabled" = "비활성화됨";
 "Disabled sites changed, fast rebuilding content blockers" = "비활성화된 사이트가 변경되어 콘텐츠 차단기를 빠르게 다시 빌드합니다";
 "Disabled sites monitor unavailable (no protobuf data directory)" = "비활성화된 사이트 모니터를 사용할 수 없습니다(protobuf 데이터 디렉터리 없음)";
@@ -273,18 +244,13 @@
 "Display" = "디스플레이";
 "Done" = "완료";
 "Close" = "닫기";
-"Download Script" = "스크립트 다운로드";
 "Downloaded" = "다운로드됨";
 "Downloaded %d update" = "업데이트 %d개 다운로드됨";
 "Downloaded %d updates" = "업데이트 %d개 다운로드됨";
-"Downloaded content does not appear to be a valid filter list" = "다운로드한 내용이 올바른 필터 목록이 아닌 것 같습니다";
 "Downloaded updates before applying" = "적용 전에 업데이트를 다운로드했습니다";
 "Downloading %d update(s)..." = "업데이트 %d개 다운로드 중...";
-"Downloading and applying filter lists…" = "필터 목록 다운로드 및 적용 중…";
-"Downloading filter updates..." = "필터 업데이트 다운로드 중...";
 "Downloading selected scripts..." = "선택한 스크립트 다운로드 중...";
 "Downloading selected updates..." = "선택한 업데이트 다운로드 중...";
-"Downloading Updates" = "업데이트 다운로드 중";
 "due now" = "지금 실행 예정";
 "Due soon catch-up" = "곧 기한이 오는 보충 실행";
 "Duplicate Userscripts Found" = "중복된 유저스크립트 발견됨";
@@ -298,8 +264,6 @@
 "EasyPrivacy" = "EasyPrivacy";
 "Edit" = "편집";
 "Edit Filter List" = "목록 편집";
-"Edit Name" = "목록 이름 변경";
-"Edit User List" = "목록 편집";
 "Editor" = "편집기";
 "Use Editor" = "편집기 사용";
 "Element zapper" = "요소 제거기";
@@ -307,18 +271,12 @@
 "Enable 'wBlock Scripts' → Always Allow on Every Website" = "'wBlock Scripts' 활성화 → 모든 웹사이트에서 항상 허용";
 "Enable all 5 Content Blocker extensions" = "5개의 콘텐츠 차단기 확장 프로그램 모두 활성화";
 "Enable Beta Userscript?" = "베타 유저스크립트를 활성화할까요?";
-"Enable extra fixes and finish setup." = "추가 수정 기능을 켜고 설정을 완료하세요.";
 "Enable the Safari extensions so wBlock can block ads and run userscripts." = "광고 차단과 유저스크립트 실행을 위해 Safari 확장 프로그램을 활성화하세요.";
-"Enable the Safari extensions so wBlock can block ads." = "wBlock이 광고를 차단할 수 있도록 Safari 확장 프로그램을 활성화하세요.";
 "Enabled" = "활성화됨";
 "Enabled Lists" = "활성화된 목록";
-"Enter a valid http(s) URL to a .txt, .list, or .json filter." = ".txt, .list, 또는 .json 필터에 대한 유효한 http(s) URL을 입력하세요.";
-"Enter Domain" = "도메인 입력";
 "Error" = "오류";
-"Error checking update for filter" = "필터 업데이트 확인 중 오류가 발생했습니다";
 "Error checking update for script" = "스크립트 업데이트 확인 중 오류가 발생했습니다";
 "Error fetching filter" = "필터를 가져오는 중 오류가 발생했습니다";
-"Error fetching script" = "스크립트를 가져오는 중 오류가 발생했습니다";
 "Estonian List" = "Estonian List";
 "Every %@" = "%@마다";
 "Every %d days" = "%d일마다";
@@ -342,7 +300,6 @@
 "Extensions" = "확장 프로그램";
 "Extensive blocklist targeting ads, trackers, and other unwanted content." = "광고, 추적기 및 기타 원치 않는 콘텐츠를 타겟팅하는 광범위한 차단 목록입니다.";
 "Failed" = "실패";
-"Failed reading user list file" = "사용자 목록 파일 읽기에 실패했습니다";
 "Failed saving user list" = "사용자 목록 저장에 실패했습니다";
 "Failed saving user list edits" = "사용자 목록 편집 내용 저장에 실패했습니다";
 "Failed to access shared storage." = "공유 저장장치에 액세스하지 못했습니다.";
@@ -351,18 +308,13 @@
 "Failed to clear extensions and advanced engine" = "확장 프로그램과 고급 엔진을 지우지 못했습니다";
 "Failed to clear filter engine during onboarding reset" = "온보딩 재설정 중 필터 엔진을 지우지 못했습니다";
 "Failed to convert rules for blocker" = "차단기의 규칙 변환에 실패했습니다";
-"Failed to create backup." = "백업을 만들지 못했습니다.";
-"Failed to decode filter content" = "필터 내용 디코딩에 실패했습니다";
 "Failed to download custom filter" = "맞춤 필터 다운로드에 실패했습니다";
 "Failed to export logs" = "로그 내보내기에 실패했습니다";
 "Failed to fetch filter - HTTP error" = "필터를 가져오지 못했습니다 - HTTP 오류";
-"Failed to fetch script" = "스크립트를 가져오지 못했습니다";
 "Failed to import dropped userscript" = "놓은 유저스크립트 가져오기에 실패했습니다";
 "Failed to load dropped item" = "놓은 항목을 불러오지 못했습니다";
 "Failed to prepare removeparam DNR rules" = "removeparam DNR 규칙 준비에 실패했습니다";
-"Failed to process one or more pre-apply filter updates" = "적용 전 필터 업데이트 하나 이상을 처리하지 못했습니다";
 "Failed to read backup: %@" = "백업을 읽지 못했습니다: %@";
-"Failed to read file." = "파일을 읽지 못했습니다.";
 "Failed to read filter content" = "필터 내용 읽기에 실패했습니다";
 "Failed to read local content for rule counting" = "규칙 수 카운트를 위한 로컬 내용 읽기에 실패했습니다";
 "Failed to reload %@." = "%@을(를) 다시 로드하지 못했습니다.";
@@ -383,10 +335,8 @@
 "Fast applying disabled sites changes without full conversion" = "전체 변환 없이 비활성화된 사이트 변경 사항을 빠르게 적용합니다";
 "Fast disabled sites update completed" = "비활성화된 사이트 빠른 업데이트가 완료되었습니다";
 "File" = "파일";
-"File Information" = "파일 정보";
 "Filter '%@' added successfully. Apply changes to enable it." = "필터 '%@'이(가) 성공적으로 추가되었습니다. 활성화하려면 변경 사항을 적용하세요.";
 "Filter Apply" = "필터 적용";
-"Filter Auto-Update" = "필터 자동 업데이트";
 "Filter for ad blocking on Estonian sites." = "에스토니아 사이트의 광고 차단용 필터입니다.";
 "Filter list not found." = "필터 목록을 찾을 수 없습니다.";
 "Filter list that specifically removes ads on websites in Spanish, Portuguese, and Brazilian Portuguese languages." = "스페인어, 포르투갈어, 브라질 포르투갈어로 된 웹사이트의 광고를 구체적으로 제거하는 필터 목록입니다.";
@@ -407,19 +357,15 @@
 "Filtering off" = "필터링 끔";
 "Filters" = "필터";
 "Filters: %d / Userscripts: %d" = "필터: %d / 유저스크립트: %d";
-"Filters and scripts applied successfully." = "필터와 스크립트가 성공적으로 적용되었습니다.";
-"Filters applied successfully." = "필터가 성공적으로 적용되었습니다.";
 "Filters Auto-Disabled" = "필터 자동 비활성화됨";
 "Filters update in the background, but timing is approximate. Force-quitting wBlock from the app switcher may prevent background updates until you reopen the app." = "필터는 백그라운드에서 업데이트되지만 시점은 대략적입니다. 앱 전환기에서 wBlock을 강제 종료하면 다시 열 때까지 백그라운드 업데이트가 막힐 수 있습니다.";
 "FilterUpdate" = "필터 업데이트";
 "Find" = "찾기";
 "Finnish ad blocking filter list." = "핀란드 광고 차단 필터 목록.";
-"For complete ad blocking" = "완벽한 광고 차단을 위해";
 "Foreground Catch-up" = "포그라운드 보충 실행";
 "Foreign" = "해외";
 "Found %d update(s) available." = "사용 가능한 업데이트 %d개를 찾았습니다.";
 "Frellwit's Swedish Filter" = "Frellwit's Swedish Filter";
-"Full content loaded" = "전체 콘텐츠 로드됨";
 "go" = "이동";
 "Go to line" = "줄로 이동";
 "Greek AdBlock Filter" = "Greek AdBlock Filter";
@@ -427,7 +373,6 @@
 "HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Handles advanced anti-adblock cases that filter rules miss." = "필터 규칙이 놓친 고급 광고 차단 방지 사례를 처리합니다.";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "페이지 내 팝업, 배너 및 기타 원치 않는 페이지 요소를 숨깁니다.";
-"Highlighting disabled for performance" = "성능을 위해 강조 표시 비활성화됨";
 "Hold for 3 seconds to apply without checking for updates." = "업데이트 확인 없이 적용하려면 3초 동안 길게 누르세요.";
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
@@ -441,7 +386,6 @@
 "iCloud Sync doesn't have permission to write to your iCloud account." = "iCloud 동기화에는 iCloud 계정에 쓸 수 있는 권한이 없습니다.";
 "iCloud Sync hit an iCloud server error. Try again in a moment." = "iCloud 동기화에 iCloud 서버 오류가 발생했습니다. 잠시 후에 다시 시도해 보세요.";
 "iCloud Sync is temporarily unavailable. Try again in a moment." = "iCloud 동기화를 일시적으로 사용할 수 없습니다. 잠시 후에 다시 시도해 보세요.";
-"If you close wBlock with unapplied changes, we'll send a gentle nudge so nothing gets forgotten." = "wBlock을 닫을 때 적용되지 않은 변경 사항이 있으면, 잊지 않도록 알림을 보내드립니다.";
 "If you use Private Browsing, also enable Allow in Private Browsing for wBlock Scripts and the 5 content blockers. Cookie notices and other scriptlets will not run in Private windows without it." = "개인정보 보호 브라우징을 사용한다면 wBlock Scripts와 콘텐츠 차단기 5개에 '개인정보 보호 브라우징에서 허용'도 켜세요. 이 설정이 없으면 쿠키 배너와 다른 스크립틀릿이 개인정보 보호 윈도우에서 실행되지 않습니다.";
 "Ignoring invalid filter response" = "잘못된 필터 응답을 무시합니다";
 "Import" = "가져오기";
@@ -449,120 +393,86 @@
 "Import failed: %@" = "가져오기 실패: %@";
 "Import File" = "파일 가져오기";
 "Import Settings" = "설정 가져오기";
-"Imported userscript from file" = "파일에서 유저스크립트를 가져왔습니다";
 "Importing…" = "가져오는 중…";
 "in %@ (%@)" = "%@ 후 (%@)";
 "IndianList" = "IndianList";
 "Info" = "정보";
 "Info.plist missing" = "Info.plist가 없습니다";
 "Initialized with %d filter list(s)." = "필터 목록 %d개로 초기화되었습니다.";
-"International" = "국제";
 "Invalid" = "유효하지 않음";
 "Invalid URL provided for new filter list" = "새 필터 목록의 URL이 잘못되었습니다";
 "Invalid URL provided: %@" = "제공된 URL이 잘못되었습니다: %@";
-"iOS background refresh is best-effort; checks may run later than scheduled." = "iOS 백그라운드 새로 고침은 최선의 노력으로 수행되며, 확인은 예정된 시간보다 늦게 실행될 수 있습니다.";
-"It will be enabled automatically." = "자동으로 활성화됩니다.";
 "KAD - Anti-Scam" = "KAD - Anti-Scam";
 "Keep All" = "모두 유지";
 "Keeps filters updating when wBlock isn't running. Turn off to avoid a persistent login item; updates will then only run while wBlock is open." = "wBlock이 실행 중이 아닐 때도 필터를 계속 업데이트합니다. 상주 로그인 항목을 원하지 않으면 끄세요. 그러면 업데이트는 wBlock이 열려 있는 동안에만 실행됩니다.";
 "Keeps the app in portrait even if the device is rotated." = "기기를 돌려도 앱을 세로 방향으로 유지합니다.";
 "Languages: %@" = "언어: %@";
 "Languages: \\(languageSummary)" = "언어: \\(languageSummary)";
-"Large file - scrolling may be slow" = "대용량 파일 - 스크롤이 느려질 수 있음";
 "last updated %@" = "최근 업데이트: %@";
-"Last: Never" = "마지막: 없음";
 "Latvian List" = "Latvian List";
 "Line %d isn’t a valid filter rule." = "%d번째 줄은 올바른 필터 규칙이 아닙니다.";
 "Line %d isn’t a valid http(s) filter URL." = "%d번째 줄은 올바른 http(s) 필터 URL이 아닙니다.";
 "filterslists-KO" = "filterslists-KO";
 "Liste AR" = "Liste AR";
 "Liste FR + AdGuard French filter. Filter list that specifically removes ads on websites in French language." = "Liste FR + AdGuard French filter. 프랑스어로 된 웹사이트의 광고를 구체적으로 제거하는 필터 목록입니다.";
-"Load full content" = "전체 콘텐츠 로드";
 "Loaded local version for filter" = "필터의 로컬 버전을 불러왔습니다";
 "Loading metadata…" = "메타데이터 불러오는 중…";
-"Loading script metadata…" = "스크립트 메타데이터 불러오는 중…";
-"Loading userscripts…" = "유저스크립트 불러오는 중…";
 "Local Import" = "로컬 가져오기";
 "Lock Portrait Orientation" = "세로 방향 고정";
 "Logs" = "로그";
-"Logs cleared" = "로그를 지웠습니다";
 "Logs will appear here as the app runs" = "앱이 실행되면 여기에 로그가 표시됩니다";
 "Content will be checked when you tap Add." = "추가를 탭하면 콘텐츠를 확인합니다.";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "match case" = "대소문자 구분";
 "Minimal" = "최소";
 "Missing conversion result for blocker" = "차단기의 변환 결과가 없습니다";
-"More lists rarely means better blocking: most overlap with the recommended defaults and mainly use up rule capacity. Annoyances and regional filters are the main exceptions." = "목록을 늘린다고 차단이 더 잘되는 경우는 드뭅니다. 대부분 권장 기본 목록과 겹치며 주로 규칙 용량만 차지합니다. 방해 요소 필터와 지역 필터가 주요 예외입니다.";
 "Multipurpose" = "다목적";
 "N/A" = "해당 없음";
 "Name" = "이름";
 "Near Safari limit: %@" = "Safari 제한에 가까움: %@";
 "Network" = "네트워크";
 "never" = "없음";
-"Never checked" = "확인 안 함";
 "Next" = "다음";
 "next" = "다음";
 "Next: %@" = "다음: %@";
 "Next: \\(compactStatusLine)" = "다음: \\(compactStatusLine)";
-"Next: Loading…" = "다음: 로딩 중…";
-"Next: review matching filters." = "다음: 일치하는 필터를 검토하세요.";
 "No advanced rules found, clearing filter engine" = "고급 규칙이 없어 필터 엔진을 지웁니다";
 "No background run recorded" = "기록된 백그라운드 실행이 없습니다";
-"No blocked requests yet." = "아직 차단된 요청이 없습니다.";
 "No Content Available" = "콘텐츠 없음";
 "No description provided by the script metadata." = "스크립트 메타데이터에 설명이 없습니다.";
-"No download URL for script" = "스크립트의 다운로드 URL이 없습니다";
 "No filter lists selected. Clearing rules from all extensions." = "선택된 필터 목록이 없습니다. 모든 확장 프로그램에서 규칙을 삭제합니다.";
 "No filters selected - clearing all extensions" = "선택한 필터가 없음 - 모든 확장 프로그램을 지웁니다";
 "No foreground catch-up recorded" = "기록된 포그라운드 보충 실행이 없습니다";
 "No logs found" = "로그 없음";
 "No matching extensions for selected filters." = "선택한 필터와 일치하는 확장 프로그램이 없습니다.";
 "No matching userscripts" = "일치하는 유저스크립트 없음";
-"No regional filters available. However, the default filter lists already cover English and international sites." = "사용 가능한 지역 필터가 없습니다. 하지만 기본 필터 목록이 이미 영어 및 국제 사이트를 포함합니다.";
-"No regional filters needed. The default filter lists already cover English and international sites." = "지역 필터가 필요 없습니다. 기본 필터 목록이 이미 영어 및 국제 사이트를 포함합니다.";
-"No regional userscripts available. However, the default userscripts already cover English and international sites." = "사용 가능한 지역 유저스크립트가 없습니다. 하지만 기본 유저스크립트가 이미 영어 및 국제 사이트를 포함합니다.";
-"No regional userscripts needed. The default userscripts already cover English and international sites." = "지역 유저스크립트가 필요 없습니다. 기본 유저스크립트가 이미 영어 및 국제 사이트를 포함합니다.";
-"No script updates" = "스크립트 업데이트 없음";
-"No silent push received yet" = "아직 무음 푸시를 받지 못했습니다";
 "No Site Settings" = "사이트 설정 없음";
 "No submit attempt yet" = "아직 제출 시도가 없습니다";
 "No updates available" = "사용 가능한 업데이트가 없습니다";
 "No updates available." = "사용 가능한 업데이트가 없습니다.";
 "No Updates Found" = "업데이트 없음";
 "No Userscripts" = "유저스크립트 없음";
-"No userscripts selected" = "선택된 유저스크립트 없음";
-"No zapper rules for this site." = "이 사이트에는 요소 제거기 규칙이 없습니다.";
 "None" = "없음";
 "Not Downloaded" = "다운로드 안 됨";
-"Not recorded" = "기록되지 않음";
-"Not selected" = "선택 안 됨";
 "Not synced yet" = "아직 동기화되지 않음";
-"Notify me" = "나에게 알림";
 "OK" = "확인";
 "on line" = "줄";
 "Online Security Filter" = "Online Security Filter";
-"Only AdGuard Base filter. Lightest protection, best compatibility." = "AdGuard Base Filter만 사용. 가장 가벼운 보호, 최고의 호환성.";
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "%@에 대해서는 커뮤니티 관리 목록만 사용할 수 있습니다. 괜찮으시다면 활성화하세요.";
-"Only community-maintained lists available. Enable them if you're comfortable." = "커뮤니티에서 관리하는 목록만 사용할 수 있습니다. 괜찮다면 활성화하세요.";
 "Only pasted user lists can be edited." = "붙여넣은 사용자 목록만 편집할 수 있습니다.";
 "Open Login Items" = "로그인 항목 열기";
 "Open Safari Settings" = "Safari 설정 열기";
 "Other" = "기타";
 "Overdue catch-up" = "기한이 지난 보충 실행";
 "Paste" = "붙여넣기";
-"Paste from Clipboard" = "클립보드에서 붙여넣기";
 "Paste one or more filter URLs, one per line." = "한 줄에 하나씩, 하나 이상의 필터 URL을 붙여넣으세요.";
-"Paste the direct .user.js link. wBlock will download and install it for you." = "직접 .user.js 링크를 붙여넣으세요. wBlock이 다운로드 및 설치를 진행합니다.";
-"Paste the direct .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss link. wBlock will download and install it for you." = "직접 .user.js, .js, .user.css, .less, .sass, .scss, .styl 또는 .pcss 링크를 붙여넣으세요. wBlock이 다운로드하여 설치합니다.";
 "Pause Blocking" = "차단 일시정지";
 "Paused Components" = "일시정지된 구성 요소";
 "Enabled Userscripts & Userstyles" = "활성화된 유저스크립트 및 유저스타일";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "선택한 구성 요소 중 하나라도 일시정지되면 차단 일시정지가 켜집니다. 다시 시작하면 모든 구성 요소가 복원됩니다.";
-"Temporarily pause selected components without changing their enabled settings." = "활성화 설정을 변경하지 않고 선택한 구성 요소를 일시적으로 일시정지합니다.";
 "Pausing blocking..." = "차단을 일시정지하는 중…";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";
 "Dandelion Sprout's Anti-Malware List" = "Dandelion Sprout's Anti-Malware List";
-"Pick your base blocking level." = "기본 차단 수준을 선택하세요.";
 "Prepared removeparam DNR rules" = "removeparam DNR 규칙을 준비했습니다";
 "Preparing %d extension" = "확장 프로그램 %d개 준비 중";
 "Preparing %d extensions" = "확장 프로그램 %d개 준비 중";
@@ -574,7 +484,6 @@
 "Progress" = "진행 상황";
 "Protects against suspicious URLs, phishing sites, and unwanted software." = "의심스러운 URL, 피싱 사이트, 원치 않는 소프트웨어로부터 보호합니다.";
 "Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = ".js, .user.js, .user.css, .less, .sass, .scss, .styl 또는 .pcss로 끝나는 유효한 http:// 또는 https:// 링크를 입력하세요";
-"Provide a valid https:// link ending in .user.js" = ".user.js로 끝나는 유효한 https:// 링크를 입력하세요";
 "Psst! You forgot something!" = "잠시만요! 잊으신 게 있네요!";
 "Quit Without Applying" = "변경 사항을 적용하지 않고 종료";
 "Reading Files" = "파일 읽는 중";
@@ -587,7 +496,6 @@
 "Refresh" = "새로 고침";
 "Regional" = "지역";
 "Regional & Language" = "지역 및 언어";
-"Regional filters" = "지역 필터";
 "Regional filters: %@" = "지역 필터: %@";
 "Registered" = "등록됨";
 "Registration: %@" = "등록: %@";
@@ -596,8 +504,6 @@
 "Reload phase summary" = "다시 로드 단계 요약";
 "Reloading Extensions" = "확장 프로그램 다시 로드 중";
 "Reloading Safari extensions..." = "Safari 확장 프로그램을 다시 로드하는 중...";
-"Reminder notifications" = "변경 사항 적용 알림";
-"Reminders" = "알림";
 "Remove" = "제거";
 "Remove Older Versions" = "이전 버전 제거";
 "Removed custom filter" = "맞춤 필터를 제거했습니다";
@@ -608,17 +514,13 @@
 "replace all" = "모두 바꾸기";
 "replaced $ matches" = "$개 바꿈";
 "replaced match on line $" = "$번째 줄의 일치를 바꿈";
-"Report an Issue" = "문제 신고";
 "Required for userscripts, advanced ad blocking, and cleaner features" = "유저스크립트, 고급 광고 차단, 클리너 기능에 필요합니다";
-"Required for YouTube ad blocking and much more" = "YouTube 광고 차단 및 기타 기능에 필요함";
 "The selected file is too large. Maximum size is 10 MB." = "선택한 파일이 너무 큽니다. 최대 크기는 10MB입니다.";
-"Requirements" = "요구 사항";
 "Reset Site Settings" = "사이트 설정 재설정";
 "Resetting…" = "재설정 중...";
 "Restart" = "재시작";
 "Restart Onboarding" = "온보딩 다시 시작";
 "Restart Onboarding?" = "온보딩을 다시 시작하시겠습니까?";
-"Restart Onboarding…" = "온보딩 다시 시작…";
 "Restarting…" = "재시작 중…";
 "Restore" = "복원";
 "Restore from backup…" = "백업에서 복원…";
@@ -626,15 +528,11 @@
 "Resume" = "다시 시작";
 "Resume Blocking" = "차단 다시 시작";
 "Return of the YouTube Dislike." = "YouTube 싫어요 수를 되살립니다.";
-"Review your choices and apply settings." = "선택 사항을 검토하고 설정을 적용하세요.";
 "road-block light" = "road-block light";
 "Romanian ad blocking filter subscription." = "루마니아어 광고 차단 필터 구독.";
-"Rule deleted" = "규칙이 삭제됨";
 "Rule limit exceeded for blocker" = "차단기의 규칙 한도를 초과했습니다";
-"Rule Limit Warning" = "규칙 제한 경고";
 "Rules" = "규칙";
 "Run on this site" = "이 사이트에서 실행";
-"Safari limits each content blocker extension to %@ rules.\\nTotal capacity (all wBlock blockers): %@ rules.\\n\\n%@\\n\\nwBlock distributes your enabled filter lists across multiple blockers to maximize capacity, but you may still hit Safari's limits if you enable too many large lists." = "Safari는 각 콘텐츠 차단기 확장 프로그램을 규칙 %@개로 제한합니다.\\n총 용량(모든 wBlock 차단기): 규칙 %@개.\\n\\n%@\\n\\nwBlock은 활성화된 필터 목록을 여러 차단기에 분산하여 용량을 최대화하지만, 큰 목록을 너무 많이 활성화하면 여전히 Safari의 한계에 도달할 수 있습니다.";
 "Safari limits each Content Blocker extension to 150,000 rules. wBlock automatically balances and compiles rules across all 5 slots." = "Safari는 각 콘텐츠 차단기 확장 프로그램을 150,000개 규칙으로 제한합니다. wBlock은 5개 슬롯 전체에서 규칙을 자동으로 균형 있게 조절하고 컴파일합니다.";
 "Safari Rule Capacity" = "Safari 규칙 용량";
 "Safari Rules" = "Safari 규칙";
@@ -644,7 +542,6 @@
 "Scheduler error" = "스케줄러 오류";
 "Scheduling: %@" = "예약: %@";
 "Script Content" = "스크립트 내용";
-"Script or Style URL" = "스크립트 또는 유저스타일 URL";
 "Scripts" = "스크립트";
 "Search" = "검색";
 "Search filters" = "필터 검색";
@@ -652,27 +549,19 @@
 "Search scripts" = "스크립트 검색";
 "Security" = "보안";
 "Select any userscripts you want to enable. These add extra features or fixes. You can always add more in the settings later." = "활성화할 유저스크립트를 선택하세요. 기능 추가나 수정사항을 제공합니다. 나중에 설정에서 언제든지 추가할 수 있습니다.";
-"Select the languages (one or more) you browse websites in. wBlock only uses this to recommend regional ad filters." = "웹사이트를 탐색할 때 사용하는 언어(하나 이상)를 선택하세요. wBlock은 이를 지역 광고 필터 추천에만 사용합니다.";
 "Select the languages you browse in. wBlock will automatically recommend matching regional filters and features." = "탐색하는 언어를 선택하세요. wBlock이 알맞은 지역 필터 및 기능을 자동으로 추천합니다.";
-"Send me reminders about unapplied changes" = "적용되지 않은 변경 사항에 대한 알림 받기";
 "Set up wBlock" = "wBlock 설정";
 "Setting userscript enabled state" = "유저스크립트 활성화 상태를 설정합니다";
 "Settings" = "설정";
 "Settings → Apps → Safari → Extensions" = "설정 → 앱 → Safari → 확장 프로그램";
 "Setup Instructions" = "설정 지침";
-"Ships with the app" = "앱에 포함됨";
-"Show blocked item count in toolbar" = "도구 막대에 차단된 항목 수 표시";
 "Show Enabled Only" = "활성화된 항목만 보기";
-"Show preview only" = "미리보기만 표시";
 "Showing preview (%@ of %@)" = "미리보기 표시 중(%@ / %@)";
 "Showing preview (%@) of %@))" = "미리보기 표시 중 (%@ / %@))";
 "Showing preview (\\(formatFileSize(previewLength)) of \\(formatFileSize(script.content.count)))" = "미리보기 표시 중 (\\(formatFileSize(previewLength)) / \\(formatFileSize(script.content.count)))";
-"Silent Push" = "무음 푸시";
 "Site Settings" = "사이트 설정";
 "Size:" = "크기:";
-"Skip for now" = "지금은 건너뛰기";
 "Skipped overlapping apply request" = "겹치는 적용 요청을 건너뛰었습니다";
-"Skipped pause request while apply is in progress" = "적용이 진행 중이어서 일시정지 요청을 건너뛰었습니다";
 "Skipping update signal due to non-filter response body" = "응답 본문이 필터가 아니라서 업데이트 신호를 건너뜁니다";
 "Some filters were automatically disabled because Safari's rule limits were exceeded." = "Safari 규칙 제한을 초과하여 일부 필터가 자동으로 비활성화되었습니다.";
 "Some pre-apply filter updates failed; continuing with available lists" = "적용 전 필터 업데이트 일부가 실패했습니다. 사용 가능한 목록으로 계속합니다";
@@ -684,7 +573,6 @@
 "Fallbacks" = "대체 URL";
 "If the source URL fails, wBlock tries these URLs in order." = "출처 URL에 연결할 수 없으면 wBlock이 다음 URL을 순서대로 시도합니다.";
 "No fallback URLs are configured for this list." = "이 목록에는 대체 URL이 설정되어 있지 않습니다.";
-"Regional lists add language-specific coverage to the default filters for English and international sites. If your language is missing, no separate regional list is available." = "지역 목록은 영어 및 국제 사이트용 기본 필터에 언어별 차단 기능을 추가합니다. 원하는 언어가 없다면 해당 언어의 별도 지역 목록이 없는 것입니다.";
 "Start Fresh" = "새로 시작";
 "Started %@" = "%@에 시작됨";
 "Starting conversion..." = "변환 시작 중...";
@@ -700,11 +588,9 @@
 "Successfully downloaded custom filter" = "맞춤 필터를 다운로드했습니다";
 "Successfully updated script" = "스크립트를 업데이트했습니다";
 "Summary" = "요약";
-"Supports .user.js, .js, .user.css, and .less files. Local imports won't auto-update; re-import to replace." = ".user.js, .js, .user.css 및 .less 파일을 지원합니다. 로컬 가져오기는 자동으로 업데이트되지 않으므로 교체하려면 다시 가져오세요.";
 "Sync" = "동기화";
 "Sync across devices" = "여러 기기에서 동기화";
 "Sync Now" = "지금 동기화";
-"Sync settings across devices" = "기기 간 설정 동기화";
 "Sync Timestamps with Device Time Zone" = "타임스탬프를 기기 시간대와 동기화";
 "Sync Userscript Enabled States" = "유저스크립트 활성화 상태 동기화";
 "Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "필터 선택, 사용자 지정 목록, 유저스크립트, 허용 목록을 기기 간에 동기화하세요.";
@@ -720,15 +606,10 @@
 "Synced just now" = "방금 동기화됨";
 "Synced today at %@" = "오늘 %@에 동기화됨";
 "Synced yesterday at %@" = "어제 %@에 동기화됨";
-"Syncing iCloud configuration…" = "iCloud 구성 동기화 중…";
 "System" = "시스템";
-"Tap to review userscript guidelines." = "탭하여 유저스크립트 가이드라인을 검토하세요.";
 "Auto-update: %@" = "자동 업데이트: %@";
-"Tell us where you browse so we can enable the right regional filters." = "적절한 지역 필터를 활성화할 수 있도록 주로 인터넷을 탐색하는 지역을 알려주세요.";
-"Temporarily disable all content blockers without turning them off in Safari Settings." = "Safari 설정에서 확장 프로그램을 끄지 않고 모든 차단(콘텐츠 차단기, 유저스크립트, 스타일)을 임시로 비활성화합니다.";
 "That doesn't look like a filter list." = "필터 목록이 아닌 것 같습니다.";
 "That name is already used by another filter list." = "해당 이름은 이미 다른 필터 목록에서 사용 중입니다.";
-"That title is already used by another filter list." = "해당 제목은 이미 다른 필터 목록에서 사용 중입니다.";
 "The %@ userscript requires the %@" = "%@ 유저스크립트는 %@이(가) 필요합니다";
 "The \\(bypassScript.name) userscript requires the \\(filterName)" = "\\(bypassScript.name) 유저스크립트는 \\(filterName)이(가) 필요합니다";
 "The following filters were automatically disabled:
@@ -741,30 +622,22 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 이 필터를 다시 활성화하려면 다른 큰 필터를 비활성화한 뒤 변경 사항을 다시 적용하세요.";
 "The following filters were automatically disabled:\\n\\n%@\\n\\nTo re-enable these filters, disable other large filters and apply changes again." = "다음 필터는 자동으로 비활성화되었습니다.\\n\\n%@\\n\\n이러한 필터를 다시 활성화하려면 다른 대형 필터를 비활성화하고 변경 사항을 다시 적용하세요.";
-"These filters add extra blocking power for your languages on top of the default lists, which already cover English and international sites. You can fine-tune them later." = "이 필터는 영어 및 국제 사이트를 이미 포함하는 기본 필터 목록에 더해, 사용 언어에 맞는 차단 성능을 추가합니다. 나중에 세부 조정할 수 있습니다.";
-"These lists are community-maintained. Enable them if you still see regional ads." = "이 목록들은 커뮤니티에서 관리합니다. 지역 광고가 계속 보이면 활성화하세요.";
-"This doesn't change the app's display language, which always follows your device settings." = "앱 표시 언어는 변경되지 않으며, 항상 기기 설정을 따릅니다.";
 "This list covers websites for Norway, Denmark, Iceland, Danish territories, and the Sami indigenous population." = "이 목록에는 노르웨이, 덴마크, 아이슬란드, 덴마크 영토 및 사미 원주민을 위한 웹사이트가 포함되어 있습니다.";
 "This may take a while" = "시간이 조금 걸릴 수 있습니다";
 "This removes all settings for %@." = "%@의 모든 설정이 제거됩니다.";
 "This removes the whitelist entry, userscript exceptions, and zapper rules for %@." = "%@의 허용 목록 항목, 유저스크립트 예외, 요소 제거기 규칙을 삭제합니다.";
-"This script hasn't been downloaded yet." = "이 스크립트는 아직 다운로드되지 않았습니다.";
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "이 작업은 모든 필터, 유저스크립트, 설정을 제거한 다음 온보딩 흐름을 다시 시작합니다.";
-"This will replace your current filter selections, whitelist, and element zapper rules with the backed up settings." = "현재 필터 선택, 허용 목록, 요소 제거기 규칙이 백업된 설정으로 대체됩니다.";
 "This will reset all filters, userscripts, and preferences." = "모든 필터, 유저스크립트 및 환경설정이 초기화됩니다.";
 "Timed out" = "시간 초과";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield는 해당 사이트에서 Ad-Shield가 다시 삽입한 광고를 차단하는 데 도움이 됩니다.";
 "Lets ad blockers quickly resist Ad-Shield, which reinserts ads on matching sites after filter lists hide them." = "필터 목록이 숨긴 광고를 해당 사이트에 다시 삽입하는 Ad-Shield에 광고 차단기가 빠르게 대응할 수 있게 합니다.";
 "Title" = "제목";
-"Title (optional)" = "제목 (선택 사항)";
 "Title is required." = "이름이 필요합니다.";
-"Titles will be created from each URL." = "각 URL에서 제목이 생성됩니다.";
 "Too many pending tasks" = "보류 중인 작업이 너무 많습니다";
 "Total Capacity" = "총 용량";
 "Trace" = "추적";
 "Trust: %@" = "신뢰도: %@";
 "Trust: \\(trust.capitalized)" = "신뢰도: \\(trust.capitalized)";
-"Tune filters for your country and language." = "국가와 언어에 맞게 필터를 조정하세요.";
 "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "wBlock이 스크립트를 일괄 또는 예약 업데이트할 때 현재 버전을 유지하려면 이 옵션을 끄세요.";
 "Unable to access shared container" = "공유 컨테이너에 접근할 수 없습니다";
 "Unapplied Filter Changes" = "적용되지 않은 필터 변경 사항";
@@ -779,7 +652,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Update & Apply" = "업데이트 및 적용";
 "Update Filters" = "필터 업데이트";
 "Update Interval" = "업데이트 간격";
-"Update Script" = "스크립트 업데이트";
 "Update wBlock Filters" = "wBlock 필터 업데이트";
 "Updated %d script" = "스크립트 %d개 업데이트됨";
 "Updated %d scripts" = "스크립트 %d개 업데이트됨";
@@ -787,15 +659,12 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Updated %d/%d extensions in %@" = "%@ 만에 확장 프로그램 %d/%d개를 업데이트했습니다";
 "Updated custom filter list" = "맞춤 필터 목록을 업데이트했습니다";
 "Updates" = "업데이트";
-"Updates Paused" = "업데이트 일시정지됨";
 "Updating disabled sites..." = "비활성화된 사이트 업데이트 중...";
-"Updating Scripts" = "유저스크립트 업데이트 확인 중";
 "Updating…" = "업데이트 중…";
 "URL" = "URL";
 "URL Patterns (%@)" = "URL 패턴 (%@)";
 "URL Patterns (%d)" = "URL 패턴(%d)";
 "URL Patterns (\\(script.matches.count))" = "URL 패턴 (\\(script.matches.count))";
-"URL requirements" = "URL 요구 사항";
 "URLs" = "URL";
 "Use existing iCloud setup?" = "기존 iCloud 설정을 사용할까요?";
 "Use iCloud Setup" = "iCloud 설정 사용";
@@ -825,22 +694,15 @@ To re-enable these filters, disable other large filters and apply changes again.
 "View Content" = "콘텐츠 보기";
 "View Logs" = "로그 보기";
 "Waiting" = "대기 중";
-"Waiting for activity" = "활동 대기 중";
-"Waiting for iOS background wake or app open" = "iOS 백그라운드 깨우기 또는 앱 열기 대기 중";
 "Warning" = "경고";
 "wBlock" = "wBlock";
-"wBlock application appeared" = "wBlock 애플리케이션이 나타났습니다";
 "wBlock filter update started." = "wBlock 필터 업데이트를 시작했습니다.";
-"wBlock Scripts must be enabled and set to 'Allow' on all websites to block YouTube ads." = "YouTube 광고를 차단하려면 모든 웹사이트에서 wBlock Scripts를 활성화하고 '허용'으로 설정해야 합니다.";
 "wBlock Scripts must be enabled and set to 'Always Allow on All Websites' for userscripts and advanced blocking." = "유저스크립트와 고급 차단을 위해 wBlock Scripts를 활성화하고 '모든 웹사이트에서 항상 허용'으로 설정해야 합니다.";
-"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' to block YouTube ads." = "YouTube 광고를 차단하려면 wBlock Scripts를 활성화하고 '모든 웹사이트에서 항상 허용'으로 설정해야 합니다.";
-"wBlock Version" = "wBlock 버전";
 "wBlock will fetch and enable the script automatically." = "wBlock이 자동으로 스크립트를 가져와 활성화합니다.";
 "We don't have language data for %@. Try enabling filters manually if you see regional ads." = "%@에 대한 언어 데이터가 없습니다. 지역 광고가 보이면 필터를 수동으로 활성화해 보세요.";
 "We don't have regional filters for %@." = "%@에 대한 지역 필터가 없습니다.";
 "We found an existing wBlock configuration in iCloud (%@). You can skip onboarding and use that instead." = "iCloud에서 기존 wBlock 구성(%@)을 찾았습니다. 온보딩을 건너뛰고 해당 구성을 사용할 수 있습니다.";
 "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "iCloud에서 기존 wBlock 구성(\\(remoteConfigUpdatedAtText))을 찾았습니다. 온보딩을 건너뛰고 해당 구성을 사용할 수 있습니다.";
-"We found an existing wBlock configuration in iCloud. You can skip onboarding and use that instead." = "iCloud에서 기존 wBlock 구성을 찾았습니다. 온보딩을 건너뛰고 해당 구성을 사용할 수 있습니다.";
 "Web extension %@" = "웹 확장 프로그램 %@";
 "Blocks advertisements and other promotional page elements." = "광고 및 기타 홍보성 페이지 요소를 차단합니다.";
 "Blocks trackers, analytics, and other privacy-invasive requests." = "추적기, 분석 도구 및 개인정보를 침해하는 요청을 차단합니다.";
@@ -867,7 +729,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "On" = "켬";
 "Off" = "끔";
 "You're already using the latest filters." = "이미 최신 필터를 사용 중입니다.";
-"You can always add regional filters later from Settings." = "지역 필터는 나중에 설정에서 언제든지 추가할 수 있습니다.";
 "You have unapplied filter changes in wBlock. Tap to apply them now!" = "wBlock에 적용되지 않은 필터 변경 사항이 있습니다. 지금 탭하여 적용하세요!";
 "You have unapplied filter changes. Do you want to apply them before quitting?" = "적용되지 않은 필터 변경 사항이 있습니다. 종료하기 전에 적용하시겠습니까?";
 "Zapper rules (%d)" = "요소 제거기 규칙 (%d)";
@@ -911,11 +772,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Disable Essential Filter?" = "필수 필터를 비활성화할까요?";
 "Replace Existing Content?" = "기존 콘텐츠를 바꿀까요?";
 "Clear Element Zapper Rules?" = "요소 제거기 규칙을 지울까요?";
-"Clear All" = "모두 지우기";
 "This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "이 추천 필터는 wBlock의 필수 보호 기능입니다. 비활성화하면 차단 범위가 줄어들 수 있습니다.";
-"Pasting will replace the existing editor content." = "붙여넣으면 편집기의 기존 내용이 바뀝니다.";
 "Pasting will replace the existing content." = "붙여넣으면 기존 내용이 바뀝니다.";
-"This removes all saved element zapper rules from every site." = "모든 사이트에서 저장된 요소 제거기 규칙을 삭제합니다.";
 "Clear Element Zapper Rules" = "요소 제거기 규칙 지우기";
 "Advanced" = "고급";
 "Help" = "도움말";
@@ -928,17 +786,10 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Privacy Policy" = "개인정보 처리방침";
 
 /* Issue 508 UI */
-"Use a valid http:// or https:// URL" = "유효한 http:// 또는 https:// URL을 사용하세요";
-"Include a host name" = "호스트 이름을 포함하세요";
-"Do not use a userscript URL ending in .js, .mjs, or .cjs" = ".js, .mjs 또는 .cjs로 끝나는 유저스크립트 URL은 사용하지 마세요";
 "wBlock will fetch and enable the filter list automatically" = "wBlock이 필터 목록을 자동으로 가져와 활성화합니다";
 
 /* Issue 508 UI follow-up */
-"Starts with http:// or https://" = "http:// 또는 https://로 시작";
-"Ends with .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = ".js, .user.js, .user.css, .less, .sass, .scss, .styl 또는 .pcss로 끝남";
-"Hosted on a trusted source" = "신뢰할 수 있는 소스에서 호스팅됨";
 
-"The file must include userscript or userstyle metadata." = "파일에는 유저스크립트 또는 유저스타일 메타데이터가 포함되어야 합니다.";
 
 "Failed to clear downloaded content; apply again to retry." = "다운로드한 콘텐츠를 지우지 못했습니다. 다시 적용하여 재시도하세요.";
 "Failed to resume blocking." = "차단을 재개하지 못했습니다.";
@@ -963,7 +814,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Couldn't save the edited source." = "편집한 소스를 저장할 수 없습니다.";
 "Userstyle source exceeds the 2 MiB limit." = "유저스타일 소스가 2MiB 제한을 초과합니다.";
 "Userstyle compiler resource is missing." = "유저스타일 컴파일러 리소스가 없습니다.";
-"Userstyle compiler resource failed to load." = "유저스타일 컴파일러 리소스를 불러오지 못했습니다.";
 "Userstyle compiler input could not be serialized." = "유저스타일 컴파일러 입력을 직렬화할 수 없습니다.";
 "Userstyle compiler returned an invalid response." = "유저스타일 컴파일러가 잘못된 응답을 반환했습니다.";
 "Userstyle compiler returned no CSS." = "유저스타일 컴파일러가 CSS를 반환하지 않았습니다.";
@@ -975,8 +825,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Userstyle compiler timed out." = "유저스타일 컴파일러 시간이 초과되었습니다.";
 "Userstyle compiler must not run on the main thread." = "유저스타일 컴파일러는 메인 스레드에서 실행하면 안 됩니다.";
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "wBlock용 MIT 라이선스 Dark Reader API 엔진(베타, 전체 사이트 수정 데이터베이스 제외).";
-"Follow System Appearance" = "시스템 모드 따르기";
-"When off, Dark Reader keeps websites dark in Light Mode." = "끄면 라이트 모드에서도 Dark Reader가 웹사이트를 어둡게 유지합니다.";
 "Follow System" = "시스템 따르기";
 "Always Dark" = "항상 어둡게";
 "Dark" = "다크";
@@ -984,15 +832,12 @@ To re-enable these filters, disable other large filters and apply changes again.
 "%@ → %@ Safari rules" = "%@ → Safari 규칙 %@개";
 "Cosmetic Filtering" = "코스메틱 필터링";
 "Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU." = "광고 자리 표시자와 기타 페이지 요소를 CSS로 숨깁니다. 끄면 네트워크 차단만 남아 규칙 수와 CPU 사용량이 줄어듭니다.";
-"Enable DeArrow" = "DeArrow 활성화";
 "Replace Titles" = "제목 바꾸기";
 "Replace Thumbnails" = "미리보기 이미지 바꾸기";
 "Random Frame When No Thumbnail" = "미리보기가 없으면 임의의 프레임";
 "Show Original on Hover" = "마우스를 올리면 원본 표시";
 "About DeArrow" = "DeArrow 정보";
 "Donate to DeArrow" = "DeArrow에 기부";
-"DeArrow: On" = "DeArrow: 켜짐";
-"DeArrow: Off" = "DeArrow: 꺼짐";
 "Check for Filter Updates" = "필터 업데이트 확인";
 "Check for Userscript Updates" = "유저스크립트 업데이트 확인";
 "Download" = "다운로드";
@@ -1032,7 +877,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Last Successful Update" = "마지막으로 성공한 업데이트";
 
-"Site Actions" = "사이트 작업";
 
 "Pause All Components" = "모든 구성 요소 일시정지";
 
@@ -1056,7 +900,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Automatic" = "자동";
 
-"This script will not run on these sites. Other scripts still run." = "이 스크립트는 해당 사이트에서 실행되지 않습니다. 다른 스크립트는 계속 실행됩니다.";
 
 "Operation details" = "작업 세부 정보";
 
@@ -1066,21 +909,15 @@ To re-enable these filters, disable other large filters and apply changes again.
 "URL entry mode" = "URL 입력 모드";
 "Single URL" = "단일 URL";
 "Bulk URLs" = "여러 URL";
-"Enter URLs to edit each list’s name and description." = "각 목록의 이름과 설명을 편집하려면 URL을 입력하세요.";
-"Names and descriptions" = "이름 및 설명";
 "Paste URL" = "URL 붙여넣기";
 "Paste URLs" = "URL 붙여넣기";
 
 "%@ submitted at last apply" = "마지막 적용 시 %@개 제출";
 
-"Submitted at last apply" = "마지막 적용 시 제출";
 
 "Source rules submitted to the converter at last apply, not Safari’s final rule count." = "마지막 적용 시 변환기에 제출된 소스 규칙이며, Safari의 최종 규칙 수가 아닙니다.";
-"Failed to persist pending filter update revision" = "대기 중인 필터 업데이트를 저장하지 못했습니다";
 
-"Paste non-empty plain text and review it before adding." = "비어 있지 않은 일반 텍스트를 붙여넣고 추가하기 전에 검토하세요.";
 
-"Choose a non-empty text file and review it before adding." = "비어 있지 않은 텍스트 파일을 선택하고 추가하기 전에 검토하세요.";
 
 /* Filter update reliability */
 "A wBlock filter update is already in progress." = "wBlock 필터 업데이트가 이미 진행 중입니다.";
@@ -1104,7 +941,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Applies filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "필터 목록과 스크립틀릿을 적용합니다. 유저스크립트, 요소 제거기, 자동 재생은 별도의 스위치가 있습니다.";
 "Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches. Each site includes its subdomains." = "추가된 사이트는 필터 목록과 스크립틀릿을 건너뜁니다. 유저스크립트, 요소 제거기, 자동 재생은 별도의 스위치가 있습니다. 각 사이트에는 하위 도메인도 포함됩니다.";
 "Websites" = "웹사이트";
-"Restart…" = "재시작…";
 "Next update: %@" = "다음 업데이트: %@";
 "Next update" = "다음 업데이트";
 "Enable Experimental Filter?" = "실험적 필터를 켜시겠습니까?";
@@ -1125,7 +961,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Due Now" = "지금 예정";
 "Capacity" = "용량";
 
-"Reset…" = "초기화…";
 "Languages" = "언어";
 "Paste or type filter rules." = "필터 규칙을 붙여넣거나 입력하세요.";
 
