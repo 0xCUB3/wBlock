@@ -1,4 +1,3 @@
-// Run with swiftc wBlock/AppTabView.swift scripts/test_tab_selection_isolation.swift -o /tmp/wblock-tab-isolation && /tmp/wblock-tab-isolation
 import AppKit
 import SwiftUI
 

@@ -127,6 +127,7 @@ compile_direct_test userscript-update-operation \
   wBlockCoreService/UserScriptUpdateOperation.swift scripts/test_userscript_update_operation.swift
 
 compile_direct_test userscript-world-isolation scripts/test_userscript_world_isolation.swift
+compile_direct_test tab-selection-isolation wBlock/AppTabView.swift scripts/test_tab_selection_isolation.swift
 compile_direct_test shared-auto-update-lease \
   wBlockCoreService/SharedAutoUpdateLease.swift scripts/test_shared_auto_update_lease.swift
 
@@ -142,6 +143,7 @@ compile_core_test issue-675-rule-analysis scripts/test_issue_675_rule_analysis.s
 compile_core_test issue-679-affinity-cache-behavior scripts/test_issue_679_affinity_cache_behavior.swift
 compile_core_test issue-681-dedup-behavior scripts/test_issue_681_dedup_behavior.swift
 compile_core_test filter-rule-conversion scripts/test_filter_rule_conversion.swift
+compile_core_test zapper-rule-editing scripts/test_zapper_rule_editing.swift
 compile_core_test issue-836-cross-target-exceptions scripts/test_issue_836_cross_target_exceptions.swift
 compile_core_test issue-681-url-identity scripts/test_issue_681_url_identity.swift
 compile_core_test issue-683-reorder-cache scripts/test_issue_683_reorder_cache.swift \
