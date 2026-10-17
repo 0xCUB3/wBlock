@@ -13,8 +13,11 @@ struct ApplyChangesProgressView: View {
     @ObservedObject var viewModel: ApplyChangesViewModel
     @Binding var isPresented: Bool
 
-    @State private var selectedFilters: Set<UUID> = []
-    @State private var selectedScripts: Set<UUID> = []
+    // Updates start selected, so track what the user unticks. Seeding a selected
+    // set on appear left the list unticked for a frame, and unticked entirely
+    // when the review replaced another mode in the same sheet.
+    @State private var deselectedFilters: Set<UUID> = []
+    @State private var deselectedScripts: Set<UUID> = []
     @State private var isStartingSelectedUpdates = false
     @State private var showingLogs = false
     @State private var measuredHeights: [ApplySheetPart: CGFloat] = [:]
@@ -39,7 +42,15 @@ struct ApplyChangesProgressView: View {
     }
 
     private var selectedUpdateCount: Int {
-        selectedFilters.count + selectedScripts.count
+        selectedFilterUpdates.count + selectedScriptUpdates.count
+    }
+
+    private var selectedFilterUpdates: [FilterList] {
+        filterManager.availableUpdates.filter { !deselectedFilters.contains($0.id) }
+    }
+
+    private var selectedScriptUpdates: [UserScript] {
+        filterManager.availableScriptUpdates.filter { !deselectedScripts.contains($0.id) }
     }
 
     private var totalAvailableUpdateCount: Int {
@@ -102,8 +113,11 @@ struct ApplyChangesProgressView: View {
             .frame(width: 700, height: 500)
             #endif
         }
-        .onAppear {
-            syncSelectionFromAvailableUpdates()
+        .onChangeCompat(of: mode) { _, newMode in
+            if newMode == .review {
+                deselectedFilters = []
+                deselectedScripts = []
+            }
         }
         #if os(macOS)
         .background {
@@ -221,7 +235,7 @@ struct ApplyChangesProgressView: View {
                         SelectableRow(
                             title: Text(filter.localizedDisplayName),
                             subtitle: filter.localizedDisplayDescription,
-                            isSelected: selectedFilters.contains(filter.id),
+                            isSelected: !deselectedFilters.contains(filter.id),
                             style: .groupedRow
                         ) {
                             toggleFilter(filter)
@@ -240,7 +254,7 @@ struct ApplyChangesProgressView: View {
                         SelectableRow(
                             title: Text(script.localizedDisplayName),
                             subtitle: script.localizedDisplayDescription,
-                            isSelected: selectedScripts.contains(script.id),
+                            isSelected: !deselectedScripts.contains(script.id),
                             style: .groupedRow
                         ) {
                             toggleScript(script)
@@ -438,44 +452,37 @@ struct ApplyChangesProgressView: View {
 
     // MARK: - Actions
 
-    private func syncSelectionFromAvailableUpdates() {
-        selectedFilters = Set(filterManager.availableUpdates.map(\.id))
-        selectedScripts = Set(filterManager.availableScriptUpdates.map(\.id))
-    }
-
     private func toggleFilter(_ filter: FilterList) {
-        if selectedFilters.remove(filter.id) == nil {
-            selectedFilters.insert(filter.id)
+        if deselectedFilters.remove(filter.id) == nil {
+            deselectedFilters.insert(filter.id)
         }
     }
 
     private func toggleScript(_ script: UserScript) {
-        if selectedScripts.remove(script.id) == nil {
-            selectedScripts.insert(script.id)
+        if deselectedScripts.remove(script.id) == nil {
+            deselectedScripts.insert(script.id)
         }
     }
 
     private func isCategorySelected(_ category: FilterListCategory) -> Bool {
         if category == .scripts {
             return !filterManager.availableScriptUpdates.isEmpty
-                && filterManager.availableScriptUpdates.allSatisfy { selectedScripts.contains($0.id) }
+                && filterManager.availableScriptUpdates.allSatisfy { !deselectedScripts.contains($0.id) }
         }
         guard let filters = filtersByCategory[category], !filters.isEmpty else { return false }
-        return filters.allSatisfy { selectedFilters.contains($0.id) }
+        return filters.allSatisfy { !deselectedFilters.contains($0.id) }
     }
 
     private func setCategory(_ category: FilterListCategory, selected: Bool) {
         if category == .scripts {
-            selectedScripts = selected ? Set(filterManager.availableScriptUpdates.map(\.id)) : []
+            deselectedScripts = selected ? [] : Set(filterManager.availableScriptUpdates.map(\.id))
             return
         }
-        guard let filters = filtersByCategory[category] else { return }
-        for filter in filters {
-            if selected {
-                selectedFilters.insert(filter.id)
-            } else {
-                selectedFilters.remove(filter.id)
-            }
+        let ids = Set((filtersByCategory[category] ?? []).map(\.id))
+        if selected {
+            deselectedFilters.subtract(ids)
+        } else {
+            deselectedFilters.formUnion(ids)
         }
     }
 
@@ -484,12 +491,9 @@ struct ApplyChangesProgressView: View {
         isStartingSelectedUpdates = true
         defer { isStartingSelectedUpdates = false }
 
-        let filtersToUpdate = filterManager.availableUpdates.filter { selectedFilters.contains($0.id) }
-        let scriptsToUpdate = filterManager.availableScriptUpdates.filter { selectedScripts.contains($0.id) }
-
         await filterManager.downloadAndApplySelectedUpdates(
-            filters: filtersToUpdate,
-            scripts: scriptsToUpdate
+            filters: selectedFilterUpdates,
+            scripts: selectedScriptUpdates
         )
     }
 

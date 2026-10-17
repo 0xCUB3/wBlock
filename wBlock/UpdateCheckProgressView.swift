@@ -4,6 +4,7 @@ struct UpdateCheckProgressView: View {
     @ObservedObject var filterManager: AppFilterManager
     #if os(iOS)
     @Environment(\.verticalSizeClass) private var verticalSizeClass
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #endif
 
     private var counter: String? {
@@ -69,11 +70,20 @@ struct UpdateCheckProgressView: View {
         }
     }
 
+    #if os(iOS)
+    private var ignoresDetents: Bool {
+        guard horizontalSizeClass == .regular else { return false }
+        if #available(iOS 18.0, *) { return false }
+        return true
+    }
+    #endif
+
     var body: some View {
         #if os(iOS)
-        // iPhone ignores detents in landscape and shows a full-height sheet, which leaves a
-        // lone progress bar in a page of white. Float a card over a clear sheet instead.
-        if #available(iOS 16.4, *), verticalSizeClass == .compact {
+        // iPhone in landscape, and iPad form sheets before iOS 18, ignore detents and show a
+        // full-size sheet, which leaves a lone progress bar in a page of white. Float a card
+        // over a clear sheet instead.
+        if #available(iOS 16.4, *), verticalSizeClass == .compact || ignoresDetents {
             content
                 .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
                 .padding(24)
