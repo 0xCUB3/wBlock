@@ -447,6 +447,7 @@ struct UserScriptManagerView: View {
         } label: {
             Label("Add Userscript or Userstyle", systemImage: "plus")
         }
+        .help("Add Userscript or Userstyle")
     }
 
     private func refreshScripts() {
@@ -793,7 +794,7 @@ struct UserScriptManagerView: View {
                 Image(systemName: "info.circle")
             }
             .buttonStyle(.plain).noFocusRingCompat()
-            .foregroundStyle(.secondary).accessibilityLabel("Info")
+            .foregroundStyle(.secondary).accessibilityLabel("Info").help("Info")
             .infoPopoverAnchor(script.id)
             #endif
 

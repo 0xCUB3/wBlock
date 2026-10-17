@@ -373,7 +373,6 @@
 "HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Handles advanced anti-adblock cases that filter rules miss." = "Handles advanced anti-adblock cases that filter rules miss.";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "Hides in-page pop-ups, banners, and other unwanted page elements.";
-"Hold for 3 seconds to apply without checking for updates." = "Hold for 3 seconds to apply without checking for updates.";
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
 "Hungarian filter" = "Hungarian filter";
@@ -1044,3 +1043,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Blocks ad and tracking hosts that the other lists only block in part." = "Blocks ad and tracking hosts that the other lists only block in part.";
 
 "Filter Logs" = "Filter Logs";
+"Apply Anyway" = "Apply Anyway";

@@ -58,42 +58,42 @@ struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
             Label("Show Enabled Only", systemImage: "line.3.horizontal.decrease")
         }
         .toggleStyle(.button)
+        .help("Show Enabled Only")
     }
 
     func body(content: Content) -> some View {
         #if os(macOS)
+        // Update sits on the leading edge as on iOS, and each trailing action
+        // stands alone with the toolbar's own spacing (#999).
         if #available(macOS 26.0, *) {
             content.toolbar {
+                if hasApply {
+                    ToolbarItem(placement: .navigation) { apply() }
+                        .toolbarVisibilityPriorityCompat(.high)
+                }
                 ToolbarItem(placement: .primaryAction) {
                     InlineGlassSearchField(text: $searchText, focusRequest: $focusRequest, prompt: searchPrompt)
-                        .padding(.trailing, 4)
                 }
                 .sharedBackgroundVisibility(.hidden)
                 .toolbarVisibilityPriorityCompat(.high)
-                ToolbarItemGroup(placement: .primaryAction) {
-                    apply()
-                    filter
-                }
-                .toolbarVisibilityPriorityCompat(.high)
+                ToolbarItem(placement: .primaryAction) { filter }
+                    .toolbarVisibilityPriorityCompat(.high)
                 ToolbarItem(placement: .primaryAction) {
                     primary()
                         .labelStyle(.iconOnly)
                         .buttonStyle(CompactToolbarButtonStyle())
                         .glassEffect(.regular.interactive(), in: .capsule)
-                        .padding(.leading, 4)
                 }
                 .sharedBackgroundVisibility(.hidden)
             }
             .toolbarBackground(.visible, for: .windowToolbar)
         } else {
             content.toolbar {
+                ToolbarItem(placement: .navigation) { apply() }
                 ToolbarItem(placement: .primaryAction) {
                     ToolbarSearchField(text: $searchText, isExpanded: $focusRequest, prompt: searchPrompt)
                 }
-                ToolbarItemGroup(placement: .primaryAction) {
-                    apply()
-                    filter
-                }
+                ToolbarItem(placement: .primaryAction) { filter }
                 ToolbarItem(placement: .primaryAction) { primary() }
             }
         }

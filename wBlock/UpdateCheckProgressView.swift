@@ -36,8 +36,17 @@ struct UpdateCheckProgressView: View {
             }
             .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
-            Button("OK") { filterManager.showingNoUpdatesAlert = false }
-                .buttonStyle(.bordered)
+            VStack(spacing: 8) {
+                Button("OK") { filterManager.showingNoUpdatesAlert = false }
+                    .buttonStyle(.bordered)
+                Button("Apply Anyway") {
+                    filterManager.showingNoUpdatesAlert = false
+                    filterManager.forceApplyChanges()
+                }
+                .buttonStyle(.borderless)
+                .font(.subheadline)
+            }
+            .fixedSize()
         }
         .task {
             // Dismisses itself; tapping outside closes it sooner.

@@ -395,38 +395,6 @@ extension CompatibleLabeledContent where Label == Text {
     }
 }
 
-/// Tracks a 3s press without @State updates that would reset the drag gesture.
-private final class ApplyChangesHoldTracker {
-    var didBegin = false
-    var isPressing = false
-    var task: Task<Void, Never>?
-
-    func start(isDisabled: Bool, onFire: @escaping () -> Void) {
-        guard !isDisabled else { return }
-        cancel()
-        isPressing = true
-        task = Task {
-            try? await Task.sleep(nanoseconds: 3_000_000_000)
-            guard !Task.isCancelled else { return }
-            await MainActor.run {
-                guard !Task.isCancelled, self.isPressing else { return }
-                onFire()
-            }
-        }
-    }
-
-    func cancel() {
-        isPressing = false
-        task?.cancel()
-        task = nil
-    }
-
-    func reset() {
-        cancel()
-        didBegin = false
-    }
-}
-
 /// Toolbar overflow order: high priority keeps an item visible longest, such as
 /// on iPhone Duo's vertical bars or a narrow Mac window. A no-op before iOS 27
 /// and macOS 26.1 so the deployment targets stay where they are.
@@ -567,37 +535,21 @@ private struct TintDimmingReader: UIViewRepresentable {
 }
 #endif
 
-/// Toolbar Apply control: tap applies pending changes or checks for updates; 3s hold force-applies.
+/// Toolbar Apply control: applies pending changes or checks for updates.
 /// While busy it shows a spinner, and a tap calls `onBusyTap` instead.
-struct ApplyChangesHoldButton<Label: View>: View {
+/// Applying without a check lives in the No Updates Found alert and the
+/// Updates menu rather than a hidden 3-second hold (#999).
+struct ApplyChangesButton<Label: View>: View {
     let isDisabled: Bool
     let hasPendingChanges: Bool
     let onTap: () -> Void
     let onBusyTap: () -> Void
-    let onForceApply: () -> Void
-    let label: Label
-
-    @State private var lastForceApplyAt: Date?
-    @State private var hold = ApplyChangesHoldTracker()
-
-    init(
-        isDisabled: Bool,
-        hasPendingChanges: Bool,
-        onTap: @escaping () -> Void,
-        onBusyTap: @escaping () -> Void,
-        onForceApply: @escaping () -> Void,
-        @ViewBuilder label: () -> Label
-    ) {
-        self.isDisabled = isDisabled
-        self.hasPendingChanges = hasPendingChanges
-        self.onTap = onTap
-        self.onBusyTap = onBusyTap
-        self.onForceApply = onForceApply
-        self.label = label()
-    }
+    @ViewBuilder let label: Label
 
     var body: some View {
-        Button(action: handleTap) {
+        Button {
+            isDisabled ? onBusyTap() : onTap()
+        } label: {
             // A background apply shows no sheet, so the button itself says it
             // is working instead of reading Apply until the run ends (#921).
             label
@@ -605,65 +557,10 @@ struct ApplyChangesHoldButton<Label: View>: View {
                 .overlay { if isDisabled { ProgressView().controlSize(.small) } }
         }
         .accessibilityLabel(isDisabled ? Text("Updating…") : hasPendingChanges ? Text("Apply Changes") : Text("Check for Updates"))
-        .accessibilityHint("Hold for 3 seconds to apply without checking for updates.")
-        .help(helpText)
+        .help(isDisabled ? Text("Updating…") : hasPendingChanges ? Text("Apply your pending changes") : Text("Check for Updates"))
         #if os(macOS)
         .environment(\.compactToolbarTextLabel, hasPendingChanges)
         #endif
-        .simultaneousGesture(forceApplyHoldGesture)
-        .onChangeCompat(of: isDisabled) { disabled in
-            if disabled {
-                hold.cancel()
-            }
-        }
-    }
-
-    private var helpText: String {
-        let action = hasPendingChanges
-            ? String(localized: "Apply your pending changes")
-            : String(localized: "Check for Updates")
-        return action
-            + " "
-            + String(localized: "Hold for 3 seconds to apply without checking for updates.")
-    }
-
-    private var forceApplyHoldGesture: some Gesture {
-        DragGesture(minimumDistance: 0)
-            .onChanged { value in
-                if !hold.didBegin {
-                    hold.didBegin = true
-                    hold.start(isDisabled: isDisabled) {
-                        handleForceApply()
-                    }
-                }
-                let distance = hypot(value.translation.width, value.translation.height)
-                if distance > 80 {
-                    hold.cancel()
-                }
-            }
-            .onEnded { _ in
-                hold.reset()
-            }
-    }
-
-    private func handleTap() {
-        guard !isDisabled else { return onBusyTap() }
-        if let lastForceApplyAt, Date().timeIntervalSince(lastForceApplyAt) < 1 {
-            return
-        }
-        onTap()
-    }
-
-    private func handleForceApply() {
-        guard !isDisabled else { return }
-        if let lastForceApplyAt, Date().timeIntervalSince(lastForceApplyAt) < 1 {
-            return
-        }
-        lastForceApplyAt = Date()
-        #if os(iOS)
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        #endif
-        onForceApply()
     }
 }
 

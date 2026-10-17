@@ -57,7 +57,7 @@ struct ListCategoryHeader: View {
             Text(title).foregroundStyle(.primary).textCase(.none)
             Button(action: info) { Image(systemName: "info.circle") }
                 .buttonStyle(.plain).noFocusRingCompat()
-                .foregroundStyle(.secondary).accessibilityLabel("Info")
+                .foregroundStyle(.secondary).accessibilityLabel("Info").help("Info")
                 .infoPopoverAnchor(anchorID)
             #if os(iOS)
             if let isExpanded {

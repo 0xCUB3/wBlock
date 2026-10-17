@@ -373,7 +373,6 @@
 "HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Handles advanced anti-adblock cases that filter rules miss." = "フィルタールールが見逃す高度な広告ブロック対策ケースを処理します。";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "ページ内のポップアップ、バナー、その他の不要なページ要素を非表示にします。";
-"Hold for 3 seconds to apply without checking for updates." = "アップデートの有無を確認せずに適用するには、3秒間長押ししてください。";
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
 "Hungarian filter" = "ハンガリー語フィルター";
@@ -1004,3 +1003,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Blocks ad and tracking hosts that the other lists only block in part." = "他のリストでは一部しかブロックされない広告・トラッキングのホストをブロックします。";
 
 "Filter Logs" = "ログを絞り込む";
+"Apply Anyway" = "このまま適用";

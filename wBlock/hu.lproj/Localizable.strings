@@ -373,7 +373,6 @@
 "HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Handles advanced anti-adblock cases that filter rules miss." = "Kezeli a fejlett hirdetésblokkolás-ellenes eseteket, amelyek kihagyják a szabályokat.";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "Elrejti az oldalon belüli felugró ablakokat, szalaghirdetéseket és egyéb nem kívánt oldalelemeket.";
-"Hold for 3 seconds to apply without checking for updates." = "Tartsd lenyomva 3 másodpercig a frissítések ellenőrzése nélküli alkalmazáshoz.";
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
 "Hungarian filter" = "Magyar szűrő";
@@ -1035,3 +1034,4 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Blocks ad and tracking hosts that the other lists only block in part." = "Letiltja azokat a hirdetési és követő hosztokat, amelyeket a többi lista csak részben tilt le.";
 
 "Filter Logs" = "Naplók szűrése";
+"Apply Anyway" = "Alkalmazás mindenképp";

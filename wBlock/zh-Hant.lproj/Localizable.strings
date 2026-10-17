@@ -373,7 +373,6 @@
 "HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Handles advanced anti-adblock cases that filter rules miss." = "處理過濾規則遺漏的進階反廣告封鎖情況。";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "隱藏頁內彈出視窗、橫幅和其他不必要的頁面元素。";
-"Hold for 3 seconds to apply without checking for updates." = "按住 3 秒即可在不檢查更新的情況下套用。";
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
 "Hungarian filter" = "Hungarian filter";
@@ -1035,3 +1034,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Blocks ad and tracking hosts that the other lists only block in part." = "封鎖其他列表只部分封鎖的廣告與追蹤主機。";
 
 "Filter Logs" = "過濾日誌";
+"Apply Anyway" = "仍然套用";

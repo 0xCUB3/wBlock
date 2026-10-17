@@ -373,7 +373,6 @@
 "HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Handles advanced anti-adblock cases that filter rules miss." = "Maneja casos avanzados antibloqueo de publicidad en los que se pasan por alto las reglas de filtrado.";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "Oculta ventanas emergentes, banners y otros elementos no deseados en la página.";
-"Hold for 3 seconds to apply without checking for updates." = "Mantén pulsado 3 segundos para aplicar sin buscar actualizaciones.";
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
 "Hungarian filter" = "Hungarian filter";
@@ -1035,3 +1034,4 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Blocks ad and tracking hosts that the other lists only block in part." = "Bloquea hosts de anuncios y rastreo que las demás listas solo bloquean en parte.";
 
 "Filter Logs" = "Filtrar registros";
+"Apply Anyway" = "Aplicar de todos modos";

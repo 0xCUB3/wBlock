@@ -83,6 +83,7 @@ struct AddItemButton: View {
         .buttonStyle(.plain)
         .noFocusRingCompat()
         .accessibilityLabel("Add")
+        .help("Add")
         .disabled(!canAdd || isBusy)
     }
 }

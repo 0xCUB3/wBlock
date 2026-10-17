@@ -313,12 +313,11 @@ struct ContentView: View {
     }
 
     private var applyChangesToolbarButton: some View {
-        ApplyChangesHoldButton(
+        ApplyChangesButton(
             isDisabled: filterManager.isLoading || filterManager.isAutoUpdateRunning,
             hasPendingChanges: hasPendingChanges,
             onTap: applyPendingChanges,
-            onBusyTap: filterManager.showBackgroundApplyProgress,
-            onForceApply: { filterManager.forceApplyChanges() }
+            onBusyTap: filterManager.showBackgroundApplyProgress
         ) {
             #if os(iOS)
             ApplyChangesToolbarLabel(
@@ -335,7 +334,7 @@ struct ContentView: View {
         }
         #if os(macOS)
         // Right-click exposes the apply variants (#651); iOS uses pull-to-refresh
-        // on each tab and the long-press stays reserved for force apply.
+        // on each tab.
         .contextMenu { scopedUpdateMenuItems }
         #endif
     }
@@ -404,6 +403,7 @@ struct ContentView: View {
             } label: {
                 Label("Add Filter", systemImage: "plus")
             }
+            .help("Add Filter")
         } apply: {
             applyChangesToolbarButton
         }
@@ -910,7 +910,7 @@ struct FilterRowView: View {
             #if os(macOS)
             Button(action: onInfo) { Image(systemName: "info.circle") }
                 .buttonStyle(.plain).noFocusRingCompat()
-                .foregroundStyle(.secondary).accessibilityLabel("Info")
+                .foregroundStyle(.secondary).accessibilityLabel("Info").help("Info")
                 .infoPopoverAnchor(filter.id)
             #endif
             if filter.isRemoteURL && (isDownloading || !isDownloaded) {
@@ -1149,6 +1149,9 @@ struct ContentModifiers: ViewModifier {
                 set: { if !$0 { filterManager.showingNoUpdatesAlert = false } }
             )) {
                 Button("OK") {}
+                // Rebuilds Safari's rules from the downloaded lists, the
+                // replacement for the old 3-second hold (#999).
+                Button("Apply Anyway") { filterManager.forceApplyChanges() }
             } message: {
                 Text("You're already using the latest filters.")
             }
