@@ -1069,7 +1069,7 @@ struct ContentModifiers: ViewModifier {
     // host mid-dismissal crashed UIKit on iOS 16.
     @State private var onboardingSettled = true
 
-    // iOS shows the no-updates result in the progress sheet, as a card like the macOS alert sheet.
+    // iOS shows the no-updates result in the floating check card instead of an alert.
     private var noUpdatesInSheet: Bool {
         #if os(iOS)
         filterManager.showingNoUpdatesAlert
@@ -1078,9 +1078,19 @@ struct ContentModifiers: ViewModifier {
         #endif
     }
 
+    private var checkCardVisible: Bool {
+        onboardingSettled && !filterManager.showingApplyProgressSheet
+            && (noUpdatesInSheet || (filterManager.isLoading && !filterManager.suppressBlockingOverlay))
+    }
+
+    // iOS floats the check card over the app: a short sheet sits against the home bar, iOS 26
+    // glass sheets ignore a clear background, and older iPads ignore detents entirely.
     private var progressSheetPresented: Bool {
-        onboardingSettled && (filterManager.showingApplyProgressSheet || noUpdatesInSheet
-            || (filterManager.isLoading && !filterManager.suppressBlockingOverlay))
+        #if os(iOS)
+        onboardingSettled && filterManager.showingApplyProgressSheet
+        #else
+        onboardingSettled && filterManager.showingApplyProgressSheet || checkCardVisible
+        #endif
     }
 
     func body(content: Content) -> some View {
@@ -1097,7 +1107,12 @@ struct ContentModifiers: ViewModifier {
                     }
                 }
             ), onDismiss: { progressSheetSettled = true }) {
-                if filterManager.showingApplyProgressSheet {
+                #if os(iOS)
+                let showsApplyProgress = true
+                #else
+                let showsApplyProgress = filterManager.showingApplyProgressSheet
+                #endif
+                if showsApplyProgress {
                     ApplyChangesProgressView(
                         filterManager: filterManager,
                         viewModel: filterManager.applyProgressViewModel,
@@ -1108,6 +1123,20 @@ struct ContentModifiers: ViewModifier {
                         .interactiveDismissDisabled(!noUpdatesInSheet)
                 }
             }
+            #if os(iOS)
+            .overlay {
+                if checkCardVisible {
+                    ZStack {
+                        Color.black.opacity(0.2).ignoresSafeArea()
+                            .onTapGesture { filterManager.showingNoUpdatesAlert = false }
+                        UpdateCheckProgressView(filterManager: filterManager)
+                    }
+                    .accessibilityAddTraits(.isModal)
+                    .transition(.opacity)
+                }
+            }
+            .animation(.easeInOut(duration: 0.2), value: checkCardVisible)
+            #endif
             .onChangeCompat(of: progressSheetPresented) { _, presented in
                 if presented { progressSheetSettled = false }
             }

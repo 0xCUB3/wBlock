@@ -2,10 +2,6 @@ import SwiftUI
 
 struct UpdateCheckProgressView: View {
     @ObservedObject var filterManager: AppFilterManager
-    #if os(iOS)
-    @Environment(\.verticalSizeClass) private var verticalSizeClass
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    #endif
 
     private var counter: String? {
         guard let progress = filterManager.updateCheckProgress, progress.total > 0 else { return nil }
@@ -43,9 +39,8 @@ struct UpdateCheckProgressView: View {
             Button("OK") { filterManager.showingNoUpdatesAlert = false }
                 .buttonStyle(.bordered)
         }
-        .frame(maxHeight: .infinity)
         .task {
-            // Dismisses itself; swiping down or tapping outside closes it sooner.
+            // Dismisses itself; tapping outside closes it sooner.
             try? await Task.sleep(nanoseconds: 4_000_000_000)
             filterManager.showingNoUpdatesAlert = false
         }
@@ -70,32 +65,13 @@ struct UpdateCheckProgressView: View {
         }
     }
 
-    #if os(iOS)
-    private var ignoresDetents: Bool {
-        guard horizontalSizeClass == .regular else { return false }
-        if #available(iOS 18.0, *) { return false }
-        return true
-    }
-    #endif
-
     var body: some View {
         #if os(iOS)
-        // iPhone in landscape, and iPad form sheets before iOS 18, ignore detents and show a
-        // full-size sheet, which leaves a lone progress bar in a page of white. Float a card
-        // over a clear sheet instead.
-        if #available(iOS 16.4, *), verticalSizeClass == .compact || ignoresDetents {
-            content
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-                .padding(24)
-                .presentationBackground(.clear)
-                .presentationDragIndicator(.hidden)
-        } else if #available(iOS 16.0, *) {
-            content
-                .presentationDetents([.height(160)])
-                .presentationDragIndicator(.hidden)
-        } else {
-            content
-        }
+        content
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(.primary.opacity(0.1)))
+            .shadow(color: .black.opacity(0.15), radius: 20, y: 8)
+            .padding(24)
         #else
         content
         #endif
