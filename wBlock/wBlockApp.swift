@@ -115,7 +115,7 @@ struct wBlockApp: App {
         #if os(macOS)
         .handlesExternalEvents(matching: Set(["open"]))
         #endif
-        #if os(macOS)
+        // The macOS and iPadOS menu bars, and hardware-keyboard shortcuts.
         .commands {
             // The Settings tab is wBlock's settings window; ⌘, goes there
             // rather than opening a second copy of it (#999).
@@ -123,11 +123,13 @@ struct wBlockApp: App {
                 Button("Settings…") { post(.wBlockSelectTabRequest, 2) }
                     .keyboardShortcut(",", modifiers: .command)
             }
+            #if os(macOS)
             CommandGroup(after: .appInfo) {
                 Button("Restart Onboarding") {
                     showingRestartConfirmation = true
                 }
             }
+            #endif
             // ⌘N used to open a second copy of the main window, which looked
             // like nothing happened. Repurpose it for the Add sheets.
             CommandGroup(replacing: .newItem) {
@@ -156,12 +158,9 @@ struct wBlockApp: App {
                 Divider()
                 Button("Show Enabled Only") { post(.wBlockToggleEnabledOnlyRequest) }
                     .keyboardShortcut("e", modifiers: [.command, .option])
-                Divider()
-            }
-            CommandGroup(after: .windowList) {
-                Divider()
                 Button("Logs") { post(.wBlockShowLogsRequest) }
                     .keyboardShortcut("l", modifiers: [.command, .option])
+                Divider()
             }
             CommandGroup(replacing: .help) {
                 Link("FAQ", destination: SettingsView.faqURL)
@@ -186,7 +185,6 @@ struct wBlockApp: App {
                 Menu("Pause Blocking") { PauseBlockingControls(filterManager: filterManager) }
             }
         }
-        #endif
     }
 
     private func post(_ name: Notification.Name, _ object: Int? = nil) {

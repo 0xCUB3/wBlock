@@ -113,9 +113,10 @@ struct ContentView: View {
     /// attached hardware keyboard.
     private var keyboardShortcutHandlers: some View {
         Group {
-            // macOS gets these from the menu bar (wBlockApp.commands), so the
-            // hidden buttons only exist for iPad/iPhone hardware keyboards.
+            // macOS and iPadOS get these from the menu bar (wBlockApp.commands),
+            // so the hidden buttons only exist for iPhone hardware keyboards.
             #if os(iOS)
+            if UIDevice.current.userInterfaceIdiom == .phone {
             Button {
                 guard !filterManager.isLoading,
                     !filterManager.showingApplyProgressSheet
@@ -181,6 +182,7 @@ struct ContentView: View {
                 Color.clear
             }
             .keyboardShortcut("r", modifiers: [.command, .option, .shift])
+            }
             #endif
         }
         .opacity(0)
@@ -282,15 +284,17 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: .wBlockShowLogsRequest)) { _ in
             showingLogs = true
         }
-        #if os(macOS)
         .sheet(isPresented: $showingLogs) {
+            #if os(iOS)
+            LogsView { showingLogs = false }
+            #else
             SheetContainer {
                 SheetHeader(title: "Logs") { showingLogs = false }
                 LogsView()
             }
             .frame(width: 700, height: 500)
+            #endif
         }
-        #endif
         .alert("Error", isPresented: $showingFilterDownloadError) {
             Button("OK", role: .cancel) {}
         } message: {
