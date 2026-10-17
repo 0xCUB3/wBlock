@@ -1422,7 +1422,7 @@ private struct UserScriptSourceSheet: View {
 
     @Environment(\.dismiss) private var dismiss
     @StateObject private var editorController: CodeMirrorEditorController
-    @State private var wrapsLines = false
+    @State private var wrapsLines = true
 
     init(script: UserScript, content: String, canEdit: Bool, onSave: @escaping (String) async -> String?) {
         self.script = script

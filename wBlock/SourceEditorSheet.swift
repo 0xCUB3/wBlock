@@ -13,7 +13,7 @@ struct SourceEditorSheet: View {
     var onPaste: (() -> Void)? = nil
 
     @Environment(\.dismiss) private var dismiss
-    @State private var wrapsLines = false
+    @State private var wrapsLines = true
     @State private var originalText: String?
     @State private var isSaving = false
     @State private var errorMessage: String?

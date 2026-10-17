@@ -222,7 +222,7 @@ struct FilterRulesView: View {
     @ObservedObject var filterManager: AppFilterManager
     @State private var rules = ""
     @StateObject private var editorController = CodeMirrorEditorController(text: "")
-    @State private var wrapsLines = false
+    @State private var wrapsLines = true
     @State private var analysis: FilterRuleAnalysis?
     @State private var isLoading = true
     @State private var shownKinds: Set<FilterRuleKind> = Set(FilterRuleKind.allCases)
