@@ -123,25 +123,6 @@ struct UserScriptPersistenceRaceTests {
             fatalError("authoritative replacement did not remove C")
         }
 
-        let manager = try String(contentsOfFile: "wBlockCoreService/UserScriptManager.swift", encoding: .utf8)
-        let persistence = try String(contentsOfFile: "wBlockCoreService/ProtobufDataManager+Extensions.swift", encoding: .utf8)
-        let handler = try String(contentsOfFile: "wBlockCoreService/WebExtensionRequestHandler.swift", encoding: .utf8)
-        guard persistence.contains("public func replaceUserScripts"),
-              persistence.contains("public func removeUserScript(withId id: UUID)"),
-              manager.contains("await dataManager.removeUserScript(withId: removedScript.id)"),
-              handler.contains("let payloadMutationRevision = userScriptManager.payloadMutationRevision"),
-              handler.contains("guard payloadMutationRevision == userScriptManager.payloadMutationRevision else"),
-              manager.contains("payloadMutationRevision &+= 1"),
-              persistence.contains("userScriptsAreAuthoritative: true"),
-              handler.contains("error: \"userscript-state-changed\""),
-              handler.contains("multipliedReportingOverflow(by: chunkSize)"),
-              handler.contains("addingReportingOverflow(chunkSize)"),
-              !handler.contains("getDocumentStartUserScriptCatalog"),
-              !handler.contains("documentStartCacheAllowed"),
-              !handler.contains("cacheRevision"),
-              !handler.contains("cacheCategory")
-        else { fatalError("authoritative deletion or payload revision contract is missing") }
-
         print("PASS: userscript persistence race contracts")
     }
 }

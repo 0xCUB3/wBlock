@@ -94,8 +94,7 @@ public enum LogErrorDescriber {
         if let underlying = nsError.userInfo[NSUnderlyingErrorKey] as? Error {
             return underlying
         }
-        if #available(macOS 11.3, iOS 14.5, *),
-           let list = nsError.userInfo[NSMultipleUnderlyingErrorsKey] as? [Error],
+        if let list = nsError.userInfo[NSMultipleUnderlyingErrorsKey] as? [Error],
            let first = list.first {
             return first
         }

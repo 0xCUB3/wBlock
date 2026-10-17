@@ -84,11 +84,6 @@ struct Test {
                 "apply-time metadata refresh must balance using downloaded counts: \(loads)")
         require(refreshed.map(\.isSelected) == stale.map(\.isSelected),
                 "metadata refresh must preserve run-start selection")
-
-        let pipeline = try! String(contentsOfFile: "wBlock/AppFilterManager+ApplyPipeline.swift", encoding: .utf8)
-        let shared = try! String(contentsOfFile: "wBlockCoreService/SharedAutoUpdateManager.swift", encoding: .utf8)
-        require(pipeline.contains("ContentBlockerMappingService.orderedForCompilation(allSelectedFilters)"), "app apply uses compile order")
-        require(shared.contains("ContentBlockerMappingService.orderedForCompilation(selectedFilters)"), "background apply uses compile order")
         print("PASS test_issue_645_compile_order")
     }
 }

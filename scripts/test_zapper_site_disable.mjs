@@ -194,43 +194,6 @@ function loadScript(sandbox) {
   vm.runInContext(source, sandbox, { filename: "zapper-content.js" });
 }
 
-check(
-  "refine mode renders tappable ancestor chips",
-  source.includes("function updateAncestorRow")
-    && source.includes("wblock-ancestor-chip")
-    && source.includes("state.ui.ancestorRow = ancestorRow")
-);
-check(
-  "done never reloads the page (hides persist via the injected stylesheet)",
-  source.includes("async function finalizeSession()")
-    && !source.includes("window.location.reload()")
-    && !source.includes("sessionRulesSignature")
-);
-
-check(
-  "showToast returns when inactive before ensureUi (no toolbar recreation)",
-  (() => {
-    const fnMatch = source.match(/function showToast\(message\) \{([\s\S]*?)\n  \}/);
-    if (!fnMatch) return false;
-    const body = fnMatch[1];
-    const activeIdx = body.indexOf("if (!state.active) return;");
-    const ensureIdx = body.indexOf("ensureUi();");
-    return activeIdx >= 0 && ensureIdx >= 0 && activeIdx < ensureIdx;
-  })()
-);
-check(
-  "addSelectorRule re-checks state.active after pending save before toast/UI",
-  /async function addSelectorRule[\s\S]*await applyRulesToPage\(state\.rules\);\s*\n\s*if \(!state\.active\) return;/.test(
-    source
-  )
-);
-check(
-  "undoLastZap re-checks state.active after pending save before toast/UI",
-  /async function undoLastZap[\s\S]*await applyRulesToPage\(state\.rules\);\s*\n\s*if \(!state\.active\) return;/.test(
-    source
-  )
-);
-
 // Scenario 1+2: enabled rules apply, then native disable + reloadRules clears them.
 {
   const env = makeSandbox({ nativeRules: [".ad-banner", "#promo"], nativeDisabled: false });

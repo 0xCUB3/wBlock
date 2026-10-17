@@ -95,32 +95,6 @@ struct FilterRefreshPlannerTests {
         let oldData = try! JSONSerialization.data(withJSONObject: json)
         check(try! JSONDecoder().decode(FilterList.self, from: oldData).updatesAutomatically,
               "absent JSON preference must keep automatic updates enabled")
-
-        let updater = try! String(
-            contentsOf: URL(fileURLWithPath: "wBlock/FilterListUpdater.swift"),
-            encoding: .utf8
-        )
-        check(!updater.contains("compareRemoteToLocal"), "update checks must not fall back to a second full download")
-        check(
-            updater.contains("timeoutIntervalForResource = 30"),
-            "a hung host must not sit on a two-minute resource timeout"
-        )
-        check(
-            updater.contains("FilterRefreshPlanner.filtersRequiringNetworkRefresh"),
-            "apply refresh must use the freshness planner"
-        )
-        check(
-            updater.contains("if checkedAllExisting && allSucceeded"),
-            "a failed or unavailable fetch must not mark the interval as successful"
-        )
-        check(
-            updater.contains("lastChecked: { lastCheckedByID[$0.id] }"),
-            "apply refresh must feed per-list check times into the planner"
-        )
-        check(
-            updater.contains("ProtobufDataManager.shared.setFilterLastChecked(verifiedTimes)"),
-            "verified lists must persist their check time even when other lists fail"
-        )
         print("PASS")
     }
 

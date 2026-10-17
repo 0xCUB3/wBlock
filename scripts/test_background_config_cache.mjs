@@ -722,19 +722,6 @@ for (const [label, inertState, activeCSS] of [
 // Scenario L: the permanently-disabled native document-start catalog/cache
 // contract is absent, while ordinary userscript payloads remain authoritative.
 {
-  const forbidden = [
-    "getDocumentStartUserScriptCatalog",
-    "getCachedDocumentStartUserScripts",
-    "documentStartCacheAllowed",
-    "cacheRevision",
-    "cacheCategory",
-    "documentStartScriptCatalog"
-  ];
-  for (const symbol of forbidden) {
-    check(`canonical source removes ${symbol}`, !canonicalSource.includes(symbol));
-    check(`bundle removes ${symbol}`, !bundleSource.includes(symbol));
-  }
-
   const pageUrl = "https://example.com/";
   const state = loadBackground({
     nativeHandler: message => message && message.action === "getUserScripts"

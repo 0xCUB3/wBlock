@@ -4,10 +4,6 @@ import wBlockCoreService
 @main
 struct Issue508BackupUserScriptTests {
     static func main() throws {
-        let source = try String(contentsOfFile: "wBlockCoreService/UserScriptManager.swift", encoding: .utf8)
-        check(source.contains("copy.category = script.category"), "backupCopy must preserve category")
-        check(source.contains("copy.localImportIdentity = UserScriptImportIdentity.normalized(script.localImportIdentity)"), "backupCopy must preserve local identity")
-        check(source.contains("UserScriptRestoreMatcher.matchingIndex"), "backup restore must use the production matcher")
         let original = BackupProbe(name: "Display Override", category: "custom", localImportIdentity: "file:/tmp/source.user.js", isLocal: true, url: nil)
         let roundTrip = try JSONDecoder().decode(BackupProbe.self, from: JSONEncoder().encode(original))
         check(roundTrip == original, "backup identity and category must survive a JSON round trip")

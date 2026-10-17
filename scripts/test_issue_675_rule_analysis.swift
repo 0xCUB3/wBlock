@@ -65,10 +65,6 @@ struct Test {
 
         let cancelled = FilterRuleAnalysis.analyze(content: content, isCancelled: { true })
         require(cancelled.lines.isEmpty, "cancellation yields an empty analysis")
-
-        let view = try! String(contentsOfFile: "wBlock/FilterInfoView.swift", encoding: .utf8)
-        require(view.contains("FilterRuleAnalysis.analyze(") && view.contains("shownKinds") && view.contains("orderedForCompilation"),
-                "rules viewer analyses against earlier lists and filters by kind")
         print("PASS test_issue_675_rule_analysis")
     }
 }

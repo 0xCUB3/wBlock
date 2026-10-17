@@ -345,11 +345,7 @@ public enum WebExtensionRequestHandler {
     /// - Returns: An NSExtensionItem containing the response message.
     private static func createResponse(with json: [String: Any?]) -> NSExtensionItem {
         let response = NSExtensionItem()
-        if #available(iOS 15.0, macOS 11.0, *) {
-            response.userInfo = [SFExtensionMessageKey: json]
-        } else {
-            response.userInfo = ["message": json]
-        }
+        response.userInfo = [SFExtensionMessageKey: json]
 
         return response
     }
@@ -374,12 +370,7 @@ public enum WebExtensionRequestHandler {
             profile = request?.userInfo?["profile"] as? UUID
         }
 
-        let message: Any?
-        if #available(iOS 15.0, macOS 11.0, *) {
-            message = request?.userInfo?[SFExtensionMessageKey]
-        } else {
-            message = request?.userInfo?["message"]
-        }
+        let message = request?.userInfo?[SFExtensionMessageKey]
 
         os_log(
             .info,

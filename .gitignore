@@ -32,3 +32,6 @@ docs/superpowers/
 .derived-data
 node_modules/
 .claude/
+
+# Wrangler local cache
+.wrangler/
