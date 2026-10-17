@@ -1007,3 +1007,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Clear Logs?" = "ログを消去しますか？";
 "This deletes every log entry." = "すべてのログ項目が削除されます。";
 "Settings…" = "設定…";
+"Browse" = "ブラウズ";

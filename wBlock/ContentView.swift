@@ -1380,7 +1380,7 @@ struct AddFilterListView: View {
         case url = "URL"
         case paste = "Text"
         case file = "File"
-        case find = "Find"
+        case find = "Browse"
 
         var id: String { rawValue }
         var localizedTitle: LocalizedStringKey { LocalizedStringKey(rawValue) }

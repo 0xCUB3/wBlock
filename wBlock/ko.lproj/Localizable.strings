@@ -1038,3 +1038,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Clear Logs?" = "로그를 지우시겠습니까?";
 "This deletes every log entry." = "모든 로그 항목이 삭제됩니다.";
 "Settings…" = "설정…";
+"Browse" = "둘러보기";

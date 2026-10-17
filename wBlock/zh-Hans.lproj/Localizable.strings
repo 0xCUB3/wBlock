@@ -1038,3 +1038,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Clear Logs?" = "清除日志？";
 "This deletes every log entry." = "这会删除所有日志条目。";
 "Settings…" = "设置…";
+"Browse" = "浏览";

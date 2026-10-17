@@ -1038,3 +1038,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Clear Logs?" = "清除記錄？";
 "This deletes every log entry." = "這會刪除所有記錄項目。";
 "Settings…" = "設定⋯";
+"Browse" = "瀏覽";

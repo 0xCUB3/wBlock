@@ -1,7 +1,7 @@
 import SwiftUI
 import wBlockCoreService
 
-/// The Find tab of Add Filter List: wBlock's own lists first, then lists from
+/// The Browse tab of Add Filter List: wBlock's own lists first, then lists from
 /// AdGuard's Safari filter registry that wBlock doesn't have yet.
 struct FilterRegistrySearchSections: View {
     @ObservedObject var filterManager: AppFilterManager
