@@ -15,7 +15,7 @@ struct SiteScopeEditor: View {
         // The footer joins the last group's notes so it doesn't float a full
         // group gap below them (#948).
         let showsExcluded = selectedSites == nil || !excludedSites.isEmpty
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: 14) {
             SettingsGroup {
                 // A menu picker outside a Form drops its label on iOS, so the
                 // label is drawn as text and the picker's own label hidden.

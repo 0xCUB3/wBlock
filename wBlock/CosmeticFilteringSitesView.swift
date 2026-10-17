@@ -10,37 +10,28 @@ struct CosmeticFilteringSitesView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                Toggle(isOn: Binding(get: { isEnabled }, set: setEnabled)) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Cosmetic Filtering")
-                        Text("Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-                .settingsSwitch()
-                .settingsGroup()
+            VStack(alignment: .leading, spacing: 14) {
                 // Not locked during an apply (#936): the run snapshots this setting
                 // and a change made meanwhile stays pending for the next one.
-                // The scope only matters while the switch is on, so it is
-                // hidden rather than left editable with no effect.
-                if isEnabled {
-                    Toggle(isOn: Binding(
-                        get: { sites.includesGeneric },
-                        set: { update(sites.selectedSites, sites.excludedSites, includesGeneric: $0) }
-                    )) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Generic Rules")
-                            Text("Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps.")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
+                // Generic Rules shares the box since it only narrows cosmetic
+                // filtering (#999); it and the scope are hidden while it's off.
+                SettingsGroup {
+                    Toggle(isOn: Binding(get: { isEnabled }, set: setEnabled)) {
+                        toggleLabel("Cosmetic Filtering", detail: "Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU.")
                     }
                     .settingsSwitch()
-                    .settingsGroup()
+                    if isEnabled {
+                        Divider()
+                        Toggle(isOn: Binding(
+                            get: { sites.includesGeneric },
+                            set: { update(sites.selectedSites, sites.excludedSites, includesGeneric: $0) }
+                        )) {
+                            toggleLabel("Generic Rules", detail: "Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps.")
+                        }
+                        .settingsSwitch()
+                    }
+                }
+                if isEnabled {
                     SiteScopeEditor(
                         title: "Apply on", selectedSites: sites.selectedSites, excludedSites: sites.excludedSites,
                         emptySelectionMessage: "No sites selected. Cosmetic filtering will not apply.",
@@ -57,6 +48,16 @@ struct CosmeticFilteringSitesView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+    }
+
+    private func toggleLabel(_ title: LocalizedStringKey, detail: LocalizedStringKey) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+            Text(detail)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 
     private func setEnabled(_ enabled: Bool) {

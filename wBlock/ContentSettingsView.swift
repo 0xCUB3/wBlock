@@ -15,7 +15,7 @@ struct ContentSettingsView<Content: View>: View {
     }
 
     private var settingsContent: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Settings").font(.title2.weight(.semibold))
@@ -38,17 +38,12 @@ struct AutomaticUpdatesToggle: View {
     let onChange: (Bool) -> Void
 
     var body: some View {
-        Toggle(isOn: Binding(get: { isOn }, set: onChange)) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Automatic Updates")
-                Text(description)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+        // The switch alone in the box with its explanation under it, like a
+        // Settings footer (#999).
+        SettingsGroup(footer: [description], tint: isOn ? nil : .orange) {
+            Toggle("Automatic Updates", isOn: Binding(get: { isOn }, set: onChange))
+                .settingsSwitch()
         }
-        .settingsSwitch()
-        .settingsGroup(tint: isOn ? nil : .orange)
     }
 }
 
@@ -57,6 +52,7 @@ struct AutomaticUpdatesToggle: View {
 struct SettingsGroup<Content: View>: View {
     var header: LocalizedStringKey? = nil
     var footer: [LocalizedStringKey] = []
+    var tint: Color? = nil
     @ViewBuilder let content: () -> Content
 
     var body: some View {
@@ -65,9 +61,11 @@ struct SettingsGroup<Content: View>: View {
                 Text(header).font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
                     .padding(.horizontal, 12)
             }
-            VStack(alignment: .leading, spacing: 8, content: content).settingsGroup()
-            ForEach(Array(footer.enumerated()), id: \.offset) { _, line in
-                Text(line).font(.caption).foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 8, content: content).settingsGroup(tint: tint)
+            // One paragraph: separate lines left gaps between the sentences (#999).
+            if let first = footer.first {
+                footer.dropFirst().reduce(Text(first)) { $0 + Text(verbatim: " ") + Text($1) }
+                    .font(.caption).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.horizontal, 12)
             }
