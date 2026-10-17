@@ -44,10 +44,7 @@ struct CosmeticFilteringSitesView: View {
             }
             .padding()
         }
-        .navigationTitle("Cosmetic Filtering")
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
+        .pageTitle("Cosmetic Filtering")
     }
 
     private func toggleLabel(_ title: LocalizedStringKey, detail: LocalizedStringKey) -> some View {

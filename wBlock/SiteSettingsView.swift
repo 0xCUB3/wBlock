@@ -81,7 +81,7 @@ struct SiteSettingsView: View {
             .padding(.vertical)
             .padding(.horizontal)
         }
-        .navigationTitle("Site Settings")
+        .pageTitle("Site Settings")
         #if os(iOS)
         .toolbar {
             UndoRedoToolbar(
@@ -92,7 +92,6 @@ struct SiteSettingsView: View {
             )
         }
         .searchable(text: $searchText, prompt: "Search")
-        .navigationBarTitleDisplayMode(.inline)
         #else
         .modifier(MacPushedActionsToolbar() {
             UndoRedoButtons(

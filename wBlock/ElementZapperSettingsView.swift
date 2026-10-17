@@ -81,7 +81,7 @@ struct ElementZapperSettingsView: View {
         })
         .toolbarSearch(text: $searchText, focusRequest: $showSearch, prompt: "Search")
         #endif
-        .navigationTitle("Element Zapper")
+        .pageTitle("Element Zapper")
         .task { await ruleManager.refreshNow() }
         .sheet(item: $editingRule) { selection in
             ElementZapperRuleEditor(domain: selection.domain, originalRule: selection.rule) { replacement in
@@ -103,7 +103,6 @@ struct ElementZapperSettingsView: View {
         }
         #if os(iOS)
         .searchable(text: $searchText, prompt: "Search")
-        .navigationBarTitleDisplayMode(.inline)
         #endif
     }
 

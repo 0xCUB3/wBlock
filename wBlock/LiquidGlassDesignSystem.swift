@@ -776,3 +776,38 @@ private struct ToolbarFieldFocuser: NSViewRepresentable {
 }
 
 #endif
+
+extension View {
+    /// The title of a page pushed inside a tab. macOS hides the window title
+    /// behind the tab picker, so it sits in the toolbar beside Back, the way
+    /// System Settings shows it (#999).
+    func pageTitle(_ title: LocalizedStringKey) -> some View {
+        navigationTitle(title)
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .macToolbarTitle(title)
+    }
+
+    @ViewBuilder
+    func macToolbarTitle(_ title: LocalizedStringKey) -> some View {
+        #if os(macOS)
+        if #available(macOS 26.0, *) {
+            toolbar {
+                ToolbarItem(placement: .navigation) {
+                    Text(title).font(.headline).fixedSize()
+                }
+                .sharedBackgroundVisibility(.hidden)
+            }
+        } else {
+            toolbar {
+                ToolbarItem(placement: .navigation) {
+                    Text(title).font(.headline).fixedSize()
+                }
+            }
+        }
+        #else
+        self
+        #endif
+    }
+}
