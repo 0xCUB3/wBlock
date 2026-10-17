@@ -95,6 +95,7 @@ struct FilterRegistrySearchSections: View {
                             : nil)
                         Spacer()
                         Button("Add") { onAdd(list) }
+                            .buttonStyle(.bordered)
                     }
                 }
             }

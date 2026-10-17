@@ -12,6 +12,7 @@ public struct AdGuardRegistryList: Identifiable, Hashable, Sendable {
 
     public func isSameList(as url: URL) -> Bool {
         knownURLs.contains { FilterListURLSupport.isSameList($0, url) }
+            || FilterListURLMirror.adGuardFilterID(for: url) == id
     }
 }
 
@@ -42,11 +43,14 @@ public enum AdGuardFilterRegistry {
         try JSONDecoder().decode(Payload.self, from: data).filters.compactMap { entry in
             guard entry.deprecated != true, entry.downloadUrl.scheme?.lowercased() == "https" else { return nil }
             let category = category(filterID: entry.filterId, groupID: entry.groupId)
+            // GitHub first, like wBlock's own lists, then AdGuard's CDN and jsDelivr.
+            let url = FilterListURLMirror.fallbackURLs(for: entry.downloadUrl)
+                .first { $0.host == "raw.githubusercontent.com" } ?? entry.downloadUrl
             let filter = FilterList(
-                name: entry.name, url: entry.downloadUrl, category: category, isCustom: true,
+                name: entry.name, url: url, category: category, isCustom: true,
                 description: entry.description ?? "",
                 languages: category == .foreign ? entry.languages ?? [] : [])
-            var urls = [entry.downloadUrl] + FilterListURLMirror.fallbackURLs(for: entry.downloadUrl)
+            var urls = [url, entry.downloadUrl] + FilterListURLMirror.fallbackURLs(for: url)
             if let source = entry.subscriptionUrl { urls.append(source) }
             return AdGuardRegistryList(id: entry.filterId, filter: filter, knownURLs: urls)
         }

@@ -31,6 +31,14 @@ public enum FilterListURLMirror {
         return String(path[range.upperBound...])
     }
 
+    /// AdGuard's ID for a list at any registry or CDN address, such as 11 for
+    /// .../ios/filters/11_optimized.txt, whatever the platform.
+    public static func adGuardFilterID(for url: URL) -> Int? {
+        registryPath(for: url).flatMap { path in
+            path.split(separator: "/").last.flatMap { Int($0.prefix { $0.isNumber }) }
+        }
+    }
+
     /// R2 public bucket for the Bypass Paywalls Clean list; the worker serves the
     /// same object through its edge cache if the bucket URL ever fails.
     static let bpcBucketURL = URL(string: "https://pub-d303b9085c0b41b5aa749fc74609d4d9.r2.dev/bpc-paywall-filter.txt")!
