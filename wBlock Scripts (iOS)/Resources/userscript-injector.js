@@ -97,10 +97,11 @@ function usesPageOnlyNetwork(script) {
 // AdGuard Popup Blocker patches page globals (window.open, click) and exports its
 // options API there, so it must run in MAIN. Its page storage persists only bounded
 // allow/silence lists, and ordinary pages may change only their own host.
-const POPUP_BLOCKER_URL = 'https://userscripts.adtidy.org/release/popup-blocker/2.5/popupblocker.user.js';
+const POPUP_BLOCKER_URLS = new Set(['release', 'beta'].map(channel =>
+    `https://userscripts.adtidy.org/${channel}/popup-blocker/2.5/popupblocker.user.js`));
 const POPUP_BLOCKER_ID = /^[A-Za-z0-9+/=]{1,64}$/;
 function isPopupBlockerPageScript(script) {
-    return script && script.isLocal === false && script.sourceURL === POPUP_BLOCKER_URL
+    return script && script.isLocal === false && POPUP_BLOCKER_URLS.has(script.sourceURL)
         && (script.grant || []).every(grant => ['unsafewindow', 'gm_getvalue', 'gm_setvalue', 'gm_deletevalue',
             'gm_listvalues', 'gm_getresourceurl'].includes(String(grant).toLowerCase()));
 }
