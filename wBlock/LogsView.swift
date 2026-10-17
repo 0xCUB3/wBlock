@@ -27,6 +27,9 @@ struct LogsView: View {
     @State private var selectedLevel: LogLevel? = nil
     @State private var selectedCategory: LogCategory? = nil
     @State private var searchText = ""
+    @State private var showSearch = false
+    @State private var showingClearConfirmation = false
+    @AppStorage(LogTimeZonePreference.storageKey) private var logTimeZoneIdentifier = LogTimeZonePreference.deviceIdentifier
     #if os(iOS)
     /// The export is written to a file first and the sheet is keyed on the
     /// URL, so the share never presents before the text exists (#682).
@@ -112,6 +115,7 @@ struct LogsView: View {
                     Menu {
                         levelFilterPicker
                         categoryFilterPicker
+                        timeZoneToggle
                     } label: {
                         Label(
                             "Filter Logs",
@@ -133,16 +137,8 @@ struct LogsView: View {
                     }
                     .accessibilityLabel("Export")
 
-                    Button {
-                        Task {
-                            await ConcurrentLogManager.shared.clearLogs()
-                            await loadLogs()
-                        }
-                    } label: {
-                        Label("Clear", systemImage: "trash")
-                    }
-                    .disabled(hasLoadedLogs && entries.isEmpty)
-                    .accessibilityLabel("Clear")
+                    clearButton
+                        .disabled(hasLoadedLogs && entries.isEmpty)
                 }
             }
             #else
@@ -152,21 +148,32 @@ struct LogsView: View {
                 } label: {
                     Label("Export", systemImage: "square.and.arrow.up")
                 }
+                .help("Export")
                 .disabled(entries.isEmpty)
 
-                Button {
-                    Task {
-                        await ConcurrentLogManager.shared.clearLogs()
-                        await loadLogs()
-                    }
-                } label: {
-                    Label("Clear", systemImage: "trash")
-                }
-                .disabled(entries.isEmpty)
+                clearButton
+                    .help("Clear")
+                    .disabled(entries.isEmpty)
             })
+            // The toolbar field the other pages use; .searchable drew nothing
+            // on a pushed Mac page (#999).
+            .toolbarSearch(text: $searchText, focusRequest: $showSearch, prompt: "Search logs")
             #endif
         }
+        #if os(iOS)
         .searchable(text: $searchText, prompt: "Search logs")
+        #endif
+        .alert("Clear Logs?", isPresented: $showingClearConfirmation) {
+            Button("Cancel", role: .cancel) {}
+            Button("Clear", role: .destructive) {
+                Task {
+                    await ConcurrentLogManager.shared.clearLogs()
+                    await loadLogs()
+                }
+            }
+        } message: {
+            Text("This deletes every log entry.")
+        }
         .task {
             await loadLogs()
             hasLoadedLogs = true
@@ -200,11 +207,37 @@ struct LogsView: View {
             statsLabel
 
             Spacer(minLength: 0)
+
+            timeZoneToggle
+                .toggleStyle(.checkbox)
+                .controlSize(.small)
         }
         .padding(.horizontal)
         .padding(.vertical, 8)
     }
     #endif
+
+    private var clearButton: some View {
+        Button { showingClearConfirmation = true } label: {
+            Label("Clear", systemImage: "trash")
+        }
+        .accessibilityLabel("Clear")
+    }
+
+    /// Lives with the logs it formats rather than in Settings (#999).
+    private var timeZoneToggle: some View {
+        Toggle("Sync Timestamps with Device Time Zone", isOn: Binding(
+            get: { logTimeZoneIdentifier.isEmpty },
+            set: { newValue in
+                if newValue {
+                    logTimeZoneIdentifier = LogTimeZonePreference.deviceIdentifier
+                } else if logTimeZoneIdentifier.isEmpty {
+                    logTimeZoneIdentifier = TimeZone.current.identifier
+                }
+                LogDateFormatters.configureIfNeeded()
+            }
+        ))
+    }
 
     private var levelFilterPicker: some View {
         Picker("All Levels", selection: $selectedLevel) {
@@ -320,20 +353,27 @@ struct LogEntryRow: View {
 
     @State private var isExpanded = false
 
+    /// Only metadata expands. A long message alone used to get an arrow that
+    /// opened nothing, so it now shows in full instead (#999).
     private var hasDetails: Bool {
-        entry.message.count > 80 || !(entry.metadata?.isEmpty ?? true)
+        !(entry.metadata?.isEmpty ?? true)
     }
 
+    /// The chevron trails the row like iOS: on macOS a DisclosureGroup put it
+    /// at the window edge with a wide gap before the level icon (#999).
     var body: some View {
-        if hasDetails {
-            DisclosureGroup(isExpanded: $isExpanded) {
-                detailContent
-            } label: {
+        VStack(alignment: .leading, spacing: 6) {
+            if hasDetails {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) { isExpanded.toggle() }
+                } label: {
+                    summaryContent.contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                if isExpanded { detailContent }
+            } else {
                 summaryContent
             }
-            .tint(.secondary)
-        } else {
-            summaryContent
         }
     }
 
@@ -374,8 +414,16 @@ struct LogEntryRow: View {
                 Text(entry.message)
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(.primary)
-                    .lineLimit(isExpanded ? nil : 2)
-                    .textSelection(.enabled)
+                    .lineLimit(hasDetails && !isExpanded ? 2 : nil)
+            }
+            if hasDetails {
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.right")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+                    .rotationEffect(.degrees(isExpanded ? 90 : 0))
+                    .padding(.top, 2)
+                    .accessibilityHidden(true)
             }
         }
     }
