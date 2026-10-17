@@ -577,7 +577,7 @@
 "Starting filter application process" = "Starting filter application process";
 "Startup" = "Startup";
 "Step %d of %d" = "Step %d of %d";
-"Stripped unknown directive" = "Stripped unknown directive";
+"Stripped unknown directives" = "Stripped unknown directives";
 "Style Content" = "Style Content";
 "Styles" = "Styles";
 "Submit failed" = "Submit failed";

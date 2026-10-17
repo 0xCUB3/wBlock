@@ -579,7 +579,7 @@
 "Starting filter application process" = "A szűrőalkalmazási folyamat elindítása";
 "Startup" = "Indítás";
 "Step %d of %d" = "%d/%d lépés";
-"Stripped unknown directive" = "Ismeretlen direktíva eltávolítva";
+"Stripped unknown directives" = "Ismeretlen direktívák eltávolítva";
 "Style Content" = "Stílus tartalma";
 "Styles" = "Stílusok";
 "Submit failed" = "Beküldés sikertelen";

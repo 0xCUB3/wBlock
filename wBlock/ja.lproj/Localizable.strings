@@ -579,7 +579,7 @@
 "Starting filter application process" = "フィルター適用プロセスを開始しています";
 "Startup" = "起動";
 "Step %d of %d" = "ステップ %d / %d";
-"Stripped unknown directive" = "不明なディレクティブを取り除きました";
+"Stripped unknown directives" = "不明なディレクティブを取り除きました";
 "Style Content" = "スタイル内容";
 "Styles" = "スタイル";
 "Submit failed" = "送信に失敗しました";

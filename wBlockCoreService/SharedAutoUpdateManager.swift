@@ -1823,8 +1823,10 @@ public actor SharedAutoUpdateManager {
                     )
                 }
             )
-            for directive in processed.strippedDirectives {
-                appendSharedLog("Stripped unknown directive: filter=\(filter.name), directive=\(directive)")
+            if !processed.strippedDirectives.isEmpty {
+                appendSharedLog(
+                    "Stripped unknown directives: filter=\(filter.name), directives=\(processed.strippedDirectives.joined(separator: ", "))"
+                )
             }
             return .updated(
                 filter: processed.filter,

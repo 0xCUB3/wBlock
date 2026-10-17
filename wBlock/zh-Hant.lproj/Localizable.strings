@@ -579,7 +579,7 @@
 "Starting filter application process" = "正在啟動過濾器套用流程";
 "Startup" = "啟動";
 "Step %d of %d" = "第 %d / %d 步";
-"Stripped unknown directive" = "已移除未知指令";
+"Stripped unknown directives" = "已移除未知指令";
 "Style Content" = "樣式內容";
 "Styles" = "樣式";
 "Submit failed" = "提交失敗";

@@ -577,7 +577,7 @@
 "Starting filter application process" = "Pornirea procesului de aplicare a filtrelor";
 "Startup" = "Pornire";
 "Step %d of %d" = "Pasul %d din %d";
-"Stripped unknown directive" = "Directivă necunoscută eliminată";
+"Stripped unknown directives" = "Directive necunoscute eliminate";
 "Style Content" = "Conținut stil";
 "Styles" = "Stiluri";
 "Submit failed" = "Trimiterea a eșuat";

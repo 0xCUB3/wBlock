@@ -577,7 +577,7 @@
 "Starting filter application process" = "Filtre uygulama işlemi başlatılıyor";
 "Startup" = "Başlangıç";
 "Step %d of %d" = "Adım %d / %d";
-"Stripped unknown directive" = "Bilinmeyen yönerge ayıklandı";
+"Stripped unknown directives" = "Bilinmeyen yönergeler ayıklandı";
 "Style Content" = "Stil içeriği";
 "Styles" = "Stiller";
 "Submit failed" = "Gönderilemedi";

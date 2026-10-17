@@ -33,7 +33,7 @@ public enum FilterDownloadProcessor {
 
         var strippedDirectives: [String] = []
         let processedContent = FilterListContentProcessing.normalizedContent(from: rawContent) {
-            strippedDirectives.append($0)
+            if !strippedDirectives.contains($0) { strippedDirectives.append($0) }
         }
         let rawCount = FilterList.countRules(in: processedContent)
 

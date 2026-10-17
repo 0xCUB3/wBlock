@@ -577,7 +577,7 @@
 "Starting filter application process" = "正在启动过滤器应用流程";
 "Startup" = "启动";
 "Step %d of %d" = "第 %d / %d 步";
-"Stripped unknown directive" = "已移除未知指令";
+"Stripped unknown directives" = "已移除未知指令";
 "Style Content" = "样式内容";
 "Styles" = "样式";
 "Submit failed" = "提交失败";

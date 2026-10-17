@@ -577,7 +577,7 @@
 "Starting filter application process" = "شروع فرایند اعمال فیلتر";
 "Startup" = "راه‌اندازی";
 "Step %d of %d" = "مرحلهٔ %d از %d";
-"Stripped unknown directive" = "دستورالعمل ناشناخته حذف شد";
+"Stripped unknown directives" = "دستورالعمل‌های ناشناخته حذف شدند";
 "Style Content" = "محتوای استایل";
 "Styles" = "استایل‌ها";
 "Submit failed" = "ارسال ناموفق بود";

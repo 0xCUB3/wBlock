@@ -577,7 +577,7 @@
 "Starting filter application process" = "Iniciando el proceso de aplicación de filtros";
 "Startup" = "Inicio";
 "Step %d of %d" = "Paso %d de %d";
-"Stripped unknown directive" = "Directiva desconocida eliminada";
+"Stripped unknown directives" = "Directivas desconocidas eliminadas";
 "Style Content" = "Contenido del estilo";
 "Styles" = "Estilos";
 "Submit failed" = "El envío falló";

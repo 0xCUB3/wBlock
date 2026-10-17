@@ -579,7 +579,7 @@
 "Starting filter application process" = "Запуск процесса применения фильтров";
 "Startup" = "Запуск";
 "Step %d of %d" = "Шаг %d из %d";
-"Stripped unknown directive" = "Неизвестная директива удалена";
+"Stripped unknown directives" = "Неизвестные директивы удалены";
 "Style Content" = "Содержимое стиля";
 "Styles" = "Стили";
 "Submit failed" = "Не удалось отправить";

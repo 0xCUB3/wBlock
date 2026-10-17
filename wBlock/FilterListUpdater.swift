@@ -476,11 +476,14 @@ final class FilterListUpdater: @unchecked Sendable {
             return .failed
         }
 
-        for directive in processed.strippedDirectives {
+        if !processed.strippedDirectives.isEmpty {
             await ConcurrentLogManager.shared.debug(
                 .filterUpdate,
-                LocalizedStrings.text("Stripped unknown directive"),
-                metadata: ["directive": directive]
+                LocalizedStrings.text("Stripped unknown directives"),
+                metadata: [
+                    "filter": filter.name,
+                    "directives": processed.strippedDirectives.joined(separator: ", "),
+                ]
             )
         }
 

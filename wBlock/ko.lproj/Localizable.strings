@@ -579,7 +579,7 @@
 "Starting filter application process" = "필터 적용 프로세스를 시작합니다";
 "Startup" = "시작";
 "Step %d of %d" = "%d / %d 단계";
-"Stripped unknown directive" = "알 수 없는 지시문을 제거했습니다";
+"Stripped unknown directives" = "알 수 없는 지시문을 제거했습니다";
 "Style Content" = "스타일 내용";
 "Styles" = "스타일";
 "Submit failed" = "제출 실패";

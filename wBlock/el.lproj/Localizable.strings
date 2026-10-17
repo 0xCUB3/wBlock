@@ -579,7 +579,7 @@
 "Starting filter application process" = "Έναρξη διαδικασίας εφαρμογής φίλτρων";
 "Startup" = "Εκκίνηση";
 "Step %d of %d" = "Βήμα %d από %d";
-"Stripped unknown directive" = "Αφαιρέθηκε άγνωστη εντολή (directive)";
+"Stripped unknown directives" = "Αφαιρέθηκαν άγνωστες εντολές (directives)";
 "Style Content" = "Περιεχόμενο στυλ";
 "Styles" = "Στυλ";
 "Submit failed" = "Η υποβολή απέτυχε";

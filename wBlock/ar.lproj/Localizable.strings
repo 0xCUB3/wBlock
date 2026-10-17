@@ -579,7 +579,7 @@
 "Starting filter application process" = "بدء عملية تطبيق الفلاتر";
 "Startup" = "بدء التشغيل";
 "Step %d of %d" = "الخطوة %d من %d";
-"Stripped unknown directive" = "تمت إزالة توجيه غير معروف";
+"Stripped unknown directives" = "تمت إزالة توجيهات غير معروفة";
 "Style Content" = "محتوى النمط";
 "Styles" = "الأنماط";
 "Submit failed" = "فشل الإرسال";
