@@ -874,6 +874,13 @@ class AppFilterManager: ObservableObject {
         }
     }
 
+    /// A background apply (iCloud sync, catch-up) only spins the toolbar
+    /// button; tapping it opens the sheet a foreground apply shows.
+    func showBackgroundApplyProgress() {
+        guard isApplyInFlight else { return }
+        showingApplyProgressSheet = true
+    }
+
     func forceApplyChanges(checkForUpdates: Bool = false) {
         guard !isLoading, !isApplyInFlight else { return }
         clearFailedUpgradeRebuildSignature()

@@ -321,6 +321,7 @@ struct ContentView: View {
             isDisabled: filterManager.isLoading,
             hasPendingChanges: hasPendingChanges,
             onTap: applyPendingChanges,
+            onBusyTap: filterManager.showBackgroundApplyProgress,
             onForceApply: { filterManager.forceApplyChanges() }
         ) {
             #if os(iOS)

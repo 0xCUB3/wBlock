@@ -568,10 +568,12 @@ private struct TintDimmingReader: UIViewRepresentable {
 #endif
 
 /// Toolbar Apply control: tap applies pending changes or checks for updates; 3s hold force-applies.
+/// While busy it shows a spinner, and a tap calls `onBusyTap` instead.
 struct ApplyChangesHoldButton<Label: View>: View {
     let isDisabled: Bool
     let hasPendingChanges: Bool
     let onTap: () -> Void
+    let onBusyTap: () -> Void
     let onForceApply: () -> Void
     let label: Label
 
@@ -582,12 +584,14 @@ struct ApplyChangesHoldButton<Label: View>: View {
         isDisabled: Bool,
         hasPendingChanges: Bool,
         onTap: @escaping () -> Void,
+        onBusyTap: @escaping () -> Void,
         onForceApply: @escaping () -> Void,
         @ViewBuilder label: () -> Label
     ) {
         self.isDisabled = isDisabled
         self.hasPendingChanges = hasPendingChanges
         self.onTap = onTap
+        self.onBusyTap = onBusyTap
         self.onForceApply = onForceApply
         self.label = label()
     }
@@ -600,8 +604,7 @@ struct ApplyChangesHoldButton<Label: View>: View {
                 .opacity(isDisabled ? 0 : 1)
                 .overlay { if isDisabled { ProgressView().controlSize(.small) } }
         }
-        .disabled(isDisabled)
-        .accessibilityLabel(hasPendingChanges ? Text("Apply Changes") : Text("Check for Updates"))
+        .accessibilityLabel(isDisabled ? Text("Updating…") : hasPendingChanges ? Text("Apply Changes") : Text("Check for Updates"))
         .accessibilityHint("Hold for 3 seconds to apply without checking for updates.")
         .help(helpText)
         #if os(macOS)
@@ -644,7 +647,7 @@ struct ApplyChangesHoldButton<Label: View>: View {
     }
 
     private func handleTap() {
-        guard !isDisabled else { return }
+        guard !isDisabled else { return onBusyTap() }
         if let lastForceApplyAt, Date().timeIntervalSince(lastForceApplyAt) < 1 {
             return
         }
