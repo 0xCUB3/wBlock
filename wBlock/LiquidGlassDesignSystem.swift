@@ -119,8 +119,7 @@ struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
                             ToolbarItem(placement: .topBarLeading) { apply() }
                                 .toolbarVisibilityPriorityCompat(.high)
                         }
-                        ToolbarItem(placement: .topBarTrailing) { filter }
-                        ToolbarSpacer(.fixed, placement: .topBarTrailing)
+                        // Search, Show Enabled Only, Add: the Mac order (#999).
                         if horizontalSizeClass != .regular {
                             ToolbarItem(placement: .topBarTrailing) {
                                 Button { withAnimation(.smooth) { focusRequest = true } } label: {
@@ -129,6 +128,8 @@ struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
                             }
                             ToolbarSpacer(.fixed, placement: .topBarTrailing)
                         }
+                        ToolbarItem(placement: .topBarTrailing) { filter }
+                        ToolbarSpacer(.fixed, placement: .topBarTrailing)
                         ToolbarItem(placement: .topBarTrailing) { primary() }
                     }
                 }
@@ -138,7 +139,6 @@ struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
             // crashes on iOS 15. An EmptyView apply leaves the item empty.
             content.toolbar {
                 ToolbarItem(placement: .navigationBarLeading) { apply() }
-                ToolbarItem(placement: .navigationBarTrailing) { filter }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     if horizontalSizeClass != .regular {
                         Button { focusRequest = true } label: {
@@ -146,6 +146,7 @@ struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
                         }
                     }
                 }
+                ToolbarItem(placement: .navigationBarTrailing) { filter }
                 ToolbarItem(placement: .navigationBarTrailing) { primary() }
             }
         }
