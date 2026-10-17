@@ -24,16 +24,6 @@ public enum LogLevel: String, Codable, Comparable, CaseIterable {
         }
         return lhsIndex < rhsIndex
     }
-
-    var emoji: String {
-        switch self {
-        case .trace: return "🔍"
-        case .debug: return "🐛"
-        case .info: return "ℹ️"
-        case .warning: return "⚠️"
-        case .error: return "❌"
-        }
-    }
 }
 
 /// Log category for better organization

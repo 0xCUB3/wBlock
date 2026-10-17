@@ -1033,3 +1033,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "No longer built into wBlock" = "Больше не встроен в wBlock";
 "wBlock Ad and Tracking Hosts" = "Рекламные и трекинговые хосты wBlock";
 "Blocks ad and tracking hosts that the other lists only block in part." = "Блокирует рекламные и трекинговые хосты, которые другие списки блокируют лишь частично.";
+
+"Filter Logs" = "Фильтр журналов";

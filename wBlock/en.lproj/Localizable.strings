@@ -1042,3 +1042,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "No longer built into wBlock" = "No longer built into wBlock";
 "wBlock Ad and Tracking Hosts" = "wBlock Ad and Tracking Hosts";
 "Blocks ad and tracking hosts that the other lists only block in part." = "Blocks ad and tracking hosts that the other lists only block in part.";
+
+"Filter Logs" = "Filter Logs";

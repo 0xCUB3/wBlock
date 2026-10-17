@@ -1042,3 +1042,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "No longer built into wBlock" = "دیگر در wBlock گنجانده نشده است";
 "wBlock Ad and Tracking Hosts" = "میزبان‌های تبلیغات و ردیابی wBlock";
 "Blocks ad and tracking hosts that the other lists only block in part." = "میزبان‌های تبلیغات و ردیابی را که فهرست‌های دیگر فقط تا حدی مسدود می‌کنند، مسدود می‌کند.";
+
+"Filter Logs" = "پالایش گزارش‌ها";

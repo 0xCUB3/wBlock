@@ -1033,3 +1033,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "No longer built into wBlock" = "Δεν περιλαμβάνεται πλέον στο wBlock";
 "wBlock Ad and Tracking Hosts" = "Διακομιστές διαφημίσεων και παρακολούθησης wBlock";
 "Blocks ad and tracking hosts that the other lists only block in part." = "Αποκλείει διακομιστές διαφημίσεων και παρακολούθησης που οι άλλες λίστες αποκλείουν μόνο εν μέρει.";
+
+"Filter Logs" = "Φιλτράρισμα αρχείων καταγραφής";

@@ -1033,3 +1033,5 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "No longer built into wBlock" = "Nie jest już wbudowana w wBlock";
 "wBlock Ad and Tracking Hosts" = "Hosty reklamowe i śledzące wBlock";
 "Blocks ad and tracking hosts that the other lists only block in part." = "Blokuje hosty reklamowe i śledzące, które inne listy blokują tylko częściowo.";
+
+"Filter Logs" = "Filtruj dzienniki";

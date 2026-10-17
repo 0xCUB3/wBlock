@@ -1033,3 +1033,5 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "No longer built into wBlock" = "N’est plus intégrée à wBlock";
 "wBlock Ad and Tracking Hosts" = "Hôtes publicitaires et de pistage wBlock";
 "Blocks ad and tracking hosts that the other lists only block in part." = "Bloque les hôtes publicitaires et de pistage que les autres listes ne bloquent qu’en partie.";
+
+"Filter Logs" = "Filtrer les journaux";

@@ -32,7 +32,13 @@ struct LogsView: View {
     /// URL, so the share never presents before the text exists (#682).
     @State private var exportFile: LogExportFile?
     #endif
-    @Environment(\.dismiss) private var dismiss
+    /// Set when presented as a sheet so the navigation bar carries the close
+    /// button instead of a second "Logs" header above it.
+    private let onDismiss: (() -> Void)?
+
+    init(onDismiss: (() -> Void)? = nil) {
+        self.onDismiss = onDismiss
+    }
 
     // Cached filtered entries to avoid repeated filtering on scroll
     @State private var cachedFilteredEntries: [LogEntry] = []
@@ -69,18 +75,25 @@ struct LogsView: View {
     var body: some View {
         CompatibleNavigationStack {
             VStack(spacing: 0) {
-                // Filter toolbar
+                #if os(macOS)
                 filterToolbar
-
                 Divider()
+                #endif
 
-                // Log entries list
                 if filteredEntries.isEmpty {
                     emptyStateView
                 } else {
-                    List(filteredEntries) { entry in
-                        LogEntryRow(entry: entry)
-                            .listRowInsets(EdgeInsets(top: 4, leading: 10, bottom: 4, trailing: 10))
+                    List {
+                        Section {
+                            ForEach(filteredEntries) { entry in
+                                LogEntryRow(entry: entry)
+                                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                            }
+                        } header: {
+                            #if os(iOS)
+                            statsLabel
+                            #endif
+                        }
                     }
                     .listStyle(.plain)
                 }
@@ -89,7 +102,24 @@ struct LogsView: View {
             .navigationTitle("Logs")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItemGroup(placement: .topBarTrailing) {
+                if let onDismiss {
+                    ToolbarItem(placement: .cancellationAction) {
+                        SheetDoneButton(action: onDismiss)
+                    }
+                }
+                ToolbarItemGroup(placement: .primaryAction) {
+                    Menu {
+                        levelFilterPicker
+                        categoryFilterPicker
+                    } label: {
+                        Label(
+                            "Filter Logs",
+                            systemImage: selectedLevel == nil && selectedCategory == nil
+                                ? "line.3.horizontal.decrease.circle"
+                                : "line.3.horizontal.decrease.circle.fill"
+                        )
+                    }
+
                     Button {
                         Task {
                             let text = await ConcurrentLogManager.shared.exportAsText(
@@ -160,8 +190,8 @@ struct LogsView: View {
         #endif
     }
 
+    #if os(macOS)
     private var filterToolbar: some View {
-        #if os(macOS)
         HStack(spacing: 12) {
             levelFilterPicker
             categoryFilterPicker
@@ -172,21 +202,8 @@ struct LogsView: View {
         }
         .padding(.horizontal)
         .padding(.vertical, 8)
-        #else
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 12) {
-                levelFilterPicker
-                categoryFilterPicker
-
-                // Stats
-                statsLabel
-                    .padding(.leading, 8)
-            }
-            .padding(.horizontal)
-            .padding(.vertical, 8)
-        }
-        #endif
     }
+    #endif
 
     private var levelFilterPicker: some View {
         Picker("All Levels", selection: $selectedLevel) {
@@ -200,8 +217,6 @@ struct LogsView: View {
         .accessibilityLabel("All Levels")
         #if os(macOS)
         .controlSize(.small)
-        #else
-        .pickerStyle(.menu)
         #endif
     }
 
@@ -217,8 +232,6 @@ struct LogsView: View {
         .accessibilityLabel("All Categories")
         #if os(macOS)
         .controlSize(.small)
-        #else
-        .pickerStyle(.menu)
         #endif
     }
 
@@ -287,12 +300,24 @@ struct LogEntryRow: View {
     private var levelColor: Color {
         switch entry.level {
         case .trace: return .gray
-        case .debug: return .blue
-        case .info: return .green
+        case .debug: return .purple
+        case .info: return .blue
         case .warning: return .orange
         case .error: return .red
         }
     }
+
+    private var levelSymbol: String {
+        switch entry.level {
+        case .trace: return "magnifyingglass.circle.fill"
+        case .debug: return "ant.circle.fill"
+        case .info: return "info.circle.fill"
+        case .warning: return "exclamationmark.triangle.fill"
+        case .error: return "xmark.octagon.fill"
+        }
+    }
+
+    @State private var isExpanded = false
 
     private var hasDetails: Bool {
         entry.message.count > 80 || !(entry.metadata?.isEmpty ?? true)
@@ -300,21 +325,24 @@ struct LogEntryRow: View {
 
     var body: some View {
         if hasDetails {
-            DisclosureGroup {
+            DisclosureGroup(isExpanded: $isExpanded) {
                 detailContent
             } label: {
                 summaryContent
             }
+            .tint(.secondary)
         } else {
             summaryContent
         }
     }
 
     private var summaryContent: some View {
-        HStack(alignment: .top, spacing: 8) {
+        HStack(alignment: .top, spacing: 10) {
             VStack(spacing: 2) {
-                Text(entry.level.emoji)
-                    .font(.caption)
+                Image(systemName: levelSymbol)
+                    .font(.body)
+                    .foregroundStyle(levelColor)
+                    .accessibilityLabel(entry.level.localizedName)
 
                 if entry.count > 1 {
                     Text(String.localizedStringWithFormat(
@@ -336,16 +364,17 @@ struct LogEntryRow: View {
                     Text(entry.category.localizedName)
                         .font(.caption)
                         .fontWeight(.medium)
-                        .foregroundStyle(levelColor)
+                        .foregroundStyle(.secondary)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 1)
-                        .background(levelColor.opacity(0.15), in: Capsule())
+                        .background(Color.secondary.opacity(0.12), in: Capsule())
                 }
 
                 Text(entry.message)
-                    .font(.subheadline)
+                    .font(.subheadline.weight(.medium))
                     .foregroundStyle(.primary)
-                    .lineLimit(entry.message.count > 80 ? 2 : nil)
+                    .lineLimit(isExpanded ? nil : 2)
+                    .textSelection(.enabled)
             }
         }
     }
@@ -353,23 +382,28 @@ struct LogEntryRow: View {
     @ViewBuilder
     private var detailContent: some View {
         VStack(alignment: .leading, spacing: 6) {
-            if entry.message.count > 80 {
-                Text(entry.message)
-                    .font(.subheadline)
-                    .foregroundStyle(.primary)
-                    .textSelection(.enabled)
-            }
-
             if let metadata = entry.metadata, !metadata.isEmpty {
-                ForEach(metadata.keys.sorted(), id: \.self) { key in
-                    CompatibleLabeledContent(key, value: metadata[key] ?? "")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(metadata.keys.sorted(), id: \.self) { key in
+                        HStack(alignment: .firstTextBaseline, spacing: 12) {
+                            Text(key)
+                                .foregroundStyle(.secondary)
+                                .frame(width: 96, alignment: .leading)
+                            Text(metadata[key] ?? "")
+                                .font(.system(.caption, design: .monospaced))
+                                .foregroundStyle(.primary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .textSelection(.enabled)
+                        }
+                        .font(.caption)
+                    }
                 }
+                .padding(10)
+                .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
         }
-        .padding(.leading, 32)
-        .padding(.vertical, 2)
+        .padding(.leading, 34)
+        .padding(.vertical, 4)
     }
 
 }

@@ -63,7 +63,7 @@ struct ApplyChangesProgressView: View {
     }
 
     var body: some View {
-        SheetContainer(fill: .clear) {
+        SheetContainer(fill: sheetFill) {
             SheetHeader(title: headerTitle, isLoading: isDismissDisabled) {
                 isPresented = false
             }
@@ -77,6 +77,11 @@ struct ApplyChangesProgressView: View {
             } else if mode == .progress {
                 progressToolbar.measureApplySheetPart(.toolbar)
             }
+            #if os(iOS)
+            // Before iOS 18 an iPad form sheet ignores the fitted detent and keeps
+            // its fixed size, so pin the content to the top instead of centering it.
+            Spacer(minLength: 0)
+            #endif
         }
         .frame(maxWidth: .infinity, maxHeight: fillsAvailableHeight ? .infinity : nil, alignment: .top)
         .applySheetPresentationCompat(
@@ -87,11 +92,13 @@ struct ApplyChangesProgressView: View {
         .onPreferenceChange(ApplySheetHeightsKey.self) { measuredHeights = $0 }
         .interactiveDismissDisabled(isDismissDisabled)
         .sheet(isPresented: $showingLogs) {
+            #if os(iOS)
+            LogsView { showingLogs = false }
+            #else
             SheetContainer {
                 SheetHeader(title: "Logs") { showingLogs = false }
                 LogsView()
             }
-            #if os(macOS)
             .frame(width: 700, height: 500)
             #endif
         }
@@ -487,6 +494,17 @@ struct ApplyChangesProgressView: View {
     }
 
     // MARK: - Copy helpers
+
+    /// Liquid glass shows through on iOS 26. Earlier sheets are plain white,
+    /// which hides the white stat cards, so they get the grouped gray canvas.
+    private var sheetFill: SheetFill {
+        #if os(iOS)
+        if #available(iOS 26.0, *) { return .clear }
+        return .grouped
+        #else
+        return .clear
+        #endif
+    }
 
     private var headerTitle: String {
         switch mode {

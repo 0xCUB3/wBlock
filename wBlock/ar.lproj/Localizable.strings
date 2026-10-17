@@ -1033,3 +1033,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "No longer built into wBlock" = "لم تعد مضمّنة في wBlock";
 "wBlock Ad and Tracking Hosts" = "مضيفات الإعلانات والتتبع من wBlock";
 "Blocks ad and tracking hosts that the other lists only block in part." = "يحظر مضيفات الإعلانات والتتبع التي لا تحظرها القوائم الأخرى إلا جزئيًا.";
+
+"Filter Logs" = "تصفية السجلات";

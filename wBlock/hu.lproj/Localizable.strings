@@ -1033,3 +1033,5 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "No longer built into wBlock" = "Már nem része a wBlocknak";
 "wBlock Ad and Tracking Hosts" = "wBlock hirdetési és követő hosztok";
 "Blocks ad and tracking hosts that the other lists only block in part." = "Letiltja azokat a hirdetési és követő hosztokat, amelyeket a többi lista csak részben tilt le.";
+
+"Filter Logs" = "Naplók szűrése";

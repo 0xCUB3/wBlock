@@ -1042,3 +1042,5 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "No longer built into wBlock" = "Artık wBlock’ta yerleşik değil";
 "wBlock Ad and Tracking Hosts" = "wBlock Reklam ve İzleme Sunucuları";
 "Blocks ad and tracking hosts that the other lists only block in part." = "Diğer listelerin yalnızca kısmen engellediği reklam ve izleme sunucularını engeller.";
+
+"Filter Logs" = "Günlükleri filtrele";

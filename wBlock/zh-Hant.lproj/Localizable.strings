@@ -1033,3 +1033,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "No longer built into wBlock" = "已不再內建於 wBlock";
 "wBlock Ad and Tracking Hosts" = "wBlock 廣告與追蹤主機";
 "Blocks ad and tracking hosts that the other lists only block in part." = "封鎖其他列表只部分封鎖的廣告與追蹤主機。";
+
+"Filter Logs" = "過濾日誌";

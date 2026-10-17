@@ -256,15 +256,17 @@ struct SheetBottomToolbar<Content: View>: View {
 
 // MARK: - Sheet Container
 
+enum SheetFill {
+    /// Form-style sheets: gray grouped canvas with inset white cards.
+    case grouped
+    /// Apply Changes-style sheets: one continuous systemBackground card.
+    case system
+    /// No opaque fill — system sheet chrome (liquid glass) shows through.
+    case clear
+}
+
 struct SheetContainer<Content: View>: View {
-    enum Fill {
-        /// Form-style sheets: gray grouped canvas with inset white cards.
-        case grouped
-        /// Apply Changes-style sheets: one continuous systemBackground card.
-        case system
-        /// No opaque fill — system sheet chrome (liquid glass) shows through.
-        case clear
-    }
+    typealias Fill = SheetFill
 
     var fill: Fill = .grouped
     let content: Content

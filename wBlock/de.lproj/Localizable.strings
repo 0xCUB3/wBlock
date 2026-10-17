@@ -1033,3 +1033,5 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "No longer built into wBlock" = "Nicht mehr in wBlock integriert";
 "wBlock Ad and Tracking Hosts" = "wBlock Werbe- und Tracking-Hosts";
 "Blocks ad and tracking hosts that the other lists only block in part." = "Blockiert Werbe- und Tracking-Hosts, die andere Listen nur teilweise blockieren.";
+
+"Filter Logs" = "Protokolle filtern";

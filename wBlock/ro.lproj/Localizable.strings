@@ -1033,3 +1033,5 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "No longer built into wBlock" = "Nu mai este inclusă în wBlock";
 "wBlock Ad and Tracking Hosts" = "Gazde de reclame și urmărire wBlock";
 "Blocks ad and tracking hosts that the other lists only block in part." = "Blochează gazdele de reclame și urmărire pe care celelalte liste le blochează doar parțial.";
+
+"Filter Logs" = "Filtrează jurnalele";

@@ -1002,3 +1002,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "No longer built into wBlock" = "wBlockには内蔵されなくなりました";
 "wBlock Ad and Tracking Hosts" = "wBlock 広告・トラッキングホスト";
 "Blocks ad and tracking hosts that the other lists only block in part." = "他のリストでは一部しかブロックされない広告・トラッキングのホストをブロックします。";
+
+"Filter Logs" = "ログを絞り込む";

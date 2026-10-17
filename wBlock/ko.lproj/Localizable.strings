@@ -1033,3 +1033,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "No longer built into wBlock" = "더 이상 wBlock에 내장되지 않음";
 "wBlock Ad and Tracking Hosts" = "wBlock 광고 및 추적 호스트";
 "Blocks ad and tracking hosts that the other lists only block in part." = "다른 목록이 일부만 차단하는 광고 및 추적 호스트를 차단합니다.";
+
+"Filter Logs" = "로그 필터";
