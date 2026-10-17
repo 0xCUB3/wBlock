@@ -116,10 +116,6 @@ public enum UserStylePreprocessorService {
 
     public static func requiresCompilation(_ preprocessor: String) -> Bool { backend(for: preprocessor) != nil }
     public static func compilerRevision(for preprocessor: String) -> String? { backend(for: preprocessor)?.compilerRevision }
-    public static func limits(for preprocessor: String) -> (source: Int, output: Int)? {
-        guard let backend = backend(for: preprocessor) else { return nil }
-        return (backend.maximumSourceBytes, backend.maximumOutputBytes)
-    }
 
     public static func request(source: String, authoritativeContent: String, preprocessor: String, variables: [UserStyleSupport.Variable], options: [String: String] = [:]) -> UserStyleCompilationRequest {
         UserStyleCompilationRequest(source: source, preprocessor: preprocessor, variables: variables, options: options, sourceDigest: digest(authoritativeContent))
@@ -237,10 +233,6 @@ enum UserStyleCompiler {
     }
 
     static func compile(_ source: String, variables: [UserStyleSupport.Variable]) throws -> String {
-        try compileLess(source, variables: variables)
-    }
-
-    static func compileLess(_ source: String, variables: [UserStyleSupport.Variable]) throws -> String {
         try compileLess(UserStyleCompilationRequest(source: source, preprocessor: "less", variables: variables))
     }
 

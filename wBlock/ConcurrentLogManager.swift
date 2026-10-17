@@ -183,12 +183,6 @@ public actor ConcurrentLogManager {
             metadata: fields.merging(["operation": event]) { _, new in new })
     }
 
-    /// Convenience methods for each log level
-    public func trace(_ category: LogCategory, _ message: String, metadata: [String: String]? = nil,
-                      file: String = #file, function: String = #function, line: Int = #line) {
-        log(.trace, category, message, metadata: metadata, file: file, function: function, line: line)
-    }
-
     public func debug(_ category: LogCategory, _ message: String, metadata: [String: String]? = nil,
                       file: String = #file, function: String = #function, line: Int = #line) {
         log(.debug, category, message, metadata: metadata, file: file, function: function, line: line)
@@ -345,16 +339,6 @@ public actor ConcurrentLogManager {
     public func getEntries() -> [LogEntry] {
         loadPersistedEntriesIfNeeded()
         return logEntries.sorted { $0.timestamp < $1.timestamp }
-    }
-
-    /// Get entries filtered by level
-    public func getEntries(minLevel: LogLevel) -> [LogEntry] {
-        return logEntries.filter { $0.level >= minLevel }.sorted { $0.timestamp < $1.timestamp }
-    }
-
-    /// Get entries filtered by category
-    public func getEntries(category: LogCategory) -> [LogEntry] {
-        return logEntries.filter { $0.category == category }.sorted { $0.timestamp < $1.timestamp }
     }
 
     /// Export logs as formatted text

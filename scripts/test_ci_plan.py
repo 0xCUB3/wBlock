@@ -9,7 +9,7 @@ class CIPlanTests(unittest.TestCase):
             'scripts/test_background_config_cache.mjs', 'scripts/minify-extension-js.sh',
             '.github/workflows/ci.yml', 'scripts/ci_plan.py',
         ])
-        self.assertEqual(plan, dict(javascript=True, native=False, build=False, rules_ui=False, sheet_ui=False))
+        self.assertEqual(plan, dict(javascript=True, native=False, build=False, sheet_ui=False))
 
     def test_native_test_changes_do_not_rebuild_both_apps(self):
         for path in ('scripts/run-ci-tests.sh', 'scripts/test_new_native.swift'):
@@ -18,12 +18,11 @@ class CIPlanTests(unittest.TestCase):
             self.assertFalse(plan['build'])
 
     def test_ui_fixtures_do_not_run_unrelated_native_checks(self):
-        for path in ('scripts/rules-viewer-ui/App.swift', 'scripts/test_rules_viewer_ui.sh',
-                     'scripts/test_apply_sheet_presentation.swift'):
+        for path in ('scripts/test_apply_sheet_presentation.swift', 'scripts/test_apply_sheet_presentation.sh'):
             plan = select_checks([path])
             self.assertFalse(plan['native'])
             self.assertFalse(plan['build'])
-            self.assertTrue(plan['rules_ui'] or plan['sheet_ui'])
+            self.assertTrue(plan['sheet_ui'])
 
     def test_docs_and_empty_changes_skip_expensive_checks(self):
         for paths in ([], ['README.md', 'docs/usage.md', 'LICENSE', '.github/ISSUE_TEMPLATE/bug.yml']):
@@ -36,22 +35,9 @@ class CIPlanTests(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertTrue(select_checks([path])['native'])
 
-    def test_ui_suites_only_run_for_their_production_or_fixture_sources(self):
-        for path in ('wBlock/MonospacedTextView.swift', 'wBlock/ViewportSyntaxHighlighter.swift',
-                     'wBlock/AdGuardSyntaxHighlighter.swift', 'scripts/rules-viewer-ui/project.yml',
-                     'scripts/test_rules_viewer_ui.sh'):
-            plan = select_checks([path])
-            self.assertTrue(plan['rules_ui'])
-            self.assertFalse(plan['sheet_ui'])
-        for path in ('wBlock/SwiftUICompatibility.swift', 'scripts/test_apply_sheet_presentation.swift',
-                     'scripts/test_apply_sheet_presentation.sh'):
-            plan = select_checks([path])
-            self.assertTrue(plan['sheet_ui'])
-            self.assertFalse(plan['rules_ui'])
-
-    def test_combined_changes_keep_both_ui_suites(self):
-        plan = select_checks(['wBlock/MonospacedTextView.swift', 'wBlock/SwiftUICompatibility.swift'])
-        self.assertTrue(all(plan.values()))
+    def test_sheet_suite_runs_only_for_its_sources(self):
+        self.assertTrue(select_checks(['wBlock/SwiftUICompatibility.swift'])['sheet_ui'])
+        self.assertFalse(select_checks(['wBlock/ContentView.swift'])['sheet_ui'])
 
     def test_full_run_overrides_path_filters(self):
         self.assertTrue(all(select_checks([], full=True).values()))

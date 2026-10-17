@@ -40,12 +40,9 @@
 		C1F16D402DE36AE50031E7EF /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
 		C1F16D432DE36AE70031E7EF /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
 		C1F16D462DE36AE90031E7EF /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
-		C1F16D492DE36AEC0031E7EF /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
 		C1F16D4C2DE36AF20031E7EF /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
 		C1F16D4F2DE36AF50031E7EF /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
-		C1F16D522DE36AF70031E7EF /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
 		C1F16D552DE36AF90031E7EF /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
-		C1F16D582DE36AFC0031E7EF /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
 		C1F16D5B2DE36B060031E7EF /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
 		C1F16D612DE36B0E0031E7EF /* wBlockCoreService.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C1A41C452DE089C50056F63D /* wBlockCoreService.framework */; };
 		CB8C251C16284955BB17F3A1 /* skula.wBlock.FilterUpdateAgent.plist in Embed Launch Agents */ = {isa = PBXBuildFile; fileRef = ABB624B3E5C14E8CBFCA4484 /* skula.wBlock.FilterUpdateAgent.plist */; platformFilters = (macos, ); };
@@ -83,27 +80,6 @@
 			proxyType = 1;
 			remoteGlobalIDString = C1A41C442DE089C50056F63D;
 			remoteInfo = wBlockCoreService;
-		};
-		C19A20582E6F596900E66F69 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = C1F16C3E2DE355670031E7EF;
-			remoteInfo = "wBlock Privacy iOS";
-		};
-		C19A20592E6F596900E66F69 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = C1F16C742DE355A80031E7EF;
-			remoteInfo = "wBlock Multipurpose iOS";
-		};
-		C19A205A2E6F596900E66F69 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = C1A41C252DE0897C0056F63D /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = C1F16C982DE355CC0031E7EF;
-			remoteInfo = "wBlock Experimental iOS";
 		};
 		C1A41C4B2DE089C50056F63D /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -585,22 +561,12 @@
 			path = "wBlock Security (iOS)";
 			sourceTree = "<group>";
 		};
-		C1F16C762DE355A80031E7EF /* wBlock Multipurpose (iOS) */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = "wBlock Multipurpose (iOS)";
-			sourceTree = "<group>";
-		};
 		C1F16C882DE355BC0031E7EF /* wBlock Foreign (iOS) */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				C1F16C942DE355BC0031E7EF /* Exceptions for "wBlock Foreign (iOS)" folder in "wBlock Foreign & Experimental iOS" target */,
 			);
 			path = "wBlock Foreign (iOS)";
-			sourceTree = "<group>";
-		};
-		C1F16C9A2DE355CC0031E7EF /* wBlock Experimental (iOS) */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = "wBlock Experimental (iOS)";
 			sourceTree = "<group>";
 		};
 		C1F16CAC2DE355DE0031E7EF /* wBlock Custom (iOS) */ = {
@@ -724,14 +690,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		C1F16C3C2DE355670031E7EF /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				C1F16D492DE36AEC0031E7EF /* wBlockCoreService.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		C1F16C4E2DE3557D0031E7EF /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -748,27 +706,11 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		C1F16C722DE355A80031E7EF /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				C1F16D522DE36AF70031E7EF /* wBlockCoreService.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		C1F16C842DE355BC0031E7EF /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				C1F16D552DE36AF90031E7EF /* wBlockCoreService.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		C1F16C962DE355CC0031E7EF /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				C1F16D582DE36AFC0031E7EF /* wBlockCoreService.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -974,12 +916,9 @@
 				C1F16C0D2DE354E40031E7EF /* PBXTargetDependency */,
 				C1F16C212DE354FB0031E7EF /* PBXTargetDependency */,
 				C1F16C352DE355150031E7EF /* PBXTargetDependency */,
-				C1F16C472DE355670031E7EF /* PBXTargetDependency */,
 				C1F16C592DE3557D0031E7EF /* PBXTargetDependency */,
 				C1F16C6B2DE3558A0031E7EF /* PBXTargetDependency */,
-				C1F16C7D2DE355A80031E7EF /* PBXTargetDependency */,
 				C1F16C8F2DE355BC0031E7EF /* PBXTargetDependency */,
-				C1F16CA12DE355CC0031E7EF /* PBXTargetDependency */,
 				C1F16CB32DE355DE0031E7EF /* PBXTargetDependency */,
 				867CCA2F2F696EA200719EFE /* PBXTargetDependency */,
 			);
@@ -1175,27 +1114,6 @@
 			productReference = C1F16C2B2DE355150031E7EF /* wBlock Custom.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
-		C1F16C3E2DE355670031E7EF /* wBlock Privacy iOS */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = C1F16C492DE355670031E7EF /* Build configuration list for PBXNativeTarget "wBlock Privacy iOS" */;
-			buildPhases = (
-				C1F16C3B2DE355670031E7EF /* Sources */,
-				C1F16C3C2DE355670031E7EF /* Frameworks */,
-				C1F16C3D2DE355670031E7EF /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				C1F16C402DE355670031E7EF /* wBlock Privacy (iOS) */,
-			);
-			name = "wBlock Privacy iOS";
-			packageProductDependencies = (
-			);
-			productName = "wBlock Privacy (iOS)";
-			productType = "com.apple.product-type.app-extension";
-		};
 		C1F16C502DE3557D0031E7EF /* wBlock Security iOS */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = C1F16C5B2DE3557D0031E7EF /* Build configuration list for PBXNativeTarget "wBlock Security iOS" */;
@@ -1240,27 +1158,6 @@
 			productReference = C1F16C632DE3558A0031E7EF /* wBlock Annoyances iOS.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
-		C1F16C742DE355A80031E7EF /* wBlock Multipurpose iOS */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = C1F16C7F2DE355A80031E7EF /* Build configuration list for PBXNativeTarget "wBlock Multipurpose iOS" */;
-			buildPhases = (
-				C1F16C712DE355A80031E7EF /* Sources */,
-				C1F16C722DE355A80031E7EF /* Frameworks */,
-				C1F16C732DE355A80031E7EF /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				C1F16C762DE355A80031E7EF /* wBlock Multipurpose (iOS) */,
-			);
-			name = "wBlock Multipurpose iOS";
-			packageProductDependencies = (
-			);
-			productName = "wBlock Multipurpose (iOS)";
-			productType = "com.apple.product-type.app-extension";
-		};
 		C1F16C862DE355BC0031E7EF /* wBlock Foreign & Experimental iOS */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = C1F16C912DE355BC0031E7EF /* Build configuration list for PBXNativeTarget "wBlock Foreign & Experimental iOS" */;
@@ -1281,27 +1178,6 @@
 			);
 			productName = "wBlock Foreign (iOS)";
 			productReference = C1F16C872DE355BC0031E7EF /* wBlock Foreign & Experimental iOS.appex */;
-			productType = "com.apple.product-type.app-extension";
-		};
-		C1F16C982DE355CC0031E7EF /* wBlock Experimental iOS */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = C1F16CA32DE355CC0031E7EF /* Build configuration list for PBXNativeTarget "wBlock Experimental iOS" */;
-			buildPhases = (
-				C1F16C952DE355CC0031E7EF /* Sources */,
-				C1F16C962DE355CC0031E7EF /* Frameworks */,
-				C1F16C972DE355CC0031E7EF /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			fileSystemSynchronizedGroups = (
-				C1F16C9A2DE355CC0031E7EF /* wBlock Experimental (iOS) */,
-			);
-			name = "wBlock Experimental iOS";
-			packageProductDependencies = (
-			);
-			productName = "wBlock Experimental (iOS)";
 			productType = "com.apple.product-type.app-extension";
 		};
 		C1F16CAA2DE355DE0031E7EF /* wBlock Custom iOS */ = {
@@ -1548,13 +1424,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		C1F16C3D2DE355670031E7EF /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		C1F16C4F2DE3557D0031E7EF /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1569,21 +1438,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		C1F16C732DE355A80031E7EF /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		C1F16C852DE355BC0031E7EF /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		C1F16C972DE355CC0031E7EF /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -1769,13 +1624,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		C1F16C3B2DE355670031E7EF /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		C1F16C4D2DE3557D0031E7EF /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1790,21 +1638,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		C1F16C712DE355A80031E7EF /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		C1F16C832DE355BC0031E7EF /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		C1F16C952DE355CC0031E7EF /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -1909,15 +1743,6 @@
 			target = C1F16C2A2DE355150031E7EF /* wBlock Custom */;
 			targetProxy = C1F16C342DE355150031E7EF /* PBXContainerItemProxy */;
 		};
-		C1F16C472DE355670031E7EF /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			platformFilters = (
-				ios,
-				xros,
-			);
-			target = C1F16C3E2DE355670031E7EF /* wBlock Privacy iOS */;
-			targetProxy = C19A20582E6F596900E66F69 /* PBXContainerItemProxy */;
-		};
 		C1F16C592DE3557D0031E7EF /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			platformFilters = (
@@ -1936,15 +1761,6 @@
 			target = C1F16C622DE3558A0031E7EF /* wBlock Annoyances iOS */;
 			targetProxy = C1F16C6A2DE3558A0031E7EF /* PBXContainerItemProxy */;
 		};
-		C1F16C7D2DE355A80031E7EF /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			platformFilters = (
-				ios,
-				xros,
-			);
-			target = C1F16C742DE355A80031E7EF /* wBlock Multipurpose iOS */;
-			targetProxy = C19A20592E6F596900E66F69 /* PBXContainerItemProxy */;
-		};
 		C1F16C8F2DE355BC0031E7EF /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			platformFilters = (
@@ -1953,15 +1769,6 @@
 			);
 			target = C1F16C862DE355BC0031E7EF /* wBlock Foreign & Experimental iOS */;
 			targetProxy = C1F16C8E2DE355BC0031E7EF /* PBXContainerItemProxy */;
-		};
-		C1F16CA12DE355CC0031E7EF /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			platformFilters = (
-				ios,
-				xros,
-			);
-			target = C1F16C982DE355CC0031E7EF /* wBlock Experimental iOS */;
-			targetProxy = C19A205A2E6F596900E66F69 /* PBXContainerItemProxy */;
 		};
 		C1F16CB32DE355DE0031E7EF /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -3008,69 +2815,6 @@
 			};
 			name = Release;
 		};
-		C1F16C4A2DE355670031E7EF /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = "wBlock Privacy (iOS)/wBlock Privacy (iOS).entitlements";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 110;
-				DEVELOPMENT_TEAM = DNP7DGUB7B;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "wBlock Privacy (iOS)/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "wBlock 2";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 15.4;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 3.2.2;
-				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Privacy-iOS";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
-				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Debug;
-		};
-		C1F16C4B2DE355670031E7EF /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = "wBlock Privacy (iOS)/wBlock Privacy (iOS).entitlements";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 110;
-				DEVELOPMENT_TEAM = DNP7DGUB7B;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "wBlock Privacy (iOS)/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "wBlock 2";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 15.4;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 3.2.2;
-				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Privacy-iOS";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
-				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				VALIDATE_PRODUCT = YES;
-			};
-			name = Release;
-		};
 		C1F16C5C2DE3557D0031E7EF /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -3197,69 +2941,6 @@
 			};
 			name = Release;
 		};
-		C1F16C802DE355A80031E7EF /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = "wBlock Multipurpose (iOS)/wBlock Multipurpose (iOS).entitlements";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 110;
-				DEVELOPMENT_TEAM = DNP7DGUB7B;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "wBlock Multipurpose (iOS)/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Multipurpose";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 15.4;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 3.2.2;
-				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Multipurpose-iOS";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
-				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Debug;
-		};
-		C1F16C812DE355A80031E7EF /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = "wBlock Multipurpose (iOS)/wBlock Multipurpose (iOS).entitlements";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 110;
-				DEVELOPMENT_TEAM = DNP7DGUB7B;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "wBlock Multipurpose (iOS)/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Multipurpose";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 15.4;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 3.2.2;
-				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Multipurpose-iOS";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
-				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				VALIDATE_PRODUCT = YES;
-			};
-			name = Release;
-		};
 		C1F16C922DE355BC0031E7EF /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -3310,69 +2991,6 @@
 				);
 				MARKETING_VERSION = 3.2.2;
 				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Foreign-iOS";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
-				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				VALIDATE_PRODUCT = YES;
-			};
-			name = Release;
-		};
-		C1F16CA42DE355CC0031E7EF /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = "wBlock Experimental (iOS)/wBlock Experimental (iOS).entitlements";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 110;
-				DEVELOPMENT_TEAM = DNP7DGUB7B;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "wBlock Experimental (iOS)/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Experimental";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 15.4;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 3.2.2;
-				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Experimental-iOS";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
-				SUPPORTS_MACCATALYST = NO;
-				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = YES;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Debug;
-		};
-		C1F16CA52DE355CC0031E7EF /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_ENTITLEMENTS = "wBlock Experimental (iOS)/wBlock Experimental (iOS).entitlements";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 110;
-				DEVELOPMENT_TEAM = DNP7DGUB7B;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "wBlock Experimental (iOS)/Info.plist";
-				INFOPLIST_KEY_CFBundleDisplayName = "wBlock Experimental";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 15.4;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				MARKETING_VERSION = 3.2.2;
-				PRODUCT_BUNDLE_IDENTIFIER = "skula.wBlock.wBlock-Experimental-iOS";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
@@ -3673,15 +3291,6 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		C1F16C492DE355670031E7EF /* Build configuration list for PBXNativeTarget "wBlock Privacy iOS" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				C1F16C4A2DE355670031E7EF /* Debug */,
-				C1F16C4B2DE355670031E7EF /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		C1F16C5B2DE3557D0031E7EF /* Build configuration list for PBXNativeTarget "wBlock Security iOS" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -3700,29 +3309,11 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		C1F16C7F2DE355A80031E7EF /* Build configuration list for PBXNativeTarget "wBlock Multipurpose iOS" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				C1F16C802DE355A80031E7EF /* Debug */,
-				C1F16C812DE355A80031E7EF /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		C1F16C912DE355BC0031E7EF /* Build configuration list for PBXNativeTarget "wBlock Foreign & Experimental iOS" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				C1F16C922DE355BC0031E7EF /* Debug */,
 				C1F16C932DE355BC0031E7EF /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		C1F16CA32DE355CC0031E7EF /* Build configuration list for PBXNativeTarget "wBlock Experimental iOS" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				C1F16CA42DE355CC0031E7EF /* Debug */,
-				C1F16CA52DE355CC0031E7EF /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

@@ -166,10 +166,6 @@ extension AppFilterManager {
         removeCustomFilterList(listToRemove)
     }
 
-    func toggleFilter(list: FilterList) {
-        toggleFilterListSelection(id: list.id)
-    }
-
     func addCustomFilterList(_ filter: FilterList) {
         if !filterLists.contains(where: { FilterListURLSupport.isSameList($0.url, filter.url) }) {
             let newFilterToAdd = filter

@@ -763,11 +763,6 @@ private actor ProtobufDiskStore {
         }
     }
 
-    func removeItemIfExists(at url: URL) throws {
-        guard fileExists(at: url) else { return }
-        try fileManager.removeItem(at: url)
-    }
-
     /// Deletes all protobuf artifacts while holding the same coordination used by writes.
     /// Reset is therefore one serialized storage transaction, not three independent deletes.
     func resetFiles(dataURL: URL, backupURL: URL, versionURL: URL) throws {
@@ -1385,21 +1380,6 @@ public class ProtobufDataManager: ObservableObject {
                 data.extensionData.zapperRulesByHost[host] = ruleList
             }
             data.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
-        }
-    }
-
-    @MainActor
-    public func deleteAllZapperRules() async {
-        await updateDataImmediately { data in
-            var changed = false
-            for host in Array(data.extensionData.zapperRulesByHost.keys) {
-                guard var rules = data.extensionData.zapperRulesByHost[host], !rules.selectors.isEmpty else { continue }
-                rules.pendingDeletions = Array(Set(rules.pendingDeletions + rules.selectors)).sorted()
-                rules.selectors.removeAll()
-                data.extensionData.zapperRulesByHost[host] = rules
-                changed = true
-            }
-            if changed { data.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970) }
         }
     }
 

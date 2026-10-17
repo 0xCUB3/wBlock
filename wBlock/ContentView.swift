@@ -69,10 +69,6 @@ struct ContentView: View {
     @State private var userScriptSearchRequest = 0
     @Environment(\.scenePhase) var scenePhase
 
-    private var hasCompletedOnboarding: Bool {
-        dataManager.hasCompletedOnboarding
-    }
-
     private var enabledListsCount: Int {
         filterManager.filterLists.filter { $0.isSelected }.count
     }

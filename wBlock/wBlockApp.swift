@@ -30,7 +30,6 @@ struct wBlockApp: App {
 
     @StateObject private var filterManager = AppFilterManager()
 
-    @StateObject private var dataManager = ProtobufDataManager.shared
     @Environment(\.scenePhase) private var scenePhase
     @State private var hasStartedLaunchSetup = false
     @State private var hasCompletedLaunchSetup = false
@@ -38,10 +37,6 @@ struct wBlockApp: App {
     #if os(macOS)
     @State private var showingRestartConfirmation = false
     #endif
-
-    private var hasCompletedOnboarding: Bool {
-        dataManager.hasCompletedOnboarding
-    }
 
     private func startLaunchSetupIfNeeded() {
         guard !hasStartedLaunchSetup else { return }

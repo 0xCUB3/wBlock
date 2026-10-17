@@ -1814,15 +1814,6 @@ public actor SharedAutoUpdateManager {
         }
     }
 
-    private func makeConditionalRequest(for filter: FilterList, etag: String?, lastModified: String?) -> URLRequest {
-        return NetworkRequestFactory.makeConditionalRequest(
-            url: filter.url,
-            etag: etag,
-            lastModified: lastModified,
-            timeout: 20
-        )
-    }
-
     private func localDataForComparison(filter: FilterList, containerURL: URL) -> Data? {
         FilterListContentProcessing.localDataForComparison(
             filter: filter,

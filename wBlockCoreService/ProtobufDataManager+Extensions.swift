@@ -323,26 +323,6 @@ extension ProtobufDataManager {
         }
     }
 
-    @discardableResult
-    public func setNoAutoplaySiteAllowed(_ allowed: Bool, onHost host: String) async -> Bool {
-        guard let normalizedHost = DisabledSitesNormalizer.normalizedDomain(host) else {
-            return false
-        }
-
-        return await updateDataImmediately { data in
-            var sites = Set(DisabledSitesNormalizer.normalizedDomains(
-                from: data.whitelist.noAutoplayAllowedSites
-            ))
-            if allowed {
-                sites.insert(normalizedHost)
-            } else {
-                sites.remove(normalizedHost)
-            }
-            data.whitelist.noAutoplayAllowedSites = Array(sites).sorted()
-            data.whitelist.lastUpdated = Int64(Date().timeIntervalSince1970)
-        }
-    }
-
     public var noAutoplayBlockedSites: [String] {
         appData.whitelist.noAutoplayBlockedSites
     }

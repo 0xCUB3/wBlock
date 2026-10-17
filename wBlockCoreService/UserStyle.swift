@@ -287,12 +287,6 @@ public enum UserStyleSupport {
         return parsed
     }
 
-    /// Returns compiler source with the UserCSS metadata masked as whitespace.
-    /// Preserving its line breaks keeps compiler line numbers aligned with the editor.
-    static func sourceBody(from content: String) -> String {
-        parseSourceBodyInfo(content).text
-    }
-
     /// Builds one offset-safe identity for compilation and sidecar validation.
     static func compilationRequest(
         for content: String,

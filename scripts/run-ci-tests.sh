@@ -331,8 +331,8 @@ step env "${COMPILER_BUNDLES[@]}" "$TMP/packaged-compilers"
 queue direct swift scripts/test_action_icon_masks.swift
 
 for test in scripts/test_*.sh; do
-  if [[ "$test" == scripts/test_rules_viewer_ui.sh || "$test" == scripts/test_apply_sheet_presentation.sh ]]; then
-    # These parameterized suites run in the simulator job in CI.
+  if [[ "$test" == scripts/test_apply_sheet_presentation.sh ]]; then
+    # This parameterized suite runs in the simulator job in CI.
     if [[ -n "${WBLOCK_UI_TEST_SIMULATOR:-}" ]]; then
       queue direct bash "$test" "$WBLOCK_UI_TEST_SIMULATOR"
     else
@@ -381,9 +381,6 @@ compile_direct_test staged-filter-downloads \
   wBlockCoreService/StagedFilterDownloads.swift \
   scripts/test_staged_filter_downloads.swift
 
-compile_direct_test bounded-concurrency \
-  wBlockCoreService/AsyncConcurrency.swift \
-  scripts/test_bounded_concurrent_compact_map.swift
 
 compile_core_test filter-validation scripts/test_filter_list_validation.swift
 

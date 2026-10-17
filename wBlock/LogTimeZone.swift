@@ -37,12 +37,6 @@ enum LogTimeZonePreference {
 }
 
 extension TimeZone {
-    /// Localized, user-friendly name for a time zone identifier, falling back to
-    /// the raw identifier when resolution fails (e.g. invalid or deprecated ids).
-    static func localizedName(for identifier: String) -> String? {
-        guard let timeZone = TimeZone(identifier: identifier) else { return nil }
-        return timeZone.localizedName(for: .shortGeneric, locale: .appCurrent)
-    }
 }
 
 /// Centralized, preference-aware date formatters for log timestamps.

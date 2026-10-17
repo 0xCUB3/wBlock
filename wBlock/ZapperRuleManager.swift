@@ -105,37 +105,6 @@ final class ZapperRuleManager: ObservableObject {
         ProtobufDataManager.shared.getZapperRules(forHost: hostname)
     }
 
-    /// Removes a single CSS selector for the hostname and refreshes local state.
-    func deleteRule(_ rule: String, forDomain hostname: String) {
-        Task { @MainActor in
-            await performMutation {
-                await ProtobufDataManager.shared.deleteZapperRule(rule, forHost: hostname)
-                self.publishStateFromDataManager()
-            }
-        }
-    }
-
-    /// Removes all rules for the hostname and refreshes local state.
-    func deleteAllRules(forDomain hostname: String) {
-        Task { @MainActor in
-            await performMutation {
-                await ProtobufDataManager.shared.deleteAllZapperRules(forHost: hostname)
-                self.publishStateFromDataManager()
-            }
-        }
-    }
-
-    /// Removes every stored rule for every hostname and refreshes local state.
-    func deleteAllRules() {
-        Task { @MainActor in
-            await performMutation {
-                await ProtobufDataManager.shared.deleteAllZapperRules()
-                self.publishStateFromDataManager()
-                self.selectedDomain = nil
-            }
-        }
-    }
-
     /// Returns the number of rules stored for the given hostname.
     func ruleCount(forDomain hostname: String) -> Int {
         return rules(for: hostname).count

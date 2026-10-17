@@ -42,13 +42,6 @@ final class AutoUpdateLaunchAgentManager {
 
     private init() {}
 
-    func currentStatus() -> RegistrationStatus {
-        if #available(macOS 13.0, *) {
-            return status(from: modernService.status)
-        }
-        return legacyStatus()
-    }
-
     /// ServiceManagement can block on XPC; opening Settings must not wait on the UI thread.
     func currentStatusForDisplay() async -> RegistrationStatus {
         if #available(macOS 13.0, *) {

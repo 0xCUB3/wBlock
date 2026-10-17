@@ -23,7 +23,6 @@ jobs:
     outputs:
       native: ${{ steps.plan.outputs.native }}
       build: ${{ steps.plan.outputs.build }}
-      rules_ui: ${{ steps.plan.outputs.rules_ui }}
       sheet_ui: ${{ steps.plan.outputs.sheet_ui }}
     steps:
       - name: Checkout
@@ -75,18 +74,14 @@ jobs:
           WBLOCK_DERIVED_DATA: ${{ env.DERIVED_DATA }}
         run: scripts/run-ci-tests.sh --native
 
-  rules-viewer-ui:
+  sheet-ui:
     needs: checks
-    if: needs.checks.outputs.rules_ui == 'true' || needs.checks.outputs.sheet_ui == 'true'
+    if: needs.checks.outputs.sheet_ui == 'true'
     runs-on: xcode-27
     timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Install XcodeGen
-        if: needs.checks.outputs.rules_ui == 'true'
-        run: command -v xcodegen >/dev/null || brew install xcodegen
 
       - name: Select available iPad simulator
         id: simulator
@@ -109,25 +104,10 @@ jobs:
           print("udid=" + matches[0]["udid"])
           PY
 
-      - name: Run rules-viewer gestures
-        if: needs.checks.outputs.rules_ui == 'true'
-        env:
-          SIMULATOR: ${{ steps.simulator.outputs.udid }}
-        run: bash scripts/test_rules_viewer_ui.sh "$SIMULATOR"
-
       - name: Run fitted-sheet presentation
-        if: needs.checks.outputs.sheet_ui == 'true'
         env:
           SIMULATOR: ${{ steps.simulator.outputs.udid }}
         run: bash scripts/test_apply_sheet_presentation.sh "$SIMULATOR"
-
-      - name: Preserve gesture-test diagnostics on failure
-        if: failure() && needs.checks.outputs.rules_ui == 'true'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: rules-viewer-results
-          path: ~/Library/Developer/Xcode/DerivedData/ScrollProbe-*/Logs/Test/*.xcresult
-          retention-days: 3
 
   build:
     needs: checks

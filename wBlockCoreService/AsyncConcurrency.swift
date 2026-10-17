@@ -75,22 +75,3 @@ public func boundedConcurrentForEach<Item: Sendable, Result: Sendable>(
         }
     }
 }
-
-/// Runs an async transform with bounded concurrency and keeps only non-nil outputs.
-/// Results are returned in completion order.
-public func boundedConcurrentCompactMap<Item: Sendable, Output: Sendable>(
-    _ items: [Item],
-    maxConcurrent: Int? = nil,
-    transform: @Sendable @escaping (Item) async -> Output?
-) async -> [Output] {
-    var outputs: [Output] = []
-    await boundedConcurrentForEach(
-        items,
-        maxConcurrent: maxConcurrent,
-        operation: transform
-    ) { output in
-        if let output { outputs.append(output) }
-    }
-
-    return outputs
-}

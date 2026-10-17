@@ -14,12 +14,6 @@ private extension Notification.Name {
     static let wBlockFilterUpdateRequest = Notification.Name("wBlockFilterUpdateRequest")
 }
 
-#if os(macOS)
-    let APP_CONTENT_BLOCKER_ID = "skula.wBlock.wBlock-Filters"
-#else
-    let APP_CONTENT_BLOCKER_ID = "skula.wBlock.wBlock-Filters-iOS"
-#endif
-
 struct ApplyRunSnapshot {
     let filters: [FilterList]
     let configurations: [ApplyFilterConfiguration]
@@ -905,11 +899,6 @@ class AppFilterManager: ObservableObject {
                 }
             }
         }
-    }
-
-    func toggleFilterListSelection(id: UUID) {
-        guard let index = filterListIndex(for: id) else { return }
-        setFilterListSelection(id: id, selected: !filterLists[index].isSelected)
     }
 
     /// Sets a filter's selection state without depending on the caller's stale toggle state.

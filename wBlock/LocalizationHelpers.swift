@@ -132,62 +132,7 @@ enum LocalizedStrings {
     }
 }
 
-struct ForeignFilterGroup: Identifiable, Sendable {
-    let languageCode: String
-    let title: String
-    let sortTitle: String
-    let filters: [FilterList]
-
-    var id: String { languageCode }
-}
-
 enum ForeignFilterOrganizer {
-    private static let ungroupedLanguageCode = "__foreign__"
-
-    static func groups(
-        for filters: [FilterList],
-        preferredLanguages: Set<String>? = nil
-    ) -> [ForeignFilterGroup] {
-        let preferred = preferredLanguages.map { Set($0.map { $0.lowercased() }) }
-        var groups: [(languages: Set<String>, filters: [FilterList])] = []
-        var seen = Set<UUID>()
-
-        for filter in filters where seen.insert(filter.id).inserted {
-            var languages = Set(filter.languages.map { $0.lowercased() })
-            if let preferred {
-                languages.formIntersection(preferred)
-                guard !languages.isEmpty else { continue }
-            }
-            if languages.isEmpty { languages = [ungroupedLanguageCode] }
-
-            // Merge overlapping coverage, including a language-specific list
-            // alongside a shared list (Icelandic + Nordic, for example).
-            var members = [filter]
-            for index in groups.indices.reversed() where !groups[index].languages.isDisjoint(with: languages) {
-                let overlapping = groups.remove(at: index)
-                languages.formUnion(overlapping.languages)
-                members.append(contentsOf: overlapping.filters)
-            }
-            groups.append((languages, members))
-        }
-
-        return groups.map { languages, filters in
-            let ordered = languages.sorted {
-                languageSortTitle(for: $0).localizedCaseInsensitiveCompare(languageSortTitle(for: $1)) == .orderedAscending
-            }
-            return ForeignFilterGroup(
-                languageCode: languages.sorted().joined(separator: "+"),
-                title: ordered.map { languageSortTitle(for: $0) }.joined(separator: ", "),
-                sortTitle: ordered.map { languageSortTitle(for: $0) }.joined(separator: ", "),
-                filters: sortedFilters(filters)
-            )
-        }
-        .sorted { lhs, rhs in
-            if lhs.languageCode == ungroupedLanguageCode { return false }
-            if rhs.languageCode == ungroupedLanguageCode { return true }
-            return lhs.sortTitle.localizedCaseInsensitiveCompare(rhs.sortTitle) == .orderedAscending
-        }
-    }
 
     private static let catalogOrder = Dictionary(uniqueKeysWithValues:
         FilterListLoader().getDefaultFilterLists().filter { $0.category == .foreign }
@@ -236,13 +181,6 @@ enum ForeignFilterOrganizer {
         }
     }
 
-    private static func languageSortTitle(for languageCode: String) -> String {
-        guard languageCode != ungroupedLanguageCode else {
-            return LocalizedStrings.text("Regional", comment: "Filter list category")
-        }
-
-        return Locale.appCurrent.localizedString(forLanguageCode: languageCode) ?? languageCode.uppercased()
-    }
 }
 
 enum LocalizedFormatting {

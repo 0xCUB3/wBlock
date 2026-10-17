@@ -106,7 +106,7 @@ xcodebuild -project wBlock.xcodeproj -scheme wBlock -configuration Debug \
   -destination 'generic/platform=macOS' -derivedDataPath "$WBLOCK_DERIVED_DATA" build
 xcodebuild -project wBlock.xcodeproj -scheme wBlock -configuration Debug \
   -destination 'generic/platform=iOS Simulator' -derivedDataPath "$WBLOCK_DERIVED_DATA" build
-bash scripts/test_rules_viewer_ui.sh <available-iPhone-simulator-UUID>
+bash scripts/test_apply_sheet_presentation.sh <available-iPad-simulator-UUID>
 git diff --check
 ```
 

@@ -129,13 +129,6 @@ public enum HeadlessLaunch {
         return min(autoRebuildMaximumBackoffSeconds, autoRebuildCooldownSeconds * multiplier)
     }
 
-    public static func loadAutoRebuildGateState(
-        groupIdentifier: String = GroupIdentifier.shared.value
-    ) -> AutoRebuildGateState? {
-        guard let url = autoRebuildGateURL(groupIdentifier: groupIdentifier) else { return nil }
-        return loadAutoRebuildGateState(at: url)
-    }
-
     public static func loadAutoRebuildGateState(gateDirectory: URL) -> AutoRebuildGateState? {
         loadAutoRebuildGateState(at: autoRebuildGateURL(gateDirectory: gateDirectory))
     }
@@ -197,11 +190,6 @@ public enum HeadlessLaunch {
         groupIdentifier: String = GroupIdentifier.shared.value
     ) -> URL? {
         FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier)
-    }
-
-    private static func autoRebuildGateURL(groupIdentifier: String) -> URL? {
-        autoRebuildGateDirectory(groupIdentifier: groupIdentifier)
-            .map { autoRebuildGateURL(gateDirectory: $0) }
     }
 
     private static func autoRebuildGateURL(gateDirectory: URL) -> URL {

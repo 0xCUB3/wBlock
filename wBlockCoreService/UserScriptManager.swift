@@ -165,7 +165,6 @@ public class UserScriptManager: ObservableObject {
 
     private let sharedContainerIdentifier = GroupIdentifier.shared.value
     private let dataManager = ProtobufDataManager.shared
-    private let sharedDefaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
     private let logger = Logger(subsystem: "com.skula.wBlock", category: "UserScriptManager")
     private var cancellables = Set<AnyCancellable>()
     private var initialLoadTask: Task<Void, Never>?
