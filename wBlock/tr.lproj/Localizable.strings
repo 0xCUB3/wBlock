@@ -1205,3 +1205,5 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "wBlock already includes every list in the registry." = "wBlock, kayıt defterindeki tüm listeleri zaten içeriyor.";
 "No matching lists." = "Eşleşen liste yok.";
 "No longer built into wBlock" = "Artık wBlock’ta yerleşik değil";
+"wBlock Ad and Tracking Hosts" = "wBlock Reklam ve İzleme Sunucuları";
+"Blocks ad and tracking hosts that the other lists only block in part." = "Diğer listelerin yalnızca kısmen engellediği reklam ve izleme sunucularını engeller.";

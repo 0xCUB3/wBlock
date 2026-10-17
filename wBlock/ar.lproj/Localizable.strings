@@ -1196,3 +1196,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "wBlock already includes every list in the registry." = "يتضمن wBlock بالفعل كل قوائم السجل.";
 "No matching lists." = "لا توجد قوائم مطابقة.";
 "No longer built into wBlock" = "لم تعد مضمّنة في wBlock";
+"wBlock Ad and Tracking Hosts" = "مضيفات الإعلانات والتتبع من wBlock";
+"Blocks ad and tracking hosts that the other lists only block in part." = "يحظر مضيفات الإعلانات والتتبع التي لا تحظرها القوائم الأخرى إلا جزئيًا.";

@@ -1,0 +1,42 @@
+! Title: wBlock Ad and Tracking Hosts
+! Description: Ad and tracking hosts that the default lists only block in part. Hosts that pages rely on, like Facebook login, YouTube video, JW Player, and chat widgets, are left out on purpose.
+! Homepage: https://github.com/0xCUB3/wBlock
+! Expires: 4 days
+||adtech.yahooinc.com^$third-party
+||advertising-api-eu.amazon.com^$third-party
+||advertising.apple.com^$third-party
+||advertising.yahoo.com^$third-party
+||advertising.yandex.ru^$third-party
+||ads-api.tiktok.com^$third-party
+||ads-sg.tiktok.com^$third-party
+||ads.huawei.com^$third-party
+||ads.microsoft.com^$third-party
+||ads.vk.com^$third-party
+||ads.x.com^$third-party
+||analytics.twitter.com^$third-party
+||analytics.x.com^$third-party
+||app.posthog.com^$third-party
+||appmetrica.yandex.ru^$third-party
+||business-api.tiktok.com^$third-party
+||c.bing.com^$third-party
+||eu.posthog.com^$third-party
+||fingerprintjs.com^$third-party
+||g.jwpsrv.com^$third-party
+||gemini.yahoo.com^$third-party
+||log.fc.yahoo.com^$third-party
+||mads-eu.amazon.com^$third-party
+||metrika.yandex.ru^$third-party
+||mineralt.io^$third-party
+||ngfts.lge.com^$third-party
+||pangleglobal.com^$third-party
+||pixel.quora.com^$third-party
+||qevents.quora.com^$third-party
+||rudderstack.com^$third-party
+||smartclip.com^$third-party
+||snap.licdn.com^$third-party
+||snowplowanalytics.com^$third-party
+||tagmanager.google.com^$third-party
+||tr.facebook.com^$third-party
+||udc.yahoo.com^$third-party
+||udcm.yahoo.com^$third-party
+||xp.apple.com^$third-party

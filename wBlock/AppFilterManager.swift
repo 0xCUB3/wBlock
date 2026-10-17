@@ -695,9 +695,11 @@ class AppFilterManager: ObservableObject {
 
             for defaultFilter in defaultLists {
                 if !existingURLs.contains(defaultFilter.url) {
-                    // New filter from app update - add unselected
+                    // New filter from app update - add unselected, except the
+                    // hosts that used to be built in
                     var newFilter = defaultFilter
-                    newFilter.isSelected = false
+                    newFilter.isSelected = defaultFilter.url == FilterListLoader.adTrackingHostsURL
+                        && migratedFilterLists.contains(where: \.isSelected)
                     migratedFilterLists.append(newFilter)
                     addedDefaultFilters = true
                 }

@@ -1205,3 +1205,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "wBlock already includes every list in the registry." = "wBlock already includes every list in the registry.";
 "No matching lists." = "No matching lists.";
 "No longer built into wBlock" = "No longer built into wBlock";
+"wBlock Ad and Tracking Hosts" = "wBlock Ad and Tracking Hosts";
+"Blocks ad and tracking hosts that the other lists only block in part." = "Blocks ad and tracking hosts that the other lists only block in part.";

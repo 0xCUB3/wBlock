@@ -1196,3 +1196,5 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "wBlock already includes every list in the registry." = "wBlock include già tutte le liste del registro.";
 "No matching lists." = "Nessuna lista corrispondente.";
 "No longer built into wBlock" = "Non più integrata in wBlock";
+"wBlock Ad and Tracking Hosts" = "Host pubblicitari e di tracciamento wBlock";
+"Blocks ad and tracking hosts that the other lists only block in part." = "Blocca gli host pubblicitari e di tracciamento che le altre liste bloccano solo in parte.";

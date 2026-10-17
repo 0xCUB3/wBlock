@@ -1196,3 +1196,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "wBlock already includes every list in the registry." = "wBlock에 레지스트리의 모든 목록이 이미 포함되어 있습니다.";
 "No matching lists." = "일치하는 목록이 없습니다.";
 "No longer built into wBlock" = "더 이상 wBlock에 내장되지 않음";
+"wBlock Ad and Tracking Hosts" = "wBlock 광고 및 추적 호스트";
+"Blocks ad and tracking hosts that the other lists only block in part." = "다른 목록이 일부만 차단하는 광고 및 추적 호스트를 차단합니다.";

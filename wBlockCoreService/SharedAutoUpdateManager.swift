@@ -2155,9 +2155,7 @@ public actor SharedAutoUpdateManager {
                 disabledSites: disabledSites,
                 affinitySnapshot: affinitySnapshot,
                 orderedFilters: ordered,
-                extraRulesText: target.slot == 5
-                    ? BuiltInBlockRules.extraRulesText(filtersEnabled: !selectedFilters.isEmpty, zapperRulesText: zapper)
-                    : nil,
+                extraRulesText: target.slot == 5 ? zapper : nil,
                 deadline: policy.isBackground ? policy.deadline : nil,
                 minimumTime: policy.minimumTimeForConversionTarget,
                 isCancelled: { Task.isCancelled }

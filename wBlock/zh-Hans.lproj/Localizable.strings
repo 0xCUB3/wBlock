@@ -1196,3 +1196,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "wBlock already includes every list in the registry." = "wBlock 已包含注册表中的所有列表。";
 "No matching lists." = "没有匹配的列表。";
 "No longer built into wBlock" = "已不再内置于 wBlock";
+"wBlock Ad and Tracking Hosts" = "wBlock 广告与跟踪主机";
+"Blocks ad and tracking hosts that the other lists only block in part." = "拦截其他列表只部分拦截的广告和跟踪主机。";

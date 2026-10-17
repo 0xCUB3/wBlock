@@ -1196,3 +1196,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "wBlock already includes every list in the registry." = "Το wBlock περιλαμβάνει ήδη κάθε λίστα του μητρώου.";
 "No matching lists." = "Δεν υπάρχουν λίστες που ταιριάζουν.";
 "No longer built into wBlock" = "Δεν περιλαμβάνεται πλέον στο wBlock";
+"wBlock Ad and Tracking Hosts" = "Διακομιστές διαφημίσεων και παρακολούθησης wBlock";
+"Blocks ad and tracking hosts that the other lists only block in part." = "Αποκλείει διακομιστές διαφημίσεων και παρακολούθησης που οι άλλες λίστες αποκλείουν μόνο εν μέρει.";

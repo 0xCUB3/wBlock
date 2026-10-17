@@ -18,6 +18,7 @@ class FilterListLoader {
             "Actually Legitimate URL Shortener Tool",
             "Peter Lowe's Blocklist",
             "AdGuard Cookie Notices",
+            "wBlock Ad and Tracking Hosts",
         ]
     #else
         static let minimalFilterNames: Set<String> = ["AdGuard Base Filter", "AdGuard Mobile Filter"]
@@ -29,12 +30,21 @@ class FilterListLoader {
             "Peter Lowe's Blocklist",
             "AdGuard Cookie Notices",
             "AdGuard Mobile Filter",
+            "wBlock Ad and Tracking Hosts",
         ]
     #endif
 
     // Lists that prompt an "essential protection" warning before they are disabled.
     // Cookie Notices is on by default (#655) but is a convenience, not protection.
-    static let essentialFilterNames: Set<String> = recommendedFilterNames.subtracting(["AdGuard Cookie Notices"])
+    static let essentialFilterNames: Set<String> = recommendedFilterNames.subtracting([
+        "AdGuard Cookie Notices", "wBlock Ad and Tracking Hosts",
+    ])
+
+    /// Was built into wBlock 5 while any list was on, so upgrades turn it on
+    /// whenever another list is on (#994).
+    static let adTrackingHostsURL = URL(
+        string: "https://raw.githubusercontent.com/0xCUB3/wBlock/main/filters/ad-tracking-hosts.txt"
+    )!
 
     private static let stevoAIBlocklistURL = URL(
         string: "https://raw.githubusercontent.com/Stevoisiak/Stevos-AI-Blocklist/refs/heads/main/GenAI-Blocklist.txt"
@@ -306,6 +316,11 @@ class FilterListLoader {
                         "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/3_optimized.txt"
                 )!, category: FilterListCategory.privacy, isSelected: true,
                 description: "The most comprehensive list of various online counters and web analytics tools. Use this filter if you do not want your actions on the Internet to be tracked."),
+            FilterList(
+                id: UUID(), name: "wBlock Ad and Tracking Hosts",
+                url: Self.adTrackingHostsURL, category: FilterListCategory.privacy, isSelected: true,
+                description: "Blocks ad and tracking hosts that the other lists only block in part.",
+                trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "HaGeZi Referral Allowlist",
                 url: URL(
