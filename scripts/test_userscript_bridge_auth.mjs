@@ -1029,7 +1029,7 @@ const pbPage = await popupBlockerSandbox('https://ads.test/page');
 check('Popup Blocker runs in the page with only its list snapshot', pbPage.wrapper.includes('__popupHooks')
   && pbPage.wrapper.includes('other.com') && !pbPage.wrapper.includes('must-not-reach-page'));
 const pbOwnNameOnly = await popupBlockerSandbox('https://ads.test/page', { ...popupBlocker, sourceURL:'https://evil.test/popupblocker.user.js', name:'AdGuard Popup Blocker' });
-const pbBeta = await popupBlockerSandbox('https://ads.test/page', { ...popupBlocker, sourceURL:'https://userscripts.adtidy.org/beta/popup-blocker/2.5/popupblocker.user.js' });
+const pbBeta = await popupBlockerSandbox('https://ads.test/page', { ...popupBlocker, id:'official-popup-blocker-beta', sourceURL:'https://userscripts.adtidy.org/beta/popup-blocker/2.5/popupblocker.user.js' });
 check('the Popup Blocker beta also runs in the page', pbBeta.wrapper.includes('__popupHooks'));
 check('a lookalike Popup Blocker stays isolated', pbOwnNameOnly.wrapper === '' && pbOwnNameOnly.sandbox.__popupHooks === true);
 vm.runInContext(`__fire({type:'wblock:popup-blocker-storage',key:'allowed',rawValue:JSON.stringify('evil-ads.test,ads.test')})`, pbPage.sandbox);
