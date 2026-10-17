@@ -15,7 +15,8 @@ struct FilterFallbacksButton: View {
         } label: {
             Label("Fallbacks", systemImage: "point.topleft.down.curvedto.point.bottomright.up")
         }
-        .buttonStyle(.borderless)
+        .buttonStyle(.bordered)
+        .controlSize(.small)
         .sheet(isPresented: $showingFallbacks) {
             FilterFallbacksView(filter: filter, urls: FilterListURLMirror.fallbackURLs(for: filter.url))
                 .infoSheetPresentationCompat()

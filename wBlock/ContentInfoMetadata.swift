@@ -94,7 +94,8 @@ struct CopyURLButton: View {
                     .accessibilityHidden(copied)
             }
         }
-        .buttonStyle(.borderless)
+        .buttonStyle(.bordered)
+        .controlSize(.small)
         .animation(.easeInOut(duration: 0.15), value: copied)
         .accessibilityLabel(copied ? Text("Copied") : Text("Copy URL"))
     }
