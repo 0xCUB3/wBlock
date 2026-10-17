@@ -295,6 +295,7 @@ final class CloudSyncManager: ObservableObject {
 
         if !enabled {
             deferredSyncTrigger = nil
+            saveSyncBase(nil)
             return
         }
 
@@ -524,6 +525,7 @@ final class CloudSyncManager: ObservableObject {
                 // An account change (sign-in/sign-out/switch) can flip which records are
                 // reachable, so bypass the AppActive throttle and reconcile promptly.
                 self.lastAutomaticSyncAt = 0
+                self.saveSyncBase(nil)
                 Task { @MainActor [weak self] in
                     guard let self else { return }
                     await self.syncNow(trigger: "AccountChanged")
@@ -643,6 +645,18 @@ final class CloudSyncManager: ObservableObject {
             var record = try await fetchRecord() ?? CKRecord(recordType: recordType, recordID: recordID)
 
             if let remotePayload = try? decodePayload(from: record) {
+                // Another device changed iCloud since this one last agreed with it. Merge that
+                // first; the apply schedules the upload of the merged state.
+                if let base = loadSyncBase(), remotePayload.contentHash != base.contentHash {
+                    setStatus(.downloading)
+                    try await applyRemotePayload(
+                        remotePayload,
+                        trigger: "\(trigger)-RemoteChanged",
+                        localPayloadBaseline: base,
+                        localMutationBaseline: localMutationRevisionSnapshot()
+                    )
+                    return
+                }
                 refreshSharedUserScriptEnabledStates(from: remotePayload)
                 await reconcileMissingDefinitionsIfNeeded(from: remotePayload)
             }
@@ -657,6 +671,7 @@ final class CloudSyncManager: ObservableObject {
             acknowledgeRemoteScriptAdditions(additionsForUpload, syncedPayload: savedPayload)
             markDisplayOrdersSynced(savedPayload)
 
+            saveSyncBase(savedPayload)
             defaults.set(savedPayload.contentHash, forKey: Keys.lastUploadedHash)
             defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastUploadedAt)
             defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastSyncAt)
@@ -718,7 +733,14 @@ final class CloudSyncManager: ObservableObject {
                 markUpToDate(from: localPayload, acknowledging: additionsAtStart)
                 return
             }
-            guard (remoteUpdatedAt ?? remotePayload.updatedAt) > localUpdatedAt else {
+            let base = loadSyncBase()
+            let direction = CloudSyncDirection.resolve(
+                remoteHash: remotePayload.contentHash,
+                baseHash: base?.contentHash,
+                localUpdatedAt: localUpdatedAt,
+                remoteUpdatedAt: remoteUpdatedAt ?? remotePayload.updatedAt
+            )
+            guard direction == .download else {
                 setStatus(.uploading)
                 await uploadLatestPayload(trigger: "\(trigger)-LocalNewer", withinSyncSession: true)
                 return
@@ -727,7 +749,7 @@ final class CloudSyncManager: ObservableObject {
             try await applyRemotePayload(
                 remotePayload,
                 trigger: trigger,
-                localPayloadBaseline: localPayload,
+                localPayloadBaseline: base ?? localPayload,
                 localMutationBaseline: localMutationBaseline
             )
         } catch {
@@ -922,6 +944,9 @@ final class CloudSyncManager: ObservableObject {
             defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastSyncAt)
             refreshStatusFromDefaults()
         }
+        // Remote is merged in even when local kept its own edits, so the next upload
+        // carries those edits on top of it.
+        saveSyncBase(payload)
 
         // A local userscript that was never synced, or a local toggle made during apply, needs
         // a follow-up upload after the current sync becomes idle.
@@ -1048,7 +1073,11 @@ final class CloudSyncManager: ObservableObject {
         mergeDeletedCustomListURLs(mergedDeleted.subtracting(currentDeleted))
 
         let (desiredSelected, knownURLs) = CloudSyncCustomFilterReconciler.builtInSelection(
-            selectedURLs: filters.selectedURLs,
+            selectedURLs: Self.mergeStringSet(
+                local: currentFilters.selectedURLs,
+                baseline: baselineFilters.selectedURLs,
+                remote: filters.selectedURLs
+            ),
             knownURLs: filters.knownURLs,
             customURLs: Set(filters.customLists.map(\.url)),
             canonicalize: FilterListLoader.canonicalFilterURLString
@@ -2200,6 +2229,7 @@ final class CloudSyncManager: ObservableObject {
     /// Records that local and remote match: stamps lastSyncAt, marks every current local
     /// userscript name as known-synced, and surfaces the up-to-date status.
     private func markUpToDate(from localPayload: SyncPayload, acknowledging additions: [String: String] = [:]) {
+        saveSyncBase(localPayload)
         acknowledgeRemoteScriptAdditions(additions, syncedPayload: localPayload)
         markDisplayOrdersSynced(localPayload)
         setLastSyncedLocalUserScriptNames(localUserScriptNames(in: localPayload))
@@ -2252,6 +2282,35 @@ final class CloudSyncManager: ObservableObject {
         static let lastSyncedLocalUserScriptIdentities = "cloudSyncLastSyncedLocalUserScriptIdentities"
         static let deletedRemoteUserScriptURLs = "cloudSyncDeletedRemoteUserScriptURLs"
         static let pendingRemoteScriptAdditions = "cloudSyncPendingRemoteScriptAdditions"
+    }
+
+    // MARK: - Sync base
+
+    /// The payload this device and iCloud last agreed on. It is the common ancestor that
+    /// tells a local edit apart from a device that is only behind.
+    private static var syncBaseURL: URL? {
+        guard let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+            return nil
+        }
+        let directory = base.appendingPathComponent("wBlock", isDirectory: true)
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        return directory.appendingPathComponent("cloud-sync-base.json")
+    }
+
+    private func loadSyncBase() -> SyncPayload? {
+        guard let url = Self.syncBaseURL, let data = try? Data(contentsOf: url) else { return nil }
+        return try? JSONDecoder().decode(SyncPayload.self, from: data)
+    }
+
+    private func saveSyncBase(_ payload: SyncPayload?) {
+        guard let url = Self.syncBaseURL else { return }
+        guard let payload, !payload.contentHash.isEmpty else {
+            try? FileManager.default.removeItem(at: url)
+            return
+        }
+        guard loadSyncBase()?.contentHash != payload.contentHash,
+              let data = try? sortedJSONEncoder.encode(payload) else { return }
+        try? data.write(to: url, options: .atomic)
     }
 
     private func loadSharedUserScriptEnabledStates() -> [String: Bool] {

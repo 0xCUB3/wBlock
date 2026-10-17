@@ -187,6 +187,8 @@ compile_direct_test cloud-timestamp-formatter \
   "$TMP/localization-formatting-shim.swift" \
   wBlock/CloudSyncTimestampFormatter.swift scripts/test_cloud_sync_timestamp_formatter.swift
 compile_core_test cloud-upload-coordinator scripts/test_cloud_sync_upload_coordinator.swift
+compile_direct_test cloud-sync-direction \
+  wBlock/CloudSyncDirection.swift scripts/test_cloud_sync_direction.swift
 compile_core_test dark-reader-appearance scripts/test_dark_reader_appearance_preference.swift
 compile_core_test tube-cleaner-dearrow scripts/test_tube_cleaner_dearrow_preference.swift
 compile_core_test sponsorblock-settings-transfer scripts/test_sponsorblock_settings_transfer.swift
