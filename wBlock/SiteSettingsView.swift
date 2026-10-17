@@ -152,16 +152,7 @@ struct SiteSettingsView: View {
                     .padding(12)
                     .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
 
-                Button {
-                    addDomain()
-                } label: {
-                    Image(systemName: isAddingDomain ? "hourglass" : "plus.circle.fill")
-                        .font(.title2)
-                        .foregroundStyle(addableDomain == nil ? AnyShapeStyle(.secondary) : AnyShapeStyle(Color.accentColor))
-                }
-                .buttonStyle(.plain)
-                .noFocusRingCompat()
-                .disabled(addableDomain == nil || isAddingDomain)
+                AddItemButton(canAdd: addableDomain != nil, isBusy: isAddingDomain, action: addDomain)
             }
 
             Text("Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches. Each site includes its subdomains.")
