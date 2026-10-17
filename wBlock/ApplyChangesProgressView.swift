@@ -271,10 +271,15 @@ struct ApplyChangesProgressView: View {
             #if os(macOS)
             Spacer()
             #endif
+            // An auto-update run can't be stopped from here; Close only hides it.
             Button {
-                filterManager.cancelInFlightApply()
+                if filterManager.isApplyInFlight {
+                    filterManager.cancelInFlightApply()
+                } else {
+                    filterManager.showingApplyProgressSheet = false
+                }
             } label: {
-                Text(String(localized: "Cancel"))
+                Text(filterManager.isApplyInFlight ? String(localized: "Cancel") : String(localized: "Close"))
                     .sheetActionWidth()
             }
             .keyboardShortcut(.cancelAction)

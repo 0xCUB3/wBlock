@@ -74,6 +74,11 @@ class AppFilterManager: ObservableObject {
 
     /// Ensures only one apply/update pipeline runs at a time across entry points.
     var isApplyInFlight = false
+    /// An auto-update run in this process (launch or foreground catch-up). It
+    /// applies on its own, so the toolbar spins and the sheet mirrors its stages.
+    @Published private(set) var isAutoUpdateRunning = false
+    /// False when the run started while the sheet showed something else.
+    private var autoUpdateOwnsProgressSheet = false
     var exclusiveApplyTask: Task<Void, Never>?
     /// Set only after the current apply has reached a successful terminal state.
     var lastApplySucceeded = false
@@ -617,6 +622,7 @@ class AppFilterManager: ObservableObject {
 
     func setup() {
         filterUpdater.filterListManager = self
+        SharedAutoUpdateManager.runProgressHandler = { [weak self] in self?.showAutoUpdateProgress($0) }
 
         // Load filter lists from protobuf data manager. Keep the in-memory
         // boundary unique even when older or concurrent data supplies repeats.
@@ -843,7 +849,7 @@ class AppFilterManager: ObservableObject {
     }
 
     func applyOrCheckForUpdates() {
-        guard !isLoading, !isApplyInFlight else { return }
+        guard !isLoading, !isApplyInFlight, !isAutoUpdateRunning else { return }
         isLoading = true
         statusDescription = LocalizedStrings.text("Checking for updates...", comment: "Update check status")
         Task {
@@ -871,12 +877,44 @@ class AppFilterManager: ObservableObject {
     /// A background apply (iCloud sync, catch-up) only spins the toolbar
     /// button; tapping it opens the sheet a foreground apply shows.
     func showBackgroundApplyProgress() {
-        guard isApplyInFlight else { return }
+        guard isApplyInFlight || (isAutoUpdateRunning && autoUpdateOwnsProgressSheet) else { return }
         showingApplyProgressSheet = true
     }
 
+    private func showAutoUpdateProgress(_ progress: SharedAutoUpdateManager.RunProgress) {
+        let sheet = applyProgressViewModel
+        if progress == .finished {
+            guard isAutoUpdateRunning else { return }
+            isAutoUpdateRunning = false
+            if autoUpdateOwnsProgressSheet {
+                sheet.updateIsLoading(false)
+                showingApplyProgressSheet = false
+            }
+            return
+        }
+        if !isAutoUpdateRunning {
+            isAutoUpdateRunning = true
+            autoUpdateOwnsProgressSheet = !showingApplyProgressSheet
+            if autoUpdateOwnsProgressSheet { sheet.beginProgressRun() }
+        }
+        guard autoUpdateOwnsProgressSheet else { return }
+        switch progress {
+        case .checking(let done, let total):
+            sheet.updateFiltersChecked(done, total: total)
+        case .converting(let done, let total):
+            sheet.updatePhaseCompletion(scripts: true, reading: true)
+            sheet.updateProcessedCount(done, total: total)
+            sheet.updateConvertingDone(done)
+        case .reloading(let done, _):
+            sheet.updatePhaseCompletion(converting: true)
+            sheet.updateReloadingDone(done)
+        case .finished:
+            break
+        }
+    }
+
     func forceApplyChanges(checkForUpdates: Bool = false) {
-        guard !isLoading, !isApplyInFlight else { return }
+        guard !isLoading, !isApplyInFlight, !isAutoUpdateRunning else { return }
         clearFailedUpgradeRebuildSignature()
         isLoading = true
         showingNoUpdatesAlert = false

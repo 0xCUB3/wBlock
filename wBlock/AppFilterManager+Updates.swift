@@ -49,6 +49,8 @@ extension AppFilterManager {
         scope: UpdateCheckScope = .all,
         presentation: UpdateCheckPresentation = .blocking
     ) async {
+        // A running auto-update is already checking and applying the same lists.
+        guard !isAutoUpdateRunning else { return }
         if presentation == .refresh {
             suppressBlockingOverlay = true
         }

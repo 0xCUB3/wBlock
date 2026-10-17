@@ -237,6 +237,21 @@ public actor SharedAutoUpdateManager {
         foregroundApplyInProgress = active
     }
 
+    /// Stage of a run in this process, so the app can show a run it did not start.
+    public enum RunProgress: Sendable, Equatable {
+        case checking(done: Int, total: Int)
+        case converting(done: Int, total: Int)
+        case reloading(done: Int, total: Int)
+        case finished
+    }
+
+    /// Set by the app; helper processes leave it nil.
+    @MainActor public static var runProgressHandler: ((RunProgress) -> Void)?
+
+    private func reportRunProgress(_ progress: RunProgress) async {
+        await MainActor.run { Self.runProgressHandler?(progress) }
+    }
+
     private let sharedAutoUpdateLogFilename = "auto_update.log"
 
     // Reused for shared-log timestamps; safe because all access is actor-isolated.
@@ -835,11 +850,13 @@ public actor SharedAutoUpdateManager {
 
         let startTimestamp = Date().timeIntervalSince1970
         await ProtobufDataManager.shared.setAutoUpdateIsRunning(true)
+        await reportRunProgress(.checking(done: 0, total: 0))
         invalidateStatusCache()
         os_log("Auto-update started at %.0f (trigger: %{public}@, forced: %d)", log: log, type: .info, startTimestamp, trigger, shouldForce)
 
         func finishStartedRun(_ outcome: AutoUpdateRunOutcome) async -> AutoUpdateRunOutcome {
             await ProtobufDataManager.shared.setAutoUpdateIsRunning(false)
+            await reportRunProgress(.finished)
             let didPersistCleanup = await ProtobufDataManager.shared.saveDataImmediately()
             invalidateStatusCache()
             let endTimestamp = Date().timeIntervalSince1970
@@ -1517,10 +1534,14 @@ public actor SharedAutoUpdateManager {
         var hadErrors = false
         var errorCount = 0
         var validatorUpdates: [String: (etag: String?, lastModified: String?)] = [:]
+        var checkedCount = 0
+        await reportRunProgress(.checking(done: 0, total: remoteFilters.count))
 
         await boundedConcurrentForEach(remoteFilters, operation: { filter in
             await self.fetchIfUpdated(filter, containerURL: containerURL)
         }, onResult: { outcome in
+            checkedCount += 1
+            await self.reportRunProgress(.checking(done: checkedCount, total: remoteFilters.count))
             switch outcome {
             case .noChange:
                 break
@@ -2146,7 +2167,12 @@ public actor SharedAutoUpdateManager {
                 isCancelled: { Task.isCancelled }
             )
         }
-        let compiled = await Self.compileTargets(requests)
+        var convertedCount = 0
+        await reportRunProgress(.converting(done: 0, total: requests.count))
+        let compiled = await Self.compileTargets(requests) { _ in
+            convertedCount += 1
+            await self.reportRunProgress(.converting(done: convertedCount, total: requests.count))
+        }
         let results = Dictionary(uniqueKeysWithValues: compiled.map { ($0.target.bundleIdentifier, $0) })
 
         for target in targets {
@@ -2169,6 +2195,7 @@ public actor SharedAutoUpdateManager {
         var reloadResults: [String: ContentBlockerService.ReloadAttemptResult] = [:]
         if reloadContentBlockers {
             let counts = results.mapValues { $0.outcome?.safariRulesCount ?? 0 }
+            await reportRunProgress(.reloading(done: 0, total: targets.count))
             for target in ContentBlockerReloadPolicy.orderedTargets(targets, ruleCounts: counts) {
                 try Task.checkCancellation()
                 try checkBudget(
@@ -2182,6 +2209,7 @@ public actor SharedAutoUpdateManager {
                     identifier: target.bundleIdentifier, maxRetries: 6,
                     groupIdentifier: GroupIdentifier.shared.value, targetRulesFilename: target.rulesFilename
                 )
+                await reportRunProgress(.reloading(done: reloadResults.count, total: targets.count))
             }
         }
         var metrics: [RebuildTargetMetrics] = []

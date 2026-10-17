@@ -314,7 +314,7 @@ struct ContentView: View {
 
     private var applyChangesToolbarButton: some View {
         ApplyChangesHoldButton(
-            isDisabled: filterManager.isLoading,
+            isDisabled: filterManager.isLoading || filterManager.isAutoUpdateRunning,
             hasPendingChanges: hasPendingChanges,
             onTap: applyPendingChanges,
             onBusyTap: filterManager.showBackgroundApplyProgress,
