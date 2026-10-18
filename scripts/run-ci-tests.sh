@@ -43,7 +43,7 @@ xcodebuild -project wBlock.xcodeproj \
   -configuration Debug \
   -destination 'generic/platform=macOS' \
   -derivedDataPath "$CORE_DERIVED_DATA" \
-  "${signing_args[@]}" \
+  ${signing_args[@]+"${signing_args[@]}"} \
   build > "$TMP/core-build.log" 2>&1 &
 core_build=$!
 CORE_PRODUCTS="$CORE_DERIVED_DATA/Build/Products/Debug"

@@ -34,7 +34,7 @@ else
   if [[ "${CI:-}" == "true" ]]; then signing_args+=(CODE_SIGNING_ALLOWED=NO); fi
   xcodebuild -project wBlock.xcodeproj -scheme wBlockCoreService \
     -destination 'platform=macOS' -derivedDataPath "$DERIVED" \
-    "${signing_args[@]}" build >"$LOG" 2>&1 || { cat "$LOG"; exit 1; }
+    ${signing_args[@]+"${signing_args[@]}"} build >"$LOG" 2>&1 || { cat "$LOG"; exit 1; }
 fi
 
 swiftc -D DEBUG -framework WebKit -framework CryptoKit \
