@@ -2122,9 +2122,7 @@ struct AddUserScriptView: View {
         // Userstyles (.user.css / .css and offline compiler formats)
         types.append(UTType(filenameExtension: "css") ?? .plainText)
         types.append(UTType(filenameExtension: "less") ?? .plainText)
-        for fileExtension in ["sass", "scss", "styl", "pcss"] {
-            types.append(UTType(filenameExtension: fileExtension) ?? .plainText)
-        }
+        types.append(UTType(filenameExtension: "styl") ?? .plainText)
 
         let userCssTypes = UTType.types(tag: "user.css", tagClass: .filenameExtension, conformingTo: nil)
         if !userCssTypes.isEmpty {
@@ -2282,7 +2280,7 @@ struct AddUserScriptView: View {
 
         let urls = UserScriptURLSupport.parseRemoteURLs(from: trimmed)
         guard !urls.isEmpty else {
-            validationState = .invalid(String(localized: "Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss"))
+            validationState = .invalid(String(localized: "Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, or .styl"))
             return
         }
 

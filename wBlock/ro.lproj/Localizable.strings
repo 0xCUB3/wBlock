@@ -478,7 +478,7 @@
 "Process completed with reload issues" = "Proces finalizat cu probleme de reîncărcare";
 "Progress" = "Progres";
 "Protects against suspicious URLs, phishing sites, and unwanted software." = "Protejează împotriva adreselor URL suspecte, a site-urilor de phishing și a software-ului nedorit.";
-"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = "Furnizează un link http:// sau https:// valid, care se termină în .js, .user.js, .user.css, .less, .sass, .scss, .styl sau .pcss";
+"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, or .styl" = "Furnizează un link http:// sau https:// valid, care se termină în .js, .user.js, .user.css, .less sau .styl";
 "Psst! You forgot something!" = "Psst! Ai uitat ceva!";
 "Quit Without Applying" = "Ieși fără a aplica";
 "Reading Files" = "Se citesc fișierele";
@@ -800,7 +800,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "Pauza blocării este activă cât timp orice componentă selectată este pusă pe pauză. Reluarea reactivează toate componentele.";
 
 /* Userstyle compiler diagnostics */
-"Choose a .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss file." = "Alege un fișier .user.js, .js, .user.css, .less, .sass, .scss, .styl sau .pcss.";
+"Choose a .user.js, .js, .user.css, .less, or .styl file." = "Alege un fișier .user.js, .js, .user.css, .less sau .styl.";
 "Couldn't read the selected file." = "Fișierul selectat nu a putut fi citit.";
 "The file is empty." = "Fișierul este gol.";
 "Not a userscript or userstyle: missing metadata block." = "Nu este un script de utilizator sau un stil de utilizator: lipsește blocul de metadate.";

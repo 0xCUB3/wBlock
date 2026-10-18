@@ -58,7 +58,7 @@ wBlock does not collect user data. The rules viewer provides access to compiled 
 ### Userscripts and userstyles
 
 - A Greasemonkey-compatible engine supporting `GM_*` and `GM.*` APIs. `GM_xmlhttpRequest` is restricted to hosts declared in a script's `@connect` metadata.
-- UserCSS themes (`.user.css`) with Less, Sass, and Stylus support. See [docs/USERSTYLES.md](docs/USERSTYLES.md).
+- UserCSS themes (`.user.css`) with Less and Stylus support. See [docs/USERSTYLES.md](docs/USERSTYLES.md).
 - A built-in catalog containing Tube Cleaner, Player Cleaner, DeArrow, Dark Reader, Return YouTube Dislike, Bypass Paywalls Clean, AdGuard Extra, AdGuard Popup Blocker, and TwitchAdSolutions. Catalog scripts are disabled by default except tinyShield, which handles anti-adblock checks.
 
 ### Native video controls

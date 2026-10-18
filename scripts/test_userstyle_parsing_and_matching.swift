@@ -7,9 +7,7 @@ struct UserStyleParsingAndMatchingTests {
 #if DEBUG
         let resources = [
             ("less.min", "WBLOCK_LESS_BUNDLE"),
-            ("wblock-sass-1.104.0.min", "WBLOCK_SASS_BUNDLE"),
-            ("stylus-jsc", "WBLOCK_STYLUS_BUNDLE"),
-            ("wblock-postcss-nested", "WBLOCK_POSTCSS_BUNDLE")
+            ("stylus-jsc", "WBLOCK_STYLUS_BUNDLE")
         ]
         var overrides: [String: String] = [:]
         for (name, variable) in resources {
@@ -363,144 +361,6 @@ struct UserStyleParsingAndMatchingTests {
         )
         expect(UserStyleSupport.effectiveCSS(forContent: malformed, url: "https://example.com/") == nil, "failed Less must not inject CSS")
 
-        let malformedSCSSWithVariable = """
-        /* ==UserStyle==
-        @name Broken SCSS variable
-        @preprocessor scss
-        @var color accent "Accent" red
-        ==/UserStyle== */
-        .card { color: #; }
-        """
-        let variableDiagnostic = UserStyleSupport.parsed(from: malformedSCSSWithVariable)?.compilationError ?? ""
-        expect(variableDiagnostic.contains("line 6"),
-               "Sass variable prelude must not shift editor diagnostics: \(variableDiagnostic)")
-        expect(!variableDiagnostic.contains("7 │"),
-               "Sass diagnostics must not retain a contradictory generated-source location")
-
-        let malformedSCSSAfterPrefix = """
-        .before { color: red; }
-        /* ==UserStyle==
-        @name Broken SCSS after prefix
-        @preprocessor scss
-        ==/UserStyle== */
-        .after { color: #; }
-        """
-        let prefixDiagnostic = UserStyleSupport.parsed(from: malformedSCSSAfterPrefix)?.compilationError ?? ""
-        expect(prefixDiagnostic.contains("line 6"),
-               "non-leading metadata must not shift later diagnostics: \(prefixDiagnostic)")
-
-        let malformedScopedSCSS = """
-        /* ==UserStyle==
-        @name Broken SCSS document
-        @preprocessor scss
-        ==/UserStyle== */
-        @-moz-document domain("example.com"),
-          url-prefix("https://app.example.net/") {
-          .card { color: #; }
-        }
-        """
-        let scopedDiagnostic = UserStyleSupport.parsed(from: malformedScopedSCSS)?.compilationError ?? ""
-        expect(scopedDiagnostic.contains("line 7"),
-               "multiline document rewriting must preserve editor diagnostics: \(scopedDiagnostic)")
-
-        let sass = """
-        /* ==UserStyle==
-        @name Sass
-        @preprocessor sass
-        @var color accent "Accent" red
-        ==/UserStyle== */
-        .card
-          color: $accent
-          .child
-            display: block
-        """
-        guard let sassParsed = UserStyleSupport.parsed(from: sass) else { return fail("Sass metadata should parse") }
-        expect(sassParsed.isPreprocessorSupported && sassParsed.isCompiled, "Sass should compile")
-        let sassCSS = UserStyleSupport.effectiveCSS(forContent: sass, url: "https://example.com/") ?? ""
-        expect(sassCSS.contains(".card .child") && sassCSS.contains("color: red"), "Sass variables and nesting should render")
-
-        let scss = """
-        /* ==UserStyle==
-        @name SCSS
-        @preprocessor scss
-        ==/UserStyle== */
-        .card { .child { color: blue; } }
-        """
-        guard let scssParsed = UserStyleSupport.parsed(from: scss) else { return fail("SCSS metadata should parse") }
-        expect(scssParsed.isCompiled, "SCSS should compile")
-        expect((UserStyleSupport.effectiveCSS(forContent: scss, url: "https://example.com/") ?? "").contains(".card .child"), "SCSS nesting should render")
-
-        let scopedSCSS = """
-        /* ==UserStyle==
-        @name Scoped SCSS
-        @preprocessor scss
-        ==/UserStyle== */
-        @media all { .global { color: black; } }
-        @-moz-document domain("example.com"),
-          url-prefix("https://app.example.net/") {
-            .scoped { .child { color: red; } }
-        }
-        @-moz-document domain("other.example") {
-            .other { color: blue; }
-        }
-        """
-        guard let scopedParsed = UserStyleSupport.parsed(from: scopedSCSS) else {
-            return fail("Scoped SCSS metadata should parse")
-        }
-        expect(scopedParsed.isCompiled, "multiline scoped SCSS should compile")
-        let compiledScoped = scopedParsed.compiledArtifact?.body ?? ""
-        expect(compiledScoped.contains("@media all"), "ordinary media rules must remain unchanged")
-        expect(compiledScoped.contains("@-moz-document domain(\"example.com\"),"),
-               "multiline document conditions must be restored")
-        expect(!compiledScoped.contains("__wblock_document_"), "Sass markers must not escape compilation")
-        expect(!compiledScoped.contains("{ {"), "restored document rules must contain one opening brace")
-        let matchingScoped = UserStyleSupport.effectiveCSS(
-            forContent: scopedSCSS, url: "https://example.com/page"
-        ) ?? ""
-        expect(matchingScoped.contains(".global") && matchingScoped.contains(".scoped .child"),
-               "matching SCSS should include global and selected scoped CSS")
-        expect(!matchingScoped.contains(".other"), "nonmatching SCSS sections must stay excluded")
-        let unrelatedScoped = UserStyleSupport.effectiveCSS(
-            forContent: scopedSCSS, url: "https://unrelated.invalid/"
-        ) ?? ""
-        expect(unrelatedScoped.contains(".global"), "ordinary media CSS should remain global")
-        expect(!unrelatedScoped.contains(".scoped") && !unrelatedScoped.contains(".other"),
-               "scoped SCSS must not leak to unrelated URLs")
-
-        let scopedSass = """
-        /* ==UserStyle==
-        @name Scoped Sass
-        @preprocessor sass
-        ==/UserStyle== */
-        @-moz-document domain("example.com"),
-          url-prefix("https://app.example.net/")
-          .sass-scope
-            color: red
-        """
-        guard let scopedSassParsed = UserStyleSupport.parsed(from: scopedSass) else {
-            return fail("Scoped Sass metadata should parse")
-        }
-        expect(scopedSassParsed.isCompiled,
-               "multiline scoped Sass should compile: \(scopedSassParsed.compilationError ?? "missing diagnostic")")
-        let matchingSass = UserStyleSupport.effectiveCSS(
-            forContent: scopedSass, url: "https://example.com/page"
-        ) ?? ""
-        expect(matchingSass.contains(".sass-scope"),
-               "matching multiline Sass condition should inject")
-        expect(UserStyleSupport.effectiveCSS(
-            forContent: scopedSass, url: "https://unrelated.invalid/"
-        ) == nil, "multiline Sass condition must not leak")
-
-        let rejectedSassImport = """
-        /* ==UserStyle==
-        @name Sass import
-        @preprocessor scss
-        ==/UserStyle== */
-        @use "remote";
-        """
-        expect(UserStyleSupport.parsed(from: rejectedSassImport)?.isCompiled == false,
-               "Sass module imports must be rejected offline")
-
         let stylus = """
         /* ==UserStyle==
         @name Stylus
@@ -581,36 +441,9 @@ struct UserStyleParsingAndMatchingTests {
         expect(UserStyleSupport.parsed(from: rejectedStylusImport)?.isCompiled == false,
                "Stylus imports must be rejected offline")
 
-        let postcss = """
-        /* ==UserStyle==
-        @name PostCSS
-        @preprocessor postcss
-        @var color accent "Accent" red
-        ==/UserStyle== */
-        .card { .child { color: blue; } }
-        """
-        guard let postcssParsed = UserStyleSupport.parsed(from: postcss) else { return fail("PostCSS metadata should parse") }
-        expect(postcssParsed.isCompiled, "PostCSS should compile")
-        let postcssCSS = UserStyleSupport.effectiveCSS(forContent: postcss, url: "https://example.com/") ?? ""
-        expect(postcssCSS.hasPrefix(":root {"), "PostCSS should receive CSS variable prelude after compilation")
-        expect(postcssCSS.contains(".card .child"), "PostCSS nesting should render")
-
-        let malformedPostCSS = """
-        /* ==UserStyle==
-        @name Broken PostCSS
-        @preprocessor postcss
-        ==/UserStyle== */
-        .broken { color: red;
-        """
-        expect(UserStyleSupport.parsed(from: malformedPostCSS)?.isCompiled == false,
-               "malformed PostCSS must fail compilation")
-
         let revisions = [
             "less": UserStylePreprocessorService.lessRevision,
-            "sass": UserStylePreprocessorService.sassRevision,
-            "scss": UserStylePreprocessorService.sassRevision,
-            "stylus": UserStylePreprocessorService.stylusRevision,
-            "postcss": UserStylePreprocessorService.postCSSRevision
+            "stylus": UserStylePreprocessorService.stylusRevision
         ]
         for (preprocessor, revision) in revisions {
             expect(UserStylePreprocessorService.backend(for: preprocessor) != nil,
@@ -775,16 +608,13 @@ struct UserStyleParsingAndMatchingTests {
             ".less query-value remote URLs should validate"
         )
         expect(
-            UserScriptURLSupport.validatedRemoteURL(from: "https://example.com/styles/dark.scss") != nil,
-            ".scss remote URLs should validate"
+            UserScriptURLSupport.validatedRemoteURL(from: "https://example.com/styles/dark.scss") == nil,
+            ".scss remote URLs should not validate"
         )
 
         let compilerExtensions = [
             "less": "less",
-            "sass": "sass",
-            "scss": "scss",
-            "styl": "stylus",
-            "pcss": "postcss"
+            "styl": "stylus"
         ]
         for (fileExtension, preprocessor) in compilerExtensions {
             let pathURL = URL(string: "https://example.com/styles/theme.\(fileExtension)")!

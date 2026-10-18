@@ -480,7 +480,7 @@
 "Process completed with reload issues" = "اكتملت العملية مع وجود مشكلات إعادة التحميل";
 "Progress" = "التقدم";
 "Protects against suspicious URLs, phishing sites, and unwanted software." = "يحمي من عناوين URL المشبوهة ومواقع التصيد والبرامج غير المرغوب فيها.";
-"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = "قدّم رابط http:// أو https:// صالحًا ينتهي بـ .js أو .user.js أو .user.css أو .less أو .sass أو .scss أو .styl أو .pcss";
+"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, or .styl" = "قدّم رابط http:// أو https:// صالحًا ينتهي بـ .js أو .user.js أو .user.css أو .less أو .styl";
 "Psst! You forgot something!" = "مهلًا! لقد نسيت شيئًا!";
 "Quit Without Applying" = "الخروج دون تطبيق";
 "Reading Files" = "جارٍ قراءة الملفات";
@@ -800,7 +800,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Beta userscripts and scripts that are still being evaluated or may change." = "سكربتات المستخدم التجريبية والسكربتات التي لا تزال قيد التقييم أو قد تتغير.";
 
 /* Userstyle compiler diagnostics */
-"Choose a .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss file." = "اختر ملفًا من نوع .user.js أو .js أو .user.css أو .less أو .sass أو .scss أو .styl أو .pcss.";
+"Choose a .user.js, .js, .user.css, .less, or .styl file." = "اختر ملفًا من نوع .user.js أو .js أو .user.css أو .less أو .styl.";
 "Couldn't read the selected file." = "تعذّرت قراءة الملف المحدد.";
 "The file is empty." = "الملف فارغ.";
 "Not a userscript or userstyle: missing metadata block." = "ليس سكربت مستخدم أو نمط مستخدم: كتلة البيانات الوصفية مفقودة.";

@@ -12,7 +12,7 @@
 //
 //  Supported preprocessors: none/"default" (variables become CSS custom
 //  properties), "uso" (textual /*[[name]]*/ substitution), and the bounded
-//  offline Less, Sass/SCSS, Stylus, and PostCSS backends.
+//  offline Less and Stylus backends.
 //
 
 import CryptoKit
@@ -48,9 +48,7 @@ public enum UserStyleSupport {
     public static func isUserStylePath(_ path: String) -> Bool {
         let lowercased = path.lowercased()
         return lowercased.hasSuffix(".user.css") || lowercased.hasSuffix(".css")
-            || lowercased.hasSuffix(".less") || lowercased.hasSuffix(".sass")
-            || lowercased.hasSuffix(".scss") || lowercased.hasSuffix(".styl")
-            || lowercased.hasSuffix(".pcss")
+            || lowercased.hasSuffix(".less") || lowercased.hasSuffix(".styl")
     }
 
     public static func isUserStyleURL(_ url: URL) -> Bool {
@@ -69,15 +67,12 @@ public enum UserStyleSupport {
     public static func expectedPreprocessor(forPath path: String) -> String? {
         let lowercased = path.lowercased()
         if lowercased.hasSuffix(".less") { return "less" }
-        if lowercased.hasSuffix(".sass") { return "sass" }
-        if lowercased.hasSuffix(".scss") { return "scss" }
         if lowercased.hasSuffix(".styl") { return "stylus" }
-        if lowercased.hasSuffix(".pcss") { return "postcss" }
         return nil
     }
 
     /// Preprocessors wBlock can apply natively or compile in the bounded offline
-    /// WebKit compiler host. PostCSS is the fixed nested-plugin backend only.
+    /// WebKit compiler host.
     public static func isPreprocessorSupported(_ preprocessor: String) -> Bool {
         let normalized = UserStylePreprocessorService.normalize(preprocessor)
         return normalized == "default" || normalized == "uso" || UserStylePreprocessorService.backend(for: normalized) != nil
@@ -447,7 +442,7 @@ public enum UserStyleSupport {
 
         let normalized = preprocessor.trimmingCharacters(in: .whitespaces).lowercased()
         if let backend = UserStylePreprocessorService.backend(for: normalized), backend.consumesVariables {
-            // Sass/SCSS, Stylus, and Less consumed metadata variables during compile.
+            // Stylus and Less consumed metadata variables during compile.
             return css
         }
         if normalized == "uso" {

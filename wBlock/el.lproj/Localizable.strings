@@ -480,7 +480,7 @@
 "Process completed with reload issues" = "Η διαδικασία ολοκληρώθηκε με προβλήματα επαναφόρτωσης";
 "Progress" = "Πρόοδος";
 "Protects against suspicious URLs, phishing sites, and unwanted software." = "Προστατεύει από ύποπτες διευθύνσεις URL, ιστότοπους ηλεκτρονικού ψαρέματος (phishing) και ανεπιθύμητο λογισμικό.";
-"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = "Δώστε έναν έγκυρο σύνδεσμο http:// ή https:// που τελειώνει σε .js, .user.js, .user.css, .less, .sass, .scss, .styl ή .pcss";
+"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, or .styl" = "Δώστε έναν έγκυρο σύνδεσμο http:// ή https:// που τελειώνει σε .js, .user.js, .user.css, .less ή .styl";
 "Psst! You forgot something!" = "Ψστ! Ξεχάσατε κάτι!";
 "Quit Without Applying" = "Έξοδος χωρίς εφαρμογή";
 "Reading Files" = "Ανάγνωση αρχείων";
@@ -800,7 +800,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Beta userscripts and scripts that are still being evaluated or may change." = "Beta κώδικες χρήστη και κώδικες που αξιολογούνται ακόμη ή ενδέχεται να αλλάξουν.";
 
 /* Userstyle compiler diagnostics */
-"Choose a .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss file." = "Επιλέξτε ένα αρχείο .user.js, .js, .user.css, .less, .sass, .scss, .styl ή .pcss.";
+"Choose a .user.js, .js, .user.css, .less, or .styl file." = "Επιλέξτε ένα αρχείο .user.js, .js, .user.css, .less ή .styl.";
 "Couldn't read the selected file." = "Δεν ήταν δυνατή η ανάγνωση του επιλεγμένου αρχείου.";
 "The file is empty." = "Το αρχείο είναι κενό.";
 "Not a userscript or userstyle: missing metadata block." = "Δεν είναι κώδικας χρήστη ή στυλ χρήστη: λείπει το μπλοκ μεταδεδομένων.";

@@ -478,7 +478,7 @@
 "Process completed with reload issues" = "İşlem, yeniden yükleme sorunlarıyla tamamlandı";
 "Progress" = "İlerleme";
 "Protects against suspicious URLs, phishing sites, and unwanted software." = "Şüpheli URL'lere, kimlik avı sitelerine ve istenmeyen yazılımlara karşı korur.";
-"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = "Lütfen .js, .user.js, .user.css, .less, .sass, .scss, .styl veya .pcss ile biten geçerli bir http:// ya da https:// bağlantısı sağlayın";
+"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, or .styl" = "Lütfen .js, .user.js, .user.css, .less veya .styl ile biten geçerli bir http:// ya da https:// bağlantısı sağlayın";
 "Psst! You forgot something!" = "Psst! Bir şeyi unuttun!";
 "Quit Without Applying" = "Değişiklikleri uygulamadan çık";
 "Reading Files" = "Dosyalar okunuyor";
@@ -799,7 +799,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "Engellemeyi Duraklat özelliği, seçilen herhangi bir bileşen duraklatıldığı sürece etkindir. Sürdür seçeneği tüm bileşenleri eski haline getirir.";
 
 /* Userstyle compiler diagnostics */
-"Choose a .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss file." = "Bir .user.js, .js, .user.css, .less, .sass, .scss, .styl veya .pcss dosyası seçin.";
+"Choose a .user.js, .js, .user.css, .less, or .styl file." = "Bir .user.js, .js, .user.css, .less veya .styl dosyası seçin.";
 "Couldn't read the selected file." = "Seçilen dosya okunamadı.";
 "The file is empty." = "Dosya boş.";
 "Not a userscript or userstyle: missing metadata block." = "Kullanıcı betiği veya kullanıcı stili değil: Üst veri bloğu eksik.";

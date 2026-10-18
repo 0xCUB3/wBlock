@@ -478,7 +478,7 @@
 "Process completed with reload issues" = "Proceso completado con problemas de recarga";
 "Progress" = "Progreso";
 "Protects against suspicious URLs, phishing sites, and unwanted software." = "Protege contra URL sospechosas, sitios de phishing y software no deseado.";
-"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = "Proporciona un enlace http:// o https:// válido que termine en .js, .user.js, .user.css, .less, .sass, .scss, .styl o .pcss";
+"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, or .styl" = "Proporciona un enlace http:// o https:// válido que termine en .js, .user.js, .user.css, .less o .styl";
 "Psst! You forgot something!" = "¡Psst! ¡Olvidaste algo!";
 "Quit Without Applying" = "Salir sin aplicar";
 "Reading Files" = "Leyendo archivos";
@@ -800,7 +800,7 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "Pausar el bloqueo está activo mientras haya un componente seleccionado en pausa. Reanudar restaura todos los componentes.";
 
 /* Userstyle compiler diagnostics */
-"Choose a .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss file." = "Elige un archivo .user.js, .js, .user.css, .less, .sass, .scss, .styl o .pcss.";
+"Choose a .user.js, .js, .user.css, .less, or .styl file." = "Elige un archivo .user.js, .js, .user.css, .less o .styl.";
 "Couldn't read the selected file." = "No se pudo leer el archivo seleccionado.";
 "The file is empty." = "El archivo está vacío.";
 "Not a userscript or userstyle: missing metadata block." = "No es un script de usuario ni un estilo de usuario: falta el bloque de metadatos.";

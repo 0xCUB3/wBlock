@@ -480,7 +480,7 @@
 "Process completed with reload issues" = "프로세스가 완료되었지만 다시 로드에 문제가 있습니다";
 "Progress" = "진행 상황";
 "Protects against suspicious URLs, phishing sites, and unwanted software." = "의심스러운 URL, 피싱 사이트, 원치 않는 소프트웨어로부터 보호합니다.";
-"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = ".js, .user.js, .user.css, .less, .sass, .scss, .styl 또는 .pcss로 끝나는 유효한 http:// 또는 https:// 링크를 입력하세요";
+"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, or .styl" = ".js, .user.js, .user.css, .less 또는 .styl로 끝나는 유효한 http:// 또는 https:// 링크를 입력하세요";
 "Psst! You forgot something!" = "잠시만요! 잊으신 게 있네요!";
 "Quit Without Applying" = "변경 사항을 적용하지 않고 종료";
 "Reading Files" = "파일 읽는 중";
@@ -800,7 +800,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Beta userscripts and scripts that are still being evaluated or may change." = "아직 평가 중이거나 변경될 수 있는 베타 유저스크립트와 스크립트입니다.";
 
 /* Userstyle compiler diagnostics */
-"Choose a .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss file." = ".user.js, .js, .user.css, .less, .sass, .scss, .styl 또는 .pcss 파일을 선택하세요.";
+"Choose a .user.js, .js, .user.css, .less, or .styl file." = ".user.js, .js, .user.css, .less 또는 .styl 파일을 선택하세요.";
 "Couldn't read the selected file." = "선택한 파일을 읽을 수 없습니다.";
 "The file is empty." = "파일이 비어 있습니다.";
 "Not a userscript or userstyle: missing metadata block." = "유저스크립트 또는 유저스타일이 아닙니다. 메타데이터 블록이 없습니다.";

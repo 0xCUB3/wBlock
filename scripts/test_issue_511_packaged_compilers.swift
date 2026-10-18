@@ -27,10 +27,7 @@ let finished = DispatchSemaphore(value: 0)
 DispatchQueue.global().async {
     let cases: [(preprocessor: String, body: String, expected: String)] = [
         ("less", "@accent: red; .a { color: @accent; .b { display: block; } }", ".a .b"),
-        ("scss", "$accent: red; .a { color: $accent; .b { display: block; } }", ".a .b"),
-        ("sass", "$accent: red\n.a\n  color: $accent\n  .b\n    display: block", ".a .b"),
-        ("stylus", "accent = red\n.a\n  color accent\n  .b\n    filter invert(65%) saturate(277%)\n    color tint(#000, 50%)", "#7f7f7f"),
-        ("postcss", ".a { color: red; .b { display: block; } }", ".a .b")
+        ("stylus", "accent = red\n.a\n  color accent\n  .b\n    filter invert(65%) saturate(277%)\n    color tint(#000, 50%)", "#7f7f7f")
     ]
 
     for testCase in cases {
@@ -54,37 +51,13 @@ DispatchQueue.global().async {
                "\(testCase.preprocessor) output was \(css)")
     }
 
-    let scopedSCSS = """
-    /* ==UserStyle==
-    @name scoped
-    @preprocessor scss
-    ==/UserStyle== */
-    @media all { .global { color: black; } }
-    @-moz-document domain("example.com"),
-      url-prefix("https://app.example.net/") {
-        .scoped { .child { color: red; } }
-    }
-    """
-    let matching = UserStyleSupport.effectiveCSS(
-        forContent: scopedSCSS,
-        url: "https://example.com/page"
-    ) ?? ""
-    let unrelated = UserStyleSupport.effectiveCSS(
-        forContent: scopedSCSS,
-        url: "https://unrelated.invalid/"
-    ) ?? ""
-    expect(matching.contains(".global") && matching.contains(".scoped .child"),
-           "SCSS document scope did not match")
-    expect(unrelated.contains(".global") && !unrelated.contains(".scoped"),
-           "SCSS document scope leaked")
-
     let executableScript = """
     // ==UserScript==
     // @name Wrong classification
     // ==/UserScript==
     alert('must not import');
     """
-    for fileExtension in ["css", "scss"] {
+    for fileExtension in ["css", "styl"] {
         try! withTemporaryFile(extension: fileExtension, content: executableScript) { url in
             do {
                 _ = try UserScriptManager.stageUserScriptImport(fromLocalFile: url)
@@ -102,12 +75,12 @@ DispatchQueue.global().async {
     ==/UserStyle== */
     body { color: red; }
     """
-    try! withTemporaryFile(extension: "scss", content: mismatch) { url in
+    try! withTemporaryFile(extension: "styl", content: mismatch) { url in
         do {
             _ = try UserScriptManager.stageUserScriptImport(fromLocalFile: url)
-            fail("mismatched .scss metadata was accepted")
+            fail("mismatched .styl metadata was accepted")
         } catch UserScriptImportError.stylePreprocessorMismatch(let expected, let declared) {
-            expect(expected == "scss" && declared == "less", "wrong mismatch details")
+            expect(expected == "stylus" && declared == "less", "wrong mismatch details")
         }
     }
 

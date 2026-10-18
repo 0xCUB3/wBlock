@@ -174,11 +174,7 @@ public enum UserScriptURLSupport {
 
     private static func hasSupportedExtension(in path: String) -> Bool {
         let lowercased = path.lowercased()
-        return lowercased.hasSuffix(".user.js") || lowercased.hasSuffix(".js")
-            || lowercased.hasSuffix(".user.css") || lowercased.hasSuffix(".css")
-            || lowercased.hasSuffix(".less") || lowercased.hasSuffix(".sass")
-            || lowercased.hasSuffix(".scss") || lowercased.hasSuffix(".styl")
-            || lowercased.hasSuffix(".pcss")
+        return lowercased.hasSuffix(".js") || UserStyleSupport.isUserStylePath(lowercased)
     }
 }
 

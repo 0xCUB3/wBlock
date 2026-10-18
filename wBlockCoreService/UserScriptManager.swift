@@ -27,7 +27,7 @@ public enum UserScriptImportError: LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .unsupportedType:
-            return String(localized: "Choose a .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss file.", comment: "UserScript import file type error")
+            return String(localized: "Choose a .user.js, .js, .user.css, .less, or .styl file.", comment: "UserScript import file type error")
         case .unreadableFile:
             return String(localized: "Couldn't read the selected file.", comment: "UserScript import read error")
         case .emptyContent:
@@ -2379,11 +2379,7 @@ public class UserScriptManager: ObservableObject {
     nonisolated public static func stageUserScriptImport(fromLocalFile fileURL: URL) throws -> UserScript {
         let filename = fileURL.lastPathComponent
         let lowercased = filename.lowercased()
-        let isSupportedType = lowercased.hasSuffix(".user.js") || lowercased.hasSuffix(".js")
-            || lowercased.hasSuffix(".user.css") || lowercased.hasSuffix(".css")
-            || lowercased.hasSuffix(".less") || lowercased.hasSuffix(".sass")
-            || lowercased.hasSuffix(".scss") || lowercased.hasSuffix(".styl")
-            || lowercased.hasSuffix(".pcss")
+        let isSupportedType = lowercased.hasSuffix(".js") || UserStyleSupport.isUserStylePath(lowercased)
         guard isSupportedType else { throw UserScriptImportError.unsupportedType }
 
         let fileSize = try fileURL.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0

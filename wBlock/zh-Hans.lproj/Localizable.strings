@@ -478,7 +478,7 @@
 "Process completed with reload issues" = "流程已完成，但存在重新加载问题";
 "Progress" = "进度";
 "Protects against suspicious URLs, phishing sites, and unwanted software." = "防范可疑 URL、网络钓鱼站点和不需要的软件。";
-"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = "提供以 .js、.user.js、.user.css、.less、.sass、.scss、.styl 或 .pcss 结尾的有效 http:// 或 https:// 链接";
+"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, or .styl" = "提供以 .js、.user.js、.user.css、.less 或 .styl 结尾的有效 http:// 或 https:// 链接";
 "Psst! You forgot something!" = "嘘！你忘了点什么！";
 "Quit Without Applying" = "退出且不应用";
 "Reading Files" = "正在读取文件";
@@ -800,7 +800,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "只要有选定组件处于暂停状态，暂停拦截就会开启。恢复后将还原所有组件。";
 
 /* Userstyle compiler diagnostics */
-"Choose a .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss file." = "选择一个 .user.js、.js、.user.css、.less、.sass、.scss、.styl 或 .pcss 文件。";
+"Choose a .user.js, .js, .user.css, .less, or .styl file." = "选择一个 .user.js、.js、.user.css、.less 或 .styl 文件。";
 "Couldn't read the selected file." = "无法读取所选文件。";
 "The file is empty." = "文件为空。";
 "Not a userscript or userstyle: missing metadata block." = "不是用户脚本或用户样式：缺少元数据块。";

@@ -8,9 +8,9 @@ This guide covers macOS, but the same steps apply on iOS, iPadOS, and visionOS.
 
 Open wBlock, go to Userscripts in the sidebar, and click the add button (Add Userscript or Userstyle). The sheet has three tabs.
 
-- URL: paste a direct link to the style. The link has to end in `.user.css`, `.css`, `.less`, `.sass`, `.scss`, `.styl`, or `.pcss`. The Install link on a userstyles.world page is the right one. wBlock downloads the file, reads the metadata, and installs it.
+- URL: paste a direct link to the style. The link has to end in `.user.css`, `.css`, `.less`, or `.styl`. The Install link on a userstyles.world page is the right one. wBlock downloads the file, reads the metadata, and installs it.
 - Text: paste or write the style yourself. The editor recognizes the `/* ==UserStyle== */` block and fills in the name and description for you.
-- File: import a `.user.css` (or `.less`, `.sass`, `.scss`, `.styl`, `.pcss`) file from disk. Files imported this way do not auto-update; import the file again to replace it.
+- File: import a `.user.css` (or `.less`, `.styl`) file from disk. Files imported this way do not auto-update; import the file again to replace it.
 
 Click Apply Changes when you are done so Safari picks up the new style. Reload any pages that are already open.
 
@@ -41,11 +41,11 @@ The `@preprocessor` line picks how the style is compiled before injection.
 
 - `default` or no line: plain CSS. `@var` declarations become CSS custom properties.
 - `uso`: userstyles.org convention, `/*[[name]]*/` placeholders are substituted textually. `@advanced` variables are supported.
-- `less`, `sass`, `scss`, `stylus`, `postcss`: compiled offline on your Mac with a bundled compiler. Nothing is sent over the network.
+- `less`, `stylus`: compiled offline on your Mac with a bundled compiler. Nothing is sent over the network.
 
 Variables declared with `@var` or `@advanced` are applied with their default values. There is no per-variable settings UI yet; to change a value, edit the style's source in wBlock and change the default.
 
-A few things are deliberately not supported. Sass `@import`, `@use`, and `@forward` are rejected, as are Stylus imports and plugins and Less inline JavaScript. The PostCSS backend only runs the `postcss-nested` plugin. Source is limited to 2 MiB and compiled output to 10 MiB, and compilation stops after 10 seconds. If a style hits one of these limits, wBlock shows the compiler error on the style's row.
+A few things are deliberately not supported. Stylus imports and plugins and Less inline JavaScript are rejected. Sass, SCSS, and PostCSS styles are not supported, since no other userstyle manager runs them; compile them to CSS before importing. Source is limited to 2 MiB and compiled output to 10 MiB, and compilation stops after 10 seconds. If a style hits one of these limits, wBlock shows the compiler error on the style's row.
 
 ## Updating, disabling, and removing
 

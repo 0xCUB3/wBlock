@@ -480,7 +480,7 @@
 "Process completed with reload issues" = "A folyamat befejeződött, de újratöltési problémák vannak";
 "Progress" = "Folyamat";
 "Protects against suspicious URLs, phishing sites, and unwanted software." = "Védelmet nyújt a gyanús URL-ek, adathalász webhelyek és nem kívánt szoftverek ellen.";
-"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = "Adj meg érvényes http:// vagy https:// hivatkozást, amely .js, .user.js, .user.css, .less, .sass, .scss, .styl vagy .pcss végű";
+"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, or .styl" = "Adj meg érvényes http:// vagy https:// hivatkozást, amely .js, .user.js, .user.css, .less vagy .styl végű";
 "Psst! You forgot something!" = "Pszt! Elfelejtettél valamit!";
 "Quit Without Applying" = "Kilépés jelentkezés nélkül";
 "Reading Files" = "Fájlok olvasása";
@@ -800,7 +800,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Beta userscripts and scripts that are still being evaluated or may change." = "Béta felhasználói szkriptek és még értékelés alatt álló vagy változható szkriptek.";
 
 /* Userstyle compiler diagnostics */
-"Choose a .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss file." = "Válassz egy .user.js, .js, .user.css, .less, .sass, .scss, .styl vagy .pcss fájlt.";
+"Choose a .user.js, .js, .user.css, .less, or .styl file." = "Válassz egy .user.js, .js, .user.css, .less vagy .styl fájlt.";
 "Couldn't read the selected file." = "A kijelölt fájl nem olvasható.";
 "The file is empty." = "A fájl üres.";
 "Not a userscript or userstyle: missing metadata block." = "Nem userscript vagy userstyle: hiányzik a metaadatblokk.";

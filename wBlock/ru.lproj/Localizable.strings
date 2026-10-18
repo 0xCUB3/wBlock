@@ -480,7 +480,7 @@
 "Process completed with reload issues" = "Процесс завершён с проблемами перезагрузки";
 "Progress" = "Прогресс";
 "Protects against suspicious URLs, phishing sites, and unwanted software." = "Защищает от подозрительных URL-адресов, фишинговых сайтов и нежелательного программного обеспечения.";
-"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = "Укажите действительную ссылку http:// или https://, оканчивающуюся на .js, .user.js, .user.css, .less, .sass, .scss, .styl или .pcss";
+"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, or .styl" = "Укажите действительную ссылку http:// или https://, оканчивающуюся на .js, .user.js, .user.css, .less или .styl";
 "Psst! You forgot something!" = "Псс! Вы кое-что забыли!";
 "Quit Without Applying" = "Выйти без применения";
 "Reading Files" = "Чтение файлов";
@@ -800,7 +800,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Beta userscripts and scripts that are still being evaluated or may change." = "Бета-версии пользовательских скриптов и скрипты, которые ещё проходят проверку или могут измениться.";
 
 /* Userstyle compiler diagnostics */
-"Choose a .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss file." = "Выберите файл .user.js, .js, .user.css, .less, .sass, .scss, .styl или .pcss.";
+"Choose a .user.js, .js, .user.css, .less, or .styl file." = "Выберите файл .user.js, .js, .user.css, .less или .styl.";
 "Couldn't read the selected file." = "Не удалось прочитать выбранный файл.";
 "The file is empty." = "Файл пуст.";
 "Not a userscript or userstyle: missing metadata block." = "Это не пользовательский скрипт и не пользовательский стиль: отсутствует блок метаданных.";

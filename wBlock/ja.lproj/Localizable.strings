@@ -480,7 +480,7 @@
 "Process completed with reload issues" = "プロセスは完了しましたが、再読み込みに問題があります";
 "Progress" = "進行状況";
 "Protects against suspicious URLs, phishing sites, and unwanted software." = "不審な URL、フィッシングサイト、望ましくないソフトウェアから保護します。";
-"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = "末尾が .js、.user.js、.user.css、.less、.sass、.scss、.styl、または .pcss の有効な http:// または https:// リンクを指定してください";
+"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, or .styl" = "末尾が .js、.user.js、.user.css、.less、または .styl の有効な http:// または https:// リンクを指定してください";
 "Psst! You forgot something!" = "おっと！忘れている項目があります！";
 "Quit Without Applying" = "適用せずに終了する";
 "Reading Files" = "ファイルを読み込み中";
@@ -794,7 +794,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Custom, remote, and local scripts that do not have a more specific display category." = "より具体的な表示カテゴリに分類されないカスタム、リモート、ローカルスクリプトです。";
 "Beta userscripts and scripts that are still being evaluated or may change." = "評価中または変更される可能性があるベータ版ユーザースクリプトとスクリプトです。";
 /* Userstyle compiler diagnostics */
-"Choose a .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss file." = ".user.js、.js、.user.css、.less、.sass、.scss、.styl、または .pcss ファイルを選択してください。";
+"Choose a .user.js, .js, .user.css, .less, or .styl file." = ".user.js、.js、.user.css、.less、または .styl ファイルを選択してください。";
 "Couldn't read the selected file." = "選択したファイルを読み取れませんでした。";
 "The file is empty." = "ファイルが空です。";
 "Not a userscript or userstyle: missing metadata block." = "ユーザースクリプトまたはユーザースタイルではありません。メタデータブロックがありません。";

@@ -480,7 +480,7 @@
 "Process completed with reload issues" = "流程已完成，但存在重新載入問題";
 "Progress" = "進度";
 "Protects against suspicious URLs, phishing sites, and unwanted software." = "防範可疑 URL、網路釣魚網站和不需要的軟體。";
-"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = "提供以 .js、.user.js、.user.css、.less、.sass、.scss、.styl 或 .pcss 結尾的有效 http:// 或 https:// 連結";
+"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, or .styl" = "提供以 .js、.user.js、.user.css、.less 或 .styl 結尾的有效 http:// 或 https:// 連結";
 "Psst! You forgot something!" = "嘿！你忘了某些項目！";
 "Quit Without Applying" = "結束但不套用";
 "Reading Files" = "正在讀取檔案";
@@ -800,7 +800,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Beta userscripts and scripts that are still being evaluated or may change." = "仍在評估中或可能變更的 Beta 使用者腳本與腳本。";
 
 /* Userstyle compiler diagnostics */
-"Choose a .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss file." = "選擇 .user.js、.js、.user.css、.less、.sass、.scss、.styl 或 .pcss 檔案。";
+"Choose a .user.js, .js, .user.css, .less, or .styl file." = "選擇 .user.js、.js、.user.css、.less 或 .styl 檔案。";
 "Couldn't read the selected file." = "無法讀取所選檔案。";
 "The file is empty." = "檔案是空的。";
 "Not a userscript or userstyle: missing metadata block." = "不是使用者腳本或使用者樣式：缺少中繼資料區塊。";

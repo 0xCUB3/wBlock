@@ -478,7 +478,7 @@
 "Process completed with reload issues" = "فرآیند با مشکلاتی در بارگیری مجدد به پایان رسید";
 "Progress" = "پیشرفت";
 "Protects against suspicious URLs, phishing sites, and unwanted software." = "از شما در برابر نشانی‌های URL مشکوک، سایت‌های فیشینگ و نرم‌افزارهای ناخواسته محافظت می‌کند.";
-"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, .sass, .scss, .styl, or .pcss" = "یک پیوند معتبر \U2068http://\U2069 یا \U2068https://\U2069 ارائه دهید که به \U2068.js\U2069، \U2068.user.js\U2069، \U2068.user.css\U2069، \U2068.less\U2069، \U2068.sass\U2069، \U2068.scss\U2069، \U2068.styl\U2069 یا \U2068.pcss\U2069 ختم شود";
+"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, or .styl" = "یک پیوند معتبر \U2068http://\U2069 یا \U2068https://\U2069 ارائه دهید که به \U2068.js\U2069، \U2068.user.js\U2069، \U2068.user.css\U2069، \U2068.less\U2069 یا \U2068.styl\U2069 ختم شود";
 "Psst! You forgot something!" = "پست! چیزی را فراموش کردید!";
 "Quit Without Applying" = "خروج بدون اعمال";
 "Reading Files" = "در حال خواندن فایل‌ها";
@@ -799,7 +799,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "وقتی هر یک از بخش‌های انتخاب‌شده موقتاً متوقف شده باشد، «توقف مسدودسازی» روشن است. ازسرگیری همهٔ بخش‌ها را بازیابی می‌کند.";
 
 /* Userstyle compiler diagnostics */
-"Choose a .user.js, .js, .user.css, .less, .sass, .scss, .styl, or .pcss file." = "یک فایل \U2068.user.js\U2069، \U2068.js\U2069، \U2068.user.css\U2069، \U2068.less\U2069، \U2068.sass\U2069، \U2068.scss\U2069، \U2068.styl\U2069 یا \U2068.pcss\U2069 انتخاب کنید.";
+"Choose a .user.js, .js, .user.css, .less, or .styl file." = "یک فایل \U2068.user.js\U2069، \U2068.js\U2069، \U2068.user.css\U2069، \U2068.less\U2069 یا \U2068.styl\U2069 انتخاب کنید.";
 "Couldn't read the selected file." = "خواندن فایل انتخاب‌شده امکان‌پذیر نبود.";
 "The file is empty." = "فایل خالی است.";
 "Not a userscript or userstyle: missing metadata block." = "اسکریپت کاربر یا استایل کاربر نیست: بلوک فراداده وجود ندارد.";
