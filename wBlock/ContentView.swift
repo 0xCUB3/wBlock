@@ -907,6 +907,9 @@ struct FilterRowView: View {
                 Label("Edit Rules", systemImage: "pencil")
             }
         }
+        if actions.contains(.editInfo) {
+            Button(action: onEditInfo) { Label("Edit Info", systemImage: "square.and.pencil") }
+        }
         if actions.contains(.moveTo), let onChangeCategory {
             Picker(selection: Binding(get: { filter.category }, set: onChangeCategory)) {
                 ForEach(FilterListCategory.moveTargets) { category in

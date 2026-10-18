@@ -883,6 +883,11 @@ struct UserScriptManagerView: View {
                 Label("Edit Content", systemImage: "pencil")
             }
         }
+        if actions.contains(.editInfo) {
+            Button { selectedScript = SelectedUserScript(id: script.id, action: .editInfo) } label: {
+                Label("Edit Info", systemImage: "square.and.pencil")
+            }
+        }
         if actions.contains(.download) {
             Button { requestEnable(script) } label: {
                 Label("Download", systemImage: "arrow.down.circle")
