@@ -215,7 +215,8 @@ enum UserStyleCompiler {
         function(request) { return new Promise(function(resolve) {
             var failure = null;
             less.render(request.source, {filename:'file:///userstyle.less', javascriptEnabled: false, processImports: false, globalVars:request.variables}, function(error, output) {
-                if (error) failure = {message:error.message || String(error), line:error.line, column:error.column};
+                // globalVars adds one line ahead of the source.
+                if (error) failure = {message:error.message || String(error), line:error.line == null ? null : error.line - 1, column:error.column};
                 resolve(JSON.stringify(failure ? {error:failure} : {css:output && output.css}));
             });
         }); }

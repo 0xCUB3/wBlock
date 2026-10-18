@@ -356,9 +356,20 @@ struct UserStyleParsingAndMatchingTests {
             "metadata masking must preserve editor lines"
         )
         expect(
-            (broken.compilationError ?? "").contains("line 6"),
-            "Less error should use editor EOF line 6: \(broken.compilationError ?? "missing diagnostic")"
+            (broken.compilationError ?? "").contains("line 5"),
+            "Less error should use editor line 5: \(broken.compilationError ?? "missing diagnostic")"
         )
+        let undefinedVariable = """
+        .before { color: red; }
+        /* ==UserStyle==
+        @name Undefined Less variable
+        @preprocessor less
+        ==/UserStyle== */
+        .after { color: @missing; }
+        """
+        let undefinedDiagnostic = UserStyleSupport.parsed(from: undefinedVariable)?.compilationError ?? ""
+        expect(undefinedDiagnostic.contains("line 6"),
+               "Less globals must not shift diagnostics: \(undefinedDiagnostic)")
         expect(UserStyleSupport.effectiveCSS(forContent: malformed, url: "https://example.com/") == nil, "failed Less must not inject CSS")
 
         let stylus = """
