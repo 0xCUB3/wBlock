@@ -62,6 +62,7 @@ struct MacListSection {
     let header: AnyView
     var rows: [MacListRow]
     var acceptsMoves = true
+    var allowsCrossSectionMoves = true
     /// An empty section keeps its drop target but shows its header only while a row is dragged.
     var revealsOnlyWhileDragging = false
 }
@@ -193,9 +194,11 @@ struct MacListMove: Equatable {
 
     static func proposed(itemID: UUID, sectionID: String, childIndex: Int,
                          sections: [MacListSection]) -> Self? {
-        guard sections.contains(where: { $0.rows.contains(where: { $0.movableID == itemID }) }),
+        guard let source = sections.first(where: { $0.rows.contains(where: { $0.movableID == itemID }) }),
               let destination = sections.first(where: { $0.id == sectionID }),
-              destination.acceptsMoves else { return nil }
+              destination.acceptsMoves,
+              source.id == destination.id || (source.allowsCrossSectionMoves && destination.allowsCrossSectionMoves)
+        else { return nil }
         let rows = destination.rows
         let index = childIndex == NSOutlineViewDropOnItemIndex ? rows.count : childIndex
         guard (0...rows.count).contains(index), rows.allSatisfy({ $0.movableID != nil }) else { return nil }

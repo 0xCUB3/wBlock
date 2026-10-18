@@ -97,6 +97,16 @@ import SwiftUI
         precondition(MacListMove.proposed(itemID: ids[0], sectionID: "foreign", childIndex: 0, sections: base + [fixed]) == nil)
         precondition(MacListMove.proposed(itemID: fixedID, sectionID: "a", childIndex: 0, sections: base + [fixed]) == nil)
 
+        var reorderableRegional = section("regional", [ids[0], ids[1]])
+        reorderableRegional.allowsCrossSectionMoves = false
+        let regionalSections = [reorderableRegional, section("ads", [ids[2]])]
+        precondition(MacListMove.proposed(itemID: ids[0], sectionID: "regional", childIndex: 2,
+                                         sections: regionalSections)?.orderedIDs == [ids[1], ids[0]])
+        precondition(MacListMove.proposed(itemID: ids[0], sectionID: "ads", childIndex: 0,
+                                         sections: regionalSections) == nil, "Regional rows cannot leave their section")
+        precondition(MacListMove.proposed(itemID: ids[2], sectionID: "regional", childIndex: 0,
+                                         sections: regionalSections) == nil, "Other rows cannot enter Regional")
+
         // Search and enabled-only lists replace visible slots without moving hidden items.
         let items = ids.map(Item.init)
         let encoded = ListDisplayOrder.saving([items[3], items[0]], in: items)

@@ -69,6 +69,13 @@ struct FilterListPresentation: Sendable {
     var sections: [Section] = []
     var rowText: [UUID: RowText] = [:]
 
+    static func ordered(_ filters: [FilterList], order: Data) -> [FilterList] {
+        ListDisplayOrder.sorted(
+            filters.filter { $0.category != .foreign }
+                + ForeignFilterOrganizer.sortedFilters(filters.filter { $0.category == .foreign }),
+            order: order)
+    }
+
     static func prepare(_ input: Input) async throws -> Self {
         let worker = Task.detached(priority: .userInitiated) {
             try Task.checkCancellation()
@@ -77,8 +84,7 @@ struct FilterListPresentation: Sendable {
             let visible = input.filters.filter { filter in
                 (!input.enabledOnly || filter.isSelected) && filter.matchesSearch(query, locale: locale)
             }
-            let ordered = ListDisplayOrder.sorted(visible.filter { $0.category != .foreign }, order: input.order)
-                + ForeignFilterOrganizer.sortedFilters(visible.filter { $0.category == .foreign })
+            let ordered = Self.ordered(visible, order: input.order)
             let byCategory = Dictionary(grouping: ordered, by: \.category)
             let sections = FilterListCategory.allCases
                 .filter { $0 != .all && !$0.isUserScriptOnly }

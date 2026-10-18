@@ -34,6 +34,14 @@ struct FilterListPresentationTests {
         precondition(all.sections.first { $0.category == .foreign }!.filters.map(\.id) == [regional.id, superseded.id])
         precondition(ids(all).count == Set(ids(all)).count, "Each catalog list has one row")
 
+        let reordered = FilterListPresentation.Input(
+            filters: filters,
+            order: ListDisplayOrder.saving([superseded, regional], in: [a, privacy, b, regional, superseded]),
+            searchText: "", enabledOnly: false, localeIdentifier: "en")
+        let reorderedPresentation = try await FilterListPresentation.prepare(reordered)
+        precondition(reorderedPresentation.sections.first { $0.category == .foreign }!.filters.map(\.id) == [superseded.id, regional.id],
+                     "Regional rows must honor saved display order")
+
         let enabled = try await FilterListPresentation.prepare(input(filters, enabled: true))
         precondition(Set(ids(enabled)) == [a.id, regional.id])
         let descriptionSearch = try await FilterListPresentation.prepare(input(filters, query: "  UNIQUE DESCRIPTION \n"))

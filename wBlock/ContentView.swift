@@ -719,9 +719,7 @@ struct ContentView: View {
     }
 
     private var orderedFilters: [FilterList] {
-        let filters = filterManager.filterLists
-        return ListDisplayOrder.sorted(filters.filter { $0.category != .foreign }, order: filterDisplayOrder)
-            + ForeignFilterOrganizer.sortedFilters(filters.filter { $0.category == .foreign })
+        FilterListPresentation.ordered(filterManager.filterLists, order: filterDisplayOrder)
     }
 
     private func moveFilter(_ id: UUID, to category: FilterListCategory) {
@@ -737,18 +735,9 @@ struct ContentView: View {
 
     @ViewBuilder
     private func filterRows(_ filters: [FilterList]) -> some View {
-        if filters.first?.category == .foreign {
-            ForEach(filters) { filter in
-                filterRowView(for: filter)
-                #if os(macOS)
-                if filter.id != filters.last?.id { Divider().padding(.leading, 16) }
-                #endif
-            }
-        } else {
-            ReorderableRows(items: filters,
-                            allItems: { orderedFilters }, order: $filterDisplayOrder) { filter in
-                filterRowView(for: filter)
-            }
+        ReorderableRows(items: filters,
+                        allItems: { orderedFilters }, order: $filterDisplayOrder) { filter in
+            filterRowView(for: filter)
         }
     }
 
@@ -821,10 +810,10 @@ struct ContentView: View {
                 // Collapse is owned by the header's disclosure binding; the
                 // section simply carries its rows only while expanded.
                 let rows = shouldExpandForeignFilters ? filters.map { filter in
-                    MacListRow(filter.id, movable: false) { filterRowView(for: filter) }
+                    MacListRow(filter.id) { filterRowView(for: filter) }
                 } : []
                 return MacListSection(id: category.id, header: AnyView(categoryHeader(category)),
-                                      rows: rows, acceptsMoves: false)
+                                      rows: rows, allowsCrossSectionMoves: false)
             }
             let acceptsMoves = FilterListCategory.moveTargets.contains(category)
             guard acceptsMoves || !filters.isEmpty else { return nil }
@@ -836,9 +825,9 @@ struct ContentView: View {
 
     private func commitFilterMove(_ move: MacListMove) -> Bool {
         guard let category = FilterListCategory(rawValue: move.sectionID),
-              FilterListCategory.moveTargets.contains(category),
               let filter = filterManager.filterLists.first(where: { $0.id == move.itemID }),
-              filter.category != .foreign else { return false }
+              category == .foreign ? filter.category == .foreign
+                : FilterListCategory.moveTargets.contains(category) && filter.category != .foreign else { return false }
         let all = orderedFilters
         let byID = Dictionary(uniqueKeysWithValues: all.map { ($0.id, $0) })
         let moved = move.orderedIDs.compactMap { byID[$0] }
