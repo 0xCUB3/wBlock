@@ -1250,7 +1250,9 @@ final class CloudSyncManager: ObservableObject {
             itemKey: CloudSyncUserScriptEnabledStatePolicy.key(for:))
     }
 
-    private var orderableFilters: [FilterList] { currentFilterLists().filter { $0.category != .foreign } }
+    private var orderableFilters: [FilterList] {
+        FilterListPresentation.ordered(currentFilterLists(), order: ListDisplayOrder.cleared)
+    }
 
     private func applyRemoteUserScriptState(
         _ script: UserScript,
@@ -1955,7 +1957,7 @@ final class CloudSyncManager: ObservableObject {
             deletedCustomURLs: deletedCustomURLs.isEmpty ? nil : deletedCustomURLs,
             automaticUpdates: Self.builtInAutomaticUpdates(filterLists),
             order: ListDisplayOrder.exportedKeys(
-                filterLists.filter { $0.category != .foreign },
+                FilterListPresentation.ordered(filterLists, order: ListDisplayOrder.cleared),
                 order: ListDisplayOrder.saved(ListDisplayOrder.filtersKey), key: Self.filterOrderKey)
         )
 

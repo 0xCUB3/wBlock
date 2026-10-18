@@ -42,6 +42,20 @@ struct FilterListPresentationTests {
         precondition(reorderedPresentation.sections.first { $0.category == .foreign }!.filters.map(\.id) == [superseded.id, regional.id],
                      "Regional rows must honor saved display order")
 
+        let exported = ListDisplayOrder.exportedKeys(
+            FilterListPresentation.ordered(filters, order: ListDisplayOrder.cleared),
+            order: reordered.order, key: { $0.url.absoluteString })!
+        let otherDevice = filters.map {
+            FilterList(name: $0.name, url: $0.url, category: $0.category, languages: $0.languages)
+        }
+        let imported = ListDisplayOrder.applying(
+            exported, to: FilterListPresentation.ordered(otherDevice, order: ListDisplayOrder.cleared),
+            current: Data(), baseline: Data(), key: { $0.url.absoluteString })!
+        let synced = try await FilterListPresentation.prepare(.init(
+            filters: otherDevice, order: imported, searchText: "", enabledOnly: false, localeIdentifier: "en"))
+        precondition(synced.sections.first { $0.category == .foreign }!.filters.map(\.url) == [superseded.url, regional.url],
+                     "Regional display order must survive sync to different local IDs")
+
         let enabled = try await FilterListPresentation.prepare(input(filters, enabled: true))
         precondition(Set(ids(enabled)) == [a.id, regional.id])
         let descriptionSearch = try await FilterListPresentation.prepare(input(filters, query: "  UNIQUE DESCRIPTION \n"))
