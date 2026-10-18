@@ -344,39 +344,39 @@ struct InlineGlassSearchField: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            // The field stays mounted at its last expanded width while collapsed, so
-            // the capsule clips it instead of re-laying out the text mid-animation.
-            HStack(spacing: 6) {
-                TextField(prompt, text: $text)
-                    .font(.system(size: 13))
-                    .textFieldStyle(.plain)
-                    .focused($isFocused)
-                    .onExitCommand {
-                        text = ""
-                        collapse()
+            // Keep the last field width during the capsule animation, but remove
+            // the native text field while collapsed so it cannot install I-beam cursor rects.
+            if isExpanded {
+                HStack(spacing: 6) {
+                    TextField(prompt, text: $text)
+                        .font(.system(size: 13))
+                        .textFieldStyle(.plain)
+                        .focused($isFocused)
+                        .onExitCommand {
+                            text = ""
+                            collapse()
+                        }
+                        .frame(maxWidth: .infinity)
+                    if !text.isEmpty {
+                        Button { text = "" } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.plain)
+                        .noFocusRingCompat()
+                        .help(String(localized: "Clear"))
+                        .accessibilityLabel(Text("Clear"))
+                        .transition(.opacity)
                     }
-                    .frame(maxWidth: .infinity)
-                if !text.isEmpty {
-                    Button { text = "" } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundStyle(.secondary)
-                    }
-                    .buttonStyle(.plain)
-                    .noFocusRingCompat()
-                    .help(String(localized: "Clear"))
-                    .accessibilityLabel(Text("Clear"))
-                    .transition(.opacity)
                 }
+                .onGeometryChange(for: CGFloat.self, of: \.size.width) { width in
+                    fieldWidth = width
+                }
+                .padding(.leading, 36)
+                .padding(.trailing, 8)
+            } else {
+                Color.clear.frame(width: fieldWidth + 44)
             }
-            .frame(width: isExpanded ? nil : fieldWidth)
-            .onGeometryChange(for: CGFloat.self, of: \.size.width) { width in
-                if isExpanded { fieldWidth = width }
-            }
-            .opacity(isExpanded ? 1 : 0)
-            .allowsHitTesting(isExpanded)
-            .accessibilityHidden(!isExpanded)
-            .padding(.leading, 36)
-            .padding(.trailing, 8)
         }
         .frame(width: isExpanded ? Self.expandedWidth : 36, height: 36, alignment: buttonEdge)
         .clipShape(.capsule)
@@ -389,25 +389,16 @@ struct InlineGlassSearchField: View {
                     .frame(height: 36)
             }
         }
-        .glassEffect(.regular.interactive(), in: .capsule)
+        .glassEffect(isExpanded ? .regular.interactive() : .identity, in: .capsule)
         // The magnifier sits on the capsule's leading edge, outside the field, so
         // it rides that edge as the capsule grows and ends in front of the text,
         // the way Notes and Mail place it.
         .overlay(alignment: .leading) {
-            Button(action: expandAndFocus) {
-                Label(prompt, systemImage: "magnifyingglass")
-                    .labelStyle(.iconOnly)
-                    .font(.system(size: 13))
-                    .fixedSize()
-                    .foregroundStyle(text.isEmpty ? (controlActiveState == .inactive ? Color.primary.opacity(0.25) : Color.primary) : Color.accentColor)
-                    .contentTransition(.identity)
-                    .frame(width: 20, height: 36)
-                    .padding(.horizontal, 8)
-                    .contentShape(Rectangle())
+            if isExpanded {
+                searchButton.buttonStyle(.plain)
+            } else {
+                searchButton.buttonStyle(.glass).buttonBorderShape(.circle)
             }
-            .buttonStyle(.plain)
-            .accessibilityValue(text)
-            .help(prompt)
         }
         .animation(reduceMotion ? nil : .smooth(duration: Self.duration), value: isExpanded)
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: text.isEmpty)
@@ -431,6 +422,22 @@ struct InlineGlassSearchField: View {
             isVisible = false
             collapse()
         }
+    }
+
+    private var searchButton: some View {
+        Button(action: expandAndFocus) {
+            Label(prompt, systemImage: "magnifyingglass")
+                .labelStyle(.iconOnly)
+                .font(.system(size: 13))
+                .fixedSize()
+                .foregroundStyle(text.isEmpty ? (controlActiveState == .inactive ? Color.primary.opacity(0.25) : Color.primary) : Color.accentColor)
+                .contentTransition(.identity)
+                .frame(width: 20, height: isExpanded ? 36 : 28)
+                .padding(.horizontal, isExpanded ? 8 : 4)
+                .contentShape(Rectangle())
+        }
+        .accessibilityValue(text)
+        .help(prompt)
     }
 
     private static let expandedWidth: CGFloat = 180
