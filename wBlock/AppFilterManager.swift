@@ -251,9 +251,8 @@ class AppFilterManager: ObservableObject {
 
     private func refreshHasUnappliedChanges() {
         hasUnappliedChanges = hasPendingSelectionChanges || hasPendingNonSelectionChanges
-        if hasUnappliedChanges {
-            scheduleAutoApplyDebounce()
-        } else {
+        // Edits wait for Apply (#1003). Only upgrades and disabled-site changes apply on their own.
+        if !hasUnappliedChanges {
             autoApplyTask?.cancel()
             autoApplyTask = nil
         }
@@ -728,9 +727,8 @@ class AppFilterManager: ObservableObject {
             && (hasURLMigrations || selectedDeprecatedListWasRemoved || signatureMismatch)
         if needsRebuild {
             markNonSelectionChangesPending()
-            if storedFailedUpgradeSignature() == currentSignature {
-                autoApplyTask?.cancel()
-                autoApplyTask = nil
+            if storedFailedUpgradeSignature() != currentSignature {
+                scheduleAutoApplyDebounce()
             }
         } else {
             markCurrentStateApplied()

@@ -214,11 +214,6 @@ extension AppFilterManager {
         defer {
             isApplyInFlight = false
             Task { await SharedAutoUpdateManager.shared.setForegroundApplyInProgress(false) }
-            if lastApplySucceeded
-                && hasUnappliedChanges
-                && !BlockingPauseStore.isPaused(.filters) {
-                scheduleAutoApplyDebounce()
-            }
         }
         ApplyCancellation.reset()
         let applyTask = Task {

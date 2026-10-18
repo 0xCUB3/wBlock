@@ -101,8 +101,7 @@ extension AppFilterManager {
             _ = await self.performFastDisabledSitesApply()
         }
         if !started {
-            // The active full apply will schedule one follow-up from the shared gate’s
-            // defer path. Avoid recursive polling while a long conversion is running.
+            // Retry once after the active apply instead of polling during a long conversion.
             hasUnappliedChanges = true
             lastApplySucceeded = false
             scheduleAutoApplyDebounce()
