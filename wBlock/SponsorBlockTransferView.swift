@@ -8,23 +8,10 @@ struct SponsorBlockTransferButton: View {
 
     var body: some View {
         Button { showingTransfer = true } label: {
-            HStack(spacing: 6) {
-                Image(systemName: "doc.badge.gearshape")
-                    .imageScale(.small)
-                Text("SponsorBlock Backups")
-                    .fontWeight(.medium)
-                    .lineLimit(1)
-                Image(systemName: "chevron.forward")
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.tertiary)
-            }
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 5)
-            .background(
-                Capsule(style: .continuous)
-                    .fill(Color.primary.opacity(0.06))
+            UserScriptSettingsPill(
+                title: Text("SponsorBlock Backups"),
+                systemImage: "doc.badge.gearshape",
+                chevron: "chevron.forward"
             )
         }
         .buttonStyle(.plain)

@@ -163,43 +163,16 @@ actor UserScriptStorageManager {
     }
 
     private func withExclusiveFileLock<T>(for dataURL: URL, _ operation: () throws -> T) throws -> T {
-        let directoryURL = dataURL.deletingLastPathComponent()
-        if !fileExists(at: directoryURL) {
-            try fileManager.createDirectory(at: directoryURL, withIntermediateDirectories: true)
-        }
-
-        // Coordinate the file rather than the whole shared directory once it exists.
-        // The directory is only needed for first-write creation; narrower coordination
-        // reduces the suspension window for unrelated app-group files.
-        let coordinationURL = fileExists(at: dataURL) ? dataURL : directoryURL
-        let startedAt = Date()
-        let coordinator = NSFileCoordinator(filePresenter: nil)
-        var coordinationError: NSError?
-        var operationResult: Result<T, Error>?
-
-        coordinator.coordinate(writingItemAt: coordinationURL, options: [], error: &coordinationError) { _ in
-            operationResult = Result { try operation() }
-        }
-
-        let durationMs = Int(Date().timeIntervalSince(startedAt) * 1000)
-        if durationMs >= 100 {
-            logger.warning(
-                "File coordination held for \(durationMs) ms: \(dataURL.lastPathComponent)"
-            )
-        }
-
-        if let operationResult {
-            return try operationResult.get()
-        }
-
-        if let coordinationError {
-            throw coordinationError
-        }
-
-        throw NSError(
-            domain: "UserScriptStorageManager",
-            code: CocoaError.fileWriteUnknown.rawValue,
-            userInfo: [NSLocalizedDescriptionKey: "File coordination failed before userscript storage write"]
+        try CoordinatedDiskAccess.withWriteAccess(
+            for: dataURL,
+            fileManager: fileManager,
+            logger: logger,
+            fallbackError: NSError(
+                domain: "UserScriptStorageManager",
+                code: CocoaError.fileWriteUnknown.rawValue,
+                userInfo: [NSLocalizedDescriptionKey: "File coordination failed before userscript storage write"]
+            ),
+            operation
         )
     }
 

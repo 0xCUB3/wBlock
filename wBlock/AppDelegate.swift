@@ -573,6 +573,19 @@ extension AppDelegate: UIApplicationDelegate {
     @MainActor
     private func scheduleBackgroundFilterUpdate() {
         let request = BGAppRefreshTaskRequest(identifier: backgroundTaskIdentifier)
+        scheduleBackgroundUpdate(request: request, kind: .appRefresh)
+    }
+
+    @MainActor
+    private func scheduleBackgroundProcessingUpdate() {
+        let request = BGProcessingTaskRequest(identifier: backgroundProcessingIdentifier)
+        request.requiresNetworkConnectivity = true
+        request.requiresExternalPower = false // Don't require power - be more aggressive
+        scheduleBackgroundUpdate(request: request, kind: .processing)
+    }
+
+    @MainActor
+    private func scheduleBackgroundUpdate(request: BGTaskRequest, kind: AutoUpdateDiagnosticTaskKind) {
         let data = ProtobufDataManager.shared
         guard data.autoUpdateEnabled else {
             BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: request.identifier)
@@ -591,23 +604,35 @@ extension AppDelegate: UIApplicationDelegate {
         let scheduleFields = ["task": request.identifier, "dueUnix": String(dueDate.timeIntervalSince1970),
                               "delaySeconds": String(max(0, delaySeconds)), "intervalHours": String(configuredAutoUpdateIntervalHours())]
         Task { await ConcurrentLogManager.shared.operation("background-schedule", fields: scheduleFields) }
-
         do {
             // Cancel and resubmit atomically
-            BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: backgroundTaskIdentifier)
+            BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: request.identifier)
             try BGTaskScheduler.shared.submit(request)
             Task { await ConcurrentLogManager.shared.operation("background-submit", fields: ["task": request.identifier, "result": "submitted"]) }
-            os_log("Background filter update task scheduled successfully (delay: %.1f hrs)", type: .info, delaySeconds / 3600)
+            if kind == .processing {
+                os_log("Background processing task scheduled successfully (delay: %.1f hrs)", type: .info, delaySeconds / 3600)
+            } else {
+                os_log("Background filter update task scheduled successfully (delay: %.1f hrs)", type: .info, delaySeconds / 3600)
+            }
             Task { @MainActor in
                 await ProtobufDataManager.shared.recordAutoUpdateTaskScheduleAttempt(
-                    .appRefresh,
+                    kind,
                     result: .submitted
                 )
             }
         } catch let error as NSError {
             let details = taskScheduleFailureDetails(for: error)
             Task { await ConcurrentLogManager.shared.operation("background-submit", fields: ["task": request.identifier, "result": "failed", "domain": error.domain, "code": String(error.code)], level: .error) }
-            if error.domain == "BGTaskSchedulerErrorDomain" {
+            if kind == .processing, error.domain == "BGTaskSchedulerErrorDomain" {
+                switch error.code {
+                case 1: os_log("BGTaskScheduler: Processing identifier not in Info.plist", type: .error)
+                case 2: os_log("BGTaskScheduler: Too many pending processing tasks", type: .error)
+                case 3: os_log("BGTaskScheduler: Background processing unavailable", type: .error)
+                default: os_log("BGTaskScheduler processing error: %{public}@", type: .error, error.localizedDescription)
+                }
+            } else if kind == .processing {
+                os_log("Failed to schedule background processing task: %{public}@", type: .error, error.localizedDescription)
+            } else if error.domain == "BGTaskSchedulerErrorDomain" {
                 switch error.code {
                 case 1: os_log("BGTaskScheduler: Identifier not in Info.plist", type: .error)
                 case 2: os_log("BGTaskScheduler: Too many pending tasks", type: .error)
@@ -619,65 +644,7 @@ extension AppDelegate: UIApplicationDelegate {
             }
             Task { @MainActor in
                 await ProtobufDataManager.shared.recordAutoUpdateTaskScheduleAttempt(
-                    .appRefresh,
-                    result: details.result,
-                    error: details.message
-                )
-            }
-        }
-    }
-
-    @MainActor
-    private func scheduleBackgroundProcessingUpdate() {
-        let request = BGProcessingTaskRequest(identifier: backgroundProcessingIdentifier)
-        request.requiresNetworkConnectivity = true
-        request.requiresExternalPower = false // Don't require power - be more aggressive
-        let data = ProtobufDataManager.shared
-        guard data.autoUpdateEnabled else {
-            BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: request.identifier)
-            Task { await ConcurrentLogManager.shared.operation("background-cancel", fields: ["task": request.identifier, "reason": "auto-update-disabled"]) }
-            return
-        }
-        let now = Date()
-        let dueDate = BackgroundUpdateSchedule.earliestBeginDate(
-            now: now,
-            intervalHours: configuredAutoUpdateIntervalHours(),
-            nextEligibleTime: data.autoUpdateNextEligibleTime,
-            lastCheckTime: data.autoUpdateLastCheckTime
-        )
-        let delaySeconds = dueDate.timeIntervalSince(now)
-        request.earliestBeginDate = dueDate
-        let scheduleFields = ["task": request.identifier, "dueUnix": String(dueDate.timeIntervalSince1970),
-                              "delaySeconds": String(max(0, delaySeconds)), "intervalHours": String(configuredAutoUpdateIntervalHours())]
-        Task { await ConcurrentLogManager.shared.operation("background-schedule", fields: scheduleFields) }
-        do {
-            // Cancel and resubmit atomically
-            BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: backgroundProcessingIdentifier)
-            try BGTaskScheduler.shared.submit(request)
-            Task { await ConcurrentLogManager.shared.operation("background-submit", fields: ["task": request.identifier, "result": "submitted"]) }
-            os_log("Background processing task scheduled successfully (delay: %.1f hrs)", type: .info, delaySeconds / 3600)
-            Task { @MainActor in
-                await ProtobufDataManager.shared.recordAutoUpdateTaskScheduleAttempt(
-                    .processing,
-                    result: .submitted
-                )
-            }
-        } catch let error as NSError {
-            let details = taskScheduleFailureDetails(for: error)
-            Task { await ConcurrentLogManager.shared.operation("background-submit", fields: ["task": request.identifier, "result": "failed", "domain": error.domain, "code": String(error.code)], level: .error) }
-            if error.domain == "BGTaskSchedulerErrorDomain" {
-                switch error.code {
-                case 1: os_log("BGTaskScheduler: Processing identifier not in Info.plist", type: .error)
-                case 2: os_log("BGTaskScheduler: Too many pending processing tasks", type: .error)
-                case 3: os_log("BGTaskScheduler: Background processing unavailable", type: .error)
-                default: os_log("BGTaskScheduler processing error: %{public}@", type: .error, error.localizedDescription)
-                }
-            } else {
-                os_log("Failed to schedule background processing task: %{public}@", type: .error, error.localizedDescription)
-            }
-            Task { @MainActor in
-                await ProtobufDataManager.shared.recordAutoUpdateTaskScheduleAttempt(
-                    .processing,
+                    kind,
                     result: details.result,
                     error: details.message
                 )

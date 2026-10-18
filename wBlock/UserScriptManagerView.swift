@@ -1559,23 +1559,9 @@ private struct DarkReaderAppearancePicker: View {
                 appearanceMenuItem(title: "Always Dark", selected: !followsSystemAppearance)
             }
         } label: {
-            HStack(spacing: 6) {
-                Image(systemName: followsSystemAppearance ? "circle.lefthalf.filled" : "moon.fill")
-                    .imageScale(.small)
-                Text(followsSystemAppearance ? "Follow System" : "Always Dark")
-                    .fontWeight(.medium)
-                    .lineLimit(1)
-                Image(systemName: "chevron.up.chevron.down")
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.tertiary)
-            }
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 5)
-            .background(
-                Capsule(style: .continuous)
-                    .fill(Color.primary.opacity(0.06))
+            UserScriptSettingsPill(
+                title: Text(followsSystemAppearance ? "Follow System" : "Always Dark"),
+                systemImage: followsSystemAppearance ? "circle.lefthalf.filled" : "moon.fill"
             )
         }
         .buttonStyle(.plain)
@@ -1628,24 +1614,7 @@ private struct TubeCleanerFeaturesPicker: View {
             }
                 .disabled(features.allEnabled)
         } label: {
-            HStack(spacing: 6) {
-                Image(systemName: "slider.horizontal.3")
-                    .imageScale(.small)
-                Text(summary)
-                    .fontWeight(.medium)
-                    .lineLimit(1)
-                Image(systemName: "chevron.up.chevron.down")
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.tertiary)
-            }
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 5)
-            .background(
-                Capsule(style: .continuous)
-                    .fill(Color.primary.opacity(0.06))
-            )
+            UserScriptSettingsPill(title: Text(summary), systemImage: "slider.horizontal.3")
         }
         .buttonStyle(.plain)
         .noFocusRingCompat()
@@ -1673,24 +1642,7 @@ private struct PlayerCleanerFeaturesPicker: View {
             Button("Enable All") { features = PlayerCleanerPreference.Features() }
                 .disabled(features.allEnabled)
         } label: {
-            HStack(spacing: 6) {
-                Image(systemName: "slider.horizontal.3")
-                    .imageScale(.small)
-                Text(summary)
-                    .fontWeight(.medium)
-                    .lineLimit(1)
-                Image(systemName: "chevron.up.chevron.down")
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.tertiary)
-            }
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 5)
-            .background(
-                Capsule(style: .continuous)
-                    .fill(Color.primary.opacity(0.06))
-            )
+            UserScriptSettingsPill(title: Text(summary), systemImage: "slider.horizontal.3")
         }
         .buttonStyle(.plain)
         .noFocusRingCompat()
@@ -1718,24 +1670,7 @@ private struct DeArrowSettingsPicker: View {
             }
             Link("Donate to DeArrow", destination: URL(string: "https://dearrow.ajay.app/donate/")!)
         } label: {
-            HStack(spacing: 6) {
-                Image(systemName: "gearshape")
-                    .imageScale(.small)
-                Text("Settings")
-                    .fontWeight(.medium)
-                    .lineLimit(1)
-                Image(systemName: "chevron.up.chevron.down")
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.tertiary)
-            }
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 5)
-            .background(
-                Capsule(style: .continuous)
-                    .fill(Color.primary.opacity(0.06))
-            )
+            UserScriptSettingsPill(title: Text("Settings"), systemImage: "gearshape")
         }
         .buttonStyle(.plain)
         .noFocusRingCompat()
@@ -1759,17 +1694,13 @@ struct AddUserScriptView: View {
     @State private var validationState: ValidationState = .idle
     @State private var urlImportError: String?
     private enum URLEntryMode { case single, bulk }
-    private struct URLMetadata: Sendable { var title: String?; var description: String? }
     @State private var urlEntryMode: URLEntryMode = .single
     @State private var isReviewingURLs = false
     @State private var isReviewingText = false
     @State private var urlNames: [String: String] = [:]
     @State private var urlDescriptions: [String: String] = [:]
     @State private var urlCategories: [String: FilterListCategory] = [:]
-    @State private var urlMetadata: [String: URLMetadata] = [:]
-    @State private var urlMetadataTask: Task<Void, Never>?
-    @State private var urlMetadataGeneration = 0
-    @State private var isFetchingURLMetadata = false
+    @StateObject private var urlReview = URLImportReviewCoordinator(userscript: true)
     @State private var isAdding: Bool = false
     @State private var fileImportError: String?
     @State private var editorImportError: String?
@@ -1781,8 +1712,6 @@ struct AddUserScriptView: View {
     @State private var stagedFile: StagedScriptFile?
     @State private var isStagingFile = false
     @State private var stagingGeneration = 0
-    @State private var isImportingURLList = false
-    @State private var urlListImportGeneration = 0
     @State private var importsURLList = false
     @State private var stagedName = ""
     @State private var stagedDescription = ""
@@ -1851,7 +1780,7 @@ struct AddUserScriptView: View {
             mode: $addMode,
             isLoading: isAdding,
             submitTitle: LocalizedStringKey(addURLButtonTitle),
-            isSubmitDisabled: !canSubmit || isAdding || isImportingURLList,
+            isSubmitDisabled: !canSubmit || isAdding || urlReview.isImportingFile,
             onDismiss: { dismiss() },
             onSubmit: submit
         ) { mode in
@@ -1878,21 +1807,17 @@ struct AddUserScriptView: View {
             fetchURLMetadata()
         }
         .onChangeCompat(of: urlEntryMode) { _, mode in
-            urlListImportGeneration += 1
-            isImportingURLList = false
+            urlReview.cancelFileImport()
             isReviewingURLs = false
             if mode == .single { urlInput = FilterListURLSupport.normalizeSingleURLInput(urlInput) }
             validateInput(urlInput)
             fetchURLMetadata()
         }
         .onChangeCompat(of: addMode) { _, mode in
-            urlListImportGeneration += 1
-            isImportingURLList = false
+            urlReview.cancelFileImport()
             if mode == .text { scheduleEditorMetadataRefresh() }
             if mode == .url { fetchURLMetadata() } else {
-                urlMetadataTask?.cancel()
-                urlMetadataGeneration += 1
-                isFetchingURLMetadata = false
+                urlReview.cancelMetadata()
             }
         }
         .onChangeCompat(of: textInput) { _, _ in
@@ -1913,7 +1838,7 @@ struct AddUserScriptView: View {
         }
         .onDisappear {
             editorMetadataRefreshTask?.cancel()
-            urlMetadataTask?.cancel()
+            urlReview.cancelMetadata()
         }
         .alert("Replace Existing Content?", isPresented: $showingPasteReplacementConfirmation) {
             Button("Cancel", role: .cancel) { pendingPasteText = nil }
@@ -1951,10 +1876,9 @@ struct AddUserScriptView: View {
                 Section {
                     AddContentBackButton {
                         isReviewingURLs = false
-                        urlMetadataTask?.cancel()
-                        isFetchingURLMetadata = false
+                        urlReview.cancelMetadata()
                     }
-                    if isFetchingURLMetadata { ProgressView().controlSize(.small) }
+                    if urlReview.isFetchingMetadata { ProgressView().controlSize(.small) }
                 } footer: {
                     validationMessage
                 }
@@ -1963,7 +1887,7 @@ struct AddUserScriptView: View {
                     AddContentURLMetadataSection(
                         url: url,
                         name: Binding(get: { urlNames[key] ?? automaticURLName(for: url) }, set: { urlNames[key] = $0 }),
-                        description: Binding(get: { urlDescriptions[key] ?? urlMetadata[key]?.description ?? "" }, set: { urlDescriptions[key] = $0 }),
+                        description: Binding(get: { urlDescriptions[key] ?? urlReview.metadata[key]?.description ?? "" }, set: { urlDescriptions[key] = $0 }),
                         category: Binding(get: { urlCategories[key] ?? selectedCategory }, set: { urlCategories[key] = $0 }),
                         categories: FilterListCategory.userScriptCategories,
                         categoryName: { $0.userScriptCategoryName }
@@ -2035,29 +1959,11 @@ struct AddUserScriptView: View {
     }
 
     private func fetchURLMetadata() {
-        urlMetadataTask?.cancel()
-        urlMetadataGeneration += 1
-        let generation = urlMetadataGeneration
-        guard isReviewingURLs else { isFetchingURLMetadata = false; return }
-        let targets = parsedURLs.filter { urlMetadata[$0.absoluteString] == nil }
-        guard !targets.isEmpty else { isFetchingURLMetadata = false; return }
-        isFetchingURLMetadata = true
-        urlMetadataTask = Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 350_000_000)
-            guard !Task.isCancelled, generation == urlMetadataGeneration else { return }
-            await boundedConcurrentForEach(targets, maxConcurrent: 4, operation: { url in
-                let metadata = try? await RemoteFilterListMetadataLoader.fetch(from: url, userscript: true)
-                return (url, URLMetadata(title: metadata?.title, description: metadata?.description))
-            }, onResult: { url, metadata in
-                guard !Task.isCancelled, generation == urlMetadataGeneration else { return }
-                urlMetadata[url.absoluteString] = metadata
-            })
-            if generation == urlMetadataGeneration { isFetchingURLMetadata = false }
-        }
+        urlReview.fetchMetadata(for: parsedURLs, isReviewing: isReviewingURLs)
     }
 
     private func automaticURLName(for url: URL) -> String {
-        let title = urlMetadata[url.absoluteString]?.title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let title = urlReview.metadata[url.absoluteString]?.title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         return title.isEmpty ? UserScriptURLSupport.displayName(forRemoteURL: url) : title
     }
 
@@ -2072,7 +1978,7 @@ struct AddUserScriptView: View {
             onPaste: pasteFromClipboard,
             pasteTitle: urlEntryMode == .single ? "Paste URL" : "Paste URLs",
             onImportFile: { importsURLList = true; showingFileImporter = true },
-            isImportingFile: isImportingURLList
+            isImportingFile: urlReview.isImportingFile
         )
     }
 
@@ -2105,7 +2011,7 @@ struct AddUserScriptView: View {
 
 
     private var canSubmit: Bool {
-        if isAdding || (addMode == .url && isReviewingURLs && isFetchingURLMetadata) { return false }
+        if isAdding || (addMode == .url && isReviewingURLs && urlReview.isFetchingMetadata) { return false }
         switch addMode {
         case .url:
             if case .valid = validationState { return true }
@@ -2138,7 +2044,7 @@ struct AddUserScriptView: View {
                     await ConcurrentLogManager.shared.info(.userScript, LocalizedStrings.text("Adding new userscript from URL"), metadata: ["url": url.absoluteString])
                     let key = url.absoluteString
                     let name = ImportMetadataReview.userProvided(urlNames[key], automatic: automaticURLName(for: url))
-                    let description = ImportMetadataReview.userProvided(urlDescriptions[key], automatic: urlMetadata[key]?.description)
+                    let description = ImportMetadataReview.userProvided(urlDescriptions[key], automatic: urlReview.metadata[key]?.description)
                     if let error = await userScriptManager.addUserScript(from: url, nameOverride: name, descriptionOverride: description, category: urlCategories[key] ?? selectedCategory) {
                         let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
                         await ConcurrentLogManager.shared.error(.userScript, LocalizedStrings.text("Failed to add userscript from URL"), metadata: ["url": url.absoluteString, "error": message])
@@ -2257,30 +2163,11 @@ struct AddUserScriptView: View {
     }
 
     private func importURLList(from url: URL) {
-        urlListImportGeneration += 1
-        let generation = urlListImportGeneration
-        // Drop anything prepared from the previous input before the async read.
         isReviewingURLs = false
-        urlMetadataTask?.cancel()
-        isFetchingURLMetadata = false
-        isImportingURLList = true
         urlImportError = nil
-        let didAccess = url.startAccessingSecurityScopedResource()
-        Task { @MainActor in
-            defer { if didAccess { url.stopAccessingSecurityScopedResource() } }
-            do {
-                let text = try await Task.detached(priority: .userInitiated) {
-                    try UserScriptURLSupport.urlListText(fromFile: url)
-                }.value
-                guard generation == urlListImportGeneration else { return }
-                urlInput = UserScriptURLSupport.appendingPastedURLs(text, to: urlInput)
-                isImportingURLList = false
-            } catch {
-                guard generation == urlListImportGeneration else { return }
-                isImportingURLList = false
-                urlImportError = error.localizedDescription
-            }
-        }
+        urlReview.importURLList(from: url, onSuccess: { text in
+            urlInput = UserScriptURLSupport.appendingPastedURLs(text, to: urlInput)
+        }, onFailure: { urlImportError = $0 })
     }
 
     private func stageFile(at url: URL) {

@@ -1336,10 +1336,7 @@ struct AddFilterListView: View {
     @State private var textMetadataState = EditorMetadataAutofillState()
     @State private var customURLNames: [String: String] = [:]
     @State private var customURLDescriptions: [String: String] = [:]
-    @State private var fetchedURLMetadata: [String: URLMetadata] = [:]
-    @State private var metadataFetchGeneration = 0
-    @State private var metadataFetchTask: Task<Void, Never>?
-    @State private var isFetchingURLMetadata = false
+    @StateObject private var urlReview = URLImportReviewCoordinator(identity: FilterListURLSupport.identityKey(for:))
     @State private var submittedURLs: [URL]?
     @State private var isSaving: Bool = false
     /// Names as they were before this add saved. The list being added must
@@ -1356,8 +1353,6 @@ struct AddFilterListView: View {
     @State private var stagedFile: StagedFilterFile?
     @State private var isStagingFile = false
     @State private var stagingGeneration = 0
-    @State private var isImportingURLList = false
-    @State private var urlListImportGeneration = 0
     @State private var importsURLList = false
     /// Set when Find hands over a registry list: the URL change it makes goes
     /// straight to review instead of resetting it.
@@ -1366,11 +1361,6 @@ struct AddFilterListView: View {
     private struct StagedFilterFile {
         let filename: String
         let content: String
-    }
-
-    private struct URLMetadata: Equatable, Sendable {
-        var title: String?
-        var description: String?
     }
 
     private enum URLEntryMode: String, CaseIterable, Identifiable {
@@ -1434,7 +1424,7 @@ struct AddFilterListView: View {
             mode: $addMode,
             isLoading: isSaving,
             submitTitle: LocalizedStringKey(addButtonTitle),
-            isSubmitDisabled: !canSubmit || isSaving || isImportingURLList || (isReviewingURLs && isFetchingURLMetadata),
+            isSubmitDisabled: !canSubmit || isSaving || urlReview.isImportingFile || (isReviewingURLs && urlReview.isFetchingMetadata),
             onDismiss: { dismiss() },
             onSubmit: submit,
             // Find adds each list as you tap it, so Done is the only way out.
@@ -1477,9 +1467,7 @@ struct AddFilterListView: View {
             }
             cancelURLListImport()
             if mode == .url { fetchMetadataForCurrentURLs() } else {
-                metadataFetchTask?.cancel()
-                metadataFetchGeneration += 1
-                isFetchingURLMetadata = false
+                urlReview.cancelMetadata()
             }
         }
         .onChangeCompat(of: pastedRules) { _, _ in isReviewingText = false }
@@ -1490,7 +1478,7 @@ struct AddFilterListView: View {
             if addMode == .paste { textMetadataState.noteDescriptionEdit(newValue) }
         }
         .onDisappear {
-            metadataFetchTask?.cancel()
+            urlReview.cancelMetadata()
         }
         #if os(macOS)
 	    .onAppear {
@@ -1539,11 +1527,10 @@ struct AddFilterListView: View {
                 Section {
                     AddContentBackButton {
                         isReviewingURLs = false
-                        metadataFetchTask?.cancel()
-                        isFetchingURLMetadata = false
+                        urlReview.cancelMetadata()
                         if isReviewingFromFind { addMode = .find }
                     }
-                    if isFetchingURLMetadata { ProgressView().controlSize(.small) }
+                    if urlReview.isFetchingMetadata { ProgressView().controlSize(.small) }
                 } footer: {
                     if !isSaving { urlFooterMessage }
                 }
@@ -1599,8 +1586,8 @@ struct AddFilterListView: View {
     /// description, category, and languages as the automatic values.
     private func review(_ list: AdGuardRegistryList) {
         let url = list.filter.url
-        fetchedURLMetadata[FilterListURLSupport.identityKey(for: url)] =
-            URLMetadata(title: list.filter.name, description: list.filter.description)
+        urlReview.metadata[FilterListURLSupport.identityKey(for: url)] =
+            .init(title: list.filter.name, description: list.filter.description)
         urlCategories[url.absoluteString] = list.filter.category
         urlLanguages[url.absoluteString] = Set(list.filter.languages)
         if !isReviewingFromFind { urlInputBeforeFind = urlInput }
@@ -1661,7 +1648,7 @@ struct AddFilterListView: View {
             onPaste: pasteURLsFromClipboard,
             pasteTitle: urlEntryMode == .single ? "Paste URL" : "Paste URLs",
             onImportFile: { importsURLList = true; showingFileImporter = true },
-            isImportingFile: isImportingURLList
+            isImportingFile: urlReview.isImportingFile
         )
     }
 
@@ -1744,7 +1731,7 @@ struct AddFilterListView: View {
                     let key = FilterListURLSupport.identityKey(for: url)
                     let automaticName = automaticName(for: url)
                     let name = ImportMetadataReview.userProvided(customURLNames[key], automatic: automaticName)
-                    let automaticDescription = fetchedURLMetadata[key]?.description
+                    let automaticDescription = urlReview.metadata[key]?.description
                     let description = ImportMetadataReview.userProvided(
                         customURLDescriptions[key], automatic: automaticDescription)
                     filterManager.addFilterList(
@@ -1876,7 +1863,7 @@ struct AddFilterListView: View {
     }
 
     private func automaticName(for url: URL) -> String {
-        let title = trimmed(fetchedURLMetadata[FilterListURLSupport.identityKey(for: url)]?.title)
+        let title = trimmed(urlReview.metadata[FilterListURLSupport.identityKey(for: url)]?.title)
         return title.isEmpty ? defaultName(for: url) : title
     }
 
@@ -1891,7 +1878,7 @@ struct AddFilterListView: View {
     private func descriptionBinding(for url: URL) -> Binding<String> {
         let key = FilterListURLSupport.identityKey(for: url)
         return Binding(
-            get: { customURLDescriptions[key] ?? fetchedURLMetadata[key]?.description ?? "" },
+            get: { customURLDescriptions[key] ?? urlReview.metadata[key]?.description ?? "" },
             set: { customURLDescriptions[key] = Self.singleLineMetadataField($0) }
         )
     }
@@ -1900,7 +1887,7 @@ struct AddFilterListView: View {
         let keys = Set(newURLs.map { FilterListURLSupport.identityKey(for: $0) })
         customURLNames = customURLNames.filter { keys.contains($0.key) }
         customURLDescriptions = customURLDescriptions.filter { keys.contains($0.key) }
-        fetchedURLMetadata = fetchedURLMetadata.filter { keys.contains($0.key) }
+        urlReview.metadata = urlReview.metadata.filter { keys.contains($0.key) }
     }
 
     private static func singleLineMetadataField(_ value: String) -> String {
@@ -1910,38 +1897,7 @@ struct AddFilterListView: View {
     }
 
     private func fetchMetadataForCurrentURLs() {
-        guard isReviewingURLs else {
-            metadataFetchTask?.cancel()
-            metadataFetchGeneration += 1
-            isFetchingURLMetadata = false
-            return
-        }
-        metadataFetchGeneration += 1
-        let generation = metadataFetchGeneration
-        metadataFetchTask?.cancel()
-        let targets = newURLs.filter { url in
-            fetchedURLMetadata[FilterListURLSupport.identityKey(for: url)] == nil
-        }
-        guard !targets.isEmpty else {
-            isFetchingURLMetadata = false
-            return
-        }
-
-        isFetchingURLMetadata = true
-        metadataFetchTask = Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 350_000_000)
-            guard generation == metadataFetchGeneration, !Task.isCancelled else { return }
-            await boundedConcurrentForEach(targets, maxConcurrent: 4, operation: { url in
-                let metadata = try? await RemoteFilterListMetadataLoader.fetch(from: url)
-                return (url, URLMetadata(title: metadata?.title, description: metadata?.description))
-            }, onResult: { url, metadata in
-                guard generation == metadataFetchGeneration, !Task.isCancelled else { return }
-                fetchedURLMetadata[FilterListURLSupport.identityKey(for: url)] = metadata
-            })
-            if generation == metadataFetchGeneration {
-                isFetchingURLMetadata = false
-            }
-        }
+        urlReview.fetchMetadata(for: newURLs, isReviewing: isReviewingURLs)
     }
 
     private func trimmed(_ value: String?) -> String {
@@ -1949,35 +1905,15 @@ struct AddFilterListView: View {
     }
 
     private func cancelURLListImport() {
-        urlListImportGeneration += 1
-        isImportingURLList = false
+        urlReview.cancelFileImport()
     }
 
     private func importURLList(from url: URL) {
-        urlListImportGeneration += 1
-        let generation = urlListImportGeneration
-        // Drop anything prepared from the previous input before the async read.
         isReviewingURLs = false
-        metadataFetchTask?.cancel()
-        isFetchingURLMetadata = false
-        isImportingURLList = true
         importErrorMessage = nil
-        let didAccess = url.startAccessingSecurityScopedResource()
-        Task { @MainActor in
-            defer { if didAccess { url.stopAccessingSecurityScopedResource() } }
-            do {
-                let text = try await Task.detached(priority: .userInitiated) {
-                    try UserScriptURLSupport.urlListText(fromFile: url)
-                }.value
-                guard generation == urlListImportGeneration else { return }
-                urlInput = UserScriptURLSupport.appendingPastedURLs(text, to: urlInput)
-                isImportingURLList = false
-            } catch {
-                guard generation == urlListImportGeneration else { return }
-                isImportingURLList = false
-                importErrorMessage = error.localizedDescription
-            }
-        }
+        urlReview.importURLList(from: url, onSuccess: { text in
+            urlInput = UserScriptURLSupport.appendingPastedURLs(text, to: urlInput)
+        }, onFailure: { importErrorMessage = $0 })
     }
 
     private func stageFile(at url: URL) {
