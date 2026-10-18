@@ -145,10 +145,10 @@
 "Apply your pending changes" = "Bekleyen değişikliklerinizi uygulayın";
 "Applying filters..." = "Filtreler uygulanıyor...";
 "Applying filters...\n(This may take a while)" = "Filtreler uygulanıyor...\n(Bu biraz zaman alabilir)";
-"Auto Update" = "Otomatik Güncelleme";
+"Auto Update" = "Otomatik güncelleme";
 "Auto-Update Filters" = "Filtreleri otomatik güncelle";
-"Automatic Updates" = "Otomatik Güncelleme";
-"AutoUpdate" = "Otomatik Güncelleme";
+"Automatic Updates" = "Otomatik güncelleme";
+"AutoUpdate" = "Otomatik güncelleme";
 "Available Updates" = "Mevcut güncellemeler";
 "Back" = "Geri";
 "Background agent error: %@" = "Arka plan görevi hatası: %@";
@@ -293,8 +293,8 @@
 "The backup has no usable contents for these lists. They will be skipped when restoring. %@" = "Yedek, bu listeler için kullanılabilir içerik barındırmıyor. Geri yükleme sırasında bu listeler atlanacak. %@";
 "Export Settings" = "Ayarları dışa aktar";
 "Extension Slots" = "Genişletme Modülleri";
-"Rule Types" = "Kural türleri";
-"Network and element hiding rules count toward Safari's limit. wBlock Scripts applies its rules on its own, and URL parameter rules have a separate limit of %@." = "Ağ ve öğe gizleme kuralları Safari sınırına dahildir. wBlock Scripts kendi kurallarını ayrıca uygular ve URL parametresi kurallarının ayrı bir %@ sınırı vardır.";
+"Rule Types" = "Kural Türleri";
+"Network and element hiding rules count toward Safari's limit. wBlock Scripts applies its rules on its own, and URL parameter rules have a separate limit of %@." = "Ağ ve öğe gizleme kuralları, Safari'nin sınırına dahildir. wBlock Scripts kendi kurallarını uygular ve URL parametre kuralları %@ ile sınırlıdır.";
 "Extensions" = "Genişletmeler";
 "Extensive blocklist targeting ads, trackers, and other unwanted content." = "Reklamları, izleyicileri ve diğer istenmeyen içerikleri hedefleyen kapsamlı engelleme listesi.";
 "Failed" = "Başarısız";
@@ -350,8 +350,8 @@
 "Filter that enables ad blocking on websites in Ukrainian language." = "Ukraynaca dilindeki sitelerde reklam engellemeyi sağlayan filtre.";
 "Filter that protects against various types of scams in the Polish network, such as mass text messaging, fake online stores, etc." = "Polonya ağındaki toplu kısa mesajlar, sahte çevrimiçi mağazalar vb. gibi çeşitli dolandırıcılık türlerine karşı koruma sağlayan filtre.";
 "CERT Polska's list of dangerous domains that impersonate real sites to steal data or money." = "CERT Polska'nın, veri veya para çalmak amacıyla gerçek siteleri taklit eden tehlikeli alan adlarından oluşan listesi.";
-"Filter Update" = "Filtre Güncelleme";
-"FilterApply" = "Filtreyi Uygula";
+"Filter Update" = "Filtre güncelleme";
+"FilterApply" = "Filtre uygulama";
 "Filtering off" = "Filtreleme kapalı";
 "Filters" = "Filtreler";
 "Filters: %d / Userscripts: %d" = "Filtre: %d / Kullanıcı betiği: %d";
@@ -407,7 +407,7 @@
 "Languages: \\(languageSummary)" = "Dil: \\(languageSummary)";
 "last updated %@" = "son güncelleme %@";
 "Latvian List" = "Latvian List";
-"Line %d isn’t a valid filter rule." = "%d satırı geçerli bir filtre kuralı değildir.";
+"Line %d isn’t a valid filter rule." = "%d satır geçerli bir filtre kuralı değil.";
 "Line %d isn’t a valid http(s) filter URL." = "%d. satırındaki http(s) filtre URL'si geçerli değil.";
 "filterslists-KO" = "filterslists-KO";
 "Liste AR" = "Liste AR";
@@ -574,7 +574,7 @@
 "Starting filter application process" = "Filtre uygulama işlemi başlatılıyor";
 "Startup" = "Başlangıç";
 "Step %d of %d" = "Adım %d / %d";
-"Stripped unknown directives" = "Bilinmeyen yönergeler ayıklandı";
+"Stripped unknown directives" = "Bilinmeyen yönergeler kaldırıldı";
 "Style Content" = "Stil içeriği";
 "Styles" = "Stiller";
 "Submit failed" = "Gönderilemedi";
@@ -827,7 +827,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Light" = "Açık";
 "%@ → %@ Safari rules" = "%@ → %@ Safari kuralı";
 "Cosmetic Filtering" = "Kozmetik filtreleme";
-"Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU." = "CSS kullanarak reklam alanlarını ve diğer sayfa öğelerini gizler. Kapatılırsa yalnızca daha az kural ve CPU kullanan ağ engellemesi çalışır.";
+"Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU." = "CSS kullanarak reklam alanlarını ve sayfa öğelerini gizler. Kapatıldığında yalnızca ağ engellemesi çalışır; bu da daha az kural ve işlemci kullanımı demektir.";
 "Replace Titles" = "Başlıkları değiştir";
 "Replace Thumbnails" = "Kapakları değiştir";
 "Random Frame When No Thumbnail" = "Kapak resmi yoksa rastgele kare";
@@ -849,7 +849,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Features: All" = "Özellikler: Tümü";
 "Features: %d off" = "Özellikler: %d kapalı";
 "Chapters" = "Bölümler";
-"Captions in Native Player" = "Yerel oynatıcıda altyazılar";
+"Captions in Native Player" = "Yerel oynatıcıda altyazı";
 "Picture in Picture" = "Resim içinde resim";
 "Automatic Picture in Picture" = "Otomatik resim içinde resim";
 "Background Playback" = "Arkaplanda oynatma";
@@ -860,8 +860,8 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Enable All" = "Tümünü etkinleştir";
 
 
-"Network Rules" = "Ağ kuralları";
-"Element Hiding" = "Öğe gizleme";
+"Network Rules" = "Ağ Kuralları";
+"Element Hiding" = "Öğe Gizleme";
 "Unsupported" = "Desteklenmeyen";
 "Duplicates" = "Tekrarlanan";
 "Comments" = "Yorumlar";
@@ -909,9 +909,9 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 
 
 
-"Paste URL" = "URL'yi yapıştırın";
+"Paste URL" = "URL'yi yapıştır";
 
-"Paste URLs" = "URL'leri yapıştırın";
+"Paste URLs" = "URL'leri yapıştır";
 
 
 
@@ -999,8 +999,8 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 
 /* Shown under a sync setting while a sync is running */
 "Available when the current sync finishes." = "Mevcut eşitleme tamamlandığında kullanılabilir.";
-"Generic Rules" = "Genel Kurallar";
-"Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps." = "Herhangi bir site adı belirtmeyen kurallarla, her sitedeki öğeleri gizler. Bu özelliği kapatmak, siteye özel gizleme kurallarını korur ve özellikle yoğun web uygulamalarında sayfaların daha hızlı çalışmasını sağlar.";
+"Generic Rules" = "Genel kurallar";
+"Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps." = "Genel kurallarla tüm sitelerdeki öğeleri gizler. Kapatırsanız sadece siteye özel kurallar çalışır ve özellikle yoğun siteler daha hızlı yüklenir.";
 "AdGuard Italian filter" = "AdGuard İtalyanca filtresi";
 "AdGuard Polish filter" = "AdGuard Polonya filtresi";
 "EasyList + AdGuard English filter. This filter is necessary for quality ad blocking." = "EasyList + AdGuard İngilizce filtresi. Bu filtre, kaliteli bir reklam engelleme için gereklidir.";
@@ -1013,7 +1013,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Blocks irritating elements that do not fall under popular categories of annoyances, such as website promotional offers and restrictions on copying and text selection." = "Web sitesi promosyon teklifleri ile kopyalama ve metin seçme kısıtlamaları gibi yaygın rahatsızlık kategorilerine girmeyen sinir bozucu öğeleri engeller.";
 "Blocks annoying third-party widgets: online assistants, live support chats, etc." = "Canlı destek sohbetleri ve çevrim içi asistanlar gibi rahatsız edici üçüncü taraf araçları engeller.";
 "Filter for social media widgets such as 'Like' and 'Share' buttons and more." = "Beğen' ve 'Paylaş' düğmeleri gibi sosyal medya araçlarını ve daha fazlasını engelleyen filtre.";
-"Hides website features that use generative AI and AI-generated content." = "Üretken yapay zekayı ve yapay zeka tarafından oluşturulan içerikleri kullanan web sitesi özelliklerini gizler.";
+"Hides website features that use generative AI and AI-generated content." = "Üretken yapay zekâ kullanan web sitesi özelliklerini ve yapay zekâ tarafından oluşturulan içerikleri gizler.";
 "This filter blocks tracking pixels in email clients." = "Bu filtre, e-posta istemcilerindeki izleme piksellerini engeller.";
 "Prevents public Internet sites from digging into your LAN files." = "Genel internet sitelerinin yerel ağ (LAN) dosyalarınızı kurcalamasını veya bunlara erişmesini engeller.";
 "Blocks more malware than most other major anti-malware lists - domains and URL patterns used in malware redirection chains, IP addresses that are solely used by malware, PUP nags, and a few scammers. Already included in Dandelion Sprout's Annoyances List." = "Kötü amaçlı yazılım yönlendirme zincirlerinde kullanılan alan adları ve URL kalıpları, yalnızca kötü amaçlı yazılımlarca kullanılan IP adresleri, potansiyel olarak istenmeyen program (PUP) darlamaları ve bazı dolandırıcılar da dahil olmak üzere — bilinen diğer birçok ana anti-malware listesinden daha fazla kötü amaçlı yazılımı engeller. Zaten Dandelion Sprout's Annoyances List filtresinde mevcut.";
@@ -1031,20 +1031,20 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 
 /* Add Filter List: Find */
 "Name, language, or topic" = "Ad, dil veya konu";
-"Searches wBlock’s lists and AdGuard’s filter registry for Safari." = "wBlock listelerinde ve AdGuard’ın Safari filtre kayıt defterinde arama yapar.";
-"In wBlock" = "wBlock’ta";
-"AdGuard Filter Registry" = "AdGuard Filtre Kayıt Defteri";
-"wBlock already includes every list in the registry." = "wBlock, kayıt defterindeki tüm listeleri zaten içeriyor.";
+"Searches wBlock’s lists and AdGuard’s filter registry for Safari." = "Safari için wBlock listelerinde ve AdGuard filtre dizininde arama yapar.";
+"In wBlock" = "wBlock içinde";
+"AdGuard Filter Registry" = "AdGuard Filtre Dizini";
+"wBlock already includes every list in the registry." = "wBlock, dizindeki tüm listeleri zaten içeriyor.";
 "No matching lists." = "Eşleşen liste yok.";
-"No longer built into wBlock" = "Artık wBlock’ta yerleşik değil";
+"No longer built into wBlock" = "Artık wBlock'ta yerleşik olarak bulunmuyor";
 "wBlock Ad and Tracking Hosts" = "wBlock Reklam ve İzleme Sunucuları";
 "Blocks ad and tracking hosts that the other lists only block in part." = "Diğer listelerin yalnızca kısmen engellediği reklam ve izleme sunucularını engeller.";
 
-"Filter Logs" = "Günlükleri filtrele";
+"Filter Logs" = "Filtreleme Günlüğü";
 "Apply Anyway" = "Yine de uygula";
 "General" = "Genel";
 "Jump to Section" = "Bölüme git";
 "Clear Logs?" = "Günlükler temizlensin mi?";
-"This deletes every log entry." = "Bu, tüm günlük kayıtlarını siler.";
+"This deletes every log entry." = "Bu işlem, tüm günlük kayıtlarını siler.";
 "Settings…" = "Ayarlar…";
-"Browse" = "Göz At";
+"Browse" = "Göz at";
