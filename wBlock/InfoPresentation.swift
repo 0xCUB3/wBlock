@@ -110,6 +110,19 @@ final class InfoPopoverPresenter: ObservableObject {
     @Published private(set) var state = InfoPopoverState()
     var clearSelection: () -> Void = {}
     var lastItem: Any?
+    weak var sourceView: NSView?
+
+    var attachmentRect: CGRect {
+        guard let token = state.presented, let view = anchors[token]?.view, let sourceView,
+              let window = view.window, sourceView.window === window else { return .zero }
+        let visible = view.bounds.intersection(view.visibleRect)
+        guard !visible.isEmpty else { return .zero }
+        let rect = sourceView.convert(visible, from: view)
+        return CGRect(x: rect.minX - sourceView.bounds.minX,
+                      y: sourceView.isFlipped ? rect.minY - sourceView.bounds.minY : sourceView.bounds.maxY - rect.maxY,
+                      width: rect.width, height: rect.height)
+    }
+
     private var anchors: [UUID: (id: AnyHashable, view: InfoPopoverAnchorView)] = [:]
 
     func register(_ token: UUID, id: AnyHashable, view: InfoPopoverAnchorView) { anchors[token] = (id, view) }
@@ -157,19 +170,14 @@ final class InfoPopoverPresenter: ObservableObject {
     }
 }
 
-private struct InfoPopoverEntry {
-    let presenter: InfoPopoverPresenter
-    let content: () -> AnyView
-}
-
 private struct InfoPopoverEntriesKey: EnvironmentKey {
-    static var defaultValue: [InfoPopoverEntry] { [] }
+    static var defaultValue: [InfoPopoverPresenter] { [] }
 }
 
 private extension EnvironmentValues {
     /// Native list rows host SwiftUI in their own NSHostingViews and receive
     /// the environment explicitly; preferences never reach the presenter.
-    var infoPopoverEntries: [InfoPopoverEntry] {
+    var infoPopoverEntries: [InfoPopoverPresenter] {
         get { self[InfoPopoverEntriesKey.self] }
         set { self[InfoPopoverEntriesKey.self] = newValue }
     }
@@ -188,11 +196,20 @@ private struct InfoPresentationModifier<Item: Identifiable, Info: View>: ViewMod
         if let item { presenter.lastItem = item }
         // Keep the closing popover's content until it finishes animating away.
         let shown = item ?? presenter.lastItem as? Item
-        let entry = InfoPopoverEntry(presenter: presenter) { [info, onDismiss] in
-            shown.map { AnyView(info($0).onDisappear(perform: onDismiss)) } ?? AnyView(EmptyView())
-        }
         let id = item.map { AnyHashable($0.id) }
-        let scoped = content.environment(\.infoPopoverEntries, entries + [entry])
+        let token = presenter.state.presented
+        let isPresented = Binding(
+            get: { presenter.state.presented != nil },
+            set: { if !$0, let token { presenter.dismiss(token) } }
+        )
+        let scoped = content.environment(\.infoPopoverEntries, entries + [presenter])
+            .background(InfoPopoverSource(presenter: presenter))
+            .background {
+                if let token { PopoverWindowShield { presenter.dismiss(token) } }
+            }
+            .popover(isPresented: isPresented, attachmentAnchor: .rect(.rect(presenter.attachmentRect)), arrowEdge: .leading) {
+                if let shown { info(shown).id(shown.id).font(.body).onDisappear(perform: onDismiss) }
+            }
         if #available(macOS 14.0, *) {
             return AnyView(scoped.onChange(of: id) { presenter.select($1) })
         } else {
@@ -211,40 +228,24 @@ private struct InfoPopoverAnchor: ViewModifier {
     func body(content: Content) -> some View {
         content
             .simultaneousGesture(TapGesture().onEnded {
-                for entry in entries { entry.presenter.clicked(token, id: id) }
+                for presenter in entries { presenter.clicked(token, id: id) }
             })
             .background {
                 ZStack {
                     ForEach(entries.indices, id: \.self) { index in
-                        InfoPopoverSlot(id: id, token: token, presenter: entries[index].presenter,
-                                        content: entries[index].content)
+                        InfoPopoverAnchorRegistration(token: token, id: id, presenter: entries[index])
                     }
                 }
             }
     }
 }
 
-private struct InfoPopoverSlot: View {
-    let id: AnyHashable
-    let token: UUID
-    @ObservedObject var presenter: InfoPopoverPresenter
-    let content: () -> AnyView
-
-    var body: some View {
-        let isPresented = Binding(
-            get: { presenter.state.presented == token },
-            set: { if !$0 { presenter.dismiss(token) } }
-        )
-        InfoPopoverAnchorRegistration(token: token, id: id, presenter: presenter)
-            .background {
-                if isPresented.wrappedValue { PopoverWindowShield { presenter.dismiss(token) } }
-            }
-            // Popovers inherit the anchor's environment; a category header's
-            // headline font would otherwise make the whole popover semibold.
-            .popover(isPresented: isPresented, attachmentAnchor: .rect(.bounds), arrowEdge: .top) {
-                content().font(.body)
-            }
-    }
+/// Host the native popover on the unclipped page, not inside a reusable row.
+/// Its attachment rectangle still follows the visible part of the info button.
+private struct InfoPopoverSource: NSViewRepresentable {
+    let presenter: InfoPopoverPresenter
+    func makeNSView(context: Context) -> NSView { InfoPopoverAnchorView() }
+    func updateNSView(_ view: NSView, context: Context) { presenter.sourceView = view }
 }
 
 private struct InfoPopoverAnchorRegistration: NSViewRepresentable {

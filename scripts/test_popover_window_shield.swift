@@ -3,7 +3,10 @@ import AppKit
 
 private struct Item: Identifiable { let id: Int }
 private final class Model: ObservableObject { @Published var selected: Item? }
-private final class Box { var buttons: [Int: NSView] = [:] }
+private final class Box {
+    var buttons: [Int: NSView] = [:]
+    let rowIDs = (0..<8).map { _ in UUID() }
+}
 private struct Marker: NSViewRepresentable {
     let id: Int
     let box: Box
@@ -25,6 +28,28 @@ private struct Fixture: View {
         .infoPresentation(item: $model.selected) { item in
             Text("Info \(item.id)").frame(width: 160, height: 80)
         }
+    }
+}
+private struct ClippedFixture: View {
+    @ObservedObject var model: Model
+    let box: Box
+    var body: some View {
+        MacReorderableList(sections: [MacListSection(
+            id: "rows", header: AnyView(Text("Lists")), rows: box.rowIDs.enumerated().map { index, id in
+                MacListRow(id) {
+                    HStack {
+                        Text("Row \(index)")
+                        Spacer()
+                        Button { model.selected = Item(id: index) } label: { Image(systemName: "info.circle") }
+                            .buttonStyle(.plain)
+                            .background(Marker(id: index, box: box))
+                            .infoPopoverAnchor(index)
+                    }
+                    .padding(16).frame(height: 70)
+                }
+            })], header: AnyView(EmptyView()), onMove: { _ in false })
+            .scrollingUnderToolbar()
+            .infoPresentation(item: $model.selected) { _ in Text("Details").frame(width: 420, height: 640) }
     }
 }
 private extension NSView {
@@ -57,9 +82,8 @@ struct PopoverWindowShieldTests {
         precondition(popups().count == 1, "rapid A->B->A must show exactly one popup")
         let shield = shields()[0]
         let button = box.buttons[1]!
-        let anchorRect = shield.convert(shield.bounds, to: nil)
-        let buttonRect = button.convert(button.bounds, to: nil)
-        precondition(abs(anchorRect.minX - buttonRect.minX) < 1 && abs(anchorRect.minY - buttonRect.minY) < 1 && abs(anchorRect.width - buttonRect.width) < 1 && abs(anchorRect.height - buttonRect.height) < 1, "attachment host must match the button")
+        precondition(shield.bounds.contains(shield.convert(button.bounds, from: button)),
+                     "the page-level host must contain the info button")
 
         // Switching an already-open popup must reuse its host. A delayed
         // dismissal from the first item must not close the second item.
@@ -86,13 +110,45 @@ struct PopoverWindowShieldTests {
         precondition(model.selected?.id == 2 && shields().count == 1 && popups().count == 1, "reopening after cancellation must present one popup")
         let reopened = shields()[0]
         let reopenedButton = box.buttons[2]!
-        let reopenedHostRect = reopened.convert(reopened.bounds, to: nil)
-        let reopenedButtonRect = reopenedButton.convert(reopenedButton.bounds, to: nil)
-        precondition(abs(reopenedHostRect.minX - reopenedButtonRect.minX) < 1 && abs(reopenedHostRect.minY - reopenedButtonRect.minY) < 1 && abs(reopenedHostRect.width - reopenedButtonRect.width) < 1 && abs(reopenedHostRect.height - reopenedButtonRect.height) < 1, "reopened host must match the button")
+        precondition(reopened.bounds.contains(reopened.convert(reopenedButton.bounds, from: reopenedButton)),
+                     "the reopened page-level host must contain its info button")
 
         model.selected = nil
         pump()
         precondition(shields().isEmpty && popups().isEmpty, "teardown must restore the idle host")
+
+        let clippedModel = Model(), clippedBox = Box()
+        let clippedHost = NSHostingView(rootView: ClippedFixture(model: clippedModel, box: clippedBox))
+        window.contentView = clippedHost
+        pump()
+        let outline = clippedHost.descendants.compactMap { $0 as? NSOutlineView }.first!
+        let listScroll = outline.enclosingScrollView!
+        for topEdge in [false, true] {
+            outline.scrollRowToVisible(7)
+            pump()
+            let marker = clippedBox.buttons[5]!
+            let rect = marker.convert(marker.bounds, to: outline)
+            let y = topEdge ? rect.minY + 4 : rect.maxY - 4 - listScroll.contentView.bounds.height
+            listScroll.contentView.scroll(to: NSPoint(x: 0, y: y))
+            listScroll.reflectScrolledClipView(listScroll.contentView)
+            pump()
+            let button = clippedBox.buttons[5]!
+            let visible = button.bounds.intersection(button.visibleRect)
+            precondition(!visible.isEmpty && visible.height < button.bounds.height, "fixture must clip the info button")
+            let point = button.convert(NSPoint(x: visible.midX, y: visible.midY), to: nil)
+            let hit = listScroll.hitTest(listScroll.superview!.convert(point, from: nil))
+            precondition(hit?.isDescendant(of: outline) == true, "the visible part of a clipped row must receive clicks, even inside the content inset")
+            clippedModel.selected = Item(id: 5)
+            pump()
+            precondition(clippedModel.selected?.id == 5 && popups().count == 1,
+                         "a partially visible info button must open its native popover at either viewport edge")
+            let popup = popups()[0], frame = popups()[0].frame
+            pump()
+            precondition(popup.frame == frame, "the tall popover must retain its settled placement")
+            clippedModel.selected = nil
+            pump()
+            precondition(popups().isEmpty, "a clipped-anchor popup must dismiss normally")
+        }
 
         // Keep the original shield behavior checks in the same one-main standalone fixture.
         let parent = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 400, height: 300), styleMask: [.titled], backing: .buffered, defer: false)
@@ -131,11 +187,16 @@ struct PopoverWindowShieldTests {
         presenter.register(offscreenToken, id: "shared", view: offscreenAnchor)
         precondition(!offscreenAnchor.visibleRect.isEmpty && offscreenAnchor.bounds.intersection(offscreenAnchor.visibleRect).isEmpty,
                      "fixture must expose a nonempty visibleRect outside the anchor bounds")
+        presenter.sourceView = scroll
         presenter.select("shared")
         precondition(presenter.state.presented == visibleToken, "an offscreen anchor must not displace the visible button")
+        precondition(presenter.attachmentRect == CGRect(x: 100, y: scroll.bounds.height - 56, width: 16, height: 16),
+                     "the page attachment must match the button in SwiftUI coordinates")
         visibleAnchor.frame.origin.y = -8
         presenter.select("shared")
         precondition(presenter.state.presented == visibleToken, "partially visible anchors remain eligible for native presentation")
+        precondition(presenter.attachmentRect == CGRect(x: 100, y: scroll.bounds.height - 8, width: 16, height: 8),
+                     "only the visible button bounds should anchor the popover")
         visibleAnchor.frame.origin.y = -40
         var clearedSelection = false
         presenter.clearSelection = { [weak presenter] in clearedSelection = true; presenter?.select(nil) }

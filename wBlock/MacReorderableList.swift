@@ -67,6 +67,16 @@ struct MacListSection {
     var revealsOnlyWhileDragging = false
 }
 
+/// Rows draw under the bottom content inset, but NSClipView stops hit testing
+/// there, so the visible part of an edge row ignored clicks (#1006).
+final class MacListClipView: NSClipView {
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        if let hit = super.hitTest(point) { return hit }
+        guard frame.contains(point), let documentView else { return nil }
+        return documentView.hitTest(convert(point, from: superview))
+    }
+}
+
 /// Rows that cannot move never enter AppKit's drag machinery. Refusing only
 /// in `pasteboardWriterForItem` is too late: by then the outline has hidden the
 /// pressed row for its drag image, and with no session to end, nothing shows
@@ -250,6 +260,7 @@ struct MacReorderableList: NSViewRepresentable {
         scroll.hasVerticalScroller = true
         scroll.autohidesScrollers = true
         scroll.drawsBackground = false
+        scroll.contentView = MacListClipView()
         let outline = MacReorderableOutlineView()
         outline.canDragRow = { [weak coordinator = context.coordinator, weak outline] row in
             guard let coordinator, let outline, let item = outline.item(atRow: row) else { return false }
