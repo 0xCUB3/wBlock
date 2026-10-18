@@ -90,7 +90,11 @@ struct LogsView: View {
                         Section {
                             ForEach(filteredEntries) { entry in
                                 LogEntryRow(entry: entry)
+                                    #if os(macOS)
+                                    .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 16))
+                                    #else
                                     .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                                    #endif
                             }
                         } header: {
                             #if os(iOS)
@@ -375,6 +379,8 @@ struct LogEntryRow: View {
                 summaryContent
             }
         }
+        // List may propose the cached collapsed height while this row expands.
+        .fixedSize(horizontal: false, vertical: true)
     }
 
     private var summaryContent: some View {
