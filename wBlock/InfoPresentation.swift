@@ -138,7 +138,7 @@ final class InfoPopoverPresenter: ObservableObject {
         let visible = anchors.compactMap { token, anchor -> InfoPopoverState.Anchor? in
             let view = anchor.view
             guard anchor.id == id, let window = view.window, !view.isHiddenOrHasHiddenAncestor,
-                  !view.visibleRect.isEmpty else { return nil }
+                  !view.bounds.intersection(view.visibleRect).isEmpty else { return nil }
             return .init(token: token, id: anchor.id, windowNumber: window.windowNumber, frame: view.convert(view.bounds, to: nil))
         }
         let mouseUp = event?.type == .leftMouseUp ? event?.eventNumber : nil

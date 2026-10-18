@@ -113,7 +113,36 @@ struct PopoverWindowShieldTests {
         precondition(!standaloneShield.consume(.keyDown, in: parent))
         parent.contentView = NSView()
         precondition(standaloneShield.window == nil && !standaloneShield.consume(.leftMouseDown, in: parent))
+        // A non-clipping NSView can report a nonempty visibleRect entirely
+        // outside its bounds. Such a reused/offscreen anchor must not win.
+        let scroll = NSScrollView(frame: NSRect(x: 0, y: 0, width: 400, height: 200))
+        let document = NSView(frame: NSRect(x: 0, y: 0, width: 400, height: 600))
+        scroll.documentView = document
+        parent.contentView = scroll
+        let visibleAnchor = InfoPopoverAnchorView(frame: NSRect(x: 100, y: 40, width: 16, height: 16))
+        let offscreenAnchor = InfoPopoverAnchorView(frame: NSRect(x: 100, y: 340, width: 16, height: 16))
+        document.addSubview(visibleAnchor)
+        document.addSubview(offscreenAnchor)
+        scroll.contentView.scroll(to: .zero)
+        parent.layoutIfNeeded()
+        let presenter = InfoPopoverPresenter()
+        let visibleToken = UUID(), offscreenToken = UUID()
+        presenter.register(visibleToken, id: "shared", view: visibleAnchor)
+        presenter.register(offscreenToken, id: "shared", view: offscreenAnchor)
+        precondition(!offscreenAnchor.visibleRect.isEmpty && offscreenAnchor.bounds.intersection(offscreenAnchor.visibleRect).isEmpty,
+                     "fixture must expose a nonempty visibleRect outside the anchor bounds")
+        presenter.select("shared")
+        precondition(presenter.state.presented == visibleToken, "an offscreen anchor must not displace the visible button")
+        visibleAnchor.frame.origin.y = -8
+        presenter.select("shared")
+        precondition(presenter.state.presented == visibleToken, "partially visible anchors remain eligible for native presentation")
+        visibleAnchor.frame.origin.y = -40
+        var clearedSelection = false
+        presenter.clearSelection = { [weak presenter] in clearedSelection = true; presenter?.select(nil) }
+        presenter.select("shared")
+        precondition(clearedSelection && presenter.state.presented == nil, "no visible anchor must clear the selection")
+
         window.orderOut(nil)
-        print("PASS: rapid A->B->A, pre-readiness cancellation/reopen, exact attachment geometry, and shield isolation")
+        print("PASS: rapid A->B->A, pre-readiness cancellation/reopen, exact attachment geometry, shield isolation, and clipped-anchor selection")
     }
 }
