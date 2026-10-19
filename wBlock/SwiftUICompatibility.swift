@@ -410,6 +410,37 @@ extension ToolbarContent {
     }
 }
 
+@available(iOS 16.0, macOS 13.0, *)
+extension CustomizableToolbarContent {
+    func toolbarVisibilityPriorityCompat(_ priority: ToolbarVisibilityPriorityCompat) -> some CustomizableToolbarContent {
+        CustomizableToolbarVisibilityPriorityContent(base: self, priority: priority)
+    }
+}
+
+@available(iOS 16.0, macOS 13.0, *)
+private struct CustomizableToolbarVisibilityPriorityContent<Base: CustomizableToolbarContent>: CustomizableToolbarContent {
+    let base: Base
+    let priority: ToolbarVisibilityPriorityCompat
+
+    var body: some CustomizableToolbarContent {
+        #if os(iOS) && compiler(>=6.4)
+        if #available(iOS 27.0, *) {
+            base.visibilityPriority(priority == .high ? .high : .low)
+        } else {
+            base
+        }
+        #elseif os(macOS) && compiler(>=6.2.1)
+        if #available(macOS 26.1, *) {
+            base.visibilityPriority(priority == .high ? .high : .low)
+        } else {
+            base
+        }
+        #else
+        base
+        #endif
+    }
+}
+
 /// ToolbarContentBuilder has no branching before iOS 16, so the availability
 /// check lives in a wrapper's body rather than inside the builder.
 @available(iOS 16.0, macOS 13.0, *)

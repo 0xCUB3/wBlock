@@ -351,7 +351,15 @@ struct MacReorderableList: NSViewRepresentable {
         private var heights: [Node.ID: CGFloat] = [:]
         /// Rows whose content changed while off screen; only these are re-measured as they scroll in.
         private var unverified: Set<Node.ID> = []
-        private let sizer = MacListHostingView(rootView: AnyView(EmptyView()))
+        /// Height still measured synchronously in an update; rows past it get an
+        /// estimate and are measured a few at a time between frames.
+        private var syncBudget: CGFloat = 0
+        private var mustMeasure: Set<Node.ID> = []
+        private var deferred: [Node] = []
+        private var measuringDeferred = false
+        /// fittingSize on a hosting view loads Auto Layout constraints for the
+        /// whole row; a controller asks SwiftUI's layout directly.
+        private let sizer = NSHostingController(rootView: AnyView(EmptyView()))
 
         init(_ model: MacReorderableList) { self.model = model }
 
@@ -362,8 +370,9 @@ struct MacReorderableList: NSViewRepresentable {
             // Drop validation still consults the latest model, including deletions.
             guard !dragging, let outline else { return }
             updating = true
-            defer { updating = false }
+            defer { updating = false; syncBudget = 0 }
             unverified.formUnion(heights.keys)
+            syncBudget = (outline.enclosingScrollView?.contentView.bounds.height ?? 0) * 1.5
             let previous = structure
             let existing = Dictionary(uniqueKeysWithValues: roots.flatMap { [$0] + $0.children }.map { ($0.id, $0) })
             func node(_ id: Node.ID, _ content: AnyView) -> Node {
@@ -468,6 +477,7 @@ struct MacReorderableList: NSViewRepresentable {
                 guard let node = outline.item(atRow: row) as? Node else { continue }
                 heights[node.id] = nil
                 unverified.remove(node.id)
+                mustMeasure.insert(node.id)
                 guard let view = outline.view(atColumn: 0, row: row, makeIfNecessary: false) as? MacListHostingView else { continue }
                 view.isHidden = isConcealed(node)
                 view.setContent(hosted(node))
@@ -483,15 +493,18 @@ struct MacReorderableList: NSViewRepresentable {
                 view.setContent(hosted(header))
             }
             guard !heights.isEmpty else { return }
-            let rows: IndexSet
-            if outline.inLiveResize {
-                let visible = outline.rows(in: outline.visibleRect)
-                guard visible.location != NSNotFound else { return }
-                rows = IndexSet(integersIn: visible.location..<NSMaxRange(visible))
-                rows.compactMap { outline.item(atRow: $0) as? Node }.forEach { heights[$0.id] = nil }
-            } else {
-                rows = IndexSet(integersIn: 0..<outline.numberOfRows)
-                heights.removeAll()
+            let visible = outline.rows(in: outline.visibleRect)
+            guard visible.location != NSNotFound else { return }
+            let rows = IndexSet(integersIn: visible.location..<NSMaxRange(visible))
+            for row in 0..<outline.numberOfRows {
+                guard let node = outline.item(atRow: row) as? Node else { continue }
+                if rows.contains(row) {
+                    heights[node.id] = nil
+                    mustMeasure.insert(node.id)
+                } else if !outline.inLiveResize {
+                    // The old height stays as the estimate until the idle pass.
+                    deferMeasuring(node)
+                }
             }
             NSAnimationContext.runAnimationGroup { context in
                 context.duration = 0
@@ -499,20 +512,79 @@ struct MacReorderableList: NSViewRepresentable {
             }
         }
 
+        private func deferMeasuring(_ node: Node) {
+            unverified.insert(node.id)
+            deferred.append(node)
+            guard !measuringDeferred else { return }
+            measuringDeferred = true
+            DispatchQueue.main.async { [weak self] in self?.measureDeferred() }
+        }
+
+        /// Measure estimated rows in short slices so scrolling and tab switches
+        /// never wait for rows the user cannot see yet.
+        private func measureDeferred() {
+            measuringDeferred = false
+            guard let outline else { return }
+            if dragging || updating {
+                measuringDeferred = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in self?.measureDeferred() }
+                return
+            }
+            let deadline = Date().addingTimeInterval(0.004)
+            var changed = IndexSet()
+            while !deferred.isEmpty, Date() < deadline {
+                let node = deferred.removeFirst()
+                let row = outline.row(forItem: node)
+                guard row >= 0, unverified.remove(node.id) != nil, !isConcealed(node) else { continue }
+                let height = measure(node, width: outline.bounds.width)
+                if heights[node.id].map({ abs($0 - height) > 0.5 }) ?? true { changed.insert(row) }
+                heights[node.id] = height
+            }
+            noteHeightsKeepingViewport(changed)
+            if !deferred.isEmpty {
+                measuringDeferred = true
+                DispatchQueue.main.async { [weak self] in self?.measureDeferred() }
+            }
+        }
+
+        /// Rows above the viewport that change height must not move what the user is looking at.
+        private func noteHeightsKeepingViewport(_ rows: IndexSet) {
+            guard !rows.isEmpty, let outline, let clip = outline.enclosingScrollView?.contentView else { return }
+            let visible = outline.rows(in: outline.visibleRect)
+            let anchor = visible.location == NSNotFound ? nil
+                : (visible.location..<NSMaxRange(visible)).first { !rows.contains($0) }
+            let offset = anchor.map { outline.rect(ofRow: $0).minY - clip.bounds.minY }
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0
+                outline.noteHeightOfRows(withIndexesChanged: rows)
+            }
+            guard let anchor, let offset, rows.contains(where: { $0 < anchor }) else { return }
+            outline.layoutSubtreeIfNeeded()
+            let target = NSPoint(x: clip.bounds.minX, y: outline.rect(ofRow: anchor).minY - offset)
+            clip.scroll(to: clip.constrainBoundsRect(NSRect(origin: target, size: clip.bounds.size)).origin)
+            outline.enclosingScrollView?.reflectScrolledClipView(clip)
+        }
+
         func outlineView(_ outlineView: NSOutlineView, heightOfRowByItem item: Any) -> CGFloat {
             guard let node = item as? Node else { return 1 }
             if isConcealed(node) { return Self.concealedHeight }
             if let height = heights[node.id] { return height }
-            let height = measure(node, in: sizer, width: outlineView.bounds.width, keyed: false)
+            guard mustMeasure.remove(node.id) != nil || syncBudget > 0 else {
+                let estimate = heights.isEmpty ? 60 : heights.values.reduce(0, +) / CGFloat(heights.count)
+                heights[node.id] = estimate
+                deferMeasuring(node)
+                return estimate
+            }
+            let height = measure(node, width: outlineView.bounds.width)
             heights[node.id] = height
+            syncBudget -= height
             return height
         }
 
         /// Unkeyed content lets one sizer diff between rows instead of rebuilding each.
-        private func measure(_ node: Node, in view: MacListHostingView, width: CGFloat, keyed: Bool) -> CGFloat {
-            view.setFrameSize(NSSize(width: max(width, 1), height: view.frame.height))
-            view.setContent(hosted(node, keyed: keyed))
-            return max(1, ceil(view.fittingSize.height))
+        private func measure(_ node: Node, width: CGFloat) -> CGFloat {
+            sizer.rootView = hosted(node, keyed: false)
+            return max(1, ceil(sizer.sizeThatFits(in: NSSize(width: max(width, 1), height: .greatestFiniteMagnitude)).height))
         }
 
         private func updateCardEdges(in parent: Node) {
@@ -596,24 +668,15 @@ struct MacReorderableList: NSViewRepresentable {
             if view.isHidden { return view }
             // Measuring forces a full layout, so only rows whose content changed
             // off screen since they were measured pay for it while scrolling.
-            guard unverified.remove(node.id) != nil else {
-                view.setFrameSize(NSSize(width: max(outlineView.bounds.width, 1), height: view.frame.height))
-                view.setContent(hosted(node))
-                return view
-            }
-            let height = measure(node, in: view, width: outlineView.bounds.width, keyed: true)
-            if let cached = heights[node.id] {
-                if abs(height - cached) > 0.5 {
-                    heights[node.id] = nil
-                    DispatchQueue.main.async { [weak outlineView] in
-                        guard let outlineView else { return }
-                        let row = outlineView.row(forItem: node)
-                        guard row >= 0 else { return }
-                        NSAnimationContext.runAnimationGroup { context in
-                            context.duration = 0
-                            outlineView.noteHeightOfRows(withIndexesChanged: IndexSet(integer: row))
-                        }
-                    }
+            view.setFrameSize(NSSize(width: max(outlineView.bounds.width, 1), height: view.frame.height))
+            view.setContent(hosted(node))
+            guard unverified.remove(node.id) != nil else { return view }
+            let height = measure(node, width: outlineView.bounds.width)
+            if let cached = heights[node.id], abs(height - cached) > 0.5 {
+                heights[node.id] = height
+                DispatchQueue.main.async { [weak self, weak outlineView] in
+                    guard let self, let row = outlineView?.row(forItem: node), row >= 0 else { return }
+                    self.noteHeightsKeepingViewport(IndexSet(integer: row))
                 }
             }
             return view
