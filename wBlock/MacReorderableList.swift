@@ -549,9 +549,24 @@ struct MacReorderableList: NSViewRepresentable {
             }
         }
 
-        /// Rows above the viewport that change height must not move what the user is looking at.
+        /// Rows above the viewport that change height must not move what the user is looking at,
+        /// and a viewport at the end of the list stays there while estimated rows settle.
         private func noteHeightsKeepingViewport(_ rows: IndexSet) {
             guard !rows.isEmpty, let outline, let clip = outline.enclosingScrollView?.contentView else { return }
+            func endOrigin() -> NSPoint {
+                clip.constrainBoundsRect(NSRect(origin: NSPoint(x: clip.bounds.minX, y: .greatestFiniteMagnitude), size: clip.bounds.size)).origin
+            }
+            let last = outline.numberOfRows - 1
+            if clip.bounds.minY > 0, last >= 0, outline.rect(ofRow: last).maxY <= clip.bounds.maxY + 1 {
+                NSAnimationContext.runAnimationGroup { context in
+                    context.duration = 0
+                    outline.noteHeightOfRows(withIndexesChanged: rows)
+                }
+                outline.layoutSubtreeIfNeeded()
+                clip.scroll(to: endOrigin())
+                outline.enclosingScrollView?.reflectScrolledClipView(clip)
+                return
+            }
             let visible = outline.rows(in: outline.visibleRect)
             let anchor = visible.location == NSNotFound ? nil
                 : (visible.location..<NSMaxRange(visible)).first { !rows.contains($0) }
