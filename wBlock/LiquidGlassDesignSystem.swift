@@ -60,8 +60,9 @@ struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
 
     func body(content: Content) -> some View {
         #if os(macOS)
-        // Update sits on the leading edge as on iOS, and each trailing action
-        // stands alone with the toolbar's own spacing (#999).
+        // Update sits on the leading edge as on iOS. Search stands alone, then
+        // Show Enabled Only and Add share one group, with the toolbar's own
+        // spacing between them (#999).
         if #available(macOS 26.0, *) {
             content.toolbar {
                 ToolbarItem(placement: .navigation) { apply() }
@@ -71,9 +72,14 @@ struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
                 }
                 .sharedBackgroundVisibility(.hidden)
                 .toolbarVisibilityPriorityCompat(.high)
-                ToolbarItem(placement: .primaryAction) { filter }
-                    .toolbarVisibilityPriorityCompat(.high)
-                ToolbarItem(placement: .primaryAction) { primary() }
+                ToolbarSpacer(.fixed, placement: .primaryAction)
+                // One item, so AppKit can't split a menu (Userscripts' Add) into its own capsule.
+                ToolbarItem(placement: .primaryAction) {
+                    ControlGroup {
+                        filter
+                        primary()
+                    }
+                }
             }
             .toolbarBackground(.visible, for: .windowToolbar)
         } else {
