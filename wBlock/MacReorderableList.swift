@@ -255,6 +255,15 @@ struct MacReorderableList: NSViewRepresentable {
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
+    /// The list fills what it is offered. Without this SwiftUI asks the scroll
+    /// view for its fitting size on every layout, which loads Auto Layout
+    /// constraints for every hosted row and took about a third of the main
+    /// thread while scrolling and switching tabs.
+    @available(macOS 13.0, *)
+    func sizeThatFits(_ proposal: ProposedViewSize, nsView: NSScrollView, context: Context) -> CGSize? {
+        proposal.replacingUnspecifiedDimensions()
+    }
+
     func makeNSView(context: Context) -> NSScrollView {
         let scroll = NSScrollView()
         scroll.hasVerticalScroller = true
@@ -340,6 +349,8 @@ struct MacReorderableList: NSViewRepresentable {
         private var accepted = false
         private var updating = false
         private var heights: [Node.ID: CGFloat] = [:]
+        /// Rows whose content changed while off screen; only these are re-measured as they scroll in.
+        private var unverified: Set<Node.ID> = []
         private let sizer = MacListHostingView(rootView: AnyView(EmptyView()))
 
         init(_ model: MacReorderableList) { self.model = model }
@@ -352,6 +363,7 @@ struct MacReorderableList: NSViewRepresentable {
             guard !dragging, let outline else { return }
             updating = true
             defer { updating = false }
+            unverified.formUnion(heights.keys)
             let previous = structure
             let existing = Dictionary(uniqueKeysWithValues: roots.flatMap { [$0] + $0.children }.map { ($0.id, $0) })
             func node(_ id: Node.ID, _ content: AnyView) -> Node {
@@ -455,6 +467,7 @@ struct MacReorderableList: NSViewRepresentable {
             for row in indexes {
                 guard let node = outline.item(atRow: row) as? Node else { continue }
                 heights[node.id] = nil
+                unverified.remove(node.id)
                 guard let view = outline.view(atColumn: 0, row: row, makeIfNecessary: false) as? MacListHostingView else { continue }
                 view.isHidden = isConcealed(node)
                 view.setContent(hosted(node))
@@ -581,7 +594,13 @@ struct MacReorderableList: NSViewRepresentable {
             view.identifier = identifier
             view.isHidden = isConcealed(node)
             if view.isHidden { return view }
-            // Off-screen content may have changed since this row was measured.
+            // Measuring forces a full layout, so only rows whose content changed
+            // off screen since they were measured pay for it while scrolling.
+            guard unverified.remove(node.id) != nil else {
+                view.setFrameSize(NSSize(width: max(outlineView.bounds.width, 1), height: view.frame.height))
+                view.setContent(hosted(node))
+                return view
+            }
             let height = measure(node, in: view, width: outlineView.bounds.width, keyed: true)
             if let cached = heights[node.id] {
                 if abs(height - cached) > 0.5 {
