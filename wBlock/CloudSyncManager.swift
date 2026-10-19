@@ -861,10 +861,10 @@ final class CloudSyncManager: ObservableObject {
             ))
         }
 
-        // Merge zapper hosts per key and disabled-host choices as a set.
+        // Merge each host's zapper selectors and the disabled hosts as sets.
         let mergedZapperRules: [String: [String]]
         if let remoteZapperRules = payload.zapperRules {
-            mergedZapperRules = Self.mergeDictionary(
+            mergedZapperRules = Self.mergeZapperRules(
                 local: currentContent.zapperRules ?? [:],
                 baseline: zapperBaseline ?? [:],
                 remote: remoteZapperRules
@@ -996,6 +996,20 @@ final class CloudSyncManager: ObservableObject {
         let keys = Set(baseline.keys).union(local.keys)
         for key in keys where local[key] != baseline[key] {
             merged[key] = local[key]
+        }
+        return merged
+    }
+
+    /// Selectors zapped on the same site on two devices must both survive.
+    private static func mergeZapperRules(
+        local: [String: [String]],
+        baseline: [String: [String]],
+        remote: [String: [String]]
+    ) -> [String: [String]] {
+        var merged: [String: [String]] = [:]
+        for host in Set(local.keys).union(baseline.keys).union(remote.keys) {
+            let rules = mergeStringSet(local: local[host] ?? [], baseline: baseline[host] ?? [], remote: remote[host] ?? [])
+            if !rules.isEmpty { merged[host] = rules }
         }
         return merged
     }
