@@ -558,9 +558,6 @@ struct ApplyChangesButton<Label: View>: View {
         }
         .accessibilityLabel(isDisabled ? Text("Updating…") : hasPendingChanges ? Text("Apply Changes") : Text("Check for Updates"))
         .help(isDisabled ? Text("Updating…") : hasPendingChanges ? Text("Apply your pending changes") : Text("Check for Updates"))
-        #if os(macOS)
-        .environment(\.compactToolbarTextLabel, hasPendingChanges)
-        #endif
     }
 }
 

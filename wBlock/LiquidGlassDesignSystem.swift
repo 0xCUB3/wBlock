@@ -33,8 +33,8 @@ extension View {
     }
 }
 
-/// On macOS, Search leads the actions (see `InlineGlassSearchField`), then
-/// Update and Show Enabled in one container, then Add.
+/// On macOS 26 and later every item is a system toolbar item with the system's
+/// own sizing; search is the native toolbar search field.
 /// On iOS and iPadOS, Update/Apply sits alone at the leading edge. That is a
 /// settled decision: do not regroup it with the trailing actions again.
 struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
@@ -66,21 +66,11 @@ struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
             content.toolbar {
                 ToolbarItem(placement: .navigation) { apply() }
                     .toolbarVisibilityPriorityCompat(.high)
-                ToolbarItem(placement: .primaryAction) {
-                    InlineGlassSearchField(text: $searchText, focusRequest: $focusRequest, prompt: searchPrompt)
-                }
-                .sharedBackgroundVisibility(.hidden)
-                .toolbarVisibilityPriorityCompat(.high)
                 ToolbarItem(placement: .primaryAction) { filter }
                     .toolbarVisibilityPriorityCompat(.high)
-                ToolbarItem(placement: .primaryAction) {
-                    primary()
-                        .labelStyle(.iconOnly)
-                        .buttonStyle(CompactToolbarButtonStyle())
-                        .glassEffect(.regular.interactive(), in: .capsule)
-                }
-                .sharedBackgroundVisibility(.hidden)
+                ToolbarItem(placement: .primaryAction) { primary() }
             }
+            .modifier(NativeToolbarSearch(text: $searchText, focusRequest: $focusRequest, prompt: searchPrompt))
             .toolbarBackground(.visible, for: .windowToolbar)
         } else {
             content.toolbar {
@@ -197,74 +187,37 @@ struct MacPushedActionsToolbar<Actions: View>: ViewModifier {
     }
 
     func body(content: Content) -> some View {
-        if #available(macOS 26.0, *) {
-            content.toolbar {
-                ToolbarItemGroup(placement: .automatic) {
-                    actions()
-                        .labelStyle(.iconOnly)
-                        .environment(\.compactToolbarGrouped, true)
-                        .buttonStyle(CompactToolbarButtonStyle())
-                }
-            }
-        } else {
-            // Keep action items separate on older macOS releases.
-            content.toolbar {
-                ToolbarItemGroup(placement: .automatic) { actions() }
-            }
+        content.toolbar {
+            ToolbarItemGroup(placement: .automatic) { actions() }
         }
     }
 }
 
-private struct CompactToolbarGroupedKey: EnvironmentKey {
-    static let defaultValue = false
-}
-
-extension EnvironmentValues {
-    var compactToolbarGrouped: Bool {
-        get { self[CompactToolbarGroupedKey.self] }
-        set { self[CompactToolbarGroupedKey.self] = newValue }
-    }
-}
-
-private struct CompactToolbarTextLabelKey: EnvironmentKey {
-    static let defaultValue = false
-}
-
-extension EnvironmentValues {
-    var compactToolbarTextLabel: Bool {
-        get { self[CompactToolbarTextLabelKey.self] }
-        set { self[CompactToolbarTextLabelKey.self] = newValue }
-    }
-}
-
+/// The system toolbar search field. A focus request (⌘F) moves the caret into it
+/// and resets, so it can be repeated; `isPresented` alone does not focus it on macOS.
 @available(macOS 26.0, *)
-private struct CompactToolbarButtonStyle: ButtonStyle {
-    @Environment(\.isEnabled) private var isEnabled
-    @State private var isHovered = false
-    @Environment(\.compactToolbarTextLabel) private var isTextLabel
-    @Environment(\.compactToolbarGrouped) private var isGrouped
-    @Environment(\.controlActiveState) private var controlActiveState
+private struct NativeToolbarSearch: ViewModifier {
+    @Binding var text: String
+    @Binding var focusRequest: Bool
+    let prompt: LocalizedStringKey
+    @FocusState private var isFocused: Bool
 
-    private var side: CGFloat { isGrouped ? 30 : 36 }
+    func body(content: Content) -> some View {
+        content
+            .searchable(text: $text, placement: .toolbar, prompt: prompt)
+            .searchFocused($isFocused)
+            .onAppear(perform: handleFocusRequest)
+            .onChangeCompat(of: focusRequest) { _, _ in handleFocusRequest() }
+    }
 
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.system(size: isTextLabel ? 13 : (isGrouped ? 15 : 17)))
-            .fixedSize(horizontal: true, vertical: false)
-            .frame(width: isTextLabel ? nil : side, height: side)
-            .padding(.horizontal, isTextLabel ? 10 : 0)
-            .contentShape(Rectangle())
-            // Background windows gray their toolbar, as native items do.
-            .foregroundStyle(controlActiveState == .inactive ? .tertiary : .primary)
-            .background(Color.primary.opacity(isEnabled ? (configuration.isPressed ? 0.12 : (isHovered ? 0.08 : 0)) : 0), in: .capsule)
-            .opacity(isEnabled ? (configuration.isPressed ? 0.6 : 1) : 0.35)
-            .onHover { isHovered = $0 }
-            .padding(isGrouped ? 3 : 0)
+    private func handleFocusRequest() {
+        guard focusRequest else { return }
+        isFocused = true
+        focusRequest = false
     }
 }
 
-
-/// Compact inline glass search on macOS 26 and the original toolbar field on older systems.
+/// The system toolbar search field on macOS 26, and the original toolbar field on older systems.
 /// Requests are one-shot so menu and notification commands can focus the field repeatedly.
 struct ToolbarSearchModifier: ViewModifier {
     @Binding var text: String
@@ -274,12 +227,7 @@ struct ToolbarSearchModifier: ViewModifier {
     @ViewBuilder
     func body(content: Content) -> some View {
         if #available(macOS 26.0, *) {
-            content.toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    InlineGlassSearchField(text: $text, focusRequest: $focusRequest, prompt: prompt)
-                }
-                .sharedBackgroundVisibility(.hidden)
-            }
+            content.modifier(NativeToolbarSearch(text: $text, focusRequest: $focusRequest, prompt: prompt))
         } else {
             content.toolbar {
                 ToolbarItem(placement: .automatic) {
@@ -300,183 +248,6 @@ extension View {
         modifier(ToolbarSearchModifier(text: text, focusRequest: focusRequest, prompt: prompt))
     }
     #endif
-}
-
-@available(macOS 26.0, *)
-struct InlineGlassSearchField: View {
-    @Binding var text: String
-    @Binding var focusRequest: Bool
-    let prompt: LocalizedStringKey
-
-    @State private var isExpanded = false
-    /// The toolbar resizes its item without animating, so the slot stays at full width
-    /// until the capsule finishes collapsing and the capsule is pinned to its trailing edge.
-    @State private var holdsExpandedSlot = false
-    @State private var focusRequests = 0
-    @State private var isVisible = false
-    @State private var fieldWidth: CGFloat = 140
-    /// Search is the leftmost list action on macOS, and in a narrow window it moves
-    /// to the far left and grows rightward. Both are deliberate and settled, chosen
-    /// so the expand animation stays simple; do not "fix" either.
-    ///
-    /// Once the window is too narrow for the tab picker, AppKit moves this item to
-    /// the leading edge of the toolbar and owns that slot. The slot then widens
-    /// toward the trailing side, so the capsule has to grow from its leading edge
-    /// to stay inside it. Keeping the field anchored on the right (where the button
-    /// sits in a wide window) would mean animating against AppKit's placement: the
-    /// toolbar resizes the item without animating, so a right-anchored capsule
-    /// either jumps on the first frame, overruns its slot until layout catches up,
-    /// or fights the toolbar's own relayout. Every attempt to fake it has done one
-    /// of those. Growing from where AppKit already put the item is the only
-    /// version that stays smooth, and smooth beats symmetric here.
-    @State private var growsTrailing = false
-    @State private var anchor = ToolbarItemAnchor()
-    @FocusState private var isFocused: Bool
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.controlActiveState) private var controlActiveState
-
-    var body: some View {
-        HStack(spacing: 0) {
-            // Keep the last field width during the capsule animation, but remove
-            // the native text field while collapsed so it cannot install I-beam cursor rects.
-            if isExpanded {
-                HStack(spacing: 6) {
-                    TextField(prompt, text: $text)
-                        .font(.system(size: 13))
-                        .textFieldStyle(.plain)
-                        .focused($isFocused)
-                        .onExitCommand {
-                            text = ""
-                            collapse()
-                        }
-                        .frame(maxWidth: .infinity)
-                    if !text.isEmpty {
-                        Button { text = "" } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundStyle(.secondary)
-                        }
-                        .buttonStyle(.plain)
-                        .noFocusRingCompat()
-                        .help(String(localized: "Clear"))
-                        .accessibilityLabel(Text("Clear"))
-                        .transition(.opacity)
-                    }
-                }
-                .onGeometryChange(for: CGFloat.self, of: \.size.width) { width in
-                    fieldWidth = width
-                }
-                .padding(.leading, 36)
-                .padding(.trailing, 8)
-            } else {
-                Color.clear.frame(width: fieldWidth + 44)
-            }
-        }
-        .frame(width: isExpanded ? Self.expandedWidth : 36, height: 36, alignment: buttonEdge)
-        .clipShape(.capsule)
-        .background {
-            if isExpanded {
-                ToolbarFieldFocuser(request: focusRequests, onClickOutside: {
-                    guard isVisible, isExpanded, text.isEmpty else { return }
-                    collapse()
-                })
-                    .frame(height: 36)
-            }
-        }
-        .glassEffect(isExpanded ? .regular.interactive() : .identity, in: .capsule)
-        // The magnifier sits on the capsule's leading edge, outside the field, so
-        // it rides that edge as the capsule grows and ends in front of the text,
-        // the way Notes and Mail place it.
-        .overlay(alignment: .leading) {
-            if isExpanded {
-                searchButton.buttonStyle(.plain)
-            } else {
-                searchButton.buttonStyle(.glass).buttonBorderShape(.circle)
-            }
-        }
-        .animation(reduceMotion ? nil : .smooth(duration: Self.duration), value: isExpanded)
-        .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: text.isEmpty)
-        .frame(width: holdsExpandedSlot ? Self.expandedWidth : 36, alignment: buttonEdge)
-        .background(ToolbarItemAnchorReader(anchor: anchor))
-        .onAppear {
-            isVisible = true
-            if !text.isEmpty { expand() }
-            handleFocusRequest()
-        }
-        .onChangeCompat(of: text) { _, value in
-            if !value.isEmpty { expand() }
-        }
-        .onChangeCompat(of: focusRequest) { _, requested in
-            if requested { handleFocusRequest() }
-        }
-        .onChangeCompat(of: isFocused) { _, focused in
-            if !focused && isVisible && isExpanded && text.isEmpty { collapse() }
-        }
-        .onDisappear {
-            isVisible = false
-            collapse()
-        }
-    }
-
-    private var searchButton: some View {
-        Button(action: expandAndFocus) {
-            Label(prompt, systemImage: "magnifyingglass")
-                .labelStyle(.iconOnly)
-                .font(.system(size: 13))
-                .fixedSize()
-                .foregroundStyle(text.isEmpty ? (controlActiveState == .inactive ? Color.primary.opacity(0.25) : Color.primary) : Color.accentColor)
-                .contentTransition(.identity)
-                .frame(width: 20, height: isExpanded ? 36 : 28)
-                .padding(.horizontal, isExpanded ? 8 : 4)
-                .contentShape(Rectangle())
-        }
-        .accessibilityValue(text)
-        .help(prompt)
-    }
-
-    private static let expandedWidth: CGFloat = 180
-    private static let duration = 0.32
-
-    private var buttonEdge: Alignment { growsTrailing ? .leading : .trailing }
-
-    private func handleFocusRequest() {
-        guard focusRequest, isVisible else { return }
-        expand()
-        focusRequests += 1
-        focusRequest = false
-        DispatchQueue.main.async {
-            guard isVisible, isExpanded else { return }
-            isFocused = true
-        }
-    }
-
-    /// Widens the slot first, without animation, so the capsule starts at the trailing
-    /// edge and grows toward the leading side on the next pass.
-    private func expand() {
-        guard !holdsExpandedSlot else {
-            isExpanded = true
-            return
-        }
-        growsTrailing = anchor.isInLeadingHalf
-        holdsExpandedSlot = true
-        DispatchQueue.main.async { if holdsExpandedSlot { isExpanded = true } }
-    }
-
-    private func expandAndFocus() {
-        expand()
-        focusRequests += 1
-        DispatchQueue.main.async {
-            guard isVisible, isExpanded else { return }
-            isFocused = true
-        }
-    }
-
-    private func collapse() {
-        isExpanded = false
-        isFocused = false
-        DispatchQueue.main.asyncAfter(deadline: .now() + (reduceMotion ? 0 : Self.duration)) {
-            if !isExpanded { holdsExpandedSlot = false }
-        }
-    }
 }
 
 /// A toolbar search field in the shape the HIG expects on the Mac: the
@@ -604,95 +375,12 @@ private struct ToolbarSearchFieldChrome: ViewModifier {
 /// Toolbar items live in AppKit's toolbar view hierarchy, where SwiftUI's
 /// `@FocusState` does not reliably move the caret (#613). Each new focus
 /// request makes the sibling NSTextField the first responder directly.
-/// Where the collapsed search item sits in its window, read before it widens.
-final class ToolbarItemAnchor {
-    weak var view: NSView?
-
-    var isInLeadingHalf: Bool {
-        guard let view, let window = view.window else { return false }
-        let midX = view.convert(view.bounds, to: nil).midX
-        let leading = midX < window.frame.width / 2
-        return window.windowTitlebarLayoutDirection == .rightToLeft ? !leading : leading
-    }
-}
-
-private struct ToolbarItemAnchorReader: NSViewRepresentable {
-    let anchor: ToolbarItemAnchor
-
-    func makeNSView(context: Context) -> NSView {
-        let view = NSView()
-        anchor.view = view
-        return view
-    }
-
-    func updateNSView(_ nsView: NSView, context: Context) { anchor.view = nsView }
-}
-
 private struct ToolbarFieldFocuser: NSViewRepresentable {
     let request: Int
-    let onClickOutside: (() -> Void)?
-
-    init(request: Int, onClickOutside: (() -> Void)? = nil) {
-        self.request = request
-        self.onClickOutside = onClickOutside
-    }
 
     final class Coordinator {
         var handledRequest = 0
         var pendingFocus: DispatchWorkItem?
-        var eventMonitor: Any?
-        var pendingOutsideClick: DispatchWorkItem?
-        var onClickOutside: (() -> Void)?
-
-        func installMouseMonitor(for view: NSView) {
-            guard onClickOutside != nil, eventMonitor == nil else { return }
-            let mask: NSEvent.EventTypeMask = [.leftMouseDown, .leftMouseUp]
-            eventMonitor = NSEvent.addLocalMonitorForEvents(matching: mask) { [weak view, weak self] event in
-                guard let view, let self else { return event }
-                guard self.isOutside(event, view: view) else {
-                    self.pendingOutsideClick?.cancel()
-                    self.pendingOutsideClick = nil
-                    return event
-                }
-
-                if event.type == .leftMouseDown {
-                    // A blank click can omit mouseUp when the toolbar resizes;
-                    // keep a deferred fallback, but give normal controls time
-                    // to receive their mouseUp first.
-                    self.pendingOutsideClick?.cancel()
-                    let work = DispatchWorkItem { [weak self] in
-                        self?.onClickOutside?()
-                        self?.pendingOutsideClick = nil
-                    }
-                    self.pendingOutsideClick = work
-                    DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(150), execute: work)
-                } else {
-                    self.pendingOutsideClick?.cancel()
-                    self.pendingOutsideClick = nil
-                    // Let the clicked control finish its action before the toolbar resizes.
-                    DispatchQueue.main.async { [weak self] in
-                        self?.onClickOutside?()
-                    }
-                }
-                return event
-            }
-        }
-
-        private func isOutside(_ event: NSEvent, view: NSView) -> Bool {
-            guard let window = view.window else { return false }
-            let pointInWindow: NSPoint
-            if let eventWindow = event.window {
-                guard eventWindow === window || event.windowNumber == window.windowNumber else { return false }
-                pointInWindow = event.locationInWindow
-            } else {
-                // Nil-window events are only trusted while this window is active,
-                // and their location is interpreted in screen coordinates.
-                guard window.isKeyWindow || window.isMainWindow,
-                      window.frame.contains(event.locationInWindow) else { return false }
-                pointInWindow = window.convertPoint(fromScreen: event.locationInWindow)
-            }
-            return !view.bounds.contains(view.convert(pointInWindow, from: nil))
-        }
 
         func cancelPendingFocus() {
             pendingFocus?.cancel()
@@ -701,13 +389,6 @@ private struct ToolbarFieldFocuser: NSViewRepresentable {
 
         func cancel() {
             cancelPendingFocus()
-            pendingOutsideClick?.cancel()
-            pendingOutsideClick = nil
-            if let eventMonitor {
-                NSEvent.removeMonitor(eventMonitor)
-                self.eventMonitor = nil
-            }
-            onClickOutside = nil
         }
     }
 
@@ -715,8 +396,6 @@ private struct ToolbarFieldFocuser: NSViewRepresentable {
 
     func makeNSView(context: Context) -> NSView {
         let view = NSView(frame: .zero)
-        context.coordinator.onClickOutside = onClickOutside
-        context.coordinator.installMouseMonitor(for: view)
         if request > 0 {
             context.coordinator.handledRequest = request
             focusSibling(of: view, coordinator: context.coordinator, attemptsLeft: 10)
@@ -725,8 +404,6 @@ private struct ToolbarFieldFocuser: NSViewRepresentable {
     }
 
     func updateNSView(_ nsView: NSView, context: Context) {
-        context.coordinator.onClickOutside = onClickOutside
-        context.coordinator.installMouseMonitor(for: nsView)
         guard request != context.coordinator.handledRequest else { return }
         context.coordinator.handledRequest = request
         focusSibling(of: nsView, coordinator: context.coordinator, attemptsLeft: 10)
