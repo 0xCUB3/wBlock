@@ -226,6 +226,8 @@ struct ToolbarSearchModifier: ViewModifier {
                     InlineGlassSearchField(text: $text, focusRequest: $focusRequest, isOpen: $isOpen, prompt: prompt)
                 }
                 .sharedBackgroundVisibility(isOpen ? .hidden : .automatic)
+                // Its own bubble, as on the list tabs, not merged into the page's actions.
+                ToolbarSpacer(.fixed, placement: .primaryAction)
             }
         } else {
             content.toolbar {
