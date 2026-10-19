@@ -37,7 +37,6 @@ extension View {
 /// Update and Show Enabled in one container, then Add.
 /// On iOS and iPadOS, Update/Apply sits alone at the leading edge. That is a
 /// settled decision: do not regroup it with the trailing actions again.
-/// Userscripts pass `EmptyView` for apply: they take effect without one (#953).
 struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
     @Binding var searchText: String
     @Binding var focusRequest: Bool
@@ -49,8 +48,6 @@ struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var contentWidth: CGFloat = 0
     #endif
-
-    private var hasApply: Bool { Apply.self != EmptyView.self }
 
     /// A button-style toggle, so the system draws the selected state.
     private var filter: some View {
@@ -67,10 +64,8 @@ struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
         // stands alone with the toolbar's own spacing (#999).
         if #available(macOS 26.0, *) {
             content.toolbar {
-                if hasApply {
-                    ToolbarItem(placement: .navigation) { apply() }
-                        .toolbarVisibilityPriorityCompat(.high)
-                }
+                ToolbarItem(placement: .navigation) { apply() }
+                    .toolbarVisibilityPriorityCompat(.high)
                 ToolbarItem(placement: .primaryAction) {
                     InlineGlassSearchField(text: $searchText, focusRequest: $focusRequest, prompt: searchPrompt)
                 }
@@ -115,10 +110,8 @@ struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
                             }
                         }
                     } else {
-                        if hasApply {
-                            ToolbarItem(placement: .topBarLeading) { apply() }
-                                .toolbarVisibilityPriorityCompat(.high)
-                        }
+                        ToolbarItem(placement: .topBarLeading) { apply() }
+                            .toolbarVisibilityPriorityCompat(.high)
                         // Search, Show Enabled Only, Add: the Mac order (#999).
                         if horizontalSizeClass != .regular {
                             ToolbarItem(placement: .topBarTrailing) {
@@ -136,7 +129,7 @@ struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
                 .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { contentWidth = $0 }
         } else {
             // No `if` here: ToolbarContentBuilder can't branch before iOS 16 and
-            // crashes on iOS 15. An EmptyView apply leaves the item empty.
+            // crashes on iOS 15.
             content.toolbar {
                 ToolbarItem(placement: .navigationBarLeading) { apply() }
                 ToolbarItem(placement: .navigationBarTrailing) {

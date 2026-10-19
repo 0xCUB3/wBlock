@@ -145,6 +145,8 @@ struct UserScriptManagerView: View {
     let addRequest: Int
     let searchRequest: Int
     let onRefresh: () async -> Void
+    /// The Filters tab's Update/Apply button, shared so both tabs match (#953).
+    let applyButton: AnyView
 
     @State private var scripts: [UserScriptListItem] = []
     @AppStorage(ListDisplayOrder.scriptsKey) private var scriptDisplayOrder = Data()
@@ -435,7 +437,7 @@ struct UserScriptManagerView: View {
         ) {
             addMenu
         } apply: {
-            EmptyView()
+            applyButton
         }
     }
 

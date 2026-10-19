@@ -486,7 +486,8 @@ struct ContentView: View {
                 onRefresh: {
                     guard !filterManager.isLoading else { return }
                     await filterManager.checkForUpdates(scope: .scripts, presentation: .refresh)
-                }
+                },
+                applyButton: AnyView(applyChangesToolbarButton)
             )
                 .safeAreaInset(edge: .top) {
                     if filterManager.isBlockingPaused {
