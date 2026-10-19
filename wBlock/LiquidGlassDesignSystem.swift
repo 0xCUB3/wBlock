@@ -47,6 +47,8 @@ struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var contentWidth: CGFloat = 0
+    #else
+    @State private var isSearchOpen = false
     #endif
 
     /// A button-style toggle, so the system draws the selected state.
@@ -71,9 +73,9 @@ struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
                     .customizationBehavior(.disabled)
                     .toolbarVisibilityPriorityCompat(.high)
                 ToolbarItem(id: "search", placement: .primaryAction) {
-                    InlineGlassSearchField(text: $searchText, focusRequest: $focusRequest, prompt: searchPrompt)
+                    InlineGlassSearchField(text: $searchText, focusRequest: $focusRequest, isOpen: $isSearchOpen, prompt: searchPrompt)
                 }
-                .sharedBackgroundVisibility(.hidden)
+                .sharedBackgroundVisibility(isSearchOpen ? .hidden : .automatic)
                 .customizationBehavior(.disabled)
                 .toolbarVisibilityPriorityCompat(.high)
                 ToolbarSpacer(.fixed, placement: .primaryAction)
@@ -214,15 +216,16 @@ struct ToolbarSearchModifier: ViewModifier {
     @Binding var text: String
     @Binding var focusRequest: Bool
     let prompt: LocalizedStringKey
+    @State private var isOpen = false
 
     @ViewBuilder
     func body(content: Content) -> some View {
         if #available(macOS 26.0, *) {
             content.toolbar {
                 ToolbarItem(placement: .primaryAction) {
-                    InlineGlassSearchField(text: $text, focusRequest: $focusRequest, prompt: prompt)
+                    InlineGlassSearchField(text: $text, focusRequest: $focusRequest, isOpen: $isOpen, prompt: prompt)
                 }
-                .sharedBackgroundVisibility(.hidden)
+                .sharedBackgroundVisibility(isOpen ? .hidden : .automatic)
             }
         } else {
             content.toolbar {
@@ -250,12 +253,16 @@ extension View {
 struct InlineGlassSearchField: View {
     @Binding var text: String
     @Binding var focusRequest: Bool
+    /// True from the moment the field starts opening until it has fully closed.
+    /// While closed, search is a plain toolbar button with the system's own
+    /// bubble, hover, press, and spacing (#1014); the toolbar hides that bubble
+    /// while this is true, since the field draws its own growing capsule.
+    /// The toolbar resizes its item without animating, so the slot stays at full width
+    /// until the capsule finishes collapsing and the capsule is pinned to its trailing edge.
+    @Binding var isOpen: Bool
     let prompt: LocalizedStringKey
 
     @State private var isExpanded = false
-    /// The toolbar resizes its item without animating, so the slot stays at full width
-    /// until the capsule finishes collapsing and the capsule is pinned to its trailing edge.
-    @State private var holdsExpandedSlot = false
     @State private var focusRequests = 0
     @State private var isVisible = false
     @State private var fieldWidth: CGFloat = 140
@@ -280,6 +287,39 @@ struct InlineGlassSearchField: View {
     @Environment(\.controlActiveState) private var controlActiveState
 
     var body: some View {
+        Group {
+            if isOpen {
+                capsule
+            } else {
+                Button(action: expandAndFocus) {
+                    Label(prompt, systemImage: "magnifyingglass")
+                }
+                .accessibilityValue(text)
+                .help(prompt)
+            }
+        }
+        .background(ToolbarItemAnchorReader(anchor: anchor))
+        .onAppear {
+            isVisible = true
+            if !text.isEmpty { expand() }
+            handleFocusRequest()
+        }
+        .onChangeCompat(of: text) { _, value in
+            if !value.isEmpty { expand() }
+        }
+        .onChangeCompat(of: focusRequest) { _, requested in
+            if requested { handleFocusRequest() }
+        }
+        .onChangeCompat(of: isFocused) { _, focused in
+            if !focused && isVisible && isExpanded && text.isEmpty { collapse() }
+        }
+        .onDisappear {
+            isVisible = false
+            collapse()
+        }
+    }
+
+    private var capsule: some View {
         HStack(spacing: 0) {
             // Keep the last field width during the capsule animation, but remove
             // the native text field while collapsed so it cannot install I-beam cursor rects.
@@ -335,26 +375,7 @@ struct InlineGlassSearchField: View {
         }
         .animation(reduceMotion ? nil : .smooth(duration: Self.duration), value: isExpanded)
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: text.isEmpty)
-        .frame(width: holdsExpandedSlot ? Self.expandedWidth : 36, alignment: buttonEdge)
-        .background(ToolbarItemAnchorReader(anchor: anchor))
-        .onAppear {
-            isVisible = true
-            if !text.isEmpty { expand() }
-            handleFocusRequest()
-        }
-        .onChangeCompat(of: text) { _, value in
-            if !value.isEmpty { expand() }
-        }
-        .onChangeCompat(of: focusRequest) { _, requested in
-            if requested { handleFocusRequest() }
-        }
-        .onChangeCompat(of: isFocused) { _, focused in
-            if !focused && isVisible && isExpanded && text.isEmpty { collapse() }
-        }
-        .onDisappear {
-            isVisible = false
-            collapse()
-        }
+        .frame(width: Self.expandedWidth, alignment: buttonEdge)
     }
 
     private var searchButton: some View {
@@ -392,13 +413,13 @@ struct InlineGlassSearchField: View {
     /// Widens the slot first, without animation, so the capsule starts at the trailing
     /// edge and grows toward the leading side on the next pass.
     private func expand() {
-        guard !holdsExpandedSlot else {
+        guard !isOpen else {
             isExpanded = true
             return
         }
         growsTrailing = anchor.isInLeadingHalf
-        holdsExpandedSlot = true
-        DispatchQueue.main.async { if holdsExpandedSlot { isExpanded = true } }
+        isOpen = true
+        DispatchQueue.main.async { if isOpen { isExpanded = true } }
     }
 
     private func expandAndFocus() {
@@ -414,7 +435,7 @@ struct InlineGlassSearchField: View {
         isExpanded = false
         isFocused = false
         DispatchQueue.main.asyncAfter(deadline: .now() + (reduceMotion ? 0 : Self.duration)) {
-            if !isExpanded { holdsExpandedSlot = false }
+            if !isExpanded { isOpen = false }
         }
     }
 }
