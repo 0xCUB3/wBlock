@@ -228,6 +228,7 @@ struct SettingsView: View {
     private var generalSection: some View {
         Section {
             Toggle("Autoplay", isOn: autoplayBinding)
+            Toggle("Global Privacy Control", isOn: globalPrivacyControlBinding)
             appearancePicker
             #if os(iOS)
             if PortraitOrientationLock.isAvailable {
@@ -240,11 +241,14 @@ struct SettingsView: View {
         } header: {
             sectionHeader(.general)
         } footer: {
-            #if os(iOS)
-            if PortraitOrientationLock.isAvailable {
-                Text("Keeps the app in portrait even if the device is rotated.")
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it.")
+                #if os(iOS)
+                if PortraitOrientationLock.isAvailable {
+                    Text("Keeps the app in portrait even if the device is rotated.")
+                }
+                #endif
             }
-            #endif
         }
     }
 
@@ -261,6 +265,13 @@ struct SettingsView: View {
         Binding(
             get: { !dataManager.isNoAutoplayEnabled },
             set: { enabled in Task { await dataManager.setNoAutoplayEnabled(!enabled) } }
+        )
+    }
+
+    private var globalPrivacyControlBinding: Binding<Bool> {
+        Binding(
+            get: { dataManager.isGlobalPrivacyControlEnabled },
+            set: { enabled in Task { await dataManager.setGlobalPrivacyControlEnabled(enabled) } }
         )
     }
 

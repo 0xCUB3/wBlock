@@ -338,6 +338,7 @@
 				Resources/Assets.xcassets,
 				Resources/background.js,
 				Resources/content.js,
+				Resources/gpc.js,
 				"Resources/no-autoplay-gate.js",
 				"Resources/no-autoplay.js",
 				Resources/pages,

@@ -1048,3 +1048,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This deletes every log entry." = "این کار همهٔ ورودی‌های گزارش را حذف می‌کند.";
 "Settings…" = "تنظیمات…";
 "Browse" = "مرور";
+"Global Privacy Control" = "کنترل جهانی حریم خصوصی";
+"Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it." = "کنترل جهانی حریم خصوصی از وب‌سایت‌ها می‌خواهد اطلاعات شخصی شما را نفروشند یا به اشتراک نگذارند. در برخی مناطق، وب‌سایت‌ها موظف به رعایت آن هستند.";

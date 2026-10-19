@@ -1039,3 +1039,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This deletes every log entry." = "سيؤدي هذا إلى حذف كل إدخالات السجل.";
 "Settings…" = "الإعدادات…";
 "Browse" = "تصفح";
+"Global Privacy Control" = "التحكم العالمي في الخصوصية";
+"Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it." = "يطلب التحكم العالمي في الخصوصية من المواقع عدم بيع معلوماتك الشخصية أو مشاركتها. تُلزم بعض الأماكن المواقع باحترامه.";

@@ -1039,3 +1039,5 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "This deletes every log entry." = "Spowoduje to usunięcie wszystkich wpisów dziennika.";
 "Settings…" = "Ustawienia…";
 "Browse" = "Przeglądaj";
+"Global Privacy Control" = "Global Privacy Control";
+"Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it." = "Global Privacy Control prosi strony internetowe, by nie sprzedawały ani nie udostępniały Twoich danych osobowych. W niektórych miejscach strony muszą to respektować.";

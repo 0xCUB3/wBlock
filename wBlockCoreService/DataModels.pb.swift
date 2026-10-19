@@ -628,6 +628,9 @@ nonisolated struct Wblock_Data_WhitelistData: Sendable {
   /// Sites where autoplay is blocked even though it is allowed globally.
   var noAutoplayBlockedSites: [String] = []
 
+  /// Sends Global Privacy Control (Sec-GPC header and navigator property).
+  var globalPrivacyControlEnabled: Bool = false
+
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
   init() {}
@@ -1607,7 +1610,7 @@ nonisolated extension Wblock_Data_UserScriptData: SwiftProtobuf.Message, SwiftPr
 
 nonisolated extension Wblock_Data_WhitelistData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".WhitelistData"
-  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}disabled_sites\0\u{3}last_updated\0\u{3}filter_disabled_sites\0\u{3}no_autoplay_enabled\0\u{3}no_autoplay_allowed_sites\0\u{3}user_scripts_disabled_sites\0\u{3}no_autoplay_blocked_sites\0")
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}disabled_sites\0\u{3}last_updated\0\u{3}filter_disabled_sites\0\u{3}no_autoplay_enabled\0\u{3}no_autoplay_allowed_sites\0\u{3}user_scripts_disabled_sites\0\u{3}no_autoplay_blocked_sites\0\u{3}global_privacy_control_enabled\0")
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1622,6 +1625,7 @@ nonisolated extension Wblock_Data_WhitelistData: SwiftProtobuf.Message, SwiftPro
       case 5: try { try decoder.decodeRepeatedStringField(value: &self.noAutoplayAllowedSites) }()
       case 6: try { try decoder.decodeRepeatedStringField(value: &self.userScriptsDisabledSites) }()
       case 7: try { try decoder.decodeRepeatedStringField(value: &self.noAutoplayBlockedSites) }()
+      case 8: try { try decoder.decodeSingularBoolField(value: &self.globalPrivacyControlEnabled) }()
       default: break
       }
     }
@@ -1649,6 +1653,9 @@ nonisolated extension Wblock_Data_WhitelistData: SwiftProtobuf.Message, SwiftPro
     if !self.noAutoplayBlockedSites.isEmpty {
       try visitor.visitRepeatedStringField(value: self.noAutoplayBlockedSites, fieldNumber: 7)
     }
+    if self.globalPrivacyControlEnabled != false {
+      try visitor.visitSingularBoolField(value: self.globalPrivacyControlEnabled, fieldNumber: 8)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -1660,6 +1667,7 @@ nonisolated extension Wblock_Data_WhitelistData: SwiftProtobuf.Message, SwiftPro
     if lhs.noAutoplayAllowedSites != rhs.noAutoplayAllowedSites {return false}
     if lhs.userScriptsDisabledSites != rhs.userScriptsDisabledSites {return false}
     if lhs.noAutoplayBlockedSites != rhs.noAutoplayBlockedSites {return false}
+    if lhs.globalPrivacyControlEnabled != rhs.globalPrivacyControlEnabled {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

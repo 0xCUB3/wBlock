@@ -306,6 +306,11 @@ private func mergePersistedChanges(
         baseline: previous.whitelist.noAutoplayBlockedSites,
         persisted: persisted.whitelist.noAutoplayBlockedSites
     )
+    mergeField(
+        &whitelist.globalPrivacyControlEnabled,
+        baseline: previous.whitelist.globalPrivacyControlEnabled,
+        persisted: persisted.whitelist.globalPrivacyControlEnabled
+    )
     whitelist.lastUpdated = max(whitelist.lastUpdated, persisted.whitelist.lastUpdated)
     mergeField(
         &whitelist.unknownFields,

@@ -26756,6 +26756,48 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     }).catch(error => console.warn("[wBlock] No Autoplay setup failed:", error));
     return noAutoplaySync;
   };
+  // Global Privacy Control is sent only while its app setting is on: a
+  // Sec-GPC header rule, then a page-world script for
+  // navigator.globalPrivacyControl, so the property never claims a header
+  // Safari is not sending. WebKit skips main-frame requests when a rule lists
+  // no resource types, and ignores the whole rule when "object" is listed.
+  const GPC_RULE = {
+    id: 1700000,
+    priority: 1,
+    action: { type: "modifyHeaders", requestHeaders: [{ header: "Sec-GPC", operation: "set", value: "1" }] },
+    condition: { resourceTypes: ["main_frame", "sub_frame", "stylesheet", "script", "image", "font", "xmlhttprequest", "ping", "media", "websocket", "other"] }
+  };
+  const GPC_SCRIPT = {
+    id: "wblock-gpc",
+    js: ["gpc.js"],
+    matches: ["<all_urls>"],
+    allFrames: true,
+    runAt: "document_start",
+    world: "MAIN"
+  };
+  let gpcSync = Promise.resolve();
+  let lastGPCSync = 0;
+  const syncGlobalPrivacyControl = () => {
+    const dnr = browser.declarativeNetRequest;
+    if (!canRegisterNoAutoplay || !dnr || typeof dnr.getDynamicRules !== "function") return gpcSync;
+    if (Date.now() - lastGPCSync < CONFIG_REVALIDATE_INTERVAL_MS) return gpcSync;
+    lastGPCSync = Date.now();
+    gpcSync = gpcSync.then(async () => {
+      const response = await readNativeRecently({ action: "getGlobalPrivacyControlState" }).catch(() => null);
+      if (!response || typeof response.enabled !== "boolean") return;
+      const ids = [GPC_SCRIPT.id];
+      const ruleInstalled = (await dnr.getDynamicRules()).some(rule => rule && rule.id === GPC_RULE.id);
+      const scriptLoaded = (await browser.scripting.getRegisteredContentScripts({ ids })).length > 0;
+      if (!response.enabled) {
+        if (scriptLoaded) await browser.scripting.unregisterContentScripts({ ids });
+        if (ruleInstalled) await dnr.updateDynamicRules({ removeRuleIds: [GPC_RULE.id] });
+        return;
+      }
+      if (!ruleInstalled) await dnr.updateDynamicRules({ addRules: [GPC_RULE] });
+      if (!scriptLoaded) await browser.scripting.registerContentScripts([GPC_SCRIPT]);
+    }).catch(error => console.warn("[wBlock] Global Privacy Control setup failed:", error));
+    return gpcSync;
+  };
   const handleMessages = async (request, sender) => {
     var _sender$tab, _sender$tab2;
     // Cast the incoming request to `Message`.
@@ -28128,9 +28170,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   refreshActionStateForAllTabs();
   // Start handling messages from content scripts.
   syncNoAutoplayScripts();
+  syncGlobalPrivacyControl();
   browser.runtime.onMessage.addListener((request, sender) => {
     scheduleInstallRemoveParamDNRRules(false);
     syncNoAutoplayScripts();
+    syncGlobalPrivacyControl();
     if (!canRegisterNoAutoplay && request && request.type === MessageType.InitContentScript
       && sender && sender.tab && typeof sender.tab.id === "number" && Number.isSafeInteger(sender.frameId)) {
       isNoAutoplayActive().then(active => {

@@ -1039,3 +1039,5 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "This deletes every log entry." = "Ez minden naplóbejegyzést töröl.";
 "Settings…" = "Beállítások…";
 "Browse" = "Böngészés";
+"Global Privacy Control" = "Global Privacy Control";
+"Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it." = "A Global Privacy Control arra kéri a webhelyeket, hogy ne adják el és ne osszák meg a személyes adataidat. Egyes helyeken a webhelyek kötelesek ezt betartani.";

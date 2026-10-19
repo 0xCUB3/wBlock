@@ -179,6 +179,10 @@ public enum WebExtensionRequestHandler {
             case "getNoAutoplayState":
                 handleGetNoAutoplayState(message: message!, context: context)
                 return
+            case "getGlobalPrivacyControlState":
+                handleGetGlobalPrivacyControlState(context: context)
+                return
+
             case "setNoAutoplayEnabled":
                 handleSetNoAutoplayEnabled(message: message!, context: context)
                 return
@@ -1783,6 +1787,15 @@ public enum WebExtensionRequestHandler {
                 // No Autoplay scripts only then.
                 "active": manager.isNoAutoplayEnabled || !manager.noAutoplayBlockedSites.isEmpty,
             ])
+            context.completeRequest(returningItems: [response])
+        }
+    }
+
+    private static func handleGetGlobalPrivacyControlState(context: NSExtensionContext) {
+        Task { @MainActor in
+            await ProtobufDataManager.shared.waitUntilLoaded()
+            _ = await ProtobufDataManager.shared.refreshFromDiskIfModified(forceRead: true)
+            let response = createResponse(with: ["enabled": ProtobufDataManager.shared.isGlobalPrivacyControlEnabled])
             context.completeRequest(returningItems: [response])
         }
     }

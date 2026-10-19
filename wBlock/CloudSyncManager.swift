@@ -772,6 +772,7 @@ final class CloudSyncManager: ObservableObject {
         let filterDisabledBaseline = localPayloadBaseline.filterDisabledDomains
         let noAutoplayEnabledBaseline = localPayloadBaseline.noAutoplayEnabled
         let noAutoplayAllowedBaseline = localPayloadBaseline.noAutoplayAllowedSites
+        let gpcEnabledBaseline = localPayloadBaseline.globalPrivacyControlEnabled
         let zapperBaseline = localPayloadBaseline.zapperRules
         let zapperDisabledBaseline = localPayloadBaseline.zapperDisabledDomains
         isApplyingRemoteChanges = true
@@ -852,6 +853,11 @@ final class CloudSyncManager: ObservableObject {
            let remoteNoAutoplayEnabled = payload.noAutoplayEnabled
         {
             await dataManager.setNoAutoplayEnabled(remoteNoAutoplayEnabled)
+        }
+        if (currentContent.globalPrivacyControlEnabled ?? false) == (gpcEnabledBaseline ?? false),
+           let remoteGPCEnabled = payload.globalPrivacyControlEnabled
+        {
+            await dataManager.setGlobalPrivacyControlEnabled(remoteGPCEnabled)
         }
         if let remoteNoAutoplayAllowedSites = payload.noAutoplayAllowedSites {
             await dataManager.setNoAutoplayAllowedSites(Self.mergeStringSet(
@@ -1901,6 +1907,7 @@ final class CloudSyncManager: ObservableObject {
             filterDisabledDomains: content.filterDisabledDomains,
             noAutoplayEnabled: content.noAutoplayEnabled,
             noAutoplayAllowedSites: content.noAutoplayAllowedSites,
+            globalPrivacyControlEnabled: content.globalPrivacyControlEnabled,
             zapperRules: content.zapperRules,
             zapperDisabledDomains: content.zapperDisabledDomains
         )
@@ -2070,6 +2077,7 @@ final class CloudSyncManager: ObservableObject {
             filterDisabledDomains: filterDisabledDomains,
             noAutoplayEnabled: noAutoplayEnabled,
             noAutoplayAllowedSites: noAutoplayAllowedSites,
+            globalPrivacyControlEnabled: dataManager.isGlobalPrivacyControlEnabled,
             zapperRules: zapperRules,
             zapperDisabledDomains: zapperDisabledDomains
         )
@@ -2702,6 +2710,7 @@ private struct SyncPayload: Codable {
         let filterDisabledDomains: [String]?
         let noAutoplayEnabled: Bool?
         let noAutoplayAllowedSites: [String]?
+        let globalPrivacyControlEnabled: Bool?
         let zapperRules: [String: [String]]?
         let zapperDisabledDomains: [String]?
     }
@@ -2716,6 +2725,7 @@ private struct SyncPayload: Codable {
     let filterDisabledDomains: [String]?
     let noAutoplayEnabled: Bool?
     let noAutoplayAllowedSites: [String]?
+    let globalPrivacyControlEnabled: Bool?
     let zapperRules: [String: [String]]?
     let zapperDisabledDomains: [String]?
 }

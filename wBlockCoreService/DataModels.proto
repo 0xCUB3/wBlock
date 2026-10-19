@@ -144,6 +144,8 @@ message WhitelistData {
   repeated string user_scripts_disabled_sites = 6;
   // Sites where autoplay is blocked even though it is allowed globally.
   repeated string no_autoplay_blocked_sites = 7;
+  // Sends Global Privacy Control (Sec-GPC header and navigator property).
+  bool global_privacy_control_enabled = 8;
 }
 
 // Rule count tracking data

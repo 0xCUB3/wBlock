@@ -33,6 +33,7 @@ struct WBlockBackup: Codable, Sendable {
     var tubeCleanerDeArrow: TubeCleanerDeArrowPreference.Settings?
     var playerCleanerFeatures: PlayerCleanerPreference.Features?
     var darkReaderFollowsSystemAppearance: Bool?
+    var globalPrivacyControlEnabled: Bool?
     var filtersShowEnabledOnly: Bool?
     var userScriptsShowEnabledOnly: Bool?
     struct FilterSelection: Codable, Sendable {
@@ -230,6 +231,7 @@ struct WBlockBackup: Codable, Sendable {
         tubeCleanerDeArrow: TubeCleanerDeArrowPreference.Settings? = nil,
         playerCleanerFeatures: PlayerCleanerPreference.Features? = nil,
         darkReaderFollowsSystemAppearance: Bool? = nil,
+        globalPrivacyControlEnabled: Bool? = nil,
         filtersShowEnabledOnly: Bool? = nil,
         userScriptsShowEnabledOnly: Bool? = nil
     ) {
@@ -257,6 +259,7 @@ struct WBlockBackup: Codable, Sendable {
         self.tubeCleanerDeArrow = tubeCleanerDeArrow
         self.playerCleanerFeatures = playerCleanerFeatures
         self.darkReaderFollowsSystemAppearance = darkReaderFollowsSystemAppearance
+        self.globalPrivacyControlEnabled = globalPrivacyControlEnabled
         self.filtersShowEnabledOnly = filtersShowEnabledOnly
         self.userScriptsShowEnabledOnly = userScriptsShowEnabledOnly
     }
@@ -281,7 +284,7 @@ struct WBlockBackup: Codable, Sendable {
         case lockPortraitOrientation
         case appearance
         case cosmeticFilteringEnabled, cosmeticFilteringSites, tubeCleanerFeatures, tubeCleanerDeArrow, playerCleanerFeatures
-        case darkReaderFollowsSystemAppearance
+        case darkReaderFollowsSystemAppearance, globalPrivacyControlEnabled
         case filtersShowEnabledOnly, userScriptsShowEnabledOnly
     }
 
@@ -311,6 +314,7 @@ struct WBlockBackup: Codable, Sendable {
         tubeCleanerDeArrow = try container.decodeIfPresent(TubeCleanerDeArrowPreference.Settings.self, forKey: .tubeCleanerDeArrow)
         playerCleanerFeatures = try container.decodeIfPresent(PlayerCleanerPreference.Features.self, forKey: .playerCleanerFeatures)
         darkReaderFollowsSystemAppearance = try container.decodeIfPresent(Bool.self, forKey: .darkReaderFollowsSystemAppearance)
+        globalPrivacyControlEnabled = try container.decodeIfPresent(Bool.self, forKey: .globalPrivacyControlEnabled)
         filtersShowEnabledOnly = try container.decodeIfPresent(Bool.self, forKey: .filtersShowEnabledOnly)
         userScriptsShowEnabledOnly = try container.decodeIfPresent(Bool.self, forKey: .userScriptsShowEnabledOnly)
     }
@@ -614,6 +618,7 @@ enum BackupManager {
             tubeCleanerDeArrow: TubeCleanerDeArrowPreference.settings(),
             playerCleanerFeatures: PlayerCleanerPreference.features(),
             darkReaderFollowsSystemAppearance: DarkReaderAppearancePreference.followsSystemAppearance(),
+            globalPrivacyControlEnabled: filterManager.dataManager.isGlobalPrivacyControlEnabled,
             filtersShowEnabledOnly: UserDefaults.standard.bool(forKey: ListDisplayOrder.filtersEnabledOnlyKey),
             userScriptsShowEnabledOnly: ProtobufDataManager.shared.getUserScriptShowEnabledOnly()
         )
@@ -688,6 +693,9 @@ enum BackupManager {
         await filterManager.dataManager.setNoAutoplayEnabled(backup.noAutoplayEnabled)
         await filterManager.dataManager.setNoAutoplayAllowedSites(backup.noAutoplayAllowedSites)
         await filterManager.dataManager.setNoAutoplayBlockedSites(backup.noAutoplayBlockedSites)
+        if let gpc = backup.globalPrivacyControlEnabled {
+            await filterManager.dataManager.setGlobalPrivacyControlEnabled(gpc)
+        }
         await filterManager.dataManager.setUserScriptsDisabledSites(backup.userScriptsDisabledSites)
 
         // 4. Restore zapper rules (to protobuf)

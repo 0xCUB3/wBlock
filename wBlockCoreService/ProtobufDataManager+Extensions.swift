@@ -242,6 +242,18 @@ extension ProtobufDataManager {
         appData.whitelist.noAutoplayAllowedSites
     }
 
+    public var isGlobalPrivacyControlEnabled: Bool {
+        appData.whitelist.globalPrivacyControlEnabled
+    }
+
+    @discardableResult
+    public func setGlobalPrivacyControlEnabled(_ enabled: Bool) async -> Bool {
+        return await updateDataImmediately { data in
+            data.whitelist.globalPrivacyControlEnabled = enabled
+            data.whitelist.lastUpdated = Int64(Date().timeIntervalSince1970)
+        }
+    }
+
     @discardableResult
     public func setNoAutoplayEnabled(_ enabled: Bool) async -> Bool {
         return await updateDataImmediately { data in

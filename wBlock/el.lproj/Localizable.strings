@@ -1039,3 +1039,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This deletes every log entry." = "Αυτό διαγράφει όλες τις καταχωρίσεις καταγραφής.";
 "Settings…" = "Ρυθμίσεις…";
 "Browse" = "Περιήγηση";
+"Global Privacy Control" = "Global Privacy Control";
+"Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it." = "Το Global Privacy Control ζητά από τους ιστότοπους να μην πωλούν ή κοινοποιούν τα προσωπικά σας δεδομένα. Ορισμένες περιοχές υποχρεώνουν τους ιστότοπους να το σέβονται.";

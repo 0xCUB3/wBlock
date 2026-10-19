@@ -57,6 +57,7 @@ actor ConcurrentLogManager {
     var isNoAutoplayEnabled = false
     var noAutoplayAllowedSites: [String] = []
     var noAutoplayBlockedSites: [String] = []
+    var isGlobalPrivacyControlEnabled = false
     var userScriptsDisabledSites: [String] = []
     var autoUpdateEnabled = true
     var autoUpdateIntervalHours = 6.0
@@ -79,6 +80,7 @@ actor ConcurrentLogManager {
     func setNoAutoplayEnabled(_ value: Bool) async { isNoAutoplayEnabled = value }
     func setNoAutoplayAllowedSites(_ value: [String]) async { noAutoplayAllowedSites = value }
     func setNoAutoplayBlockedSites(_ value: [String]) async { noAutoplayBlockedSites = value }
+    func setGlobalPrivacyControlEnabled(_ value: Bool) async { isGlobalPrivacyControlEnabled = value }
     func setUserScriptsDisabledSites(_ value: [String]) async { userScriptsDisabledSites = value }
     func setAutoUpdateEnabled(_ value: Bool) async { autoUpdateEnabled = value }
     func setAutoUpdateIntervalHours(_ value: Double) async { autoUpdateIntervalHours = value }

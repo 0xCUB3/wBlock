@@ -1039,3 +1039,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This deletes every log entry." = "Все записи журнала будут удалены.";
 "Settings…" = "Настройки…";
 "Browse" = "Обзор";
+"Global Privacy Control" = "Global Privacy Control";
+"Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it." = "Global Privacy Control просит сайты не продавать и не передавать ваши личные данные. В некоторых регионах сайты обязаны его соблюдать.";
