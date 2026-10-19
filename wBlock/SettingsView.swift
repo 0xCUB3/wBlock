@@ -228,11 +228,19 @@ struct SettingsView: View {
     private var generalSection: some View {
         Section {
             Toggle("Autoplay", isOn: autoplayBinding)
-            Toggle("Global Privacy Control", isOn: globalPrivacyControlBinding)
+            Toggle(isOn: globalPrivacyControlBinding) {
+                rowLabel(
+                    "Global Privacy Control",
+                    detail: Text("Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it.")
+                        + Text(" ") + Text(gpcLearnMore)
+                )
+            }
             appearancePicker
             #if os(iOS)
             if PortraitOrientationLock.isAvailable {
-                Toggle("Lock Portrait Orientation", isOn: $lockPortraitOrientation)
+                Toggle(isOn: $lockPortraitOrientation) {
+                    rowLabel("Lock Portrait Orientation", detail: Text("Keeps the app in portrait even if the device is rotated."))
+                }
                     .onChangeCompat(of: lockPortraitOrientation) { _ in
                         PortraitOrientationLock.apply()
                     }
@@ -240,15 +248,6 @@ struct SettingsView: View {
             #endif
         } header: {
             sectionHeader(.general)
-        } footer: {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it.")
-                #if os(iOS)
-                if PortraitOrientationLock.isAvailable {
-                    Text("Keeps the app in portrait even if the device is rotated.")
-                }
-                #endif
-            }
         }
     }
 
@@ -266,6 +265,12 @@ struct SettingsView: View {
             get: { !dataManager.isNoAutoplayEnabled },
             set: { enabled in Task { await dataManager.setNoAutoplayEnabled(!enabled) } }
         )
+    }
+
+    private var gpcLearnMore: AttributedString {
+        var text = AttributedString(localized: "Learn More")
+        text.link = URL(string: "https://globalprivacycontrol.org/faq#StateCompliance")
+        return text
     }
 
     private var globalPrivacyControlBinding: Binding<Bool> {
