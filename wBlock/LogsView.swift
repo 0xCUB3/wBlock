@@ -363,9 +363,21 @@ struct LogEntryRow: View {
         !(entry.metadata?.isEmpty ?? true)
     }
 
-    /// The chevron trails the row like iOS: on macOS a DisclosureGroup put it
-    /// at the window edge with a wide gap before the level icon (#999).
+    /// iOS uses the system disclosure row, so List animates the expansion itself.
+    /// On macOS a DisclosureGroup put the chevron at the window edge with a wide
+    /// gap before the level icon (#999), so the row draws its own trailing chevron.
     var body: some View {
+        #if os(iOS)
+        if hasDetails {
+            DisclosureGroup(isExpanded: $isExpanded) {
+                detailContent
+            } label: {
+                summaryContent
+            }
+        } else {
+            summaryContent
+        }
+        #else
         VStack(alignment: .leading, spacing: 6) {
             if hasDetails {
                 Button {
@@ -381,6 +393,7 @@ struct LogEntryRow: View {
         }
         // List may propose the cached collapsed height while this row expands.
         .fixedSize(horizontal: false, vertical: true)
+        #endif
     }
 
     private var summaryContent: some View {
@@ -422,6 +435,7 @@ struct LogEntryRow: View {
                     .foregroundStyle(.primary)
                     .lineLimit(hasDetails && !isExpanded ? 2 : nil)
             }
+            #if os(macOS)
             if hasDetails {
                 Spacer(minLength: 8)
                 Image(systemName: "chevron.right")
@@ -431,6 +445,7 @@ struct LogEntryRow: View {
                     .padding(.top, 2)
                     .accessibilityHidden(true)
             }
+            #endif
         }
     }
 
