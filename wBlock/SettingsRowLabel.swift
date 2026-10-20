@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// What a settings row does when chosen, drawn as a trailing glyph on macOS
-/// so the row reads correctly before anyone clicks it. iOS lists add their
-/// own disclosure chevrons, so the label stays plain there.
+/// so the row reads correctly before anyone clicks it. Forms draw their own
+/// chevron for a navigation link, so a push row adds none.
 enum SettingsRowAccessory {
     /// Pushes another page in the navigation stack.
     case push
@@ -43,12 +43,12 @@ struct SettingsRowLabel: View {
                     .frame(width: 20)
             }
             Spacer(minLength: 12)
-            Image(systemName: accessory.systemImage)
-                .font(.footnote.weight(.semibold))
-                .foregroundStyle(.tertiary)
+            if accessory != .push {
+                Image(systemName: accessory.systemImage)
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
         }
-        .padding(.vertical, 8)
-        .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
         .contentShape(Rectangle())
         #else
         // iOS lists draw disclosure chevrons for NavigationLink only, so a
@@ -69,20 +69,3 @@ struct SettingsRowLabel: View {
     }
 }
 
-extension View {
-    /// Puts the menu on the trailing edge of a card row. The grouped Form did
-    /// this for free; a plain scroll view leaves the menu beside its label.
-    @ViewBuilder
-    func macTrailingPicker(_ title: LocalizedStringKey) -> some View {
-        #if os(macOS)
-        CompatibleLabeledContent {
-            self.labelsHidden()
-                .buttonStyle(.automatic)
-        } label: {
-            Text(title)
-        }
-        #else
-        self
-        #endif
-    }
-}

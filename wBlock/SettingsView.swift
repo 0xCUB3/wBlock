@@ -247,7 +247,15 @@ struct SettingsView: View {
             }
             #endif
         } header: {
+            #if os(macOS)
+            // The form draws a header without a card, so the pills ride here.
+            VStack(alignment: .leading, spacing: 16) {
+                statusPills.frame(maxWidth: .infinity)
+                sectionHeader(.general)
+            }
+            #else
             sectionHeader(.general)
+            #endif
         }
     }
 
@@ -257,7 +265,6 @@ struct SettingsView: View {
                 Text(option.title).tag(option)
             }
         }
-        .macTrailingPicker("Appearance")
     }
 
     private var autoplayBinding: Binding<Bool> {
@@ -374,6 +381,9 @@ struct SettingsView: View {
         } label: {
             SettingsRowLabel("Open Safari Settings", systemImage: "gear", accessory: .app)
         }
+        #if os(macOS)
+        .buttonStyle(.plain)
+        #endif
     }
 
     /// The same stat pills the Filters and Userscripts tabs open with, so every
@@ -520,7 +530,6 @@ struct SettingsView: View {
                         Text(intervalDescription(hours: hours)).tag(hours)
                     }
                 }
-                .macTrailingPicker("Update Interval")
 
                 #if os(macOS)
                 Toggle(isOn: backgroundAgentEnabledBinding) {
@@ -616,16 +625,12 @@ struct SettingsView: View {
         }
     }
 
-    /// macOS shows the diagnostics in the same cards as Settings; a plain
+    /// macOS shows the diagnostics in a grouped Form like Settings; a plain
     /// List left an empty band and a divider above the first row.
     @ViewBuilder
     private func diagnosticsContainer<Content: View>(@ViewBuilder content: () -> Content) -> some View {
         #if os(macOS)
-        if #available(macOS 15.0, *) {
-            MacSettingsCardList { EmptyView() } content: { content() }
-        } else {
-            Form { content() }.groupedFormStyleCompat()
-        }
+        Form { content() }.groupedFormStyleCompat()
         #else
         List { content() }
         #endif
@@ -897,19 +902,9 @@ struct SettingsView: View {
         .navigationTitle("Settings")
         .navigationBarTitleDisplayMode(.inline)
         #else
-        // Settings fills the window in the same cards as Filters and
-        // Userscripts. A grouped Form capped the content to a narrow centered
-        // column. Older macOS keeps the Form since the card list needs
-        // section introspection from macOS 15.
-        if #available(macOS 15.0, *) {
-            MacSettingsCardList { statusPills } content: { settingsSections }
-        } else {
-            VStack(spacing: 0) {
-                statusPills.padding(.vertical, 16)
-                Form { settingsSections }
-                    .groupedFormStyleCompat()
-            }
-        }
+        // A grouped Form, as in System Settings (#1018).
+        Form { settingsSections }
+        .groupedFormStyleCompat()
         #endif
     }
 
