@@ -154,7 +154,9 @@ wBlock collects no data. Safari applies the rules outside the app, and idle memo
 
 ## Install
 
-Get it on the [App Store](https://apps.apple.com/us/app/wblock/id6746388723) for automatic updates, download the DMG from the [latest release](https://github.com/0xCUB3/wBlock/releases/latest), or use Homebrew:
+The [App Store](https://apps.apple.com/us/app/wblock/id6746388723) version is the recommended way to install wBlock. It updates automatically and is signed and reviewed by Apple. On iPhone, iPad, and Apple Vision Pro, the App Store is the only way to get it.
+
+On the Mac, you can also download the DMG from the [latest release](https://github.com/0xCUB3/wBlock/releases/latest) or use Homebrew:
 
 ```sh
 brew tap 0xcub3/wblock && brew install --cask wblock
