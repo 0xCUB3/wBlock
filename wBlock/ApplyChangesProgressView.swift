@@ -239,10 +239,12 @@ struct ApplyChangesProgressView: View {
     }
 
     /// One update per native toggle: a checkbox on macOS, a switch on iOS.
+    /// Type matches the filter rows on the main list.
     private func updateToggle(_ title: String, subtitle: String, isOn: Bool, toggle: @escaping () -> Void) -> some View {
         Toggle(isOn: Binding(get: { isOn }, set: { _ in toggle() })) {
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(verbatim: title)
+                    .fontWeight(.medium)
                 if !subtitle.isEmpty {
                     Text(verbatim: subtitle)
                         .font(.caption)
