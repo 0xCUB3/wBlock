@@ -1011,3 +1011,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it." = "グローバル・プライバシー・コントロール（GPC）は、個人情報を販売・共有しないようWebサイトに求めます。一部の地域では、サイトはこれに従う義務があります。";
 "Learn More" = "詳しく見る";
 "Edit…" = "編集…";
+"Select All" = "すべてを選択";
+"Deselect All" = "すべての選択を解除";

@@ -1051,3 +1051,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it." = "Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it.";
 "Learn More" = "Learn More";
 "Edit…" = "Edit…";
+"Select All" = "Select All";
+"Deselect All" = "Deselect All";

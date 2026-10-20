@@ -1042,3 +1042,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it." = "글로벌 개인정보 보호 제어(GPC)는 웹사이트에 개인 정보를 판매하거나 공유하지 말라고 요청합니다. 일부 지역에서는 사이트가 이를 따라야 합니다.";
 "Learn More" = "자세히 알아보기";
 "Edit…" = "편집…";
+"Select All" = "모두 선택";
+"Deselect All" = "모두 선택 해제";

@@ -1042,3 +1042,5 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it." = "El Control Global de Privacidad pide a los sitios web que no vendan ni compartan tu información personal. En algunos lugares, los sitios están obligados a respetarlo.";
 "Learn More" = "Más información";
 "Edit…" = "Editar…";
+"Select All" = "Seleccionar todo";
+"Deselect All" = "Anular selección";

@@ -210,61 +210,50 @@ struct ApplyChangesProgressView: View {
             .padding(.top, 8)
             .padding(.bottom, 12)
 
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    ForEach(visibleCategories, id: \.self) { category in
-                        reviewSection(category)
+            Form {
+                ForEach(visibleCategories, id: \.self) { category in
+                    Section {
+                        ForEach(filtersByCategory[category] ?? []) { filter in
+                            updateToggle(
+                                filter.localizedDisplayName,
+                                subtitle: filter.localizedDisplayDescription,
+                                isOn: !deselectedFilters.contains(filter.id)
+                            ) { toggleFilter(filter) }
+                        }
+                        if category == .scripts {
+                            ForEach(filterManager.availableScriptUpdates) { script in
+                                updateToggle(
+                                    script.localizedDisplayName,
+                                    subtitle: script.localizedDisplayDescription,
+                                    isOn: !deselectedScripts.contains(script.id)
+                                ) { toggleScript(script) }
+                            }
+                        }
+                    } header: {
+                        categoryHeader(category)
                     }
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 8)
-                .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .groupedFormStyleCompat()
         }
     }
 
-    private func reviewSection(_ category: FilterListCategory) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            categoryHeader(category)
-
-            VStack(spacing: 0) {
-                if let filters = filtersByCategory[category] {
-                    ForEach(Array(filters.enumerated()), id: \.element.id) { index, filter in
-                        if index > 0 {
-                            Divider().padding(.leading, 44)
-                        }
-                        SelectableRow(
-                            title: Text(filter.localizedDisplayName),
-                            subtitle: filter.localizedDisplayDescription,
-                            isSelected: !deselectedFilters.contains(filter.id),
-                            style: .groupedRow
-                        ) {
-                            toggleFilter(filter)
-                        }
-                    }
-                }
-
-                if category == .scripts {
-                    ForEach(
-                        Array(filterManager.availableScriptUpdates.enumerated()),
-                        id: \.element.id
-                    ) { index, script in
-                        if index > 0 || filtersByCategory[category] != nil {
-                            Divider().padding(.leading, 44)
-                        }
-                        SelectableRow(
-                            title: Text(script.localizedDisplayName),
-                            subtitle: script.localizedDisplayDescription,
-                            isSelected: !deselectedScripts.contains(script.id),
-                            style: .groupedRow
-                        ) {
-                            toggleScript(script)
-                        }
-                    }
+    /// One update per native toggle: a checkbox on macOS, a switch on iOS.
+    private func updateToggle(_ title: String, subtitle: String, isOn: Bool, toggle: @escaping () -> Void) -> some View {
+        Toggle(isOn: Binding(get: { isOn }, set: { _ in toggle() })) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(verbatim: title)
+                if !subtitle.isEmpty {
+                    Text(verbatim: subtitle)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
                 }
             }
-            .updateReviewSectionBackgroundCompat(cornerRadius: 12)
         }
+        #if os(macOS)
+        .toggleStyle(.checkbox)
+        #endif
     }
 
     private var progressToolbar: some View {
@@ -313,21 +302,17 @@ struct ApplyChangesProgressView: View {
     }
 
     private func categoryHeader(_ category: FilterListCategory) -> some View {
-        HStack {
+        let selected = isCategorySelected(category)
+        return HStack {
             Text(category.localizedName)
-                .font(.headline)
             Spacer()
-            Toggle(
-                category.localizedName,
-                isOn: Binding(
-                    get: { isCategorySelected(category) },
-                    set: { setCategory(category, selected: $0) }
-                )
-            )
-            .toggleStyle(.switch)
-            .labelsHidden()
+            Button(selected ? "Deselect All" : "Select All") {
+                setCategory(category, selected: !selected)
+            }
+            .buttonStyle(.borderless)
+            .font(.subheadline)
         }
-        .padding(.horizontal, 4)
+        .textCase(nil)
     }
 
     // MARK: - Progress
@@ -534,19 +519,6 @@ struct ApplyChangesProgressView: View {
 }
 
 private extension View {
-    @ViewBuilder
-    func updateReviewSectionBackgroundCompat(cornerRadius: CGFloat) -> some View {
-        #if os(iOS)
-        self.background(.regularMaterial, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
-            }
-        #else
-        self.liquidGlassCompat(cornerRadius: cornerRadius, material: .regularMaterial)
-        #endif
-    }
-
     /// iOS sheet actions span the sheet; macOS buttons keep their natural width.
     @ViewBuilder
     func sheetActionWidth() -> some View {

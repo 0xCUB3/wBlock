@@ -1042,3 +1042,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it." = "全球隱私控制（GPC）會要求網站不要出售或分享你的個人資訊。部分地區要求網站遵守此訊號。";
 "Learn More" = "了解更多";
 "Edit…" = "編輯…";
+"Select All" = "全選";
+"Deselect All" = "取消全選";

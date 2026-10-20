@@ -1051,3 +1051,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it." = "کنترل جهانی حریم خصوصی از وب‌سایت‌ها می‌خواهد اطلاعات شخصی شما را نفروشند یا به اشتراک نگذارند. در برخی مناطق، وب‌سایت‌ها موظف به رعایت آن هستند.";
 "Learn More" = "بیشتر بدانید";
 "Edit…" = "ویرایش…";
+"Select All" = "انتخاب همه";
+"Deselect All" = "لغو انتخاب همه";
