@@ -123,8 +123,8 @@ struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
                             }
                             ToolbarSpacer(.fixed, placement: .topBarTrailing)
                         }
+                        // Show Enabled Only and Add share one bubble, as on the Mac (#1021).
                         ToolbarItem(placement: .topBarTrailing) { filter }
-                        ToolbarSpacer(.fixed, placement: .topBarTrailing)
                         ToolbarItem(placement: .topBarTrailing) { primary() }
                     }
                 }

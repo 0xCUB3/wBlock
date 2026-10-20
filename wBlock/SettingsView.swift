@@ -753,19 +753,32 @@ struct SettingsView: View {
     }
 
 
+    private var jumpToSectionMenu: some View {
+        Menu {
+            ForEach(SettingsSection.allCases, id: \.self) { section in
+                Button(section.title) { scrollTarget = section }
+            }
+        } label: {
+            Label("Jump to Section", systemImage: "list.bullet")
+        }
+        .help("Jump to Section")
+    }
+
+    /// One bubble on both platforms; iOS merges adjacent items itself,
+    /// the Mac needs a control group (#1021).
     @ToolbarContentBuilder
     private var pauseBlockingToolbar: some ToolbarContent {
+        #if os(macOS)
         ToolbarItem(placement: .primaryAction) {
-            Menu {
-                ForEach(SettingsSection.allCases, id: \.self) { section in
-                    Button(section.title) { scrollTarget = section }
-                }
-            } label: {
-                Label("Jump to Section", systemImage: "list.bullet")
+            ControlGroup {
+                jumpToSectionMenu
+                PauseBlockingMenu(filterManager: filterManager)
             }
-            .help("Jump to Section")
         }
+        #else
+        ToolbarItem(placement: .primaryAction) { jumpToSectionMenu }
         ToolbarItem(placement: .primaryAction) { PauseBlockingMenu(filterManager: filterManager) }
+        #endif
     }
 
     @ViewBuilder
