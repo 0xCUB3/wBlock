@@ -66,27 +66,22 @@ struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
         // Show Enabled Only and Add share one group, with the toolbar's own
         // spacing between them (#999).
         if #available(macOS 26.0, *) {
-            // Shared ids let Filters and Userscripts keep the same toolbar items
-            // across a tab switch instead of AppKit rebuilding and retiling them.
-            content.toolbar(id: "wblock.list") {
-                ToolbarItem(id: "apply", placement: .navigation) { apply() }
-                    .customizationBehavior(.disabled)
+            content.toolbar {
+                ToolbarItem(placement: .navigation) { apply() }
                     .toolbarVisibilityPriorityCompat(.high)
-                ToolbarItem(id: "search", placement: .primaryAction) {
+                ToolbarItem(placement: .primaryAction) {
                     InlineGlassSearchField(text: $searchText, focusRequest: $focusRequest, isOpen: $isSearchOpen, prompt: searchPrompt)
                 }
                 .sharedBackgroundVisibility(isSearchOpen ? .hidden : .automatic)
-                .customizationBehavior(.disabled)
                 .toolbarVisibilityPriorityCompat(.high)
                 ToolbarSpacer(.fixed, placement: .primaryAction)
                 // One item, so AppKit can't split a menu (Userscripts' Add) into its own capsule.
-                ToolbarItem(id: "actions", placement: .primaryAction) {
+                ToolbarItem(placement: .primaryAction) {
                     ControlGroup {
                         filter
                         primary()
                     }
                 }
-                .customizationBehavior(.disabled)
             }
             .toolbarBackground(.visible, for: .windowToolbar)
         } else {
