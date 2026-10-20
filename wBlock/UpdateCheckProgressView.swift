@@ -10,21 +10,16 @@ struct UpdateCheckProgressView: View {
 
     @ViewBuilder private var content: some View {
         Group {
-            #if os(iOS)
             if filterManager.showingNoUpdatesAlert {
                 noUpdates
             } else {
                 progress
             }
-            #else
-            progress
-            #endif
         }
         .padding(24)
         .frame(idealWidth: 380, maxWidth: 440)
     }
 
-    #if os(iOS)
     private var noUpdates: some View {
         HStack(spacing: 16) {
             VStack(alignment: .leading, spacing: 4) {
@@ -39,6 +34,7 @@ struct UpdateCheckProgressView: View {
             VStack(spacing: 8) {
                 Button("OK") { filterManager.showingNoUpdatesAlert = false }
                     .buttonStyle(.bordered)
+                    .keyboardShortcut(.defaultAction)
                 Button("Apply Anyway") {
                     filterManager.showingNoUpdatesAlert = false
                     filterManager.forceApplyChanges()
@@ -54,7 +50,6 @@ struct UpdateCheckProgressView: View {
             filterManager.showingNoUpdatesAlert = false
         }
     }
-    #endif
 
     private var progress: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -75,14 +70,10 @@ struct UpdateCheckProgressView: View {
     }
 
     var body: some View {
-        #if os(iOS)
         content
             .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(.primary.opacity(0.1)))
             .shadow(color: .black.opacity(0.15), radius: 20, y: 8)
             .padding(24)
-        #else
-        content
-        #endif
     }
 }

@@ -1080,37 +1080,22 @@ struct ContentModifiers: ViewModifier {
     @State private var showOnboardingSheet = false
     // Track if initial presentation check has been done to avoid re-showing after dismiss
     @State private var hasPerformedInitialCheck = false
-    // False from the moment the progress sheet appears until its dismissal finishes.
-    // An alert requested while the sheet is up is held until then; SwiftUI drops an
-    // alert presented over a sheet that is still on screen or animating away.
-    @State private var progressSheetSettled = true
     // False from the moment onboarding is requested until its dismissal finishes.
     // Onboarding requests Apply as it dismisses; presenting Apply on the same
     // host mid-dismissal crashed UIKit on iOS 16.
     @State private var onboardingSettled = true
 
-    // iOS shows the no-updates result in the floating check card instead of an alert.
-    private var noUpdatesInSheet: Bool {
-        #if os(iOS)
-        filterManager.showingNoUpdatesAlert
-        #else
-        false
-        #endif
-    }
-
+    /// Update checks and their no-updates result float in a card over the app on
+    /// every platform: on iOS a short sheet sits against the home bar, iOS 26 glass
+    /// sheets ignore a clear background, and older iPads ignore detents; on the Mac
+    /// the card dismisses itself and closes on a click like iOS (email feedback).
     private var checkCardVisible: Bool {
         onboardingSettled && !filterManager.showingApplyProgressSheet
-            && (noUpdatesInSheet || (filterManager.isLoading && !filterManager.suppressBlockingOverlay))
+            && (filterManager.showingNoUpdatesAlert || (filterManager.isLoading && !filterManager.suppressBlockingOverlay))
     }
 
-    // iOS floats the check card over the app: a short sheet sits against the home bar, iOS 26
-    // glass sheets ignore a clear background, and older iPads ignore detents entirely.
     private var progressSheetPresented: Bool {
-        #if os(iOS)
         onboardingSettled && filterManager.showingApplyProgressSheet
-        #else
-        onboardingSettled && filterManager.showingApplyProgressSheet || checkCardVisible
-        #endif
     }
 
     func body(content: Content) -> some View {
@@ -1126,24 +1111,13 @@ struct ContentModifiers: ViewModifier {
                         filterManager.showingNoUpdatesAlert = false
                     }
                 }
-            ), onDismiss: { progressSheetSettled = true }) {
-                #if os(iOS)
-                let showsApplyProgress = true
-                #else
-                let showsApplyProgress = filterManager.showingApplyProgressSheet
-                #endif
-                if showsApplyProgress {
-                    ApplyChangesProgressView(
-                        filterManager: filterManager,
-                        viewModel: filterManager.applyProgressViewModel,
-                        isPresented: $filterManager.showingApplyProgressSheet
-                    )
-                } else {
-                    UpdateCheckProgressView(filterManager: filterManager)
-                        .interactiveDismissDisabled(!noUpdatesInSheet)
-                }
+            )) {
+                ApplyChangesProgressView(
+                    filterManager: filterManager,
+                    viewModel: filterManager.applyProgressViewModel,
+                    isPresented: $filterManager.showingApplyProgressSheet
+                )
             }
-            #if os(iOS)
             .overlay {
                 if checkCardVisible {
                     ZStack {
@@ -1156,24 +1130,8 @@ struct ContentModifiers: ViewModifier {
                 }
             }
             .animation(.easeInOut(duration: 0.2), value: checkCardVisible)
-            #endif
-            .onChangeCompat(of: progressSheetPresented) { _, presented in
-                if presented { progressSheetSettled = false }
-            }
-
             .onChangeCompat(of: showOnboardingSheet) { _, presented in
                 if presented { onboardingSettled = false }
-            }
-            .alert("No Updates Found", isPresented: Binding(
-                get: { filterManager.showingNoUpdatesAlert && !noUpdatesInSheet && !progressSheetPresented && progressSheetSettled },
-                set: { if !$0 { filterManager.showingNoUpdatesAlert = false } }
-            )) {
-                Button("OK") {}
-                // Rebuilds Safari's rules from the downloaded lists, the
-                // replacement for the old 3-second hold (#999).
-                Button("Apply Anyway") { filterManager.forceApplyChanges() }
-            } message: {
-                Text("You're already using the latest filters.")
             }
             .alert("Filters Auto-Disabled", isPresented: $filterManager.showingAutoDisabledAlert) {
                 Button("OK") {}
