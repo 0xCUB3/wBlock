@@ -281,7 +281,6 @@ struct InlineGlassSearchField: View {
     @State private var anchor = ToolbarItemAnchor()
     @FocusState private var isFocused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.controlActiveState) private var controlActiveState
 
     var body: some View {
         Group {
@@ -379,9 +378,9 @@ struct InlineGlassSearchField: View {
         Button(action: expandAndFocus) {
             Label(prompt, systemImage: "magnifyingglass")
                 .labelStyle(.iconOnly)
-                .imageScale(.large)
                 .fixedSize()
-                .foregroundStyle(text.isEmpty ? (controlActiveState == .inactive ? Color.primary.opacity(0.25) : Color.primary) : Color.accentColor)
+                // Sized and tinted like the magnifier in a system search field.
+                .foregroundStyle(.secondary)
                 .contentTransition(.identity)
                 .frame(width: 20, height: 36)
                 .padding(.horizontal, 8)
