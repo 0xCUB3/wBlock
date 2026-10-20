@@ -73,6 +73,9 @@ html, body {
   background: var(--background);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 body {
