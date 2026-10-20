@@ -180,6 +180,9 @@ class AppFilterManager: ObservableObject {
     }
 
     var autoApplyTask: Task<Void, Never>?
+    /// A rebuild that came due while an auto-update was rebuilding the same
+    /// blockers; it runs when that update finishes, in the same sheet.
+    private var autoApplyWaitingForAutoUpdate = false
 
     func markCurrentStateApplied() {
         appliedSelectedFilterIDs = selectedFilterIDs
@@ -263,8 +266,12 @@ class AppFilterManager: ObservableObject {
         autoApplyTask = Task { @MainActor [weak self] in
             try? await Task.sleep(nanoseconds: 60_000_000_000)
             guard !Task.isCancelled else { return }
-            guard let self,
-                  self.hasUnappliedChanges,
+            guard let self else { return }
+            if self.isAutoUpdateRunning {
+                self.autoApplyWaitingForAutoUpdate = true
+                return
+            }
+            guard self.hasUnappliedChanges,
                   !self.isLoading,
                   !self.isApplyInFlight,
                   !self.pausedComponents.contains(.filters)
@@ -886,6 +893,15 @@ class AppFilterManager: ObservableObject {
         if progress == .finished {
             guard isAutoUpdateRunning else { return }
             isAutoUpdateRunning = false
+            if autoApplyWaitingForAutoUpdate {
+                // Hand the open sheet to the rebuild instead of closing it and
+                // floating a second "Applying filters" card over the app.
+                autoApplyWaitingForAutoUpdate = false
+                if hasUnappliedChanges, !isLoading, !isApplyInFlight, !pausedComponents.contains(.filters) {
+                    Task { await self.performFilterUpdate(checkForUpdates: false, downloadMissing: true) }
+                    return
+                }
+            }
             if autoUpdateOwnsProgressSheet {
                 sheet.updateIsLoading(false)
                 showingApplyProgressSheet = false
