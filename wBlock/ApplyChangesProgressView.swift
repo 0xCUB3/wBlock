@@ -135,6 +135,7 @@ struct ApplyChangesProgressView: View {
             .frame(width: 0, height: 0)
             .accessibilityHidden(true)
         }
+        .background(FinishedSheetDismissal(isActive: mode == .result) { isPresented = false })
         #endif
         #if os(macOS)
         .frame(
@@ -591,3 +592,52 @@ private extension View {
         }
     }
 }
+
+#if os(macOS)
+/// Once an apply has finished, Return, Space, or a click outside the sheet
+/// closes it, the way a tap outside closes it on iOS.
+private struct FinishedSheetDismissal: NSViewRepresentable {
+    let isActive: Bool
+    let dismiss: () -> Void
+
+    func makeNSView(context: Context) -> MonitorView { MonitorView() }
+
+    func updateNSView(_ view: MonitorView, context: Context) {
+        view.isActive = isActive
+        view.dismiss = dismiss
+    }
+
+    final class MonitorView: NSView {
+        var isActive = false
+        var dismiss: () -> Void = {}
+        private var monitor: Any?
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            if let monitor { NSEvent.removeMonitor(monitor) }
+            monitor = nil
+            guard window != nil else { return }
+            monitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .keyDown]) { [weak self] event in
+                guard let self, self.isActive, let sheet = self.window else { return event }
+                switch event.type {
+                case .keyDown where [36, 49, 76].contains(event.keyCode)
+                    && event.modifierFlags.intersection([.command, .option, .control, .shift]).isEmpty:
+                    self.dismiss()
+                    return nil
+                case .leftMouseDown where event.window !== sheet:
+                    self.dismiss()
+                    return nil
+                default:
+                    return event
+                }
+            }
+        }
+
+        override func removeFromSuperview() {
+            if let monitor { NSEvent.removeMonitor(monitor) }
+            monitor = nil
+            super.removeFromSuperview()
+        }
+    }
+}
+#endif
