@@ -1,13 +1,14 @@
 <div align="center">
 
-<img src="docs/media/img/wblock_logo.png" alt="wBlock logo" width="120" />
+<img src="docs/media/img/wblock_logo.png" alt="wBlock logo" width="112" />
 
 # wBlock
 
-**The end of Safari ad-blocking B.S.**
+The end of Safari ad-blocking B.S.
 
-A free, open-source ad blocker for Safari on Mac, iPhone, iPad, and Apple Vision Pro.
+<sub>A free, open-source ad blocker for Safari on Mac, iPhone, iPad, and Apple Vision Pro.</sub>
 
+<br>
 <br>
 
 <a href="https://apps.apple.com/us/app/wblock/id6746388723?itscg=30200&itsct=apps_box_badge&mttnsubad=6746388723">
@@ -32,110 +33,170 @@ A free, open-source ad blocker for Safari on Mac, iPhone, iPad, and Apple Vision
 
 <img src="docs/media/img/hero_image.png" alt="wBlock on macOS in light and dark mode" width="900" />
 
+<br>
+
+[Features](#features) · [Screenshots](#screenshots) · [Install](#install) · [How it works](#how-it-works) · [FAQ](#faq) · [Support](#support)
+
 </div>
 
 <br>
 
-wBlock is a free, open-source Safari content blocker for macOS, iOS, iPadOS, and visionOS. Five content blocking extensions provide a combined capacity of 750,000 rules, with a limit of 150,000 per extension. A separate scripts extension supports scriptlets, cosmetic filtering, userscripts, userstyles, element hiding, and native video controls.
+## Features
 
-wBlock does not collect user data. The rules viewer provides access to compiled rules, unsupported filter entries, and changes from the latest filter update.
+<table>
+<tr>
+<td width="50%" valign="top">
+
+#### Blocking
+
+Up to 750,000 Safari rules across five content blockers, with recommended lists, regional lists picked for you, and optional annoyance and cookie-banner filters.
+
+</td>
+<td width="50%" valign="top">
+
+#### Userscripts
+
+A Greasemonkey-compatible engine, UserCSS themes, and a built-in catalog with Tube Cleaner, DeArrow, Dark Reader, and more.
+
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+
+#### Native video
+
+Tube Cleaner and Player Cleaner give videos Safari's own controls, with Picture-in-Picture, background audio, and SponsorBlock.
+
+</td>
+<td width="50%" valign="top">
+
+#### Private by design
+
+No data collection. Settings, lists, and scripts sync through your own iCloud. Idle memory is about 40 MB.
+
+</td>
+</tr>
+</table>
+
+<details>
+<summary>Content blocking</summary>
+<br>
+
+- AdGuard-compatible filter lists compiled into Safari's native rules and spread across five content blockers, with a limit of 150,000 rules each. Safari applies the rules outside the app process.
+- Recommended default lists, automatic regional filter selection, and optional annoyance and cookie-banner filters. Add custom lists by URL, pasted text, or file import.
+- Scheduled updates from hourly to weekly, with incremental downloads for lists that support them. On macOS, a launch agent checks for updates while the app is closed.
+- Tracking-parameter removal, including `utm_*`, and link-shortener resolution. Both are on by default.
+- A capacity indicator and a rules viewer that shows compiled rules, unsupported entries, duplicate rules, rules handled by the scripts extension, and changes from the latest update.
+
+</details>
+
+<details>
+<summary>Userscripts and userstyles</summary>
+<br>
+
+- A separate scripts extension supports scriptlets, cosmetic filtering, userscripts, userstyles, and element hiding.
+- A Greasemonkey-compatible engine supporting `GM_*` and `GM.*` APIs. `GM_xmlhttpRequest` is restricted to hosts declared in a script's `@connect` metadata.
+- UserCSS themes (`.user.css`) with Less and Stylus support. See [docs/USERSTYLES.md](docs/USERSTYLES.md).
+- A built-in catalog with Tube Cleaner, Player Cleaner, DeArrow, Dark Reader, Return YouTube Dislike, Bypass Paywalls Clean, AdGuard Extra, AdGuard Popup Blocker, and TwitchAdSolutions. Catalog scripts are off by default except tinyShield, which handles anti-adblock checks.
+
+</details>
+
+<details>
+<summary>Native video controls</summary>
+<br>
+
+Tube Cleaner and Player Cleaner turn on Safari's native controls for existing video elements before the page renders, including Picture-in-Picture, background audio, fullscreen playback, and Now Playing.
+
+Tube Cleaner works on YouTube and keeps its original video stream. It puts chapters and captions into Safari's native menus and skips sponsors with SponsorBlock, with settings per category. DeArrow is available separately for alternative titles and thumbnails.
+
+Player Cleaner supports video.js, JW Player, Plyr, Flowplayer, MediaElement, Clappr, Media Chrome, and shadow-root players such as Archive.org's. It saves playback speed, volume, captions, and position per site.
+
+Both scripts update from [wBlock-userscripts](https://github.com/0xCUB3/wBlock-userscripts) independently of app releases. Ad blocking stays with the filter lists.
+
+</details>
+
+<details>
+<summary>Per-site controls, sync, and platforms</summary>
+<br>
+
+The Safari toolbar popup has separate switches for filtering, userscripts, and autoplay, plus the Element Zapper. Filter lists and userscripts can be limited to selected sites or excluded from specific domains. Zapper rules can be edited in Settings.
+
+wBlock runs on macOS, iOS, iPadOS, and visionOS. iCloud sync covers filter lists, custom filters, userscripts, the allowlist, and settings. Local backup export is also available.
+
+</details>
 
 > [!TIP]
 > The [comparison guide](Adblock_Comparison.md) covers wBlock, uBlock Origin Lite, Wipr, and AdGuard.
 
 <br>
 
-## Features
+## Screenshots
 
-### Content blocking
-
-- AdGuard-compatible filter lists compiled into Safari's native rules and distributed across five content blockers. Safari applies the rules outside the app process; wBlock uses approximately 40 MB of memory at idle.
-- Recommended default lists, automatic regional filter selection, and optional annoyance and cookie-banner filters. Custom lists can be added by URL, pasted text, or file import.
-- Scheduled updates from hourly to weekly, with incremental downloads for lists that support them. A macOS launch agent checks for updates while the app is closed.
-- Tracking-parameter removal, including `utm_*`, and link-shortener resolution. Both are enabled by default.
-- A capacity indicator and rules viewer showing unsupported entries, duplicate rules, and rules handled by the scripts extension.
-
-### Userscripts and userstyles
-
-- A Greasemonkey-compatible engine supporting `GM_*` and `GM.*` APIs. `GM_xmlhttpRequest` is restricted to hosts declared in a script's `@connect` metadata.
-- UserCSS themes (`.user.css`) with Less and Stylus support. See [docs/USERSTYLES.md](docs/USERSTYLES.md).
-- A built-in catalog containing Tube Cleaner, Player Cleaner, DeArrow, Dark Reader, Return YouTube Dislike, Bypass Paywalls Clean, AdGuard Extra, AdGuard Popup Blocker, and TwitchAdSolutions. Catalog scripts are disabled by default except tinyShield, which handles anti-adblock checks.
-
-### Native video controls
-
-Tube Cleaner and Player Cleaner enable Safari's native controls on existing video elements before the page renders. Supported features include Picture-in-Picture, background audio, fullscreen playback, and Now Playing integration.
-
-Tube Cleaner supports YouTube while preserving its original video stream. It integrates chapters and captions into Safari's native menus and provides SponsorBlock skipping with per-category settings. DeArrow is available separately for alternative titles and thumbnails.
-
-Player Cleaner supports video.js, JW Player, Plyr, Flowplayer, MediaElement, Clappr, Media Chrome, and shadow-root players such as Archive.org's. Playback speed, volume, captions, and playback position are saved per site.
-
-Both scripts receive updates from [wBlock-userscripts](https://github.com/0xCUB3/wBlock-userscripts) independently of app releases. Ad blocking remains the responsibility of the filter lists.
-
-### Per-site configuration
-
-The Safari toolbar popup provides separate controls for filtering, userscripts, and autoplay, along with the element zapper. Filter lists and userscripts can be restricted to selected sites or excluded from specific domains. Zapper rules can be edited in Settings.
-
-### Platform support and sync
-
-wBlock supports macOS, iOS, iPadOS, and visionOS. iCloud sync includes filter lists, custom filters, userscripts, the allowlist, and settings. Local backup export is also available.
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/media/img/filters_macos_dark.png" />
+    <img src="docs/media/img/filters_macos_light.png" alt="Filters on macOS" width="760" />
+  </picture>
+  <br><sub>Filters on macOS</sub>
+</p>
 
 <br>
 
-## Screenshots
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/media/img/scripts_popup_ios_dark.png" />
+    <img src="docs/media/img/scripts_popup_ios_light.png" alt="The Safari popup on iPhone" height="560" />
+  </picture>
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="docs/media/img/tube_cleaner_sponsorblock.png" alt="SponsorBlock settings in Tube Cleaner" height="560" />
+  <br><sub>The Safari popup on iPhone, and SponsorBlock in Tube Cleaner</sub>
+</p>
 
-<table>
-<tr>
-<td colspan="2" align="center">
+<br>
+
+<p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/media/img/userscripts_macos_dark.png" />
     <img src="docs/media/img/userscripts_macos_light.png" alt="Userscripts on macOS" width="760" />
   </picture>
   <br><sub>Userscripts on macOS</sub>
-</td>
-</tr>
-<tr>
-<td align="center" width="50%">
-  <img src="docs/media/img/tube_cleaner_sponsorblock.png" alt="SponsorBlock settings in Tube Cleaner" width="260" />
-  <br><sub>SponsorBlock in Tube Cleaner</sub>
-</td>
-<td align="center" width="50%">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/media/img/scripts_popup_ios_dark.png" />
-    <img src="docs/media/img/scripts_popup_ios_light.png" alt="The Safari popup on iPhone" width="300" />
-  </picture>
-  <br><sub>The Safari popup on iPhone</sub>
-</td>
-</tr>
-<tr>
-<td colspan="2" align="center">
+</p>
+
+<br>
+
+<p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/media/img/settings_macos_dark.png" />
     <img src="docs/media/img/settings_macos_light.png" alt="Settings on macOS" width="760" />
   </picture>
   <br><sub>Settings on macOS</sub>
-</td>
-</tr>
-</table>
+</p>
 
 <br>
 
-## Installation
+## Install
 
-- [App Store](https://apps.apple.com/us/app/wblock/id6746388723): supports automatic app updates.
-- Homebrew: `brew tap 0xcub3/wblock && brew install --cask wblock`
-- DMG: available from the [latest release](https://github.com/0xCUB3/wBlock/releases/latest).
+<div align="center">
 
-The initial setup provides instructions for enabling the extensions in Safari.
+| | |
+|:--|:--|
+| App Store | [Download](https://apps.apple.com/us/app/wblock/id6746388723), with automatic updates |
+| Homebrew | `brew tap 0xcub3/wblock && brew install --cask wblock` |
+| DMG | [Latest release](https://github.com/0xCUB3/wBlock/releases/latest) |
+
+</div>
+
+On first launch, wBlock walks you through turning on its extensions in Safari.
 
 <br>
 
-## Technical implementation
+## How it works
 
-The app downloads filter lists and converts them with [SafariConverterLib](https://github.com/AdguardTeam/SafariConverterLib) 4.3.0. Rules are distributed across five content blockers: Ads, Privacy, Security, Foreign, and Custom. Safari compiles and applies these rules independently of the app. The wBlock Scripts extension handles functionality that cannot be expressed through static rules.
+The app downloads filter lists and converts them with [SafariConverterLib](https://github.com/AdguardTeam/SafariConverterLib) 4.3.0. Rules are spread across five content blockers: Ads, Privacy, Security, Foreign, and Custom. Safari compiles and applies them independently of the app. The wBlock Scripts extension handles what static rules can't express.
 
-Filter data is stored in Protocol Buffers with LZ4 compression. Streaming writes limit peak memory usage during compilation. Changes to a filter list rebuild only the affected content blockers. Safari must reload the updated rule sets before changes take effect.
+Filter data is stored in Protocol Buffers with LZ4 compression, and streaming writes keep peak memory low during compilation. Changing a list rebuilds only the affected content blockers. Safari must reload the updated rule sets before changes take effect.
 
-The [comparison guide](Adblock_Comparison.md#how-wblock-works-around-static-rules) includes the rule used to disable filtering for a specific site.
+The [comparison guide](Adblock_Comparison.md#how-wblock-works-around-static-rules) includes the rule used to turn off filtering for a specific site.
 
 <br>
 
@@ -221,21 +282,35 @@ On iOS and iPadOS, background updates are scheduled by the operating system. Dis
 
 ## Support
 
-wBlock is free and open source. Optional contributions to development are accepted through Open Collective.
+<div align="center">
+
+wBlock is free and open source. If it's useful to you, you can support development on Open Collective.
+
+<br>
 
 <a href="https://opencollective.com/skula/projects/wblock">
   <img src="https://opencollective.com/about-this-hack/donate/button@2x.png?color=blue" alt="Donate on Open Collective" width="220" />
 </a>
 
-Report bugs and request features through [Issues](https://github.com/0xCUB3/wBlock/issues). Community support is available on [Discord](https://discord.gg/Y3yTFPpbXr). See the [privacy policy](PRIVACY_POLICY.md) for details on data handling.
+<br>
+<br>
+
+[Report a bug or request a feature](https://github.com/0xCUB3/wBlock/issues) · [Join the Discord](https://discord.gg/Y3yTFPpbXr) · [Privacy policy](PRIVACY_POLICY.md)
+
+</div>
 
 <br>
 
 ## Credits
 
-Contributors include [@arjpar](https://github.com/arjpar), [@ameshkov](https://github.com/ameshkov), and [@shindgew](https://github.com/shindgew). Rule conversion and scriptlets are provided by [AdGuard](https://github.com/AdguardTeam). SponsorBlock and DeArrow data are provided by [Ajay Ramachandran's](https://sponsor.ajay.app/) projects under CC BY-NC-SA 4.0.
+<div align="center">
+
+<sub>Contributors include [@arjpar](https://github.com/arjpar), [@ameshkov](https://github.com/ameshkov), and [@shindgew](https://github.com/shindgew). Rule conversion and scriptlets come from [AdGuard](https://github.com/AdguardTeam). SponsorBlock and DeArrow data come from [Ajay Ramachandran's](https://sponsor.ajay.app/) projects under CC BY-NC-SA 4.0.</sub>
 
 <br>
+<br>
+
+</div>
 
 <div align="center">
 
