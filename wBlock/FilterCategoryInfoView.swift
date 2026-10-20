@@ -41,16 +41,12 @@ struct FilterCategoryInfoView: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             if category == .foreign {
-                VStack(alignment: .leading, spacing: 8) {
-                    Label("Regional & Language", systemImage: "globe")
-                        .font(.headline)
-                    RegionalLanguagePickerView(
-                        selectedLanguages: $selectedLanguages,
-                        options: languageOptions
-                    )
-                    .onChangeCompat(of: selectedLanguages) { _, newValue in
-                        onLanguagesChange(newValue)
-                    }
+                RegionalLanguagePickerView(
+                    selectedLanguages: $selectedLanguages,
+                    options: languageOptions
+                )
+                .onChangeCompat(of: selectedLanguages) { _, newValue in
+                    onLanguagesChange(newValue)
                 }
             }
 

@@ -492,7 +492,6 @@
 "Recorded" = "Rögzítve";
 "Refresh" = "Frissítés";
 "Regional" = "Regionális";
-"Regional & Language" = "Regionális és nyelvi";
 "Regional filters: %@" = "Regionális szűrők: %@";
 "Registered" = "Regisztrálva";
 "Registration: %@" = "Regisztráció: %@";
@@ -1042,3 +1041,4 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Global Privacy Control" = "Global Privacy Control";
 "Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it." = "A Global Privacy Control arra kéri a webhelyeket, hogy ne adják el és ne osszák meg a személyes adataidat. Egyes helyeken a webhelyek kötelesek ezt betartani.";
 "Learn More" = "További információ";
+"Edit…" = "Szerkesztés…";

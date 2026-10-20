@@ -490,7 +490,6 @@
 "Recorded" = "Zapisano";
 "Refresh" = "Odśwież";
 "Regional" = "Regionalne";
-"Regional & Language" = "Regionalne i językowe";
 "Regional filters: %@" = "Filtry regionalne: %@";
 "Registered" = "Zarejestrowano";
 "Registration: %@" = "Rejestracja: %@";
@@ -1042,3 +1041,4 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Global Privacy Control" = "Global Privacy Control";
 "Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it." = "Global Privacy Control prosi strony internetowe, by nie sprzedawały ani nie udostępniały Twoich danych osobowych. W niektórych miejscach strony muszą to respektować.";
 "Learn More" = "Dowiedz się więcej";
+"Edit…" = "Edytuj…";

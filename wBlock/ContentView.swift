@@ -1379,7 +1379,8 @@ struct AddFilterListView: View {
             onDismiss: { dismiss() },
             onSubmit: submit,
             // Find adds each list as you tap it, so Done is the only way out.
-            showsCancel: addMode != .find
+            showsCancel: addMode != .find,
+            onBack: backAction
         ) { mode in
             modeContent(mode)
         }
@@ -1470,17 +1471,27 @@ struct AddFilterListView: View {
 	        }
 	    }
 
+    private var backAction: (() -> Void)? {
+        switch addMode {
+        case .url where isReviewingURLs:
+            return {
+                isReviewingURLs = false
+                urlReview.cancelMetadata()
+                if isReviewingFromFind { addMode = .find }
+            }
+        case .paste where isReviewingText:
+            return { isReviewingText = false }
+        default:
+            return nil
+        }
+    }
+
     @ViewBuilder
     private func modeContent(_ mode: AddMode) -> some View {
         switch mode {
         case .url:
             if isReviewingURLs {
                 Section {
-                    AddContentBackButton {
-                        isReviewingURLs = false
-                        urlReview.cancelMetadata()
-                        if isReviewingFromFind { addMode = .find }
-                    }
                     if urlReview.isFetchingMetadata { ProgressView().controlSize(.small) }
                 } footer: {
                     if !isSaving { urlFooterMessage }
@@ -1496,9 +1507,6 @@ struct AddFilterListView: View {
             }
         case .paste:
             if isReviewingText {
-                Section {
-                    AddContentBackButton { isReviewingText = false }
-                }
                 Section { userListMetaFields } footer: { duplicateNameNote(for: userListTitle) }
             } else {
                 AddContentSourceSection(title: "Rules", placeholder: "Paste or type filter rules.",

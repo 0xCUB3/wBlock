@@ -6,9 +6,9 @@ protocol AddContentMode: CaseIterable, Identifiable, Hashable {
     var systemImage: String { get }
 }
 
-/// Both Add sheets: a native TabView of grouped forms (bottom tab bar on iOS,
-/// top tabs on macOS), with Cancel and the primary action where each
-/// platform puts them. On iOS each tab owns its navigation bar, so a bar's
+/// Both Add sheets: grouped forms switched by a bottom tab bar on iOS and a
+/// segmented control on macOS (a Mac tab view boxes its content in gray,
+/// #1018), with Cancel and the primary action where each platform puts them. On iOS each tab owns its navigation bar, so a bar's
 /// scroll-edge blur sized for one form never lingers over another.
 struct AddContentSheet<Mode: AddContentMode, Content: View>: View {
     let title: LocalizedStringKey
@@ -20,13 +20,10 @@ struct AddContentSheet<Mode: AddContentMode, Content: View>: View {
     let onSubmit: () -> Void
     /// Off when the primary action only closes the sheet, as Cancel would.
     var showsCancel = true
+    /// Set while reviewing, to return to the entry step: bottom left on
+    /// macOS, in place of Cancel on iOS.
+    var onBack: (() -> Void)? = nil
     @ViewBuilder let content: (Mode) -> Content
-    #if os(macOS)
-    /// A TabView built while its sheet is still sizing lays every tab label
-    /// out at zero width, stacked on top of each other (macOS 27). Mounting it
-    /// one run-loop turn later gets real tabs.
-    @State private var isSheetSized = false
-    #endif
 
     var body: some View {
         #if os(iOS)
@@ -35,9 +32,19 @@ struct AddContentSheet<Mode: AddContentMode, Content: View>: View {
         .largeSheetPresentationCompat()
         #else
         VStack(alignment: .leading, spacing: 12) {
-            Text(title).font(.headline)
-            if isSheetSized { tabs } else { Spacer() }
+            Text(title).font(.headline).padding([.horizontal, .top], 20)
+            Picker(selection: $mode) {
+                ForEach(Array(Mode.allCases)) { Text($0.localizedTitle).tag($0) }
+            } label: {
+                Text(title)
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 20)
+            page(mode)
             HStack {
+                if let onBack { backButton(onBack) }
                 Spacer()
                 if showsCancel { cancelButton.keyboardShortcut(.cancelAction) }
                 submitButton
@@ -45,30 +52,25 @@ struct AddContentSheet<Mode: AddContentMode, Content: View>: View {
                     .keyboardShortcut(.defaultAction)
             }
             .controlSize(.large)
+            .padding([.horizontal, .bottom], 20)
         }
-        .padding(20)
-        // A fixed size: a columns form doesn't scroll, so a sheet sized to its
-        // content grew while language results appeared (#971).
+        // A fixed size; the grouped form scrolls inside it (#971).
         .frame(width: 560, height: 520)
         .interactiveDismissDisabled(isLoading)
-        .task {
-            await Task.yield()
-            isSheetSized = true
-        }
         #endif
     }
 
+    #if os(iOS)
     private var tabs: some View {
         TabView(selection: $mode) {
-            ForEach(Array(Mode.allCases)) { tab($0) }
+            ForEach(Array(Mode.allCases)) { mode in
+                page(mode)
+                    .tabItem { Label(mode.localizedTitle, systemImage: mode.systemImage) }
+                    .tag(mode)
+            }
         }
     }
-
-    private func tab(_ mode: Mode) -> some View {
-        page(mode)
-            .tabItem { Label(mode.localizedTitle, systemImage: mode.systemImage) }
-            .tag(mode)
-    }
+    #endif
 
     @ViewBuilder
     private func page(_ mode: Mode) -> some View {
@@ -82,19 +84,20 @@ struct AddContentSheet<Mode: AddContentMode, Content: View>: View {
                 .toolbar {
                     // Branch inside the item: ToolbarContentBuilder can't before iOS 16.
                     ToolbarItem(placement: .cancellationAction) {
-                        if showsCancel { cancelButton }
+                        if let onBack { backButton(onBack) } else if showsCancel { cancelButton }
                     }
                     ToolbarItem(placement: .confirmationAction) { submitButton }
                 }
         }
         #else
-        FormLabelColumnHost { content(mode) }
-            .columnsFormStyleCompat()
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        Form { content(mode) }
+            .groupedFormStyleCompat()
             .disabled(isLoading)
         #endif
+    }
+
+    private func backButton(_ action: @escaping () -> Void) -> some View {
+        Button(action: action) { Label("Back", systemImage: "chevron.left") }.disabled(isLoading)
     }
 
     private var cancelButton: some View {
@@ -138,12 +141,12 @@ struct AddContentMetadataFields: View {
     var languages: Binding<Set<String>>? = nil
 
     var body: some View {
-        TextField(text: $name) { Text("Name").formLabel() }
+        TextField("Name", text: $name)
             .disableAutocorrection(true)
             #if os(iOS)
             .textInputAutocapitalization(.words)
             #endif
-        TextField(text: $description) { Text("Description").formLabel() }
+        TextField("Description", text: $description)
             .disableAutocorrection(true)
             #if os(iOS)
             .textInputAutocapitalization(.sentences)
@@ -152,14 +155,6 @@ struct AddContentMetadataFields: View {
         if let languages {
             RegionalListLanguagesField(category: category, languages: languages)
         }
-    }
-}
-
-struct AddContentBackButton: View {
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) { Label("Back", systemImage: "chevron.left") }
     }
 }
 
@@ -298,74 +293,9 @@ struct ContentCategoryPicker: View {
                 Text(categoryName(category)).tag(category)
             }
         } label: {
-            Text("Category").formLabel()
+            Text("Category")
         }
         .pickerStyle(.menu)
-    }
-}
-
-/// A macOS columns form keeps every row's content right of the label column.
-/// Rows marked `spansFormLabelColumn()` stretch back across it to the widest
-/// label's leading edge, which the labels marked `formLabel()` report. Both
-/// edges reach the form through preferences: a row inside a columns form never
-/// sees its own preference changes.
-private struct FormLabelLeadingKey: PreferenceKey {
-    static let defaultValue = CGFloat.infinity
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = min(value, nextValue()) }
-}
-
-private struct FormColumnLeadingKey: PreferenceKey {
-    static let defaultValue = CGFloat.infinity
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = min(value, nextValue()) }
-}
-
-private struct FormLabelColumnWidthKey: EnvironmentKey {
-    static let defaultValue: CGFloat = 0
-}
-
-private extension EnvironmentValues {
-    var formLabelColumnWidth: CGFloat {
-        get { self[FormLabelColumnWidthKey.self] }
-        set { self[FormLabelColumnWidthKey.self] = newValue }
-    }
-}
-
-private struct FormLabelColumnHost<Content: View>: View {
-    @ViewBuilder let content: () -> Content
-    @State private var labelLeading = CGFloat.infinity
-    @State private var columnLeading = CGFloat.infinity
-
-    var body: some View {
-        Form { content() }
-            .onPreferenceChange(FormLabelLeadingKey.self) { labelLeading = $0 }
-            .onPreferenceChange(FormColumnLeadingKey.self) { columnLeading = $0 }
-            .environment(\.formLabelColumnWidth,
-                         labelLeading.isFinite && columnLeading.isFinite ? max(0, columnLeading - labelLeading) : 0)
-    }
-}
-
-private struct SpansFormLabelColumn: ViewModifier {
-    @Environment(\.formLabelColumnWidth) private var labelColumnWidth
-
-    func body(content: Content) -> some View {
-        content
-            .padding(.leading, -labelColumnWidth)
-            // Measured outside the padding, so the frame read is the column's own.
-            .background(GeometryReader { proxy in
-                Color.clear.preference(key: FormColumnLeadingKey.self, value: proxy.frame(in: .global).minX)
-            })
-    }
-}
-
-extension View {
-    func formLabel() -> some View {
-        background(GeometryReader { proxy in
-            Color.clear.preference(key: FormLabelLeadingKey.self, value: proxy.frame(in: .global).minX)
-        })
-    }
-
-    func spansFormLabelColumn() -> some View {
-        modifier(SpansFormLabelColumn())
     }
 }
 

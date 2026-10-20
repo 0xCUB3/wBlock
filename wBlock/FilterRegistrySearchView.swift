@@ -42,18 +42,7 @@ struct FilterRegistrySearchSections: View {
             AddContentNote(text: "Searches wBlock’s lists and AdGuard’s filter registry for Safari.")
         }
         .task { await load() }
-        #if os(macOS)
-        // Column-style forms don't scroll on macOS, so the results scroll on their own.
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) { results }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.trailing, 12)
-        }
-        .frame(maxHeight: .infinity)
-        .spansFormLabelColumn()
-        #else
         results
-        #endif
     }
 
     @ViewBuilder
@@ -73,7 +62,7 @@ struct FilterRegistrySearchSections: View {
                     }
                 }
             } header: {
-                sectionHeader("In wBlock")
+                Text("In wBlock")
             }
         }
         Section {
@@ -100,18 +89,8 @@ struct FilterRegistrySearchSections: View {
                 }
             }
         } header: {
-            sectionHeader("AdGuard Filter Registry")
+            Text("AdGuard Filter Registry")
         }
-    }
-
-    /// macOS lays these sections out in a plain stack, where a default header
-    /// reads like another list name (#981).
-    private func sectionHeader(_ title: LocalizedStringKey) -> some View {
-        Text(title)
-            #if os(macOS)
-            .font(.title3.weight(.semibold))
-            .padding(.top, 4)
-            #endif
     }
 
     private func row(_ filter: FilterList, note: String?) -> some View {

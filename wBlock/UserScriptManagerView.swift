@@ -1789,7 +1789,8 @@ struct AddUserScriptView: View {
             submitTitle: LocalizedStringKey(addURLButtonTitle),
             isSubmitDisabled: !canSubmit || isAdding || urlReview.isImportingFile,
             onDismiss: { dismiss() },
-            onSubmit: submit
+            onSubmit: submit,
+            onBack: backAction
         ) { mode in
             modeContent(mode)
         }
@@ -1875,16 +1876,26 @@ struct AddUserScriptView: View {
             }
         }
     }
+    private var backAction: (() -> Void)? {
+        switch addMode {
+        case .url where isReviewingURLs:
+            return {
+                isReviewingURLs = false
+                urlReview.cancelMetadata()
+            }
+        case .text where isReviewingText:
+            return { isReviewingText = false }
+        default:
+            return nil
+        }
+    }
+
     @ViewBuilder
     private func modeContent(_ mode: AddMode) -> some View {
         switch mode {
         case .url:
             if isReviewingURLs {
                 Section {
-                    AddContentBackButton {
-                        isReviewingURLs = false
-                        urlReview.cancelMetadata()
-                    }
                     if urlReview.isFetchingMetadata { ProgressView().controlSize(.small) }
                 } footer: {
                     validationMessage
@@ -1916,9 +1927,6 @@ struct AddUserScriptView: View {
             }
         case .text:
             if isReviewingText {
-                Section {
-                    AddContentBackButton { isReviewingText = false }
-                }
                 Section { userScriptMetaFields } footer: { AddContentNote(error: editorImportError) }
             } else {
                 AddContentSourceSection(title: kind == .style ? "Style Content" : "Script Content",

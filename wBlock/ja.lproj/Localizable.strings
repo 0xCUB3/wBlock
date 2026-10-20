@@ -492,7 +492,6 @@
 "Recorded" = "記録済み";
 "Refresh" = "更新";
 "Regional" = "地域向け";
-"Regional & Language" = "地域と言語";
 "Regional filters: %@" = "地域フィルター: %@";
 "Registered" = "登録済み";
 "Registration: %@" = "登録: %@";
@@ -1011,3 +1010,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Global Privacy Control" = "グローバル・プライバシー・コントロール";
 "Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it." = "グローバル・プライバシー・コントロール（GPC）は、個人情報を販売・共有しないようWebサイトに求めます。一部の地域では、サイトはこれに従う義務があります。";
 "Learn More" = "詳しく見る";
+"Edit…" = "編集…";

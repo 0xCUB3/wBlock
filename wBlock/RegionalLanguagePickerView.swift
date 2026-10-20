@@ -22,134 +22,131 @@ struct RegionalListLanguagesField: View {
 
     var body: some View {
         if category == .foreign {
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Languages").font(.caption).foregroundStyle(.secondary)
-                RegionalLanguagePickerView(selectedLanguages: $languages, options: RegionalLanguageOption.assignable(),
-                                           usesFieldBackground: true)
-            }
-            .padding(.top, 8)
-            .spansFormLabelColumn()
+            RegionalLanguagePickerView(selectedLanguages: $languages, options: RegionalLanguageOption.assignable())
         }
     }
 }
 
-/// Selected languages as removable rows above a search field that lists the
-/// matching languages left to add. Same control in onboarding and Regional
-/// Info (#687).
+/// A Languages row naming the chosen languages. It opens a searchable list
+/// with a checkmark per language, like Language & Region in Settings (#1018).
+/// Same control in onboarding, Regional Info, and the Add sheets (#687).
 struct RegionalLanguagePickerView: View {
     @Binding var selectedLanguages: Set<String>
     let options: [RegionalLanguageOption]
-    /// In a form the picker matches the text fields above it (#971).
-    var usesFieldBackground = false
 
-    @State private var searchQuery = ""
+    @State private var isChoosing = false
 
-    private var selectedOptions: [RegionalLanguageOption] {
-        options.filter { selectedLanguages.contains($0.code) }
-    }
-
-    private var matchingOptions: [RegionalLanguageOption] {
-        options.filter { !selectedLanguages.contains($0.code) && $0.matches(searchQuery) }
+    private var summary: String {
+        let names = options.filter { selectedLanguages.contains($0.code) }.map(\.nativeName)
+        return names.isEmpty ? String(localized: "None") : ListFormatter.localizedString(byJoining: names)
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            ForEach(Array(selectedOptions.enumerated()), id: \.element.id) { index, language in
-                HStack(spacing: 10) {
-                    languageLeading(language)
-                    Text(language.nativeName)
-                    Spacer()
-                    Button {
-                        selectedLanguages.remove(language.code)
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundStyle(.secondary)
-                    }
-                    .buttonStyle(.plain)
-                    .noFocusRingCompat()
-                    .accessibilityLabel(Text("Remove") + Text(" " + language.nativeName))
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 9)
-
-                if index < selectedOptions.count - 1 {
-                    Divider().padding(.leading, 42)
-                }
-            }
-
-            if !selectedOptions.isEmpty {
-                Divider().padding(.leading, 42)
-            }
-
-            HStack(spacing: 10) {
-                Image(systemName: "magnifyingglass")
-                    .foregroundStyle(.secondary)
-                    .frame(width: 20)
-                // Hidden label: a macOS Form lifts a field's label into its label
-                // column, which pushed every other row to the right (#932).
-                TextField("Search languages", text: $searchQuery)
-                    .textFieldStyle(.plain)
-                    .labelsHidden()
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 9)
-
-            // Results scroll in a band capped at five rows, so the sheet around
-            // the picker stops growing while typing (#932) without leaving empty
-            // space under a short or empty match list (#940, #945).
-            if !matchingOptions.isEmpty {
-                ScrollView {
-                    VStack(spacing: 0) {
-                        ForEach(matchingOptions) { language in
-                            Divider().padding(.leading, 42)
-                            Button {
-                                selectedLanguages.insert(language.code)
-                                searchQuery = ""
-                            } label: {
-                                HStack(spacing: 10) {
-                                    languageLeading(language)
-                                    Text(language.nativeName)
-                                    Spacer()
-                                }
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 9)
-                                .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                            .noFocusRingCompat()
-                        }
-                    }
-                }
-                // Shrinks below five rows when the sheet has less room left.
-                .frame(minHeight: rowHeight, idealHeight: resultsHeight, maxHeight: resultsHeight)
-            }
-        }
-        .background(background)
-    }
-
-    private var resultsHeight: CGFloat { CGFloat(min(matchingOptions.count, 5)) * rowHeight }
-
-    @ViewBuilder
-    private var background: some View {
-        let shape = RoundedRectangle(cornerRadius: 12)
         #if os(macOS)
-        if usesFieldBackground {
-            shape.fill(Color(nsColor: .textBackgroundColor))
-                .overlay(shape.stroke(Color(nsColor: .separatorColor), lineWidth: 1))
-        } else {
-            shape.fill(.regularMaterial)
+        HStack {
+            Text("Languages")
+            Spacer()
+            Text(verbatim: summary).foregroundStyle(.secondary).lineLimit(1).truncationMode(.tail)
+            // A popover: a sheet can't open from the Regional Info popover.
+            Button("Edit…") { isChoosing = true }
+                .popover(isPresented: $isChoosing) { list }
         }
         #else
-        shape.fill(.regularMaterial)
+        Button { isChoosing = true } label: {
+            HStack {
+                Text("Languages").foregroundStyle(.primary)
+                Spacer()
+                Text(verbatim: summary).foregroundStyle(.secondary).lineLimit(1).truncationMode(.tail)
+                Image(systemName: "chevron.right")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .sheet(isPresented: $isChoosing) { list }
         #endif
     }
 
-    @ScaledMetric(relativeTo: .body) private var rowHeight: CGFloat = 37
+    private var list: some View {
+        RegionalLanguageList(selectedLanguages: $selectedLanguages, options: options)
+    }
+}
 
-    /// The language code rather than a flag: a flag names a country, and many
-    /// languages have none of their own (#940).
-    private func languageLeading(_ language: RegionalLanguageOption) -> some View {
-        LanguageCodeBadge(code: language.code)
+/// Every option with a checkmark on the chosen ones. Chosen languages lead
+/// the list as it opens and stay put while you tap, so rows never jump.
+/// iOS shows it in a sheet with a search bar; macOS in a popover with a
+/// search field on top, which closes when you click outside it.
+private struct RegionalLanguageList: View {
+    @Binding var selectedLanguages: Set<String>
+    let options: [RegionalLanguageOption]
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var query = ""
+    @State private var order: [RegionalLanguageOption] = []
+
+    private var visible: [RegionalLanguageOption] {
+        query.trimmingCharacters(in: .whitespaces).isEmpty ? order : order.filter { $0.matches(query) }
+    }
+
+    var body: some View {
+        content.onAppear {
+        order = options.filter { selectedLanguages.contains($0.code) }
+            + options.filter { !selectedLanguages.contains($0.code) }
+        }
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        #if os(macOS)
+        VStack(spacing: 0) {
+        TextField("Search languages", text: $query, prompt: Text("Search languages"))
+            .textFieldStyle(.roundedBorder)
+            .labelsHidden()
+            .padding(10)
+        Divider()
+        list
+        }
+        .frame(width: 320, height: 400)
+        #else
+        CompatibleNavigationStack {
+        list
+            .searchable(text: $query, prompt: Text("Search languages"))
+            .navigationTitle(Text("Languages"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+        #endif
+    }
+
+    private var list: some View {
+        List(visible) { language in
+            Button {
+                if selectedLanguages.contains(language.code) {
+                    selectedLanguages.remove(language.code)
+                } else {
+                    selectedLanguages.insert(language.code)
+                }
+            } label: {
+                HStack(spacing: 10) {
+                    LanguageCodeBadge(code: language.code)
+                    Text(verbatim: language.nativeName).foregroundStyle(.primary)
+                    Spacer()
+                    if selectedLanguages.contains(language.code) {
+                        Image(systemName: "checkmark")
+                            .font(.body.weight(.semibold))
+                            .foregroundStyle(Color.accentColor)
+                    }
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityAddTraits(selectedLanguages.contains(language.code) ? .isSelected : [])
+        }
     }
 }
 
