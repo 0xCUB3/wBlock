@@ -4,12 +4,10 @@
 
 # wBlock
 
-The end of Safari ad-blocking B.S.
+### The end of Safari ad-blocking B.S.
 
-<sub>A free, open-source ad blocker for Safari on Mac, iPhone, iPad, and Apple Vision Pro.</sub>
+A free, open-source ad blocker for Safari on Mac, iPhone, iPad, and Apple Vision Pro.
 
-<br>
-<br>
 
 <a href="https://apps.apple.com/us/app/wblock/id6746388723?itscg=30200&itsct=apps_box_badge&mttnsubad=6746388723">
   <picture>
@@ -34,52 +32,20 @@ The end of Safari ad-blocking B.S.
 <img src="docs/media/img/hero_image.png" alt="wBlock on macOS in light and dark mode" width="900" />
 
 <br>
+<br>
 
 [Features](#features) · [Screenshots](#screenshots) · [Install](#install) · [How it works](#how-it-works) · [FAQ](#faq) · [Support](#support)
 
 </div>
 
-<br>
-
 ## Features
 
-<table>
-<tr>
-<td width="50%" valign="top">
-
-#### Blocking
+### Blocking
 
 Up to 750,000 Safari rules across five content blockers, with recommended lists, regional lists picked for you, and optional annoyance and cookie-banner filters.
 
-</td>
-<td width="50%" valign="top">
-
-#### Userscripts
-
-A Greasemonkey-compatible engine, UserCSS themes, and a built-in catalog with Tube Cleaner, DeArrow, Dark Reader, and more.
-
-</td>
-</tr>
-<tr>
-<td width="50%" valign="top">
-
-#### Native video
-
-Tube Cleaner and Player Cleaner give videos Safari's own controls, with Picture-in-Picture, background audio, and SponsorBlock.
-
-</td>
-<td width="50%" valign="top">
-
-#### Private by design
-
-No data collection. Settings, lists, and scripts sync through your own iCloud. Idle memory is about 40 MB.
-
-</td>
-</tr>
-</table>
-
 <details>
-<summary>Content blocking</summary>
+<summary>More about blocking</summary>
 <br>
 
 - AdGuard-compatible filter lists compiled into Safari's native rules and spread across five content blockers, with a limit of 150,000 rules each. Safari applies the rules outside the app process.
@@ -90,8 +56,12 @@ No data collection. Settings, lists, and scripts sync through your own iCloud. I
 
 </details>
 
+### Userscripts
+
+A Greasemonkey-compatible engine, UserCSS themes, and a built-in catalog with Tube Cleaner, DeArrow, Dark Reader, and more.
+
 <details>
-<summary>Userscripts and userstyles</summary>
+<summary>More about userscripts</summary>
 <br>
 
 - A separate scripts extension supports scriptlets, cosmetic filtering, userscripts, userstyles, and element hiding.
@@ -101,8 +71,12 @@ No data collection. Settings, lists, and scripts sync through your own iCloud. I
 
 </details>
 
+### Native video
+
+Tube Cleaner and Player Cleaner give videos Safari's own controls, with Picture-in-Picture, background audio, and SponsorBlock.
+
 <details>
-<summary>Native video controls</summary>
+<summary>More about native video</summary>
 <br>
 
 Tube Cleaner and Player Cleaner turn on Safari's native controls for existing video elements before the page renders, including Picture-in-Picture, background audio, fullscreen playback, and Now Playing.
@@ -115,8 +89,12 @@ Both scripts update from [wBlock-userscripts](https://github.com/0xCUB3/wBlock-u
 
 </details>
 
+### Per-site controls and sync
+
+The Safari popup turns filtering, userscripts, and autoplay on or off for each site, and the Element Zapper hides anything else. Lists, scripts, and settings sync through iCloud.
+
 <details>
-<summary>Per-site controls, sync, and platforms</summary>
+<summary>More about per-site controls and sync</summary>
 <br>
 
 The Safari toolbar popup has separate switches for filtering, userscripts, and autoplay, plus the Element Zapper. Filter lists and userscripts can be limited to selected sites or excluded from specific domains. Zapper rules can be edited in Settings.
@@ -125,10 +103,12 @@ wBlock runs on macOS, iOS, iPadOS, and visionOS. iCloud sync covers filter lists
 
 </details>
 
+### Private by design
+
+wBlock collects no data. Safari applies the rules outside the app, and idle memory is about 40 MB.
+
 > [!TIP]
 > The [comparison guide](Adblock_Comparison.md) covers wBlock, uBlock Origin Lite, Wipr, and AdGuard.
-
-<br>
 
 ## Screenshots
 
@@ -149,7 +129,7 @@ wBlock runs on macOS, iOS, iPadOS, and visionOS. iCloud sync covers filter lists
   </picture>
   &nbsp;&nbsp;&nbsp;&nbsp;
   <img src="docs/media/img/tube_cleaner_sponsorblock.png" alt="SponsorBlock settings in Tube Cleaner" height="560" />
-  <br><sub>The Safari popup on iPhone, and SponsorBlock in Tube Cleaner</sub>
+  <br><br><sub>The Safari popup on iPhone, and SponsorBlock in Tube Cleaner</sub>
 </p>
 
 <br>
@@ -172,23 +152,15 @@ wBlock runs on macOS, iOS, iPadOS, and visionOS. iCloud sync covers filter lists
   <br><sub>Settings on macOS</sub>
 </p>
 
-<br>
-
 ## Install
 
-<div align="center">
+Get it on the [App Store](https://apps.apple.com/us/app/wblock/id6746388723) for automatic updates, download the DMG from the [latest release](https://github.com/0xCUB3/wBlock/releases/latest), or use Homebrew:
 
-| | |
-|:--|:--|
-| App Store | [Download](https://apps.apple.com/us/app/wblock/id6746388723), with automatic updates |
-| Homebrew | `brew tap 0xcub3/wblock && brew install --cask wblock` |
-| DMG | [Latest release](https://github.com/0xCUB3/wBlock/releases/latest) |
-
-</div>
+```sh
+brew tap 0xcub3/wblock && brew install --cask wblock
+```
 
 On first launch, wBlock walks you through turning on its extensions in Safari.
-
-<br>
 
 ## How it works
 
@@ -197,8 +169,6 @@ The app downloads filter lists and converts them with [SafariConverterLib](https
 Filter data is stored in Protocol Buffers with LZ4 compression, and streaming writes keep peak memory low during compilation. Changing a list rebuilds only the affected content blockers. Safari must reload the updated rule sets before changes take effect.
 
 The [comparison guide](Adblock_Comparison.md#how-wblock-works-around-static-rules) includes the rule used to turn off filtering for a specific site.
-
-<br>
 
 ## FAQ
 
@@ -278,8 +248,6 @@ On iOS and iPadOS, background updates are scheduled by the operating system. Dis
 
 </details>
 
-<br>
-
 ## Support
 
 <div align="center">
@@ -298,8 +266,6 @@ wBlock is free and open source. If it's useful to you, you can support developme
 [Report a bug or request a feature](https://github.com/0xCUB3/wBlock/issues) · [Join the Discord](https://discord.gg/Y3yTFPpbXr) · [Privacy policy](PRIVACY_POLICY.md)
 
 </div>
-
-<br>
 
 ## Credits
 
