@@ -161,7 +161,7 @@
 "Background Update Agent" = "Agent de actualizare în fundal";
 "Backup" = "Copie de rezervă";
 "Local Backup" = "Copie de rezervă locală";
-"Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "Copie de rezervă din %@ (app v%@, %@ filtre). Aceasta va înlocui selecțiile actuale de filtre, lista albă și regulile Eliminatorului de elemente.";
+"Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "Copie de rezervă din %@ (app v%@, %@ filtre). Aceasta va înlocui selecțiile actuale de filtre, lista de permisiuni și regulile Eliminatorului de elemente.";
 "Balanced defaults." = "Setări implicite echilibrate.";
 "Base and mobile filters only." = "Doar filtrele de bază și mobil.";
 "Base filter only." = "Doar filtrul de bază.";
@@ -587,7 +587,7 @@
 "Sync Now" = "Sincronizează acum";
 "Sync Timestamps with Device Time Zone" = "Sincronizează marcajele temporale cu fusul orar al dispozitivului";
 "Sync Userscript Enabled States" = "Sincronizează stările de activare ale scripturilor de utilizator";
-"Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "Sincronizează între dispozitive selecțiile de filtre, listele personalizate, scripturile de utilizator și lista albă.";
+"Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "Sincronizează între dispozitive selecțiile de filtre, listele personalizate, scripturile de utilizator și lista de permisiuni.";
 "Sync: Checking…" = "Sincronizare: Se verifică…";
 "Sync: Downloading…" = "Sincronizare: Se descarcă…";
 "Sync: Error" = "Sincronizare: Eroare";
@@ -619,7 +619,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "This list covers websites for Norway, Denmark, Iceland, Danish territories, and the Sami indigenous population." = "Această listă acoperă site-uri web pentru Norvegia, Danemarca, Islanda, teritoriile daneze și populația indigenă Sami.";
 "This may take a while" = "Acest lucru poate dura ceva timp";
 "This removes all settings for %@." = "Aceasta elimină toate setările pentru %@.";
-"This removes the whitelist entry, userscript exceptions, and zapper rules for %@." = "Aceasta elimină intrarea din lista albă, excepțiile pentru scripturi de utilizator și regulile Eliminatorului de elemente pentru %@.";
+"This removes the whitelist entry, userscript exceptions, and zapper rules for %@." = "Aceasta elimină intrarea din lista de permisiuni, excepțiile pentru scripturi de utilizator și regulile Eliminatorului de elemente pentru %@.";
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "Aceasta va elimina toate filtrele, scripturile de utilizator și preferințele, apoi va relansa configurarea inițială.";
 "This will reset all filters, userscripts, and preferences." = "Acest lucru va reseta toate filtrele, scripturile de utilizator și preferințele.";
 "Timed out" = "Timp expirat";
@@ -716,9 +716,9 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Adds rules tailored to websites and languages from specific regions." = "Adaugă reguli adaptate site-urilor și limbilor din anumite regiuni. Când alegi limbile, se activează toate listele care le acoperă. Listele incluse deja într-o listă regională AdGuard nu apar în catalog.";
 "The end of Safari ad-blocking B.S." = "Sfârșitul prostiilor blocării reclamelor în Safari.";
 "Welcome to wBlock!" = "Bine ai venit în wBlock!";
-"Whitelist" = "Listă albă";
-"Whitelist a site here, or adjust userscripts per site from the wBlock popup in Safari." = "Adaugă un site în lista albă aici sau ajustează scripturile de utilizator pentru fiecare site din popup-ul wBlock din Safari.";
-"Whitelisted" = "În lista albă";
+"Whitelist" = "Listă de permisiuni";
+"Whitelist a site here, or adjust userscripts per site from the wBlock popup in Safari." = "Adaugă un site în lista de permisiuni aici sau ajustează scripturile de utilizator pentru fiecare site din popup-ul wBlock din Safari.";
+"Whitelisted" = "Permis";
 "Wrap Lines" = "Încadrare linii";
 "On" = "Activat";
 "Off" = "Dezactivat";

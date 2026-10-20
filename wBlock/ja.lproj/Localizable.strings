@@ -161,7 +161,7 @@
 "Background Update Agent" = "バックグラウンドアップデートエージェント";
 "Backup" = "バックアップ";
 "Local Backup" = "ローカルバックアップ";
-"Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "%@ のバックアップ（アプリ v%@、%@ 件のフィルター）です。現在のフィルター選択、ホワイトリスト、要素ブロックのルールがこれで置き換えられます。";
+"Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "%@ のバックアップ（アプリ v%@、%@ 件のフィルター）です。現在のフィルター選択、許可リスト、要素ブロックのルールがこれで置き換えられます。";
 "Balanced defaults." = "バランスの取れたデフォルト設定。";
 "Base and mobile filters only." = "ベースとモバイルフィルターのみ。";
 "Base filter only." = "ベースフィルターのみ。";
@@ -589,7 +589,7 @@
 "Sync Now" = "今すぐ同期";
 "Sync Timestamps with Device Time Zone" = "タイムスタンプをデバイスのタイムゾーンに同期";
 "Sync Userscript Enabled States" = "ユーザースクリプトの有効状態を同期";
-"Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "フィルターの選択、カスタムリスト、ユーザースクリプト、ホワイトリストをデバイス間で同期します。";
+"Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "フィルターの選択、カスタムリスト、ユーザースクリプト、許可リストをデバイス間で同期します。";
 "Sync: Checking…" = "同期: 確認中…";
 "Sync: Downloading…" = "同期: ダウンロード中…";
 "Sync: Error" = "同期: エラー";
@@ -621,7 +621,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This list covers websites for Norway, Denmark, Iceland, Danish territories, and the Sami indigenous population." = "このリストには、ノルウェー、デンマーク、アイスランド、デンマーク領土、および先住民族サーミ人のウェブサイトが含まれています。";
 "This may take a while" = "時間がかかる場合があります";
 "This removes all settings for %@." = "%@ の全ての設定を削除します。";
-"This removes the whitelist entry, userscript exceptions, and zapper rules for %@." = "%@ のホワイトリスト登録、ユーザースクリプトの除外設定、要素ブロックのルールを削除します。";
+"This removes the whitelist entry, userscript exceptions, and zapper rules for %@." = "%@ の許可リスト登録、ユーザースクリプトの除外設定、要素ブロックのルールを削除します。";
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "これにより、全てのフィルター、ユーザースクリプト、設定が削除され、初期設定フローが再起動されます。";
 "This will reset all filters, userscripts, and preferences." = "これにより、全てのフィルター、ユーザースクリプト、設定がリセットされます。";
 "Timed out" = "タイムアウト";
@@ -718,9 +718,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Adds rules tailored to websites and languages from specific regions." = "特定の地域のウェブサイトや言語に合わせたルールを追加します。言語を選ぶと、その言語に対応するすべてのリストがオンになります。AdGuard の地域別リストにすでに含まれているリストはカタログにありません。";
 "The end of Safari ad-blocking B.S." = "Safariの広告ブロックのくだらない問題に終止符を";
 "Welcome to wBlock!" = "wBlockへようこそ！";
-"Whitelist" = "ホワイトリスト";
-"Whitelist a site here, or adjust userscripts per site from the wBlock popup in Safari." = "ここでサイトをホワイトリストに登録するか、Safari のwBlockポップアップからサイトごとにユーザースクリプトを調整します。";
-"Whitelisted" = "ホワイトリストに登録済み";
+"Whitelist" = "許可リスト";
+"Whitelist a site here, or adjust userscripts per site from the wBlock popup in Safari." = "ここでサイトを許可リストに登録するか、Safari のwBlockポップアップからサイトごとにユーザースクリプトを調整します。";
+"Whitelisted" = "許可済み";
 "Wrap Lines" = "行を折り返す";
 "On" = "オン";
 "Off" = "オフ";

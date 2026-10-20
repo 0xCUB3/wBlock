@@ -27,6 +27,10 @@
     "message": "Gizlemek için sayfadaki bir öğeye dokun. Elle seçici eklemek için zaplayıcıda \"Kural Ekle\"yi kullan.",
     "description": "Help text shown in the popup for how to use the element zapper."
   },
+  "popup_hint_click_to_hide": {
+    "message": "Gizlemek için sayfadaki bir öğeye tıkla. Elle seçici eklemek için zaplayıcıda \"Kural Ekle\"yi kullan.",
+    "description": "Help text shown in the popup on the Mac for how to use the element zapper."
+  },
   "popup_rules": {
     "message": "Kurallar",
     "description": "Label for the disclosure button that expands saved zapper rules."
@@ -115,6 +119,10 @@
     "message": "Öğe Zaplayıcı: Gizlemek için bir öğeye dokun.",
     "description": "Default status text in the in-page element zapper toolbar."
   },
+  "zapper_status_click_to_hide": {
+    "message": "Öğe Zaplayıcı: Gizlemek için bir öğeye tıkla.",
+    "description": "Default status text in the in-page element zapper toolbar on the Mac."
+  },
   "zapper_button_undo": {
     "message": "Geri Al",
     "description": "Button label to undo last zapper action."
@@ -194,6 +202,10 @@
   "zapper_status_refine": {
     "message": "$1 — ▲▼ ile ayarla, kaydetmek için $2 öğesine dokun",
     "description": "Refine-mode status text. Placeholder 1 is element label and placeholder 2 is hide action label."
+  },
+  "zapper_status_refine_click": {
+    "message": "$1 — ▲▼ ile ayarla, kaydetmek için $2 öğesine tıkla",
+    "description": "Refine-mode status text on the Mac. Placeholder 1 is element label and placeholder 2 is hide action label."
   },
   "zapper_toast_unable_create_rule": {
     "message": "Bu öğe için kural oluşturulamadı.",

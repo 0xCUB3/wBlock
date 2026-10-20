@@ -27,6 +27,10 @@
     "message": "ページ上の要素をタップすると非表示にできます。手動セレクタは要素ブロックの「ルール追加」を使用してください。",
     "description": "Help text shown in the popup for how to use the element zapper."
   },
+  "popup_hint_click_to_hide": {
+    "message": "ページ上の要素をクリックすると非表示にできます。手動セレクタは要素ブロックの「ルール追加」を使用してください。",
+    "description": "Help text shown in the popup on the Mac for how to use the element zapper."
+  },
   "popup_rules": {
     "message": "ルール",
     "description": "Label for the disclosure button that expands saved zapper rules."
@@ -115,6 +119,10 @@
     "message": "要素ブロック: 要素をタップして非表示にします。",
     "description": "Default status text in the in-page element zapper toolbar."
   },
+  "zapper_status_click_to_hide": {
+    "message": "要素ブロック: 要素をクリックして非表示にします。",
+    "description": "Default status text in the in-page element zapper toolbar on the Mac."
+  },
   "zapper_button_undo": {
     "message": "元に戻す",
     "description": "Button label to undo last zapper action."
@@ -194,6 +202,10 @@
   "zapper_status_refine": {
     "message": "$1 — ▲▼で調整し、$2 をタップして保存",
     "description": "Refine-mode status text. Placeholder 1 is element label and placeholder 2 is hide action label."
+  },
+  "zapper_status_refine_click": {
+    "message": "$1 — ▲▼で調整し、$2 をクリックして保存",
+    "description": "Refine-mode status text on the Mac. Placeholder 1 is element label and placeholder 2 is hide action label."
   },
   "zapper_toast_unable_create_rule": {
     "message": "その要素のルールを作成できませんでした。",

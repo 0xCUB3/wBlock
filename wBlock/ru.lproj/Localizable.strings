@@ -161,7 +161,7 @@
 "Background Update Agent" = "Агент фонового обновления";
 "Backup" = "Резервная копия";
 "Local Backup" = "Локальная резервная копия";
-"Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "Резервная копия от %@ (версия приложения %@, фильтров: %@). Это заменит текущие выбранные фильтры, белый список и правила скрытия элементов.";
+"Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "Резервная копия от %@ (версия приложения %@, фильтров: %@). Это заменит текущие выбранные фильтры, список разрешённых и правила скрытия элементов.";
 "Balanced defaults." = "Сбалансированные настройки по умолчанию.";
 "Base and mobile filters only." = "Только базовый и мобильный фильтры.";
 "Base filter only." = "Только базовый фильтр.";
@@ -589,7 +589,7 @@
 "Sync Now" = "Синхронизировать сейчас";
 "Sync Timestamps with Device Time Zone" = "Синхронизировать метки времени с часовым поясом устройства";
 "Sync Userscript Enabled States" = "Синхронизировать состояния включения пользовательских скриптов";
-"Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "Синхронизируйте выбранные фильтры, пользовательские списки, пользовательские скрипты и белый список между устройствами.";
+"Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "Синхронизируйте выбранные фильтры, пользовательские списки, пользовательские скрипты и список разрешённых между устройствами.";
 "Sync: Checking…" = "Синхронизация: Проверка…";
 "Sync: Downloading…" = "Синхронизация: Загрузка…";
 "Sync: Error" = "Синхронизация: Ошибка";
@@ -621,7 +621,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This list covers websites for Norway, Denmark, Iceland, Danish territories, and the Sami indigenous population." = "В этот список входят веб-сайты Норвегии, Дании, Исландии, датских территорий и коренного населения саами.";
 "This may take a while" = "Это может занять некоторое время";
 "This removes all settings for %@." = "Будут удалены все настройки для %@.";
-"This removes the whitelist entry, userscript exceptions, and zapper rules for %@." = "Это удалит запись в белом списке, исключения пользовательских скриптов и правила скрытия элементов для %@.";
+"This removes the whitelist entry, userscript exceptions, and zapper rules for %@." = "Это удалит запись в списке разрешённых, исключения пользовательских скриптов и правила скрытия элементов для %@.";
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "Это удалит все фильтры, пользовательские скрипты и настройки, а затем заново запустит начальную настройку.";
 "This will reset all filters, userscripts, and preferences." = "Это сбросит все фильтры, пользовательские скрипты и настройки.";
 "Timed out" = "Время ожидания истекло";
@@ -718,9 +718,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Adds rules tailored to websites and languages from specific regions." = "Добавляет правила для сайтов и языков определённых регионов. При выборе языков включаются все списки, которые их охватывают. Списков, уже входящих в региональные списки AdGuard, в каталоге нет.";
 "The end of Safari ad-blocking B.S." = "Конец ерунде с блокировкой рекламы в Safari";
 "Welcome to wBlock!" = "Добро пожаловать в wBlock!";
-"Whitelist" = "Белый список";
-"Whitelist a site here, or adjust userscripts per site from the wBlock popup in Safari." = "Добавьте сайт в белый список здесь или настройте пользовательские скрипты для каждого сайта во всплывающем окне wBlock в Safari.";
-"Whitelisted" = "В белом списке";
+"Whitelist" = "Список разрешённых";
+"Whitelist a site here, or adjust userscripts per site from the wBlock popup in Safari." = "Добавьте сайт в список разрешённых здесь или настройте пользовательские скрипты для каждого сайта во всплывающем окне wBlock в Safari.";
+"Whitelisted" = "Разрешён";
 "Wrap Lines" = "Перенос строк";
 "On" = "Вкл.";
 "Off" = "Выкл.";

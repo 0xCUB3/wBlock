@@ -32,6 +32,11 @@
     return fallback;
   }
 
+  // Say "click" where the main pointer is a mouse or trackpad, "tap" on touch.
+  function tapOrClick(tapKey, clickKey) {
+    return window.matchMedia('(pointer: fine)').matches ? clickKey : tapKey;
+  }
+
   function withTimeout(promise, timeoutMs, message = 'Operation timed out.') {
     let timer = null;
     return Promise.race([
@@ -511,7 +516,7 @@
 
     const status = document.createElement('div');
     status.className = 'wblock-status';
-    status.textContent = t('zapper_status_tap_to_hide', undefined, 'Element Zapper: Tap an element to hide it.');
+    status.textContent = t(tapOrClick('zapper_status_tap_to_hide', 'zapper_status_click_to_hide'), undefined, 'Element Zapper: Tap an element to hide it.');
 
     const actions = document.createElement('div');
     actions.className = 'wblock-actions';
@@ -1115,7 +1120,7 @@
     const actionsEl = state.ui.doneButton && state.ui.doneButton.parentElement;
     if (actionsEl) actionsEl.classList.remove('wblock-refine-active');
     if (state.ui.statusText) {
-      state.ui.statusText.textContent = t('zapper_status_tap_to_hide', undefined, 'Element Zapper: Tap an element to hide it.');
+      state.ui.statusText.textContent = t(tapOrClick('zapper_status_tap_to_hide', 'zapper_status_click_to_hide'), undefined, 'Element Zapper: Tap an element to hide it.');
     }
   }
 
@@ -1125,7 +1130,7 @@
     const label = elementLabel(el);
     if (state.ui.statusText) {
       state.ui.statusText.textContent = t(
-        'zapper_status_refine',
+        tapOrClick('zapper_status_refine', 'zapper_status_refine_click'),
         [label, t('zapper_button_hide', undefined, 'Hide')],
         `${label} \u2014 \u25B2\u25BC to adjust, tap Hide to save`
       );
@@ -1190,7 +1195,7 @@
     if (state.ui.defaultGroup) state.ui.defaultGroup.style.display = 'flex';
     clearAncestorRow();
     if (state.ui.statusText) {
-      state.ui.statusText.textContent = t('zapper_status_tap_to_hide', undefined, 'Element Zapper: Tap an element to hide it.');
+      state.ui.statusText.textContent = t(tapOrClick('zapper_status_tap_to_hide', 'zapper_status_click_to_hide'), undefined, 'Element Zapper: Tap an element to hide it.');
     }
     showToast(t('zapper_toast_enabled', undefined, 'Element Zapper enabled.'));
 

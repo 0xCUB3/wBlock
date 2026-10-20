@@ -27,6 +27,10 @@
     "message": "点按页面上的元素即可隐藏。若需手动选择器，请在清除器中使用“添加规则”。",
     "description": "Help text shown in the popup for how to use the element zapper."
   },
+  "popup_hint_click_to_hide": {
+    "message": "点击页面上的元素即可隐藏。若需手动选择器，请在清除器中使用“添加规则”。",
+    "description": "Help text shown in the popup on the Mac for how to use the element zapper."
+  },
   "popup_rules": {
     "message": "规则",
     "description": "Label for the disclosure button that expands saved zapper rules."
@@ -115,6 +119,10 @@
     "message": "元素清除器：点按元素即可隐藏。",
     "description": "Default status text in the in-page element zapper toolbar."
   },
+  "zapper_status_click_to_hide": {
+    "message": "元素清除器：点击元素即可隐藏。",
+    "description": "Default status text in the in-page element zapper toolbar on the Mac."
+  },
   "zapper_button_undo": {
     "message": "撤销",
     "description": "Button label to undo last zapper action."
@@ -194,6 +202,10 @@
   "zapper_status_refine": {
     "message": "$1 — ▲▼ 调整，点按 $2 保存",
     "description": "Refine-mode status text. Placeholder 1 is element label and placeholder 2 is hide action label."
+  },
+  "zapper_status_refine_click": {
+    "message": "$1 — ▲▼ 调整，点击 $2 保存",
+    "description": "Refine-mode status text on the Mac. Placeholder 1 is element label and placeholder 2 is hide action label."
   },
   "zapper_toast_unable_create_rule": {
     "message": "无法为该元素创建规则。",

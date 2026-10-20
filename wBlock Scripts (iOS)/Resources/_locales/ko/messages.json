@@ -27,6 +27,10 @@
     "message": "페이지의 요소를 탭하면 숨길 수 있습니다. 수동 선택자는 요소 제거기에서 \"규칙 추가\"를 사용하세요.",
     "description": "Help text shown in the popup for how to use the element zapper."
   },
+  "popup_hint_click_to_hide": {
+    "message": "페이지의 요소를 클릭하면 숨길 수 있습니다. 수동 선택자는 요소 제거기에서 \"규칙 추가\"를 사용하세요.",
+    "description": "Help text shown in the popup on the Mac for how to use the element zapper."
+  },
   "popup_rules": {
     "message": "규칙",
     "description": "Label for the disclosure button that expands saved zapper rules."
@@ -115,6 +119,10 @@
     "message": "요소 제거기: 요소를 탭해 숨기세요.",
     "description": "Default status text in the in-page element zapper toolbar."
   },
+  "zapper_status_click_to_hide": {
+    "message": "요소 제거기: 요소를 클릭해 숨기세요.",
+    "description": "Default status text in the in-page element zapper toolbar on the Mac."
+  },
   "zapper_button_undo": {
     "message": "실행 취소",
     "description": "Button label to undo last zapper action."
@@ -194,6 +202,10 @@
   "zapper_status_refine": {
     "message": "$1 — ▲▼로 조정하고, 저장하려면 $2 탭",
     "description": "Refine-mode status text. Placeholder 1 is element label and placeholder 2 is hide action label."
+  },
+  "zapper_status_refine_click": {
+    "message": "$1 — ▲▼로 조정하고, 저장하려면 $2 클릭",
+    "description": "Refine-mode status text on the Mac. Placeholder 1 is element label and placeholder 2 is hide action label."
   },
   "zapper_toast_unable_create_rule": {
     "message": "해당 요소에 대한 규칙을 만들 수 없습니다.",

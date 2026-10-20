@@ -27,6 +27,10 @@
     "message": "Toca un elemento de la página para ocultarlo. Usa «Agregar regla» en el ocultador para selectores manuales.",
     "description": "Help text shown in the popup for how to use the element zapper."
   },
+  "popup_hint_click_to_hide": {
+    "message": "Haz clic en un elemento de la página para ocultarlo. Usa «Agregar regla» en el ocultador para selectores manuales.",
+    "description": "Help text shown in the popup on the Mac for how to use the element zapper."
+  },
   "popup_rules": {
     "message": "Reglas",
     "description": "Label for the disclosure button that expands saved zapper rules."
@@ -115,6 +119,10 @@
     "message": "Ocultador de elementos: toca un elemento para ocultarlo.",
     "description": "Default status text in the in-page element zapper toolbar."
   },
+  "zapper_status_click_to_hide": {
+    "message": "Ocultador de elementos: haz clic en un elemento para ocultarlo.",
+    "description": "Default status text in the in-page element zapper toolbar on the Mac."
+  },
   "zapper_button_undo": {
     "message": "Deshacer",
     "description": "Button label to undo last zapper action."
@@ -194,6 +202,10 @@
   "zapper_status_refine": {
     "message": "$1 — ▲▼ para ajustar, toca $2 para guardar",
     "description": "Refine-mode status text. Placeholder 1 is element label and placeholder 2 is hide action label."
+  },
+  "zapper_status_refine_click": {
+    "message": "$1 — ▲▼ para ajustar, haz clic en $2 para guardar",
+    "description": "Refine-mode status text on the Mac. Placeholder 1 is element label and placeholder 2 is hide action label."
   },
   "zapper_toast_unable_create_rule": {
     "message": "No se pudo crear una regla para ese elemento.",

@@ -161,7 +161,7 @@
 "Background Update Agent" = "后台更新代理";
 "Backup" = "备份";
 "Local Backup" = "本地备份";
-"Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "来自 %@ 的备份（应用 v%@，%@ 个过滤器）。这将替换你当前的过滤器选择、白名单和元素清除器规则。";
+"Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "来自 %@ 的备份（应用 v%@，%@ 个过滤器）。这将替换你当前的过滤器选择、允许列表和元素清除器规则。";
 "Balanced defaults." = "平衡的默认设置。";
 "Base and mobile filters only." = "仅基础和移动过滤器。";
 "Base filter only." = "仅基础过滤器。";
@@ -587,7 +587,7 @@
 "Sync Now" = "立即同步";
 "Sync Timestamps with Device Time Zone" = "将时间戳与设备时区同步";
 "Sync Userscript Enabled States" = "同步用户脚本启用状态";
-"Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "在设备间同步你的过滤器选择、自定义列表、用户脚本和白名单。";
+"Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "在设备间同步你的过滤器选择、自定义列表、用户脚本和允许列表。";
 "Sync: Checking…" = "同步：检查中…";
 "Sync: Downloading…" = "同步：下载中…";
 "Sync: Error" = "同步：错误";
@@ -619,7 +619,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This list covers websites for Norway, Denmark, Iceland, Danish territories, and the Sami indigenous population." = "该列表涵盖挪威、丹麦、冰岛、丹麦领土和萨米原住民的网站。";
 "This may take a while" = "这可能需要一些时间";
 "This removes all settings for %@." = "这将移除 %@ 的所有设置。";
-"This removes the whitelist entry, userscript exceptions, and zapper rules for %@." = "这会移除 %@ 的白名单条目、用户脚本例外和元素清除器规则。";
+"This removes the whitelist entry, userscript exceptions, and zapper rules for %@." = "这会移除 %@ 的允许列表条目、用户脚本例外和元素清除器规则。";
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "这将移除所有过滤器、用户脚本和偏好设置，然后重新启动引导流程。";
 "This will reset all filters, userscripts, and preferences." = "这将重置所有过滤器、用户脚本和偏好设置。";
 "Timed out" = "超时";
@@ -716,9 +716,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Adds rules tailored to websites and languages from specific regions." = "为特定地区的网站和语言添加定制规则。选择语言后，会开启所有覆盖这些语言的列表。已包含在 AdGuard 地区列表中的列表不在目录中。";
 "The end of Safari ad-blocking B.S." = "告别 Safari 广告拦截的糟心事";
 "Welcome to wBlock!" = "欢迎使用 wBlock！";
-"Whitelist" = "白名单";
-"Whitelist a site here, or adjust userscripts per site from the wBlock popup in Safari." = "在这里将网站列入白名单，或从 Safari 中的 wBlock 弹出窗口按网站调整用户脚本。";
-"Whitelisted" = "已列入白名单";
+"Whitelist" = "允许列表";
+"Whitelist a site here, or adjust userscripts per site from the wBlock popup in Safari." = "在这里将网站加入允许列表，或从 Safari 中的 wBlock 弹出窗口按网站调整用户脚本。";
+"Whitelisted" = "已允许";
 "Wrap Lines" = "自动换行";
 "On" = "开";
 "Off" = "关";

@@ -161,7 +161,7 @@
 "Background Update Agent" = "背景更新代理程式";
 "Backup" = "備份";
 "Local Backup" = "本機備份";
-"Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "來自 %@ 的備份（app v%@，%@ 個過濾器）。這會取代你目前的過濾器選擇、白名單與元素清除器規則。";
+"Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "來自 %@ 的備份（app v%@，%@ 個過濾器）。這會取代你目前的過濾器選擇、允許清單與元素清除器規則。";
 "Balanced defaults." = "平衡的預設設定。";
 "Base and mobile filters only." = "僅基礎與行動過濾器。";
 "Base filter only." = "僅基礎過濾器。";
@@ -589,7 +589,7 @@
 "Sync Now" = "立即同步";
 "Sync Timestamps with Device Time Zone" = "將時間戳記與裝置時區同步";
 "Sync Userscript Enabled States" = "同步使用者腳本啟用狀態";
-"Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "在裝置間同步你的過濾器選擇、自訂清單、使用者腳本與白名單。";
+"Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "在裝置間同步你的過濾器選擇、自訂清單、使用者腳本與允許清單。";
 "Sync: Checking…" = "同步：檢查中…";
 "Sync: Downloading…" = "同步：下載中…";
 "Sync: Error" = "同步：錯誤";
@@ -621,7 +621,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This list covers websites for Norway, Denmark, Iceland, Danish territories, and the Sami indigenous population." = "這份清單涵蓋挪威、丹麥、冰島、丹麥屬地和薩米原住民的網站。";
 "This may take a while" = "這可能需要一些時間";
 "This removes all settings for %@." = "這會移除 %@ 的所有設定。";
-"This removes the whitelist entry, userscript exceptions, and zapper rules for %@." = "這會移除 %@ 的白名單項目、使用者腳本例外和元素清除器規則。";
+"This removes the whitelist entry, userscript exceptions, and zapper rules for %@." = "這會移除 %@ 的允許清單項目、使用者腳本例外和元素清除器規則。";
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "這會移除所有過濾器、使用者腳本與偏好設定，然後重新啟動新手導覽流程。";
 "This will reset all filters, userscripts, and preferences." = "這將重設所有過濾器、使用者腳本與偏好設定。";
 "Timed out" = "逾時";
@@ -718,9 +718,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Adds rules tailored to websites and languages from specific regions." = "為特定地區的網站和語言新增適用規則。選擇語言後，會開啟所有涵蓋這些語言的清單。已包含在 AdGuard 區域清單中的清單不在目錄中。";
 "The end of Safari ad-blocking B.S." = "告別 Safari 廣告封鎖的糟心事";
 "Welcome to wBlock!" = "歡迎使用 wBlock！";
-"Whitelist" = "白名單";
-"Whitelist a site here, or adjust userscripts per site from the wBlock popup in Safari." = "在這裡將網站列入白名單，或從 Safari 中的 wBlock 彈出視窗按網站調整使用者腳本。";
-"Whitelisted" = "已列入白名單";
+"Whitelist" = "允許清單";
+"Whitelist a site here, or adjust userscripts per site from the wBlock popup in Safari." = "在這裡將網站加入允許清單，或從 Safari 中的 wBlock 彈出視窗按網站調整使用者腳本。";
+"Whitelisted" = "已允許";
 "Wrap Lines" = "自動換行";
 "On" = "開啟";
 "Off" = "關閉";

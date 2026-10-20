@@ -27,6 +27,10 @@
     "message": "Touchez un élément de la page pour le masquer. Utilisez « Ajouter une règle » dans le zappeur pour les sélecteurs manuels.",
     "description": "Help text shown in the popup for how to use the element zapper."
   },
+  "popup_hint_click_to_hide": {
+    "message": "Cliquez sur un élément de la page pour le masquer. Utilisez « Ajouter une règle » dans le zappeur pour les sélecteurs manuels.",
+    "description": "Help text shown in the popup on the Mac for how to use the element zapper."
+  },
   "popup_rules": {
     "message": "Règles",
     "description": "Label for the disclosure button that expands saved zapper rules."
@@ -115,6 +119,10 @@
     "message": "Zappeur d’éléments : touchez un élément pour le masquer.",
     "description": "Default status text in the in-page element zapper toolbar."
   },
+  "zapper_status_click_to_hide": {
+    "message": "Zappeur d’éléments : cliquez sur un élément pour le masquer.",
+    "description": "Default status text in the in-page element zapper toolbar on the Mac."
+  },
   "zapper_button_undo": {
     "message": "Annuler",
     "description": "Button label to undo last zapper action."
@@ -194,6 +202,10 @@
   "zapper_status_refine": {
     "message": "$1 — ▲▼ pour ajuster, touchez $2 pour enregistrer",
     "description": "Refine-mode status text. Placeholder 1 is element label and placeholder 2 is hide action label."
+  },
+  "zapper_status_refine_click": {
+    "message": "$1 — ▲▼ pour ajuster, cliquez sur $2 pour enregistrer",
+    "description": "Refine-mode status text on the Mac. Placeholder 1 is element label and placeholder 2 is hide action label."
   },
   "zapper_toast_unable_create_rule": {
     "message": "Impossible de créer une règle pour cet élément.",

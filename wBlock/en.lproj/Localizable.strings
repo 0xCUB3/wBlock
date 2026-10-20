@@ -10,18 +10,18 @@
 "Only selected sites" = "Only selected sites";
 "Selected Sites" = "Selected Sites";
 "No sites selected. This script will not run." = "No sites selected. This script will not run.";
-"This script will not run on excluded sites, even if they are selected." = "This script will not run on excluded sites, even if they are selected.";
-"Sites include their subdomains. The script’s own matching rules still apply. Reload the page after making changes." = "Sites include their subdomains. The script’s own matching rules still apply. Reload the page after making changes.";
+"This script will not run on excluded sites, even if they are selected." = "The script never runs on excluded sites, even if they're also selected.";
+"Sites include their subdomains. The script’s own matching rules still apply. Reload the page after making changes." = "Each site includes its subdomains. The script's own match rules still apply. Reload the page to see changes.";
 "Could not save site settings" = "Could not save site settings";
 "SponsorBlock Backups" = "SponsorBlock Backups";
 "Import SponsorBlock Settings" = "Import SponsorBlock Settings";
 "Export SponsorBlock Settings" = "Export SponsorBlock Settings";
 "Transfers category choices, skip notices, minimum segment length, and legacy channel allowlists. Private user IDs, contributions, and per-channel profiles are excluded. Seek-bar-only categories become Disabled." = "Transfers category choices, skip notices, minimum segment length, and legacy channel allowlists. Private user IDs, contributions, and per-channel profiles are excluded. Seek-bar-only categories become Disabled.";
-"Use Tube Cleaner 0.1.36 or later. Reload YouTube after importing; open a video before exporting settings changed in Safari." = "Use Tube Cleaner 0.1.36 or later. Reload YouTube after importing; open a video before exporting settings changed in Safari.";
-"No synced SponsorBlock settings yet. Open YouTube with Tube Cleaner enabled, then try again." = "No synced SponsorBlock settings yet. Open YouTube with Tube Cleaner enabled, then try again.";
+"Use Tube Cleaner 0.1.36 or later. Reload YouTube after importing; open a video before exporting settings changed in Safari." = "Requires Tube Cleaner 0.1.36 or later. Reload YouTube after importing. Before exporting, open a video so settings you changed in Safari are included.";
+"No synced SponsorBlock settings yet. Open YouTube with Tube Cleaner enabled, then try again." = "No synced SponsorBlock settings yet. Open YouTube with Tube Cleaner turned on, then try again.";
 "Replace SponsorBlock settings?" = "Replace SponsorBlock settings?";
 "Settings imported. Reload YouTube to apply them." = "Settings imported. Reload YouTube to apply them.";
-"Could not transfer SponsorBlock settings. Use a valid settings JSON file and check available storage." = "Could not transfer SponsorBlock settings. Use a valid settings JSON file and check available storage.";
+"Could not transfer SponsorBlock settings. Use a valid settings JSON file and check available storage." = "Couldn't transfer SponsorBlock settings. Choose a valid settings JSON file and make sure there's enough storage.";
 " · Last success: %@" = " · Last success: %@";
 " · Scheduled: %@" = " · Scheduled: %@";
 "!#include fetch failed" = "!#include fetch failed";
@@ -62,7 +62,7 @@
 "\\(Int(refreshProgress * 100))%" = "\\(Int(refreshProgress * 100))%";
 "\\(level.emoji) \\(level.localizedName)" = "\\(level.emoji) \\(level.localizedName)";
 "\\(progressPercentage)%" = "\\(progressPercentage)%";
-"A filter list for websites in Serbian, Montenegrin, Croatian, and Bosnian." = "A filter list for websites in Serbian, Montenegrin, Croatian, and Bosnian.";
+"A filter list for websites in Serbian, Montenegrin, Croatian, and Bosnian." = "Blocks ads on websites in Serbian, Montenegrin, Croatian, and Bosnian.";
 "A filter list with this name already exists." = "A filter list with this name already exists.";
 "A filter list with this URL already exists in wBlock." = "A filter list with this URL already exists in wBlock.";
 "About" = "About";
@@ -91,7 +91,7 @@
 "Additional filter list for websites in Czech and Slovak." = "Additional filter list for websites in Czech and Slovak.";
 "Additional filter list for websites in Greek." = "Additional filter list for websites in Greek.";
 "Additional filter list for websites in Hebrew." = "Additional filter list for websites in Hebrew.";
-"Additional filter list for websites in Hindi, Tamil and other Dravidian and Indic languages." = "Additional filter list for websites in Hindi, Tamil and other Dravidian and Indic languages.";
+"Additional filter list for websites in Hindi, Tamil and other Dravidian and Indic languages." = "Blocks ads on websites in Hindi, Tamil, and other Indic and Dravidian languages.";
 "Additional filter list for websites in Icelandic." = "Additional filter list for websites in Icelandic.";
 "Additional filter list for websites in Latvian." = "Additional filter list for websites in Latvian.";
 "Additional filter list for websites in Lithuanian." = "Additional filter list for websites in Lithuanian.";
@@ -126,8 +126,8 @@
 "All websites" = "All websites";
 "Allowlists" = "Allowlists";
 "Already done this? Just check the boxes above." = "Already done this? Just check the boxes above.";
-"An existing wBlock configuration was found in iCloud (%@). Would you like to adopt it, or start fresh and upload your current setup?" = "An existing wBlock configuration was found in iCloud (%@). Would you like to adopt it, or start fresh and upload your current setup?";
-"An existing wBlock configuration was found in iCloud. Would you like to adopt it, or start fresh and upload your current setup?" = "An existing wBlock configuration was found in iCloud. Would you like to adopt it, or start fresh and upload your current setup?";
+"An existing wBlock configuration was found in iCloud (%@). Would you like to adopt it, or start fresh and upload your current setup?" = "wBlock found a configuration in iCloud from %@. Use it, or start fresh and upload your current setup?";
+"An existing wBlock configuration was found in iCloud. Would you like to adopt it, or start fresh and upload your current setup?" = "wBlock found a configuration in iCloud. Use it, or start fresh and upload your current setup?";
 "Annoyances" = "Annoyances";
 "Anti-Adblock List" = "Anti-Adblock List";
 "Applied" = "Applied";
@@ -161,12 +161,12 @@
 "Background Update Agent" = "Background Update Agent";
 "Backup" = "Backup";
 "Local Backup" = "Local Backup";
-"Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules.";
+"Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "Backup from %@ (wBlock %@, %@ filters). Restoring replaces your current filter choices, allowed sites, and Element Zapper rules.";
 "Balanced defaults." = "Balanced defaults.";
 "Base and mobile filters only." = "Base and mobile filters only.";
 "Base filter only." = "Base filter only.";
 "Beta" = "Beta";
-"Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time.";
+"Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "Beta userscripts are still being tested and may break pages. You can turn them off anytime.";
 "BGAppRefresh" = "BGAppRefresh";
 "BGProcessing" = "BGProcessing";
 "Blocked requests (%d)" = "Blocked requests (%d)";
@@ -179,10 +179,10 @@
 "Blocks ads and trackers on various Macedonian websites." = "Blocks ads and trackers on various Macedonian websites.";
 "Blocks banners promoting mobile app downloads." = "Blocks banners promoting mobile app downloads.";
 "Blocks cookie consent notices on web pages." = "Blocks cookie consent notices on web pages.";
-"Blocks miscellaneous irritating elements not covered by other filters." = "Blocks miscellaneous irritating elements not covered by other filters.";
-"Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites.";
+"Blocks miscellaneous irritating elements not covered by other filters." = "Hides annoying page elements that other lists don't cover.";
+"Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "Safari can't apply this list's inline script rules. For supported English-language sites, turn on Bypass Paywalls Clean in Userscripts.";
 "Blocks pop-up ads on web pages." = "Blocks pop-up ads on web pages.";
-"Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "Blocks promotional pop-ups, newsletter sign-ups, and notification requests.";
+"Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "Blocks promotional pop-ups, newsletter sign-ups, and notification prompts.";
 "Blocks social media content on webpages." = "Blocks social media content on webpages.";
 "Blocks third-party widgets, chat assistants, and support widgets." = "Blocks third-party widgets, chat assistants, and support widgets.";
 "Building combined filter engine..." = "Building combined filter engine...";
@@ -214,7 +214,7 @@
 "Continue" = "Continue";
 "Conversion" = "Conversion";
 "Conversion phase summary" = "Conversion phase summary";
-"Converted rules, but one or more extensions failed to reload after 5 attempts." = "Converted rules, but one or more extensions failed to reload after 5 attempts.";
+"Converted rules, but one or more extensions failed to reload after 5 attempts." = "Rules converted, but one or more extensions didn't reload after 5 tries.";
 "Converting %@…" = "Converting %@…";
 "Converting Rules" = "Converting Rules";
 "Copy URL" = "Copy URL";
@@ -252,10 +252,10 @@
 "due now" = "due now";
 "Due soon catch-up" = "Due soon catch-up";
 "Duplicate Userscripts Found" = "Duplicate Userscripts Found";
-"EasyList China + AdGuard Chinese filter. Filter list that specifically removes ads on websites in Chinese language." = "EasyList China + AdGuard Chinese filter. Filter list that specifically removes ads on websites in Chinese language.";
+"EasyList China + AdGuard Chinese filter. Filter list that specifically removes ads on websites in Chinese language." = "Blocks ads on Chinese-language websites. Combines EasyList China and the AdGuard Chinese filter.";
 "EasyList Czech and Slovak" = "EasyList Czech and Slovak";
-"EasyList Dutch + AdGuard Dutch filter. Filter list that specifically removes ads on websites in Dutch language." = "EasyList Dutch + AdGuard Dutch filter. Filter list that specifically removes ads on websites in Dutch language.";
-"EasyList Germany + AdGuard German filter. Filter list that specifically removes ads on websites in German language." = "EasyList Germany + AdGuard German filter. Filter list that specifically removes ads on websites in German language.";
+"EasyList Dutch + AdGuard Dutch filter. Filter list that specifically removes ads on websites in Dutch language." = "Blocks ads on Dutch-language websites. Combines EasyList Dutch and the AdGuard Dutch filter.";
+"EasyList Germany + AdGuard German filter. Filter list that specifically removes ads on websites in German language." = "Blocks ads on German-language websites. Combines EasyList Germany and the AdGuard German filter.";
 "EasyList Hebrew" = "EasyList Hebrew";
 "EasyList Lithuania" = "EasyList Lithuania";
 "EasyList Thailand" = "EasyList Thailand";
@@ -266,10 +266,10 @@
 "Use Editor" = "Use Editor";
 "Element zapper" = "Element Zapper";
 "Enable" = "Enable";
-"Enable 'wBlock Scripts' → Always Allow on Every Website" = "Enable 'wBlock Scripts' → Always Allow on Every Website";
-"Enable all 5 Content Blocker extensions" = "Enable all 5 Content Blocker extensions";
-"Enable Beta Userscript?" = "Enable Beta Userscript?";
-"Enable the Safari extensions so wBlock can block ads and run userscripts." = "Enable the Safari extensions so wBlock can block ads and run userscripts.";
+"Enable 'wBlock Scripts' → Always Allow on Every Website" = "Turn on 'wBlock Scripts' → Always Allow on Every Website";
+"Enable all 5 Content Blocker extensions" = "Turn on all 5 content blockers";
+"Enable Beta Userscript?" = "Turn On Beta Userscript?";
+"Enable the Safari extensions so wBlock can block ads and run userscripts." = "Turn on the Safari extensions so wBlock can block ads and run userscripts.";
 "Enabled" = "Enabled";
 "Enabled Lists" = "Enabled Lists";
 "Error" = "Error";
@@ -289,14 +289,14 @@
 "Expired %@" = "Expired %@";
 "Export" = "Export";
 "Export failed: %@" = "Export failed: %@";
-"The contents of local filter list \"%@\" are unavailable. Recover the list on the original device and create a new backup." = "The contents of local filter list \"%@\" are unavailable. Recover the list on the original device and create a new backup.";
-"The backup has no usable contents for these lists. They will be skipped when restoring. %@" = "The backup has no usable contents for these lists. They will be skipped when restoring. %@";
+"The contents of local filter list \"%@\" are unavailable. Recover the list on the original device and create a new backup." = "The contents of the local list \"%@\" aren't available. Recover the list on the device it came from, then make a new backup.";
+"The backup has no usable contents for these lists. They will be skipped when restoring. %@" = "This backup has nothing usable for these lists, so they'll be skipped when restoring. %@";
 "Export Settings" = "Export Settings";
 "Extension Slots" = "Extension Slots";
 "Rule Types" = "Rule Types";
-"Network and element hiding rules count toward Safari's limit. wBlock Scripts applies its rules on its own, and URL parameter rules have a separate limit of %@." = "Network and element hiding rules count toward Safari's limit. wBlock Scripts applies its rules on its own, and URL parameter rules have a separate limit of %@.";
+"Network and element hiding rules count toward Safari's limit. wBlock Scripts applies its rules on its own, and URL parameter rules have a separate limit of %@." = "Network and element hiding rules count toward Safari's limit. wBlock Scripts applies its own rules, and URL parameter rules have a separate limit of %@.";
 "Extensions" = "Extensions";
-"Extensive blocklist targeting ads, trackers, and other unwanted content." = "Extensive blocklist targeting ads, trackers, and other unwanted content.";
+"Extensive blocklist targeting ads, trackers, and other unwanted content." = "A large blocklist for ads, trackers, and other unwanted content.";
 "Failed" = "Failed";
 "Failed saving user list" = "Failed saving user list";
 "Failed saving user list edits" = "Failed saving user list edits";
@@ -316,7 +316,7 @@
 "Failed to read filter content" = "Failed to read filter content";
 "Failed to read local content for rule counting" = "Failed to read local content for rule counting";
 "Failed to reload %@." = "Failed to reload %@.";
-"%@ turned off in Safari. Enable them in Safari settings to load the applied rules." = "%@ turned off in Safari. Enable them in Safari settings to load the applied rules.";
+"%@ turned off in Safari. Enable them in Safari settings to load the applied rules." = "%@ turned off in Safari. Turn them on in Safari settings to load the applied rules.";
 "%d URL parameter rules were dropped: Safari allows at most %d." = "%d URL parameter rules were dropped: Safari allows at most %d.";
 "Skipped reload for extensions turned off in Safari" = "Skipped reload for extensions turned off in Safari";
 "wBlock launched" = "wBlock launched";
@@ -333,30 +333,30 @@
 "Fast applying disabled sites changes without full conversion" = "Fast applying disabled sites changes without full conversion";
 "Fast disabled sites update completed" = "Fast disabled sites update completed";
 "File" = "File";
-"Filter '%@' added successfully. Apply changes to enable it." = "Filter '%@' added successfully. Apply changes to enable it.";
+"Filter '%@' added successfully. Apply changes to enable it." = "Added '%@'. Apply changes to use it.";
 "Filter Apply" = "Filter Apply";
 "Filter for ad blocking on Estonian sites." = "Filter for ad blocking on Estonian sites.";
 "Filter list not found." = "Filter list not found.";
-"Filter list that specifically removes ads on websites in Spanish, Portuguese, and Brazilian Portuguese languages." = "Filter list that specifically removes ads on websites in Spanish, Portuguese, and Brazilian Portuguese languages.";
-"Filter list that specifically removes ads on websites in Turkish language." = "Filter list that specifically removes ads on websites in Turkish language.";
-"Filter list updated. Apply changes to enable it." = "Filter list updated. Apply changes to enable it.";
+"Filter list that specifically removes ads on websites in Spanish, Portuguese, and Brazilian Portuguese languages." = "Blocks ads on Spanish- and Portuguese-language websites, including Brazilian Portuguese.";
+"Filter list that specifically removes ads on websites in Turkish language." = "Blocks ads on Turkish-language websites.";
+"Filter list updated. Apply changes to enable it." = "List updated. Apply changes to use it.";
 "Filter list with this URL already exists: %@" = "Filter list with this URL already exists: %@";
 "Filter list with URL already exists" = "Filter list with URL already exists";
 "Filter name" = "Filter name";
-"Filter that aims to remove regional Swedish ads, tracking, social media, annoyances, sponsored articles etc." = "Filter that aims to remove regional Swedish ads, tracking, social media, annoyances, sponsored articles etc.";
+"Filter that aims to remove regional Swedish ads, tracking, social media, annoyances, sponsored articles etc." = "Blocks Swedish ads, tracking, social media widgets, annoyances, sponsored articles, and more.";
 "Filter that blocks ads on Thai sites." = "Filter that blocks ads on Thai sites.";
-"Filter that enables ad blocking on websites in Japanese language." = "Filter that enables ad blocking on websites in Japanese language.";
-"Filter that enables ad blocking on websites in Russian language." = "Filter that enables ad blocking on websites in Russian language.";
-"Filter that enables ad blocking on websites in Ukrainian language." = "Filter that enables ad blocking on websites in Ukrainian language.";
-"Filter that protects against various types of scams in the Polish network, such as mass text messaging, fake online stores, etc." = "Filter that protects against various types of scams in the Polish network, such as mass text messaging, fake online stores, etc.";
+"Filter that enables ad blocking on websites in Japanese language." = "Blocks ads on Japanese-language websites.";
+"Filter that enables ad blocking on websites in Russian language." = "Blocks ads on Russian-language websites.";
+"Filter that enables ad blocking on websites in Ukrainian language." = "Blocks ads on Ukrainian-language websites.";
+"Filter that protects against various types of scams in the Polish network, such as mass text messaging, fake online stores, etc." = "Protects against scams common in Poland, such as mass text messages and fake online stores.";
 "CERT Polska's list of dangerous domains that impersonate real sites to steal data or money." = "CERT Polska's list of dangerous domains that impersonate real sites to steal data or money.";
 "Filter Update" = "Filter Update";
 "FilterApply" = "FilterApply";
 "Filtering off" = "Filtering off";
 "Filters" = "Filters";
 "Filters: %d / Userscripts: %d" = "Filters: %d / Userscripts: %d";
-"Filters Auto-Disabled" = "Filters Auto-Disabled";
-"Filters update in the background, but timing is approximate. Force-quitting wBlock from the app switcher may prevent background updates until you reopen the app." = "Filters update in the background, but timing is approximate. Force-quitting wBlock from the app switcher may prevent background updates until you reopen the app.";
+"Filters Auto-Disabled" = "Lists Turned Off";
+"Filters update in the background, but timing is approximate. Force-quitting wBlock from the app switcher may prevent background updates until you reopen the app." = "The system decides when background updates run, so timing varies. If you force-quit wBlock from the app switcher, background updates may stop until you open it again.";
 "FilterUpdate" = "FilterUpdate";
 "Find" = "Find";
 "Finnish ad blocking filter list." = "Finnish ad blocking filter list.";
@@ -376,14 +376,14 @@
 "Hungarian filter" = "Hungarian filter";
 "Icelandic ABP List" = "Icelandic ABP List";
 "iCloud Sync" = "iCloud Sync";
-"This GitHub/Homebrew build cannot use iCloud Sync. The App Store/TestFlight build can." = "This GitHub/Homebrew build cannot use iCloud Sync. The App Store/TestFlight build can.";
+"This GitHub/Homebrew build cannot use iCloud Sync. The App Store/TestFlight build can." = "iCloud Sync isn't available in the GitHub and Homebrew builds. Use the App Store or TestFlight build.";
 "iCloud Sync couldn't access your iCloud account. Try again, then check your iCloud sign-in in Settings." = "iCloud Sync couldn't access your iCloud account. Try again, then check your iCloud sign-in in Settings.";
 "iCloud Sync couldn't reach iCloud. Check your connection and try again." = "iCloud Sync couldn't reach iCloud. Check your connection and try again.";
 "iCloud Sync couldn't save because your iCloud storage is full." = "iCloud Sync couldn't save because your iCloud storage is full.";
 "iCloud Sync doesn't have permission to write to your iCloud account." = "iCloud Sync doesn't have permission to write to your iCloud account.";
 "iCloud Sync hit an iCloud server error. Try again in a moment." = "iCloud Sync hit an iCloud server error. Try again in a moment.";
 "iCloud Sync is temporarily unavailable. Try again in a moment." = "iCloud Sync is temporarily unavailable. Try again in a moment.";
-"If you use Private Browsing, also enable Allow in Private Browsing for wBlock Scripts and the 5 content blockers. Cookie notices and other scriptlets will not run in Private windows without it." = "If you use Private Browsing, also enable Allow in Private Browsing for wBlock Scripts and the 5 content blockers. Cookie notices and other scriptlets will not run in Private windows without it.";
+"If you use Private Browsing, also enable Allow in Private Browsing for wBlock Scripts and the 5 content blockers. Cookie notices and other scriptlets will not run in Private windows without it." = "If you use Private Browsing, also turn on Allow in Private Browsing for wBlock Scripts and all 5 content blockers. Without it, cookie notices and other scriptlets aren't handled in private windows.";
 "Ignoring invalid filter response" = "Ignoring invalid filter response";
 "Import" = "Import";
 "Import Failed" = "Import Failed";
@@ -401,7 +401,7 @@
 "Invalid URL provided: %@" = "Invalid URL provided: %@";
 "KAD - Anti-Scam" = "KAD - Anti-Scam";
 "Keep All" = "Keep All";
-"Keeps filters updating when wBlock isn't running. Turn off to avoid a persistent login item; updates will then only run while wBlock is open." = "Keeps filters updating when wBlock isn't running. Turn off to avoid a persistent login item; updates will then only run while wBlock is open.";
+"Keeps filters updating when wBlock isn't running. Turn off to avoid a persistent login item; updates will then only run while wBlock is open." = "Keeps filters updating when wBlock isn't open. Turn this off to remove the login item; filters then update only while wBlock is open.";
 "Keeps the app in portrait even if the device is rotated." = "Keeps the app in portrait even if the device is rotated.";
 "Languages: %@" = "Languages: %@";
 "Languages: \\(languageSummary)" = "Languages: \\(languageSummary)";
@@ -411,7 +411,7 @@
 "Line %d isn’t a valid http(s) filter URL." = "Line %d isn’t a valid http(s) filter URL.";
 "filterslists-KO" = "filterslists-KO";
 "Liste AR" = "Liste AR";
-"Liste FR + AdGuard French filter. Filter list that specifically removes ads on websites in French language." = "Liste FR + AdGuard French filter. Filter list that specifically removes ads on websites in French language.";
+"Liste FR + AdGuard French filter. Filter list that specifically removes ads on websites in French language." = "Blocks ads on French-language websites. Combines Liste FR and the AdGuard French filter.";
 "Loaded local version for filter" = "Loaded local version for filter";
 "Loading metadata…" = "Loading metadata…";
 "Local Import" = "Local Import";
@@ -455,7 +455,7 @@
 "OK" = "OK";
 "on line" = "on line";
 "Online Security Filter" = "Online Security Filter";
-"Only community-maintained lists are available for %@. Enable them if you're comfortable." = "Only community-maintained lists are available for %@. Enable them if you're comfortable.";
+"Only community-maintained lists are available for %@. Enable them if you're comfortable." = "Only community-maintained lists are available for %@. Turn them on if you're comfortable with that.";
 "Only pasted user lists can be edited." = "Only pasted user lists can be edited.";
 "Open Login Items" = "Open Login Items";
 "Open Safari Settings" = "Open Safari Settings";
@@ -478,7 +478,7 @@
 "Process completed with reload issues" = "Process completed with reload issues";
 "Progress" = "Progress";
 "Protects against suspicious URLs, phishing sites, and unwanted software." = "Protects against suspicious URLs, phishing sites, and unwanted software.";
-"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, or .styl" = "Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, or .styl";
+"Provide a valid http:// or https:// link ending in .js, .user.js, .user.css, .less, or .styl" = "Enter an http:// or https:// link that ends in .js, .user.js, .user.css, .less, or .styl.";
 "Psst! You forgot something!" = "Psst! You forgot something!";
 "Quit Without Applying" = "Quit Without Applying";
 "Reading Files" = "Reading Files";
@@ -527,7 +527,7 @@
 "Rule limit exceeded for blocker" = "Rule limit exceeded for blocker";
 "Rules" = "Rules";
 "Run on this site" = "Run on this site";
-"Safari limits each Content Blocker extension to 150,000 rules. wBlock automatically balances and compiles rules across all 5 slots." = "Safari limits each Content Blocker extension to 150,000 rules. wBlock automatically balances and compiles rules across all 5 slots.";
+"Safari limits each Content Blocker extension to 150,000 rules. wBlock automatically balances and compiles rules across all 5 slots." = "Safari allows 150,000 rules per content blocker. wBlock spreads your rules across all 5 automatically.";
 "Safari Rule Capacity" = "Safari Rule Capacity";
 "Safari Rules" = "Safari Rules";
 "Safari → Settings → Extensions" = "Safari → Settings → Extensions";
@@ -542,8 +542,8 @@
 "Search logs" = "Search logs";
 "Search scripts" = "Search scripts";
 "Security" = "Security";
-"Select any userscripts you want to enable. These add extra features or fixes. You can always add more in the settings later." = "Select any userscripts you want to enable. These add extra features or fixes. You can always add more in the settings later.";
-"Select the languages you browse in. wBlock will automatically recommend matching regional filters and features." = "Select the languages you browse in. wBlock will automatically recommend matching regional filters and features.";
+"Select any userscripts you want to enable. These add extra features or fixes. You can always add more in the settings later." = "Choose userscripts to turn on. They add features or fix websites. You can add more later in Userscripts.";
+"Select the languages you browse in. wBlock will automatically recommend matching regional filters and features." = "Choose the languages you browse in. wBlock recommends regional lists and features to match.";
 "Set up wBlock" = "Set up wBlock";
 "Setting userscript enabled state" = "Setting userscript enabled state";
 "Settings" = "Settings";
@@ -557,8 +557,8 @@
 "Size:" = "Size:";
 "Skipped overlapping apply request" = "Skipped overlapping apply request";
 "Skipping update signal due to non-filter response body" = "Skipping update signal due to non-filter response body";
-"Some filters were automatically disabled because Safari's rule limits were exceeded." = "Some filters were automatically disabled because Safari's rule limits were exceeded.";
-"Some pre-apply filter updates failed; continuing with available lists" = "Some pre-apply filter updates failed; continuing with available lists";
+"Some filters were automatically disabled because Safari's rule limits were exceeded." = "Some lists were turned off because they went over Safari's rule limits.";
+"Some pre-apply filter updates failed; continuing with available lists" = "Some lists couldn't update before applying; continuing with the ones available";
 "Something went wrong while applying changes." = "Something went wrong while applying changes.";
 "soon" = "soon";
 "Source Code" = "Source Code";
@@ -587,7 +587,7 @@
 "Sync Now" = "Sync Now";
 "Sync Timestamps with Device Time Zone" = "Sync Timestamps with Device Time Zone";
 "Sync Userscript Enabled States" = "Sync Userscript Enabled States";
-"Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "Sync your filter selections, custom lists, userscripts, and whitelist across devices.";
+"Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "Syncs your filter choices, custom lists, userscripts, and allowed sites across your devices.";
 "Sync: Checking…" = "Sync: Checking…";
 "Sync: Downloading…" = "Sync: Downloading…";
 "Sync: Error" = "Sync: Error";
@@ -615,16 +615,16 @@ To re-enable these filters, disable other large filters and apply changes again.
 %@
 
 To re-enable these filters, disable other large filters and apply changes again.";
-"The following filters were automatically disabled:\\n\\n%@\\n\\nTo re-enable these filters, disable other large filters and apply changes again." = "The following filters were automatically disabled:\\n\\n%@\\n\\nTo re-enable these filters, disable other large filters and apply changes again.";
-"This list covers websites for Norway, Denmark, Iceland, Danish territories, and the Sami indigenous population." = "This list covers websites for Norway, Denmark, Iceland, Danish territories, and the Sami indigenous population.";
+"The following filters were automatically disabled:\\n\\n%@\\n\\nTo re-enable these filters, disable other large filters and apply changes again." = "These lists were turned off automatically:\\n\\n%@\\n\\nTo turn them back on, turn off other large lists and apply changes again.";
+"This list covers websites for Norway, Denmark, Iceland, Danish territories, and the Sami indigenous population." = "Blocks ads on websites in Norway, Denmark, Iceland, the Danish territories, and Sámi websites.";
 "This may take a while" = "This may take a while";
 "This removes all settings for %@." = "This removes all settings for %@.";
-"This removes the whitelist entry, userscript exceptions, and zapper rules for %@." = "This removes the whitelist entry, userscript exceptions, and zapper rules for %@.";
-"This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow.";
+"This removes the whitelist entry, userscript exceptions, and zapper rules for %@." = "This removes the allowlist entry, userscript exceptions, and Element Zapper rules for %@.";
+"This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "This removes all filters, userscripts, and preferences, then restarts onboarding.";
 "This will reset all filters, userscripts, and preferences." = "This will reset all filters, userscripts, and preferences.";
 "Timed out" = "Timed out";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield helps block ads reinserted by Ad-Shield on matching sites.";
-"Lets ad blockers quickly resist Ad-Shield, which reinserts ads on matching sites after filter lists hide them." = "Lets ad blockers quickly resist Ad-Shield, which reinserts ads on matching sites after filter lists hide them.";
+"Lets ad blockers quickly resist Ad-Shield, which reinserts ads on matching sites after filter lists hide them." = "Helps ad blockers counter Ad-Shield, which puts ads back after filter lists hide them.";
 "Title" = "Title";
 "Title is required." = "Name is required.";
 "Too many pending tasks" = "Too many pending tasks";
@@ -636,12 +636,12 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Unable to access shared container" = "Unable to access shared container";
 "Unapplied Filter Changes" = "Unapplied Filter Changes";
 "Unavailable" = "Unavailable";
-"Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.";
+"Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Fixes affiliate and referral links that would otherwise break in emails, search results, and redirects.";
 "Undo" = "Undo";
 "Redo" = "Redo";
 "Element Zapper" = "Element Zapper";
 "No Element Zapper Rules" = "No Element Zapper Rules";
-"Use the element zapper in the wBlock popup in Safari to hide page elements." = "Use the element zapper in the wBlock popup in Safari to hide page elements.";
+"Use the element zapper in the wBlock popup in Safari to hide page elements." = "To hide page elements, use Element Zapper in the wBlock popup in Safari.";
 "Update" = "Update";
 "Update & Apply" = "Update & Apply";
 "Update Filters" = "Update Filters";
@@ -663,10 +663,10 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Use existing iCloud setup?" = "Use existing iCloud setup?";
 "Use iCloud Setup" = "Use iCloud Setup";
 "User List" = "User List";
-"User list added. Apply changes to enable it." = "User list added. Apply changes to enable it.";
+"User list added. Apply changes to enable it." = "List added. Apply changes to use it.";
 "User list is empty." = "User list is empty.";
 "User list not found." = "User list not found.";
-"User list updated. Apply changes to enable it." = "User list updated. Apply changes to enable it.";
+"User list updated. Apply changes to enable it." = "List updated. Apply changes to use it.";
 "User list." = "User list.";
 "User-added filter list." = "User-added filter list.";
 "Userscript" = "Userscript";
@@ -691,11 +691,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Warning" = "Warning";
 "wBlock" = "wBlock";
 "wBlock filter update started." = "wBlock filter update started.";
-"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' for userscripts and advanced blocking." = "wBlock Scripts must be enabled and set to 'Always Allow on All Websites' for userscripts and advanced blocking.";
-"wBlock will fetch and enable the script automatically." = "wBlock will fetch and enable the script automatically.";
-"We don't have language data for %@. Try enabling filters manually if you see regional ads." = "We don't have language data for %@. Try enabling filters manually if you see regional ads.";
+"wBlock Scripts must be enabled and set to 'Always Allow on All Websites' for userscripts and advanced blocking." = "Turn on wBlock Scripts and set it to 'Always Allow on All Websites' to use userscripts and advanced blocking.";
+"wBlock will fetch and enable the script automatically." = "wBlock downloads the script and turns it on.";
+"We don't have language data for %@. Try enabling filters manually if you see regional ads." = "wBlock doesn't have language data for %@. If you see regional ads, turn on lists manually.";
 "We don't have regional filters for %@." = "We don't have regional filters for %@.";
-"We found an existing wBlock configuration in iCloud (%@). You can skip onboarding and use that instead." = "We found an existing wBlock configuration in iCloud (%@). You can skip onboarding and use that instead.";
+"We found an existing wBlock configuration in iCloud (%@). You can skip onboarding and use that instead." = "wBlock found a configuration in iCloud (%@). You can skip onboarding and use it instead.";
 "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead.";
 "Web extension %@" = "Web extension %@";
 "Blocks advertisements and other promotional page elements." = "Blocks advertisements and other promotional page elements.";
@@ -710,21 +710,21 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Provides newer rules and fixes that are still being tested." = "Provides newer rules and fixes that are still being tested.";
 "Recommended Filters" = "Recommended Filters";
 "Recommended Scripts" = "Recommended Scripts";
-"Removes cookie notices, pop-ups, banners, and other distracting elements. Enable all five AdGuard Annoyances lists for the full set." = "Removes cookie notices, pop-ups, banners, and other distracting elements. Enable all five AdGuard Annoyances lists for the full set.";
+"Removes cookie notices, pop-ups, banners, and other distracting elements. Enable all five AdGuard Annoyances lists for the full set." = "Removes cookie notices, pop-ups, banners, and other distractions. Turn on all five AdGuard Annoyances lists for full coverage.";
 "Reset to Default" = "Reset to Default";
 "Shows all filter lists across every category." = "Shows all filter lists across every category.";
-"Adds rules tailored to websites and languages from specific regions." = "Adds rules tailored to websites and languages from specific regions. Choosing your languages turns on every list that covers them. Lists already included in an AdGuard regional list are left out of the catalog.";
+"Adds rules tailored to websites and languages from specific regions." = "Lists for websites and languages of specific regions. Choosing your languages turns on every list that covers them. Lists already part of an AdGuard regional list aren't shown separately.";
 "The end of Safari ad-blocking B.S." = "The end of Safari ad-blocking B.S.";
 "Welcome to wBlock!" = "Welcome to wBlock!";
-"Whitelist" = "Whitelist";
-"Whitelist a site here, or adjust userscripts per site from the wBlock popup in Safari." = "Whitelist a site here, or adjust userscripts per site from the wBlock popup in Safari.";
-"Whitelisted" = "Whitelisted";
+"Whitelist" = "Allowlist";
+"Whitelist a site here, or adjust userscripts per site from the wBlock popup in Safari." = "Allow a site here, or change userscripts for a site from the wBlock popup in Safari.";
+"Whitelisted" = "Allowed";
 "Wrap Lines" = "Wrap Lines";
 "On" = "On";
 "Off" = "Off";
 "You're already using the latest filters." = "You're already using the latest filters.";
 "You have unapplied filter changes in wBlock. Tap to apply them now!" = "You have unapplied filter changes in wBlock. Tap to apply them now!";
-"You have unapplied filter changes. Do you want to apply them before quitting?" = "You have unapplied filter changes. Do you want to apply them before quitting?";
+"You have unapplied filter changes. Do you want to apply them before quitting?" = "You have changes that haven't been applied. Apply them before quitting?";
 "Zapper rules (%d)" = "Zapper rules (%d)";
 "·" = "·";
 "×%d" = "×%d";
@@ -759,14 +759,14 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Choose File" = "Choose File";
 "Change File" = "Change File";
 "Local imports won't auto-update; re-import to replace." = "Local imports won't auto-update; re-import to replace.";
-"AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases.";
+"AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "Blocks Twitch ads and handles tricky anti-adblock cases.";
 "Blocks Twitch ads with the vaft script from TwitchAdSolutions." = "Blocks Twitch ads with the vaft script from TwitchAdSolutions.";
 
 /* Issue 508 UI */
-"Disable Essential Filter?" = "Disable Essential Filter?";
+"Disable Essential Filter?" = "Turn Off Essential List?";
 "Replace Existing Content?" = "Replace Existing Content?";
 "Clear Element Zapper Rules?" = "Clear Element Zapper Rules?";
-"This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage.";
+"This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage." = "This list is part of wBlock's essential protection. Turning it off may let more ads through.";
 "Pasting will replace the existing content." = "Pasting will replace the existing content.";
 "Clear Element Zapper Rules" = "Clear Element Zapper Rules";
 "Advanced" = "Advanced";
@@ -780,7 +780,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Privacy Policy" = "Privacy Policy";
 
 /* Issue 508 UI */
-"wBlock will fetch and enable the filter list automatically" = "wBlock will fetch and enable the filter list automatically";
+"wBlock will fetch and enable the filter list automatically" = "wBlock downloads the list and turns it on.";
 /* Issue 508 UI follow-up */
 
 
@@ -789,13 +789,13 @@ To re-enable these filters, disable other large filters and apply changes again.
 /* Userscript display categories */
 "Functionality" = "Functionality";
 "Appearance" = "Appearance";
-"Blocking userscripts and scripts that prevent ads, anti-adblock measures, or unwanted page behavior." = "Blocking userscripts and scripts that prevent ads, anti-adblock measures, or unwanted page behavior.";
-"Userscripts and scripts that add or restore useful website functionality." = "Userscripts and scripts that add or restore useful website functionality.";
+"Blocking userscripts and scripts that prevent ads, anti-adblock measures, or unwanted page behavior." = "Scripts that block ads, anti-adblock measures, and unwanted page behavior.";
+"Userscripts and scripts that add or restore useful website functionality." = "Scripts that add or restore useful website features.";
 "Userstyles and scripts that change the appearance of websites." = "Userstyles and scripts that change the appearance of websites.";
-"Custom, remote, and local scripts that do not have a more specific display category." = "Custom, remote, and local scripts that do not have a more specific display category.";
-"Beta userscripts and scripts that are still being evaluated or may change." = "Beta userscripts and scripts that are still being evaluated or may change.";
+"Custom, remote, and local scripts that do not have a more specific display category." = "Custom, remote, and local scripts without a more specific category.";
+"Beta userscripts and scripts that are still being evaluated or may change." = "Scripts still being tested that may change.";
 "Enabled Userscripts & Userstyles" = "Enabled Userscripts & Userstyles";
-"Pause Blocking is on while any selected component is paused. Resume restores all components." = "Pause Blocking is on while any selected component is paused. Resume restores all components.";
+"Pause Blocking is on while any selected component is paused. Resume restores all components." = "Pause Blocking stays on while any selected part is paused. Resume turns everything back on.";
 
 /* Userstyle compiler diagnostics */
 "Choose a .user.js, .js, .user.css, .less, or .styl file." = "Choose a .user.js, .js, .user.css, .less, or .styl file.";
@@ -819,7 +819,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "column %@: %@" = "column %@: %@";
 "Userstyle compiler timed out." = "Userstyle compiler timed out.";
 "Userstyle compiler must not run on the main thread." = "Userstyle compiler must not run on the main thread.";
-"Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database).";
+"Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "Dark Reader's MIT-licensed engine, built for wBlock (beta; doesn't include the full set of site fixes).";
 "Follow System" = "Follow System";
 "Always Dark" = "Always Dark";
 "Dark" = "Dark";
@@ -856,7 +856,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Resume Where You Left Off" = "Resume Where You Left Off";
 "Quality and Audio Toolbar" = "Quality and Audio Toolbar";
 "Hide Shorts" = "Hide Shorts";
-"Enable All" = "Enable All";
+"Enable All" = "Turn On All";
 
 
 "Network Rules" = "Network Rules";
@@ -920,7 +920,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "%@ submitted at last apply" = "%@ submitted at last apply";
 
 
-"Source rules submitted to the converter at last apply, not Safari’s final rule count." = "Source rules submitted to the converter at last apply, not Safari’s final rule count.";
+"Source rules submitted to the converter at last apply, not Safari’s final rule count." = "Rules sent to the converter at the last apply, not Safari's final rule count.";
 
 
 
@@ -948,10 +948,10 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Websites" = "Websites";
 "Next update: %@" = "Next update: %@";
 "Next update" = "Next update";
-"Enable Experimental Filter?" = "Enable Experimental Filter?";
-"Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage.";
-"Enable HaGeZi Multi Pro Mini?" = "Enable HaGeZi Multi Pro Mini?";
-"HaGeZi Multi Pro Mini is a DNS blocklist, not a filter list designed specifically for ad blockers. It may be less stable than the other lists and can cause more false positives that break websites." = "HaGeZi Multi Pro Mini is a DNS blocklist, not a filter list designed specifically for ad blockers. It may be less stable than the other lists and can cause more false positives that break websites.";
+"Enable Experimental Filter?" = "Turn On Experimental List?";
+"Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "Experimental lists try out new rules before they reach the main lists, and they can break websites. Turn them on only if you're comfortable spotting and reporting problems.";
+"Enable HaGeZi Multi Pro Mini?" = "Turn On HaGeZi Multi Pro Mini?";
+"HaGeZi Multi Pro Mini is a DNS blocklist, not a filter list designed specifically for ad blockers. It may be less stable than the other lists and can cause more false positives that break websites." = "HaGeZi Multi Pro Mini is a DNS blocklist rather than a list made for ad blockers. It may be less stable and more likely to break websites.";
 "Reset Ordering" = "Reset Ordering";
 "Reset" = "Reset";
 "Return built-in lists and userscripts to their default categories and order, and move custom ones to Other." = "Return built-in lists and userscripts to their default categories and order, and move custom ones to Other.";
@@ -980,7 +980,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Choose a language to see its lists." = "Choose a language to see its lists.";
 
 /* Onboarding footer under the regional filter list */
-"English and languages without a regional list are covered by the default filters." = "English and languages without a regional list are covered by the default filters.";
+"English and languages without a regional list are covered by the default filters." = "English and languages without a regional list are covered by the default lists.";
 
 /* Invalid single filter URL */
 "This isn’t a valid http(s) filter URL." = "This isn’t a valid http(s) filter URL.";
@@ -1002,29 +1002,29 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps." = "Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps.";
 "AdGuard Italian filter" = "AdGuard Italian filter";
 "AdGuard Polish filter" = "AdGuard Polish filter";
-"EasyList + AdGuard English filter. This filter is necessary for quality ad blocking." = "EasyList + AdGuard English filter. This filter is necessary for quality ad blocking.";
-"The most comprehensive list of various online counters and web analytics tools. Use this filter if you do not want your actions on the Internet to be tracked." = "The most comprehensive list of various online counters and web analytics tools. Use this filter if you do not want your actions on the Internet to be tracked.";
-"Filter that enhances privacy by removing tracking parameters from URLs." = "Filter that enhances privacy by removing tracking parameters from URLs.";
-"Automatically removes unnecessary '$' and '&' values from URLs, making them easier to copy from the URL bar and pasting elsewhere as links. Already included in Dandelion Sprout's Annoyances List." = "Automatically removes unnecessary '$' and '&' values from URLs, making them easier to copy from the URL bar and pasting elsewhere as links. Already included in Dandelion Sprout's Annoyances List.";
+"EasyList + AdGuard English filter. This filter is necessary for quality ad blocking." = "EasyList plus the AdGuard English filter. Needed for good ad blocking.";
+"The most comprehensive list of various online counters and web analytics tools. Use this filter if you do not want your actions on the Internet to be tracked." = "Blocks a wide range of trackers and web analytics tools, so your activity online isn't tracked.";
+"Filter that enhances privacy by removing tracking parameters from URLs." = "Removes tracking parameters from URLs for better privacy.";
+"Automatically removes unnecessary '$' and '&' values from URLs, making them easier to copy from the URL bar and pasting elsewhere as links. Already included in Dandelion Sprout's Annoyances List." = "Removes unneeded '$' and '&' parameters from URLs, so links are easier to copy and share. Already included in Dandelion Sprout's Annoyances List.";
 "Blocks cookie notices on web pages." = "Blocks cookie notices on web pages.";
-"Blocks all kinds of pop-ups that are not necessary for websites' operation according to our Filter policy." = "Blocks all kinds of pop-ups that are not necessary for websites' operation according to our Filter policy.";
+"Blocks all kinds of pop-ups that are not necessary for websites' operation according to our Filter policy." = "Blocks pop-ups that websites don't need to work.";
 "Blocks irritating banners that promote mobile apps of websites." = "Blocks irritating banners that promote mobile apps of websites.";
-"Blocks irritating elements that do not fall under popular categories of annoyances, such as website promotional offers and restrictions on copying and text selection." = "Blocks irritating elements that do not fall under popular categories of annoyances, such as website promotional offers and restrictions on copying and text selection.";
-"Blocks annoying third-party widgets: online assistants, live support chats, etc." = "Blocks annoying third-party widgets: online assistants, live support chats, etc.";
-"Filter for social media widgets such as 'Like' and 'Share' buttons and more." = "Filter for social media widgets such as 'Like' and 'Share' buttons and more.";
+"Blocks irritating elements that do not fall under popular categories of annoyances, such as website promotional offers and restrictions on copying and text selection." = "Blocks annoyances that other lists don't cover, such as promotional offers and restrictions on copying or selecting text.";
+"Blocks annoying third-party widgets: online assistants, live support chats, etc." = "Blocks third-party widgets such as online assistants and live support chats.";
+"Filter for social media widgets such as 'Like' and 'Share' buttons and more." = "Blocks social media widgets such as Like and Share buttons.";
 "Hides website features that use generative AI and AI-generated content." = "Hides website features that use generative AI and AI-generated content.";
 "This filter blocks tracking pixels in email clients." = "This filter blocks tracking pixels in email clients.";
 "Prevents public Internet sites from digging into your LAN files." = "Prevents public Internet sites from digging into your LAN files.";
-"Blocks more malware than most other major anti-malware lists - domains and URL patterns used in malware redirection chains, IP addresses that are solely used by malware, PUP nags, and a few scammers. Already included in Dandelion Sprout's Annoyances List." = "Blocks more malware than most other major anti-malware lists - domains and URL patterns used in malware redirection chains, IP addresses that are solely used by malware, PUP nags, and a few scammers. Already included in Dandelion Sprout's Annoyances List.";
+"Blocks more malware than most other major anti-malware lists - domains and URL patterns used in malware redirection chains, IP addresses that are solely used by malware, PUP nags, and a few scammers. Already included in Dandelion Sprout's Annoyances List." = "Blocks more malware than most major anti-malware lists, including domains and URLs used in malware redirect chains, IP addresses used only by malware, unwanted-software nags, and some scams. Already included in Dandelion Sprout's Annoyances List.";
 "Filter that blocks ads, trackers, and other nasty things." = "Filter that blocks ads, trackers, and other nasty things.";
 "Removes anti-adblock warnings and other obtrusive messages." = "Removes anti-adblock warnings and other obtrusive messages.";
-"Filter that unblocks search ads in Google, DuckDuckGo, Bing, or Yahoo and self-promotion on websites." = "Filter that unblocks search ads in Google, DuckDuckGo, Bing, or Yahoo and self-promotion on websites.";
-"Filter designed to test certain hazardous filtering rules before they are added to the basic filters." = "Filter designed to test certain hazardous filtering rules before they are added to the basic filters.";
+"Filter that unblocks search ads in Google, DuckDuckGo, Bing, or Yahoo and self-promotion on websites." = "Unblocks search ads on Google, DuckDuckGo, Bing, and Yahoo, plus websites' self-promotion.";
+"Filter designed to test certain hazardous filtering rules before they are added to the basic filters." = "Tests riskier filtering rules before they're added to the main lists.";
 "Additional filter list for websites in Indonesian and Malay." = "Additional filter list for websites in Indonesian and Malay.";
-"EasyList Italy + AdGuard Italian filter. Filter list that specifically removes ads on websites in the Italian language." = "EasyList Italy + AdGuard Italian filter. Filter list that specifically removes ads on websites in the Italian language.";
-"Hufilter. Filter list that specifically removes ads, privacy threats, and security risks on websites in the Hungarian language." = "Hufilter. Filter list that specifically removes ads, privacy threats, and security risks on websites in the Hungarian language.";
-"The filterslist-KO Classic filter list for AdGuard blocks ads and disables anti-adblock scripts on Korean-language websites and apps." = "The filterslist-KO Classic filter list for AdGuard blocks ads and disables anti-adblock scripts on Korean-language websites and apps.";
-"Official Polish filters for AdBlock, uBlock Origin & AdGuard + AdGuard Polish filter. Filter list that specifically removes ads on websites in the Polish language." = "Official Polish filters for AdBlock, uBlock Origin & AdGuard + AdGuard Polish filter. Filter list that specifically removes ads on websites in the Polish language.";
+"EasyList Italy + AdGuard Italian filter. Filter list that specifically removes ads on websites in the Italian language." = "Blocks ads on Italian-language websites. Combines EasyList Italy and the AdGuard Italian filter.";
+"Hufilter. Filter list that specifically removes ads, privacy threats, and security risks on websites in the Hungarian language." = "Blocks ads, tracking, and security threats on Hungarian-language websites.";
+"The filterslist-KO Classic filter list for AdGuard blocks ads and disables anti-adblock scripts on Korean-language websites and apps." = "Blocks ads and anti-adblock scripts on Korean-language websites.";
+"Official Polish filters for AdBlock, uBlock Origin & AdGuard + AdGuard Polish filter. Filter list that specifically removes ads on websites in the Polish language." = "Blocks ads on Polish-language websites. Combines the official Polish filters and the AdGuard Polish filter.";
 "Privacy protection supplement for EasyList." = "Privacy protection supplement for EasyList.";
 "Filter for all known mobile ad networks. Useful for mobile devices." = "Filter for all known mobile ad networks. Useful for mobile devices.";
 

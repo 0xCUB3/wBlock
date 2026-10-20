@@ -161,7 +161,7 @@
 "Background Update Agent" = "Agent aktualizacji w tle";
 "Backup" = "Kopia zapasowa";
 "Local Backup" = "Lokalna kopia zapasowa";
-"Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "Kopia zapasowa z %@ (aplikacja v%@, %@ filtrów). Zastąpi to bieżące wybory filtrów, białą listę i reguły usuwacza elementów.";
+"Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "Kopia zapasowa z %@ (aplikacja v%@, %@ filtrów). Zastąpi to bieżące wybory filtrów, listę dozwolonych i reguły usuwacza elementów.";
 "Balanced defaults." = "Zrównoważone ustawienia domyślne.";
 "Base and mobile filters only." = "Tylko filtr podstawowy i mobilny.";
 "Base filter only." = "Tylko filtr podstawowy.";
@@ -587,7 +587,7 @@
 "Sync Now" = "Synchronizuj teraz";
 "Sync Timestamps with Device Time Zone" = "Synchronizuj znaczniki czasu ze strefą czasową urządzenia";
 "Sync Userscript Enabled States" = "Synchronizuj stany włączenia skryptów użytkownika";
-"Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "Synchronizuj wybrane filtry, listy niestandardowe, skrypty użytkownika i białą listę między urządzeniami.";
+"Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "Synchronizuj wybrane filtry, listy niestandardowe, skrypty użytkownika i listę dozwolonych między urządzeniami.";
 "Sync: Checking…" = "Synchronizacja: Sprawdzanie…";
 "Sync: Downloading…" = "Synchronizacja: Pobieranie…";
 "Sync: Error" = "Synchronizacja: Błąd";
@@ -619,7 +619,7 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "This list covers websites for Norway, Denmark, Iceland, Danish territories, and the Sami indigenous population." = "Ta lista obejmuje strony internetowe dotyczące Norwegii, Danii, Islandii, terytoriów duńskich i rdzennej ludności Lapończyków.";
 "This may take a while" = "To może chwilę potrwać";
 "This removes all settings for %@." = "Spowoduje to usunięcie wszystkich ustawień dla %@.";
-"This removes the whitelist entry, userscript exceptions, and zapper rules for %@." = "To usuwa wpis na białej liście, wyjątki skryptów użytkownika i reguły usuwacza dla %@.";
+"This removes the whitelist entry, userscript exceptions, and zapper rules for %@." = "To usuwa wpis na liście dozwolonych, wyjątki skryptów użytkownika i reguły usuwacza dla %@.";
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "To usunie wszystkie filtry, skrypty użytkownika i preferencje, a następnie ponownie uruchomi konfigurację początkową.";
 "This will reset all filters, userscripts, and preferences." = "To zresetuje wszystkie filtry, skrypty użytkownika i preferencje.";
 "Timed out" = "Przekroczono limit czasu";
@@ -716,9 +716,9 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Adds rules tailored to websites and languages from specific regions." = "Dodaje reguły dopasowane do stron i języków określonych regionów. Wybranie języków włącza wszystkie listy, które je obejmują. Listy zawarte już w regionalnej liście AdGuard nie występują w katalogu.";
 "The end of Safari ad-blocking B.S." = "Koniec bzdur związanych z blokowaniem reklam w Safari.";
 "Welcome to wBlock!" = "Witaj w wBlock!";
-"Whitelist" = "Biała lista";
-"Whitelist a site here, or adjust userscripts per site from the wBlock popup in Safari." = "Dodaj tutaj witrynę do białej listy albo dostosuj skrypty użytkownika dla poszczególnych witryn z okna wBlock w Safari.";
-"Whitelisted" = "Na białej liście";
+"Whitelist" = "Lista dozwolonych";
+"Whitelist a site here, or adjust userscripts per site from the wBlock popup in Safari." = "Dodaj tutaj witrynę do listy dozwolonych albo dostosuj skrypty użytkownika dla poszczególnych witryn z okna wBlock w Safari.";
+"Whitelisted" = "Dozwolona";
 "Wrap Lines" = "Zawijaj wiersze";
 "On" = "Wł.";
 "Off" = "Wył.";

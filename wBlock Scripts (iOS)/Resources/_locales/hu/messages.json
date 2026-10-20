@@ -27,6 +27,10 @@
     "message": "Koppints az oldalon egy elemre az elrejtéséhez. A kézi szelektorokhoz használd a „Szabály hozzáadása” opciót az elemeltávolítóban.",
     "description": "Help text shown in the popup for how to use the element zapper."
   },
+  "popup_hint_click_to_hide": {
+    "message": "Kattints az oldalon egy elemre az elrejtéséhez. A kézi szelektorokhoz használd a „Szabály hozzáadása” opciót az elemeltávolítóban.",
+    "description": "Help text shown in the popup on the Mac for how to use the element zapper."
+  },
   "popup_rules": {
     "message": "Szabályok",
     "description": "Label for the disclosure button that expands saved zapper rules."
@@ -115,6 +119,10 @@
     "message": "Elemeltávolító: koppints egy elemre az elrejtéshez.",
     "description": "Default status text in the in-page element zapper toolbar."
   },
+  "zapper_status_click_to_hide": {
+    "message": "Elemeltávolító: kattints egy elemre az elrejtéshez.",
+    "description": "Default status text in the in-page element zapper toolbar on the Mac."
+  },
   "zapper_button_undo": {
     "message": "Visszavonás",
     "description": "Button label to undo last zapper action."
@@ -194,6 +202,10 @@
   "zapper_status_refine": {
     "message": "$1 — ▲▼ a finomításhoz, koppints a(z) $2 gombra a mentéshez",
     "description": "Refine-mode status text. Placeholder 1 is element label and placeholder 2 is hide action label."
+  },
+  "zapper_status_refine_click": {
+    "message": "$1 — ▲▼ a finomításhoz, kattints a(z) $2 gombra a mentéshez",
+    "description": "Refine-mode status text on the Mac. Placeholder 1 is element label and placeholder 2 is hide action label."
   },
   "zapper_toast_unable_create_rule": {
     "message": "Ehhez az elemhez nem sikerült szabályt létrehozni.",

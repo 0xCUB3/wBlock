@@ -161,7 +161,7 @@
 "Background Update Agent" = "Agent de mise à jour en arrière-plan";
 "Backup" = "Sauvegarde";
 "Local Backup" = "Sauvegarde locale";
-"Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "Sauvegarde du %@ (app v%@, %@ filtres). Cela remplacera vos sélections de filtres actuelles, la liste blanche et les règles du zappeur d’éléments.";
+"Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "Sauvegarde du %@ (app v%@, %@ filtres). Cela remplacera vos sélections de filtres actuelles, la liste des sites autorisés et les règles du zappeur d’éléments.";
 "Balanced defaults." = "Paramètres par défaut équilibrés.";
 "Base and mobile filters only." = "Filtres de base et mobiles uniquement.";
 "Base filter only." = "Filtre de base uniquement.";
@@ -587,7 +587,7 @@
 "Sync Now" = "Synchroniser maintenant";
 "Sync Timestamps with Device Time Zone" = "Synchroniser les horodatages avec le fuseau horaire de l’appareil";
 "Sync Userscript Enabled States" = "Synchroniser les états d’activation des scripts utilisateur";
-"Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "Synchronisez vos sélections de filtres, listes personnalisées, scripts utilisateur et liste blanche entre vos appareils.";
+"Sync your filter selections, custom lists, userscripts, and whitelist across devices." = "Synchronisez vos sélections de filtres, listes personnalisées, scripts utilisateur et sites autorisés entre vos appareils.";
 "Sync: Checking…" = "Synchronisation : Vérification…";
 "Sync: Downloading…" = "Synchronisation : Téléchargement…";
 "Sync: Error" = "Synchronisation : Erreur";
@@ -619,7 +619,7 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "This list covers websites for Norway, Denmark, Iceland, Danish territories, and the Sami indigenous population." = "Cette liste couvre les sites web de la Norvège, du Danemark, de l'Islande, des territoires danois et de la population autochtone sami.";
 "This may take a while" = "Cela peut prendre un moment";
 "This removes all settings for %@." = "Tous les réglages de %@ seront supprimés.";
-"This removes the whitelist entry, userscript exceptions, and zapper rules for %@." = "Cela supprime l’entrée de la liste blanche, les exceptions de scripts utilisateur et les règles du zappeur pour %@.";
+"This removes the whitelist entry, userscript exceptions, and zapper rules for %@." = "Cela supprime l’entrée de la liste des sites autorisés, les exceptions de scripts utilisateur et les règles du zappeur pour %@.";
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "Cela supprimera tous les filtres, scripts utilisateur et préférences, puis relancera la configuration initiale.";
 "This will reset all filters, userscripts, and preferences." = "Cela réinitialisera tous les filtres, scripts utilisateur et préférences.";
 "Timed out" = "Délai dépassé";
@@ -716,9 +716,9 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Adds rules tailored to websites and languages from specific regions." = "Ajoute des règles adaptées aux sites web et aux langues de régions spécifiques. Choisir vos langues active toutes les listes qui les couvrent. Les listes déjà incluses dans une liste régionale AdGuard ne figurent pas dans le catalogue.";
 "The end of Safari ad-blocking B.S." = "Fini les absurdités du blocage publicitaire dans Safari.";
 "Welcome to wBlock!" = "Bienvenue dans wBlock !";
-"Whitelist" = "Liste blanche";
-"Whitelist a site here, or adjust userscripts per site from the wBlock popup in Safari." = "Ajoutez ici un site à la liste blanche, ou ajustez les scripts utilisateur par site depuis la fenêtre wBlock dans Safari.";
-"Whitelisted" = "Dans la liste blanche";
+"Whitelist" = "Sites autorisés";
+"Whitelist a site here, or adjust userscripts per site from the wBlock popup in Safari." = "Autorisez ici un site, ou ajustez les scripts utilisateur par site depuis la fenêtre wBlock dans Safari.";
+"Whitelisted" = "Autorisé";
 "Wrap Lines" = "Retour à la ligne";
 "On" = "Activé";
 "Off" = "Désactivé";
