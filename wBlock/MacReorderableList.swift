@@ -554,7 +554,8 @@ struct MacReorderableList: NSViewRepresentable {
         private func noteHeightsKeepingViewport(_ rows: IndexSet) {
             guard !rows.isEmpty, let outline, let clip = outline.enclosingScrollView?.contentView else { return }
             func endOrigin() -> NSPoint {
-                clip.constrainBoundsRect(NSRect(origin: NSPoint(x: clip.bounds.minX, y: .greatestFiniteMagnitude), size: clip.bounds.size)).origin
+                // A finite target: constrainBoundsRect sends an infinite one to the top.
+                clip.constrainBoundsRect(NSRect(origin: NSPoint(x: clip.bounds.minX, y: outline.frame.maxY), size: clip.bounds.size)).origin
             }
             let last = outline.numberOfRows - 1
             if clip.bounds.minY > 0, last >= 0, outline.rect(ofRow: last).maxY <= clip.bounds.maxY + 1 {
