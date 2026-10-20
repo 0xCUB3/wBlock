@@ -1,50 +1,61 @@
-:root, :root[data-color-scheme="light"] {
+/* System colors, so text, separators, and tints follow the system's
+   palette, Increase Contrast, and the Mac's accent color (#1018). The app's
+   Appearance setting pins the scheme through data-color-scheme. Safari on
+   the Mac has no grouped-background or fill system colors, so those keep
+   the values iOS uses for them. */
+:root {
   color-scheme: light dark;
   --background: #ffffff;
   --group: #ffffff;
-  --separator: rgba(60, 60, 67, 0.12);
-  --text: #000000;
-  --subtext: rgba(60, 60, 67, 0.64);
-  --accent: #007aff;
-  --accent-soft: rgba(0, 122, 255, 0.12);
   --fill: rgba(120, 120, 128, 0.16);
-  --switch-off: rgba(120, 120, 128, 0.16);
-  --danger: #ff3b30;
-  --danger-soft: rgba(255, 59, 48, 0.12);
+  --separator: -apple-system-separator;
+  --text: -apple-system-label;
+  --subtext: -apple-system-secondary-label;
+  --accent: -apple-system-blue;
+  --switch-off: var(--fill);
+  /* iOS switches are green; Mac switches take the accent color. */
+  --switch-on: -apple-system-green;
+  --danger: -apple-system-red;
+  --success: -apple-system-green;
+  --accent-soft: rgba(0, 122, 255, 0.14);
+  --danger-soft: rgba(255, 59, 48, 0.14);
+  --success-soft: rgba(52, 199, 89, 0.2);
+}
+
+@supports (color: AccentColor) {
+  :root { --accent: AccentColor; }
+}
+
+@supports (color: color-mix(in srgb, red 10%, transparent)) {
+  :root {
+    --accent-soft: color-mix(in srgb, var(--accent) 14%, transparent);
+    --danger-soft: color-mix(in srgb, var(--danger) 14%, transparent);
+    --success-soft: color-mix(in srgb, var(--success) 20%, transparent);
+  }
+}
+
+@media (pointer: fine) {
+  :root { --switch-on: var(--accent); }
+}
+
+:root[data-color-scheme="light"] { color-scheme: light; }
+:root[data-color-scheme="dark"] {
+  color-scheme: dark;
+  --background: #1c1c1e;
+  --group: #2c2c2e;
+  --fill: rgba(120, 120, 128, 0.32);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-color-scheme="light"]) {
     --background: #1c1c1e;
     --group: #2c2c2e;
-    --separator: rgba(84, 84, 88, 0.65);
-    --text: rgba(255, 255, 255, 0.92);
-    --subtext: rgba(235, 235, 245, 0.6);
-    --accent: #0a84ff;
-    --accent-soft: rgba(10, 132, 255, 0.18);
     --fill: rgba(120, 120, 128, 0.32);
-    --switch-off: rgba(120, 120, 128, 0.32);
-    --danger: #ff453a;
-    --danger-soft: rgba(255, 69, 58, 0.18);
   }
 
   :root:not([data-color-scheme="light"]) .app-icon {
     filter: invert(1);
   }
-}
-
-:root[data-color-scheme="dark"] {
-  --background: #1c1c1e;
-  --group: #2c2c2e;
-  --separator: rgba(84, 84, 88, 0.65);
-  --text: rgba(255, 255, 255, 0.92);
-  --subtext: rgba(235, 235, 245, 0.6);
-  --accent: #0a84ff;
-  --accent-soft: rgba(10, 132, 255, 0.18);
-  --fill: rgba(120, 120, 128, 0.32);
-  --switch-off: rgba(120, 120, 128, 0.32);
-  --danger: #ff453a;
-  --danger-soft: rgba(255, 69, 58, 0.18);
 }
 
 :root[data-color-scheme="dark"] .app-icon {
@@ -184,13 +195,13 @@ body {
 }
 
 .pill.is-active {
-  background: rgba(52, 199, 89, 0.22);
-  border-color: rgba(52, 199, 89, 0.45);
+  background: var(--success-soft);
+  border-color: var(--success);
 }
 
 .pill.is-disabled {
-  background: rgba(142, 142, 147, 0.22);
-  border-color: rgba(142, 142, 147, 0.5);
+  background: var(--fill);
+  border-color: var(--separator);
 }
 
 .pill.is-neutral {
@@ -317,7 +328,7 @@ body {
 }
 
 .switch input:checked + .slider {
-  background: var(--accent);
+  background: var(--switch-on);
   background-image: radial-gradient(circle 13.5px at 35.5px 15.5px, #ffffff 13.5px, transparent 14.5px);
 }
 
@@ -617,7 +628,7 @@ body {
 }
 
 .filter-update-status.is-success {
-  color: #248a3d;
+  color: var(--success);
 }
 
 .filter-update-status.is-error {
