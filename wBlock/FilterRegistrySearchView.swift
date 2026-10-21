@@ -96,6 +96,7 @@ struct FilterRegistrySearchSections: View {
     private func row(_ filter: FilterList, note: String?) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(verbatim: filter.localizedDisplayName)
+                .fontWeight(.medium)
             if !filter.localizedDisplayDescription.isEmpty {
                 Text(verbatim: filter.localizedDisplayDescription)
                     .font(.caption).foregroundStyle(.secondary).lineLimit(2)
