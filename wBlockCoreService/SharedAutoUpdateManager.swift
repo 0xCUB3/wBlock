@@ -2141,8 +2141,10 @@ public actor SharedAutoUpdateManager {
             throw AutoUpdateError.sharedContainerUnavailable
         }
         let disabledSites = await getDisabledSites()
+        let dataManager = await getDataManager()
+        let blockedCount = await MainActor.run { dataManager.isBlockedRequestCountEnabled }
         do {
-            let summary = try RemoveParamDNRRuleGenerator.saveRules(for: selectedFilters, disabledSites: disabledSites, groupIdentifier: GroupIdentifier.shared.value)
+            let summary = try RemoveParamDNRRuleGenerator.saveRules(for: selectedFilters, disabledSites: disabledSites, blockedCount: blockedCount, groupIdentifier: GroupIdentifier.shared.value)
             appendSharedLog("Prepared removeparam DNR rules: generated=\(summary.generatedRules) source=\(summary.removeParamRules) exceptions=\(summary.exceptionRules) skipped=\(summary.skippedRules) truncated=\(summary.truncatedRules)")
         } catch { appendSharedLog("Failed to prepare removeparam DNR rules: \(error.localizedDescription)") }
         let ordered = ContentBlockerMappingService.orderedForCompilation(selectedFilters)

@@ -46,8 +46,11 @@ message AppSettings {
   // UI state for filter page
   bool is_foreign_filters_expanded = 12;
 
-  // Badge counter setting
+  // Badge counter setting from the retired Safari App Extension. Unused.
   bool is_badge_counter_enabled = 13;
+
+  // Toolbar badge showing requests blocked on the current page.
+  bool blocked_request_count_enabled = 14;
 }
 
 // Filter list data structure

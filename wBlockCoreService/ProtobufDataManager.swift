@@ -175,6 +175,7 @@ private func mergeSettings(
     )
     mergeField(&local.isForeignFiltersExpanded, baseline: baseline.isForeignFiltersExpanded, persisted: persisted.isForeignFiltersExpanded)
     mergeField(&local.isBadgeCounterEnabled, baseline: baseline.isBadgeCounterEnabled, persisted: persisted.isBadgeCounterEnabled)
+    mergeField(&local.blockedRequestCountEnabled, baseline: baseline.blockedRequestCountEnabled, persisted: persisted.blockedRequestCountEnabled)
     mergeField(&local.unknownFields, baseline: baseline.unknownFields, persisted: persisted.unknownFields)
 }
 
@@ -891,6 +892,18 @@ public class ProtobufDataManager: ObservableObject {
     @MainActor
     public func setIsBadgeCounterEnabled(_ value: Bool) async {
         await updateData { $0.settings.isBadgeCounterEnabled = value }
+    }
+
+    /// Shows Safari's per-page count of requests blocked by wBlock's counting
+    /// DNR rules on the toolbar icon.
+    public var isBlockedRequestCountEnabled: Bool {
+        appData.settings.blockedRequestCountEnabled
+    }
+
+    @MainActor
+    @discardableResult
+    public func setBlockedRequestCountEnabled(_ enabled: Bool) async -> Bool {
+        await updateDataImmediately { $0.settings.blockedRequestCountEnabled = enabled }
     }
 
     // MARK: - Auto-Update Settings

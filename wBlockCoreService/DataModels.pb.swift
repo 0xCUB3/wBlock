@@ -290,8 +290,11 @@ nonisolated struct Wblock_Data_AppSettings: Sendable {
   /// UI state for filter page
   var isForeignFiltersExpanded: Bool = false
 
-  /// Badge counter setting
+  /// Badge counter setting from the retired Safari App Extension. Unused.
   var isBadgeCounterEnabled: Bool = false
+
+  /// Toolbar badge showing requests blocked on the current page.
+  var blockedRequestCountEnabled: Bool = false
 
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -1093,7 +1096,7 @@ nonisolated extension Wblock_Data_HostList: SwiftProtobuf.Message, SwiftProtobuf
 
 nonisolated extension Wblock_Data_AppSettings: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".AppSettings"
-  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}has_completed_onboarding\0\u{3}selected_blocking_level\0\u{3}last_update_check\0\u{3}show_advanced_features\0\u{3}app_version\0\u{3}last_terminology_sanitization_version\0\u{3}has_enabled_content_blockers\0\u{3}has_enabled_platform_extension\0\u{3}has_set_all_websites_permission\0\u{3}userscript_show_enabled_only\0\u{3}excluded_default_userscript_urls\0\u{3}is_foreign_filters_expanded\0\u{3}is_badge_counter_enabled\0")
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}has_completed_onboarding\0\u{3}selected_blocking_level\0\u{3}last_update_check\0\u{3}show_advanced_features\0\u{3}app_version\0\u{3}last_terminology_sanitization_version\0\u{3}has_enabled_content_blockers\0\u{3}has_enabled_platform_extension\0\u{3}has_set_all_websites_permission\0\u{3}userscript_show_enabled_only\0\u{3}excluded_default_userscript_urls\0\u{3}is_foreign_filters_expanded\0\u{3}is_badge_counter_enabled\0\u{3}blocked_request_count_enabled\0")
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1114,6 +1117,7 @@ nonisolated extension Wblock_Data_AppSettings: SwiftProtobuf.Message, SwiftProto
       case 11: try { try decoder.decodeRepeatedStringField(value: &self.excludedDefaultUserscriptUrls) }()
       case 12: try { try decoder.decodeSingularBoolField(value: &self.isForeignFiltersExpanded) }()
       case 13: try { try decoder.decodeSingularBoolField(value: &self.isBadgeCounterEnabled) }()
+      case 14: try { try decoder.decodeSingularBoolField(value: &self.blockedRequestCountEnabled) }()
       default: break
       }
     }
@@ -1159,6 +1163,9 @@ nonisolated extension Wblock_Data_AppSettings: SwiftProtobuf.Message, SwiftProto
     if self.isBadgeCounterEnabled != false {
       try visitor.visitSingularBoolField(value: self.isBadgeCounterEnabled, fieldNumber: 13)
     }
+    if self.blockedRequestCountEnabled != false {
+      try visitor.visitSingularBoolField(value: self.blockedRequestCountEnabled, fieldNumber: 14)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -1176,6 +1183,7 @@ nonisolated extension Wblock_Data_AppSettings: SwiftProtobuf.Message, SwiftProto
     if lhs.excludedDefaultUserscriptUrls != rhs.excludedDefaultUserscriptUrls {return false}
     if lhs.isForeignFiltersExpanded != rhs.isForeignFiltersExpanded {return false}
     if lhs.isBadgeCounterEnabled != rhs.isBadgeCounterEnabled {return false}
+    if lhs.blockedRequestCountEnabled != rhs.blockedRequestCountEnabled {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

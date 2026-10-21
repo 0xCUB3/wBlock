@@ -164,6 +164,9 @@ public enum WebExtensionRequestHandler {
             case "getRemoveParamDNRRules":
                 handleGetRemoveParamDNRRules(message: message!, context: context)
                 return
+            case "getBlockedCountDNRRules":
+                handleGetBlockedCountDNRRules(message: message!, context: context)
+                return
             case "reportRedirectDNRStatus":
                 handleReportRedirectDNRStatus(message: message!, context: context)
                 return
@@ -471,11 +474,13 @@ public enum WebExtensionRequestHandler {
 
             let selectedFilters = ProtobufDataManager.shared.getFilterLists().filter { $0.isSelected }
             let effectiveDisabledSites = await currentFilterDisabledSites()
+            let blockedCount = ProtobufDataManager.shared.isBlockedRequestCountEnabled
             Task.detached(priority: .utility) {
                 do {
                     _ = try RemoveParamDNRRuleGenerator.saveRules(
                         for: selectedFilters,
                         disabledSites: effectiveDisabledSites,
+                        blockedCount: blockedCount,
                         groupIdentifier: GroupIdentifier.shared.value
                     )
                 } catch {
@@ -561,11 +566,13 @@ public enum WebExtensionRequestHandler {
             // the popup under its timeout even on profiles with many selected filters.
             let selectedFilters = ProtobufDataManager.shared.getFilterLists().filter { $0.isSelected }
             let effectiveDisabledSites = await currentFilterDisabledSites()
+            let blockedCount = ProtobufDataManager.shared.isBlockedRequestCountEnabled
             Task.detached(priority: .utility) {
                 do {
                     _ = try RemoveParamDNRRuleGenerator.saveRules(
                         for: selectedFilters,
                         disabledSites: effectiveDisabledSites,
+                        blockedCount: blockedCount,
                         groupIdentifier: GroupIdentifier.shared.value
                     )
                 } catch {
@@ -685,6 +692,23 @@ public enum WebExtensionRequestHandler {
         }
         let response = createResponse(with: payload.mapValues { Optional($0) })
         context.completeRequest(returningItems: [response])
+    }
+
+    private static func handleGetBlockedCountDNRRules(message: [String: Any?], context: NSExtensionContext) {
+        let offset = message["offset"] as? Int ?? 0
+        let limit = message["limit"] as? Int ?? 50
+        Task { @MainActor in
+            await ProtobufDataManager.shared.waitUntilLoaded()
+            _ = await ProtobufDataManager.shared.refreshFromDiskIfModified(forceRead: true)
+            let payload = RemoveParamDNRRuleGenerator.loadBlockedCountRulesPayload(
+                groupIdentifier: GroupIdentifier.shared.value,
+                enabled: ProtobufDataManager.shared.isBlockedRequestCountEnabled && !BlockingPauseStore.isPaused(.filters),
+                offset: offset,
+                limit: limit
+            )
+            let response = createResponse(with: payload.mapValues { Optional($0) })
+            context.completeRequest(returningItems: [response])
+        }
     }
 
     /// Records whether wBlock Scripts serves its redirects, which decides

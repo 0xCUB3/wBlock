@@ -616,12 +616,14 @@ extension AppFilterManager {
         let warningThreshold = Int(Double(ruleLimit) * 0.8)  // 80% threshold
 
         let disabledSites = runSnapshot.disabledSites
+        let blockedCount = await MainActor.run { dataManager.isBlockedRequestCountEnabled }
         if await failApplyIfCancelled() { return }
         let removeParamDNRResult = await Task.detached(priority: .utility) {
             Result {
                 try RemoveParamDNRRuleGenerator.saveRules(
                     for: allSelectedFilters,
                     disabledSites: disabledSites,
+                    blockedCount: blockedCount,
                     groupIdentifier: GroupIdentifier.shared.value
                 )
             }

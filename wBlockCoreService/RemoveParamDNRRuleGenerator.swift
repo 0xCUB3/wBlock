@@ -239,9 +239,12 @@ public enum RemoveParamDNRRuleGenerator {
         return (rules, summary)
     }
 
+    /// `blockedCount` writes the blocked-request count's rules; otherwise
+    /// their file is emptied.
     public static func saveRules(
         for filters: [FilterList],
         disabledSites: [String],
+        blockedCount: Bool,
         groupIdentifier: String
     ) throws -> Summary {
         guard let containerURL = FileManager.default.containerURL(
@@ -261,6 +264,10 @@ public enum RemoveParamDNRRuleGenerator {
             disabledSites: disabledSites
         )
         try saveRules(generated.rules, groupIdentifier: groupIdentifier)
+        let blockedCountRules = blockedCount
+            ? generateBlockedCountRules(from: extracted.blockedCount, disabledSites: disabledSites)
+            : []
+        try saveBlockedCountRules(blockedCountRules, containerURL: containerURL)
         let carveOuts = saveRedirectCarveOuts(for: generated.rules, containerURL: containerURL)
         let summary = Summary(
             generatedRules: generated.summary.generatedRules,
@@ -275,7 +282,7 @@ public enum RemoveParamDNRRuleGenerator {
         )
         os_log(
             .info,
-            "Saved %d DNR rules (%d source removeparam, %d exceptions, %d skipped, %d truncated, %d disabled-site allow rules, %d resource redirects, %d native carve-outs)",
+            "Saved %d DNR rules (%d source removeparam, %d exceptions, %d skipped, %d truncated, %d disabled-site allow rules, %d resource redirects, %d native carve-outs, %d blocked-count rules)",
             summary.generatedRules,
             summary.removeParamRules,
             summary.exceptionRules,
@@ -283,7 +290,8 @@ public enum RemoveParamDNRRuleGenerator {
             summary.truncatedRules,
             summary.disabledSiteAllowRules,
             summary.resourceRedirectRules,
-            summary.redirectCarveOuts
+            summary.redirectCarveOuts,
+            blockedCountRules.count
         )
         return summary
     }
@@ -299,6 +307,9 @@ public enum RemoveParamDNRRuleGenerator {
         var fingerprint: String
         var lines: String
         var redirectLines: String
+        /// Missing in caches written before the blocked-request count.
+        var blockedCountLines: String?
+        var blockedCountFormat: Int?
     }
 
     private static let extractionCacheFilename = "dnr-extraction-cache.json"
@@ -307,7 +318,7 @@ public enum RemoveParamDNRRuleGenerator {
     static func extractedDNRSourceRules(
         for filters: [FilterList],
         containerURL: URL
-    ) -> (removeParam: String, redirectSources: [String]) {
+    ) -> (removeParam: String, redirectSources: [String], blockedCount: String) {
         try? FileManager.default.removeItem(
             at: containerURL.appendingPathComponent(legacyExtractionCacheFilename)
         )
@@ -319,6 +330,7 @@ public enum RemoveParamDNRRuleGenerator {
         }
 
         var combined = ""
+        var blockedCount = ""
         var redirectSources = RedirectFeed.sources(for: filters)
         var updated: [String: ExtractionEntry] = [:]
         var cacheChanged = false
@@ -332,19 +344,23 @@ public enum RemoveParamDNRRuleGenerator {
             let fingerprint = fileFingerprint(at: sourceURL) ?? "missing"
 
             let entry: ExtractionEntry
-            if let cached = cache[key], cached.fingerprint == fingerprint {
+            if let cached = cache[key], cached.fingerprint == fingerprint,
+               cached.blockedCountFormat == blockedCountExtractionFormat {
                 entry = cached
             } else {
                 guard let contents = try? String(contentsOf: sourceURL, encoding: .utf8) else { continue }
                 entry = ExtractionEntry(
                     fingerprint: fingerprint,
                     lines: extractRemoveParamLines(from: contents),
-                    redirectLines: extractRedirectLines(from: contents)
+                    redirectLines: extractRedirectLines(from: contents),
+                    blockedCountLines: extractBlockedCountLines(from: contents),
+                    blockedCountFormat: blockedCountExtractionFormat
                 )
                 cacheChanged = true
             }
             updated[key] = entry
             combined.append(entry.lines)
+            blockedCount.append(entry.blockedCountLines ?? "")
             if !entry.redirectLines.isEmpty { redirectSources.append(entry.redirectLines) }
         }
 
@@ -353,7 +369,7 @@ public enum RemoveParamDNRRuleGenerator {
                 try? data.write(to: cacheURL, options: .atomic)
             }
         }
-        return (combined, redirectSources)
+        return (combined, redirectSources, blockedCount)
     }
 
     static func extractRemoveParamLines(from contents: String) -> String {
@@ -382,6 +398,7 @@ public enum RemoveParamDNRRuleGenerator {
             forSecurityApplicationGroupIdentifier: groupIdentifier
         ) {
             _ = saveRedirectCarveOuts(for: rules, containerURL: containerURL)
+            try saveBlockedCountRules([], containerURL: containerURL)
         }
         return Summary(
             generatedRules: 0,
@@ -525,7 +542,8 @@ public enum RemoveParamDNRRuleGenerator {
             return BuildResult(rule: nil, wasRemoveParamRule: true, wasExceptionRule: parsed.isException, skipped: true)
         }
 
-        let priority = parsed.isException ? 10_000 : (options.contains("important") ? 1_000 : 1)
+        // Priority 1 belongs to the blocked-request count's rules.
+        let priority = parsed.isException ? 10_000 : (options.contains("important") ? 1_000 : 2)
         let action: RuleAction
         if parsed.isException {
             action = RuleAction(type: "allow", redirect: nil)
@@ -825,7 +843,7 @@ public enum RemoveParamDNRRuleGenerator {
         return sha256Hex(data: data)
     }
 
-    private static func sha256Hex(data: Data) -> String {
+    static func sha256Hex(data: Data) -> String {
         let digest = SHA256.hash(data: data)
         return digest.map { String(format: "%02x", $0) }.joined()
     }

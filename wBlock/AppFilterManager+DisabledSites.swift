@@ -49,6 +49,23 @@ extension AppFilterManager {
         )
     }
 
+    /// Rewrites the DNR rule files from the lists already on disk, so a
+    /// blocked-request count change applies before the next apply.
+    func refreshDNRRules() async {
+        guard !BlockingPauseStore.isPaused(.filters) else { return }
+        let selectedFilters = filterLists.filter { $0.isSelected }
+        let disabledSites = effectiveFilterDisabledSites()
+        let blockedCount = dataManager.isBlockedRequestCountEnabled
+        await Task.detached(priority: .utility) {
+            _ = try? RemoveParamDNRRuleGenerator.saveRules(
+                for: selectedFilters,
+                disabledSites: disabledSites,
+                blockedCount: blockedCount,
+                groupIdentifier: GroupIdentifier.shared.value
+            )
+        }.value
+    }
+
     /// Checks for changes in disabled sites and triggers fast rebuild if needed
     @MainActor
     func checkForDisabledSitesChanges() async {

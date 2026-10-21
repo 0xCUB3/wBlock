@@ -26761,9 +26761,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   // navigator.globalPrivacyControl, so the property never claims a header
   // Safari is not sending. WebKit skips main-frame requests when a rule lists
   // no resource types, and ignores the whole rule when "object" is listed.
+  // Priority 1 belongs to the blocked-request count's allow and block rules.
   const GPC_RULE = {
     id: 1700000,
-    priority: 1,
+    priority: 2,
     action: { type: "modifyHeaders", requestHeaders: [{ header: "Sec-GPC", operation: "set", value: "1" }] },
     condition: { resourceTypes: ["main_frame", "sub_frame", "stylesheet", "script", "image", "font", "xmlhttprequest", "ping", "media", "websocket", "other"] }
   };
@@ -26786,14 +26787,18 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       const response = await readNativeRecently({ action: "getGlobalPrivacyControlState" }).catch(() => null);
       if (!response || typeof response.enabled !== "boolean") return;
       const ids = [GPC_SCRIPT.id];
-      const ruleInstalled = (await dnr.getDynamicRules()).some(rule => rule && rule.id === GPC_RULE.id);
+      const installedRule = (await dnr.getDynamicRules()).find(rule => rule && rule.id === GPC_RULE.id);
+      const ruleInstalled = !!installedRule;
       const scriptLoaded = (await browser.scripting.getRegisteredContentScripts({ ids })).length > 0;
       if (!response.enabled) {
         if (scriptLoaded) await browser.scripting.unregisterContentScripts({ ids });
         if (ruleInstalled) await dnr.updateDynamicRules({ removeRuleIds: [GPC_RULE.id] });
         return;
       }
-      if (!ruleInstalled) await dnr.updateDynamicRules({ addRules: [GPC_RULE] });
+      // Builds before the blocked-request count installed it at priority 1.
+      if (!ruleInstalled || installedRule.priority !== GPC_RULE.priority) {
+        await dnr.updateDynamicRules({ removeRuleIds: ruleInstalled ? [GPC_RULE.id] : [], addRules: [GPC_RULE] });
+      }
       if (!scriptLoaded) await browser.scripting.registerContentScripts([GPC_SCRIPT]);
     }).catch(error => console.warn("[wBlock] Global Privacy Control setup failed:", error));
     return gpcSync;
@@ -27384,6 +27389,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   const canSetActionBadgeText = typeof browser !== "undefined" && !!(browser.action && browser.action.setBadgeText);
   const canSetActionBadgeBackgroundColor = typeof browser !== "undefined" && !!(browser.action && browser.action.setBadgeBackgroundColor);
   const canObserveTabs = typeof browser !== "undefined" && !!browser.tabs;
+  const canDisplayActionCount = typeof browser !== "undefined" && !!(browser.declarativeNetRequest && browser.declarativeNetRequest.setExtensionActionOptions);
   const supportStateByTab = new Map();
   const actionSyncGenerationByTab = new Map();
   const menuCommandsByTab = new Map();
@@ -27646,7 +27652,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     if (canSetActionBadgeText) {
       updates.push(browser.action.setBadgeText({
         tabId: tab.id,
-        text: blockingPaused ? "II" : ""
+        // null, not "": any custom text hides Safari's blocked-request count.
+        text: blockingPaused ? "II" : (canDisplayActionCount ? null : "")
       }).catch(error => {
         console.warn("[wBlock] Failed to update action badge:", error);
       }));
@@ -27811,6 +27818,56 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   let removeParamDNRRulesCache = null;
   let removeParamDNRVersion = "";
   let lastRemoveParamDNRCheck = 0;
+  // Copies of whole-host filter-list blocks. Safari counts them on the
+  // toolbar badge even when a content blocker blocked the same request.
+  const BLOCKED_COUNT_DNR_CHUNK_SIZE = 1000;
+  const BLOCKED_COUNT_DNR_ID_BASE = 1660000;
+  const BLOCKED_COUNT_DNR_ID_LIMIT = 1700000;
+  // WebKit compiles every DNR rule into one content rule list capped at
+  // 150,000 rules, and an overflow fails the whole list. It emits one rule per
+  // request domain or excluded request domain, so budget by that.
+  const DNR_TRANSLATED_RULE_BUDGET = 120000;
+  const translatedRuleCost = rule => {
+    const condition = (rule && rule.condition) || {};
+    const domains = Array.isArray(condition.requestDomains) ? condition.requestDomains.length : 0;
+    const excluded = Array.isArray(condition.excludedRequestDomains) ? condition.excludedRequestDomains.length : 0;
+    return Math.max(1, domains) + excluded;
+  };
+  let blockedCountDNRRulesCache = null;
+  const loadBlockedCountDNRRules = async () => {
+    const rules = [];
+    let header = null;
+    for (let offset = 0; !header || offset < header.count; offset = rules.length) {
+      const chunk = await sendQueuedNativeMessage({
+        action: "getBlockedCountDNRRules",
+        offset,
+        limit: BLOCKED_COUNT_DNR_CHUNK_SIZE
+      });
+      if (!chunk || chunk.ok !== true) {
+        throw new Error(chunk && chunk.error ? chunk.error : `Failed to load blocked-count DNR rules at ${offset}`);
+      }
+      const version = String(chunk.version || "");
+      if (!header) {
+        header = { enabled: chunk.enabled === true, version, count: Math.max(0, Number(chunk.count) || 0) };
+        const cached = blockedCountDNRRulesCache;
+        if (cached && cached.enabled === header.enabled && cached.version === version && cached.rules.length === header.count) {
+          return cached;
+        }
+      } else if (version !== header.version) {
+        throw new Error(`Blocked-count DNR rules changed while loading at ${offset}`);
+      }
+      if (header.count === 0) break;
+      if (!Array.isArray(chunk.rules) || chunk.rules.length === 0) {
+        throw new Error(`Blocked-count DNR rules ended early at ${offset}`);
+      }
+      rules.push(...chunk.rules);
+    }
+    if (rules.length !== header.count) {
+      throw new Error(`Blocked-count DNR rule count mismatch: expected ${header.count}, got ${rules.length}`);
+    }
+    blockedCountDNRRulesCache = { ...header, rules };
+    return blockedCountDNRRulesCache;
+  };
   const loadRemoveParamDNRRules = async () => {
     const firstChunk = await sendQueuedNativeMessage({
       action: "getRemoveParamDNRRules",
@@ -27965,7 +28022,8 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       ? await browser.declarativeNetRequest.getDynamicRules()
       : [];
     const trackedRules = dynamicRules.filter(rule => rule && rule.id >= ruleIdBase && rule.id < ruleIdLimit);
-    const unrelatedDynamicCount = Math.max(0, dynamicRules.length - trackedRules.length);
+    const trackedCountRules = dynamicRules.filter(rule => rule && rule.id >= BLOCKED_COUNT_DNR_ID_BASE && rule.id < BLOCKED_COUNT_DNR_ID_LIMIT);
+    const unrelatedDynamicCount = Math.max(0, dynamicRules.length - trackedRules.length - trackedCountRules.length);
     const sessionRules = typeof browser.declarativeNetRequest.getSessionRules === "function"
       ? await browser.declarativeNetRequest.getSessionRules()
       : [];
@@ -27979,23 +28037,91 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     const installRules = protectiveRules.length > availableCapacity
       ? []
       : protectiveRules.concat(redirectRules.slice(0, availableCapacity - protectiveRules.length));
+    // The count needs Safari 16.4's action count and modern rule conditions.
+    // A failed load keeps whatever counting rules are already installed.
+    let blockedCount = null;
+    if (canDisplayActionCount && Number(browser.declarativeNetRequest.MAX_NUMBER_OF_DYNAMIC_AND_SESSION_RULES) > 0) {
+      blockedCount = await loadBlockedCountDNRRules().catch(error => {
+        console.warn("[wBlock] Failed to load blocked-count DNR rules:", error);
+        return null;
+      });
+    }
+    // Dropping counting rules only lowers the count, so they get what is left
+    // of both the dynamic-rule quota and WebKit's compiled-rule budget.
+    // WebKit's quota check counts the installed dynamic rules twice (current
+    // plus updated), so the counting rules may only fill the quota minus
+    // twice the others; that keeps every step below within the check.
+    const otherDynamicCount = unrelatedDynamicCount + installRules.length;
+    const countCapacity = Math.max(0, reportedLimit - sessionRules.length - 2 * otherDynamicCount - 100);
+    let translatedRemaining = DNR_TRANSLATED_RULE_BUDGET
+      - installRules.concat(sessionRules, dynamicRules.filter(rule => rule && !(rule.id >= ruleIdBase && rule.id < ruleIdLimit)
+        && !(rule.id >= BLOCKED_COUNT_DNR_ID_BASE && rule.id < BLOCKED_COUNT_DNR_ID_LIMIT)))
+        .reduce((sum, rule) => sum + translatedRuleCost(rule), 0);
+    let installCountRules = !blockedCount ? trackedCountRules : [];
+    if (blockedCount && blockedCount.enabled) {
+      // Allows carry the filter-list exceptions. Without all of them a copy
+      // could block what the content blockers allow, so then copy nothing.
+      const allows = blockedCount.rules.filter(rule => rule && rule.action && rule.action.type === "allow");
+      const allowCost = allows.reduce((sum, rule) => sum + translatedRuleCost(rule), 0);
+      if (allows.length <= countCapacity && allowCost <= translatedRemaining) {
+        installCountRules = allows.slice();
+        translatedRemaining -= allowCost;
+        for (const rule of blockedCount.rules) {
+          if (installCountRules.length >= countCapacity) break;
+          if (!rule || !rule.action || rule.action.type === "allow") continue;
+          const cost = translatedRuleCost(rule);
+          if (cost > translatedRemaining) continue;
+          translatedRemaining -= cost;
+          installCountRules.push(rule);
+        }
+      }
+    }
+    const countVersion = blockedCount ? `${blockedCount.enabled}:${blockedCount.version}` : null;
     const storedState = stored && stored[REMOVE_PARAM_DNR_STORAGE_KEY];
-    if (storedState && typeof storedState === "object"
-        && storedState.version === version
-        && storedState.count === installRules.length
-        && trackedRules.length === installRules.length) {
+    const removeParamCurrent = storedState && typeof storedState === "object"
+      && storedState.version === version
+      && storedState.count === installRules.length
+      && trackedRules.length === installRules.length;
+    const countCurrent = !blockedCount || (storedState && typeof storedState === "object"
+      && storedState.countVersion === countVersion
+      && storedState.countCount === installCountRules.length
+      && trackedCountRules.length === installCountRules.length);
+    if (blockedCount) {
+      await browser.declarativeNetRequest.setExtensionActionOptions({
+        displayActionCountAsBadgeText: blockedCount.enabled
+      }).catch(error => console.warn("[wBlock] Failed to set action count display:", error));
+    }
+    if (removeParamCurrent && countCurrent) {
       await reportRedirectDNRStatus(trackedRules);
       return;
     }
-    const removeRuleIds = trackedRules.map(rule => rule.id);
-    // One API call is one atomic ruleset replacement: validation/quota failure
-    // leaves the previous complete set installed instead of a partial prefix.
-    await browser.declarativeNetRequest.updateDynamicRules({
-      removeRuleIds,
-      addRules: installRules
-    });
+    // Counting rules come off first and go back on last: with them
+    // installed, WebKit's doubled quota check would reject the removeparam
+    // swap. Only the count is briefly missing in between.
+    const replaceCountRules = !countCurrent || (!removeParamCurrent && trackedCountRules.length > 0);
+    if (replaceCountRules && trackedCountRules.length > 0) {
+      await browser.declarativeNetRequest.updateDynamicRules({
+        removeRuleIds: trackedCountRules.map(rule => rule.id)
+      });
+    }
+    if (!removeParamCurrent) {
+      // One API call is one atomic ruleset replacement: validation/quota failure
+      // leaves the previous complete set installed instead of a partial prefix.
+      await browser.declarativeNetRequest.updateDynamicRules({
+        removeRuleIds: trackedRules.map(rule => rule.id),
+        addRules: installRules
+      });
+    }
+    if (replaceCountRules && installCountRules.length > 0) {
+      await browser.declarativeNetRequest.updateDynamicRules({ addRules: installCountRules });
+    }
     await browser.storage.local.set({
-      [REMOVE_PARAM_DNR_STORAGE_KEY]: { version, count: installRules.length }
+      [REMOVE_PARAM_DNR_STORAGE_KEY]: {
+        version,
+        count: installRules.length,
+        countVersion: countVersion !== null ? countVersion : storedState && storedState.countVersion,
+        countCount: installCountRules.length
+      }
     });
     await reportRedirectDNRStatus(installRules);
   };

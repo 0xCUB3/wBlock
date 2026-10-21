@@ -35,6 +35,7 @@ struct SettingsView: View {
     @State private var showingSyncAdoptPrompt = false
     @State private var syncAdoptTimestamp: String?
     @State private var showingRuleCapacity = false
+    @State private var showingBlockedCountWarning = false
     @State private var scrollTarget: SettingsSection?
     @AppStorage(AppAppearance.storageKey) private var appearance = AppAppearance.system
     #if os(iOS)
@@ -92,6 +93,17 @@ struct SettingsView: View {
             Button("Restore") { performRestore() }
         } message: { backup in
             Text(backup.restoreConfirmation)
+        }
+        .alert("Turn On Blocked Request Count?", isPresented: $showingBlockedCountWarning) {
+            Button("Cancel", role: .cancel) {}
+            Button("Turn On") {
+                Task {
+                    await dataManager.setBlockedRequestCountEnabled(true)
+                    await filterManager.refreshDNRRules()
+                }
+            }
+        } message: {
+            Text("Safari doesn't tell extensions what content blockers block. To get a count, wBlock copies the filter rules that block one domain or a path on it (like ||example.com^ or ||example.com/ads/) into Safari's declarativeNetRequest engine, and Safari counts how often they match. Rules that can match any domain or only apply on certain sites aren't counted, and neither are hidden page elements. Safari also limits how many rules an extension can have, so with many filter lists some are left out. Blocking doesn't change, but the number will probably be a lot lower than you're used to. It counts requests, so a tracker that loads five times counts as five.")
         }
         .alert("Backup", isPresented: $showingBackupStatus) {
             Button("OK") {}
@@ -235,6 +247,12 @@ struct SettingsView: View {
                         + Text(" ") + Text(gpcLearnMore)
                 )
             }
+            Toggle(isOn: blockedRequestCountBinding) {
+                rowLabel(
+                    "Blocked Request Count",
+                    detail: Text("Shows on the toolbar icon how many requests wBlock blocked on the current page. Only some blocks are counted.")
+                )
+            }
             appearancePicker
             #if os(iOS)
             if PortraitOrientationLock.isAvailable {
@@ -284,6 +302,22 @@ struct SettingsView: View {
         Binding(
             get: { dataManager.isGlobalPrivacyControlEnabled },
             set: { enabled in Task { await dataManager.setGlobalPrivacyControlEnabled(enabled) } }
+        )
+    }
+
+    private var blockedRequestCountBinding: Binding<Bool> {
+        Binding(
+            get: { dataManager.isBlockedRequestCountEnabled },
+            set: { enabled in
+                if enabled {
+                    showingBlockedCountWarning = true
+                } else {
+                    Task {
+                        await dataManager.setBlockedRequestCountEnabled(false)
+                        await filterManager.refreshDNRRules()
+                    }
+                }
+            }
         )
     }
 
