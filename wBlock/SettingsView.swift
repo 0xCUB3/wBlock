@@ -384,6 +384,9 @@ struct SettingsView: View {
         }
         #if os(macOS)
         .padding(.vertical, 4)
+        // The form lines its switch or button up with the label's first
+        // baseline, which pinned it to the title of a two-line row (#1027).
+        .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] }
         #endif
     }
 

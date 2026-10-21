@@ -378,9 +378,14 @@ struct InlineGlassSearchField: View {
         Button(action: expandAndFocus) {
             Label(prompt, systemImage: "magnifyingglass")
                 .labelStyle(.iconOnly)
+                // Sized and tinted like the magnifier in a system search field
+                // while open, and like the toolbar button it turns back into
+                // while closing, so the swap doesn't jump in size (#1027).
+                // A scale, not an image scale, so the glyph grows instead of crossfading.
+                .imageScale(.large)
+                .scaleEffect(isExpanded ? 0.78 : 1)
                 .fixedSize()
-                // Sized and tinted like the magnifier in a system search field.
-                .foregroundStyle(.secondary)
+                .foregroundStyle(isExpanded ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
                 .contentTransition(.identity)
                 .frame(width: 20, height: 36)
                 .padding(.horizontal, 8)
