@@ -866,7 +866,7 @@ async function getBlockingPausedState() {
         return response;
     } catch (error) {
         console.error('[wBlock] Failed to get pause state:', error);
-        return null;
+        return { error: String((error && error.message) || error) };
     }
 }
 
@@ -1897,9 +1897,10 @@ async function refreshUi() {
         contentScriptReachablePromise,
         noAutoplayStatePromise,
     ]);
-    if (pauseState === null) {
+    if (pauseState.error !== undefined) {
         setStatus(t('popup_status_error', undefined, 'Error'), 'disabled');
-        setError(t('popup_error_load_popup', undefined, 'Failed to load popup.'));
+        // The raw reason is what tells a support screenshot apart from #896.
+        setError(`${t('popup_error_load_popup', undefined, 'Failed to load popup.')} (${pauseState.error})`);
         if (disableToggle) disableToggle.disabled = true;
         if (zapperEnabledToggle) zapperEnabledToggle.disabled = true;
         if (zapperActivate) zapperActivate.disabled = true;

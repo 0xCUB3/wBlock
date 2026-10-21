@@ -26821,8 +26821,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       // Safari 17 sends popup messages as { origin: "null" } with no URL (#896).
       const isPopupSender = sender && !sender.tab && (sender.url === browser.runtime.getURL("pages/popup/popup.html")
           || (sender.url === undefined && sender.origin === "null" && sender.frameId === undefined));
-      if (!isPopupSender
-          || !nativeRequest || !allowedActions.has(nativeRequest.action)) {
+      if (!isPopupSender) {
+        // Echo the sender's shape so a popup error screenshot shows what Safari sent.
+        const shape = sender ? { tab: Boolean(sender.tab), url: sender.url, origin: sender.origin, frameId: sender.frameId } : null;
+        return { ok: false, error: `Invalid popup sender ${JSON.stringify(shape)}` };
+      }
+      if (!nativeRequest || !allowedActions.has(nativeRequest.action)) {
         return { ok: false, error: "Invalid popup native request" };
       }
       try {
@@ -28307,6 +28311,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         if (active) injectNoAutoplay({ tabId: sender.tab.id, frameIds: [sender.frameId] });
       }, () => {});
     }
-    return handleMessages(request, sender);
+    // Safari 17 drops a reply whose promise has already settled when the listener returns.
+    return Promise.resolve().then(() => handleMessages(request, sender));
   });
 })(browser);
