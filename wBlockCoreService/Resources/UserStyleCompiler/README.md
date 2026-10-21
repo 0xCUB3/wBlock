@@ -15,7 +15,7 @@ Supported metadata preprocessors are empty/default, `uso`, `less`, and `stylus`.
 
 ## Packaging and verification
 
-`wBlockCoreService` supports macOS and iOS, including the iOS app running in Apple Vision compatibility mode; it is not a native xrOS target. Xcode's synchronized resource group may flatten these directories in a built framework, so runtime lookup checks `UserStyleCompiler/` and then the framework root. Runtime basenames are unique. The packaged-framework test in `scripts/test_issue_511_preprocessors.sh` executes both runtimes from the built product.
+`wBlockCoreService` supports macOS and iOS, including the iOS app running in Apple Vision compatibility mode; it is not a native xrOS target. Xcode's synchronized resource group may flatten these directories in a built framework, so runtime lookup checks `UserStyleCompiler/` and then the framework root. Runtime basenames are unique. The packaged-framework test in `scripts/test_issue_511_packaged_compilers.swift` executes both runtimes from the built product.
 
 Verify the checked-in source artifacts in place:
 

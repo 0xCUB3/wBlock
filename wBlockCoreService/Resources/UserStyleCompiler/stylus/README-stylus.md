@@ -11,7 +11,7 @@ The original generation record used exact npm versions, the official tarball, of
 The integration tests run the artifact through the app's WebKit Worker host and cover variables, nesting, standard color helpers, CSS filters and URLs, syntax errors, import rejection, timeout recovery, and denied Worker capabilities:
 
 ```sh
-WBLOCK_CORE_PRODUCTS="/path/to/signed/Debug" scripts/test_issue_511_preprocessors.sh
+scripts/run-ci-tests.sh --native
 ```
 
 Verify every file shipped from this directory with `shasum -a 256 -c SHA256SUMS-stylus`.

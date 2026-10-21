@@ -15,15 +15,23 @@ concurrency:
 
 env:
   DERIVED_DATA: ${{ github.workspace }}/.derived-data
+  # Content-addressed compiler outputs survive the fresh mtimes of every
+  # checkout, unlike Xcode's incremental build state. Only the cache and the
+  # package checkouts are carried between runs.
+  CACHED_BUILD_PATHS: |
+    .derived-data/CompilationCache.noindex
+    .derived-data/SourcePackages
 
 jobs:
   checks:
     runs-on: xcode-27
     timeout-minutes: 5
     outputs:
+      javascript: ${{ steps.plan.outputs.javascript }}
       native: ${{ steps.plan.outputs.native }}
       build: ${{ steps.plan.outputs.build }}
       sheet_ui: ${{ steps.plan.outputs.sheet_ui }}
+      cache_month: ${{ steps.period.outputs.month }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -45,8 +53,21 @@ jobs:
       - name: Check CI routing
         run: python3 -m unittest discover -s scripts -p test_ci_plan.py
 
+      - name: Name the cache period
+        id: period
+        # Starting each month from an empty cache bounds its growth.
+        run: echo "month=$(date -u +%Y-%m)" >> "$GITHUB_OUTPUT"
+
+  javascript:
+    needs: checks
+    if: needs.checks.outputs.javascript == 'true'
+    runs-on: xcode-27
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
       - name: Run JavaScript regressions
-        if: steps.plan.outputs.javascript == 'true'
         run: bash scripts/run-ci-tests.sh --javascript
 
   tests:
@@ -58,21 +79,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Fetch main
-        run: git fetch --no-tags --depth=1 origin main
-
-      - name: Restore core build cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Restore compilation cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: .derived-data
-          key: core-debug-${{ runner.os }}-${{ hashFiles('wBlock.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved', 'wBlockCoreService/**', 'wBlock.xcodeproj/project.pbxproj') }}
-          restore-keys: |
-            core-debug-${{ runner.os }}-
+          path: ${{ env.CACHED_BUILD_PATHS }}
+          key: cas-core-${{ needs.checks.outputs.cache_month }}-${{ github.run_id }}
+          restore-keys: cas-core-${{ needs.checks.outputs.cache_month }}-
 
       - name: Run native regressions
         env:
           WBLOCK_DERIVED_DATA: ${{ env.DERIVED_DATA }}
         run: scripts/run-ci-tests.sh --native
+
+      - name: Save compilation cache
+        if: success() && github.ref == 'refs/heads/main'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.CACHED_BUILD_PATHS }}
+          key: cas-core-${{ needs.checks.outputs.cache_month }}-${{ github.run_id }}
 
   sheet-ui:
     needs: checks
@@ -127,24 +151,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Restore build cache
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      - name: Restore compilation cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: .derived-data
-          key: app-release-${{ matrix.name }}-${{ hashFiles('wBlock.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved', 'wBlock.xcodeproj/project.pbxproj') }}-${{ github.sha }}
-          restore-keys: |
-            app-release-${{ matrix.name }}-${{ hashFiles('wBlock.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved', 'wBlock.xcodeproj/project.pbxproj') }}-
-            app-release-${{ matrix.name }}-
+          path: ${{ env.CACHED_BUILD_PATHS }}
+          key: cas-release-${{ matrix.name }}-${{ needs.checks.outputs.cache_month }}-${{ github.run_id }}
+          restore-keys: cas-release-${{ matrix.name }}-${{ needs.checks.outputs.cache_month }}-
 
       - name: Build Release
         run: |
           set -o pipefail
+          # Release uploads still build both architectures; compile errors
+          # show up in one.
           xcodebuild \
             -project wBlock.xcodeproj \
             -scheme wBlock \
             -configuration Release \
             -destination '${{ matrix.destination }}' \
             -derivedDataPath "$DERIVED_DATA" \
+            ARCHS=arm64 \
+            COMPILATION_CACHE_ENABLE_CACHING=YES \
             CODE_SIGNING_ALLOWED=NO \
             build 2>&1 | tee "$RUNNER_TEMP/build.log"
           # Swift 5 mode only warns when code uses an API newer than the
@@ -153,3 +179,10 @@ jobs:
             echo "::error::Code needs a newer OS than the deployment target (see warnings above)."
             exit 1
           fi
+
+      - name: Save compilation cache
+        if: success() && github.ref == 'refs/heads/main'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.CACHED_BUILD_PATHS }}
+          key: cas-release-${{ matrix.name }}-${{ needs.checks.outputs.cache_month }}-${{ github.run_id }}

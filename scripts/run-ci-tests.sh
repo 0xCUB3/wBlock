@@ -34,17 +34,25 @@ if [[ -z "${WBLOCK_DERIVED_DATA:-}" ]]; then
   done
 fi
 : "${WBLOCK_DERIVED_DATA:?Set WBLOCK_DERIVED_DATA to the existing signed Xcode build directory}"
-signing_args=()
-if [[ "${CI:-}" == "true" ]]; then signing_args+=(CODE_SIGNING_ALLOWED=NO); fi
+build_args=()
+if [[ "${CI:-}" == "true" ]]; then
+  build_args+=(CODE_SIGNING_ALLOWED=NO COMPILATION_CACHE_ENABLE_CACHING=YES)
+fi
 CORE_DERIVED_DATA="$WBLOCK_DERIVED_DATA"
 echo "[test] building wBlockCoreService"
-xcodebuild -project wBlock.xcodeproj \
-  -scheme wBlockCoreService \
-  -configuration Debug \
-  -destination 'generic/platform=macOS' \
-  -derivedDataPath "$CORE_DERIVED_DATA" \
-  ${signing_args[@]+"${signing_args[@]}"} \
-  build > "$TMP/core-build.log" 2>&1 &
+(
+  started=$SECONDS
+  xcodebuild -project wBlock.xcodeproj \
+    -scheme wBlockCoreService \
+    -configuration Debug \
+    -destination 'generic/platform=macOS' \
+    -derivedDataPath "$CORE_DERIVED_DATA" \
+    ${build_args[@]+"${build_args[@]}"} \
+    build > "$TMP/core-build.log" 2>&1
+  status=$?
+  echo "[test] wBlockCoreService build finished in $((SECONDS - started))s"
+  exit $status
+) &
 core_build=$!
 CORE_PRODUCTS="$CORE_DERIVED_DATA/Build/Products/Debug"
 export WBLOCK_CORE_PRODUCTS="$CORE_PRODUCTS"
@@ -116,7 +124,6 @@ compile_direct_test popover-window-shield \
   wBlock/InfoPresentation.swift wBlock/MacReorderableList.swift scripts/test_popover_window_shield.swift
 compile_direct_test info-popover-state \
   wBlock/InfoPresentation.swift scripts/test_info_popover_state.swift
-compile_direct_test compiler-timeout scripts/test_issue_511_compiler_timeout.swift
 compile_direct_test main-window-frame-restore \
   wBlock/MainWindowFrameRestorer.swift scripts/test_main_window_frame_restore.swift
 compile_direct_test retired-userscript-sources \
@@ -302,6 +309,19 @@ compile_direct_test userscript-download \
   wBlockCoreService/UserScriptContentValidation.swift \
   wBlockCoreService/UserScriptDownload.swift \
   scripts/test_userscript_download.swift
+# The timeout test's body is DEBUG-only and drives the real compiler host.
+compile_direct_test compiler-timeout -D DEBUG \
+  wBlockCoreService/FilterListCategory.swift \
+  wBlockCoreService/UserScript.swift \
+  wBlockCoreService/BuiltInUserScripts.swift \
+  wBlockCoreService/UserScriptDisplayCategory.swift \
+  wBlockCoreService/DeArrowPreference.swift \
+  wBlockCoreService/TubeCleanerDeArrowPreference.swift \
+  wBlockCoreService/DarkReaderAppearancePreference.swift \
+  wBlockCoreService/UserStyle.swift \
+  wBlockCoreService/UserStyleCompiler.swift \
+  wBlockCoreService/UserStyleCompilerExecutionHost.swift \
+  scripts/test_issue_511_compiler_timeout.swift
 job direct "userstyle-parsing-matching (scripts/test_userstyle_parsing_and_matching.swift)"
 step swiftc -parse-as-library -D DEBUG \
   wBlockCoreService/FilterListCategory.swift \
