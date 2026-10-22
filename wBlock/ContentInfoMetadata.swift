@@ -59,8 +59,8 @@ nonisolated struct ContentInfoMetadata: Sendable {
     }
 }
 
-/// Copies a URL and briefly swaps its label to a checkmark so the tap is
-/// visibly acknowledged.
+/// A round copy button beside a URL. It briefly turns into a green checkmark
+/// so the tap is visibly acknowledged (#1028).
 struct CopyURLButton: View {
     let url: URL
     @State private var copied = false
@@ -77,27 +77,32 @@ struct CopyURLButton: View {
             withAnimation(.easeInOut(duration: 0.15)) { copied = true }
             resetTask?.cancel()
             resetTask = Task {
-                try? await Task.sleep(nanoseconds: 1_500_000_000)
+                try? await Task.sleep(nanoseconds: 900_000_000)
                 guard !Task.isCancelled else { return }
                 withAnimation(.easeInOut(duration: 0.15)) { copied = false }
             }
         } label: {
-            // Keep both localized labels in layout so acknowledgement cannot
-            // resize the button or its surrounding metadata row.
+            // Both glyphs stay in layout so the swap can't resize the row.
             ZStack {
-                Label("Copied", systemImage: "checkmark")
+                Image(systemName: "checkmark")
                     .foregroundStyle(.green)
                     .opacity(copied ? 1 : 0)
-                    .accessibilityHidden(!copied)
-                Label("Copy URL", systemImage: "doc.on.doc")
+                Image(systemName: "doc.on.doc")
                     .opacity(copied ? 0 : 1)
-                    .accessibilityHidden(copied)
             }
+            .font(.caption.weight(.semibold))
+            .frame(width: 26, height: 26)
+            .background(.quaternary, in: Circle())
+            #if os(iOS)
+            .frame(minWidth: 44, minHeight: 44)
+            #endif
+            .contentShape(Rectangle())
         }
-        .buttonStyle(.bordered)
-        .controlSize(.small)
+        .buttonStyle(.plain)
+        .noFocusRingCompat()
         .animation(.easeInOut(duration: 0.15), value: copied)
         .accessibilityLabel(copied ? Text("Copied") : Text("Copy URL"))
+        .help(Text("Copy URL"))
     }
 }
 
@@ -154,6 +159,8 @@ struct InfoMetadataRow: View {
     let title: LocalizedStringKey
     let value: String
     var url: URL? = nil
+    /// Puts a round copy button after the URL value.
+    var copiesURL = false
     var color: Color = .primary
     var valueStyle: InfoMetadataValueStyle = .plain
 
@@ -186,14 +193,24 @@ struct InfoMetadataRow: View {
             titleLabel.fixedSize(horizontal: true, vertical: false)
             Spacer(minLength: 8)
             valueLabel.fixedSize(horizontal: true, vertical: false)
+            copyButton
         }
     }
 
     private var stackedLayout: some View {
         VStack(alignment: .leading, spacing: 2) {
             titleLabel
-            valueLabel
+            HStack(alignment: .center, spacing: 8) {
+                valueLabel
+                Spacer(minLength: 0)
+                copyButton
+            }
         }
+    }
+
+    @ViewBuilder
+    private var copyButton: some View {
+        if copiesURL, let url { CopyURLButton(url: url) }
     }
 
     private var titleLabel: some View {

@@ -29,15 +29,12 @@ struct FilterFallbacksView: View {
             } onDismiss: { dismiss() }
         } content: {
             // Same cards as the info view: every URL sits at one leading edge
-            // with its Copy button under it (#955).
+            // with its copy button after it (#955).
             VStack(alignment: .leading, spacing: 16) {
                 Text(filter.localizedDisplayName)
                     .foregroundStyle(.secondary)
                 InfoMetadataList {
-                    VStack(alignment: .leading, spacing: 6) {
-                        InfoMetadataRow(title: "Source URL", value: filter.url.absoluteString, url: filter.url)
-                        CopyURLButton(url: filter.url)
-                    }
+                    InfoMetadataRow(title: "Source URL", value: filter.url.absoluteString, url: filter.url, copiesURL: true)
                 }
                 VStack(alignment: .leading, spacing: 8) {
                     Text(urls.isEmpty
@@ -66,15 +63,14 @@ struct FilterFallbacksView: View {
             Text(verbatim: "\(number)")
                 .monospacedDigit()
                 .foregroundStyle(.secondary)
-            VStack(alignment: .leading, spacing: 6) {
-                Link(destination: url) {
-                    Text(verbatim: url.absoluteString)
-                        .multilineTextAlignment(.leading)
-                }
-                .textSelection(.enabled)
-                .fixedSize(horizontal: false, vertical: true)
-                CopyURLButton(url: url)
+            Link(destination: url) {
+                Text(verbatim: url.absoluteString)
+                    .multilineTextAlignment(.leading)
             }
+            .textSelection(.enabled)
+            .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+            CopyURLButton(url: url)
         }
         .font(.callout)
     }

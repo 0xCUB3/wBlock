@@ -975,8 +975,7 @@ private struct ScriptURLView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             if let url = script.url {
-                InfoMetadataRow(title: "Source URL", value: url.absoluteString, url: url)
-                CopyURLButton(url: url)
+                InfoMetadataRow(title: "Source URL", value: url.absoluteString, url: url, copiesURL: true)
             }
         }
     }
