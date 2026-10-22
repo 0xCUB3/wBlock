@@ -406,7 +406,9 @@ struct UserScriptManagerView: View {
         guard let category = UserScriptDisplayCategory(rawValue: move.sectionID),
               let persisted = FilterListCategory.allCases.first(where: { $0.userScriptDisplayCategory == category }),
               let index = scripts.firstIndex(where: { $0.id == move.itemID }),
-              userScriptManager.userScript(withId: move.itemID) != nil else { return false }
+              userScriptManager.userScript(withId: move.itemID) != nil,
+              // Built-in scripts keep the category wBlock gives them (#1028).
+              !scripts[index].isBuiltIn || scripts[index].displayCategory == category else { return false }
         let all = orderedScripts
         let byID = Dictionary(uniqueKeysWithValues: all.map { ($0.id, $0) })
         let moved = move.orderedIDs.compactMap { byID[$0] }
@@ -571,7 +573,6 @@ struct UserScriptManagerView: View {
     private func scriptInfoContent(_ selection: SelectedUserScript) -> some View {
         UserScriptInfoView(
             scriptId: selection.id, userScriptManager: userScriptManager,
-            onChangeDisplayCategory: { moveScript(selection.id, to: $0) },
             onDownload: {
                 if let item = scripts.first(where: { $0.id == selection.id }) { requestEnable(item) }
             },
@@ -896,18 +897,6 @@ struct UserScriptManagerView: View {
             }
             .disabled(downloadingScriptIDs.contains(script.id))
         }
-        if actions.contains(.moveTo) {
-            Picker(selection: Binding(
-                get: { script.displayCategory },
-                set: { category in moveScript(script.id, to: category) }
-            )) {
-                ForEach(UserScriptDisplayCategory.allCases) { category in
-                    Text(LocalizedStringKey(category.rawValue)).tag(category)
-                }
-            } label: {
-                Label("Move to", systemImage: "folder")
-            }
-        }
         if actions.contains(.deleteScript),
            let managedScript = userScriptManager.userScript(withId: script.id) {
             Button(role: .destructive) {
@@ -1161,7 +1150,6 @@ struct UserScriptInfoSidebar: View {
 struct UserScriptInfoView: View {
     let scriptId: UUID
     var userScriptManager: UserScriptManager
-    var onChangeDisplayCategory: ((UserScriptDisplayCategory) -> Void)? = nil
     var onDownload: (() -> Void)? = nil
     /// Presents an action's sheet from the window instead of this view. A
     /// macOS popover would otherwise anchor the sheet to itself (#923).
@@ -1296,23 +1284,6 @@ struct UserScriptInfoView: View {
                     dismiss()
                 }
             }
-            if actions.contains(.moveTo) {
-                InfoCategoryRow(
-                    selection: Binding(
-                        get: {
-                            UserScriptDisplayCategorySupport.category(
-                                isUserStyle: script.isUserStyle,
-                                builtInRole: userScriptManager.builtInDisplayRole(for: script),
-                                persistedCategory: script.category,
-                                isBeta: userScriptManager.isBeta(for: script)
-                            )
-                        },
-                        set: setDisplayCategory
-                    ),
-                    categories: UserScriptDisplayCategory.allCases,
-                    name: { NSLocalizedString($0.rawValue, comment: "Userscript category") }
-                )
-            }
             if actions.contains(.deleteScript) {
                 InfoActionRow(
                     script.isUserStyle ? "Delete Style" : "Delete Script",
@@ -1335,18 +1306,6 @@ struct UserScriptInfoView: View {
         }
     }
 
-    private func setDisplayCategory(_ category: UserScriptDisplayCategory) {
-        guard var currentScript = liveScript,
-              let mappedCategory = FilterListCategory.allCases.first(where: { $0.userScriptDisplayCategory == category })
-        else { return }
-        currentScript.category = mappedCategory
-        script = currentScript
-        if let onChangeDisplayCategory {
-            onChangeDisplayCategory(category)
-        } else {
-            Task { await userScriptManager.setUserScript(currentScript, category: mappedCategory) }
-        }
-    }
 
     private func formatFileSize(_ bytes: Int) -> String {
         let formatter = ByteCountFormatter()

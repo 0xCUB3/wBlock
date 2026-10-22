@@ -769,16 +769,13 @@ struct ContentView: View {
                 } else {
                     filterManager.setFilterListSelection(id: filter.id, selected: false)
                 }
-            },
-            onChangeCategory: filter.category == .foreign
-                ? nil : { moveFilter(filter.id, to: $0) }
+            }
         )
     }
 
     private func filterInfoContent(_ filter: FilterList) -> some View {
         FilterInfoView(
             filter: filter, filterManager: filterManager,
-            onChangeCategory: filter.category == .foreign ? nil : { moveFilter(filter.id, to: $0) },
             isDownloading: downloadingFilterIDs.contains(filter.id),
             onDownload: { confirmingExperimental(filter) { downloadFilter(filter) } },
             onAction: macOSWindowAction { action in
@@ -827,8 +824,9 @@ struct ContentView: View {
     private func commitFilterMove(_ move: MacListMove) -> Bool {
         guard let category = FilterListCategory(rawValue: move.sectionID),
               let filter = filterManager.filterLists.first(where: { $0.id == move.itemID }),
-              category == .foreign ? filter.category == .foreign
-                : FilterListCategory.moveTargets.contains(category) && filter.category != .foreign else { return false }
+              // Built-in lists keep the category wBlock gives them (#1028).
+              filter.category == category
+                || (filter.isCustom && FilterListCategory.moveTargets.contains(category)) else { return false }
         let all = orderedFilters
         let byID = Dictionary(uniqueKeysWithValues: all.map { ($0.id, $0) })
         let moved = move.orderedIDs.compactMap { byID[$0] }
@@ -862,7 +860,6 @@ struct FilterRowView: View {
     var onEditInfo: () -> Void
     var onDelete: () -> Void
     var onToggle: (Bool) -> Void
-    var onChangeCategory: ((FilterListCategory) -> Void)? = nil
 
     @ViewBuilder
     private var contextMenuItems: some View {
@@ -899,15 +896,6 @@ struct FilterRowView: View {
         }
         if actions.contains(.editInfo) {
             Button(action: onEditInfo) { Label("Edit Info", systemImage: "square.and.pencil") }
-        }
-        if actions.contains(.moveTo), let onChangeCategory {
-            Picker(selection: Binding(get: { filter.category }, set: onChangeCategory)) {
-                ForEach(FilterListCategory.moveTargets) { category in
-                    Text(category.localizedName).tag(category)
-                }
-            } label: {
-                Label("Move to", systemImage: "folder")
-            }
         }
         if actions.contains(.deleteList) {
             Button(role: .destructive, action: onDelete) {

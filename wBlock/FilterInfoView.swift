@@ -4,7 +4,6 @@ import wBlockCoreService
 struct FilterInfoView: View {
     let filter: FilterList
     @ObservedObject var filterManager: AppFilterManager
-    var onChangeCategory: ((FilterListCategory) -> Void)? = nil
     var isDownloading = false
     /// Returns false when the download waits on a confirmation shown from this sheet.
     var onDownload: (() -> Bool)? = nil
@@ -162,13 +161,6 @@ struct FilterInfoView: View {
             }
             if actions.contains(.editInfo) {
                 InfoActionRow("Edit Info", systemImage: "square.and.pencil") { perform(.editInfo) { showingMetadataEditor = true } }
-            }
-            if actions.contains(.moveTo), let onChangeCategory {
-                InfoCategoryRow(
-                    selection: Binding(get: { liveFilter.category }, set: onChangeCategory),
-                    categories: FilterListCategory.moveTargets,
-                    name: { $0.localizedName }
-                )
             }
             if actions.contains(.deleteList) {
                 InfoActionRow("Delete Added List", systemImage: "trash", role: .destructive) { confirmingDelete = true }
