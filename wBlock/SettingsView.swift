@@ -353,6 +353,13 @@ struct SettingsView: View {
                 SettingsRowLabel("View Logs", systemImage: "doc.text.magnifyingglass", accessory: .push)
             }
 
+            NavigationLink {
+                autoUpdateDiagnosticsDetail
+                    .swipeBackNavigationCompat()
+            } label: {
+                SettingsRowLabel("Background Diagnostics", systemImage: "stethoscope", accessory: .push)
+            }
+
             cosmeticFilteringControls
 
             backupButtons
@@ -578,43 +585,13 @@ struct SettingsView: View {
                 #endif
             }
 
-            #if os(iOS)
-            Button {
-                filterManager.applyOrCheckForUpdates()
-            } label: {
-                Label("Update Now", systemImage: "arrow.triangle.2.circlepath")
-            }
-            .disabled(filterManager.isLoading)
-            #else
-            CompatibleLabeledContent {
-                Button("Update Now") {
-                    filterManager.applyOrCheckForUpdates()
-                }
-                .buttonStyle(.bordered)
-                .disabled(filterManager.isLoading)
-            } label: {
-                if autoUpdateEnabled {
-                    rowLabel("Check for Updates", detail: nextScheduleSubtitle)
-                } else {
-                    Text("Check for Updates")
-                }
-            }
-            #endif
-
-            NavigationLink {
-                autoUpdateDiagnosticsDetail
-                    .swipeBackNavigationCompat()
-            } label: {
-                SettingsRowLabel("Background Diagnostics", systemImage: "stethoscope", accessory: .push)
-            }
         } header: {
             sectionHeader(.autoUpdate)
         } footer: {
-            #if os(iOS)
+            // The Filters and Userscripts toolbars already check for updates.
             if autoUpdateEnabled {
                 nextScheduleSubtitle
             }
-            #endif
         }
     }
 
