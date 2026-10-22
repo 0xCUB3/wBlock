@@ -1571,13 +1571,6 @@ private struct TubeCleanerFeaturesPicker: View {
             Toggle("Quality and Audio Toolbar", isOn: $features.toolbar)
             Divider()
             Toggle("Hide Shorts", isOn: $features.hideShorts)
-            Divider()
-            Button("Enable All") {
-                let hideShorts = features.hideShorts
-                features = TubeCleanerDeArrowPreference.Features()
-                features.hideShorts = hideShorts
-            }
-                .disabled(features.allEnabled)
         } label: {
             UserScriptSettingsPill(title: Text(summary), systemImage: "slider.horizontal.3")
         }
@@ -1603,9 +1596,6 @@ private struct PlayerCleanerFeaturesPicker: View {
         Menu {
             Toggle("Automatic Picture in Picture", isOn: $features.autoPictureInPicture)
             Toggle("Background Playback", isOn: $features.backgroundPlayback)
-            Divider()
-            Button("Enable All") { features = PlayerCleanerPreference.Features() }
-                .disabled(features.allEnabled)
         } label: {
             UserScriptSettingsPill(title: Text(summary), systemImage: "slider.horizontal.3")
         }
