@@ -525,11 +525,11 @@ struct SettingsView: View {
         #if os(macOS)
         CompatibleLabeledContent {
             HStack(spacing: 8) {
-                Button("Export") {
+                Button("Export…") {
                     exportBackup()
                 }
 
-                Button("Import") {
+                Button("Import…") {
                     showingImportDialog = true
                 }
             }
@@ -539,10 +539,10 @@ struct SettingsView: View {
         }
         #else
         Button { exportBackup() } label: {
-            Label("Export Settings", systemImage: "square.and.arrow.up")
+            Label("Export Settings…", systemImage: "square.and.arrow.up")
         }
         Button { showingImportDialog = true } label: {
-            Label("Import Settings", systemImage: "square.and.arrow.down")
+            Label("Import Settings…", systemImage: "square.and.arrow.down")
         }
         #endif
     }

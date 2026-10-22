@@ -291,7 +291,7 @@
 "Export failed: %@" = "导出失败：%@";
 "The contents of local filter list \"%@\" are unavailable. Recover the list on the original device and create a new backup." = "无法获取本地过滤器列表“%@”的内容。请在原设备上恢复该列表，然后创建新的备份。";
 "The backup has no usable contents for these lists. They will be skipped when restoring. %@" = "备份中没有这些列表的可用内容。恢复时将跳过它们。%@";
-"Export Settings" = "导出设置";
+"Export Settings…" = "导出设置…";
 "Extension Slots" = "扩展槽位";
 "Rule Types" = "规则类型";
 "Network and element hiding rules count toward Safari's limit. wBlock Scripts applies its rules on its own, and URL parameter rules have a separate limit of %@." = "网络规则和元素隐藏规则计入 Safari 的上限。wBlock Scripts 会自行应用其规则，URL 参数规则另有 %@ 条的上限。";
@@ -389,7 +389,7 @@
 "Import Failed" = "导入失败";
 "Import failed: %@" = "导入失败：%@";
 "Import File" = "导入文件";
-"Import Settings" = "导入设置";
+"Import Settings…" = "导入设置…";
 "Importing…" = "正在导入…";
 "in %@ (%@)" = "%@后（%@）";
 "IndianList" = "IndianList";
@@ -1047,3 +1047,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Turn On Blocked Request Count?" = "要打开已拦截请求数吗？";
 "Turn On" = "打开";
 "Safari doesn't tell extensions what content blockers block. To get a count, wBlock copies the filter rules that block one domain or a path on it (like ||example.com^ or ||example.com/ads/) into Safari's declarativeNetRequest engine, and Safari counts how often they match. Rules that can match any domain or only apply on certain sites aren't counted, and neither are hidden page elements. Safari also limits how many rules an extension can have, so with many filter lists some are left out. Blocking doesn't change, but the number will probably be a lot lower than you're used to. It counts requests, so a tracker that loads five times counts as five." = "Safari 不会告诉扩展内容拦截器拦截了什么。为了得到数量，wBlock 会把拦截某个域名或其上某个路径的过滤规则（例如 ||example.com^ 或 ||example.com/ads/）复制到 Safari 的 declarativeNetRequest 引擎中，由 Safari 统计它们的匹配次数。可能匹配任意域名、或只在特定网站生效的规则不会被统计，隐藏的页面元素也不会。Safari 还限制了一个扩展能拥有的规则数量，所以过滤列表较多时会有一部分被舍弃。拦截效果不变，但这个数字很可能比你习惯的低很多。统计的是请求次数，所以一个加载了五次的跟踪器会计为五次。";
+"Export…" = "导出…";
+"Import…" = "导入…";

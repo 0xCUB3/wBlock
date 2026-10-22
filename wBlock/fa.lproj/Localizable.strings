@@ -291,7 +291,7 @@
 "Export failed: %@" = "برون‌بری ناموفق بود: %@";
 "The contents of local filter list \"%@\" are unavailable. Recover the list on the original device and create a new backup." = "محتوای فهرست فیلتر محلی \U2068\"%@\"\U2069 در دسترس نیست. فهرست را در دستگاه اصلی بازیابی کنید و یک نسخهٔ پشتیبان جدید بسازید.";
 "The backup has no usable contents for these lists. They will be skipped when restoring. %@" = "نسخهٔ پشتیبان هیچ محتوای قابل استفاده‌ای برای این فهرست‌ها ندارد. هنگام بازیابی از آن‌ها صرف‌نظر خواهد شد. %@";
-"Export Settings" = "برون‌بری تنظیمات";
+"Export Settings…" = "برون‌بری تنظیمات…";
 "Extension Slots" = "جایگاه‌های افزونه";
 "Rule Types" = "انواع قوانین";
 "Network and element hiding rules count toward Safari's limit. wBlock Scripts applies its rules on its own, and URL parameter rules have a separate limit of %@." = "قوانین شبکه و پنهان‌سازی عناصر در محدودیت Safari شمرده می‌شوند. wBlock Scripts قوانین خود را جداگانه اعمال می‌کند و قوانین پارامترهای URL محدودیت جداگانه‌ای برابر %@ دارند.";
@@ -389,7 +389,7 @@
 "Import Failed" = "درون‌ریزی ناموفق بود";
 "Import failed: %@" = "درون‌ریزی ناموفق بود: %@";
 "Import File" = "درون‌ریزی فایل";
-"Import Settings" = "درون‌ریزی تنظیمات";
+"Import Settings…" = "درون‌ریزی تنظیمات…";
 "Importing…" = "در حال درون‌ریزی…";
 "in %@ (%@)" = "در %@ (%@)";
 "IndianList" = "IndianList";
@@ -1056,3 +1056,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Turn On Blocked Request Count?" = "شمار درخواست‌های مسدودشده روشن شود؟";
 "Turn On" = "روشن کردن";
 "Safari doesn't tell extensions what content blockers block. To get a count, wBlock copies the filter rules that block one domain or a path on it (like ||example.com^ or ||example.com/ads/) into Safari's declarativeNetRequest engine, and Safari counts how often they match. Rules that can match any domain or only apply on certain sites aren't counted, and neither are hidden page elements. Safari also limits how many rules an extension can have, so with many filter lists some are left out. Blocking doesn't change, but the number will probably be a lot lower than you're used to. It counts requests, so a tracker that loads five times counts as five." = "Safari به افزونه‌ها نمی‌گوید مسدودکننده‌های محتوا چه چیزی را مسدود می‌کنند. برای شمارش، wBlock قوانین فیلتری را که یک دامنه یا مسیری روی آن را مسدود می‌کنند (مانند ||example.com^ یا ||example.com/ads/) در موتور declarativeNetRequest سافاری کپی می‌کند و Safari دفعات تطابق آن‌ها را می‌شمارد. قوانینی که می‌توانند با هر دامنه‌ای مطابقت داشته باشند یا فقط روی سایت‌های خاصی اعمال می‌شوند شمرده نمی‌شوند، عناصر پنهان‌شدهٔ صفحه هم شمرده نمی‌شوند. Safari تعداد قوانین هر افزونه را هم محدود می‌کند، پس با فهرست‌های فیلتر زیاد برخی کنار گذاشته می‌شوند. مسدودسازی تغییری نمی‌کند، اما احتمالاً عدد بسیار کمتر از چیزی خواهد بود که به آن عادت دارید. درخواست‌ها شمرده می‌شوند، پس ردیابی که پنج بار بارگیری شود پنج بار شمرده می‌شود.";
+"Export…" = "برون‌بری…";
+"Import…" = "درون‌ریزی…";

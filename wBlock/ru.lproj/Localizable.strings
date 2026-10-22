@@ -291,7 +291,7 @@
 "Export failed: %@" = "Ошибка экспорта: %@";
 "The contents of local filter list \"%@\" are unavailable. Recover the list on the original device and create a new backup." = "Содержимое локального списка фильтров «%@» недоступно. Восстановите список на исходном устройстве и создайте новую резервную копию.";
 "The backup has no usable contents for these lists. They will be skipped when restoring. %@" = "В резервной копии нет пригодного содержимого для этих списков. Они будут пропущены при восстановлении. %@";
-"Export Settings" = "Экспортировать настройки";
+"Export Settings…" = "Экспортировать настройки…";
 "Extension Slots" = "Слоты расширений";
 "Rule Types" = "Типы правил";
 "Network and element hiding rules count toward Safari's limit. wBlock Scripts applies its rules on its own, and URL parameter rules have a separate limit of %@." = "Сетевые правила и правила скрытия элементов учитываются в лимите Safari. wBlock Scripts применяет свои правила самостоятельно, а для правил параметров URL действует отдельный лимит в %@.";
@@ -389,7 +389,7 @@
 "Import Failed" = "Импорт не удался";
 "Import failed: %@" = "Ошибка импорта: %@";
 "Import File" = "Импорт файла";
-"Import Settings" = "Импортировать настройки";
+"Import Settings…" = "Импортировать настройки…";
 "Importing…" = "Импорт…";
 "in %@ (%@)" = "в %@ (%@)";
 "IndianList" = "IndianList";
@@ -1047,3 +1047,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Turn On Blocked Request Count?" = "Включить счётчик заблокированных запросов?";
 "Turn On" = "Включить";
 "Safari doesn't tell extensions what content blockers block. To get a count, wBlock copies the filter rules that block one domain or a path on it (like ||example.com^ or ||example.com/ads/) into Safari's declarativeNetRequest engine, and Safari counts how often they match. Rules that can match any domain or only apply on certain sites aren't counted, and neither are hidden page elements. Safari also limits how many rules an extension can have, so with many filter lists some are left out. Blocking doesn't change, but the number will probably be a lot lower than you're used to. It counts requests, so a tracker that loads five times counts as five." = "Safari не сообщает расширениям, что блокируют блокировщики контента. Чтобы получить число, wBlock копирует правила фильтров, блокирующие один домен или путь на нём (например, ||example.com^ или ||example.com/ads/), в движок declarativeNetRequest Safari, а Safari считает их срабатывания. Правила, которые могут совпасть с любым доменом или действуют только на определённых сайтах, не учитываются, как и скрытые элементы страницы. Safari также ограничивает число правил расширения, поэтому при большом количестве списков фильтров часть правил не попадает в подсчёт. Блокировка не меняется, но число, скорее всего, будет намного ниже привычного. Считаются запросы, поэтому трекер, загрузившийся пять раз, засчитывается пять раз.";
+"Export…" = "Экспорт…";
+"Import…" = "Импорт…";
