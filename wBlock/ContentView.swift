@@ -341,19 +341,24 @@ struct ContentView: View {
     }
 
     private var applyChangesToolbarButton: some View {
-        ApplyChangesButton(
-            isDisabled: filterManager.isLoading || filterManager.isAutoUpdateRunning,
+        let isBusy = filterManager.isLoading || filterManager.isAutoUpdateRunning
+        // The spinner sits in the round icon's frame. Sizing it to the hidden
+        // Apply word stretched the button into an empty pill during a run
+        // that started with changes pending, such as the post-upgrade rebuild.
+        let showsApply = hasPendingChanges && !isBusy
+        return ApplyChangesButton(
+            isDisabled: isBusy,
             hasPendingChanges: hasPendingChanges,
             onTap: applyPendingChanges,
             onBusyTap: filterManager.showBackgroundApplyProgress
         ) {
             #if os(iOS)
             ApplyChangesToolbarLabel(
-                hasPendingChanges: hasPendingChanges,
+                hasPendingChanges: showsApply,
                 symbolName: applyChangesSymbolName
             )
             #else
-            if hasPendingChanges {
+            if showsApply {
                 Text("Apply").fontWeight(.semibold)
             } else {
                 Label("Update", systemImage: applyChangesSymbolName)
