@@ -99,12 +99,7 @@ struct FilterInfoView: View {
             InfoMetadataList {
                 InfoMetadataRow(title: "Type", value: NSLocalizedString("Filters", comment: "Content type"), valueStyle: .typeBadge)
                 if liveFilter.isSelected, let submitted = liveFilter.uniqueRuleCount {
-                    VStack(alignment: .leading, spacing: 2) {
-                        InfoMetadataRow(title: "Source Rules", value: submitted.formatted())
-                        Text("Source rules submitted to the converter at last apply, not Safari’s final rule count.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
+                    InfoMetadataRow(title: "Source Rules", value: submitted.formatted())
                 }
                 if let author = credit?.author ?? cachedMetadata.author {
                     InfoMetadataRow(title: "Author", value: author)
