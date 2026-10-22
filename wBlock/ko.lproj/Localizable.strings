@@ -1033,7 +1033,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Filter Logs" = "로그 필터";
 "Apply Anyway" = "그래도 적용";
 "General" = "일반";
-"Jump to Section" = "섹션으로 이동";
 "Clear Logs?" = "로그를 지우시겠습니까?";
 "This deletes every log entry." = "모든 로그 항목이 삭제됩니다.";
 "Settings…" = "설정…";

@@ -1033,7 +1033,6 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Filter Logs" = "Filtrar registros";
 "Apply Anyway" = "Aplicar de todos modos";
 "General" = "General";
-"Jump to Section" = "Ir a la sección";
 "Clear Logs?" = "¿Borrar los registros?";
 "This deletes every log entry." = "Esto elimina todas las entradas del registro.";
 "Settings…" = "Configuración…";

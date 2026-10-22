@@ -1002,7 +1002,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Filter Logs" = "ログを絞り込む";
 "Apply Anyway" = "このまま適用";
 "General" = "一般";
-"Jump to Section" = "セクションへ移動";
 "Clear Logs?" = "ログを消去しますか？";
 "This deletes every log entry." = "すべてのログ項目が削除されます。";
 "Settings…" = "設定…";

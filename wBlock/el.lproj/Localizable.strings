@@ -1033,7 +1033,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Filter Logs" = "Φιλτράρισμα αρχείων καταγραφής";
 "Apply Anyway" = "Εφαρμογή ούτως ή άλλως";
 "General" = "Γενικά";
-"Jump to Section" = "Μετάβαση σε ενότητα";
 "Clear Logs?" = "Εκκαθάριση αρχείων καταγραφής;";
 "This deletes every log entry." = "Αυτό διαγράφει όλες τις καταχωρίσεις καταγραφής.";
 "Settings…" = "Ρυθμίσεις…";

@@ -1033,7 +1033,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Filter Logs" = "تصفية السجلات";
 "Apply Anyway" = "تطبيق على أي حال";
 "General" = "عام";
-"Jump to Section" = "الانتقال إلى قسم";
 "Clear Logs?" = "مسح السجلات؟";
 "This deletes every log entry." = "سيؤدي هذا إلى حذف كل إدخالات السجل.";
 "Settings…" = "الإعدادات…";

@@ -1033,7 +1033,6 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Filter Logs" = "Protokolle filtern";
 "Apply Anyway" = "Trotzdem anwenden";
 "General" = "Allgemein";
-"Jump to Section" = "Zu Abschnitt springen";
 "Clear Logs?" = "Protokolle löschen?";
 "This deletes every log entry." = "Dadurch werden alle Protokolleinträge gelöscht.";
 "Settings…" = "Einstellungen …";

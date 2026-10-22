@@ -795,32 +795,8 @@ struct SettingsView: View {
     }
 
 
-    private var jumpToSectionMenu: some View {
-        Menu {
-            ForEach(SettingsSection.allCases, id: \.self) { section in
-                Button(section.title) { scrollTarget = section }
-            }
-        } label: {
-            Label("Jump to Section", systemImage: "list.bullet")
-        }
-        .help("Jump to Section")
-    }
-
-    /// One bubble on both platforms; iOS merges adjacent items itself,
-    /// the Mac needs a control group (#1021).
-    @ToolbarContentBuilder
     private var pauseBlockingToolbar: some ToolbarContent {
-        #if os(macOS)
-        ToolbarItem(placement: .primaryAction) {
-            ControlGroup {
-                jumpToSectionMenu
-                PauseBlockingMenu(filterManager: filterManager)
-            }
-        }
-        #else
-        ToolbarItem(placement: .primaryAction) { jumpToSectionMenu }
         ToolbarItem(placement: .primaryAction) { PauseBlockingMenu(filterManager: filterManager) }
-        #endif
     }
 
     @ViewBuilder
@@ -911,7 +887,7 @@ struct SettingsView: View {
     @ViewBuilder
     private var settingsContent: some View {
         CompatibleNavigationStack {
-            // Section headers carry ids, so the pills and the section menu
+            // Section headers carry ids, so the pills
             // can scroll to them in a page that has grown long (#999).
             ScrollViewReader { proxy in
                 settingsList
@@ -1502,8 +1478,8 @@ struct PauseBlockingMenu: View {
     }
 }
 
-/// Settings' sections in page order, for the section menu and the pills.
-enum SettingsSection: CaseIterable, Hashable {
+/// Settings' sections in page order, for the pills.
+enum SettingsSection: Hashable {
     case general, websites, autoUpdate, sync, advanced, help, about, reset
 
     var title: LocalizedStringKey {

@@ -1033,7 +1033,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Filter Logs" = "Фильтр журналов";
 "Apply Anyway" = "Всё равно применить";
 "General" = "Основные";
-"Jump to Section" = "Перейти к разделу";
 "Clear Logs?" = "Очистить журнал?";
 "This deletes every log entry." = "Все записи журнала будут удалены.";
 "Settings…" = "Настройки…";

@@ -1033,7 +1033,6 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Filter Logs" = "Filtrer les journaux";
 "Apply Anyway" = "Appliquer quand même";
 "General" = "Général";
-"Jump to Section" = "Aller à la section";
 "Clear Logs?" = "Effacer les journaux ?";
 "This deletes every log entry." = "Cela supprime toutes les entrées du journal.";
 "Settings…" = "Réglages…";

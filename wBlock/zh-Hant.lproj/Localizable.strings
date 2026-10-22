@@ -1033,7 +1033,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Filter Logs" = "過濾日誌";
 "Apply Anyway" = "仍然套用";
 "General" = "一般";
-"Jump to Section" = "跳至區段";
 "Clear Logs?" = "清除記錄？";
 "This deletes every log entry." = "這會刪除所有記錄項目。";
 "Settings…" = "設定⋯";
