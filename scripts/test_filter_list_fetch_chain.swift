@@ -49,6 +49,10 @@ final class ChainProtocol: URLProtocol {
         let saved = Data(FilterListContentProcessing.normalizedContent(from: String(decoding: crlf, as: UTF8.self)).utf8)
         check(FilterUpdateResponseClassifier.classify(statusCode: 200, responseData: crlf, localData: saved) == .unchangedContent, "CRLF body matches its saved form")
         check(FilterUpdateResponseClassifier.classify(statusCode: 200, responseData: crlf + Data("||b.com^".utf8), localData: saved) == .updatedContent, "CRLF body with a new rule")
+        let installed = Data("! Version: 2.4.99.4\n||a.com^\n||b.com^".utf8)
+        check(!FilterUpdateResponseClassifier.contentDiffers(remoteData: Data("! Version: 2.4.98.98\n||a.com^".utf8), localData: installed), "older mirror copy is not an update")
+        check(FilterUpdateResponseClassifier.contentDiffers(remoteData: Data("! Version: 2.4.99.5\n||a.com^".utf8), localData: installed), "newer version is an update")
+        check(FilterUpdateResponseClassifier.contentDiffers(remoteData: Data("! Version: 05 Sep 2026\n||a.com^".utf8), localData: Data("! Version: 06 Sep 2026\n||b.com^".utf8)), "dated versions fall back to content")
         do { reset([304]); let r = try await fetch(); check(!r.servedFallback && ChainProtocol.requests.count == 1, "304 stops without fallback") } catch { check(false, "304 threw") }
         do { reset([200, 200, 200], [Data("<html>challenge</html>".utf8), Data("<html>challenge</html>".utf8), Data("||ok.com^".utf8)]); let r = try await fetch(); check(r.servedFallback && ChainProtocol.requests.count == 3, "HTML then fallback") } catch { check(false, "HTML fallback threw") }
         do { reset([200, 200, 200], [Data("rate limit exceeded".utf8), Data("rate limit exceeded".utf8), Data("||ok.com^".utf8)]); let r = try await fetch(); check(r.servedFallback && ChainProtocol.requests.count == 3, "plain 200 retries then fallback") } catch { check(false, "plain 200 fallback threw") }
