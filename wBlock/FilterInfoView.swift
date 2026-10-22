@@ -109,8 +109,11 @@ struct FilterInfoView: View {
                 if isDownloaded, !liveFilter.version.isEmpty { InfoMetadataRow(title: "Version", value: liveFilter.version) }
                 if liveFilter.url.scheme?.lowercased() == "http" || liveFilter.url.scheme?.lowercased() == "https" {
                     VStack(alignment: .leading, spacing: 6) {
-                        InfoMetadataRow(title: "Source URL", value: liveFilter.url.absoluteString, url: liveFilter.url, copiesURL: true)
-                        FilterFallbacksButton { perform(.fallbacks) { showingFallbacks = true } }
+                        InfoMetadataRow(title: "Source URL", value: liveFilter.url.absoluteString, url: liveFilter.url)
+                        HStack {
+                            CopyURLButton(url: liveFilter.url)
+                            FilterFallbacksButton { perform(.fallbacks) { showingFallbacks = true } }
+                        }
                     }
                 }
                 if let size = cachedByteCount {
