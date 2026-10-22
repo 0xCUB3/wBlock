@@ -47,6 +47,10 @@
     "action": {
         "default_popup": "pages/popup/popup.html",
         "default_icon": {
+            "16": "assets/images/icon-16.png",
+            "19": "assets/images/icon-19.png",
+            "32": "assets/images/icon-32.png",
+            "38": "assets/images/icon-38.png",
             "48": "assets/images/icon-48.png",
             "96": "assets/images/icon-96.png",
             "128": "assets/images/icon-128.png",

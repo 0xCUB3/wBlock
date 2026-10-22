@@ -27373,6 +27373,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   const POPUP_PATH = "pages/popup/popup.html";
   const SUPPORTED_PAGE_PROTOCOLS = new Set(["http:", "https:"]);
   const DEFAULT_ACTION_ICON = {
+    16: "assets/images/icon-16.png",
+    19: "assets/images/icon-19.png",
+    32: "assets/images/icon-32.png",
+    38: "assets/images/icon-38.png",
     48: "assets/images/icon-48.png",
     96: "assets/images/icon-96.png",
     128: "assets/images/icon-128.png",
@@ -27380,6 +27384,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     512: "assets/images/icon-512.png"
   };
   const DISABLED_ACTION_ICON = {
+    16: "assets/images/icon-disabled-16.png",
+    19: "assets/images/icon-disabled-19.png",
+    32: "assets/images/icon-disabled-32.png",
+    38: "assets/images/icon-disabled-38.png",
     48: "assets/images/icon-disabled-48.png",
     96: "assets/images/icon-disabled-96.png",
     128: "assets/images/icon-disabled-128.png",

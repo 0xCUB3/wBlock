@@ -3,8 +3,9 @@
 import AppKit
 
 // Run from the repository root: swift scripts/render_action_icons.swift
-// Draws the toolbar shield from vector geometry at every size so Retina
-// toolbars stay sharp. Safari tints toolbar icons using their alpha mask, so
+// Draws the toolbar shield from vector geometry at every size. Mac Safari crops
+// a toolbar icon to its opaque bounds and scales that square to 19pt, so the
+// shield spans the full height and its sides sit on pixel boundaries. Safari tints toolbar icons using their alpha mask, so
 // gray alone cannot distinguish disabled protection; the disabled variant cuts
 // a gap around a diagonal slash instead.
 let directory = URL(fileURLWithPath: "wBlock Scripts (iOS)/Resources/assets/images", isDirectory: true)
@@ -18,26 +19,33 @@ func write(_ context: CGContext, _ name: String) throws {
     try png.write(to: directory.appendingPathComponent(name))
 }
 
-for size in [48, 96, 128, 256, 512] {
+for size in [16, 19, 32, 38, 48, 96, 128, 256, 512] {
     guard let context = CGContext(
         data: nil, width: size, height: size, bitsPerComponent: 8,
         bytesPerRow: size * 4, space: CGColorSpaceCreateDeviceRGB(),
         bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
     ) else { fatalError("Cannot render icon at \(size)px") }
 
-    // Shield outline in a 512-unit, top-left-origin design space.
+    // Shield outline in a 512-unit, top-left-origin design space, mapped so
+    // the stroke's outer edge touches the top and bottom rows.
     let side = CGFloat(size)
+    let stroke = max(1, (side * 38 / 512).rounded())
+    let half = stroke / 2
+    let left = (side * 74 / 512 - half).rounded() + half
+    func point(_ x: CGFloat, _ y: CGFloat) -> CGPoint {
+        CGPoint(x: left + (x - 74) * (side - 2 * left) / 377,
+                y: side - half - (y - 32) * (side - stroke) / 446)
+    }
     let shield = CGMutablePath()
-    shield.move(to: CGPoint(x: 262, y: 32))
-    shield.addLine(to: CGPoint(x: 451, y: 104))
-    shield.addLine(to: CGPoint(x: 451, y: 318))
-    shield.addQuadCurve(to: CGPoint(x: 262, y: 478), control: CGPoint(x: 440, y: 390))
-    shield.addQuadCurve(to: CGPoint(x: 74, y: 318), control: CGPoint(x: 84, y: 390))
-    shield.addLine(to: CGPoint(x: 74, y: 104))
+    shield.move(to: point(262.5, 32))
+    shield.addLine(to: point(451, 104))
+    shield.addLine(to: point(451, 318))
+    shield.addQuadCurve(to: point(262.5, 478), control: point(440, 390))
+    shield.addQuadCurve(to: point(74, 318), control: point(85, 390))
+    shield.addLine(to: point(74, 104))
     shield.closeSubpath()
-    var transform = CGAffineTransform(a: side / 512, b: 0, c: 0, d: -side / 512, tx: 0, ty: side)
-    context.addPath(shield.copy(using: &transform)!)
-    context.setLineWidth(side * 38 / 512)
+    context.addPath(shield)
+    context.setLineWidth(stroke)
     context.setLineJoin(.round)
     context.setStrokeColor(CGColor(gray: 0, alpha: 0.85))
     context.strokePath()
