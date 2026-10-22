@@ -260,9 +260,9 @@ struct InlineGlassSearchField: View {
     let prompt: LocalizedStringKey
 
     @State private var isExpanded = false
-    /// True only while the capsule is fully open. The magnifier keeps its toolbar
-    /// size while the capsule moves and shrinks to the field size once it stops,
-    /// the way Notes does it (#1027).
+    /// True only while the capsule is fully open. The toolbar magnifier stays where
+    /// the button was and fades as the capsule moves; the field's own magnifier and
+    /// placeholder fade in once it stops, so no glyph slides or resizes (#1027).
     @State private var isSettled = false
     @State private var focusRequests = 0
     @State private var isVisible = false
@@ -351,6 +351,8 @@ struct InlineGlassSearchField: View {
                 }
                 .padding(.leading, 36)
                 .padding(.trailing, 8)
+                .opacity(isSettled || !text.isEmpty ? 1 : 0)
+                .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: isSettled)
             } else {
                 Color.clear.frame(width: fieldWidth + 44)
             }
@@ -367,11 +369,20 @@ struct InlineGlassSearchField: View {
             }
         }
         .glassEffect(.regular.interactive(), in: .capsule)
-        // The magnifier sits on the capsule's leading edge, outside the field, so
-        // it rides that edge as the capsule grows and ends in front of the text,
-        // the way Notes and Mail place it.
+        // The open field's magnifier sits on the leading edge in front of the text,
+        // the way Notes and Mail place it. The toolbar one stays on the edge the
+        // capsule is pinned to, where the button is.
         .overlay(alignment: .leading) {
             searchButton.buttonStyle(.plain)
+        }
+        .overlay(alignment: buttonEdge) {
+            Image(systemName: "magnifyingglass")
+                .imageScale(.large)
+                .frame(width: 36, height: 36)
+                .opacity(isExpanded ? 0 : 1)
+                .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: isExpanded)
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
         }
         .animation(reduceMotion ? nil : .smooth(duration: Self.duration), value: isExpanded)
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: text.isEmpty)
@@ -382,14 +393,12 @@ struct InlineGlassSearchField: View {
         Button(action: expandAndFocus) {
             Label(prompt, systemImage: "magnifyingglass")
                 .labelStyle(.iconOnly)
-                // Sized and tinted like the magnifier in a system search field
-                // once open, and like the toolbar button while moving (#1027).
-                // A scale, not an image scale, so the glyph resizes instead of crossfading.
+                // Sized and tinted like the magnifier in a system search field.
                 .imageScale(.large)
-                .scaleEffect(isSettled ? 0.78 : 1)
+                .scaleEffect(0.78)
                 .fixedSize()
-                .foregroundStyle(isSettled ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
-                .contentTransition(.identity)
+                .foregroundStyle(.secondary)
+                .opacity(isSettled ? 1 : 0)
                 .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: isSettled)
                 .frame(width: 20, height: 36)
                 .padding(.horizontal, 8)
