@@ -316,7 +316,10 @@ public struct FilterRuleAnalysis: Sendable {
     /// merged hiding selector, and normalize unsupported network-rule options.
     public static func adGuardEquivalent(_ rule: String) -> String {
         let trimmed = String(RuleText.trimmed(rule))
-        guard let marker = RuleText.range(of: "#@#", in: trimmed) ?? RuleText.range(of: "##", in: trimmed) else {
+        // Use the converter's own marker, so `#$##id` or `#?#.a #b` isn't read as
+        // a hiding rule or a network rule with a trailing comment (#1029).
+        let found = CosmeticRuleMarker.findCosmeticRuleMarker(ruleText: trimmed)
+        guard let kind = found.marker else {
             if let comment = inlineCommentStart(trimmed) {
                 return adGuardEquivalent(String(RuleText.trimmed(trimmed[..<comment])))
             }
@@ -325,7 +328,10 @@ public struct FilterRuleAnalysis: Sendable {
                 || RuleText.containsIgnoringASCIICase(trimmed, "object") else { return rule }
             return expandingDenyAllow(trimmed) ?? droppingObjectType(trimmed) ?? rule
         }
-        let exception = trimmed[marker] == "#@#"
+        guard kind == .elementHiding || kind == .elementHidingException else { return rule }
+        let exception = kind == .elementHidingException
+        let start = trimmed.utf8.index(trimmed.startIndex, offsetBy: found.index)
+        let marker = start..<trimmed.utf8.index(start, offsetBy: kind.rawValue.utf8.count)
         let body = trimmed[marker.upperBound...]
         // The rewrites below need a parenthesis, a style block, or a shadow-DOM combinator.
         guard body.utf8.contains(where: { $0 == UInt8(ascii: "(") || $0 == UInt8(ascii: "{") })

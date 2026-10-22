@@ -32,6 +32,13 @@ struct Main {
             ("example.com#@#.a { color: red }", "example.com#@$#.a { color: red }"),
             ("example.com##.a:upward(2) { color: red }", "example.com#$?#.a:upward(2) { color: red }"),
             ("example.com##a[title='{x}']", "example.com##a[title='{x}']"),
+            // #1029: a rule that already has its own marker passes through, even when
+            // its selector starts with # or holds " #".
+            ("example.com#$##mainheader, .search { top: 0 }", "example.com#$##mainheader, .search { top: 0 }"),
+            ("#$##a { top: 0 }", "#$##a { top: 0 }"),
+            ("example.com#@$##a { top: 0 }", "example.com#@$##a { top: 0 }"),
+            ("example.com#?##a:upward(2)", "example.com#?##a:upward(2)"),
+            ("example.com#$#.a, #b { top: 0 }", "example.com#$#.a, #b { top: 0 }"),
             // #975: Safari has no object type; drop it unless that would widen the rule.
             ("||media.net^$object,script,third-party", "||media.net^$script,third-party"),
             ("||quantserve.com^$~object,third-party", "||quantserve.com^$third-party"),
