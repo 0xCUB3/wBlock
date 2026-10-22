@@ -260,6 +260,10 @@ struct InlineGlassSearchField: View {
     let prompt: LocalizedStringKey
 
     @State private var isExpanded = false
+    /// True only while the capsule is fully open. The magnifier keeps its toolbar
+    /// size while the capsule moves and shrinks to the field size once it stops,
+    /// the way Notes does it (#1027).
+    @State private var isSettled = false
     @State private var focusRequests = 0
     @State private var isVisible = false
     @State private var fieldWidth: CGFloat = 140
@@ -379,14 +383,14 @@ struct InlineGlassSearchField: View {
             Label(prompt, systemImage: "magnifyingglass")
                 .labelStyle(.iconOnly)
                 // Sized and tinted like the magnifier in a system search field
-                // while open, and like the toolbar button it turns back into
-                // while closing, so the swap doesn't jump in size (#1027).
-                // A scale, not an image scale, so the glyph grows instead of crossfading.
+                // once open, and like the toolbar button while moving (#1027).
+                // A scale, not an image scale, so the glyph resizes instead of crossfading.
                 .imageScale(.large)
-                .scaleEffect(isExpanded ? 0.78 : 1)
+                .scaleEffect(isSettled ? 0.78 : 1)
                 .fixedSize()
-                .foregroundStyle(isExpanded ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
+                .foregroundStyle(isSettled ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
                 .contentTransition(.identity)
+                .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: isSettled)
                 .frame(width: 20, height: 36)
                 .padding(.horizontal, 8)
                 .contentShape(Rectangle())
@@ -416,11 +420,22 @@ struct InlineGlassSearchField: View {
     private func expand() {
         guard !isOpen else {
             isExpanded = true
+            settle()
             return
         }
         growsTrailing = anchor.isInLeadingHalf
         isOpen = true
-        DispatchQueue.main.async { if isOpen { isExpanded = true } }
+        DispatchQueue.main.async {
+            guard isOpen else { return }
+            isExpanded = true
+            settle()
+        }
+    }
+
+    private func settle() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + (reduceMotion ? 0 : Self.duration)) {
+            if isExpanded { isSettled = true }
+        }
     }
 
     private func expandAndFocus() {
@@ -433,6 +448,7 @@ struct InlineGlassSearchField: View {
     }
 
     private func collapse() {
+        isSettled = false
         isExpanded = false
         isFocused = false
         DispatchQueue.main.asyncAfter(deadline: .now() + (reduceMotion ? 0 : Self.duration)) {
