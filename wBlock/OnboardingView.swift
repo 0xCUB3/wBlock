@@ -200,7 +200,10 @@ struct OnboardingView: View {
         .padding()
         .interactiveDismissDisabled(!hasCompletedOnboarding)
     #if os(macOS)
-        .frame(minWidth: 440, maxWidth: 540, minHeight: 620, maxHeight: 820)
+        // One height for every step: the sheet sized itself to the content and
+        // grew with each regional list, though the step already scrolls (#1028).
+        .frame(minWidth: 440, maxWidth: 540)
+        .frame(height: 680)
         .environment(\.controlActiveState, .active)
     #endif
     #if os(iOS)
