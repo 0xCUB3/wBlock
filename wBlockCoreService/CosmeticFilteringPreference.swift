@@ -70,9 +70,14 @@ public enum CosmeticFilteringPreference {
         UserDefaults(suiteName: groupIdentifier)?.set(try? JSONEncoder().encode(sites), forKey: sitesStorageKey)
     }
 
-    /// The scope compilation honors. Turning the switch off selects no sites.
+    /// The scope compilation honors. The switch picks which saved list counts
+    /// (#1028): on applies everywhere but the excluded sites, and off applies
+    /// only on the selected ones, so each list is kept while the other is used.
     public static func effectiveSites(groupIdentifier: String = GroupIdentifier.shared.value) -> Sites {
-        isEnabled(groupIdentifier: groupIdentifier) ? sites(groupIdentifier: groupIdentifier) : Sites(selectedSites: [])
+        let saved = sites(groupIdentifier: groupIdentifier)
+        return isEnabled(groupIdentifier: groupIdentifier)
+            ? Sites(excludedSites: saved.excludedSites, includesGeneric: saved.includesGeneric)
+            : Sites(selectedSites: saved.selectedSites ?? [], includesGeneric: saved.includesGeneric)
     }
 
     /// True for element-hiding and CSS injection rules, using the converter's own

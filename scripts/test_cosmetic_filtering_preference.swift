@@ -73,6 +73,20 @@ struct CosmeticFilteringPreferenceTests {
         let decoded = try? JSONDecoder().decode(CosmeticFilteringPreference.Sites.self, from: Data(#"{"excludedSites":[]}"#.utf8))
         require(decoded == .all, "older saved scopes must decode with generic rules on")
 
+        // #1028: the switch picks the saved list; the other one is kept.
+        let group = "test.cosmetic.\(UUID().uuidString)"
+        CosmeticFilteringPreference.setSites(.init(selectedSites: ["a.com"], excludedSites: ["b.com"]), groupIdentifier: group)
+        CosmeticFilteringPreference.setEnabled(true, groupIdentifier: group)
+        require(CosmeticFilteringPreference.effectiveSites(groupIdentifier: group) == .init(excludedSites: ["b.com"]),
+                "on must use only the excluded sites")
+        CosmeticFilteringPreference.setEnabled(false, groupIdentifier: group)
+        require(CosmeticFilteringPreference.effectiveSites(groupIdentifier: group) == .init(selectedSites: ["a.com"]),
+                "off must use only the selected sites")
+        CosmeticFilteringPreference.setSites(.all, groupIdentifier: group)
+        require(CosmeticFilteringPreference.effectiveSites(groupIdentifier: group) == .init(selectedSites: []),
+                "off with no selected sites must apply nowhere")
+        UserDefaults().removePersistentDomain(forName: group)
+
         print("PASS: cosmetic filtering preference")
     }
 }

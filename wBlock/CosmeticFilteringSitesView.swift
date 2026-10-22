@@ -1,8 +1,10 @@
 import SwiftUI
 import wBlockCoreService
 
-/// The cosmetic filtering switch (#610) and, while it is on, where cosmetic
-/// rules apply (#899), using the same scope editor as a list.
+/// The cosmetic filtering switch (#610) and the one site list it uses (#1028).
+/// On, cosmetic rules apply everywhere but the excluded sites. Off, they
+/// apply only on the selected sites. Both lists are saved, so flipping the
+/// switch brings each one back.
 struct CosmeticFilteringSitesView: View {
     @ObservedObject var filterManager: AppFilterManager
     @State private var isEnabled = CosmeticFilteringPreference.isEnabled()
@@ -14,7 +16,7 @@ struct CosmeticFilteringSitesView: View {
                 // Not locked during an apply (#936): the run snapshots this setting
                 // and a change made meanwhile stays pending for the next one.
                 // Generic Rules shares the box since it only narrows cosmetic
-                // filtering (#999); it and the scope are hidden while it's off.
+                // filtering (#999).
                 SettingsGroup {
                     Toggle(isOn: Binding(get: { isEnabled }, set: setEnabled)) {
                         toggleLabel("Cosmetic Filtering", detail: "Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU.")
@@ -32,14 +34,23 @@ struct CosmeticFilteringSitesView: View {
                     }
                 }
                 if isEnabled {
-                    SiteScopeEditor(
-                        title: "Apply on", selectedSites: sites.selectedSites, excludedSites: sites.excludedSites,
-                        emptySelectionMessage: "No sites selected. Cosmetic filtering will not apply.",
-                        excludedMessage: "Cosmetic filtering will not apply on these sites. Network blocking still applies.",
-                        footer: "Sites include their subdomains. Apply changes to update filtering.",
-                        updateSelected: { update($0, sites.excludedSites) },
-                        updateExcluded: { update(sites.selectedSites, $0) }
-                    )
+                    SettingsGroup(header: "Excluded Sites", footer: [
+                        "Cosmetic filtering will not apply on these sites. Network blocking still applies.",
+                        "Sites include their subdomains. Apply changes to update filtering.",
+                    ]) {
+                        StringListEditor(title: nil, items: sites.excludedSites,
+                                         update: { update(sites.selectedSites, $0) })
+                    }
+                } else {
+                    let selected = sites.selectedSites ?? []
+                    SettingsGroup(header: "Selected Sites", footer: [
+                        selected.isEmpty ? "No sites selected. Cosmetic filtering will not apply."
+                            : "Cosmetic filtering applies only on these sites.",
+                        "Sites include their subdomains. Apply changes to update filtering.",
+                    ]) {
+                        StringListEditor(title: nil, items: selected,
+                                         update: { update($0, sites.excludedSites) })
+                    }
                 }
             }
             .padding()
