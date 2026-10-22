@@ -194,6 +194,7 @@ struct ContentView: View {
         AppTabView(selection: tabSelection, filters: filtersView,
                    userscripts: userscriptsView, settings: settingsView)
         .background(keyboardShortcutHandlers)
+        .keyboardScrollingCompat()
         .task(id: filterPresentationInput) {
             let input = filterPresentationInput
             if let prepared = try? await FilterListPresentation.prepare(input),

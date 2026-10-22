@@ -4,8 +4,8 @@ import SwiftUI
 // gives a pushed page the trackpad gesture Safari and Finder use: a two-finger
 // swipe under the "Swipe between pages" preference (tracked through scroll
 // events, so it follows natural scrolling and bounces back when released
-// early) or a three-finger swipe delivered as a gesture event. iOS keeps the
-// interactive pop its navigation stack already provides.
+// early), a three-finger swipe delivered as a gesture event, or Command-[ as
+// in Safari. iOS keeps the interactive pop its navigation stack already provides.
 extension View {
     @ViewBuilder
     func swipeBackNavigationCompat() -> some View {
@@ -59,7 +59,7 @@ private final class SwipeBackMonitorView: NSView {
         super.viewDidMoveToWindow()
         removeMonitor()
         guard window != nil else { return }
-        monitor = NSEvent.addLocalMonitorForEvents(matching: [.scrollWheel, .swipe]) { [weak self] event in
+        monitor = NSEvent.addLocalMonitorForEvents(matching: [.scrollWheel, .swipe, .keyDown]) { [weak self] event in
             guard let self, self.handle(event) else { return event }
             return nil
         }
@@ -92,6 +92,11 @@ private final class SwipeBackMonitorView: NSView {
             return true
         case .scrollWheel:
             return handleScroll(event)
+        case .keyDown:
+            guard event.modifierFlags.intersection([.command, .option, .control, .shift]) == .command,
+                  event.charactersIgnoringModifiers == "[" else { return false }
+            goBack()
+            return true
         default:
             return false
         }
