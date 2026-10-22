@@ -337,6 +337,8 @@ struct SettingsView: View {
             } label: {
                 SettingsRowLabel("Element Zapper", systemImage: "wand.and.stars", accessory: .push)
             }
+
+            openSafariSettingsButton
         } header: {
             sectionHeader(.websites)
         }
@@ -399,24 +401,6 @@ struct SettingsView: View {
 
     private var nextScheduleSubtitle: Text {
         Text(String.localizedStringWithFormat(NSLocalizedString("Next update: %@", comment: "Auto-update schedule"), nextScheduleLine))
-    }
-
-    @ViewBuilder
-    private var helpSection: some View {
-        Section {
-            Link(destination: Self.faqURL) {
-                SettingsRowLabel("FAQ", systemImage: "questionmark.circle", accessory: .external)
-            }
-            Link(destination: Self.reportIssueURL) {
-                SettingsRowLabel("Report Issues", systemImage: "exclamationmark.triangle", accessory: .external)
-            }
-            Link(destination: Self.contactURL) {
-                SettingsRowLabel("Contact Us", systemImage: "bubble.left", accessory: .external)
-            }
-            openSafariSettingsButton
-        } header: {
-            sectionHeader(.help)
-        }
     }
 
     private var openSafariSettingsButton: some View {
@@ -785,6 +769,15 @@ struct SettingsView: View {
                         as? String ?? "Unknown"
                 )
             }
+            Link(destination: Self.faqURL) {
+                SettingsRowLabel("FAQ", systemImage: "questionmark.circle", accessory: .external)
+            }
+            Link(destination: Self.reportIssueURL) {
+                SettingsRowLabel("Report Issues", systemImage: "exclamationmark.triangle", accessory: .external)
+            }
+            Link(destination: Self.contactURL) {
+                SettingsRowLabel("Contact Us", systemImage: "bubble.left", accessory: .external)
+            }
             Link(destination: Self.developerURL) {
                 SettingsRowLabel("Developer", systemImage: "person", accessory: .external)
             }
@@ -924,7 +917,6 @@ struct SettingsView: View {
         autoUpdateSection.settingsAnchor(.autoUpdate)
         syncSection.settingsAnchor(.sync)
         advancedSection.settingsAnchor(.advanced)
-        helpSection.settingsAnchor(.help)
         aboutSection.settingsAnchor(.about)
         dangerZoneSection.settingsAnchor(.reset)
     }
@@ -1457,7 +1449,7 @@ struct PauseBlockingMenu: View {
 
 /// Settings' sections in page order, for the pills.
 enum SettingsSection: Hashable {
-    case general, websites, autoUpdate, sync, advanced, help, about, reset
+    case general, websites, autoUpdate, sync, advanced, about, reset
 
     var title: LocalizedStringKey {
         switch self {
@@ -1466,7 +1458,6 @@ enum SettingsSection: Hashable {
         case .autoUpdate: return "Auto-Update"
         case .sync: return "Sync"
         case .advanced: return "Advanced"
-        case .help: return "Help"
         case .about: return "About"
         case .reset: return "Reset"
         }
