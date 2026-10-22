@@ -4,7 +4,7 @@ import wBlockCoreService
 @main
 struct FilterListSiteExclusionTests {
     static func main() {
-        let selectedCases: [(String, [String], [String], String)] = [
+        let selectedCases: [(String, [String], [String]?, String)] = [
             ("##.ad", [], ["example.com"], "example.com##.ad"),
             ("||ads.test^", [], ["example.com"], "||ads.test^$domain=example.com"),
             ("example.com##.ad", [], ["news.example.com"], "news.example.com##.ad"),
@@ -24,7 +24,15 @@ struct FilterListSiteExclusionTests {
             ("/ads[0-9]+$/", [], ["example.com"], "/ads[0-9]+$/$domain=example.com"),
             ("##.ad", [], [], ""),
             ("example.com#%#//scriptlet('abort-on-property-read', 'adblock')", [], ["news.example.com"],
-             "news.example.com#%#//scriptlet('abort-on-property-read', 'adblock')")
+             "news.example.com#%#//scriptlet('abort-on-property-read', 'adblock')"),
+            // `name.*` covers every domain ending (#1032).
+            ("##.ad", [], ["amazon.*"], "amazon.*##.ad"),
+            ("amazon.it,ebay.it##.ad", [], ["amazon.*"], "amazon.it##.ad"),
+            ("www.amazon.*##.ad", [], ["amazon.*"], "www.amazon.*##.ad"),
+            ("amazon.it,ebay.it##.ad", ["amazon.*"], nil, "ebay.it##.ad"),
+            ("##.ad", ["amazon.*"], nil, "~amazon.*##.ad"),
+            ("||ads.test^$domain=amazon.co.uk", ["amazon.*"], nil, ""),
+            ("amazon.it##.ad", ["notamazon.*", "amazon.it.example.com"], nil, "amazon.it##.ad"),
         ]
         for (rule, excluded, selected, expected) in selectedCases {
             precondition(FilterListSiteExclusion.restrictingAdvancedRules(rule, excluding: excluded, including: selected) == expected,
@@ -166,6 +174,7 @@ struct FilterListSiteExclusionTests {
             stale.selectedSites = nil
             precondition(FilterSelectionRebaser.rebaseSelection(snapshot: [stale], latestPersisted: [filter])[0].selectedSites == selected)
         }
+        precondition(FilterListSiteExclusion.normalizedDomains(from: [" Amazon.* ", "*.amazon.*", "*", ".*", "amazon.com"]) == ["amazon.*", "amazon.com"])
         print("PASS")
     }
 }

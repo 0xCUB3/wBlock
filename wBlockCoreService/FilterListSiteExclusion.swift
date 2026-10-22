@@ -24,8 +24,23 @@ internal import ContentBlockerConverter
 import Foundation
 
 public enum FilterListSiteExclusion {
+    /// A site, or `name.*` for every domain ending (#1032), which filter rule
+    /// syntax matches natively.
+    public static func normalizedDomain(_ raw: String) -> String? {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.hasSuffix(".*") else { return DisabledSitesNormalizer.normalizedDomain(trimmed) }
+        return DisabledSitesNormalizer.normalizedDomain(String(trimmed.dropLast(2))).map { $0 + ".*" }
+    }
+
     public static func normalizedDomains(from raw: [String]) -> [String] {
-        DisabledSitesNormalizer.normalizedDomains(from: raw)
+        Array(Set(raw.compactMap(normalizedDomain))).sorted()
+    }
+
+    /// The frame-URL pattern the converter writes for a `name.*` domain.
+    static func wildcardFrameURLPattern(_ site: String) -> String? {
+        guard site.hasSuffix(".*") else { return nil }
+        let name = NSRegularExpression.escapedPattern(for: String(site.dropLast(2)))
+        return #"^[^:]+://+([^:/]+\.)?"# + name + #"\.[^/:]+([/:?#].*)?$"#
     }
 
     public static func restrictingAdvancedRules(_ text: String, excluding domains: [String], including selectedSites: [String]? = nil) -> String {
@@ -151,8 +166,16 @@ public enum FilterListSiteExclusion {
         var joined: [String] { positives + negatives }
     }
 
+    /// Whether `host` matches everything `site` does. `name.*` covers each
+    /// `name.<ending>` and its subdomains; a plain host never covers a pattern.
     private static func covers(_ host: String, _ site: String) -> Bool {
-        host == site || site.hasSuffix(".\(host)")
+        if host == site || site.hasSuffix(".\(host)") { return true }
+        guard host.hasSuffix(".*") else { return false }
+        let name = "." + host.dropLast(2) + "."
+        let dotted = "." + site
+        return site.hasSuffix(".*")
+            ? dotted.hasSuffix(name + "*")
+            : dotted.range(of: name).map { !dotted[$0.upperBound...].isEmpty } ?? false
     }
 
     /// Narrows a domain list so it never matches an excluded site.

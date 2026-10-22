@@ -15,7 +15,7 @@ struct SiteExclusionIgnoreSegmentTests {
 
         let target = ContentBlockerTargetManager.shared.allTargets(forPlatform: .macOS)[0]
         var excluded = FilterList(name: "excluded", url: URL(string: "https://example.com/a.txt")!, category: .privacy, isSelected: true)
-        excluded.excludedSites = ["example.com"]
+        excluded.excludedSites = ["example.com", "shop.*"]
         let other = FilterList(name: "other", url: URL(string: "https://example.com/b.txt")!, category: .privacy, isSelected: true)
         let unscoped = (0..<2000).map { "||tracker\($0).net^" }.joined(separator: "\n")
         try (unscoped + "\n||scoped.net^$domain=news.org\n@@||allowed.net^\n")
@@ -44,6 +44,8 @@ struct SiteExclusionIgnoreSegmentTests {
                 } }
                 if let only = trigger["if-domain"] as? [String], !matches(only) { continue }
                 if let except = trigger["unless-domain"] as? [String], matches(except) { continue }
+                if let frames = trigger["if-frame-url"] as? [String],
+                   !frames.contains(where: { "https://\(host)/".range(of: $0, options: .regularExpression) != nil }) { continue }
                 switch (rule["action"] as? [String: Any])?["type"] as? String {
                 case "block": state = true
                 case "ignore-previous-rules": state = false
@@ -59,6 +61,8 @@ struct SiteExclusionIgnoreSegmentTests {
         check(!blocked("https://tracker7.net/x.js", on: "www.example.com"), "excluded list stops on the excluded site")
         check(!blocked("https://scoped.net/x.js", on: "example.com") && blocked("https://scoped.net/x.js", on: "news.org"), "scoped rules keep their scope")
         check(blocked("https://other.net/x.js", on: "example.com"), "other lists still block on the excluded site")
+        check(!blocked("https://tracker7.net/x.js", on: "www.shop.co.uk") && blocked("https://tracker7.net/x.js", on: "shopping.com"),
+              "a name.* exclusion covers every ending of that name only (#1032)")
         print("PASS: site exclusions compile as one ignore rule")
     }
 

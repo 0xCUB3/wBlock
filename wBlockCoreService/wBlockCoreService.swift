@@ -1509,7 +1509,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         var safariRulesCount = result.safariRulesCount
         if let ignoreSegment, !ignoreSegment.rules.isEmpty {
             let segment = try convertRules(rules: ignoreSegment.rules, isCancelled: cancellationRequested)
-            let sites = DisabledSitesNormalizer.normalizedDomains(from: ignoreSegment.sites)
+            let sites = FilterListSiteExclusion.normalizedDomains(from: ignoreSegment.sites)
             let segmentJSON = injectIgnoreRulesForDisabledSites(
                 json: normalizedSafariRules(segment.safariRulesJSON), disabledSites: sites
             )
@@ -2295,6 +2295,11 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
 
     private static func disabledSiteIgnoreRuleJSON(for site: String) -> String {
         let trimmedSite = site.trimmingCharacters(in: .whitespacesAndNewlines)
+        // if-domain has no TLD wildcard; a list's `name.*` exclusion (#1032)
+        // matches the frame URL the way the converter does.
+        if let pattern = FilterListSiteExclusion.wildcardFrameURLPattern(trimmedSite) {
+            return "{\"action\":{\"type\":\"ignore-previous-rules\"},\"trigger\":{\"url-filter\":\".*\",\"if-frame-url\":[\"\(escapeForJSONString(pattern))\"]}}"
+        }
         let wildcardDomain = trimmedSite.hasPrefix("*") ? trimmedSite : "*\(trimmedSite)"
         let escapedDomain = escapeForJSONString(wildcardDomain)
 
