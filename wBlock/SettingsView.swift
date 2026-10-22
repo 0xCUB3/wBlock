@@ -247,12 +247,6 @@ struct SettingsView: View {
                         + Text(" ") + Text(gpcLearnMore)
                 )
             }
-            Toggle(isOn: blockedRequestCountBinding) {
-                rowLabel(
-                    "Blocked Request Count",
-                    detail: Text("Shows on the toolbar icon how many requests wBlock blocked on the current page. Only some blocks are counted.")
-                )
-            }
             appearancePicker
             #if os(iOS)
             if PortraitOrientationLock.isAvailable {
@@ -363,6 +357,14 @@ struct SettingsView: View {
             }
 
             cosmeticFilteringControls
+
+            // Opt-in and partial, so it sits with the other power-user settings.
+            Toggle(isOn: blockedRequestCountBinding) {
+                rowLabel(
+                    "Blocked Request Count",
+                    detail: Text("Shows on the toolbar icon how many requests wBlock blocked on the current page. Only some blocks are counted.")
+                )
+            }
 
             backupButtons
         } header: {
