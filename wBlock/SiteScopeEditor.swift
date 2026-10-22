@@ -36,7 +36,7 @@ struct SiteScopeEditor: View {
                 .disabled(isSaving)
             }
             if let selectedSites {
-                SettingsGroup(header: "Selected Sites",
+                SettingsGroup(header: "Selected Sites", isBoxed: false,
                               footer: (selectedSites.isEmpty ? [emptySelectionMessage] : []) + (showsExcluded ? [] : [footer])) {
                     StringListEditor(title: nil, items: selectedSites,
                                      update: { updateSelected($0) }, isSaving: isSaving,
@@ -44,7 +44,7 @@ struct SiteScopeEditor: View {
                 }
             }
             if showsExcluded {
-                SettingsGroup(header: "Excluded Sites", footer: [excludedMessage, footer]) {
+                SettingsGroup(header: "Excluded Sites", isBoxed: false, footer: [excludedMessage, footer]) {
                     StringListEditor(title: nil, items: excludedSites,
                                      update: updateExcluded, isSaving: isSaving,
                                      normalize: FilterListSiteExclusion.normalizedDomain)

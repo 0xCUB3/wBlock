@@ -51,6 +51,8 @@ struct AutomaticUpdatesToggle: View {
 /// sits on the same leading edge with one header and one footer style (#943).
 struct SettingsGroup<Content: View>: View {
     var header: LocalizedStringKey? = nil
+    /// Off for a site field, which draws its own box like Site Settings (#1028).
+    var isBoxed = true
     var footer: [LocalizedStringKey] = []
     var tint: Color? = nil
     @ViewBuilder let content: () -> Content
@@ -61,7 +63,11 @@ struct SettingsGroup<Content: View>: View {
                 Text(header).font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
                     .padding(.horizontal, 12)
             }
-            VStack(alignment: .leading, spacing: 8, content: content).settingsGroup(tint: tint)
+            if isBoxed {
+                VStack(alignment: .leading, spacing: 8, content: content).settingsGroup(tint: tint)
+            } else {
+                VStack(alignment: .leading, spacing: 8, content: content)
+            }
             // One paragraph: separate lines left gaps between the sentences (#999).
             if let first = footer.first {
                 footer.dropFirst().reduce(Text(first)) { $0 + Text(verbatim: " ") + Text($1) }

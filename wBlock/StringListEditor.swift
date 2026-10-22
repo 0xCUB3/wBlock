@@ -16,7 +16,7 @@ struct StringListEditor: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 8) {
             if let title { Text(title).font(.callout.weight(.medium)) }
             HStack(spacing: 12) {
                 // onSubmit rather than onCommit: on macOS the onCommit closure kept
@@ -27,24 +27,30 @@ struct StringListEditor: View {
                     .listEntryField()
                 AddItemButton(canAdd: candidate != nil && !isSaving, action: addItem)
             }
-            ForEach(items, id: \.self) { item in
-                HStack {
-                    Text(verbatim: item).font(.callout).textSelection(.enabled)
-                    Spacer()
-                    Button { update(items.filter { $0 != item }) } label: {
-                        Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
-                            #if os(macOS)
-                            .frame(minWidth: 28, minHeight: 32)
-                            #else
-                            .frame(minWidth: 44, minHeight: 44)
-                            #endif
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Remove")
-                    .accessibilityValue(item)
-                    .disabled(isSaving)
+            if !items.isEmpty {
+                VStack(alignment: .leading, spacing: 4) { rows }.settingsGroup()
+            }
+        }
+    }
+
+    private var rows: some View {
+        ForEach(items, id: \.self) { item in
+            HStack {
+                Text(verbatim: item).font(.callout).textSelection(.enabled)
+                Spacer()
+                Button { update(items.filter { $0 != item }) } label: {
+                    Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
+                        #if os(macOS)
+                        .frame(minWidth: 28, minHeight: 32)
+                        #else
+                        .frame(minWidth: 44, minHeight: 44)
+                        #endif
+                        .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Remove")
+                .accessibilityValue(item)
+                .disabled(isSaving)
             }
         }
     }

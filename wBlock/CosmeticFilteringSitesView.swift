@@ -34,7 +34,7 @@ struct CosmeticFilteringSitesView: View {
                     }
                 }
                 if isEnabled {
-                    SettingsGroup(header: "Excluded Sites", footer: [
+                    SettingsGroup(header: "Excluded Sites", isBoxed: false, footer: [
                         "Cosmetic filtering will not apply on these sites. Network blocking still applies.",
                         "Sites include their subdomains, and amazon.* covers every Amazon domain. Apply changes to update filtering.",
                     ]) {
@@ -44,7 +44,7 @@ struct CosmeticFilteringSitesView: View {
                     }
                 } else {
                     let selected = sites.selectedSites ?? []
-                    SettingsGroup(header: "Selected Sites", footer: [
+                    SettingsGroup(header: "Selected Sites", isBoxed: false, footer: [
                         selected.isEmpty ? "No sites selected. Cosmetic filtering will not apply."
                             : "Cosmetic filtering applies only on these sites.",
                         "Sites include their subdomains, and amazon.* covers every Amazon domain. Apply changes to update filtering.",
