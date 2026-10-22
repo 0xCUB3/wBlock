@@ -143,13 +143,11 @@ struct SiteSettingsView: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 12) {
                 TextField("example.com", text: $newDomain)
-                    .textFieldStyle(.plain)
                     .focused($isTextFieldFocused)
                     .onSubmit {
                         addDomain()
                     }
-                    .padding(12)
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+                    .listEntryField()
 
                 AddItemButton(canAdd: addableDomain != nil, isBusy: isAddingDomain, action: addDomain)
             }

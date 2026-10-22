@@ -18,18 +18,13 @@ struct StringListEditor: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             if let title { Text(title).font(.callout.weight(.medium)) }
-            HStack {
+            HStack(spacing: 12) {
                 // onSubmit rather than onCommit: on macOS the onCommit closure kept
                 // the list from the first render, so a second Return replaced the
                 // first site instead of adding to it (#948).
                 TextField(placeholder, text: $input)
                     .onSubmit(addItem)
-                    .textFieldStyle(.roundedBorder)
-                    .disableAutocorrection(true)
-                    #if os(iOS)
-                    .keyboardType(.URL)
-                    .textInputAutocapitalization(.never)
-                    #endif
+                    .listEntryField()
                 AddItemButton(canAdd: candidate != nil && !isSaving, action: addItem)
             }
             ForEach(items, id: \.self) { item in
@@ -58,6 +53,20 @@ struct StringListEditor: View {
         guard !isSaving, let candidate else { return }
         input = ""
         update((items + [candidate]).sorted())
+    }
+}
+
+extension View {
+    /// The site field Site Settings opens with, shared by every site list (#1028).
+    func listEntryField() -> some View {
+        textFieldStyle(.plain)
+            .disableAutocorrection(true)
+            #if os(iOS)
+            .keyboardType(.URL)
+            .textInputAutocapitalization(.never)
+            #endif
+            .padding(12)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
     }
 }
 
