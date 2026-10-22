@@ -176,7 +176,8 @@ struct SiteSettingsView: View {
         domains.formUnion(scriptsDisabled)
         domains.formUnion(exceptionsByScript.values.flatMap { $0 })
         domains.formUnion(dataManager.getUserScriptAllowedHosts().values.flatMap { $0 })
-        domains.formUnion(filterManager.filterLists.flatMap(\.excludedSites))
+        // A list's `name.*` pattern is no single site, so it stays in the list's editor.
+        domains.formUnion(filterManager.filterLists.flatMap(\.excludedSites).filter { !$0.hasSuffix(".*") })
 
         return domains.sorted().map { domain in
             SiteSummary(

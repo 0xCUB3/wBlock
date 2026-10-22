@@ -1,4 +1,5 @@
 import SwiftUI
+import wBlockCoreService
 
 struct SiteScopeEditor: View {
     let title: LocalizedStringKey
@@ -38,13 +39,15 @@ struct SiteScopeEditor: View {
                 SettingsGroup(header: "Selected Sites",
                               footer: (selectedSites.isEmpty ? [emptySelectionMessage] : []) + (showsExcluded ? [] : [footer])) {
                     StringListEditor(title: nil, items: selectedSites,
-                                     update: { updateSelected($0) }, isSaving: isSaving)
+                                     update: { updateSelected($0) }, isSaving: isSaving,
+                                     normalize: FilterListSiteExclusion.normalizedDomain)
                 }
             }
             if showsExcluded {
                 SettingsGroup(header: "Excluded Sites", footer: [excludedMessage, footer]) {
                     StringListEditor(title: nil, items: excludedSites,
-                                     update: updateExcluded, isSaving: isSaving)
+                                     update: updateExcluded, isSaving: isSaving,
+                                     normalize: FilterListSiteExclusion.normalizedDomain)
                 }
             }
         }

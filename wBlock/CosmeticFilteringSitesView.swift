@@ -36,20 +36,22 @@ struct CosmeticFilteringSitesView: View {
                 if isEnabled {
                     SettingsGroup(header: "Excluded Sites", footer: [
                         "Cosmetic filtering will not apply on these sites. Network blocking still applies.",
-                        "Sites include their subdomains. Apply changes to update filtering.",
+                        "Sites include their subdomains, and amazon.* covers every Amazon domain. Apply changes to update filtering.",
                     ]) {
                         StringListEditor(title: nil, items: sites.excludedSites,
-                                         update: { update(sites.selectedSites, $0) })
+                                         update: { update(sites.selectedSites, $0) },
+                                         normalize: FilterListSiteExclusion.normalizedDomain)
                     }
                 } else {
                     let selected = sites.selectedSites ?? []
                     SettingsGroup(header: "Selected Sites", footer: [
                         selected.isEmpty ? "No sites selected. Cosmetic filtering will not apply."
                             : "Cosmetic filtering applies only on these sites.",
-                        "Sites include their subdomains. Apply changes to update filtering.",
+                        "Sites include their subdomains, and amazon.* covers every Amazon domain. Apply changes to update filtering.",
                     ]) {
                         StringListEditor(title: nil, items: selected,
-                                         update: { update($0, sites.excludedSites) })
+                                         update: { update($0, sites.excludedSites) },
+                                         normalize: FilterListSiteExclusion.normalizedDomain)
                     }
                 }
             }

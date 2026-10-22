@@ -4,7 +4,7 @@
 
 "Apply on" = "Uygulanacak siteler";
 "No sites selected. This list will not apply." = "Hiçbir site seçilmedi. Bu liste uygulanmayacak.";
-"Sites include their subdomains. Apply changes to update filtering." = "Siteler alt alan adlarını da kapsar. Filtrelemeyi güncellemek için değişiklikleri uygulayın.";
+"Sites include their subdomains, and amazon.* covers every Amazon domain. Apply changes to update filtering." = "Siteler alt alan adlarını da kapsar ve amazon.* tüm Amazon alan adlarını kapsar. Filtrelemeyi güncellemek için değişiklikleri uygulayın.";
 "Run on" = "Çalıştırılacak siteler";
 "All matching sites" = "Eşleşen tüm siteler";
 "Only selected sites" = "Yalnızca seçilen siteler";

@@ -4,7 +4,7 @@
 
 "Apply on" = "Appliquer sur";
 "No sites selected. This list will not apply." = "Aucun site sélectionné. Cette liste ne sera pas appliquée.";
-"Sites include their subdomains. Apply changes to update filtering." = "Les sites incluent leurs sous-domaines. Appliquez les modifications pour mettre à jour le filtrage.";
+"Sites include their subdomains, and amazon.* covers every Amazon domain. Apply changes to update filtering." = "Les sites incluent leurs sous-domaines, et amazon.* couvre tous les domaines Amazon. Appliquez les modifications pour mettre à jour le filtrage.";
 "Run on" = "Exécuter sur";
 "All matching sites" = "Tous les sites correspondants";
 "Only selected sites" = "Uniquement les sites sélectionnés";
