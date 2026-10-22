@@ -25,10 +25,11 @@ enum UserScriptContextMenuAction: String {
 
 enum ContextMenuActionAvailability {
     static func filterActions(for filter: FilterList, isDownloaded: Bool) -> [FilterContextMenuAction] {
-        var actions: [FilterContextMenuAction] = [.info, .settings]
+        var actions: [FilterContextMenuAction] = [.info]
         if filter.isRemoteURL && !isDownloaded { actions.append(.download) }
+        // Settings only once there is something to configure (#1028).
         if isDownloaded || filter.isInlineUserList {
-            actions.append(filter.isInlineUserList ? .editRules : .viewRules)
+            actions += [.settings, filter.isInlineUserList ? .editRules : .viewRules]
         }
         if filter.isCustom {
             actions.append(.editInfo)
@@ -42,11 +43,11 @@ enum ContextMenuActionAvailability {
         isLocal: Bool,
         isDownloaded: Bool
     ) -> [UserScriptContextMenuAction] {
-        var actions: [UserScriptContextMenuAction] = [.info, .settings]
+        var actions: [UserScriptContextMenuAction] = [.info]
         if !isLocal && !isDownloaded { actions.append(.download) }
         if isDownloaded {
             // URL-sourced content remains read-only because updates replace it.
-            actions.append(!isBuiltIn && isLocal ? .editContent : .viewContent)
+            actions += [.settings, !isBuiltIn && isLocal ? .editContent : .viewContent]
         }
         if !isBuiltIn { actions += [.editInfo, .deleteScript] }
         return actions

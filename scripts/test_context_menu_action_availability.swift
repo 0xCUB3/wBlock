@@ -33,11 +33,11 @@ struct ContextMenuActionAvailabilityTest {
         let foreignCustom = filter("Foreign custom", category: .foreign, custom: true)
         let inlineCustom = filter("Inline custom", category: .custom, custom: true, url: inlineURL)
 
-        check(filterActions(builtIn, downloaded: false) == [.info, .settings, .download],
+        check(filterActions(builtIn, downloaded: false) == [.info, .download],
               "undownloaded built-in nonforeign filters can move but cannot edit metadata")
         check(filterActions(builtIn, downloaded: true) == [.info, .settings, .viewRules],
               "downloaded built-in filters expose rules and move only")
-        check(filterActions(custom, downloaded: false) == [.info, .settings, .download, .editInfo, .deleteList],
+        check(filterActions(custom, downloaded: false) == [.info, .download, .editInfo, .deleteList],
               "undownloaded custom nonforeign filters expose custom metadata actions")
         check(filterActions(custom, downloaded: true) == [.info, .settings, .viewRules, .editInfo, .deleteList],
               "downloaded custom nonforeign filters expose rules and custom metadata actions")
@@ -66,9 +66,9 @@ struct ContextMenuActionAvailabilityTest {
             )
         }
 
-        let expectedBuiltInRemoteUndownloaded: [UserScriptContextMenuAction] = [.info, .settings, .download]
+        let expectedBuiltInRemoteUndownloaded: [UserScriptContextMenuAction] = [.info, .download]
         let expectedBuiltInRemoteDownloaded: [UserScriptContextMenuAction] = [.info, .settings, .viewContent]
-        let expectedBuiltInLocalUndownloaded: [UserScriptContextMenuAction] = [.info, .settings]
+        let expectedBuiltInLocalUndownloaded: [UserScriptContextMenuAction] = [.info]
         let expectedBuiltInLocalDownloaded: [UserScriptContextMenuAction] = [.info, .settings, .viewContent]
         check(scriptActions(builtIn: true, local: false, downloaded: false) == expectedBuiltInRemoteUndownloaded,
               "undownloaded remote built-in scripts offer download and move only")
@@ -79,9 +79,9 @@ struct ContextMenuActionAvailabilityTest {
         check(scriptActions(builtIn: true, local: true, downloaded: true) == expectedBuiltInLocalDownloaded,
               "downloaded local built-in scripts offer view content and move")
 
-        let expectedCustomRemoteUndownloaded: [UserScriptContextMenuAction] = [.info, .settings, .download, .editInfo, .deleteScript]
+        let expectedCustomRemoteUndownloaded: [UserScriptContextMenuAction] = [.info, .download, .editInfo, .deleteScript]
         let expectedCustomRemoteDownloaded: [UserScriptContextMenuAction] = [.info, .settings, .viewContent, .editInfo, .deleteScript]
-        let expectedCustomLocalUndownloaded: [UserScriptContextMenuAction] = [.info, .settings, .editInfo, .deleteScript]
+        let expectedCustomLocalUndownloaded: [UserScriptContextMenuAction] = [.info, .editInfo, .deleteScript]
         let expectedCustomLocalDownloaded: [UserScriptContextMenuAction] = [.info, .settings, .editContent, .editInfo, .deleteScript]
         check(scriptActions(builtIn: false, local: false, downloaded: false) == expectedCustomRemoteUndownloaded,
               "undownloaded remote custom scripts offer download and custom metadata actions")
