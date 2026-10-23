@@ -27,6 +27,8 @@ struct FilterListSiteExclusionTests {
              "news.example.com#%#//scriptlet('abort-on-property-read', 'adblock')"),
             // `name.*` covers every domain ending (#1032).
             ("##.ad", [], ["amazon.*"], "amazon.*##.ad"),
+            // A selected site keeps rules written for `name.*` (#1031).
+            ("amazon.*##.ad", [], ["amazon.it"], "amazon.it##.ad"),
             ("amazon.it,ebay.it##.ad", [], ["amazon.*"], "amazon.it##.ad"),
             ("www.amazon.*##.ad", [], ["amazon.*"], "www.amazon.*##.ad"),
             ("amazon.it,ebay.it##.ad", ["amazon.*"], nil, "ebay.it##.ad"),
