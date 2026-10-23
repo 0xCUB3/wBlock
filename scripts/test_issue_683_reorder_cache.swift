@@ -78,6 +78,7 @@ struct ReorderCacheTests {
         let changed = try compile([a, b], [a, b, c, d], extra: "||extra.example^")
         precondition(!changed.reusedCachedBase, "affinity content changes still miss")
         b.selectedSites = ["only.test"]
+        b.onlySelectedSites = true
         let selectedOnly = try compile([a, b], [a, b, c, d], extra: "||extra.example^")
         precondition(!selectedOnly.reusedCachedBase, "selected-site changes must invalidate cached output")
         b.selectedSites = []

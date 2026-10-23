@@ -18,8 +18,8 @@ struct ApplyFilterConfiguration: Equatable {
         category = filter.category
         isCustom = filter.isCustom
         hasUserProvidedName = filter.hasUserProvidedName
-        excludedSites = filter.excludedSites
-        selectedSites = filter.selectedSites
+        excludedSites = filter.appliedExcludedSites
+        selectedSites = filter.appliedSelectedSites
     }
 }
 

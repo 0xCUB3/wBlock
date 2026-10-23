@@ -228,6 +228,10 @@ func mergeFilterListsForPersistence(
             if theirs.hasSelectedSites { merged.selectedSites = theirs.selectedSites }
             else { merged.clearSelectedSites() }
         }
+        if merged.hasOnlySelectedSites == base.hasOnlySelectedSites && merged.onlySelectedSites == base.onlySelectedSites {
+            if theirs.hasOnlySelectedSites { merged.onlySelectedSites = theirs.onlySelectedSites }
+            else { merged.clearOnlySelectedSites() }
+        }
         if merged.hasAdmittedSourceRuleCount == base.hasAdmittedSourceRuleCount
             && (!merged.hasAdmittedSourceRuleCount || merged.admittedSourceRuleCount == base.admittedSourceRuleCount)
         {

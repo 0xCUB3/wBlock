@@ -10,16 +10,23 @@ struct UserScriptWebsiteExceptionsView: View {
 
     var body: some View {
         let access = dataManager.userScriptSiteAccess(forScriptID: scriptID.uuidString)
+        let disabledHosts = dataManager.getUserScriptDisabledHosts(forScriptID: scriptID.uuidString)
+        // Sites turned off from the popup still apply to selected sites.
         SiteScopeEditor(
-            title: "Run on", selectedSites: access.onlySelectedSites ? access.hosts : nil,
-            excludedSites: dataManager.getUserScriptDisabledHosts(forScriptID: scriptID.uuidString),
+            title: "Run on", onlySelectedSites: access.onlySelectedSites, selectedSites: access.hosts,
+            excludedSites: access.onlySelectedSites && disabledHosts.isEmpty ? nil : disabledHosts,
             emptySelectionMessage: "No sites selected. This script will not run.",
             excludedMessage: "This script will not run on excluded sites, even if they are selected.",
             footer: "Sites include their subdomains. The script’s own matching rules still apply. Reload the page after making changes.",
             isSaving: isSaving,
+            updateMode: { onlySelected in
+                save { await userScriptManager.setUserScriptSiteAccess(
+                    UserScriptSiteAccess(onlySelectedSites: onlySelected, hosts: access.hosts), for: scriptID
+                ) }
+            },
             updateSelected: { hosts in
                 save { await userScriptManager.setUserScriptSiteAccess(
-                    UserScriptSiteAccess(onlySelectedSites: hosts != nil, hosts: hosts ?? []), for: scriptID
+                    UserScriptSiteAccess(onlySelectedSites: true, hosts: hosts), for: scriptID
                 ) }
             },
             updateExcluded: { hosts in

@@ -1004,25 +1004,22 @@ class AppFilterManager: ObservableObject {
         saveFilterListsCoalesced()
     }
 
-    @discardableResult
-    func setExcludedSites(_ sites: [String], for id: UUID) -> Bool {
-        guard let index = filterListIndex(for: id) else { return false }
-        let normalized = FilterListSiteExclusion.normalizedDomains(from: sites)
-        guard filterLists[index].excludedSites != normalized else { return false }
-        filterLists[index].excludedSites = normalized
-        saveFilterListsCoalesced()
-        refreshPendingChanges()
-        return true
+    func setExcludedSites(_ sites: [String], for id: UUID) {
+        updateSiteScope(\.excludedSites, FilterListSiteExclusion.normalizedDomains(from: sites), for: id)
     }
 
-    @discardableResult
-    func setSelectedSites(_ sites: [String]?, for id: UUID) -> Bool {
-        guard let index = filterListIndex(for: id) else { return false }
-        let normalized = sites.map { FilterListSiteExclusion.normalizedDomains(from: $0) }
-        guard filterLists[index].selectedSites != normalized else { return false }
-        filterLists[index].selectedSites = normalized
+    func setSelectedSites(_ sites: [String], for id: UUID) {
+        updateSiteScope(\.selectedSites, FilterListSiteExclusion.normalizedDomains(from: sites), for: id)
+    }
+
+    func setOnlySelectedSites(_ enabled: Bool, for id: UUID) {
+        updateSiteScope(\.onlySelectedSites, enabled, for: id)
+    }
+
+    private func updateSiteScope<Value: Equatable>(_ keyPath: WritableKeyPath<FilterList, Value>, _ value: Value, for id: UUID) {
+        guard let index = filterListIndex(for: id), filterLists[index][keyPath: keyPath] != value else { return }
+        filterLists[index][keyPath: keyPath] = value
         saveFilterListsCoalesced()
         refreshPendingChanges()
-        return true
     }
 }

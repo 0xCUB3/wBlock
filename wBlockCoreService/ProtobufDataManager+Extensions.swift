@@ -42,7 +42,8 @@ extension ProtobufDataManager {
             protoFilterList.userProvidedDescription = filter.hasUserProvidedDescription
             protoFilterList.excludedSites = filter.excludedSites
             if filter.isCustom { protoFilterList.languages = filter.languages }
-            if let sites = filter.selectedSites { protoFilterList.selectedSites.hosts = sites }
+            if !filter.selectedSites.isEmpty { protoFilterList.selectedSites.hosts = filter.selectedSites }
+            protoFilterList.onlySelectedSites = filter.onlySelectedSites
             if let uniqueRuleCount = filter.uniqueRuleCount {
                 protoFilterList.admittedSourceRuleCount = Int32(uniqueRuleCount)
             }
@@ -97,7 +98,8 @@ extension ProtobufDataManager {
                     ? protoData.userProvidedDescription
                     : Self.inferLegacyUserProvidedDescription(protoData, isCustom: isCustom),
                 excludedSites: Array(protoData.excludedSites),
-                selectedSites: protoData.hasSelectedSites ? protoData.selectedSites.hosts : nil,
+                selectedSites: protoData.selectedSites.hosts,
+                onlySelectedSites: protoData.hasOnlySelectedSites ? protoData.onlySelectedSites : protoData.hasSelectedSites,
                 uniqueRuleCount: protoData.hasAdmittedSourceRuleCount ? Int(protoData.admittedSourceRuleCount) : nil
             )
         }

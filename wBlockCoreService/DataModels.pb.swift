@@ -414,7 +414,7 @@ nonisolated struct Wblock_Data_FilterListData: @unchecked Sendable {
   /// Clears the value of `admittedSourceRuleCount`. Subsequent reads from it will return its default value.
   mutating func clearAdmittedSourceRuleCount() {_uniqueStorage()._admittedSourceRuleCount = nil}
 
-  /// Absent means all sites; a present empty list means no sites.
+  /// Kept while the list applies on all sites, so switching back restores it.
   var selectedSites: Wblock_Data_HostList {
     get {_storage._selectedSites ?? Wblock_Data_HostList()}
     set {_uniqueStorage()._selectedSites = newValue}
@@ -440,6 +440,17 @@ nonisolated struct Wblock_Data_FilterListData: @unchecked Sendable {
     get {_storage._languages}
     set {_uniqueStorage()._languages = newValue}
   }
+
+  /// Applies only on selected_sites, ignoring excluded_sites. Absent in older
+  /// saves, where a present selected_sites turned the mode on.
+  var onlySelectedSites: Bool {
+    get {_storage._onlySelectedSites ?? false}
+    set {_uniqueStorage()._onlySelectedSites = newValue}
+  }
+  /// Returns true if `onlySelectedSites` has been explicitly set.
+  var hasOnlySelectedSites: Bool {_storage._onlySelectedSites != nil}
+  /// Clears the value of `onlySelectedSites`. Subsequent reads from it will return its default value.
+  mutating func clearOnlySelectedSites() {_uniqueStorage()._onlySelectedSites = nil}
 
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
@@ -1191,7 +1202,7 @@ nonisolated extension Wblock_Data_AppSettings: SwiftProtobuf.Message, SwiftProto
 
 nonisolated extension Wblock_Data_FilterListData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".FilterListData"
-  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}name\0\u{1}url\0\u{1}category\0\u{3}is_selected\0\u{1}description\0\u{1}version\0\u{3}source_rule_count\0\u{3}last_updated\0\u{3}is_custom\0\u{3}local_file_path\0\u{3}excluded_sites\0\u{3}unique_rule_count\0\u{3}user_provided_name\0\u{3}user_provided_description\0\u{3}admitted_source_rule_count\0\u{3}selected_sites\0\u{3}updates_automatically\0\u{1}languages\0")
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}name\0\u{1}url\0\u{1}category\0\u{3}is_selected\0\u{1}description\0\u{1}version\0\u{3}source_rule_count\0\u{3}last_updated\0\u{3}is_custom\0\u{3}local_file_path\0\u{3}excluded_sites\0\u{3}unique_rule_count\0\u{3}user_provided_name\0\u{3}user_provided_description\0\u{3}admitted_source_rule_count\0\u{3}selected_sites\0\u{3}updates_automatically\0\u{1}languages\0\u{3}only_selected_sites\0")
 
   fileprivate class _StorageClass {
     var _id: String = String()
@@ -1213,6 +1224,7 @@ nonisolated extension Wblock_Data_FilterListData: SwiftProtobuf.Message, SwiftPr
     var _selectedSites: Wblock_Data_HostList? = nil
     var _updatesAutomatically: Bool? = nil
     var _languages: [String] = []
+    var _onlySelectedSites: Bool? = nil
 
       // This property is used as the initial default value for new instances of the type.
       // The type itself is protecting the reference to its storage via CoW semantics.
@@ -1242,6 +1254,7 @@ nonisolated extension Wblock_Data_FilterListData: SwiftProtobuf.Message, SwiftPr
       _selectedSites = source._selectedSites
       _updatesAutomatically = source._updatesAutomatically
       _languages = source._languages
+      _onlySelectedSites = source._onlySelectedSites
     }
   }
 
@@ -1279,6 +1292,7 @@ nonisolated extension Wblock_Data_FilterListData: SwiftProtobuf.Message, SwiftPr
         case 17: try { try decoder.decodeSingularMessageField(value: &_storage._selectedSites) }()
         case 18: try { try decoder.decodeSingularBoolField(value: &_storage._updatesAutomatically) }()
         case 19: try { try decoder.decodeRepeatedStringField(value: &_storage._languages) }()
+        case 20: try { try decoder.decodeSingularBoolField(value: &_storage._onlySelectedSites) }()
         default: break
         }
       }
@@ -1348,6 +1362,9 @@ nonisolated extension Wblock_Data_FilterListData: SwiftProtobuf.Message, SwiftPr
       if !_storage._languages.isEmpty {
         try visitor.visitRepeatedStringField(value: _storage._languages, fieldNumber: 19)
       }
+      try { if let v = _storage._onlySelectedSites {
+        try visitor.visitSingularBoolField(value: v, fieldNumber: 20)
+      } }()
     }
     try unknownFields.traverse(visitor: &visitor)
   }
@@ -1376,6 +1393,7 @@ nonisolated extension Wblock_Data_FilterListData: SwiftProtobuf.Message, SwiftPr
         if _storage._selectedSites != rhs_storage._selectedSites {return false}
         if _storage._updatesAutomatically != rhs_storage._updatesAutomatically {return false}
         if _storage._languages != rhs_storage._languages {return false}
+        if _storage._onlySelectedSites != rhs_storage._onlySelectedSites {return false}
         return true
       }
       if !storagesAreEqual {return false}

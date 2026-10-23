@@ -461,7 +461,8 @@ enum BackupCustomFilterRestorer {
                 lastUpdated: inline ? Date() : old?.lastUpdated,
                 hasUserProvidedName: entry.userProvidedName ?? true,
                 hasUserProvidedDescription: entry.userProvidedDescription ?? !entry.description.isEmpty,
-                excludedSites: old?.excludedSites ?? [], selectedSites: old?.selectedSites
+                excludedSites: old?.excludedSites ?? [], selectedSites: old?.selectedSites ?? [],
+                onlySelectedSites: old?.onlySelectedSites ?? false
             )
             // Admission belongs to a confirmed compilation, not to imported metadata.
             restored.uniqueRuleCount = nil

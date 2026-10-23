@@ -25,6 +25,7 @@ public enum FilterSelectionRebaser {
             rebased.category = latest.category
             rebased.excludedSites = latest.excludedSites
             rebased.selectedSites = latest.selectedSites
+            rebased.onlySelectedSites = latest.onlySelectedSites
             if latest.hasUserProvidedName || latest.hasUserProvidedName != filter.hasUserProvidedName {
                 rebased.name = latest.name
             }
@@ -85,10 +86,12 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
     public var limitExceededReason: String? = nil // Reason why filter was auto-disabled due to rule limits
     public var hasUserProvidedName: Bool = false
     public var hasUserProvidedDescription: Bool = false
-    /// Hosts this list should not apply to (issue #653). Independent of Site Settings.
+    /// Hosts this list should not apply to (issue #653) while it applies on all sites.
     public var excludedSites: [String] = []
-    /// Nil applies everywhere; an empty selection applies nowhere.
-    public var selectedSites: [String]?
+    /// The only hosts this list applies to while `onlySelectedSites` is on. Both
+    /// lists are kept, so switching modes brings each one back (#1035).
+    public var selectedSites: [String] = []
+    public var onlySelectedSites = false
     /// Source rule lines admitted for this list by the last confirmed apply.
     /// Nil when no compile-time provenance is available.
     public var uniqueRuleCount: Int?
@@ -97,7 +100,7 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
         case id, name, url, category, isCustom, isSelected, updatesAutomatically, description,
              version, sourceRuleCount, lastUpdated, languages, trustLevel,
              etag, serverLastModified, limitExceededReason, hasUserProvidedName,
-             hasUserProvidedDescription, excludedSites, selectedSites, admittedSourceRuleCount,
+             hasUserProvidedDescription, excludedSites, selectedSites, onlySelectedSites, admittedSourceRuleCount,
              uniqueRuleCount
         // uniqueRuleCount is decode-only legacy storage for pre-provenance estimates.
         // rawSourceRuleCount intentionally excluded — in-memory only, not persisted
@@ -123,7 +126,8 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
                 hasUserProvidedName: Bool = false,
                 hasUserProvidedDescription: Bool = false,
                 excludedSites: [String] = [],
-                selectedSites: [String]? = nil,
+                selectedSites: [String] = [],
+                onlySelectedSites: Bool = false,
                 uniqueRuleCount: Int? = nil) {
         self.id = id
         self.name = name
@@ -145,7 +149,8 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
         self.hasUserProvidedName = hasUserProvidedName
         self.hasUserProvidedDescription = hasUserProvidedDescription
         self.excludedSites = FilterListSiteExclusion.normalizedDomains(from: excludedSites)
-        self.selectedSites = selectedSites.map { FilterListSiteExclusion.normalizedDomains(from: $0) }
+        self.selectedSites = FilterListSiteExclusion.normalizedDomains(from: selectedSites)
+        self.onlySelectedSites = onlySelectedSites
         self.uniqueRuleCount = uniqueRuleCount
     }
 
@@ -172,8 +177,12 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
         excludedSites = FilterListSiteExclusion.normalizedDomains(
             from: try container.decodeIfPresent([String].self, forKey: .excludedSites) ?? []
         )
-        selectedSites = try container.decodeIfPresent([String].self, forKey: .selectedSites)
-            .map { FilterListSiteExclusion.normalizedDomains(from: $0) }
+        selectedSites = FilterListSiteExclusion.normalizedDomains(
+            from: try container.decodeIfPresent([String].self, forKey: .selectedSites) ?? []
+        )
+        // Older saves turned the mode on by storing a selection.
+        onlySelectedSites = try container.decodeIfPresent(Bool.self, forKey: .onlySelectedSites)
+            ?? container.contains(.selectedSites)
         uniqueRuleCount = try container.decodeIfPresent(Int.self, forKey: .admittedSourceRuleCount)
     }
 
@@ -198,9 +207,14 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
         try container.encode(hasUserProvidedName, forKey: .hasUserProvidedName)
         try container.encode(hasUserProvidedDescription, forKey: .hasUserProvidedDescription)
         try container.encode(excludedSites, forKey: .excludedSites)
-        try container.encodeIfPresent(selectedSites, forKey: .selectedSites)
+        try container.encode(selectedSites, forKey: .selectedSites)
+        try container.encode(onlySelectedSites, forKey: .onlySelectedSites)
         try container.encodeIfPresent(uniqueRuleCount, forKey: .admittedSourceRuleCount)
     }
+
+    /// The scope compilation honors: the mode picks which saved list counts.
+    public var appliedExcludedSites: [String] { onlySelectedSites ? [] : excludedSites }
+    public var appliedSelectedSites: [String]? { onlySelectedSites ? selectedSites : nil }
 
     /// Whether this is a built-in list pre-expanded by AdGuard's registry.
     /// These lists already have includes resolved and conditionals evaluated,

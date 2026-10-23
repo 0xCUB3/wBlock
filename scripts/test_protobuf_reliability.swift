@@ -304,14 +304,17 @@ struct ProtobufReliabilityTests {
         await manager.loadData()
         let moved = manager.getFilterLists().first { $0.id == builtIn.id }!
         expect(moved.category == .custom && !moved.isCustom, "Custom placement must not change built-in ownership")
-        for selected: [String]? in [nil, [], ["example.com"]] {
+        // All sites keeps the selection for when the mode comes back (#1035).
+        for (only, selected) in [(true, []), (true, ["example.com"]), (false, ["example.com"]), (false, [])] {
             builtIn.selectedSites = selected
+            builtIn.onlySelectedSites = only
             let saved = await manager.updateFilterLists([filter, builtIn])
             expect(saved, "selected-site mode must persist")
             manager = await makeManager(root: root)
             await manager.loadData()
-            expect(manager.getFilterLists().first { $0.id == builtIn.id }?.selectedSites == selected,
-                   "protobuf must distinguish all sites from an empty selected-site list")
+            let loaded = manager.getFilterLists().first { $0.id == builtIn.id }
+            expect(loaded?.selectedSites == selected && loaded?.onlySelectedSites == only,
+                   "protobuf must keep the selected sites and the mode separately")
         }
 
         for raw in ["", "not a URL", "https:///", "ftp://example.com/filter.txt", "wblock://other/123"] {

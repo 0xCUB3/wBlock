@@ -460,7 +460,7 @@ public enum ContentBlockerIncrementalCache {
     /// Per-list site scope changes the compiled output without touching
     /// the list file, so they must be part of the signature.
     private static func siteScopeMarker(for filter: FilterList) -> String {
-        FilterListSiteExclusion.scopeMarker(excluding: filter.excludedSites, including: filter.selectedSites)
+        FilterListSiteExclusion.scopeMarker(excluding: filter.appliedExcludedSites, including: filter.appliedSelectedSites)
     }
 
     private static func localFileFingerprint(for filter: FilterList, containerURL: URL) -> String {

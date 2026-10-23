@@ -1784,7 +1784,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                     guard assigned.contains(filter.id), let source = try source(filter) else { continue }
                     text = source
                 }
-                text = FilterListSiteExclusion.restrictingAdvancedRules(text, excluding: filter.excludedSites, including: filter.selectedSites)
+                text = FilterListSiteExclusion.restrictingAdvancedRules(text, excluding: filter.appliedExcludedSites, including: filter.appliedSelectedSites)
                 RuleText.forEachLine(text) { line in
                     let trimmed = RuleText.trimmed(line)
                     if trimmed.utf8.starts(with: "@@".utf8) || trimmed.utf8.starts(with: "!#".utf8)
@@ -1805,7 +1805,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             guard snapshot.content(for: filter.id) == nil,
                   let slot = owners[filter.id], let context = contexts[slot],
                   let raw = try source(filter), !RuleText.contains(raw, "!#") else { continue }
-            let text = FilterListSiteExclusion.restrictingAdvancedRules(raw, excluding: filter.excludedSites, including: filter.selectedSites)
+            let text = FilterListSiteExclusion.restrictingAdvancedRules(raw, excluding: filter.appliedExcludedSites, including: filter.appliedSelectedSites)
             RuleText.forEachLine(text) { line in
                 let trimmed = RuleText.trimmed(line)
                 guard FilterRuleAnalysis.isRuleLine(trimmed), !trimmed.utf8.starts(with: "@@".utf8),
@@ -1879,7 +1879,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         // blocker can: a second ignore would also cancel the first list's rules.
         let ignoreSegmentFilterID = orderedSelectedFilters
             .filter {
-                assignedFilterIDs.contains($0.id) && !$0.excludedSites.isEmpty && $0.selectedSites == nil
+                assignedFilterIDs.contains($0.id) && !$0.appliedExcludedSites.isEmpty
                     && exclusions[$0.id]?.isEmpty != false
             }
             .max { ($0.sourceRuleCount ?? 0) < ($1.sourceRuleCount ?? 0) }?.id
@@ -1887,7 +1887,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         // The segment joins the input file only so the cache hash covers it;
         // conversion lifts it back out.
         func appendIgnoreSegment(_ rules: String, for filter: FilterList) throws {
-            ignoreSegment = (rules, filter.excludedSites)
+            ignoreSegment = (rules, filter.appliedExcludedSites)
             try replication.addTarget(rules, isCancelled: cancellationRequested)
             try sourceRuleAdmissions.record(
                 filterID: filter.id, rulesText: rules,
@@ -1909,7 +1909,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                let sourceURL = SafariContentBlockerAffinityProcessor.sourceURL(for: filter, containerURL: containerURL),
                let raw = try? String(contentsOf: sourceURL, encoding: .utf8) {
                 try replication.addCandidate(
-                    FilterListSiteExclusion.restrictingAdvancedRules(raw, excluding: filter.excludedSites, including: filter.selectedSites),
+                    FilterListSiteExclusion.restrictingAdvancedRules(raw, excluding: filter.appliedExcludedSites, including: filter.appliedSelectedSites),
                     isCancelled: cancellationRequested
                 )
             }
@@ -1925,11 +1925,11 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                 )
                 var restricted: String
                 if filter.id == ignoreSegmentFilterID {
-                    let split = FilterListSiteExclusion.ignoreSegment(filtered, excluding: filter.excludedSites)
+                    let split = FilterListSiteExclusion.ignoreSegment(filtered, excluding: filter.appliedExcludedSites)
                     restricted = split.restricted
                     try appendIgnoreSegment(split.unscoped, for: filter)
                 } else {
-                    restricted = FilterListSiteExclusion.restrictingAdvancedRules(filtered, excluding: filter.excludedSites, including: filter.selectedSites)
+                    restricted = FilterListSiteExclusion.restrictingAdvancedRules(filtered, excluding: filter.appliedExcludedSites, including: filter.appliedSelectedSites)
                 }
                 try sourceRuleAdmissions.record(
                     filterID: filter.id,
@@ -1952,7 +1952,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             ) {
                 if let duplicates = exclusions[filter.id], !duplicates.isEmpty {
                     let raw = try String(contentsOf: sourceURL, encoding: .utf8)
-                    let restricted = FilterListSiteExclusion.restrictingAdvancedRules(raw, excluding: filter.excludedSites, including: filter.selectedSites)
+                    let restricted = FilterListSiteExclusion.restrictingAdvancedRules(raw, excluding: filter.appliedExcludedSites, including: filter.appliedSelectedSites)
                     let kept = RuleText.lines(restricted, emptyLines: .keptPerScalar).filter {
                         !duplicates.contains(FilterRuleAnalysis.ruleIdentity($0))
                     }
@@ -1968,7 +1968,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                         keptText, to: fileHandle, hasher: &hasher,
                         newlineData: newlineData, isCancelled: cancellationRequested
                     )
-                } else if filter.excludedSites.isEmpty && filter.selectedSites == nil {
+                } else if filter.appliedExcludedSites.isEmpty && !filter.onlySelectedSites {
                     let rawContent = try String(contentsOf: sourceURL, encoding: .utf8)
                     try replication.addTarget(rawContent, isCancelled: cancellationRequested)
                     try sourceRuleAdmissions.record(
@@ -1989,11 +1989,11 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                     let rawContent = try String(contentsOf: sourceURL, encoding: .utf8)
                     var restricted: String
                     if filter.id == ignoreSegmentFilterID {
-                        let split = FilterListSiteExclusion.ignoreSegment(rawContent, excluding: filter.excludedSites)
+                        let split = FilterListSiteExclusion.ignoreSegment(rawContent, excluding: filter.appliedExcludedSites)
                         restricted = split.restricted
                         try appendIgnoreSegment(split.unscoped, for: filter)
                     } else {
-                        restricted = FilterListSiteExclusion.restrictingAdvancedRules(rawContent, excluding: filter.excludedSites, including: filter.selectedSites)
+                        restricted = FilterListSiteExclusion.restrictingAdvancedRules(rawContent, excluding: filter.appliedExcludedSites, including: filter.appliedSelectedSites)
                     }
                     try replication.addTarget(restricted, isCancelled: cancellationRequested)
                     try sourceRuleAdmissions.record(

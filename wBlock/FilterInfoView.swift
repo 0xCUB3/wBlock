@@ -197,10 +197,12 @@ struct FilterSettingsView: View {
                 ) { filterManager.setFilterList(liveFilter.id, updatesAutomatically: $0) }
             }
             SiteScopeEditor(
-                title: "Apply on", selectedSites: liveFilter.selectedSites, excludedSites: liveFilter.excludedSites,
+                title: "Apply on", onlySelectedSites: liveFilter.onlySelectedSites, selectedSites: liveFilter.selectedSites,
+                excludedSites: liveFilter.onlySelectedSites ? nil : liveFilter.excludedSites,
                 emptySelectionMessage: "No sites selected. This list will not apply.",
                 excludedMessage: "This list will not apply on these sites. Other lists still apply.",
                 footer: "Sites include their subdomains, and amazon.* covers every Amazon domain. Apply changes to update filtering.",
+                updateMode: { filterManager.setOnlySelectedSites($0, for: liveFilter.id) },
                 updateSelected: { filterManager.setSelectedSites($0, for: liveFilter.id) },
                 updateExcluded: { filterManager.setExcludedSites($0, for: liveFilter.id) }
             )

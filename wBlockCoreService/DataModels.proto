@@ -78,13 +78,16 @@ message FilterListData {
   // Source rule lines admitted for this list by the last confirmed apply.
   // Converter output is still only known exactly per target.
   optional int32 admitted_source_rule_count = 16;
-  // Absent means all sites; a present empty list means no sites.
+  // Kept while the list applies on all sites, so switching back restores it.
   HostList selected_sites = 17;
   // Absent keeps automatic updates enabled, like UserScriptData.
   optional bool updates_automatically = 18;
   // ISO 639 codes a custom regional list covers. Built-ins take theirs from
   // the catalog.
   repeated string languages = 19;
+  // Applies only on selected_sites, ignoring excluded_sites. Absent in older
+  // saves, where a present selected_sites turned the mode on.
+  optional bool only_selected_sites = 20;
 }
 
 // Filter list categories
