@@ -254,7 +254,7 @@ struct ApplyChangesProgressView: View {
             }
         }
         #if os(macOS)
-        .toggleStyle(.checkbox)
+        .toggleStyle(UpdateRowCheckboxStyle())
         #endif
     }
 
@@ -612,6 +612,24 @@ private struct FinishedSheetDismissal: NSViewRepresentable {
             monitor = nil
             super.removeFromSuperview()
         }
+    }
+}
+#endif
+
+#if os(macOS)
+/// A checkbox centered on its two-line label, toggled by a click anywhere on
+/// the row (#1034).
+private struct UpdateRowCheckboxStyle: ToggleStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(spacing: 8) {
+            Toggle(isOn: configuration.$isOn) { configuration.label }
+                .toggleStyle(.checkbox)
+                .labelsHidden()
+            configuration.label.accessibilityHidden(true)
+            Spacer(minLength: 0)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture { configuration.isOn.toggle() }
     }
 }
 #endif

@@ -804,6 +804,7 @@ struct SettingsView: View {
             CompatibleLabeledContent {
                 Button("Reset", role: .destructive) { showingResetOrderingConfirmation = true }
                     .buttonStyle(.bordered)
+                    .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] }
             } label: {
                 rowLabel(
                     "Reset Ordering",
@@ -816,6 +817,7 @@ struct SettingsView: View {
                 }
                 .buttonStyle(.bordered)
                 .disabled(isRestarting)
+                .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] }
             } label: {
                 rowLabel(
                     "Restart Onboarding",
@@ -890,6 +892,9 @@ struct SettingsView: View {
         // A grouped Form, as in System Settings (#1018).
         Form { settingsSections }
         .groupedFormStyleCompat()
+        // The form lines a switch up with the label's first baseline, which sat
+        // it high on a two-line row; this style centers it (#1034).
+        .toggleStyle(MacTrailingSwitchToggleStyle())
         #endif
     }
 
