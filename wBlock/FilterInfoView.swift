@@ -221,8 +221,6 @@ struct FilterRulesView: View {
     @State private var shownKinds: Set<FilterRuleKind> = Set(FilterRuleKind.allCases)
     @State private var rebuildTask: Task<Void, Never>?
     @Environment(\.dismiss) private var dismiss
-    @ScaledMetric(relativeTo: .caption) private var legendColumnWidth = 160
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private static let highlightedKinds: [FilterRuleKind] = [.network, .elementHiding, .advanced, .removeParam, .unsupported, .duplicate]
 
@@ -235,7 +233,7 @@ struct FilterRulesView: View {
                 SourceViewerControls(
                     wrapsLines: $wrapsLines, onSearch: editorController.openSearch, onClose: { dismiss() }, isLoading: isLoading
                 ) {
-                    if analysis != nil { filterMenu }
+                    if let analysis { filterMenu(analysis) }
                 }
             }
             .padding(16)
@@ -254,10 +252,6 @@ struct FilterRulesView: View {
                     isEditable: false,
                     isLineWrappingEnabled: wrapsLines
                 )
-                if let analysis {
-                    Divider()
-                    legend(analysis)
-                }
             }
         }
         #if os(macOS)
@@ -309,27 +303,16 @@ struct FilterRulesView: View {
         return ordered[..<index].compactMap { loader.readLocalFilterContent($0) }
     }
 
-    private var filterMenu: some View {
+    /// Each kind's count sits in its menu item; a legend under the editor
+    /// cost a third of an iPhone screen (#1037) and its ViewThatFits/grid
+    /// layout hung rotation while Find had the keyboard up (#1036).
+    private func filterMenu(_ analysis: FilterRuleAnalysis) -> some View {
         Menu {
             ForEach(Self.highlightedKinds, id: \.self) { kind in
-                Toggle(isOn: Binding(
-                    get: { shownKinds.contains(kind) },
-                    set: { on in
-                        if on { shownKinds.insert(kind) } else { shownKinds.remove(kind) }
-                    }
-                )) {
-                    Label(Self.title(for: kind), systemImage: Self.symbol(for: kind))
-                }
+                kindToggle(kind, analysis: analysis)
             }
             Divider()
-            Toggle(isOn: Binding(
-                get: { shownKinds.contains(.comment) },
-                set: { on in
-                    if on { shownKinds.insert(.comment) } else { shownKinds.remove(.comment) }
-                }
-            )) {
-                Label("Comments", systemImage: "text.quote")
-            }
+            kindToggle(.comment, analysis: analysis)
         } label: {
             // The chevron marks it as a menu (#948) and the capsule keeps it apart
             // from Wrap Lines' similar bars (#932); tinted while some kinds are hidden.
@@ -356,51 +339,20 @@ struct FilterRulesView: View {
         .help("View")
     }
 
-    private func legend(_ analysis: FilterRuleAnalysis) -> some View {
-        Group {
-            if #available(macOS 13.0, iOS 16.0, *) {
-                ViewThatFits(in: .horizontal) {
-                    HStack(spacing: 14) {
-                        ForEach(Self.highlightedKinds, id: \.self) { kind in
-                            legendItem(kind, analysis: analysis)
-                                .fixedSize()
-                        }
-                    }
-                    legendGrid(analysis)
-                }
-            } else {
-                legendGrid(analysis)
+    private func kindToggle(_ kind: FilterRuleKind, analysis: FilterRuleAnalysis) -> some View {
+        Toggle(isOn: Binding(
+            get: { shownKinds.contains(kind) },
+            set: { on in
+                if on { shownKinds.insert(kind) } else { shownKinds.remove(kind) }
             }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
-    }
-
-    private func legendGrid(_ analysis: FilterRuleAnalysis) -> some View {
-        LazyVGrid(
-            columns: [GridItem(
-                dynamicTypeSize.isAccessibilitySize ? .flexible() : .adaptive(minimum: legendColumnWidth),
-                alignment: .leading
-            )],
-            alignment: .leading,
-            spacing: 8
-        ) {
-            ForEach(Self.highlightedKinds, id: \.self) { kind in
-                legendItem(kind, analysis: analysis)
+        )) {
+            Label {
+                Text(verbatim: "\(Self.title(for: kind)) (\(analysis.count(of: kind).formatted()))")
+            } icon: {
+                Image(systemName: Self.symbol(for: kind))
+                    .symbolRenderingMode(.palette)
+                    .foregroundStyle(Self.color(for: kind))
             }
-        }
-    }
-
-    private func legendItem(_ kind: FilterRuleKind, analysis: FilterRuleAnalysis) -> some View {
-        HStack(spacing: 4) {
-            Circle()
-                .fill(Self.color(for: kind))
-                .frame(width: 8, height: 8)
-            Text("\(Self.title(for: kind)): \(analysis.count(of: kind))")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
