@@ -2423,13 +2423,15 @@ struct RuleCapacityPopoverView: View {
             let scale = proxy.size.width / CGFloat(max(capacity, 1))
             let hidingWidth = CGFloat(min(hiding, total)) * scale
             let usedWidth = min(CGFloat(total) * scale, proxy.size.width)
+            // The filled part is its own capsule, so it ends rounded like a
+            // progress bar instead of square where element hiding stops.
             HStack(spacing: 0) {
                 Rectangle().fill(FilterRulesView.color(for: .network)).frame(width: max(0, usedWidth - hidingWidth))
                 Rectangle().fill(FilterRulesView.color(for: .elementHiding)).frame(width: min(hidingWidth, usedWidth))
-                Spacer(minLength: 0)
             }
-            .background(Color.secondary.opacity(0.15))
             .clipShape(Capsule())
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Capsule().fill(Color.secondary.opacity(0.15)))
         }
     }
 
