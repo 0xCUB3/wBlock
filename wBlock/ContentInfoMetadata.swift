@@ -130,7 +130,7 @@ struct InfoMetadataList<Content: View>: View {
 
     var body: some View {
         _VariadicView.Tree(Rows()) { content() }
-            .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .background(Color.groupFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     private struct Rows: _VariadicView_UnaryViewRoot {
