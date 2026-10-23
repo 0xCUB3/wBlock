@@ -101,16 +101,3 @@ extension View {
                         in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 }
-
-extension Color {
-    /// The fill behind grouped rows. On iOS a flat 5% of the label color all
-    /// but vanished on dark mode's black pages, so it uses the system fill
-    /// for large shapes, which matches Settings cells in both appearances.
-    static var groupFill: Color {
-        #if os(iOS)
-        Color(uiColor: .tertiarySystemFill)
-        #else
-        Color.primary.opacity(0.05)
-        #endif
-    }
-}
