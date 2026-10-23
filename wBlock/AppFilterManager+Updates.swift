@@ -66,6 +66,8 @@ extension AppFilterManager {
 
         statusDescription = LocalizedStrings.text("Checking for updates...", comment: "Update check status")
         progress = 0
+        // The helper may already have downloaded what the server now calls current.
+        await adoptPersistedDownloadMetadata()
 
         switch scope {
         case .filters:

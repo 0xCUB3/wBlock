@@ -888,11 +888,34 @@ class AppFilterManager: ObservableObject {
         showingApplyProgressSheet = true
     }
 
+    /// An auto-update run, here or in the background helper, writes new list files
+    /// and their metadata to disk. Rows kept the old version until relaunch while
+    /// View Rules read the new file (#1033), so they take any newer download.
+    func adoptPersistedDownloadMetadata() async {
+        _ = await dataManager.refreshFromDiskIfModified()
+        let stored = Dictionary(dataManager.getFilterLists().map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        var lists = filterLists
+        var changed = false
+        for index in lists.indices {
+            guard let newer = stored[lists[index].id], let date = newer.lastUpdated,
+                  date > (lists[index].lastUpdated ?? .distantPast) else { continue }
+            lists[index].version = newer.version
+            lists[index].lastUpdated = date
+            lists[index].sourceRuleCount = newer.sourceRuleCount
+            lists[index].uniqueRuleCount = newer.uniqueRuleCount
+            lists[index].etag = newer.etag
+            lists[index].serverLastModified = newer.serverLastModified
+            changed = true
+        }
+        if changed { filterLists = lists }
+    }
+
     private func showAutoUpdateProgress(_ progress: SharedAutoUpdateManager.RunProgress) {
         let sheet = applyProgressViewModel
         if progress == .finished {
             guard isAutoUpdateRunning else { return }
             isAutoUpdateRunning = false
+            Task { await adoptPersistedDownloadMetadata() }
             if autoApplyWaitingForAutoUpdate {
                 // Hand the open sheet to the rebuild instead of closing it and
                 // floating a second "Applying filters" card over the app.
