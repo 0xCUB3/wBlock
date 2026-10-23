@@ -202,7 +202,9 @@ enum RuleText {
 /// load (#978). Network rules are the Safari total less element hiding.
 public struct AppliedRuleCounts: Sendable, Equatable {
     /// `css-display-none` rules across the content blockers.
-    public let elementHiding: Int
+    public var elementHiding: Int { elementHidingByTarget.values.reduce(0, +) }
+    /// `css-display-none` rules per content blocker bundle identifier.
+    public let elementHidingByTarget: [String: Int]
     /// Scriptlets, scripts, and extended CSS that wBlock Scripts applies.
     public let scripts: Int
     /// URL parameter and redirect rules, capped at `RemoveParamDNRRuleGenerator.maxGeneratedRules`.
@@ -210,13 +212,13 @@ public struct AppliedRuleCounts: Sendable, Equatable {
 
     public static func load(targets: [ContentBlockerTargetInfo], groupIdentifier: String) -> AppliedRuleCounts {
         let container = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier)
-        var elementHiding = 0
+        var elementHidingByTarget: [String: Int] = [:]
         var scripts = 0
         for target in targets {
             if let url = container?.appendingPathComponent(target.rulesFilename),
                let data = try? Data(contentsOf: url, options: .alwaysMapped) {
                 // A quote inside a selector is escaped, so this only matches action types.
-                elementHiding += RuleText.count(of: "\"css-display-none\"", in: data)
+                elementHidingByTarget[target.bundleIdentifier] = RuleText.count(of: "\"css-display-none\"", in: data)
             }
             if let advanced = ContentBlockerIncrementalCache.loadCachedAdvancedRules(
                 targetRulesFilename: target.rulesFilename, groupIdentifier: groupIdentifier, containerURL: container
@@ -228,7 +230,7 @@ public struct AppliedRuleCounts: Sendable, Equatable {
         let urlParameters = RemoveParamDNRRuleGenerator.loadRulesPayload(
             groupIdentifier: groupIdentifier, offset: 0, limit: 1
         )["count"] as? Int ?? 0
-        return AppliedRuleCounts(elementHiding: elementHiding, scripts: scripts, urlParameters: urlParameters)
+        return AppliedRuleCounts(elementHidingByTarget: elementHidingByTarget, scripts: scripts, urlParameters: urlParameters)
     }
 }
 

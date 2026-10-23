@@ -2323,16 +2323,13 @@ struct RuleCapacityPopoverView: View {
                     Spacer()
                     Text("\(totalUsed.formatted()) / \(totalCapacity.formatted()) rules (\(LocalizedFormatting.percent(overallFraction)))")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(overallFraction > 0.8 ? Color.orange : Color.secondary)
                 }
 
-                ZStack(alignment: .leading) {
-                    Capsule()
-                        .fill(Color.secondary.opacity(0.15))
-                    Capsule()
-                        .fill(overallFraction > 0.8 ? Color.orange : Color.blue)
-                        .scaleEffect(x: max(0, overallFraction), y: 1, anchor: .leading)
-                }
+                ruleTypeBar(
+                    hiding: filterManager.appliedRuleCounts?.elementHiding ?? 0,
+                    total: totalUsed, capacity: totalCapacity
+                )
                 .frame(height: 8)
 
                 if sourceRules > 0 {
@@ -2402,13 +2399,10 @@ struct RuleCapacityPopoverView: View {
                                     .foregroundStyle(slotFraction > 0.9 ? Color.red : (slotFraction > 0.8 ? Color.orange : Color.secondary))
                             }
 
-                            ZStack(alignment: .leading) {
-                                Capsule()
-                                    .fill(Color.secondary.opacity(0.12))
-                                Capsule()
-                                    .fill(slotFraction > 0.9 ? Color.red : (slotFraction > 0.8 ? Color.orange : Color.accentColor))
-                                    .scaleEffect(x: max(0, slotFraction), y: 1, anchor: .leading)
-                            }
+                            ruleTypeBar(
+                                hiding: filterManager.appliedRuleCounts?.elementHidingByTarget[target.bundleIdentifier] ?? 0,
+                                total: count, capacity: ContentBlockerService.safariContentBlockerRuleLimit
+                            )
                             .frame(height: 5)
                         }
                     }
@@ -2419,6 +2413,23 @@ struct RuleCapacityPopoverView: View {
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
                 .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    /// Network and element hiding rules in the colors of their Rule Types rows,
+    /// so a bar shows what fills it (email feedback).
+    private func ruleTypeBar(hiding: Int, total: Int, capacity: Int) -> some View {
+        GeometryReader { proxy in
+            let scale = proxy.size.width / CGFloat(max(capacity, 1))
+            let hidingWidth = CGFloat(min(hiding, total)) * scale
+            let usedWidth = min(CGFloat(total) * scale, proxy.size.width)
+            HStack(spacing: 0) {
+                Rectangle().fill(FilterRulesView.color(for: .network)).frame(width: max(0, usedWidth - hidingWidth))
+                Rectangle().fill(FilterRulesView.color(for: .elementHiding)).frame(width: min(hidingWidth, usedWidth))
+                Spacer(minLength: 0)
+            }
+            .background(Color.secondary.opacity(0.15))
+            .clipShape(Capsule())
         }
     }
 

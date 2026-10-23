@@ -471,7 +471,8 @@ struct FilterRulesView: View {
         case .network: return .green
         case .elementHiding: return .orange
         case .advanced: return .blue
-        case .removeParam: return .teal
+        // Pink, since teal read as the same blue as wBlock Scripts.
+        case .removeParam: return .pink
         case .unsupported: return .red
         case .duplicate: return .indigo
         }
