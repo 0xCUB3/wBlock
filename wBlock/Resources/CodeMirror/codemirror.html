@@ -184,6 +184,12 @@ input {
   place-content: center;
 }
 
+/* Source sheets run the editor under the home indicator; this keeps the last
+   line reachable above it. The inset is zero everywhere else. */
+.cm-content {
+  padding-bottom: calc(4px + env(safe-area-inset-bottom)) !important;
+}
+
 body.cm-wrap-lines .cm-scroller {
   overflow-x: hidden !important;
 }

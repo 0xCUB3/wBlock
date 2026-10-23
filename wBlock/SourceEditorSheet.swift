@@ -95,14 +95,15 @@ struct SourceEditorSheet: View {
 
 extension View {
     /// Source windows fill the screen on iPhone and take the large page size
-    /// on iPad so landscape gets the width (#921).
+    /// on iPad so landscape gets the width (#921). The editor runs under the
+    /// home indicator, and codemirror.html pads the last line above it.
     @ViewBuilder
     func sourceSheetPresentationCompat() -> some View {
         #if os(iOS)
         if #available(iOS 18.0, *) {
-            presentationSizing(.page)
+            ignoresSafeArea(.container, edges: .bottom).presentationSizing(.page)
         } else {
-            self
+            ignoresSafeArea(.container, edges: .bottom)
         }
         #else
         self
