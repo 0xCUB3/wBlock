@@ -2,6 +2,9 @@ import SwiftUI
 
 struct UpdateCheckProgressView: View {
     @ObservedObject var filterManager: AppFilterManager
+    /// Stays set while the card fades out, so the finished check's progress
+    /// text doesn't show through on the way out (#1023).
+    @State private var showsNoUpdates = false
 
     private var counter: String? {
         guard let progress = filterManager.updateCheckProgress, progress.total > 0 else { return nil }
@@ -10,7 +13,7 @@ struct UpdateCheckProgressView: View {
 
     @ViewBuilder private var content: some View {
         Group {
-            if filterManager.showingNoUpdatesAlert {
+            if showsNoUpdates {
                 noUpdates
             } else {
                 progress
@@ -71,6 +74,13 @@ struct UpdateCheckProgressView: View {
 
     var body: some View {
         content
+            .onAppear { showsNoUpdates = filterManager.showingNoUpdatesAlert }
+            .onChangeCompat(of: filterManager.showingNoUpdatesAlert) { _, showing in
+                if showing { showsNoUpdates = true }
+            }
+            .onChangeCompat(of: filterManager.isLoading) { _, loading in
+                if loading { showsNoUpdates = false }
+            }
             .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).strokeBorder(.primary.opacity(0.1)))
             .shadow(color: .black.opacity(0.15), radius: 20, y: 8)
