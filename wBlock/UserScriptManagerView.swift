@@ -397,7 +397,9 @@ struct UserScriptManagerView: View {
         UserScriptDisplayCategory.allCases.map { category in
             let section = UserScriptDisplaySection(id: category, scripts: displayedScripts.filter { $0.displayCategory == category })
             return MacListSection(id: category.id, header: AnyView(displaySectionHeader(section)),
-                                  rows: section.scripts.map { script in MacListRow(script.id) { scriptRowView(script: script) } },
+                                  rows: section.scripts.map { script in
+                                      MacListRow(script.id, leavesSection: !script.isBuiltIn) { scriptRowView(script: script) }
+                                  },
                                   revealsOnlyWhileDragging: true)
         }
     }

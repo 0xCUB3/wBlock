@@ -822,7 +822,9 @@ struct ContentView: View {
             let acceptsMoves = FilterListCategory.moveTargets.contains(category)
             guard acceptsMoves || !filters.isEmpty else { return nil }
             return MacListSection(id: category.id, header: AnyView(categoryHeader(category)),
-                                  rows: filters.map { filter in MacListRow(filter.id) { filterRowView(for: filter) } },
+                                  rows: filters.map { filter in
+                                      MacListRow(filter.id, leavesSection: filter.isCustom) { filterRowView(for: filter) }
+                                  },
                                   acceptsMoves: acceptsMoves, revealsOnlyWhileDragging: acceptsMoves)
         }
     }

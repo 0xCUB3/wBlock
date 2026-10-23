@@ -42,11 +42,15 @@ struct MacListRow {
     enum ID: Hashable { case item(UUID, String?), decoration(String) }
     let id: ID
     let movableID: UUID?
+    /// False keeps the row in its own section, like a section that disallows cross-section moves.
+    var leavesSection = true
     let content: AnyView
 
-    init<Content: View>(_ id: UUID, movable: Bool = true, group: String? = nil, @ViewBuilder content: () -> Content) {
+    init<Content: View>(_ id: UUID, movable: Bool = true, leavesSection: Bool = true, group: String? = nil,
+                        @ViewBuilder content: () -> Content) {
         self.id = .item(id, group)
         movableID = movable ? id : nil
+        self.leavesSection = leavesSection
         self.content = AnyView(content())
     }
 
@@ -205,9 +209,11 @@ struct MacListMove: Equatable {
     static func proposed(itemID: UUID, sectionID: String, childIndex: Int,
                          sections: [MacListSection]) -> Self? {
         guard let source = sections.first(where: { $0.rows.contains(where: { $0.movableID == itemID }) }),
+              let row = source.rows.first(where: { $0.movableID == itemID }),
               let destination = sections.first(where: { $0.id == sectionID }),
               destination.acceptsMoves,
-              source.id == destination.id || (source.allowsCrossSectionMoves && destination.allowsCrossSectionMoves)
+              source.id == destination.id
+                || (row.leavesSection && source.allowsCrossSectionMoves && destination.allowsCrossSectionMoves)
         else { return nil }
         let rows = destination.rows
         let index = childIndex == NSOutlineViewDropOnItemIndex ? rows.count : childIndex
@@ -729,10 +735,11 @@ struct MacReorderableList: NSViewRepresentable {
             guard let node = item as? Node, case .section(let id) = node.id else { return nil }
             return model.sections.first { $0.id == id }
         }
-        func movableID(for item: Any) -> UUID? {
+        private func row(for item: Any) -> MacListRow? {
             guard let node = item as? Node, case .row(let id) = node.id else { return nil }
-            return model.sections.lazy.flatMap(\.rows).first { $0.id == id }?.movableID
+            return model.sections.lazy.flatMap(\.rows).first { $0.id == id }
         }
+        func movableID(for item: Any) -> UUID? { row(for: item)?.movableID }
         func outlineView(_ outlineView: NSOutlineView, pasteboardWriterForItem item: Any) -> NSPasteboardWriting? {
             guard let id = movableID(for: item) else { return nil }
             let writer = NSPasteboardItem()
@@ -751,7 +758,10 @@ struct MacReorderableList: NSViewRepresentable {
         func beginDragging(_ items: [Any] = []) {
             dragging = true
             accepted = false
-            revealsDropTargets = items.allSatisfy { section(for: outline?.parent(forItem: $0))?.allowsCrossSectionMoves ?? true }
+            // Rows that stay put (Regional, or built-ins #1034) reveal no other drop targets.
+            revealsDropTargets = items.allSatisfy {
+                (section(for: outline?.parent(forItem: $0))?.allowsCrossSectionMoves ?? true) && (row(for: $0)?.leavesSection ?? true)
+            }
             noteConcealableSections()
         }
         func endDragging() {
