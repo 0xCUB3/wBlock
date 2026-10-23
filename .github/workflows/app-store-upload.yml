@@ -28,10 +28,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Select released Xcode 27 and confirm a release host OS
+      # The image's default Xcode is its newest release; iPhone Duo runs apps
+      # built against an older iOS SDK letterboxed (#850).
+      - name: Confirm a release host OS
         run: |
           set -euo pipefail
-          sudo xcode-select -s /Applications/Xcode_27.app
           xcodebuild -version
           sw_vers
           host_build="$(sw_vers -buildVersion)"
