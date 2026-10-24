@@ -91,9 +91,7 @@ extension AppFilterManager {
                 totalUpdates
             )
         } else {
-            if presentation == .blocking {
-                showingNoUpdatesAlert = true
-            }
+            showingNoUpdatesAlert = true
             statusDescription = LocalizedStrings.text("No updates available.", comment: "No updates status")
             Task {
                 await ConcurrentLogManager.shared.info(
