@@ -621,6 +621,23 @@ class AppFilterManager: ObservableObject {
     private func setupAsync() async {
         await dataManager.waitUntilLoaded()
         setup()
+        if let container = loader.getSharedContainerURL() {
+            let sources = filterLists.filter { !$0.isCustom }.map(ContentBlockerIncrementalCache.localFilename)
+            let baselines = filterLists.map { "diff-baseline-\(ContentBlockerIncrementalCache.localFilename(for: $0))" }
+            let rules = ContentBlockerTargetManager.shared.targets.flatMap { target -> [String] in
+                let base = ContentBlockerIncrementalCache.baseRulesFilename(for: target.rulesFilename)
+                return [target.rulesFilename, base, "\(base).count", "\(base).sha256",
+                        ContentBlockerIncrementalCache.baseAdvancedRulesFilename(for: target.rulesFilename),
+                        "\(target.rulesFilename).incremental-state.json", "\(target.rulesFilename).source-rule-provenance.json"]
+            }
+            let generated = sources + baselines + rules + [
+                RemoveParamDNRRuleGenerator.rulesFilename, RemoveParamDNRRuleGenerator.blockedCountRulesFilename,
+                "dnr-extraction-cache.json", "removeparam-extraction-cache.json"
+            ]
+            await Task.detached(priority: .utility) {
+                FilterArtifactStorage.maintain(container: container, generatedFilenames: generated)
+            }.value
+        }
         for uuid in validatorClearIDs {
             await dataManager.setFilterValidators(uuid, etag: nil, lastModified: nil)
         }

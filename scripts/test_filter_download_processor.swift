@@ -89,6 +89,11 @@ struct FilterDownloadProcessorTests {
 
         let filename = ContentBlockerIncrementalCache.localFilename(for: filter)
         let publishedURL = containerURL.appendingPathComponent(filename)
+        expectEqual(try publishedURL.resourceValues(forKeys: [.isExcludedFromBackupKey]).isExcludedFromBackup, false,
+                    "custom source must remain backup eligible")
+        let baselineURL = containerURL.appendingPathComponent("diff-baseline-\(filename)")
+        expectEqual(try baselineURL.resourceValues(forKeys: [.isExcludedFromBackupKey]).isExcludedFromBackup, true,
+                    "regenerable diff baselines must not enter backups")
         let published = try String(contentsOf: publishedURL, encoding: .utf8)
         expect(published.contains("||parent.example^"), "published source should include parent rule")
         expect(published.contains("||included.example^"), "published source should include resolved include")
@@ -193,7 +198,6 @@ struct FilterDownloadProcessorTests {
         expect(PendingFilterUpdateRevisions.isPublished(filterID: filter.id.uuidString, storeURL: revisionStoreURL),
                "freshly published revision should verify against its source digest")
 
-        let baselineURL = containerURL.appendingPathComponent("diff-baseline-\(filename)")
         expectEqual(
             try String(contentsOf: baselineURL, encoding: .utf8),
             raw,
@@ -266,6 +270,17 @@ struct FilterDownloadProcessorTests {
             urlSession: session
         )
         expect(FilterDownloadProtocol.requests.isEmpty, "optimized built-ins must bypass include preprocessing")
+        let builtInURL = containerURL.appendingPathComponent(ContentBlockerIncrementalCache.localFilename(for: optimized))
+        expectEqual(try builtInURL.resourceValues(forKeys: [.isExcludedFromBackupKey]).isExcludedFromBackup, true,
+                    "downloaded built-ins must not enter backups")
+        _ = try await FilterDownloadProcessor.processAndPublish(
+            data: Data("||replacement.example^\n".utf8), sourceURL: optimized.url, filter: optimized,
+            containerURL: containerURL, etag: nil, lastModified: nil, urlSession: session
+        )
+        expectEqual(try builtInURL.resourceValues(forKeys: [.isExcludedFromBackupKey]).isExcludedFromBackup, true,
+                    "source replacement must reapply backup exclusion")
+        expectEqual(try publishedURL.resourceValues(forKeys: [.isExcludedFromBackupKey]).isExcludedFromBackup, false,
+                    "custom source must remain backup eligible after subsequent updates")
 
         print("PASS")
     }

@@ -32,6 +32,15 @@ struct CompilationProvenanceTests {
         let first = try compile([older, newest], target: target, groupIdentifier: groupIdentifier, container: container)
         expect(!first.reusedCachedBase, "first conversion should build the target")
         expect(first.safariRulesCount > 0, "converter should report actual target output")
+        let baseFilename = ContentBlockerIncrementalCache.baseRulesFilename(for: target.rulesFilename)
+        for filename in [target.rulesFilename, baseFilename, "\(baseFilename).count", "\(baseFilename).sha256",
+                         ContentBlockerIncrementalCache.baseAdvancedRulesFilename(for: target.rulesFilename)] {
+            let values = try container.appendingPathComponent(filename).resourceValues(forKeys: [.isExcludedFromBackupKey])
+            expect(values.isExcludedFromBackup == true, "compiled artifacts must not enter backups")
+        }
+        let scratch = container.appendingPathComponent("Library/Caches/FilterCompilation")
+        expect(try FileManager.default.contentsOfDirectory(atPath: scratch.path).isEmpty,
+               "successful compilation must remove its scratch input")
         expectEqual(
             first.admittedSourceRuleCountsByFilterID[newest.id],
             2,

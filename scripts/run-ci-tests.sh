@@ -370,6 +370,10 @@ compile_direct_test userscript-content-validation \
   wBlockCoreService/UserScriptContentValidation.swift \
   scripts/test_userscript_content_validation.swift
 
+compile_direct_test filter-artifact-storage \
+  wBlockCoreService/FilterArtifactStorage.swift \
+  scripts/test_filter_artifact_storage.swift
+
 compile_direct_test userscript-file-storage \
   wBlockCoreService/UserScriptFileStorage.swift \
   scripts/test_userscript_file_storage.swift

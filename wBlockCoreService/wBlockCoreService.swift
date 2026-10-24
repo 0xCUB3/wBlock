@@ -871,7 +871,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             if let output = mapOutput(outputURL), (try? validOutputDigest(output.data)) != nil {
                 rewritten = (try? withContentBlockerOutputLock(at: containerURL, targetRulesFilename: targetRulesFilename) {
                     guard outputIdentity(outputURL) == output.identity else { return false }
-                    try output.data.write(to: outputURL, options: .atomic)
+                    try FilterArtifactStorage.write(output.data, to: outputURL)
                     try? FileManager.default.removeItem(at: markerURL)
                     return true
                 }) ?? false
@@ -1316,7 +1316,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         ) {
             let outputChanged = unchangedIdentity == nil || outputIdentity(sharedFileURL) != unchangedIdentity
             if outputChanged {
-                try data.write(to: sharedFileURL, options: .atomic)
+                try FilterArtifactStorage.write(data, to: sharedFileURL)
                 os_log(.info, "Successfully saved rules to %@", sharedFileURL.path)
             } else {
                 os_log(.info, "Skipped unchanged rules at %@", sharedFileURL.path)
@@ -1845,7 +1845,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         // overlapping builds of the same target truncate and delete each
         // other's input, and the near-empty result was then cached under the
         // signature of the intended input (#821).
-        let tempURL = containerURL.appendingPathComponent(
+        let tempURL = try FilterArtifactStorage.scratchDirectory(in: containerURL).appendingPathComponent(
             "temp_\(targetInfo.bundleIdentifier)_\(UUID().uuidString).txt"
         )
         defer {
@@ -2362,6 +2362,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
 
         let baseURL = containerURL.appendingPathComponent(Schema.BASE_DIR, isDirectory: true)
         try FileManager.default.createDirectory(at: baseURL, withIntermediateDirectories: true)
+        FilterArtifactStorage.excludeFromBackup(baseURL)
         let requestToken = try recordCombinedEngineRequest(at: baseURL)
         let safariVersion = SafariVersion.autodetect()
         let rulesData = Data(combinedAdvancedRules.utf8)
@@ -2703,7 +2704,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         isCancelled: (() -> Bool)? = nil
     ) throws -> TemporaryEngineBuild {
         let fileManager = FileManager.default
-        let temporaryDirectory = baseURL.appendingPathComponent(
+        let temporaryDirectory = try FilterArtifactStorage.scratchDirectory(in: baseURL.deletingLastPathComponent()).appendingPathComponent(
             "engine-rebuild-\(UUID().uuidString)",
             isDirectory: true
         )
@@ -2980,7 +2981,7 @@ extension ContentBlockerService {
         }
 
         let sharedFileURL = appGroupURL.appendingPathComponent(filename)
-        try Data(contents.utf8).write(to: sharedFileURL, options: .atomic)
+        try FilterArtifactStorage.write(Data(contents.utf8), to: sharedFileURL)
         os_log(.info, "Successfully saved rules to %@", sharedFileURL.path)
     }
 

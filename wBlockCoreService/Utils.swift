@@ -385,7 +385,7 @@ public enum ContentBlockerIncrementalCache {
         )
 
         guard let data = try? JSONEncoder().encode(state) else { return }
-        try? data.write(to: url, options: .atomic)
+        try? FilterArtifactStorage.write(data, to: url)
     }
 
     /// A cache hit is valid only when every artifact needed to reproduce the

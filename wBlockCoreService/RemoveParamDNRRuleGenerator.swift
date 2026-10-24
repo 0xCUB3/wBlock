@@ -366,7 +366,7 @@ public enum RemoveParamDNRRuleGenerator {
 
         if cacheChanged || updated.count != cache.count {
             if let data = try? JSONEncoder().encode(updated) {
-                try? data.write(to: cacheURL, options: .atomic)
+                try? FilterArtifactStorage.write(data, to: cacheURL)
             }
         }
         return (combined, redirectSources, blockedCount)
@@ -474,7 +474,7 @@ public enum RemoveParamDNRRuleGenerator {
         encoder.outputFormatting = [.sortedKeys]
         let data = try encoder.encode(rules)
         let url = containerURL.appendingPathComponent(rulesFilename)
-        try data.write(to: url, options: .atomic)
+        try FilterArtifactStorage.write(data, to: url)
     }
 
     private struct ParsedSavedRules {

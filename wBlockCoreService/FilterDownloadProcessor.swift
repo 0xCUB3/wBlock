@@ -89,7 +89,11 @@ public enum FilterDownloadProcessor {
             ".pending-filter-\(uuid)-\(UUID().uuidString).txt",
             isDirectory: false
         )
-        try finalData.write(to: stagedFileURL, options: .atomic)
+        if filter.isCustom {
+            try finalData.write(to: stagedFileURL, options: .atomic)
+        } else {
+            try FilterArtifactStorage.write(finalData, to: stagedFileURL)
+        }
         let sourceSHA256 = SHA256.hash(data: finalData).map { String(format: "%02x", $0) }.joined()
 
         let revisionStoreURL = containerURL.appendingPathComponent(
@@ -115,7 +119,7 @@ public enum FilterDownloadProcessor {
                     do {
                         try FileManager.default.removeItem(at: baselineURL)
                     } catch {
-                        try Data().write(to: baselineURL, options: .atomic)
+                        try FilterArtifactStorage.write(Data(), to: baselineURL)
                     }
                 }
                 if FileManager.default.fileExists(atPath: fileURL.path) {
@@ -123,9 +127,10 @@ public enum FilterDownloadProcessor {
                 } else {
                     try FileManager.default.moveItem(at: stagedFileURL, to: fileURL)
                 }
+                if !filter.isCustom { FilterArtifactStorage.excludeFromBackup(fileURL) }
                 if let rawBaselineData {
                     do {
-                        try rawBaselineData.write(to: baselineURL, options: .atomic)
+                        try FilterArtifactStorage.write(rawBaselineData, to: baselineURL)
                     } catch {
                         try? FileManager.default.removeItem(at: baselineURL)
                     }

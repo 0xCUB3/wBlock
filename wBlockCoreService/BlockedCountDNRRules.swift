@@ -304,9 +304,9 @@ extension RemoveParamDNRRuleGenerator {
     static func saveBlockedCountRules(_ rules: [DeclarativeRule], containerURL: URL) throws {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
-        try encoder.encode(rules).write(
-            to: containerURL.appendingPathComponent(blockedCountRulesFilename),
-            options: .atomic
+        try FilterArtifactStorage.write(
+            encoder.encode(rules),
+            to: containerURL.appendingPathComponent(blockedCountRulesFilename)
         )
     }
 
