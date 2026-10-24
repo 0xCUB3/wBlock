@@ -421,7 +421,8 @@ struct FilterRulesView: View {
 
     static func color(for kind: FilterRuleKind) -> Color {
         switch kind {
-        case .comment: return .secondary
+        // Menus bake the icon color, so .secondary came out dark on dark menus.
+        case .comment: return .gray
         case .network: return .green
         case .elementHiding: return .orange
         case .advanced: return .blue
