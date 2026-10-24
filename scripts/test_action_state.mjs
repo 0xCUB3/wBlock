@@ -11,7 +11,14 @@ const settle = async () => {
 };
 
 for (const file of ['extension-src/background.js', 'wBlock Scripts (iOS)/Resources/background.js']) {
-  const tabs = [{ id: 1, url: 'https://example.com/' }, { id: 2, url: 'https://other.example/' }];
+  // Tab 3 is a background tab: syncing it would cost native calls, and Safari
+  // refuses all native messages after ~150 in 5 s (#1040).
+  const tabs = [
+    { id: 1, active: true, url: 'https://example.com/' },
+    { id: 2, active: true, url: 'https://other.example/' },
+    { id: 3, active: false, url: 'https://background.example/' }
+  ];
+  let actionLookups = 0;
   const disabledHosts = new Set();
   let paused = false;
   let nativeDelayMs = 0;
@@ -28,6 +35,7 @@ for (const file of ['extension-src/background.js', 'wBlock Scripts (iOS)/Resourc
         if (nativeDelayMs && (message.action === 'getBlockingPausedState' || message.action === 'getSiteDisabledState')) {
           await new Promise(resolve => setTimeout(resolve, nativeDelayMs));
         }
+        if (message.action === 'getBlockingPausedState' || message.action === 'getSiteDisabledState') actionLookups++;
         if (message.action === 'getBlockingPausedState') return { paused };
         if (message.action === 'getSiteDisabledState') return { disabled: disabledHosts.has(message.host) };
         if (message.action === 'getRemoveParamDNRRules') return { ok: true, version: 'test', rules: [], count: 0 };
@@ -40,7 +48,7 @@ for (const file of ['extension-src/background.js', 'wBlock Scripts (iOS)/Resourc
       remove: async key => { delete storage[key]; }
     } },
     tabs: {
-      query: async () => tabs,
+      query: async ({ active } = {}) => tabs.filter(tab => active === undefined || tab.active === active),
       get: async id => tabs.find(tab => tab.id === id),
       onUpdated: event(), onActivated: event(), onCreated: event(), onRemoved: event()
     },
@@ -74,6 +82,13 @@ for (const file of ['extension-src/background.js', 'wBlock Scripts (iOS)/Resourc
   };
   check(1, false);
   check(2, false);
+  for (const listener of browser.tabs.onUpdated.listeners) listener(3, { status: 'complete' }, tabs[2]);
+  await settle();
+  assert.deepEqual(state(3), {}, 'background tabs must not sync');
+  assert.equal(actionLookups, 4, 'only active tabs cost native lookups');
+  // Safari's tabs.get can report the tab inactive inside onActivated.
+  for (const listener of browser.tabs.onActivated.listeners) await listener({ tabId: 3 });
+  check(3, false);
   disabledHosts.add('example.com');
   await refresh();
   check(1, true, true, 'Disabled');

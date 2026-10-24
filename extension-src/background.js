@@ -26905,7 +26905,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         clearDocumentStartSessionCache()
       ]);
       await scheduleInstallRemoveParamDNRRules(true);
-      await refreshActionStateForAllTabs();
+      await refreshActionStateForActiveTabs();
       return {
         ok: true
       };
@@ -27043,11 +27043,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         }
         return { userScripts: scripts };
       } catch (error) {
-        console.error("[wBlock] Failed to get userscripts:", error);
-        return {
-          userScripts: [],
-          error: String(error && error.message ? error.message : error)
-        };
+        const errorMessage = String(error && error.message ? error.message : error);
+        console.error(`[wBlock] Failed to get userscripts: ${errorMessage}`, error);
+        return { userScripts: [], error: errorMessage };
       }
     }
     if (message && (message.action === "setUserScriptStorageValue" || message.action === "deleteUserScriptStorageValue")) {
@@ -27070,8 +27068,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         }
         return response;
       } catch (error) {
-        console.error("[wBlock] Failed to update userscript storage:", error);
-        return { ok: false, error: String(error && error.message ? error.message : error) };
+        const errorMessage = String(error && error.message ? error.message : error);
+        console.error(`[wBlock] Failed to update userscript storage: ${errorMessage}`, error);
+        return { ok: false, error: errorMessage };
       }
     }
     if (message && message.action === "wblock:menu:updateFrameCommands") {
@@ -27266,8 +27265,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         const response = await sendQueuedNativeMessage(chunkRequest);
         return response || { error: "Empty response from native host" };
       } catch (error) {
-        console.error("[wBlock] Failed to get userscript chunk:", error);
-        return { error: String(error && error.message ? error.message : error) };
+        const errorMessage = String(error && error.message ? error.message : error);
+        console.error(`[wBlock] Failed to get userscript chunk: ${errorMessage}`, error);
+        return { error: errorMessage };
       }
     }
     if (message && ["gmXmlhttpRequestNative", "getUserScriptRequestPolicy"].includes(message.action)) {
@@ -27623,8 +27623,11 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return false;
     }
   };
+  // Only the active tab shows the action; the rest sync through onActivated.
+  // Each sync costs native lookups, and Safari refuses every native message
+  // for about 5 s after roughly 150 inside that window (#1040).
   const syncActionStateForTab = async tab => {
-    if (!tab || typeof tab.id !== "number") {
+    if (!tab || !tab.active || typeof tab.id !== "number") {
       return;
     }
     // Native lookups are slow; a newer sync for this tab (e.g. navigating to the
@@ -27716,12 +27719,12 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       }
     }
   };
-  const refreshActionStateForAllTabs = async () => {
+  const refreshActionStateForActiveTabs = async () => {
     if (!canObserveTabs || !browser.tabs.query) {
       return;
     }
     try {
-      const tabs = await browser.tabs.query({});
+      const tabs = await browser.tabs.query({ active: true });
       await Promise.all(tabs.map(syncActionStateForTab));
     } catch (error) {
       console.warn("[wBlock] Failed to refresh action state for tabs:", error);
@@ -27797,8 +27800,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     if (browser.tabs.onActivated && browser.tabs.get) {
       browser.tabs.onActivated.addListener(async activeInfo => {
         try {
+          // Safari's tabs.get can still report the tab inactive here; the
+          // activation event is the proof.
           const tab = await browser.tabs.get(activeInfo.tabId);
-          await syncActionStateForTab(tab);
+          await syncActionStateForTab(tab && { ...tab, active: true });
         } catch (error) {
           console.warn("[wBlock] Failed to sync action state for active tab:", error);
         }
@@ -28265,8 +28270,9 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     lastRemoveParamDNRCheck = now;
     if (!removeParamDNRInstallPromise) {
       removeParamDNRInstallPromise = installRemoveParamDNRRules().catch(error => {
-        console.error("[wBlock] Failed to install removeparam DNR rules:", error);
-        logSupportDiagnostic({ event: "dnr_install_failed", error: String(error && error.message || error) });
+        const errorMessage = String(error && error.message || error);
+        console.error(`[wBlock] Failed to install removeparam DNR rules: ${errorMessage}`, error);
+        logSupportDiagnostic({ event: "dnr_install_failed", error: errorMessage });
       }).finally(() => {
         removeParamDNRInstallPromise = null;
       });
@@ -28305,7 +28311,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   };
   configCacheHydration.then(warmUpNativeHost);
   scheduleInstallRemoveParamDNRRules(true);
-  refreshActionStateForAllTabs();
+  refreshActionStateForActiveTabs();
   // Start handling messages from content scripts.
   syncNoAutoplayScripts();
   syncGlobalPrivacyControl();
