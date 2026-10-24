@@ -41,7 +41,7 @@ The `@preprocessor` line picks how the style is compiled before injection.
 
 - `default` or no line: plain CSS. `@var` declarations become CSS custom properties.
 - `uso`: userstyles.org convention, `/*[[name]]*/` placeholders are substituted textually. `@advanced` variables are supported.
-- `less`, `stylus`: compiled offline on your Mac with a bundled compiler. Nothing is sent over the network.
+- `less`, `stylus`: compiled offline on your device with a bundled compiler. Nothing is sent over the network.
 
 Variables declared with `@var` or `@advanced` are applied with their default values. There is no per-variable settings UI yet; to change a value, edit the style's source in wBlock and change the default.
 
@@ -49,7 +49,7 @@ A few things are deliberately not supported. Stylus imports and plugins and Less
 
 ## Updating, disabling, and removing
 
-Styles installed from a URL update along with your filter lists and userscripts, using `@updateURL` when the metadata has one and the original download URL otherwise. Update Now in the toolbar checks them on demand.
+Styles installed from a URL update along with your filter lists and userscripts, using `@updateURL` when the metadata has one and the original download URL otherwise. The update button in the Userscripts toolbar checks them on demand.
 
 Each style has an enable toggle in the Userscripts list, and you can turn all userscripts and userstyles off per site from the Safari toolbar popup. To remove a style, swipe or right-click it in the list and choose Delete.
 
@@ -58,5 +58,5 @@ Userstyles sync through iCloud with the rest of your userscripts when sync is on
 ## Troubleshooting
 
 - "Not a userscript or userstyle: missing metadata block": the file has no `/* ==UserStyle== */` block, or the block has no `@name`.
-- "This userstyle needs the ... preprocessor, which isn't supported yet": the `@preprocessor` value is something other than the five listed above.
+- "This userstyle needs the ... preprocessor, which isn't supported yet": the `@preprocessor` value is something other than the supported formats listed above.
 - The style installs but nothing changes on the page: check the `@-moz-document` conditions match the URL you are on, make sure you clicked Apply Changes, and reload the page. Per-site disabling in the Safari popup also turns styles off.
