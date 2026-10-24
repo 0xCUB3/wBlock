@@ -1403,7 +1403,7 @@ private struct UserScriptSourceSheet: View {
         self.canEdit = canEdit
         self.onSave = onSave
         _editorController = StateObject(
-            wrappedValue: CodeMirrorEditorController(text: content, isUserStyle: script.isUserStyle))
+            wrappedValue: CodeMirrorEditorController(text: content, language: script.isUserStyle ? .css : .javascript))
     }
 
     var body: some View {
@@ -1703,7 +1703,7 @@ struct AddUserScriptView: View {
         self.userScriptManager = userScriptManager
         self.kind = kind
         self.onScriptAdded = onScriptAdded
-        _editorController = StateObject(wrappedValue: CodeMirrorEditorController(text: "", isUserStyle: kind == .style))
+        _editorController = StateObject(wrappedValue: CodeMirrorEditorController(text: "", language: kind == .style ? .css : .javascript))
     }
 
     private struct StagedScriptFile {

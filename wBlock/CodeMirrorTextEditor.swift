@@ -1,5 +1,12 @@
 import SwiftUI
 import WebKit
+import wBlockCoreService
+
+enum CodeMirrorLanguage: String, Encodable {
+    case javascript, css
+    /// No grammar; lines take the rule type colors the viewer uses.
+    case filterRules
+}
 
 struct CodeMirrorDocumentAnalysis: Equatable {
     let isLargeDocument: Bool
@@ -11,7 +18,10 @@ struct CodeMirrorDocumentAnalysis: Equatable {
 
 @MainActor
 final class CodeMirrorEditorController: ObservableObject {
-    fileprivate let isUserStyle: Bool
+    fileprivate let language: CodeMirrorLanguage
+    /// Filter list editors color each line by rule type as it is typed.
+    private let classifiesRules: Bool
+    private var classifyTask: Task<Void, Never>?
     fileprivate var documentText: String
     fileprivate var lineKinds: [Int: String] = [:]
     fileprivate var isDocumentClean = true
@@ -24,8 +34,9 @@ final class CodeMirrorEditorController: ObservableObject {
     @Published private(set) var canUndo = false
     @Published private(set) var canRedo = false
 
-    init(text: String, isUserStyle: Bool = false) {
-        self.isUserStyle = isUserStyle
+    init(text: String, language: CodeMirrorLanguage, classifiesRules: Bool = false) {
+        self.language = language
+        self.classifiesRules = classifiesRules
         self.documentText = text
     }
 
@@ -52,6 +63,27 @@ final class CodeMirrorEditorController: ObservableObject {
         isDocumentClean = markClean
         updateDirtyState(!markClean)
         bridge?.resetDocument(to: text, lineKinds: lineKinds, markClean: markClean)
+        classifyRules(after: 0)
+    }
+
+    private func classifyRules(after delay: UInt64) {
+        guard classifiesRules else { return }
+        classifyTask?.cancel()
+        classifyTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: delay)
+            guard let self, !Task.isCancelled else { return }
+            let text = await currentText()
+            let kinds = await Task.detached(priority: .userInitiated) {
+                var kinds: [Int: String] = [:]
+                for (index, line) in FilterRuleAnalysis.analyze(content: text).lines.enumerated() {
+                    kinds[index] = line.kind.rawValue
+                }
+                return kinds
+            }.value
+            guard !Task.isCancelled else { return }
+            lineKinds = kinds
+            bridge?.setLineKinds(kinds)
+        }
     }
 
     fileprivate func bind(_ bridge: any CodeMirrorEditorBridge) {
@@ -65,6 +97,7 @@ final class CodeMirrorEditorController: ObservableObject {
 
     fileprivate func noteDocumentChanged() {
         documentRevision &+= 1
+        classifyRules(after: 300_000_000)
     }
 
     fileprivate func updateHistory(canUndo: Bool, canRedo: Bool) {
@@ -86,6 +119,7 @@ private protocol CodeMirrorEditorBridge: AnyObject {
     func redo()
     func focus()
     func resetDocument(to text: String, lineKinds: [Int: String], markClean: Bool)
+    func setLineKinds(_ lineKinds: [Int: String])
 }
 
 private enum CodeMirrorResources {
@@ -127,7 +161,7 @@ private struct CodeMirrorBootstrapConfig: Encodable {
     let text: String
     let editable: Bool
     let lineWrapping: Bool
-    let isUserStyle: Bool
+    let language: CodeMirrorLanguage
     let phrases: [String: String]
     let lineKinds: [String: String]
 }
@@ -336,6 +370,11 @@ extension CodeMirrorTextEditor {
             runScript("window.wblockEditor.setDocument(\(encodedText), \(markClean ? "true" : "false"), \(encodedLineKinds))")
         }
 
+        func setLineKinds(_ lineKinds: [Int: String]) {
+            guard hasBootedEditor, let encoded = Self.encodedJSON(lineKinds.mapKeys(String.init)) else { return }
+            runScript("window.wblockEditor.setLineKinds(\(encoded))")
+        }
+
         func currentText() async -> String {
             guard hasBootedEditor, let webView else { return controller.documentText }
             let text: String = await webView.evaluateJavaScriptString("window.wblockEditor.getDocument()")
@@ -401,7 +440,7 @@ extension CodeMirrorTextEditor {
                 text: controller.documentText,
                 editable: pendingEditable,
                 lineWrapping: pendingLineWrapping,
-                isUserStyle: controller.isUserStyle,
+                language: controller.language,
                 phrases: CodeMirrorResources.localizedPhrases,
                 lineKinds: controller.lineKinds.mapKeys(String.init)
             )

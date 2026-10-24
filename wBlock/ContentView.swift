@@ -1293,7 +1293,7 @@ struct AddFilterListView: View {
     @State private var importErrorMessage: String?
     @State private var pastedRules: String = ""
     @State private var isShowingRulesEditor = false
-    @StateObject private var rulesEditorController = CodeMirrorEditorController(text: "")
+    @StateObject private var rulesEditorController = CodeMirrorEditorController(text: "", language: .filterRules, classifiesRules: true)
     @State private var userListTitle: String = ""
     @State private var userListDescription: String = ""
     @State private var selectedCategory: FilterListCategory = .custom
@@ -2204,7 +2204,7 @@ struct EditUserListView: View {
     @ObservedObject var filterManager: AppFilterManager
     let filter: FilterList
 
-    @StateObject private var editorController = CodeMirrorEditorController(text: "")
+    @StateObject private var editorController = CodeMirrorEditorController(text: "", language: .filterRules, classifiesRules: true)
     @State private var isLoaded = false
 
     var body: some View {

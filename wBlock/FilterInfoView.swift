@@ -214,7 +214,7 @@ struct FilterRulesView: View {
     let filter: FilterList
     @ObservedObject var filterManager: AppFilterManager
     @State private var rules = ""
-    @StateObject private var editorController = CodeMirrorEditorController(text: "")
+    @StateObject private var editorController = CodeMirrorEditorController(text: "", language: .filterRules)
     @State private var wrapsLines = true
     @State private var analysis: FilterRuleAnalysis?
     @State private var isLoading = true

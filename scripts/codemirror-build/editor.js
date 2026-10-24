@@ -1,5 +1,5 @@
 // Editor entry for wBlock's CodeMirror host. Re-bundled to:
-//  - pick the language from the `isUserStyle` flag (CSS vs JavaScript)
+//  - pick the language from `language` (JavaScript, CSS, or filter rules)
 //  - keep syntax highlighting on for typical userscripts instead of disabling
 //    it whenever a single line exceeds 8192 chars; only drop it for genuinely
 //    large documents, and fall back to a stream highlighter rather than none.
@@ -247,19 +247,18 @@ function baseExtensions() {
   ];
 }
 
-function languageFor(isUserStyle) {
-  return isUserStyle ? css() : javascript();
-}
-
-function highlightBlock(analysis, isUserStyle) {
-  const language = languageFor(isUserStyle);
+function highlightBlock(analysis, name) {
+  // Filter rules have no grammar here; their rule type colors the line.
+  if (name === "filterRules") return [];
+  const language = name === "css" ? css() : javascript();
   if (analysis.isLargeDocument) {
     return streamHighlight(language);
   }
   return fullHighlight(language);
 }
 
-const RULE_KINDS = new Set(["comment", "supported", "advanced", "removeParam", "unsupported", "duplicate"]);
+// FilterRuleKind raw values on the Swift side.
+const RULE_KINDS = new Set(["comment", "network", "elementHiding", "advanced", "removeParam", "unsupported", "duplicate"]);
 
 function visibleRuleDecorations(editorView, lineKinds) {
   const ranges = [];
@@ -288,8 +287,11 @@ function categoryDecorations(lineKinds) {
     constructor(editorView) {
       this.decorations = visibleRuleDecorations(editorView, lineKinds);
     }
+    // Edits move the colors with their lines until Swift sends new kinds.
     update(update) {
-      if (update.docChanged || update.viewportChanged) {
+      if (update.docChanged) {
+        this.decorations = this.decorations.map(update.changes);
+      } else if (update.viewportChanged) {
         this.decorations = visibleRuleDecorations(update.view, lineKinds);
       }
     }
@@ -307,7 +309,7 @@ window.wblockEditor = {
     const lineWrapping = !!config.lineWrapping;
     const editable = !!config.editable;
     const phrases = config.phrases ?? {};
-    const isUserStyle = !!config.isUserStyle;
+    const language = config.language ?? "javascript";
     const lineKinds = config.lineKinds ?? {};
     baselineText = text;
     dirtyKnown = false;
@@ -318,7 +320,7 @@ window.wblockEditor = {
       readOnlyCompartment.of(EditorState.readOnly.of(!editable)),
       lineWrappingCompartment.of(lineWrapping ? EditorView.lineWrapping : []),
       lineKindsCompartment.of(categoryDecorations(lineKinds)),
-      languageCompartment.of(highlightBlock(analysis, isUserStyle)),
+      languageCompartment.of(highlightBlock(analysis, language)),
       phrasesCompartment.of(EditorState.phrases.of(phrases)),
     ];
 
@@ -364,6 +366,9 @@ window.wblockEditor = {
       dirtyKnown = false;
       post({ type: "dirtyStateChanged", isDirty: false });
     }
+  },
+  setLineKinds(lineKinds) {
+    reconfigure(lineKindsCompartment, categoryDecorations(lineKinds));
   },
   getDocument() {
     return view ? view.state.doc.toString() : "";
