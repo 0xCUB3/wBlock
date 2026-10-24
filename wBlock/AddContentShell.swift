@@ -141,12 +141,17 @@ struct AddContentMetadataFields: View {
     var languages: Binding<Set<String>>? = nil
 
     var body: some View {
-        TextField("Name", text: $name)
+        // The label is the placeholder, as on iOS. macOS grouped forms
+        // right-align a labeled field, where a typed trailing space never
+        // shows (#1039).
+        TextField("Name", text: $name, prompt: Text("Name"))
+            .labelsHidden()
             .disableAutocorrection(true)
             #if os(iOS)
             .textInputAutocapitalization(.words)
             #endif
-        TextField("Description", text: $description)
+        TextField("Description", text: $description, prompt: Text("Description"))
+            .labelsHidden()
             .disableAutocorrection(true)
             #if os(iOS)
             .textInputAutocapitalization(.sentences)
