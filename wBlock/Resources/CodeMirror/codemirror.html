@@ -10,7 +10,9 @@
 <style>
 :root {
   color-scheme: light dark;
-  --cm-background: #f4f5f7;
+  /* The sheet's own surface shows through, so the title bar and the text
+     sit on one color instead of a white bar over gray. */
+  --cm-background: transparent;
   --cm-foreground: #1f2328;
   --cm-caret: #0969da;
   --cm-selection: rgba(9, 105, 218, 0.18);
@@ -28,7 +30,7 @@
   --cm-rule-network: #34c759;
   --cm-rule-element-hiding: #ff9500;
   --cm-rule-advanced: #007aff;
-  --cm-rule-remove-param: #00a6a6;
+  --cm-rule-remove-param: #ff2d55;
   --cm-rule-unsupported: #ff3b30;
   --cm-rule-duplicate: #5856d6;
   --cm-rule-comment: #8e8e93;
@@ -36,7 +38,6 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --cm-background: #1c1c1e;
     --cm-foreground: #f5f5f7;
     --cm-caret: #4da3ff;
     --cm-selection: rgba(77, 163, 255, 0.26);
@@ -51,7 +52,7 @@
     --cm-rule-network: #30d158;
     --cm-rule-element-hiding: #ff9f0a;
     --cm-rule-advanced: #0a84ff;
-    --cm-rule-remove-param: #64d2ff;
+    --cm-rule-remove-param: #ff375f;
     --cm-rule-unsupported: #ff453a;
     --cm-rule-duplicate: #5e5ce6;
     --cm-rule-comment: #98989d;
