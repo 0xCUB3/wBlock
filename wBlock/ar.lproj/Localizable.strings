@@ -65,6 +65,8 @@
 "A filter list for websites in Serbian, Montenegrin, Croatian, and Bosnian." = "قائمة فلاتر لمواقع الويب باللغات الصربية والمونتينيغرية والكرواتية والبوسنية.";
 "A filter list with this name already exists." = "توجد قائمة فلاتر بهذا الاسم بالفعل.";
 "A filter list with this URL already exists in wBlock." = "توجد بالفعل قائمة فلاتر بهذا الرابط في wBlock.";
+"A userscript or userstyle with this URL already exists in wBlock." = "يوجد بالفعل سكربت مستخدم أو نمط مستخدم بهذا الرابط في wBlock.";
+"All of these userscripts and userstyles are already in wBlock." = "كل سكربتات المستخدم وأنماط المستخدم هذه موجودة بالفعل في wBlock.";
 "About" = "حول";
 "ABPindo" = "ABPindo";
 "ABPVN List" = "ABPVN List";

@@ -65,6 +65,8 @@
 "A filter list for websites in Serbian, Montenegrin, Croatian, and Bosnian." = "Blocks ads on websites in Serbian, Montenegrin, Croatian, and Bosnian.";
 "A filter list with this name already exists." = "A filter list with this name already exists.";
 "A filter list with this URL already exists in wBlock." = "A filter list with this URL already exists in wBlock.";
+"A userscript or userstyle with this URL already exists in wBlock." = "A userscript or userstyle with this URL already exists in wBlock.";
+"All of these userscripts and userstyles are already in wBlock." = "All of these userscripts and userstyles are already in wBlock.";
 "About" = "About";
 "ABPindo" = "ABPindo";
 "ABPVN List" = "ABPVN List";

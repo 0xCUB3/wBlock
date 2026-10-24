@@ -1679,6 +1679,8 @@ struct AddUserScriptView: View {
     @State private var metadataRefreshGeneration = 0
     @State private var addMode: AddMode = .url
     @StateObject private var editorController: CodeMirrorEditorController
+    /// Taken when the sheet opens, so a URL it adds doesn't flag itself while it closes.
+    @State private var existingURLKeys: Set<String>
     @FocusState private var urlFieldFocused: Bool
     @FocusState private var textInputFocused: Bool
 
@@ -1704,6 +1706,7 @@ struct AddUserScriptView: View {
         self.kind = kind
         self.onScriptAdded = onScriptAdded
         _editorController = StateObject(wrappedValue: CodeMirrorEditorController(text: "", language: kind == .style ? .css : .javascript))
+        _existingURLKeys = State(initialValue: Set(userScriptManager.userScripts.compactMap(\.url).map(FilterListURLSupport.identityKey(for:))))
     }
 
     private struct StagedScriptFile {
@@ -1728,8 +1731,14 @@ struct AddUserScriptView: View {
         }
     }
 
+    /// Leaves out URLs already in wBlock. Adding one would replace that
+    /// script and move it to this sheet's category (#1039).
     private var parsedURLs: [URL] {
-        UserScriptURLSupport.parseRemoteURLs(from: urlInput)
+        newURLs(in: UserScriptURLSupport.parseRemoteURLs(from: urlInput))
+    }
+
+    private func newURLs(in urls: [URL]) -> [URL] {
+        urls.filter { !existingURLKeys.contains(FilterListURLSupport.identityKey(for: $0)) }
     }
 
     var body: some View {
@@ -2245,7 +2254,14 @@ struct AddUserScriptView: View {
             return
         }
 
-        validationState = .valid(urls)
+        let newURLs = newURLs(in: urls)
+        guard !newURLs.isEmpty else {
+            validationState = .invalid(urls.count == 1
+                ? String(localized: "A userscript or userstyle with this URL already exists in wBlock.")
+                : String(localized: "All of these userscripts and userstyles are already in wBlock."))
+            return
+        }
+        validationState = .valid(newURLs)
     }
 
     private func pasteFromClipboard() {

@@ -65,6 +65,8 @@
 "A filter list for websites in Serbian, Montenegrin, Croatian, and Bosnian." = "塞爾維亞語、蒙特內哥羅語、克羅埃西亞語和波士尼亞語網站的過濾器清單。";
 "A filter list with this name already exists." = "具有該名稱的過濾器清單已存在。";
 "A filter list with this URL already exists in wBlock." = "wBlock 中已存在使用此 URL 的過濾器清單。";
+"A userscript or userstyle with this URL already exists in wBlock." = "wBlock 中已有使用此 URL 的使用者腳本或使用者樣式。";
+"All of these userscripts and userstyles are already in wBlock." = "這些使用者腳本和使用者樣式都已在 wBlock 中。";
 "About" = "關於";
 "ABPindo" = "ABPindo";
 "ABPVN List" = "ABPVN List";

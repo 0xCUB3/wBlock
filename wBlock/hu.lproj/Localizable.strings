@@ -65,6 +65,8 @@
 "A filter list for websites in Serbian, Montenegrin, Croatian, and Bosnian." = "Szűrőlista szerb, montenegrói, horvát és bosnyák nyelvű webhelyekhez.";
 "A filter list with this name already exists." = "Már létezik ilyen nevű szűrőlista.";
 "A filter list with this URL already exists in wBlock." = "Már létezik ilyen URL-ű szűrőlista a wBlockban.";
+"A userscript or userstyle with this URL already exists in wBlock." = "Ezzel az URL-lel már létezik userscript vagy userstyle a wBlockban.";
+"All of these userscripts and userstyles are already in wBlock." = "Ezek a userscriptek és userstyle-ok már mind megvannak a wBlockban.";
 "About" = "Névjegy";
 "ABPindo" = "ABPindo";
 "ABPVN List" = "ABPVN List";

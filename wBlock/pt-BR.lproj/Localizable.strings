@@ -65,6 +65,8 @@
 "A filter list for websites in Serbian, Montenegrin, Croatian, and Bosnian." = "Uma lista de filtros para sites em sérvio, montenegrino, croata e bósnio.";
 "A filter list with this name already exists." = "Já existe uma lista de filtros com este nome.";
 "A filter list with this URL already exists in wBlock." = "Uma lista de filtros com esta URL já existe no wBlock.";
+"A userscript or userstyle with this URL already exists in wBlock." = "Já existe no wBlock um userscript ou userstyle com esta URL.";
+"All of these userscripts and userstyles are already in wBlock." = "Todos estes userscripts e userstyles já estão no wBlock.";
 "About" = "Sobre";
 "ABPindo" = "ABPindo";
 "ABPVN List" = "ABPVN List";

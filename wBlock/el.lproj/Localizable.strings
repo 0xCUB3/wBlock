@@ -65,6 +65,8 @@
 "A filter list for websites in Serbian, Montenegrin, Croatian, and Bosnian." = "Μια λίστα φίλτρων για ιστότοπους στα σερβικά, μαυροβουνιακά, κροατικά και βοσνιακά.";
 "A filter list with this name already exists." = "Υπάρχει ήδη μια λίστα φίλτρων με αυτό το όνομα.";
 "A filter list with this URL already exists in wBlock." = "Υπάρχει ήδη μια λίστα φίλτρων με αυτήν τη διεύθυνση URL στο wBlock.";
+"A userscript or userstyle with this URL already exists in wBlock." = "Ένα userscript ή userstyle με αυτό το URL υπάρχει ήδη στο wBlock.";
+"All of these userscripts and userstyles are already in wBlock." = "Όλα αυτά τα userscripts και userstyles υπάρχουν ήδη στο wBlock.";
 "About" = "Σχετικά";
 "ABPindo" = "ABPindo";
 "ABPVN List" = "ABPVN List";
