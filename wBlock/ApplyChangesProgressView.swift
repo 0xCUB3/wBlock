@@ -494,9 +494,11 @@ struct ApplyChangesProgressView: View {
 
     /// Liquid glass shows through on iOS 26. Earlier sheets are plain white,
     /// which hides the white stat cards, so they get the grouped gray canvas.
+    /// The review is a grouped form, so its header and button share the
+    /// form's gray instead of sitting on white bands above and below it.
     private var sheetFill: SheetFill {
         #if os(iOS)
-        if #available(iOS 26.0, *) { return .clear }
+        if #available(iOS 26.0, *), mode != .review { return .clear }
         return .grouped
         #else
         return .clear
