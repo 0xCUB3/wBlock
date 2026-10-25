@@ -3,18 +3,17 @@ name: homebrew-cask
 on:
   push:
     tags:
-      - "v*"
       - "[0-9]+.[0-9]+.[0-9]+"
   workflow_dispatch:
     inputs:
       release_tag:
         description: "Release tag to publish to, for example 2.0.4"
-        required: false
+        required: true
         type: string
-      version:
-        description: "DMG/cask version override, for example 2.0.4"
-        required: false
-        type: string
+
+concurrency:
+  group: homebrew-${{ inputs.release_tag || github.ref_name }}
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -26,6 +25,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: refs/tags/${{ inputs.release_tag || github.ref_name }}
 
       - name: Show Xcode version
         run: xcodebuild -version
@@ -53,26 +54,23 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: refs/tags/${{ inputs.release_tag || github.ref_name }}
 
       - name: Show Xcode version
         run: xcodebuild -version
 
       - name: Extract version
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
         run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" && -n "${{ inputs.release_tag }}" ]]; then
-            TAG="${{ inputs.release_tag }}"
-          else
-            TAG="${GITHUB_REF_NAME}"
+          set -euo pipefail
+          if [[ ! "$RELEASE_TAG" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Use a stable version tag without a v prefix, for example 3.2.3." >&2
+            exit 1
           fi
-
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" && -n "${{ inputs.version }}" ]]; then
-            VERSION="${{ inputs.version }}"
-          else
-            VERSION="${TAG#v}"
-          fi
-
-          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
-          echo "TAG=${TAG}" >> "$GITHUB_ENV"
+          echo "VERSION=$RELEASE_TAG" >> "$GITHUB_ENV"
+          echo "TAG=$RELEASE_TAG" >> "$GITHUB_ENV"
 
       - name: Import Developer ID certificate
         env:
@@ -170,44 +168,41 @@ jobs:
           xcrun stapler validate "${dmg}"
           echo "Stapler validation passed"
 
-      - name: Upload to GitHub Release
+      - name: Publish notarized DMG
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          tag="${TAG}"
           dmg="build/homebrew/wBlock-${VERSION}.dmg"
 
-          # Ensure a release exists for this tag
-          if ! gh release view "${tag}" >/dev/null 2>&1; then
-            gh release create "${tag}" --title "${tag}" --notes ""
+          # Keep workflow-created releases private until the DMG is uploaded.
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" --verify-tag --draft --title "$TAG" --notes ""
           fi
 
-          # Upload/tagged asset
-          gh release upload "${tag}" "${dmg}" --clobber
+          is_prerelease=$(gh release view "$TAG" --json isPrerelease --jq .isPrerelease)
+          if [[ "$is_prerelease" == true ]]; then
+            echo "Homebrew releases must not be prereleases." >&2
+            exit 1
+          fi
 
-      - name: Update cask in tap
-        env:
-          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
-        run: |
-          set -euo pipefail
-          SHA256=$(shasum -a 256 "build/homebrew/wBlock-${VERSION}.dmg" | awk '{print $1}')
+          # Published assets must keep the checksum reviewed by Homebrew.
+          # An existing asset makes a rerun fail instead of replacing it.
+          gh release upload "$TAG" "$dmg"
+          is_draft=$(gh release view "$TAG" --json isDraft --jq .isDraft)
+          if [[ "$is_draft" == true ]]; then
+            gh release edit "$TAG" --draft=false
+          fi
 
-          TAP_DIR=$(mktemp -d)
-          gh repo clone 0xCUB3/homebrew-wblock "${TAP_DIR}" -- --depth 1
-
-          CASK="${TAP_DIR}/Casks/wblock.rb"
-          sed -i '' "s/version \".*\"/version \"${VERSION}\"/" "${CASK}"
-          sed -i '' "s/sha256 \".*\"/sha256 \"${SHA256}\"/" "${CASK}"
-
-          cd "${TAP_DIR}"
-          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/0xCUB3/homebrew-wblock.git"
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add Casks/wblock.rb
-          git commit -m "update wblock cask to ${VERSION}" || echo "nothing to commit"
-          git push origin main
-          rm -rf "${TAP_DIR}"
+          sha256=$(shasum -a 256 "$dmg" | awk '{print $1}')
+          {
+            echo "## Homebrew release"
+            echo "Published wBlock ${VERSION}."
+            echo "SHA-256: ${sha256}"
+            echo "Homebrew autobump checks for updates every three hours. Merging and API publication may take longer."
+            echo "https://github.com/Homebrew/homebrew-cask/blob/main/Casks/w/wblock.rb"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Clean up keychain
         if: always()

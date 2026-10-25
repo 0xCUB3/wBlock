@@ -159,8 +159,10 @@ The [App Store](https://apps.apple.com/us/app/wblock/id6746388723) version is th
 On the Mac, you can also download the DMG from the [latest release](https://github.com/0xCUB3/wBlock/releases/latest) or use Homebrew:
 
 ```sh
-brew tap 0xcub3/wblock && brew install --cask wblock
+brew install --cask wblock
 ```
+
+Homebrew installs from [homebrew/cask](https://github.com/Homebrew/homebrew-cask/blob/main/Casks/w/wblock.rb); no extra tap is needed. If you used the old tap, follow the [migration instructions](docs/HOMEBREW.md#move-from-the-old-tap).
 
 On first launch, wBlock walks you through turning on its extensions in Safari.
 
