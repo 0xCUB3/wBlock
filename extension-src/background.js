@@ -28315,7 +28315,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
   // Start handling messages from content scripts.
   syncNoAutoplayScripts();
   syncGlobalPrivacyControl();
-  browser.runtime.onMessage.addListener((request, sender) => {
+  browser.runtime.onMessage.addListener((request, sender, sendResponse) => {
     scheduleInstallRemoveParamDNRRules(false);
     syncNoAutoplayScripts();
     syncGlobalPrivacyControl();
@@ -28325,7 +28325,10 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
         if (active) injectNoAutoplay({ tabId: sender.tab.id, frameIds: [sender.frameId] });
       }, () => {});
     }
-    // Safari 17 drops a reply whose promise has already settled when the listener returns.
-    return Promise.resolve().then(() => handleMessages(request, sender));
+    // Keep Safari's response channel open until the native request finishes.
+    Promise.resolve().then(() => handleMessages(request, sender)).then(sendResponse, error => {
+      sendResponse({ ok: false, error: String(error && error.message ? error.message : error) });
+    });
+    return true;
   });
 })(browser);

@@ -1,6 +1,7 @@
 // Exercise the shipped background runtime, not a reimplementation of its cache.
 // Run: node scripts/test_background_cache_retention.mjs
 import assert from 'node:assert/strict';
+import { runtimeMessageListener } from './helpers/runtime-message.mjs';
 import { readFileSync } from 'node:fs';
 import { performance } from 'node:perf_hooks';
 
@@ -26,7 +27,7 @@ for (const file of ['extension-src/background.js', 'wBlock Scripts (iOS)/Resourc
   const event = { addListener() { listenerCount++; } };
   const browser = {
     runtime: {
-      onMessage: { addListener(fn) { listener = fn; listenerCount++; } },
+      onMessage: { addListener(fn) { listener = runtimeMessageListener(fn); listenerCount++; } },
       onStartup: event, onInstalled: event,
       getURL: file => `safari-web-extension://test/${file}`,
       connectNative: () => ({ onMessage: event, onDisconnect: event }),

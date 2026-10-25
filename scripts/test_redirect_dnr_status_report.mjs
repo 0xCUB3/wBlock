@@ -6,6 +6,7 @@
 // Run: node scripts/test_redirect_dnr_status_report.mjs
 
 import { readFileSync } from "node:fs";
+import { runtimeMessageListener } from "./helpers/runtime-message.mjs";
 import assert from "node:assert/strict";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -50,7 +51,7 @@ const loadBackground = ({
         state.nativeMessages.push(message);
         return nativeHandler(message);
       },
-      onMessage: { addListener: fn => { state.onMessage = fn; } },
+      onMessage: { addListener: fn => { state.onMessage = runtimeMessageListener(fn); } },
       connectNative: () => ({
         onMessage: { addListener: fn => {} },
         onDisconnect: { addListener: () => {} }

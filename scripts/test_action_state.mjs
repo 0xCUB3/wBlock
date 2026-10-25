@@ -1,5 +1,6 @@
 // Run: node scripts/test_action_state.mjs
 import assert from 'node:assert/strict';
+import { runtimeMessageListener } from './helpers/runtime-message.mjs';
 import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
@@ -77,7 +78,7 @@ for (const file of ['extension-src/background.js', 'wBlock Scripts (iOS)/Resourc
     }
   };
   const refresh = async () => {
-    const result = await browser.runtime.onMessage.listeners[0]({ action: 'wblock:clearCache' }, {});
+    const result = await runtimeMessageListener(browser.runtime.onMessage.listeners[0])({ action: 'wblock:clearCache' }, {});
     assert.equal(result.ok, true);
   };
   check(1, false);

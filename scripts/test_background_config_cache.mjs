@@ -7,6 +7,7 @@
 // Run: node scripts/test_background_config_cache.mjs
 
 import { readFileSync } from "node:fs";
+import { runtimeMessageListener } from "./helpers/runtime-message.mjs";
 import assert from "node:assert/strict";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -85,7 +86,10 @@ const loadBackground = ({
         state.nativeMessages.push(message);
         return defaultNative(message);
       },
-      onMessage: { addListener: fn => { state.onMessage = fn; } },
+      onMessage: { addListener: fn => {
+        state.messageListener = fn;
+        state.onMessage = runtimeMessageListener(fn);
+      } },
       connectNative: () => ({
         onMessage: { addListener: fn => { state.nativePortMessage = fn; } },
         onDisconnect: { addListener: () => {} }
@@ -1093,6 +1097,17 @@ for (const source of [canonicalSource, bundleSource]) {
     if (message.action === "getBlockingPausedState") throw new Error("Native unavailable");
     return { payload: makeConfig([], 1) };
   } });
+  // Exercise the callback response contract used by Safari 17. A returned
+  // Promise is not a callback response and must not close the message channel.
+  const callbackReplies = [];
+  const keepChannelOpen = state.messageListener(
+    { action: "wblock:popup:nativeMessage", message: { action: "getSiteDisabledState", host: "example.com" } },
+    { origin: "null" },
+    response => callbackReplies.push(response)
+  );
+  check("runtime listener keeps the asynchronous response channel open", keepChannelOpen === true);
+  await sleep(20);
+  check("runtime listener delivers one callback response", callbackReplies.length === 1 && callbackReplies[0].ok === true);
   const popupSender = { url: "safari-web-extension://test/pages/popup/popup.html" };
   const request = { action: "wblock:popup:nativeMessage", message: { action: "setSiteZapperDisabled", hostname: "example.com", disabled: true } };
   const result = await state.onMessage(request, popupSender);
