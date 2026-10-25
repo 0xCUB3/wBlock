@@ -60,7 +60,24 @@ struct DarkReaderAppearancePreferenceTests {
             DarkReaderAppearancePreference.followsSystemAppearance(groupIdentifier: suite),
             "the follow-system preference was not restored"
         )
-        print("PASS: Dark Reader appearance preference")
+        expect(!DarkReaderAppearancePreference.pureBlack(groupIdentifier: suite), "pure black must be opt-in")
+        for follows in [false, true] {
+            for pureBlack in [false, true] {
+                DarkReaderAppearancePreference.setPureBlack(pureBlack, groupIdentifier: suite)
+                expect(DarkReaderAppearancePreference.pureBlack(groupIdentifier: suite) == pureBlack,
+                       "pure-black preference did not round-trip")
+                let configured = DarkReaderAppearancePreference.configuredExecutableContent(
+                    "window.__darkReaderProbe = true;", followsSystemAppearance: follows,
+                    pureBlack: DarkReaderAppearancePreference.pureBlack(groupIdentifier: suite)
+                )
+                expect(configured.contains("const __wblockDarkReaderPureBlack = \(pureBlack);\n"),
+                       "pure-black runtime configuration missing")
+                expect(configured.hasPrefix("const __wblockDarkReaderFollowsSystemAppearance = \(follows);\n"),
+                       "appearance mode changed with pure black")
+                expect(configured.hasSuffix("window.__darkReaderProbe = true;"), "script content changed")
+            }
+        }
+        print("PASS: Dark Reader appearance and pure-black preferences")
     }
 
     private static func expect(_ condition: @autoclosure () -> Bool, _ message: String) {

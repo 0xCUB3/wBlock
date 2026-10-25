@@ -7,6 +7,8 @@ import Foundation
 
 public enum DarkReaderAppearancePreference {
     public static let storageKey = "darkReaderFollowsSystemAppearance"
+    public static let pureBlackStorageKey = "darkReaderPureBlack"
+    public static let pureBlackFlagName = "__wblockDarkReaderPureBlack"
     public static let storageSuiteName = "group.skula.wBlock"
     public static let scriptURL =
         "https://raw.githubusercontent.com/0xCUB3/wBlock-userscripts/main/packages/dark-reader/dist/dark-reader.user.js"
@@ -30,6 +32,14 @@ public enum DarkReaderAppearancePreference {
         )
     }
 
+    public static func pureBlack(groupIdentifier: String = storageSuiteName) -> Bool {
+        UserDefaults(suiteName: groupIdentifier)?.bool(forKey: pureBlackStorageKey) ?? false
+    }
+
+    public static func setPureBlack(_ pureBlack: Bool, groupIdentifier: String = storageSuiteName) {
+        UserDefaults(suiteName: groupIdentifier)?.set(pureBlack, forKey: pureBlackStorageKey)
+    }
+
     public static func matches(scriptURL: URL?) -> Bool {
         scriptURL?.absoluteString == self.scriptURL
     }
@@ -46,10 +56,11 @@ public enum DarkReaderAppearancePreference {
 
     public static func configuredExecutableContent(
         _ executableContent: String,
-        followsSystemAppearance: Bool
+        followsSystemAppearance: Bool,
+        pureBlack: Bool = false
     ) -> String {
         let value = followsSystemAppearance ? "true" : "false"
-        return "const \(appearanceFlagName) = \(value);\n\(executableContent)"
+        return "const \(appearanceFlagName) = \(value);\nconst \(pureBlackFlagName) = \(pureBlack ? "true" : "false");\n\(executableContent)"
     }
 }
 

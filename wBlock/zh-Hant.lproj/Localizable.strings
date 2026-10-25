@@ -821,6 +821,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Userstyle compiler timed out." = "使用者樣式編譯器逾時。";
 "Userstyle compiler must not run on the main thread." = "使用者樣式編譯器不得在主執行緒上執行。";
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "適用於 wBlock 的 MIT 授權 Dark Reader API 引擎（測試版；不含完整的網站修正資料庫）。";
+"Pure Black (OLED)" = "純黑（OLED）";
 "Follow System" = "跟隨系統";
 "Always Dark" = "始終深色";
 "Dark" = "深色";

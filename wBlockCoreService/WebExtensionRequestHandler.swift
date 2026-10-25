@@ -1248,7 +1248,8 @@ public enum WebExtensionRequestHandler {
         if DarkReaderAppearancePreference.matches(scriptURL: script.url) {
             return DarkReaderAppearancePreference.configuredExecutableContent(
                 script.executableContent,
-                followsSystemAppearance: DarkReaderAppearancePreference.followsSystemAppearance()
+                followsSystemAppearance: DarkReaderAppearancePreference.followsSystemAppearance(),
+                pureBlack: DarkReaderAppearancePreference.pureBlack()
             )
         }
         if DeArrowPreference.matches(scriptURL: script.url) {

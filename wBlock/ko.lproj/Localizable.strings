@@ -821,6 +821,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Userstyle compiler timed out." = "유저스타일 컴파일러 시간이 초과되었습니다.";
 "Userstyle compiler must not run on the main thread." = "유저스타일 컴파일러는 메인 스레드에서 실행하면 안 됩니다.";
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "wBlock용 MIT 라이선스 Dark Reader API 엔진(베타, 전체 사이트 수정 데이터베이스 제외).";
+"Pure Black (OLED)" = "완전한 검정 (OLED)";
 "Follow System" = "시스템 따르기";
 "Always Dark" = "항상 어둡게";
 "Dark" = "다크";

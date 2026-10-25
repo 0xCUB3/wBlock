@@ -820,6 +820,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Userstyle compiler timed out." = "Userstyle compiler timed out.";
 "Userstyle compiler must not run on the main thread." = "Userstyle compiler must not run on the main thread.";
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "Dark Reader's MIT-licensed engine, built for wBlock (beta; doesn't include the full set of site fixes).";
+"Pure Black (OLED)" = "Pure Black (OLED)";
 "Follow System" = "Follow System";
 "Always Dark" = "Always Dark";
 "Dark" = "Dark";

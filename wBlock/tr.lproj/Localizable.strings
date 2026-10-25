@@ -820,6 +820,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Userstyle compiler timed out." = "Kullanıcı stili derleyicisi zaman aşımına uğradı.";
 "Userstyle compiler must not run on the main thread." = "Kullanıcı stili derleyicisi ana iş parçacığında çalışmamalıdır.";
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "Dark Reader'ın wBlock için MIT lisanslı API motoru (beta; tüm site düzeltme veritabanını içermez).";
+"Pure Black (OLED)" = "Saf Siyah (OLED)";
 "Follow System" = "Sistemi takip et";
 "Always Dark" = "Her zaman koyu";
 "Dark" = "Koyu";

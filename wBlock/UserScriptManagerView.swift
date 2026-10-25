@@ -750,6 +750,10 @@ struct UserScriptManagerView: View {
                         followsSystemAppearance: Binding(
                             get: { userScriptManager.darkReaderFollowsSystemAppearance },
                             set: { userScriptManager.setDarkReaderFollowsSystemAppearance($0) }
+                        ),
+                        pureBlack: Binding(
+                            get: { userScriptManager.darkReaderPureBlack },
+                            set: { userScriptManager.setDarkReaderPureBlack($0) }
                         )
                     )
                 }
@@ -1513,6 +1517,7 @@ struct Badge: View {
 
 private struct DarkReaderAppearancePicker: View {
     @Binding var followsSystemAppearance: Bool
+    @Binding var pureBlack: Bool
 
     var body: some View {
         Menu {
@@ -1526,6 +1531,8 @@ private struct DarkReaderAppearancePicker: View {
             } label: {
                 appearanceMenuItem(title: "Always Dark", selected: !followsSystemAppearance)
             }
+            Divider()
+            Toggle("Pure Black (OLED)", isOn: $pureBlack)
         } label: {
             UserScriptSettingsPill(
                 title: Text(followsSystemAppearance ? "Follow System" : "Always Dark"),

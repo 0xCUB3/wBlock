@@ -821,6 +821,7 @@ Para reativá-los, desative outros filtros grandes e aplique as alterações nov
 "Userstyle compiler timed out." = "O compilador de estilos de usuário atingiu o tempo limite.";
 "Userstyle compiler must not run on the main thread." = "O compilador de estilos de usuário não deve ser executado na thread principal.";
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "Mecanismo de API do Dark Reader sob licença MIT para o wBlock (beta; sem o banco completo de correções de sites).";
+"Pure Black (OLED)" = "Preto puro (OLED)";
 "Follow System" = "Seguir o sistema";
 "Always Dark" = "Sempre escuro";
 "Dark" = "Escuro";

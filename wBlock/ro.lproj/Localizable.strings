@@ -821,6 +821,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Userstyle compiler timed out." = "Compilatorul de stiluri de utilizator a depășit limita de timp.";
 "Userstyle compiler must not run on the main thread." = "Compilatorul de stiluri de utilizator nu trebuie să ruleze pe firul principal.";
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "Motorul API Dark Reader, licențiat MIT, pentru wBlock (beta; fără baza completă de remedieri pentru site-uri).";
+"Pure Black (OLED)" = "Negru pur (OLED)";
 "Follow System" = "Urmează sistemul";
 "Always Dark" = "Întotdeauna întunecat";
 "Dark" = "Întunecat";

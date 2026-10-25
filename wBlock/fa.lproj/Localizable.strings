@@ -820,6 +820,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Userstyle compiler timed out." = "مهلت زمانی کامپایلر استایل کاربر به پایان رسید.";
 "Userstyle compiler must not run on the main thread." = "کامپایلر استایل کاربر نباید روی رشتهٔ اصلی اجرا شود.";
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "موتور API دارای مجوز MIT از Dark Reader برای wBlock (بتا؛ بدون پایگاه دادهٔ کامل رفع اشکال سایت‌ها).";
+"Pure Black (OLED)" = "مشکی خالص (OLED)";
 "Follow System" = "پیروی از سیستم";
 "Always Dark" = "همیشه تیره";
 "Dark" = "تیره";

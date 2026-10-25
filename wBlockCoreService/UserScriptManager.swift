@@ -157,6 +157,7 @@ public class UserScriptManager: ObservableObject {
     @Published public private(set) var isReady = false
     @Published public private(set) var userScriptToggleStates: [UUID: UserScriptToggleState] = [:]
     @Published public private(set) var isPrefetchingDefaultMetadata = false
+    @Published public private(set) var darkReaderPureBlack = DarkReaderAppearancePreference.pureBlack()
     @Published public private(set) var darkReaderFollowsSystemAppearance =
         DarkReaderAppearancePreference.followsSystemAppearance()
     @Published public private(set) var tubeCleanerDeArrow = TubeCleanerDeArrowPreference.settings()
@@ -698,6 +699,14 @@ public class UserScriptManager: ObservableObject {
         Self.invalidateDocumentStartExecutionCache()
     }
 
+    public func setDarkReaderPureBlack(_ pureBlack: Bool) {
+        guard darkReaderPureBlack != pureBlack else { return }
+        DarkReaderAppearancePreference.setPureBlack(pureBlack)
+        darkReaderPureBlack = pureBlack
+        Self.invalidateDocumentStartExecutionCache()
+        Task { await refreshOutdatedDarkReaderContentIfNeeded() }
+    }
+
     public func setDarkReaderFollowsSystemAppearance(_ followsSystemAppearance: Bool) {
         guard darkReaderFollowsSystemAppearance != followsSystemAppearance else { return }
         DarkReaderAppearancePreference.setFollowsSystemAppearance(followsSystemAppearance)
@@ -716,6 +725,7 @@ public class UserScriptManager: ObservableObject {
     ///   the system).
     /// - Content without the built-in dark theme detector re-processes pages
     ///   that already render dark, washing out their native dark themes.
+    /// - Content without the pure-black flag cannot honor the OLED preference.
     private func refreshOutdatedDarkReaderContentIfNeeded() async {
         guard let script = userScripts.first(where: {
             DarkReaderAppearancePreference.matches(scriptURL: $0.url)
@@ -725,11 +735,12 @@ public class UserScriptManager: ObservableObject {
         let isOutdated =
             !script.content.contains(DarkReaderAppearancePreference.appearanceFlagName)
             || !script.content.contains(DarkReaderAppearancePreference.darkThemeDetectionMarkerName)
+            || !script.content.contains(DarkReaderAppearancePreference.pureBlackFlagName)
         guard isOutdated else { return }
 
-        logger.info("🔄 Dark Reader content predates the appearance preference or dark theme detection; refreshing")
+        logger.info("🔄 Dark Reader content predates appearance settings or dark theme detection; refreshing")
         do {
-            if try await updateSingleScript(script) {
+            if try await updateSingleScript(script, checkRemoteVersion: false) {
                 await persistUserScriptsNow()
                 Self.invalidateDocumentStartExecutionCache()
                 logger.info("✅ Refreshed Dark Reader to an appearance-aware adapter")

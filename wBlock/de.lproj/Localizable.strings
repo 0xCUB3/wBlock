@@ -821,6 +821,7 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Userstyle compiler timed out." = "Zeitüberschreitung beim Benutzerstil-Compiler.";
 "Userstyle compiler must not run on the main thread." = "Der Benutzerstil-Compiler darf nicht im Hauptthread ausgeführt werden.";
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "Die MIT-lizenzierte Dark-Reader-API-Engine für wBlock (Beta; ohne die vollständige Website-Fix-Datenbank).";
+"Pure Black (OLED)" = "Reines Schwarz (OLED)";
 "Follow System" = "System folgen";
 "Always Dark" = "Immer dunkel";
 "Dark" = "Dunkel";
