@@ -87,9 +87,6 @@ extension View {
 struct InfoSheetContainer<Header: View, Content: View>: View {
     let header: () -> Header
     let content: () -> Content
-    #if os(iOS)
-    @State private var isScrolled = false
-    #endif
 
     init(@ViewBuilder header: @escaping () -> Header, @ViewBuilder content: @escaping () -> Content) {
         self.header = header
@@ -98,35 +95,17 @@ struct InfoSheetContainer<Header: View, Content: View>: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            #if os(macOS)
             header()
                 .frame(maxWidth: .infinity, alignment: .leading)
-            ScrollView { scrollContent }
-            #else
             ScrollView {
                 scrollContent
+                    #if os(iOS)
                     .padding(.top, 4)
-                    .background(GeometryReader { proxy in
-                        Color.clear.preference(
-                            key: InfoSheetScrollOffset.self,
-                            value: proxy.frame(in: .named(InfoSheetScrollOffset.space)).minY
-                        )
-                    })
+                    #endif
             }
-            .coordinateSpace(name: InfoSheetScrollOffset.space)
-            .onPreferenceChange(InfoSheetScrollOffset.self) { top in
-                if #unavailable(iOS 18.0) { isScrolled = top < -1 }
-            }
-            .infoSheetScrolledCompat($isScrolled)
-            .safeAreaInset(edge: .top, spacing: 0) {
-                // Frosted only once content scrolls beneath it, so the title and
-                // description do not sit against a divider at rest.
-                header()
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(isScrolled ? AnyShapeStyle(.bar) : AnyShapeStyle(Color.clear))
-                    .animation(.easeInOut(duration: 0.15), value: isScrolled)
-            }
-            #endif
+            // An inset reserves space but still lets rows draw behind the
+            // header. Keep the viewport below it, including Duo's side bars.
+            .clipped()
         }
         #if os(macOS)
         .infoPopoverHeightCap()
@@ -144,12 +123,6 @@ struct InfoSheetContainer<Header: View, Content: View>: View {
 }
 
 #if os(iOS)
-private struct InfoSheetScrollOffset: PreferenceKey {
-    static let space = "InfoSheetScroll"
-    static let defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
-}
-
 extension View {
     /// iPad form sheets are glass on iOS 26, so the green toggles beneath tinted
     /// them in dark mode, and their text flashed from gray to its real color as
@@ -164,23 +137,6 @@ extension View {
     }
 }
 
-private extension View {
-    /// Content offset measured against the top inset. On iPad form sheets the
-    /// content's frame never goes negative while the header inset covers it,
-    /// so the frame test alone left the title unfrosted over the rows (#916).
-    @ViewBuilder
-    func infoSheetScrolledCompat(_ isScrolled: Binding<Bool>) -> some View {
-        if #available(iOS 18.0, *) {
-            onScrollGeometryChange(for: Bool.self) { geometry in
-                geometry.contentOffset.y + geometry.contentInsets.top > 1
-            } action: { _, scrolled in
-                isScrolled.wrappedValue = scrolled
-            }
-        } else {
-            self
-        }
-    }
-}
 #endif
 
 struct InfoSheetHeader<Title: View>: View {
