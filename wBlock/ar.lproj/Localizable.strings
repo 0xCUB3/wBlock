@@ -4,7 +4,7 @@
 
 "Apply on" = "تطبيق على";
 "No sites selected. This list will not apply." = "لم يتم تحديد أي مواقع. لن تُطبَّق هذه القائمة.";
-"Sites include their subdomains, and amazon.* covers every Amazon domain. Apply changes to update filtering." = "تشمل المواقع نطاقاتها الفرعية، ويشمل amazon.* كل نطاقات Amazon. طبّق التغييرات لتحديث التصفية.";
+"Sites include their subdomains. Use * to match any top-level domain, for example amazon.*. Apply changes to update filtering." = "تشمل المواقع نطاقاتها الفرعية. استخدم * لمطابقة أي نطاق من المستوى الأعلى، مثل amazon.*. طبّق التغييرات لتحديث التصفية.";
 "Run on" = "التشغيل على";
 "All matching sites" = "كل المواقع المطابقة";
 "Only selected sites" = "المواقع المحددة فقط";

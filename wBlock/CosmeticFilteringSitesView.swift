@@ -1,10 +1,8 @@
 import SwiftUI
 import wBlockCoreService
 
-/// The cosmetic filtering switch (#610) and the one site list it uses (#1028).
-/// On, cosmetic rules apply everywhere but the excluded sites. Off, they
-/// apply only on the selected sites. Both lists are saved, so flipping the
-/// switch brings each one back.
+/// The cosmetic filtering switch and its independent site scope.
+/// Both lists are saved while the mode picks which one applies.
 struct CosmeticFilteringSitesView: View {
     @ObservedObject var filterManager: AppFilterManager
     @State private var isEnabled = CosmeticFilteringPreference.isEnabled()
@@ -34,25 +32,17 @@ struct CosmeticFilteringSitesView: View {
                     }
                 }
                 if isEnabled {
-                    SettingsGroup(header: "Excluded Sites", isBoxed: false, footer: [
-                        "Cosmetic filtering will not apply on these sites. Network blocking still applies.",
-                        "Sites include their subdomains, and amazon.* covers every Amazon domain. Apply changes to update filtering.",
-                    ]) {
-                        StringListEditor(title: nil, items: sites.excludedSites,
-                                         update: { update(sites.selectedSites, $0) },
-                                         normalize: FilterListSiteExclusion.normalizedDomain)
-                    }
-                } else {
-                    let selected = sites.selectedSites ?? []
-                    SettingsGroup(header: "Selected Sites", isBoxed: false, footer: [
-                        selected.isEmpty ? "No sites selected. Cosmetic filtering will not apply."
-                            : "Cosmetic filtering applies only on these sites.",
-                        "Sites include their subdomains, and amazon.* covers every Amazon domain. Apply changes to update filtering.",
-                    ]) {
-                        StringListEditor(title: nil, items: selected,
-                                         update: { update($0, sites.excludedSites) },
-                                         normalize: FilterListSiteExclusion.normalizedDomain)
-                    }
+                    SiteScopeEditor(
+                        title: "Apply on", onlySelectedSites: sites.onlySelectedSites,
+                        selectedSites: sites.selectedSites ?? [],
+                        excludedSites: sites.onlySelectedSites ? nil : sites.excludedSites,
+                        emptySelectionMessage: "No sites selected. Cosmetic filtering will not apply.",
+                        excludedMessage: "Cosmetic filtering will not apply on these sites. Network blocking still applies.",
+                        footer: "Sites include their subdomains. Use * to match any top-level domain, for example amazon.*. Apply changes to update filtering.",
+                        updateMode: { update(sites.selectedSites, sites.excludedSites, onlySelectedSites: $0) },
+                        updateSelected: { update($0, sites.excludedSites) },
+                        updateExcluded: { update(sites.selectedSites, $0) }
+                    )
                 }
             }
             .padding()
@@ -77,11 +67,12 @@ struct CosmeticFilteringSitesView: View {
         filterManager.markNonSelectionChangesPending()
     }
 
-    private func update(_ selected: [String]?, _ excluded: [String], includesGeneric: Bool? = nil) {
-        let newSites = CosmeticFilteringPreference.Sites(
+    private func update(_ selected: [String]?, _ excluded: [String], includesGeneric: Bool? = nil, onlySelectedSites: Bool? = nil) {
+        var newSites = CosmeticFilteringPreference.Sites(
             selectedSites: selected, excludedSites: excluded,
             includesGeneric: includesGeneric ?? sites.includesGeneric
         )
+        newSites.onlySelectedSites = onlySelectedSites ?? sites.onlySelectedSites
         guard newSites != sites else { return }
         sites = newSites
         CosmeticFilteringPreference.setSites(newSites)

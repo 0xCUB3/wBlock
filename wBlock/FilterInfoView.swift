@@ -201,7 +201,7 @@ struct FilterSettingsView: View {
                 excludedSites: liveFilter.onlySelectedSites ? nil : liveFilter.excludedSites,
                 emptySelectionMessage: "No sites selected. This list will not apply.",
                 excludedMessage: "This list will not apply on these sites. Other lists still apply.",
-                footer: "Sites include their subdomains, and amazon.* covers every Amazon domain. Apply changes to update filtering.",
+                footer: "Sites include their subdomains. Use * to match any top-level domain, for example amazon.*. Apply changes to update filtering.",
                 updateMode: { filterManager.setOnlySelectedSites($0, for: liveFilter.id) },
                 updateSelected: { filterManager.setSelectedSites($0, for: liveFilter.id) },
                 updateExcluded: { filterManager.setExcludedSites($0, for: liveFilter.id) }

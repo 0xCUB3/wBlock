@@ -4,7 +4,7 @@
 
 "Apply on" = "Aplică pe";
 "No sites selected. This list will not apply." = "Niciun site selectat. Această listă nu se va aplica.";
-"Sites include their subdomains, and amazon.* covers every Amazon domain. Apply changes to update filtering." = "Site-urile includ subdomeniile lor, iar amazon.* acoperă toate domeniile Amazon. Aplică modificările pentru a actualiza filtrarea.";
+"Sites include their subdomains. Use * to match any top-level domain, for example amazon.*. Apply changes to update filtering." = "Site-urile includ subdomeniile lor. Folosește * pentru orice domeniu de nivel superior, de exemplu amazon.*. Aplică modificările pentru a actualiza filtrarea.";
 "Run on" = "Rulează pe";
 "All matching sites" = "Toate site-urile corespunzătoare";
 "Only selected sites" = "Doar site-urile selectate";

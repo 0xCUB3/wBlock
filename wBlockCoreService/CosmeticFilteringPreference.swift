@@ -19,6 +19,12 @@ public enum CosmeticFilteringPreference {
     public struct Sites: Codable, Equatable, Sendable {
         public var selectedSites: [String]?
         public var excludedSites: [String]
+        private var selectedSitesOnly: Bool?
+
+        public var onlySelectedSites: Bool {
+            get { selectedSitesOnly ?? (selectedSites != nil) }
+            set { selectedSitesOnly = newValue }
+        }
         /// Nil keeps generic rules (those naming no site), which every frame
         /// on every site has to match against.
         private var genericRules: Bool?
@@ -70,14 +76,14 @@ public enum CosmeticFilteringPreference {
         UserDefaults(suiteName: groupIdentifier)?.set(try? JSONEncoder().encode(sites), forKey: sitesStorageKey)
     }
 
-    /// The scope compilation honors. The switch picks which saved list counts
-    /// (#1028): on applies everywhere but the excluded sites, and off applies
-    /// only on the selected ones, so each list is kept while the other is used.
+    /// The master switch disables cosmetic rules; the site mode independently
+    /// picks which saved list applies without discarding the inactive list.
     public static func effectiveSites(groupIdentifier: String = GroupIdentifier.shared.value) -> Sites {
         let saved = sites(groupIdentifier: groupIdentifier)
-        return isEnabled(groupIdentifier: groupIdentifier)
-            ? Sites(excludedSites: saved.excludedSites, includesGeneric: saved.includesGeneric)
-            : Sites(selectedSites: saved.selectedSites ?? [], includesGeneric: saved.includesGeneric)
+        guard isEnabled(groupIdentifier: groupIdentifier) else { return Sites(selectedSites: []) }
+        return saved.onlySelectedSites
+            ? Sites(selectedSites: saved.selectedSites ?? [], includesGeneric: saved.includesGeneric)
+            : Sites(excludedSites: saved.excludedSites, includesGeneric: saved.includesGeneric)
     }
 
     /// True for element-hiding and CSS injection rules, using the converter's own

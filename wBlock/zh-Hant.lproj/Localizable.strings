@@ -4,7 +4,7 @@
 
 "Apply on" = "套用範圍";
 "No sites selected. This list will not apply." = "未選取任何網站。此清單將不會套用。";
-"Sites include their subdomains, and amazon.* covers every Amazon domain. Apply changes to update filtering." = "網站範圍包含其子網域，amazon.* 涵蓋所有 Amazon 網域。請套用變更以更新過濾。";
+"Sites include their subdomains. Use * to match any top-level domain, for example amazon.*. Apply changes to update filtering." = "網站範圍包含其子網域。使用 * 可符合任意頂級網域，例如 amazon.*。請套用變更以更新過濾。";
 "Run on" = "執行範圍";
 "All matching sites" = "所有符合條件的網站";
 "Only selected sites" = "僅選取的網站";

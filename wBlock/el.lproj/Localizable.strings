@@ -4,7 +4,7 @@
 
 "Apply on" = "Εφαρμογή σε";
 "No sites selected. This list will not apply." = "Δεν έχουν επιλεγεί ιστότοποι. Αυτή η λίστα δεν θα εφαρμόζεται.";
-"Sites include their subdomains, and amazon.* covers every Amazon domain. Apply changes to update filtering." = "Οι ιστότοποι περιλαμβάνουν τους υποτομείς τους και το amazon.* καλύπτει κάθε τομέα της Amazon. Εφαρμόστε τις αλλαγές για να ενημερώσετε το φιλτράρισμα.";
+"Sites include their subdomains. Use * to match any top-level domain, for example amazon.*. Apply changes to update filtering." = "Οι ιστότοποι περιλαμβάνουν τους υποτομείς τους. Χρησιμοποιήστε * για οποιονδήποτε τομέα ανώτατου επιπέδου, για παράδειγμα amazon.*. Εφαρμόστε τις αλλαγές για να ενημερώσετε το φιλτράρισμα.";
 "Run on" = "Εκτέλεση σε";
 "All matching sites" = "Όλους τους αντίστοιχους ιστοτόπους";
 "Only selected sites" = "Μόνο επιλεγμένους ιστοτόπους";
