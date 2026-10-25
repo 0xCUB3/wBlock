@@ -1038,7 +1038,7 @@ Para reativá-los, desative outros filtros grandes e aplique as alterações nov
 "Settings…" = "Ajustes…";
 "Browse" = "Explorar";
 "Global Privacy Control" = "Controle Global de Privacidade";
-"Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it." = "O Controle Global de Privacidade pede aos sites que não vendam nem compartilhem suas informações pessoais. Em alguns lugares, os sites são obrigados a respeitá-lo.";
+"Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it. Enabling GPC may make your browser easier to fingerprint." = "O Controle Global de Privacidade pede aos sites que não vendam nem compartilhem suas informações pessoais. Em alguns lugares, os sites são obrigados a respeitá-lo. Ativar o GPC pode facilitar a identificação do seu navegador pela impressão digital.";
 "Learn More" = "Saiba mais";
 "Edit…" = "Editar…";
 "Select All" = "Selecionar Tudo";

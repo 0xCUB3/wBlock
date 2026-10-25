@@ -1038,7 +1038,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Settings…" = "Ρυθμίσεις…";
 "Browse" = "Περιήγηση";
 "Global Privacy Control" = "Global Privacy Control";
-"Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it." = "Το Global Privacy Control ζητά από τους ιστότοπους να μην πωλούν ή κοινοποιούν τα προσωπικά σας δεδομένα. Ορισμένες περιοχές υποχρεώνουν τους ιστότοπους να το σέβονται.";
+"Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it. Enabling GPC may make your browser easier to fingerprint." = "Το Global Privacy Control ζητά από τους ιστότοπους να μην πωλούν ή κοινοποιούν τα προσωπικά σας δεδομένα. Ορισμένες περιοχές υποχρεώνουν τους ιστότοπους να το σέβονται. Η ενεργοποίηση του GPC ενδέχεται να διευκολύνει την αναγνώριση του προγράμματος περιήγησής σας μέσω ψηφιακού αποτυπώματος.";
 "Learn More" = "Μάθετε περισσότερα";
 "Edit…" = "Επεξεργασία…";
 "Select All" = "Επιλογή όλων";

@@ -1047,7 +1047,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Settings…" = "تنظیمات…";
 "Browse" = "مرور";
 "Global Privacy Control" = "کنترل جهانی حریم خصوصی";
-"Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it." = "کنترل جهانی حریم خصوصی از وب‌سایت‌ها می‌خواهد اطلاعات شخصی شما را نفروشند یا به اشتراک نگذارند. در برخی مناطق، وب‌سایت‌ها موظف به رعایت آن هستند.";
+"Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it. Enabling GPC may make your browser easier to fingerprint." = "کنترل جهانی حریم خصوصی از وب‌سایت‌ها می‌خواهد اطلاعات شخصی شما را نفروشند یا به اشتراک نگذارند. در برخی مناطق، وب‌سایت‌ها موظف به رعایت آن هستند. فعال کردن GPC ممکن است شناسایی مرورگر شما از طریق اثر انگشت دیجیتال را آسان‌تر کند.";
 "Learn More" = "بیشتر بدانید";
 "Edit…" = "ویرایش…";
 "Select All" = "انتخاب همه";

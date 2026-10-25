@@ -243,7 +243,7 @@ struct SettingsView: View {
             Toggle(isOn: globalPrivacyControlBinding) {
                 rowLabel(
                     "Global Privacy Control",
-                    detail: Text("Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it.")
+                    detail: Text("Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it. Enabling GPC may make your browser easier to fingerprint.")
                         + Text(" ") + Text(gpcLearnMore)
                 )
             }

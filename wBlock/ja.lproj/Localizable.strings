@@ -1007,7 +1007,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Settings…" = "設定…";
 "Browse" = "ブラウズ";
 "Global Privacy Control" = "グローバル・プライバシー・コントロール";
-"Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it." = "グローバル・プライバシー・コントロール（GPC）は、個人情報を販売・共有しないようWebサイトに求めます。一部の地域では、サイトはこれに従う義務があります。";
+"Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it. Enabling GPC may make your browser easier to fingerprint." = "グローバル・プライバシー・コントロール（GPC）は、個人情報を販売・共有しないようWebサイトに求めます。一部の地域では、サイトはこれに従う義務があります。GPCを有効にすると、フィンガープリントによってブラウザを識別されやすくなる可能性があります。";
 "Learn More" = "詳しく見る";
 "Edit…" = "編集…";
 "Select All" = "すべてを選択";

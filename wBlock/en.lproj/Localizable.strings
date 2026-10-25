@@ -1047,7 +1047,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Settings…" = "Settings…";
 "Browse" = "Browse";
 "Global Privacy Control" = "Global Privacy Control";
-"Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it." = "Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it.";
+"Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it. Enabling GPC may make your browser easier to fingerprint." = "Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it. Enabling GPC may make your browser easier to fingerprint.";
 "Learn More" = "Learn More";
 "Edit…" = "Edit…";
 "Select All" = "Select All";

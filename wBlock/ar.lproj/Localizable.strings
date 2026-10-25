@@ -1038,7 +1038,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Settings…" = "الإعدادات…";
 "Browse" = "تصفح";
 "Global Privacy Control" = "التحكم العالمي في الخصوصية";
-"Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it." = "يطلب التحكم العالمي في الخصوصية من المواقع عدم بيع معلوماتك الشخصية أو مشاركتها. تُلزم بعض الأماكن المواقع باحترامه.";
+"Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it. Enabling GPC may make your browser easier to fingerprint." = "يطلب التحكم العالمي في الخصوصية من المواقع عدم بيع معلوماتك الشخصية أو مشاركتها. تُلزم بعض الأماكن المواقع باحترامه. قد يؤدي تفعيل GPC إلى تسهيل التعرف على متصفحك من خلال بصمته الرقمية.";
 "Learn More" = "اعرف المزيد";
 "Edit…" = "تحرير…";
 "Select All" = "تحديد الكل";
