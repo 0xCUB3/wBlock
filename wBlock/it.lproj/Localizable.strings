@@ -185,7 +185,7 @@
 "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "Safari non può applicare le regole inline-script di questo elenco. Abilita Bypass Paywalls Clean in Userscript per i siti in inglese supportati.";
 "Blocks pop-up ads on web pages." = "Blocca gli annunci pop-up nelle pagine web.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "Blocca i popup promozionali, le iscrizioni alle newsletter e le richieste di notifica.";
-"Blocks social media content on webpages." = "Blocca i contenuti dei social media sulle pagine web.";
+"Hides share and follow buttons on any site, including many that AdGuard Social Media Filter misses." = "Nasconde i pulsanti di condivisione e di follow su qualsiasi sito, compresi molti che AdGuard Social Media Filter non intercetta.";
 "Blocks third-party widgets, chat assistants, and support widgets." = "Blocca widget di terze parti, assistenti di chat e widget di supporto.";
 "Building combined filter engine..." = "Creazione del motore filtri combinato...";
 "Building filter engine" = "Compilazione del motore filtri";
@@ -908,7 +908,7 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "Paste URL" = "Incolla URL";
 "Paste URLs" = "Incolla URL";
 
-"%@ submitted at last apply" = "%@ inviate all’ultima applicazione";
+"%@ applied" = "%@ applicate";
 
 
 "Source rules submitted to the converter at last apply, not Safari’s final rule count." = "Regole sorgente inviate al convertitore all’ultima applicazione, non il numero finale di regole di Safari.";

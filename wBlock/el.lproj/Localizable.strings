@@ -185,7 +185,7 @@
 "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "Το Safari δεν μπορεί να εφαρμόσει τους κανόνες inline-script αυτής της λίστας. Ενεργοποιήστε το Bypass Paywalls Clean στους Κώδικες χρήστη για τους υποστηριζόμενους αγγλόφωνους ιστότοπους.";
 "Blocks pop-up ads on web pages." = "Αποκλείει τις αναδυόμενες διαφημίσεις στις ιστοσελίδες.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "Αποκλείει διαφημιστικά αναδυόμενα παράθυρα, εγγραφές σε ενημερωτικά δελτία και αιτήματα ειδοποιήσεων.";
-"Blocks social media content on webpages." = "Αποκλείει το περιεχόμενο των μέσων κοινωνικής δικτύωσης σε ιστοσελίδες.";
+"Hides share and follow buttons on any site, including many that AdGuard Social Media Filter misses." = "Κρύβει τα κουμπιά κοινοποίησης και ακολούθησης σε κάθε ιστότοπο, μαζί με πολλά που ξεφεύγουν από το AdGuard Social Media Filter.";
 "Blocks third-party widgets, chat assistants, and support widgets." = "Αποκλείει γραφικά στοιχεία τρίτων, βοηθούς συνομιλίας και γραφικά στοιχεία υποστήριξης.";
 "Building combined filter engine..." = "Δημιουργία συνδυασμένης μηχανής φίλτρων...";
 "Building filter engine" = "Δημιουργία μηχανής φίλτρων";
@@ -908,7 +908,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Paste URL" = "Επικόλληση URL";
 "Paste URLs" = "Επικόλληση URL";
 
-"%@ submitted at last apply" = "%@ υποβλήθηκαν στην τελευταία εφαρμογή";
+"%@ applied" = "%@ εφαρμόστηκαν";
 
 
 "Source rules submitted to the converter at last apply, not Safari’s final rule count." = "Πηγαίοι κανόνες που υποβλήθηκαν στον μετατροπέα κατά την τελευταία εφαρμογή, όχι το τελικό πλήθος κανόνων του Safari.";

@@ -1023,7 +1023,6 @@ struct FilterRowView: View {
                         .foregroundStyle(.gray)
                         .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
-                        .help(text.help)
                 }
             }
             Spacer(minLength: 0)

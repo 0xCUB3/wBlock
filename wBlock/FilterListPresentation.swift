@@ -21,7 +21,6 @@ struct FilterListPresentation: Sendable {
         let languages: String
         let description: String
         let metadata: String
-        let help: String
 
         init(_ filter: FilterList, isDownloaded: Bool, lastModified: String?) {
             name = filter.localizedDisplayName
@@ -30,16 +29,21 @@ struct FilterListPresentation: Sendable {
             let updated = HTTPModifiedDate.date(from: lastModified) ?? filter.lastUpdated
             metadata = filter.isRemoteURL && !isDownloaded ? "" : ContentRowMetadata.summary([
                 Self.ruleCountSummary(filter),
+                Self.appliedSummary(filter),
                 ContentRowMetadata.versionLabel(filter.version),
                 ContentRowMetadata.updatedLabel(updated),
             ])
-            // How many source rules the last successful apply handed to the converter (#742).
-            help = filter.isSelected ? filter.uniqueRuleCount.map {
-                String.localizedStringWithFormat(
-                    NSLocalizedString("%@ submitted at last apply", comment: "Actual source rules admitted to the last successful compilation"),
-                    $0.formatted()
-                )
-            } ?? "" : ""
+        }
+
+        /// Source rules the last apply handed to the converter (#742), shown
+        /// when rules another list already supplied were left out.
+        private static func appliedSummary(_ filter: FilterList) -> String? {
+            guard filter.isSelected, let applied = filter.uniqueRuleCount,
+                  applied < filter.sourceRuleCount ?? 0 else { return nil }
+            return String.localizedStringWithFormat(
+                NSLocalizedString("%@ applied", comment: "Source rules this list added to the last apply after duplicates in other lists were removed"),
+                applied.formatted()
+            )
         }
 
         private static func ruleCountSummary(_ filter: FilterList) -> String? {

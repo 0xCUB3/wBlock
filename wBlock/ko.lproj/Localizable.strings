@@ -185,7 +185,7 @@
 "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "Safari는 이 목록의 inline-script 규칙을 적용할 수 없습니다. 지원되는 영어 사이트에서는 유저스크립트에서 Bypass Paywalls Clean을 활성화하세요.";
 "Blocks pop-up ads on web pages." = "웹 페이지의 팝업 광고를 차단합니다.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "프로모션 팝업, 뉴스레터 가입, 알림 요청을 차단합니다.";
-"Blocks social media content on webpages." = "웹페이지에서 소셜 미디어 콘텐츠를 차단합니다.";
+"Hides share and follow buttons on any site, including many that AdGuard Social Media Filter misses." = "모든 사이트에서 공유 및 팔로우 버튼을 숨깁니다. AdGuard Social Media Filter가 놓치는 버튼도 많이 포함됩니다.";
 "Blocks third-party widgets, chat assistants, and support widgets." = "타사 위젯, 채팅 도우미 및 지원 위젯을 차단합니다.";
 "Building combined filter engine..." = "결합 필터 엔진 구축 중...";
 "Building filter engine" = "필터 엔진을 빌드합니다";
@@ -908,7 +908,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Paste URL" = "URL 붙여넣기";
 "Paste URLs" = "URL 붙여넣기";
 
-"%@ submitted at last apply" = "마지막 적용 시 %@개 제출";
+"%@ applied" = "%@개 적용됨";
 
 
 "Source rules submitted to the converter at last apply, not Safari’s final rule count." = "마지막 적용 시 변환기에 제출된 소스 규칙이며, Safari의 최종 규칙 수가 아닙니다.";

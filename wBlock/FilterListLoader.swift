@@ -393,7 +393,8 @@ class FilterListLoader {
                 id: UUID(), name: "Fanboy's Social Blocking List",
                 url: URL(string: "https://easylist.to/easylist/fanboy-social.txt")!,
                 category: FilterListCategory.annoyances,
-                description: "Blocks social media content on webpages."),
+                description:
+                    "Hides share and follow buttons on any site, including many that AdGuard Social Media Filter misses."),
             FilterList(
                 id: UUID(), name: "Stevo's AI Blocklist",
                 url: Self.stevoAIBlocklistURL, category: FilterListCategory.annoyances,

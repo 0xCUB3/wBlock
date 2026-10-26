@@ -185,7 +185,7 @@
 "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "Safari 無法套用此清單的 inline-script 規則。對於支援的英語網站，請在使用者腳本中啟用 Bypass Paywalls Clean。";
 "Blocks pop-up ads on web pages." = "封鎖網頁上的彈出式廣告。";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "封鎖促銷彈出視窗、電子報訂閱和通知請求。";
-"Blocks social media content on webpages." = "封鎖網頁上的社群媒體內容。";
+"Hides share and follow buttons on any site, including many that AdGuard Social Media Filter misses." = "在任何網站上隱藏分享和追蹤按鈕，包括許多 AdGuard Social Media Filter 漏掉的按鈕。";
 "Blocks third-party widgets, chat assistants, and support widgets." = "封鎖第三方小工具、聊天助理和支援小工具。";
 "Building combined filter engine..." = "正在建置合併的過濾器引擎...";
 "Building filter engine" = "正在建置過濾器引擎";
@@ -908,7 +908,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Paste URL" = "貼上 URL";
 "Paste URLs" = "貼上 URL";
 
-"%@ submitted at last apply" = "上次套用時提交了 %@ 條";
+"%@ applied" = "已套用 %@ 條";
 
 
 "Source rules submitted to the converter at last apply, not Safari’s final rule count." = "上次套用時傳送給轉換器的來源規則，而非 Safari 的最終規則數量。";

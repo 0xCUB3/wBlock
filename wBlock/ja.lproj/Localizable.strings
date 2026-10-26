@@ -185,7 +185,7 @@
 "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "Safari はこのリストの inline-script ルールを適用できません。対応する英語サイトでは、ユーザースクリプトで Bypass Paywalls Clean を有効にしてください。";
 "Blocks pop-up ads on web pages." = "ウェブページ上のポップアップ広告をブロックします。";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "プロモーションのポップアップ、ニュースレターの登録、通知リクエストをブロックします。";
-"Blocks social media content on webpages." = "ウェブページ上のソーシャルメディアのコンテンツをブロックします。";
+"Hides share and follow buttons on any site, including many that AdGuard Social Media Filter misses." = "あらゆるサイトで共有ボタンやフォローボタンを非表示にします。AdGuard Social Media Filter が見逃す多くのボタンも対象です。";
 "Blocks third-party widgets, chat assistants, and support widgets." = "サードパーティのウィジェット、チャットアシスタント、サポートウィジェットをブロックします。";
 "Building combined filter engine..." = "複合フィルターエンジンを構築中...";
 "Building filter engine" = "フィルターエンジンを構築中";
@@ -881,7 +881,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Bulk URLs" = "複数のURL";
 "Paste URL" = "URLをペースト";
 "Paste URLs" = "URLをペースト";
-"%@ submitted at last apply" = "前回の適用時に%@件送信";
+"%@ applied" = "%@ 件を適用";
 "Source rules submitted to the converter at last apply, not Safari’s final rule count." = "前回の適用時に変換処理へ送信された元のルールであり、Safariの最終的なルール数ではありません。";
 
 /* Filter update reliability */

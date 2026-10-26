@@ -185,7 +185,7 @@
 "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "قوانین اسکریپت درون‌خطی این فهرست را Safari نمی‌تواند اعمال کند. برای سایت‌های انگلیسی‌زبان پشتیبانی‌شده، Bypass Paywalls Clean را در Userscripts فعال کنید.";
 "Blocks pop-up ads on web pages." = "تبلیغات پاپ‌آپ را در صفحات وب مسدود می‌کند.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "پاپ‌آپ‌های تبلیغاتی، ثبت‌نام خبرنامه و درخواست‌های اعلان را مسدود می‌کند.";
-"Blocks social media content on webpages." = "محتوای شبکه‌های اجتماعی را در صفحات وب مسدود می‌کند.";
+"Hides share and follow buttons on any site, including many that AdGuard Social Media Filter misses." = "دکمه‌های اشتراک‌گذاری و دنبال‌کردن را در هر سایتی پنهان می‌کند، از جمله بسیاری که AdGuard Social Media Filter از قلم می‌اندازد.";
 "Blocks third-party widgets, chat assistants, and support widgets." = "ابزارک‌های شخص ثالث، دستیاران چت و ابزارک‌های پشتیبانی را مسدود می‌کند.";
 "Building combined filter engine..." = "در حال ساخت موتور فیلتر ترکیبی...";
 "Building filter engine" = "در حال ساخت موتور فیلتر";
@@ -917,7 +917,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 
 
-"%@ submitted at last apply" = "%@ در آخرین اعمال ارسال شد";
+"%@ applied" = "%@ اعمال‌شده";
 
 
 "Source rules submitted to the converter at last apply, not Safari’s final rule count." = "قوانین مبدأ در آخرین اعمال به تبدیل‌کننده ارسال شدند، نه تعداد نهایی قوانین Safari.";

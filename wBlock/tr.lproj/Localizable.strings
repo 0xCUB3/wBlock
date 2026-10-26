@@ -185,7 +185,7 @@
 "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "Safari, bu listenin satır içi komut dosyası kurallarını uygulayamıyor. Desteklenen İngilizce siteler için kullanıcı betikleri üzerinden Bypass Paywalls Clean'i etkinleştirin.";
 "Blocks pop-up ads on web pages." = "Web sayfalarındaki açılır reklamları engeller.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "Tanıtım amaçlı açılır pencereleri, bülten kayıtlarını ve bildirim isteklerini engeller.";
-"Blocks social media content on webpages." = "Web sayfalarındaki sosyal medya içeriklerini engeller.";
+"Hides share and follow buttons on any site, including many that AdGuard Social Media Filter misses." = "Her sitede paylaşma ve takip etme düğmelerini gizler; AdGuard Social Media Filter'ın kaçırdığı pek çoğu da buna dahildir.";
 "Blocks third-party widgets, chat assistants, and support widgets." = "Üçüncü taraf araçları, sohbet asistanlarını ve destek pencere ögelerini engeller.";
 "Building combined filter engine..." = "Birleşik filtreleme motoru oluşturuluyor...";
 "Building filter engine" = "Filtreleme motoru oluşturuluyor";
@@ -917,7 +917,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 
 
 
-"%@ submitted at last apply" = "%@ son uygulamada gönderildi";
+"%@ applied" = "%@ uygulandı";
 
 
 "Source rules submitted to the converter at last apply, not Safari’s final rule count." = "Safari'nin son kural sayısı değil, son uygulamada dönüştürücüye gönderilen kaynak kurallardır.";
