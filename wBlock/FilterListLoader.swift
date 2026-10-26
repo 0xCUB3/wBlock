@@ -161,7 +161,6 @@ class FilterListLoader {
         "d3ward/toolz",
         "platforms/extension/safari/filters/208_optimized.txt",  // Online Malicious URL Blocklist (#864)
         "platforms/extension/safari/filters/122_optimized.txt",  // Fanboy's Annoyances Filter (#877)
-        "easylist.to/easylist/fanboy-social.txt",  // Fanboy's Social Blocking List (#877)
         "raw.githubusercontent.com/cjx82630/cjxlist/master/cjx-annoyance.txt",  // CJX's Annoyances List (#882)
         "raw.githubusercontent.com/easylist/easylistchina/master/easylistchina.txt",  // EasyList China (#882)
         "easylist-downloads.adblockplus.org/easylistdutch.txt",  // EasyList Dutch (#882)
@@ -390,6 +389,11 @@ class FilterListLoader {
                         "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/4_optimized.txt"
                 )!, category: FilterListCategory.annoyances,
                 description: "Filter for social media widgets such as 'Like' and 'Share' buttons and more."),
+            FilterList(
+                id: UUID(), name: "Fanboy's Social Blocking List",
+                url: URL(string: "https://easylist.to/easylist/fanboy-social.txt")!,
+                category: FilterListCategory.annoyances,
+                description: "Blocks social media content on webpages."),
             FilterList(
                 id: UUID(), name: "Stevo's AI Blocklist",
                 url: Self.stevoAIBlocklistURL, category: FilterListCategory.annoyances,
