@@ -150,6 +150,7 @@ compile_core_test issue-681-dedup-behavior scripts/test_issue_681_dedup_behavior
 compile_core_test filter-rule-conversion scripts/test_filter_rule_conversion.swift
 compile_core_test zapper-rule-editing scripts/test_zapper_rule_editing.swift
 compile_core_test issue-836-cross-target-exceptions scripts/test_issue_836_cross_target_exceptions.swift
+compile_core_test content-blocker-slot-overflow scripts/test_content_blocker_slot_overflow.swift
 compile_core_test issue-681-url-identity scripts/test_issue_681_url_identity.swift
 compile_core_test issue-683-reorder-cache scripts/test_issue_683_reorder_cache.swift \
   wBlock/ListDisplayOrder.swift

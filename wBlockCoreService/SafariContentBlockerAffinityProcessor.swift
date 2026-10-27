@@ -41,7 +41,7 @@ public struct SafariContentBlockerAffinitySnapshot: Sendable {
 }
 
 public enum SafariContentBlockerAffinityProcessor {
-    fileprivate static let directivePrefix = "!#safari_cb_affinity"
+    static let directivePrefix = "!#safari_cb_affinity"
 
     public static func sourceURL(for filter: FilterList, containerURL: URL) -> URL? {
         ContentBlockerIncrementalCache.existingLocalFileURL(for: filter, containerURL: containerURL)

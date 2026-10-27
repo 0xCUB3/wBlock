@@ -1507,14 +1507,27 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         }
         var safariRulesJSON = normalizedSafariRules(result.safariRulesJSON)
         var safariRulesCount = result.safariRulesCount
+        var discardedRulesCount = result.discardedSafariRules
         if let ignoreSegment, !ignoreSegment.rules.isEmpty {
             let segment = try convertRules(rules: ignoreSegment.rules, isCancelled: cancellationRequested)
+            discardedRulesCount += segment.discardedSafariRules
             let sites = FilterListSiteExclusion.normalizedDomains(from: ignoreSegment.sites)
             let segmentJSON = injectIgnoreRulesForDisabledSites(
                 json: normalizedSafariRules(segment.safariRulesJSON), disabledSites: sites
             )
             safariRulesJSON = concatenatedRuleArrays(segmentJSON, safariRulesJSON)
             safariRulesCount += segment.safariRulesCount + sites.count
+        }
+        // The converter stops at Safari's limit by itself. Its output is then
+        // incomplete, so it is neither published nor cached as a base.
+        if discardedRulesCount > 0 {
+            try? FileManager.default.removeItem(at: baseCountURL)
+            return (
+                safariRulesCount: safariRulesCount,
+                truncatedRuleCount: discardedRulesCount,
+                advancedRulesText: result.advancedRulesText,
+                outputChanged: false
+            )
         }
 
         _ = try saveContentBlockerIfChanged(
@@ -1719,16 +1732,10 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
     /// Choose one owner across slots with equal exception contexts. Safari
     /// exceptions are local to a slot; affinity copies must remain in place.
     private static func crossTargetDuplicateRules(
-        filters: [FilterList], orderedFilters: [FilterList],
-        snapshot: SafariContentBlockerAffinitySnapshot,
-        target: ContentBlockerTargetInfo, targets: [ContentBlockerTargetInfo],
+        orderedFilters: [FilterList], distribution: ContentBlockerDistribution,
+        snapshot: SafariContentBlockerAffinitySnapshot, targets: [ContentBlockerTargetInfo],
         containerURL: URL, isCancelled: () -> Bool
     ) throws -> [UUID: Set<String>] {
-        let distribution = ContentBlockerMappingService.distribute(selectedFilters: orderedFilters, across: targets)
-        guard Set((distribution[target] ?? []).map(\.id)) == Set(filters.map(\.id)) else {
-            // Compatibility callers may supply a custom mapping we cannot infer.
-            return [:]
-        }
         func source(_ filter: FilterList) throws -> String? {
             if isCancelled() { throw CancellationError() }
             guard let url = SafariContentBlockerAffinityProcessor.sourceURL(for: filter, containerURL: containerURL) else { return nil }
@@ -1764,14 +1771,14 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
 
     private static func crossTargetDuplicateRules(
         orderedFilters: [FilterList], snapshot: SafariContentBlockerAffinitySnapshot,
-        distribution: [ContentBlockerTargetInfo: [FilterList]], source: (FilterList) throws -> String?,
+        distribution: ContentBlockerDistribution, source: (FilterList) throws -> String?,
         targets: [ContentBlockerTargetInfo], isCancelled: () -> Bool
     ) throws -> [UUID: Set<String>] {
         var contexts: [ContentBlockerTargetInfo: String] = [:]
-        var owners: [UUID: ContentBlockerTargetInfo] = [:]
+        var owners: [UUID: [ContentBlockerTargetInfo]] = [:]
         for slot in targets {
-            let assigned = Set((distribution[slot] ?? []).map(\.id))
-            for id in assigned { owners[id] = slot }
+            let assigned = Set((distribution.filtersByTarget[slot] ?? []).map(\.id))
+            for id in assigned { owners[id, default: []].append(slot) }
             var exceptions = Set<String>()
             for filter in orderedFilters {
                 if isCancelled() { throw CancellationError() }
@@ -1802,20 +1809,22 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         var excluded: [UUID: Set<String>] = [:]
         for filter in orderedFilters {
             if isCancelled() { throw CancellationError() }
-            guard snapshot.content(for: filter.id) == nil,
-                  let slot = owners[filter.id], let context = contexts[slot],
+            guard snapshot.content(for: filter.id) == nil, let slots = owners[filter.id],
                   let raw = try source(filter), !RuleText.contains(raw, "!#") else { continue }
-            let text = FilterListSiteExclusion.restrictingAdvancedRules(raw, excluding: filter.appliedExcludedSites, including: filter.appliedSelectedSites)
-            RuleText.forEachLine(text) { line in
-                let trimmed = RuleText.trimmed(line)
-                guard FilterRuleAnalysis.isRuleLine(trimmed), !trimmed.utf8.starts(with: "@@".utf8),
-                      !RuleText.contains(trimmed, "#@") else { return }
-                let identity = FilterRuleAnalysis.ruleIdentity(trimmed)
-                let key = Key(context: context, rule: RuleFingerprint(identity))
-                if let owner = seen[key], owner != slot {
-                    excluded[filter.id, default: []].insert(identity)
-                } else {
-                    seen[key] = slot
+            for slot in slots {
+                guard let context = contexts[slot] else { continue }
+                let part = distribution.shardsByTarget[slot]?[filter.id]?.apply(to: raw) ?? raw
+                let text = FilterListSiteExclusion.restrictingAdvancedRules(part, excluding: filter.appliedExcludedSites, including: filter.appliedSelectedSites)
+                RuleText.forEachLine(text) { line in
+                    let trimmed = RuleText.trimmed(line)
+                    guard !ContentBlockerShard.isShared(trimmed) else { return }
+                    let identity = FilterRuleAnalysis.ruleIdentity(trimmed)
+                    let key = Key(context: context, rule: RuleFingerprint(identity))
+                    if let owner = seen[key], owner != slot {
+                        excluded[filter.id, default: []].insert(identity)
+                    } else {
+                        seen[key] = slot
+                    }
                 }
             }
         }
@@ -1864,11 +1873,19 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             Task.isCancelled || isCancelled?() == true
         }
 
-        let exclusions = try crossTargetDuplicateRules(
-            filters: filters, orderedFilters: orderedSelectedFilters,
-            snapshot: affinitySnapshot, target: targetInfo, targets: allTargets,
+        // Compatibility callers may supply a custom mapping we cannot infer;
+        // their lists compile whole and skip cross-blocker deduplication.
+        let distribution = ContentBlockerMappingService.plan(selectedFilters: orderedSelectedFilters, across: allTargets)
+        let followsPlan = Set((distribution.filtersByTarget[targetInfo] ?? []).map(\.id)) == assignedFilterIDs
+        let shards = followsPlan ? distribution.shardsByTarget[targetInfo] ?? [:] : [:]
+        let exclusions = followsPlan ? try crossTargetDuplicateRules(
+            orderedFilters: orderedSelectedFilters, distribution: distribution,
+            snapshot: affinitySnapshot, targets: allTargets,
             containerURL: containerURL, isCancelled: cancellationRequested
-        )
+        ) : [:]
+        func baseRules(_ filter: FilterList, from text: String) -> String {
+            shards[filter.id]?.apply(to: text) ?? text
+        }
 
         // Text compiled into this target, and the text of lists compiled
         // elsewhere. Exceptions from the latter are replicated here when they
@@ -1917,7 +1934,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
 
             if hasAffinity {
                 let filtered = try SafariContentBlockerAffinityProcessor.filteredContent(
-                    from: affinitySnapshot.content(for: filter.id) ?? "",
+                    from: baseRules(filter, from: affinitySnapshot.content(for: filter.id) ?? ""),
                     includeBaseRules: includeBaseRules,
                     target: targetInfo,
                     allTargets: allTargets,
@@ -1951,7 +1968,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                 containerURL: containerURL
             ) {
                 if let duplicates = exclusions[filter.id], !duplicates.isEmpty {
-                    let raw = try String(contentsOf: sourceURL, encoding: .utf8)
+                    let raw = baseRules(filter, from: try String(contentsOf: sourceURL, encoding: .utf8))
                     let restricted = FilterListSiteExclusion.restrictingAdvancedRules(raw, excluding: filter.appliedExcludedSites, including: filter.appliedSelectedSites)
                     let kept = RuleText.lines(restricted, emptyLines: .keptPerScalar).filter {
                         !duplicates.contains(FilterRuleAnalysis.ruleIdentity($0))
@@ -1968,7 +1985,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                         keptText, to: fileHandle, hasher: &hasher,
                         newlineData: newlineData, isCancelled: cancellationRequested
                     )
-                } else if filter.appliedExcludedSites.isEmpty && !filter.onlySelectedSites {
+                } else if filter.appliedExcludedSites.isEmpty && !filter.onlySelectedSites && shards[filter.id] == nil {
                     let rawContent = try String(contentsOf: sourceURL, encoding: .utf8)
                     try replication.addTarget(rawContent, isCancelled: cancellationRequested)
                     try sourceRuleAdmissions.record(
@@ -1986,7 +2003,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                         isCancelled: cancellationRequested
                     )
                 } else {
-                    let rawContent = try String(contentsOf: sourceURL, encoding: .utf8)
+                    let rawContent = baseRules(filter, from: try String(contentsOf: sourceURL, encoding: .utf8))
                     var restricted: String
                     if filter.id == ignoreSegmentFilterID {
                         let split = FilterListSiteExclusion.ignoreSegment(rawContent, excluding: filter.appliedExcludedSites)
