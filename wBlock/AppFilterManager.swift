@@ -961,9 +961,13 @@ class AppFilterManager: ObservableObject {
             sheet.updatePhaseCompletion(scripts: true, reading: true)
             sheet.updateProcessedCount(done, total: total)
             sheet.updateConvertingDone(done)
-        case .reloading(let done, _):
+        case .reloading(let done, let total):
+            // A run with no filter changes reloads without converting first.
             sheet.updatePhaseCompletion(converting: true)
+            sheet.updateProcessedCount(done, total: total)
             sheet.updateReloadingDone(done)
+        case .saving:
+            sheet.updatePhaseCompletion(reloading: true)
         case .finished:
             break
         }

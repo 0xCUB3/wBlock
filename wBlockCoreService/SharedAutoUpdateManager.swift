@@ -242,6 +242,8 @@ public actor SharedAutoUpdateManager {
         case checking(done: Int, total: Int)
         case converting(done: Int, total: Int)
         case reloading(done: Int, total: Int)
+        /// Engine publish, userscript updates, and the final save.
+        case saving
         case finished
     }
 
@@ -525,6 +527,7 @@ public actor SharedAutoUpdateManager {
 
     private func autoUpdateUserScriptsIfNeeded() async -> (updated: Int, failed: Int) {
         let manager = await MainActor.run { UserScriptManager.shared }
+        await reportRunProgress(.saving)
         guard !BlockingPauseStore.isPaused(.userScripts) else { return (0, 0) }
         let result = await manager.autoUpdateEnabledUserScripts()
         return (result.updated, result.failed)
@@ -1972,33 +1975,13 @@ public actor SharedAutoUpdateManager {
         #endif
 
         let targets = ContentBlockerTargetManager.shared.allTargets(forPlatform: platform)
-        var failedTargets: [String] = []
         var advancedRulesSnippets: [String] = []
 
         let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value)
 
         let counts = await MainActor.run { ProtobufDataManager.shared.ruleCountsByCategory.mapValues { Int($0) } }
-        for target in ContentBlockerReloadPolicy.orderedTargets(targets, ruleCounts: counts) {
-            try Task.checkCancellation()
-            try checkBudget(
-                policy,
-                phase: AutoUpdateBudgetPhase.reloadRetry,
-                requiredTime: ContentBlockerReloadPolicy.needsRecovery(
-                    identifier: target.bundleIdentifier, groupIdentifier: GroupIdentifier.shared.value
-                ) ? max(policy.minimumTimeForReloadRetry, ContentBlockerReloadPolicy.recoveryTimeout)
-                  : policy.minimumTimeForReloadRetry
-            )
-
-            let reloadResult = await ContentBlockerService.reloadWithRetry(
-                identifier: target.bundleIdentifier,
-                maxRetries: 6,
-                groupIdentifier: GroupIdentifier.shared.value,
-                targetRulesFilename: target.rulesFilename
-            )
-            if !reloadResult.success {
-                failedTargets.append(target.displayName)
-            }
-        }
+        let reloadResults = try await reloadTargets(targets, ruleCounts: counts, policy: policy)
+        let failedTargets = targets.filter { reloadResults[$0.bundleIdentifier]?.success == false }.map(\.displayName)
         for target in targets {
             if let containerURL,
                let adv = loadCachedAdvancedRules(for: target, containerURL: containerURL),
@@ -2022,6 +2005,34 @@ public actor SharedAutoUpdateManager {
                 names: failedTargets
             )
         }
+    }
+
+    /// Reloads each blocker in order, reporting progress. Work still follows the
+    /// last reload, so it reports `.saving` rather than letting the sheet read as done.
+    private func reloadTargets(
+        _ targets: [ContentBlockerTargetInfo],
+        ruleCounts: [String: Int],
+        policy: AutoUpdateExecutionPolicy
+    ) async throws -> [String: ContentBlockerService.ReloadAttemptResult] {
+        var results: [String: ContentBlockerService.ReloadAttemptResult] = [:]
+        await reportRunProgress(.reloading(done: 0, total: targets.count))
+        for target in ContentBlockerReloadPolicy.orderedTargets(targets, ruleCounts: ruleCounts) {
+            try Task.checkCancellation()
+            try checkBudget(
+                policy, phase: AutoUpdateBudgetPhase.reloadRetry,
+                requiredTime: ContentBlockerReloadPolicy.needsRecovery(
+                    identifier: target.bundleIdentifier, groupIdentifier: GroupIdentifier.shared.value
+                ) ? max(policy.minimumTimeForReloadRetry, ContentBlockerReloadPolicy.recoveryTimeout)
+                  : policy.minimumTimeForReloadRetry
+            )
+            results[target.bundleIdentifier] = await ContentBlockerService.reloadWithRetry(
+                identifier: target.bundleIdentifier, maxRetries: 6,
+                groupIdentifier: GroupIdentifier.shared.value, targetRulesFilename: target.rulesFilename
+            )
+            await reportRunProgress(.reloading(done: results.count, total: targets.count))
+        }
+        await reportRunProgress(.saving)
+        return results
     }
 
     public struct TargetCompilationRequest: Sendable {
@@ -2199,22 +2210,7 @@ public actor SharedAutoUpdateManager {
         var reloadResults: [String: ContentBlockerService.ReloadAttemptResult] = [:]
         if reloadContentBlockers {
             let counts = results.mapValues { $0.outcome?.safariRulesCount ?? 0 }
-            await reportRunProgress(.reloading(done: 0, total: targets.count))
-            for target in ContentBlockerReloadPolicy.orderedTargets(targets, ruleCounts: counts) {
-                try Task.checkCancellation()
-                try checkBudget(
-                    policy, phase: AutoUpdateBudgetPhase.reloadRetry,
-                    requiredTime: ContentBlockerReloadPolicy.needsRecovery(
-                        identifier: target.bundleIdentifier, groupIdentifier: GroupIdentifier.shared.value
-                    ) ? max(policy.minimumTimeForReloadRetry, ContentBlockerReloadPolicy.recoveryTimeout)
-                      : policy.minimumTimeForReloadRetry
-                )
-                reloadResults[target.bundleIdentifier] = await ContentBlockerService.reloadWithRetry(
-                    identifier: target.bundleIdentifier, maxRetries: 6,
-                    groupIdentifier: GroupIdentifier.shared.value, targetRulesFilename: target.rulesFilename
-                )
-                await reportRunProgress(.reloading(done: reloadResults.count, total: targets.count))
-            }
+            reloadResults = try await reloadTargets(targets, ruleCounts: counts, policy: policy)
         }
         var metrics: [RebuildTargetMetrics] = []
         var appliedSourceRuleCountsByFilterID: [UUID: Int] = [:]
