@@ -653,7 +653,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Updated %d script" = "已更新 %d 個腳本";
 "Updated %d scripts" = "已更新 %d 個腳本";
 "Updated %d, %d failed" = "已更新 %d 個，%d 個失敗";
-"Updated %d/%d extensions in %@" = "已在 %@ 內更新 %d/%d 個延伸功能";
+"Updated %d/%d extensions in %@" = "已在 %3$@ 內更新 %1$d/%2$d 個延伸功能";
 "Updated custom filter list" = "已更新自訂過濾器清單";
 "Updates" = "更新";
 "Updating disabled sites..." = "正在更新已停用的網站...";
