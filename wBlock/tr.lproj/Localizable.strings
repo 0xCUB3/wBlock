@@ -651,7 +651,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Updated %d script" = "%d betik güncellendi";
 "Updated %d scripts" = "%d betik güncellendi";
 "Updated %d, %d failed" = "%d güncellendi, %d güncelleme başarısız";
-"Updated %d/%d extensions in %@" = "%@ içinde %d/%d genişletme güncellendi";
+"Updated %d/%d extensions in %@" = "%3$@ içinde %1$d/%2$d genişletme güncellendi";
 "Updated custom filter list" = "Özel filtre listesi güncellendi";
 "Updates" = "Güncellemeler";
 "Updating disabled sites..." = "Devre dışı bırakılan siteler güncelleniyor...";

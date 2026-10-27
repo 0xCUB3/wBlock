@@ -651,7 +651,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Updated %d script" = "已更新 %d 个脚本";
 "Updated %d scripts" = "已更新 %d 个脚本";
 "Updated %d, %d failed" = "已更新 %d 个，%d 个失败";
-"Updated %d/%d extensions in %@" = "已在 %@ 内更新 %d/%d 个扩展";
+"Updated %d/%d extensions in %@" = "已在 %3$@ 内更新 %1$d/%2$d 个扩展";
 "Updated custom filter list" = "已更新自定义过滤器列表";
 "Updates" = "更新";
 "Updating disabled sites..." = "正在更新已禁用的网站...";

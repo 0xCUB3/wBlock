@@ -653,7 +653,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Updated %d script" = "스크립트 %d개 업데이트됨";
 "Updated %d scripts" = "스크립트 %d개 업데이트됨";
 "Updated %d, %d failed" = "%d개 업데이트됨, %d개 실패";
-"Updated %d/%d extensions in %@" = "%@ 만에 확장 프로그램 %d/%d개를 업데이트했습니다";
+"Updated %d/%d extensions in %@" = "%3$@ 만에 확장 프로그램 %1$d/%2$d개를 업데이트했습니다";
 "Updated custom filter list" = "맞춤 필터 목록을 업데이트했습니다";
 "Updates" = "업데이트";
 "Updating disabled sites..." = "비활성화된 사이트 업데이트 중...";
