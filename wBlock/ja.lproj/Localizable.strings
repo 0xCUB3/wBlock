@@ -911,7 +911,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Enable Experimental Filter?" = "実験的フィルターを有効にしますか？";
 "Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "実験的フィルターは、メインのリストに入る前の新しいルールを試すもので、ウェブサイトが正しく表示されなくなることがあります。不具合を見つけて報告できる場合にのみ有効にしてください。";
 "Enable HaGeZi Multi Pro Mini?" = "HaGeZi Multi Pro Mini を有効にしますか？";
-"HaGeZi Multi Pro Mini is a DNS blocklist, not a filter list designed specifically for ad blockers. It may be less stable than the other lists and can cause more false positives that break websites." = "HaGeZi Multi Pro Mini は DNS 向けのブロックリストで、広告ブロッカー専用に設計されたフィルターリストではありません。他のリストより安定性が低く、ウェブサイトを壊す誤検出が増える場合があります。";
+"HaGeZi Multi Pro Mini is better suited to a DNS blocker than Safari. Its many domain rules can consume a large share of Safari’s limited rule capacity, leaving less room for browser-focused filters, and may break websites by blocking services they need. We recommend leaving it off and using wBlock’s recommended filter lists instead." = "HaGeZi Multi Pro Mini は、Safari よりも DNS ブロッカーでの使用に適しています。多数のドメインルールが Safari の限られたルール容量を大きく消費し、ブラウザー向けフィルターの余地を減らすほか、必要なサービスを遮断してサイトの動作を妨げることがあります。このリストはオフのままにし、代わりに wBlock の推奨フィルターリストを使用することをおすすめします。";
 "Reset Ordering" = "並び順をリセット";
 "Reset" = "リセット";
 "Return built-in lists and userscripts to their default categories and order, and move custom ones to Other." = "内蔵のリストとユーザースクリプトをデフォルトのカテゴリと順序に戻し、カスタムのものを「その他」に移動します。";

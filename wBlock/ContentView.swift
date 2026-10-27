@@ -685,7 +685,7 @@ struct ContentView: View {
         downloadedFilterIDs = Set(filterManager.filterLists.lazy.filter { loader.filterFileExists($0) }.map(\.id))
     }
 
-    /// Built-in experimental lists and HaGeZi Multi Pro Mini can break sites, so enabling one asks first (#878, #886).
+    /// Confirm risky built-in lists before enabling or downloading them.
     /// The alert is attached to the info sheet too, because an open sheet blocks alerts from the view underneath.
     /// Returns whether `enable` ran now, so the info sheet stays open for the alert instead of dismissing under it.
     @discardableResult
@@ -2445,26 +2445,6 @@ struct RuleCapacityPopoverView: View {
             Text(limit.map { "\(count.formatted()) / \($0.formatted())" } ?? count.formatted())
                 .font(.caption.monospacedDigit())
                 .foregroundStyle(.secondary)
-        }
-    }
-}
-
-private struct RiskyFilterEnable {
-    let title: LocalizedStringKey
-    let message: LocalizedStringKey
-    let enable: () -> Void
-
-    init?(filter: FilterList, enable: @escaping () -> Void) {
-        guard !filter.isCustom else { return nil }
-        self.enable = enable
-        if filter.category == .experimental {
-            title = "Enable Experimental Filter?"
-            message = "Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage."
-        } else if filter.name == "HaGeZi Multi Pro Mini" {
-            title = "Enable HaGeZi Multi Pro Mini?"
-            message = "HaGeZi Multi Pro Mini is a DNS blocklist, not a filter list designed specifically for ad blockers. It may be less stable than the other lists and can cause more false positives that break websites."
-        } else {
-            return nil
         }
     }
 }

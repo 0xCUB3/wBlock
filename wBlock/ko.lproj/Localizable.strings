@@ -942,7 +942,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Enable Experimental Filter?" = "실험적 필터를 켜시겠습니까?";
 "Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "실험적 필터는 새 규칙을 주요 목록에 넣기 전에 시험하는 필터로, 웹사이트가 깨질 수 있습니다. 문제를 찾아 신고하는 데 익숙한 경우에만 켜세요.";
 "Enable HaGeZi Multi Pro Mini?" = "HaGeZi Multi Pro Mini를 켤까요?";
-"HaGeZi Multi Pro Mini is a DNS blocklist, not a filter list designed specifically for ad blockers. It may be less stable than the other lists and can cause more false positives that break websites." = "HaGeZi Multi Pro Mini는 DNS용 차단 목록이며 광고 차단기를 위해 특별히 설계된 필터 목록이 아닙니다. 다른 목록보다 안정성이 떨어질 수 있고 웹사이트를 깨뜨리는 오탐이 더 많을 수 있습니다.";
+"HaGeZi Multi Pro Mini is better suited to a DNS blocker than Safari. Its many domain rules can consume a large share of Safari’s limited rule capacity, leaving less room for browser-focused filters, and may break websites by blocking services they need. We recommend leaving it off and using wBlock’s recommended filter lists instead." = "HaGeZi Multi Pro Mini는 Safari보다 DNS 차단기에 더 적합합니다. 많은 도메인 규칙이 Safari의 제한된 규칙 용량을 크게 차지해 브라우저용 필터가 사용할 공간을 줄이고, 웹사이트에 필요한 서비스를 차단해 사이트가 제대로 작동하지 않을 수 있습니다. 이 목록은 꺼 두고 wBlock이 추천하는 필터 목록을 사용하는 것이 좋습니다.";
 "Reset Ordering" = "순서 초기화";
 "Reset" = "초기화";
 "Return built-in lists and userscripts to their default categories and order, and move custom ones to Other." = "기본 제공 목록과 유저스크립트를 기본 카테고리와 순서로 되돌리고, 사용자 지정 항목은 기타로 옮깁니다.";
