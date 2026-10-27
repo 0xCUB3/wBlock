@@ -143,7 +143,9 @@ compile_core_test apply-progress-presentation scripts/test_apply_progress_presen
 compile_core_test safari-setup-query-isolation scripts/test_safari_setup_query_isolation.swift \
   wBlock/SafariExtensionSetupSupport.swift
 compile_core_test userscript-frame-authorization scripts/test_userscript_frame_authorization.swift
-compile_core_test filter-refresh-planner scripts/test_filter_refresh_planner.swift
+job core "policy proofs and Swift conformance"
+step npm --prefix scripts/proofs ci --ignore-scripts --no-audit --no-fund
+step npm --prefix scripts/proofs test
 compile_core_test issue-675-rule-analysis scripts/test_issue_675_rule_analysis.swift
 compile_core_test issue-679-affinity-cache-behavior scripts/test_issue_679_affinity_cache_behavior.swift
 compile_core_test issue-681-dedup-behavior scripts/test_issue_681_dedup_behavior.swift
@@ -192,17 +194,13 @@ SWIFT
 compile_direct_test cloud-timestamp-formatter \
   "$TMP/localization-formatting-shim.swift" \
   wBlock/CloudSyncTimestampFormatter.swift scripts/test_cloud_sync_timestamp_formatter.swift
-compile_core_test cloud-upload-coordinator scripts/test_cloud_sync_upload_coordinator.swift
 compile_core_test dark-reader-appearance scripts/test_dark_reader_appearance_preference.swift
 compile_core_test tube-cleaner-dearrow scripts/test_tube_cleaner_dearrow_preference.swift
 compile_core_test sponsorblock-settings-transfer scripts/test_sponsorblock_settings_transfer.swift
 compile_core_test disabled-sites-normalization scripts/test_disabled_sites_normalization.swift
-compile_core_test context-menu-actions scripts/test_context_menu_action_availability.swift \
-  wBlock/ContextMenuActionAvailability.swift
 compile_direct_test filter-update-popup-status \
   wBlockCoreService/FilterUpdatePopupStatus.swift \
   scripts/test_filter_update_popup_status.swift
-compile_core_test filter-selection-rebase scripts/test_filter_selection_rebase.swift
 compile_core_test filter-list-setup scripts/test_filter_list_setup.swift wBlock/FilterListSetup.swift
 compile_core_test apply-baseline-acknowledgement scripts/test_apply_baseline_acknowledgement.swift \
   wBlock/ApplyFilterConfiguration.swift

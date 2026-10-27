@@ -21,14 +21,15 @@ def select_checks(paths, full=False):
         or (len(PurePosixPath(p).parts) == 1 and (
             p.endswith('.md') or p.startswith(('LICENSE', 'NOTICE'))))
     )}
-    native = {p for p in paths if p not in CHEAP_SOURCES and not p.endswith(
-        ('.js', '.mjs', '.css', '.html')) and not (
+    native = {p for p in paths if p not in CHEAP_SOURCES and (
+        p.startswith('scripts/proofs/') or not p.endswith(
+            ('.js', '.mjs', '.css', '.html'))) and not (
             p.startswith('scripts/') and p in SHEET_SOURCES)}
     return {
         'javascript': full or bool(paths),
         'native': full or bool(native),
         'build': full or any(p != 'scripts/run-ci-tests.sh' and not p.startswith(
-            'scripts/test_') for p in native),
+            ('scripts/test_', 'scripts/proofs/')) for p in native),
         'sheet_ui': full or bool(paths & SHEET_SOURCES),
     }
 

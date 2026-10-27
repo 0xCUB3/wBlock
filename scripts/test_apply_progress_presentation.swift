@@ -1,584 +1,145 @@
 import Foundation
 
-@main
-struct ApplyProgressPresentationTests {
-    @MainActor
-    static func main() {
-        testFreshRunFocusesUpdating()
-        testUpdatingFractionAndProgress()
-        testPhaseAdvanceIsMonotonic()
-        testSkipPreApplyLandsOnReading()
-        testReadingDetailUsesExtensionCount()
-        testConvertingShowsCurrentTargetAndFraction()
-        testReloadingFractionAndEmptyName()
-        testSavingUsesSegmentFloor()
-        testCompletedRunIsFull()
-        testFailedPhaseWinsFocus()
-        testScriptDetails()
-        testClampsAndZeroTotals()
-        testAccessibilityValue()
-        testNodeOrderMatchesPhases()
-        testCompletedNodesKeepDetails()
-        testBarTracksVisibleStatus()
-        testUpdatingShowsCurrentFilter()
-        testUpdatingShowsCheckedCount()
-        testScriptsShowCheckedCountAndName()
-        testOnlyOnePhaseSpinsAtATime()
-        testDownloadNameDoesNotLeakIntoConverting()
-        print("PASS")
+// State transitions are proven and compared with the ViewModel in scripts/proofs.
+// Keep actual formatting, floating-point progress, and setter behavior here.
+@main struct ApplyProgressPresentationTests {
+  @MainActor static func main() {
+    let phases = ApplyChangesPhase.allCases
+    func count(_ key: String, _ n: Int) -> String {
+      String.localizedStringWithFormat(NSLocalizedString(key, comment: "Apply changes detail"), n)
     }
-
-    @MainActor
-    private static func testFreshRunFocusesUpdating() {
-        let viewModel = ApplyChangesViewModel()
-        viewModel.beginProgressRun()
-        let presentation = ApplyProgressPresentation.make(from: viewModel.state)
-
-        check(presentation.nodes.count == ApplyChangesPhase.allCases.count, "rail must include every apply phase")
-        check(presentation.nodes.first?.phase == .updating, "first rail node must be updating")
-        check(presentation.nodes.first?.status == .active, "fresh run must focus updating")
-        check(presentation.nodes.dropFirst().allSatisfy { $0.status == .pending }, "later phases start pending")
-        check(presentation.title == ApplyChangesPhase.updating.title, "title must be the active phase")
-        check(presentation.detail == viewModel.state.statusMessage, "active updating detail is the stage message")
-        check(presentation.fractionLabel == nil, "no percent until phase progress exists")
-        check(presentation.progress == 0, "fresh run starts at the first segment")
-        check(!presentation.isFailed, "a fresh run is not failed")
-    }
-
-    @MainActor
-    private static func testUpdatingFractionAndProgress() {
-        let viewModel = ApplyChangesViewModel()
-        viewModel.beginProgressRun()
-        viewModel.updatePhaseProgress(0.4)
-        let presentation = ApplyProgressPresentation.make(from: viewModel.state)
-
-        check(presentation.fractionLabel == ApplyProgressPresentation.percentString(0.4), "updating must show a percent")
-        checkAlmostEqual(presentation.progress, 0.4 / 5, "updating progress occupies the first fifth")
-
-        viewModel.updatePhaseProgress(1.5)
-        let clamped = ApplyProgressPresentation.make(from: viewModel.state)
-        check(clamped.fractionLabel == ApplyProgressPresentation.percentString(1), "phase progress must clamp to 100%")
-        checkAlmostEqual(clamped.progress, 1.0 / 5, "full local progress reaches the next segment boundary")
-    }
-
-    @MainActor
-    private static func testPhaseAdvanceIsMonotonic() {
-        let viewModel = ApplyChangesViewModel()
-        viewModel.beginProgressRun()
-        var last = ApplyProgressPresentation.make(from: viewModel.state).progress
-        var samples = [last]
-
-        func record(_ message: String) {
-            let value = ApplyProgressPresentation.make(from: viewModel.state).progress
-            check(value + 0.000_000_1 >= last, "\(message): progress went backwards from \(last) to \(value)")
-            last = value
-            samples.append(value)
-        }
-
-        viewModel.updatePhaseProgress(0.5)
-        record("updating halfway")
-        viewModel.updateFilterUpdatesFound(3)
-        viewModel.updatePhaseCompletion(updating: true, scripts: false)
-        record("scripts became active")
-        check(
-            ApplyProgressPresentation.make(from: viewModel.state).title == ApplyChangesPhase.updating.title,
-            "the update row stays live while scripts are still checking"
-        )
-
-        viewModel.updatePhaseProgress(1)
-        record("scripts finished locally")
-        viewModel.updateScriptsUpdateResult(updated: 2, failed: 0)
-        viewModel.updatePhaseCompletion(scripts: true, reading: false)
-        record("reading became active")
-
-        viewModel.updateProcessedCount(0, total: 5)
-        record("extension count arrived")
-        viewModel.updatePhaseCompletion(reading: true, converting: false)
-        record("converting became active")
-
-        viewModel.updateProcessedCount(0, total: 5)
-        for done in 0...5 {
-            viewModel.updateConvertingDone(done)
-            viewModel.updateCurrentFilter(done == 0 ? "" : "Blocker \(done)")
-            record("converting \(done)/5")
-        }
-        viewModel.updatePhaseCompletion(converting: true, reloading: false)
-        record("reloading became active")
-
-        for done in 0...5 {
-            viewModel.updateReloadingDone(done)
-            record("reloading \(done)/5")
-        }
-        viewModel.updatePhaseCompletion(reloading: true, saving: false)
-        record("saving became active")
-        viewModel.updatePhaseCompletion(saving: true)
-        record("saving complete")
-
-        let finished = ApplyProgressPresentation.make(from: viewModel.state)
-        check(finished.progress == 1, "a finished run must report full progress")
-        check(samples.count > 10, "monotonic walk must sample the whole pipeline")
-    }
-
-    @MainActor
-    private static func testSkipPreApplyLandsOnReading() {
-        let viewModel = ApplyChangesViewModel()
-        viewModel.beginProgressRun()
-        viewModel.updateFilterUpdatesFound(4)
-        viewModel.updateScriptsUpdateResult(updated: 1, failed: 0)
-        viewModel.updatePhaseCompletion(updating: true, scripts: true, reading: false)
-
-        let presentation = ApplyProgressPresentation.make(from: viewModel.state)
-        check(presentation.title == ApplyChangesPhase.reading.title, "skipping downloads should land on reading")
-        check(status(presentation, .updating) == .complete, "updating must already be complete")
-        check(status(presentation, .reading) == .active, "reading must be the live phase")
-        checkAlmostEqual(presentation.progress, (1 + 0.2) / 5, "reading uses a small segment floor")
-    }
-
-    @MainActor
-    private static func testReadingDetailUsesExtensionCount() {
-        let viewModel = ApplyChangesViewModel()
-        viewModel.beginProgressRun()
-        viewModel.updatePhaseCompletion(updating: true, scripts: true, reading: false)
-        var presentation = ApplyProgressPresentation.make(from: viewModel.state)
-        check(presentation.detail == nil, "reading has no detail before the target count exists")
-
-        viewModel.updateProcessedCount(0, total: 5)
-        presentation = ApplyProgressPresentation.make(from: viewModel.state)
-        check(
-            presentation.detail == localizedCount("Preparing %d extensions", count: 5),
-            "reading should name the extension count"
-        )
-    }
-
-    @MainActor
-    private static func testConvertingShowsCurrentTargetAndFraction() {
-        let viewModel = ApplyChangesViewModel()
-        viewModel.beginProgressRun()
-        viewModel.updatePhaseCompletion(updating: true, scripts: true, reading: true, converting: false)
-        viewModel.updateProcessedCount(0, total: 5)
-        viewModel.updateConvertingDone(2)
-        viewModel.updateCurrentFilter("Privacy")
-
-        let presentation = ApplyProgressPresentation.make(from: viewModel.state)
-        check(presentation.title == ApplyChangesPhase.converting.title, "converting title")
-        check(presentation.detail == "Privacy", "converting detail is the current target")
-        check(presentation.fractionLabel == "2/5", "converting fraction uses done/total")
-        checkAlmostEqual(presentation.progress, (2 + 0.4) / 5, "converting 2/5 sits 40% into its segment")
-    }
-
-    @MainActor
-    private static func testReloadingFractionAndEmptyName() {
-        let viewModel = ApplyChangesViewModel()
-        viewModel.beginProgressRun()
-        viewModel.updatePhaseCompletion(
-            updating: true,
-            scripts: true,
-            reading: true,
-            converting: true,
-            reloading: false
-        )
-        viewModel.updateProcessedCount(0, total: 5)
-        viewModel.updateReloadingDone(0)
-        viewModel.updateCurrentFilter("")
-
-        var presentation = ApplyProgressPresentation.make(from: viewModel.state)
-        check(presentation.detail == nil, "reloading without a name should not invent one")
-        check(presentation.fractionLabel == "0/5", "reloading still shows 0/total")
-
-        viewModel.updateCurrentFilter("Ads")
-        viewModel.updateReloadingDone(5)
-        presentation = ApplyProgressPresentation.make(from: viewModel.state)
-        check(presentation.detail == "Ads", "reloading detail is the current target")
-        check(presentation.fractionLabel == "5/5", "reloading 5/5")
-        checkAlmostEqual(presentation.progress, 4.0 / 5, "full local reload reaches the next boundary")
-    }
-
-    @MainActor
-    private static func testSavingUsesSegmentFloor() {
-        let viewModel = ApplyChangesViewModel()
-        viewModel.beginProgressRun()
-        viewModel.updatePhaseCompletion(
-            updating: true,
-            scripts: true,
-            reading: true,
-            converting: true,
-            reloading: true,
-            saving: false
-        )
-        let presentation = ApplyProgressPresentation.make(from: viewModel.state)
-        check(presentation.title == ApplyChangesPhase.saving.title, "saving title")
-        check(presentation.detail == nil, "saving has no extra detail")
-        check(presentation.fractionLabel == nil, "saving has no count label")
-        checkAlmostEqual(presentation.progress, (4 + 0.2) / 5, "saving uses the same quiet floor as reading")
-    }
-
-    @MainActor
-    private static func testCompletedRunIsFull() {
-        let viewModel = ApplyChangesViewModel()
-        viewModel.beginProgressRun()
-        viewModel.updateStatistics(
-            sourceRules: 10,
-            safariRules: 8,
-            conversionTime: "0.20s",
-            reloadTime: "0.10s"
-        )
-        let presentation = ApplyProgressPresentation.make(from: viewModel.state)
-        check(presentation.progress == 1, "summary completion is full progress")
-        check(presentation.nodes.allSatisfy { $0.status == .complete }, "summary completion marks every phase")
-        check(!presentation.isFailed, "a successful summary is not failed")
-    }
-
-    @MainActor
-    private static func testFailedPhaseWinsFocus() {
-        let viewModel = ApplyChangesViewModel()
-        viewModel.beginProgressRun()
-        viewModel.updatePhaseCompletion(updating: true, scripts: true, reading: true, converting: false)
-        viewModel.updateCurrentFilter("Security")
-        viewModel.markFailed(message: "Conversion exploded")
-
-        let presentation = ApplyProgressPresentation.make(from: viewModel.state)
-        check(presentation.isFailed, "failed runs must flag the field")
-        check(presentation.title == ApplyChangesPhase.converting.title, "failure keeps the live phase")
-        check(presentation.detail == "Conversion exploded", "failure detail is the message")
-        check(node(presentation, .converting)?.detail == nil, "failed rows must not repeat the failure card")
-        check(node(presentation, .converting)?.accessibilityValue == String(localized: "Failed"), "failed rows must still speak their status")
-        check(status(presentation, .converting) == .failed, "the live phase becomes failed")
-        check(status(presentation, .reloading) == .pending, "later phases stay pending")
-    }
-
-    @MainActor
-    private static func testScriptDetails() {
-        let viewModel = ApplyChangesViewModel()
-        viewModel.beginProgressRun()
-        viewModel.updatePhaseCompletion(updating: true, scripts: false)
-        viewModel.updateStageDescription("Updating userscripts...")
-        var presentation = ApplyProgressPresentation.make(from: viewModel.state)
-        check(presentation.detail == "Updating userscripts...", "script-related status is shown")
-
-        func completedUpdatingState() -> ApplyChangesState {
-            var state = viewModel.state
-            if let index = state.phases.firstIndex(where: { $0.phase == .updating }) {
-                state.phases[index].status = .complete
-                state.phases[index + 1].status = .pending
+    let vm = ApplyChangesViewModel()
+    vm.beginProgressRun()
+    let fresh = ApplyProgressPresentation.make(from: vm.state)
+    precondition(
+      fresh.progress == 0 && fresh.detail == vm.state.statusMessage && fresh.fractionLabel == nil && !fresh.isFailed)
+    precondition(fresh.nodes.first?.status == .active && fresh.nodes.dropFirst().allSatisfy { $0.status == .pending })
+    for (i, phase) in phases.enumerated() {
+      for status: ApplyChangesPhaseStatus in [.active, .complete, .failed] {
+        for total in [-1, 0, 1, 5] {
+          for done in [-3, 0, 2, 7] {
+            for fraction in [-4.0, 0, 0.4, 1.5] {
+              vm.beginProgressRun()
+              vm.updateProcessedCount(0, total: total)
+              vm.updateConvertingDone(done)
+              vm.updateReloadingDone(done)
+              vm.updatePhaseProgress(fraction)
+              var s = vm.state
+              s.statusMessage = "status"
+              s.failureMessage = "failure"
+              s.currentFilterName = "target"
+              s.phases = phases.enumerated().map { j, p in
+                .init(phase: p, status: j < i ? .complete : j == i ? status : .pending)
+              }
+              let p = ApplyProgressPresentation.make(from: s)
+              let node = p.nodes[i]
+              let clamped = min(1, max(0, fraction))
+              let local =
+                phase == .updating
+                ? clamped
+                : (phase == .reading || phase == .saving)
+                  ? 0.2 : total > 0 ? min(1, Double(max(0, done)) / Double(total)) : 0
+              let expected = status == .complete ? Double(i + 1) / 5 : (Double(i) + local) / 5
+              precondition(abs(p.progress - expected) < 1e-9 && p.progress.isFinite)
+              precondition(p.title == phase.title && p.nodes.map(\.phase) == phases)
+              precondition(
+                p.progressLabel == ApplyProgressPresentation.percentString(expected)
+                  && p.accessibilityValue == p.progressLabel)
+              precondition(p.isFailed == (status == .failed))
+              let label =
+                status != .active
+                ? nil
+                : phase == .updating
+                  ? (clamped > 0 ? ApplyProgressPresentation.percentString(clamped) : nil)
+                  : (phase == .converting || phase == .reloading) && total > 0 ? "\(max(0, done))/\(total)" : nil
+              precondition(p.fractionLabel == label && node.accessory == label)
+              let detail: String? =
+                status == .failed
+                ? "failure"
+                : phase == .updating
+                  ? (status == .active ? "target" : String(localized: "No updates available"))
+                  : phase == .reading
+                    ? (total > 0 ? count("Preparing %d extensions", total) : nil)
+                    : (phase == .converting || phase == .reloading) && status == .active ? "target" : nil
+              precondition(p.detail == detail && node.detail == (status == .failed ? nil : detail))
+              let spoken =
+                status == .failed
+                ? String(localized: "Failed") : [node.detail, label].compactMap { $0 }.joined(separator: " · ")
+              precondition(node.accessibilityValue == spoken)
+              if status == .active && (phase == .converting || phase == .reloading) {
+                s.currentFilterName = ""
+                precondition(ApplyProgressPresentation.make(from: s).detail == nil)
+              }
             }
-            return state
+          }
         }
-
-        viewModel.updateScriptsUpdateResult(updated: 2, failed: 1)
-        viewModel.updatePhaseCompletion(scripts: true, reading: false)
-        presentation = ApplyProgressPresentation.make(from: completedUpdatingState())
-        check(
-            presentation.detail == localizedCount("Updated %d scripts", count: 2)
-                + " · " + localizedCount("%d script update(s) failed", count: 1),
-            "completed update row should report mixed script results when focused"
-        )
-
-        viewModel.updateScriptsUpdateResult(updated: 3, failed: 0)
-        presentation = ApplyProgressPresentation.make(from: completedUpdatingState())
-        check(
-            presentation.detail == localizedCount("Updated %d scripts", count: 3),
-            "completed update row should report a script success count"
-        )
-
-        viewModel.updateFilterUpdatesFound(4)
-        presentation = ApplyProgressPresentation.make(from: completedUpdatingState())
-        check(
-            presentation.detail == localizedCount("Updated %d filters", count: 4) + " · " + localizedCount("Updated %d scripts", count: 3),
-            "filter and script results share one line"
-        )
-
-        viewModel.updateFilterUpdatesFound(0)
-        viewModel.updateScriptsUpdateResult(updated: 0, failed: 0)
-        presentation = ApplyProgressPresentation.make(from: completedUpdatingState())
-        check(presentation.detail == String(localized: "No updates available"), "zero updates of either kind have one explicit line")
+      }
     }
-
-    @MainActor
-    private static func testClampsAndZeroTotals() {
-        let viewModel = ApplyChangesViewModel()
-        viewModel.beginProgressRun()
-        viewModel.updatePhaseCompletion(updating: true, scripts: true, reading: true, converting: false)
-        viewModel.updateProcessedCount(0, total: 0)
-        viewModel.updateConvertingDone(4)
-        var presentation = ApplyProgressPresentation.make(from: viewModel.state)
-        check(presentation.fractionLabel == nil, "converting without a total cannot show a fraction")
-        check(!presentation.progress.isNaN, "zero totals must not produce NaN progress")
-
-        viewModel.updateProcessedCount(0, total: 5)
-        viewModel.updateConvertingDone(-3)
-        presentation = ApplyProgressPresentation.make(from: viewModel.state)
-        check(presentation.fractionLabel == "0/5", "negative converting counts clamp to zero")
-
-        viewModel.updatePhaseProgress(-4)
-        viewModel.updatePhaseCompletion(updating: false)
-        presentation = ApplyProgressPresentation.make(from: viewModel.state)
-        check(presentation.progress >= 0, "negative phase progress cannot go below zero")
-    }
-
-    @MainActor
-    private static func testAccessibilityValue() {
-        let viewModel = ApplyChangesViewModel()
-        viewModel.beginProgressRun()
-        viewModel.updatePhaseCompletion(updating: true, scripts: true, reading: true, converting: false)
-        viewModel.updateProcessedCount(0, total: 5)
-        viewModel.updateConvertingDone(1)
-        viewModel.updateCurrentFilter("Ads")
-        let presentation = ApplyProgressPresentation.make(from: viewModel.state)
-        check(presentation.accessibilityValue == presentation.progressLabel, "the bar VoiceOver value must only be overall progress")
-        check(node(presentation, .converting)?.accessibilityValue.contains("Ads") == true, "the live row VoiceOver value must include the current target")
-        check(node(presentation, .converting)?.accessibilityValue.contains("1/5") == true, "the live row VoiceOver value must include the fraction")
-    }
-
-    @MainActor
-    private static func testUpdatingShowsCheckedCount() {
-        let viewModel = ApplyChangesViewModel()
-        viewModel.beginProgressRun()
-        viewModel.updateFiltersChecked(12, total: 87)
-        let presentation = ApplyProgressPresentation.make(from: viewModel.state)
-        check(presentation.fractionLabel == "12/87", "updating must show checked/total once counts exist")
-        checkAlmostEqual(presentation.progress, (12.0 / 87.0) / 5.0, "checked counts drive the phase fill")
-
-        viewModel.updateFiltersChecked(90, total: 87)
-        let clamped = ApplyProgressPresentation.make(from: viewModel.state)
-        check(clamped.fractionLabel == "87/87", "checked count clamps to the total")
-
-        viewModel.updateFiltersChecked(0, total: 0)
-        viewModel.updatePhaseProgress(0.5)
-        let fallback = ApplyProgressPresentation.make(from: viewModel.state)
-        check(
-            fallback.fractionLabel == ApplyProgressPresentation.percentString(0.5),
-            "a zero total falls back to the percent label"
-        )
-    }
-
-    @MainActor
-    private static func testScriptsShowCheckedCountAndName() {
-        let viewModel = ApplyChangesViewModel()
-        viewModel.beginProgressRun()
-        viewModel.updateFiltersChecked(10, total: 10)
-        viewModel.updatePhaseCompletion(updating: true, scripts: false)
-        viewModel.updateScriptsChecked(3, total: 12)
-        viewModel.updateCurrentScript("Return YouTube Dislike")
-        var presentation = ApplyProgressPresentation.make(from: viewModel.state)
-        check(presentation.fractionLabel == "13/22", "the update row counts filters and scripts together")
-        check(presentation.detail == "Return YouTube Dislike", "the update row must show the script being fetched")
-
-        viewModel.updateCurrentScript("")
-        viewModel.updateStageDescription("Downloading selected scripts...")
-        presentation = ApplyProgressPresentation.make(from: viewModel.state)
-        check(presentation.detail == "Downloading selected scripts...", "an empty script name falls back to the script status")
-
-        viewModel.updateScriptsChecked(20, total: 12)
-        check(ApplyProgressPresentation.make(from: viewModel.state).fractionLabel == "22/22", "script count clamps to the total")
-
-        viewModel.updateFiltersChecked(0, total: 0)
-        viewModel.updateScriptsChecked(0, total: 0)
-        viewModel.updatePhaseProgress(0.25)
-        presentation = ApplyProgressPresentation.make(from: viewModel.state)
-        check(
-            presentation.fractionLabel == ApplyProgressPresentation.percentString(0.25),
-            "a zero script total falls back to the percent label"
-        )
-    }
-
-    @MainActor
-    private static func testOnlyOnePhaseSpinsAtATime() {
-        let viewModel = ApplyChangesViewModel()
-        viewModel.beginProgressRun()
-
-        func activeCount(_ label: String) {
-            let active = viewModel.state.phases.filter { $0.status == .active }.map(\.phase)
-            check(active.count == 1, "\(label): expected one active phase, got \(active)")
+    for filters in 0...2 {
+      for scripts in 0...2 {
+        for failed in 0...2 {
+          vm.beginProgressRun()
+          vm.updateFilterUpdatesFound(filters)
+          vm.updateScriptsUpdateResult(updated: scripts, failed: failed)
+          vm.updatePhaseCompletion(scripts: true, reading: false)
+          let p = ApplyProgressPresentation.make(from: vm.state)
+          let parts = [
+            ("Updated %d filters", filters), ("Updated %d scripts", scripts), ("%d script update(s) failed", failed),
+          ].filter { $0.1 > 0 }.map { count($0.0, $0.1) }
+          precondition(
+            p.nodes[0].detail
+              == (parts.isEmpty ? String(localized: "No updates available") : parts.joined(separator: " · ")))
         }
-
-        // Out-of-order reports from the pipeline must not leave two spinners.
-        viewModel.updatePhaseCompletion(updating: true, scripts: false)
-        activeCount("filters done, scripts still checking")
-        viewModel.updatePhaseCompletion(scripts: true, reading: false)
-        activeCount("reading")
-        viewModel.updatePhaseCompletion(reading: true, converting: false)
-        activeCount("converting")
-        // A late completion for an earlier phase, as when the pause/resume
-        // path re-reports the update pass after conversion started.
-        viewModel.updatePhaseCompletion(updating: true, scripts: true)
-        activeCount("stale updating completion during converting")
-        check(phaseStatus(viewModel, .converting) == .active, "converting keeps spinning after a stale earlier completion")
-        // Re-activating an earlier phase pulls later ones back to pending.
-        viewModel.updatePhaseCompletion(reading: false)
-        activeCount("reading re-entered")
-        check(phaseStatus(viewModel, .converting) == .pending, "converting returns to pending when reading re-enters")
-        check(phaseStatus(viewModel, .updating) == .complete, "phases before the active one are complete")
-        viewModel.updatePhaseCompletion(reading: true, converting: true, reloading: false)
-        activeCount("reloading")
-        viewModel.updatePhaseCompletion(reloading: true, saving: false)
-        activeCount("saving")
-        viewModel.updatePhaseCompletion(saving: true)
-        check(viewModel.state.phases.allSatisfy { $0.status == .complete }, "finished run is all complete")
+      }
     }
-
-    @MainActor
-    private static func testDownloadNameDoesNotLeakIntoConverting() {
-        let viewModel = ApplyChangesViewModel()
-        viewModel.beginProgressRun()
-        viewModel.updateCurrentFilter("tif")
-        check(ApplyProgressPresentation.make(from: viewModel.state).detail == "tif", "download name shows under the update row")
-
-        viewModel.updatePhaseCompletion(updating: true, scripts: false)
-        viewModel.updateCurrentScript("YouTube Fix")
-        viewModel.updatePhaseCompletion(scripts: true, reading: false)
-        viewModel.updateProcessedCount(0, total: 5)
-        viewModel.updatePhaseCompletion(reading: true, converting: false)
-        viewModel.updateConvertingDone(0)
-
-        let presentation = ApplyProgressPresentation.make(from: viewModel.state)
-        check(presentation.title == ApplyChangesPhase.converting.title, "converting is focused")
-        check(node(presentation, .converting)?.detail == nil, "converting shows no list name before its first target finishes, got \(String(describing: node(presentation, .converting)?.detail))")
-        check(presentation.fractionLabel == "0/5", "converting starts at 0/5")
-        check(viewModel.state.currentScriptName.isEmpty, "script name is cleared with the phase change")
-
-        viewModel.updateConvertingDone(1)
-        viewModel.updateCurrentFilter("Ads")
-        check(node(ApplyProgressPresentation.make(from: viewModel.state), .converting)?.detail == "Ads", "converting names its own target")
+    vm.beginProgressRun()
+    vm.updateFiltersChecked(12, total: 87)
+    precondition(ApplyProgressPresentation.make(from: vm.state).fractionLabel == "12/87")
+    precondition(abs(ApplyProgressPresentation.make(from: vm.state).progress - 12.0 / 87 / 5) < 1e-9)
+    vm.updateFiltersChecked(90, total: 87)
+    precondition(vm.state.filtersCheckedDone == 87)
+    vm.updateFiltersChecked(10, total: 10)
+    vm.updatePhaseCompletion(updating: true, scripts: false)
+    vm.updateScriptsChecked(3, total: 12)
+    vm.updateCurrentScript("script")
+    precondition(ApplyProgressPresentation.make(from: vm.state).fractionLabel == "13/22")
+    precondition(ApplyProgressPresentation.make(from: vm.state).detail == "script")
+    vm.updateScriptsChecked(20, total: 12)
+    precondition(ApplyProgressPresentation.make(from: vm.state).fractionLabel == "22/22")
+    vm.updateCurrentScript("")
+    vm.updateStageDescription("status")
+    precondition(ApplyProgressPresentation.make(from: vm.state).detail == "status")
+    vm.updateFiltersChecked(-1, total: -2)
+    vm.updateScriptsChecked(-1, total: -2)
+    vm.updatePhaseProgress(0.25)
+    precondition(vm.state.filtersCheckedDone == 0 && vm.state.scriptsCheckedDone == 0)
+    precondition(
+      ApplyProgressPresentation.make(from: vm.state).fractionLabel == ApplyProgressPresentation.percentString(0.25))
+    var previous = 0.0
+    for phase in phases {
+      switch phase {
+      case .updating:
+        vm.updatePhaseProgress(1)
+        vm.updatePhaseCompletion(scripts: true)
+      case .reading: vm.updatePhaseCompletion(reading: true)
+      case .converting: vm.updatePhaseCompletion(converting: true)
+      case .reloading: vm.updatePhaseCompletion(reloading: true)
+      case .saving: vm.updatePhaseCompletion(saving: true)
+      }
+      let progress = ApplyProgressPresentation.make(from: vm.state).progress
+      precondition(progress >= previous)
+      previous = progress
     }
-
-    @MainActor
-    private static func testUpdatingShowsCurrentFilter() {
-        let viewModel = ApplyChangesViewModel()
-        viewModel.beginProgressRun()
-        viewModel.updateCurrentFilter("AdGuard Base Filter")
-        viewModel.updatePhaseProgress(0.93)
-        let presentation = ApplyProgressPresentation.make(from: viewModel.state)
-        check(presentation.detail == "AdGuard Base Filter", "the live update row must name the in-flight list")
-        check(
-            node(presentation, .updating)?.detail == "AdGuard Base Filter",
-            "the update row should keep the list name on its own line"
-        )
-        check(
-            node(presentation, .updating)?.accessory == ApplyProgressPresentation.percentString(0.93),
-            "the update row should keep the local fraction as a short accessory"
-        )
-        checkAlmostEqual(presentation.progress, 0.93 / 5.0, "overall fill stays in the first segment")
-    }
-
-    @MainActor
-    private static func testBarTracksVisibleStatus() {
-        let viewModel = ApplyChangesViewModel()
-        viewModel.beginProgressRun()
-        viewModel.updateFilterUpdatesFound(3)
-        viewModel.updateScriptsUpdateResult(updated: 2, failed: 0)
-        viewModel.updatePhaseCompletion(updating: true, scripts: true, reading: false)
-        viewModel.updateProcessedCount(0, total: 5)
-        viewModel.updatePhaseCompletion(reading: true, converting: false)
-        viewModel.updateConvertingDone(2)
-        viewModel.updateCurrentFilter("Privacy")
-
-        var presentation = ApplyProgressPresentation.make(from: viewModel.state)
-        let complete = presentation.nodes.filter { $0.status == .complete }.count
-        check(complete == 2, "two finished rows should already be checked")
-        check(presentation.nodes.first(where: { $0.status == .active })?.phase == .converting, "converting is the live row")
-        checkAlmostEqual(
-            presentation.progress,
-            (Double(complete) + 2.0 / 5.0) / 5.0,
-            "bar fill must equal finished rows plus the live fraction"
-        )
-        check(
-            presentation.progressLabel == ApplyProgressPresentation.percentString(presentation.progress),
-            "the bar caption must describe the same fill as the track"
-        )
-        check(presentation.progressLabel != presentation.fractionLabel, "the overall bar must not reuse the live row fraction")
-
-        viewModel.updateConvertingDone(4)
-        presentation = ApplyProgressPresentation.make(from: viewModel.state)
-        checkAlmostEqual(
-            presentation.progress,
-            (2.0 + 4.0 / 5.0) / 5.0,
-            "the bar must move when the live row's fraction moves"
-        )
-        check(
-            presentation.progressLabel == ApplyProgressPresentation.percentString(presentation.progress),
-            "the bar caption must stay locked to the new fill"
-        )
-    }
-
-    @MainActor
-    private static func testCompletedNodesKeepDetails() {
-        let viewModel = ApplyChangesViewModel()
-        viewModel.beginProgressRun()
-        viewModel.updateFilterUpdatesFound(3)
-        viewModel.updateScriptsUpdateResult(updated: 2, failed: 0)
-        viewModel.updatePhaseCompletion(updating: true, scripts: true, reading: false)
-        viewModel.updateProcessedCount(0, total: 5)
-        viewModel.updatePhaseCompletion(reading: true, converting: false)
-        viewModel.updateConvertingDone(2)
-        viewModel.updateCurrentFilter("Privacy")
-
-        let presentation = ApplyProgressPresentation.make(from: viewModel.state)
-        check(
-            node(presentation, .updating)?.detail
-                == localizedCount("Updated %d filters", count: 3) + " · " + localizedCount("Updated %d scripts", count: 2),
-            "completed update row must keep both counts"
-        )
-        check(
-            node(presentation, .reading)?.detail == localizedCount("Preparing %d extensions", count: 5),
-            "completed reading rows must keep the extension count"
-        )
-        check(
-            node(presentation, .converting)?.detail == "Privacy",
-            "the active converting row should show the target under the title"
-        )
-        check(
-            node(presentation, .converting)?.accessory == "2/5",
-            "the active converting row should keep the fraction as a short accessory"
-        )
-        check(node(presentation, .reloading)?.detail == nil, "pending reload has no detail")
-        check(node(presentation, .saving)?.detail == nil, "pending save has no detail")
-    }
-
-    @MainActor
-    private static func testNodeOrderMatchesPhases() {
-        let viewModel = ApplyChangesViewModel()
-        viewModel.beginProgressRun()
-        let presentation = ApplyProgressPresentation.make(from: viewModel.state)
-        check(
-            presentation.nodes.map(\.phase) == ApplyChangesPhase.allCases,
-            "rail order must follow ApplyChangesPhase.allCases"
-        )
-    }
-
-    private static func node(
-        _ presentation: ApplyProgressPresentation,
-        _ phase: ApplyChangesPhase
-    ) -> ApplyProgressPresentation.Node? {
-        presentation.nodes.first(where: { $0.phase == phase })
-    }
-
-    @MainActor
-    private static func phaseStatus(_ viewModel: ApplyChangesViewModel, _ phase: ApplyChangesPhase) -> ApplyChangesPhaseStatus? {
-        viewModel.state.phases.first { $0.phase == phase }?.status
-    }
-
-    private static func status(
-        _ presentation: ApplyProgressPresentation,
-        _ phase: ApplyChangesPhase
-    ) -> ApplyChangesPhaseStatus? {
-        node(presentation, phase)?.status
-    }
-
-    private static func localizedCount(_ key: String, count: Int) -> String {
-        String.localizedStringWithFormat(
-            NSLocalizedString(key, comment: "Apply changes detail"),
-            count
-        )
-    }
-
-    private static func checkAlmostEqual(_ actual: Double, _ expected: Double, _ message: String) {
-        check(abs(actual - expected) < 0.000_1, "\(message) (actual \(actual), expected \(expected))")
-    }
-
-    private static func check(_ condition: Bool, _ message: String) {
-        guard condition else {
-            fputs("FAIL: \(message)\n", stderr)
-            exit(1)
-        }
-    }
+    precondition(previous == 1)
+    vm.beginProgressRun()
+    vm.updateCurrentFilter("")
+    var unnamed = vm.state
+    unnamed.statusMessage = ""
+    precondition(ApplyProgressPresentation.make(from: unnamed).detail == nil)
+    vm.updateStatistics(sourceRules: 10, safariRules: 8, conversionTime: "0.2s", reloadTime: "0.1s")
+    precondition(
+      ApplyProgressPresentation.make(from: vm.state).progress == 1
+        && vm.state.phases.allSatisfy { $0.status == .complete })
+    print("PASS: progress formatting, numeric boundaries, accessibility, and setters")
+  }
 }

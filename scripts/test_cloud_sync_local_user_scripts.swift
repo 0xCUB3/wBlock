@@ -1,420 +1,93 @@
 import Foundation
 
-func expect(_ condition: @autoclosure () -> Bool, _ message: String) {
-    if !condition() {
-        fputs("FAIL: \(message)\n", stderr)
-        exit(1)
+@main struct CloudSyncLocalUserScriptTests {
+  static func main() throws {
+    // Identity/name decisions and tombstone sets are proven in scripts/proofs.
+    // Keep serialization, normalization, restore composition, and preferences here.
+    for access in [
+      UserScriptSiteAccess(), .init(onlySelectedSites: true), .init(onlySelectedSites: true, hosts: ["example.com"]),
+    ] {
+      let record = CloudSyncLocalUserScript(
+        name: "Scope", content: "source", isEnabled: true, description: "description", siteAccess: access)
+      let decoded = try JSONDecoder().decode(CloudSyncLocalUserScript.self, from: JSONEncoder().encode(record))
+      precondition(decoded == record)
     }
-}
-
-func stubScripts(_ names: [String]) -> [CloudSyncLocalUserScript] {
-    names.map { CloudSyncLocalUserScript(name: $0, content: "", isEnabled: true) }
-}
-
-@main
-struct CloudSyncLocalUserScriptTests {
-    static func main() {
-        for access in [UserScriptSiteAccess(), .init(onlySelectedSites: true), .init(onlySelectedSites: true, hosts: ["example.com"])] {
-            let record = CloudSyncLocalUserScript(name: "Scope", content: "// script", isEnabled: true, siteAccess: access)
-            let decoded = try! JSONDecoder().decode(CloudSyncLocalUserScript.self, from: JSONEncoder().encode(record))
-            expect(decoded == record, "cloud payload must preserve all, empty and populated selected-site modes")
+    let legacy = try JSONDecoder().decode(
+      CloudSyncLocalUserScript.self, from: Data(#"{"name":"Legacy Name","content":"source","isEnabled":true}"#.utf8))
+    precondition(legacy.description == nil && legacy.siteAccess == nil && legacy.category == nil)
+    precondition(legacy.resolvedUpdatesAutomatically && legacy.resolvedCategory == .scripts)
+    var existing = UserScript(name: "Old", url: nil, content: "source")
+    existing.description = "old"
+    for description: String? in [nil, "", "new"] {
+      let remote = CloudSyncLocalUserScript(
+        name: "Renamed", content: "source", isEnabled: true, description: description)
+      let metadata = CloudSyncLocalUserScriptReconciler.metadataOverrides(existing: existing, remote: remote)
+      precondition(metadata.name == "Renamed" && metadata.description == (description ?? "old"))
+    }
+    func record(_ identity: String?, name: String = "Duplicate") -> CloudSyncLocalUserScript {
+      .init(name: name, content: identity ?? "source", isEnabled: true, localImportIdentity: identity)
+    }
+    let a = record("a")
+    let b = record("b")
+    let named = record(nil, name: "Legacy Name")
+    precondition(CloudSyncLocalUserScriptReconciler.normalizedName(" Legacy NAME ") == "legacy name")
+    precondition(
+      CloudSyncLocalUserScriptReconciler.matches(existing: record("  ", name: "Legacy Name"), remote: legacy))
+    for tombNames: Set<String> in [[], ["duplicate"], ["legacy name"]] {
+      for tombIDs: Set<String> in [[], ["a"], ["b"]] {
+        let candidates = [a, b, named]
+        let expected = candidates.filter { r in
+          r.localImportIdentity.map { !tombIDs.contains($0) } ?? !tombNames.contains("legacy name")
         }
-        var existingMetadata = UserScript(name: "Old name", url: nil, content: "// unchanged source")
-        existingMetadata.description = "Old description"
-        let renamed = CloudSyncLocalUserScript(name: "New name", content: existingMetadata.content,
-            isEnabled: true, description: nil, localImportIdentity: "stable-id")
-        let renameMetadata = CloudSyncLocalUserScriptReconciler.metadataOverrides(existing: existingMetadata, remote: renamed)
-        expect(renameMetadata.name == "New name", "metadata-only rename must use the remote name")
-        expect(renameMetadata.description == "Old description", "legacy absent description must preserve local metadata")
-        let clearedDescription = CloudSyncLocalUserScript(name: "New name", content: existingMetadata.content,
-            isEnabled: true, description: "", localImportIdentity: "stable-id")
-        expect(
-            CloudSyncLocalUserScriptReconciler.metadataOverrides(existing: existingMetadata, remote: clearedDescription).description.isEmpty,
-            "an explicit empty remote description must clear it"
-        )
-
-        let bypass = CloudSyncLocalUserScript(name: "Bypass Paywalls Clean", content: "// script A", isEnabled: true)
-        let other = CloudSyncLocalUserScript(name: "Other Script", content: "// script B", isEnabled: false)
-        let foo = CloudSyncLocalUserScript(name: "Foo", content: "// script C", isEnabled: true)
-
-        let missingAfterDelete = CloudSyncLocalUserScriptReconciler.missingRemoteScriptsToRestore(
-            remoteScripts: [bypass],
-            localScripts: [],
-            deletedNames: ["bypass paywalls clean"]
-        )
-        expect(
-            missingAfterDelete.isEmpty,
-            "deleted local imports should not be restored during upload reconciliation"
-        )
-
-        let missingWithoutDelete = CloudSyncLocalUserScriptReconciler.missingRemoteScriptsToRestore(
-            remoteScripts: [bypass, other],
-            localScripts: stubScripts(["Bypass Paywalls Clean"]),
-            deletedNames: []
-        )
-        expect(
-            missingWithoutDelete == [other],
-            "only remote local scripts missing locally should be restored"
-        )
-
-        let namesToDelete = CloudSyncLocalUserScriptReconciler.localScriptsToDeleteDuringRemoteApply(
-            localScripts: stubScripts(["Bypass Paywalls Clean", "Local Only Script"]),
-            remoteScripts: [other],
-            deletedNames: ["bypass paywalls clean"],
-            lastSyncedNames: ["local only script"]
-        )
-        expect(
-            namesToDelete == ["bypass paywalls clean", "local only script"],
-            "remote apply should remove tombstoned locals and previously-synced locals absent from the winning payload"
-        )
-
-        // #437: a brand-new local userscript that was never synced must NOT be deleted on the
-        // download path just because it is absent from a newer remote payload.
-        let neverSyncedKept = CloudSyncLocalUserScriptReconciler.localScriptsToDeleteDuringRemoteApply(
-            localScripts: stubScripts(["Foo"]),
-            remoteScripts: [],
-            deletedNames: [],
-            lastSyncedNames: [],
-            lastSyncedIdentities: []
-        )
-        expect(
-            neverSyncedKept.isEmpty,
-            "a never-synced, non-tombstoned local script must not be deleted on the download path (#437)"
-        )
-
-        // A local script that WAS previously synced and is now absent from remote (e.g. deleted on
-        // another device after its tombstone aged out) should still be removed.
-        let previouslySyncedRemoved =
-            CloudSyncLocalUserScriptReconciler.localScriptsToDeleteDuringRemoteApply(
-                localScripts: stubScripts(["Foo"]),
-                remoteScripts: [],
-                deletedNames: [],
-                lastSyncedNames: ["foo"]
-            )
-        expect(
-            previouslySyncedRemoved == ["foo"],
-            "a previously-synced local script absent from the winning remote payload should be removed"
-        )
-
-        // A tombstoned local script is removed even when it was never synced.
-        let tombstonedRemoved = CloudSyncLocalUserScriptReconciler.localScriptsToDeleteDuringRemoteApply(
-            localScripts: stubScripts(["Foo"]),
-            remoteScripts: [],
-            deletedNames: ["foo"],
-            lastSyncedNames: [],
-            lastSyncedIdentities: []
-        )
-        expect(
-            tombstonedRemoved == ["foo"],
-            "a tombstoned local script should be removed on the download path"
-        )
-
-        // A local script still present in the remote payload is always kept.
-        let presentInRemoteKept = CloudSyncLocalUserScriptReconciler.localScriptsToDeleteDuringRemoteApply(
-            localScripts: stubScripts(["Foo"]),
-            remoteScripts: [foo],
-            deletedNames: [],
-            lastSyncedNames: ["foo"],
-            lastSyncedIdentities: []
-        )
-        expect(
-            presentInRemoteKept.isEmpty,
-            "a local script still present in the remote payload must be kept"
-        )
-
-        // Mixed case: only the tombstoned local is removed; the never-synced local is kept.
-        let namesToDeleteNeverSynced =
-            CloudSyncLocalUserScriptReconciler.localScriptsToDeleteDuringRemoteApply(
-                localScripts: stubScripts(["Bypass Paywalls Clean", "Local Only Script"]),
-                remoteScripts: [other],
-                deletedNames: ["bypass paywalls clean"],
-                lastSyncedNames: []
-            )
-        expect(
-            namesToDeleteNeverSynced == ["bypass paywalls clean"],
-            "a never-synced local absent from remote must be kept; only the tombstoned local is removed (#437)"
-        )
-
-        // The identity-aware API identifies kept scripts that still need uploading.
-        let neverSyncedToUpload = CloudSyncLocalUserScriptReconciler.localScriptsNeverSyncedToUpload(
-            localScripts: stubScripts(["Foo", "Bar"]),
-            remoteScripts: [other],
-            deletedNames: [],
-            deletedIdentities: [],
-            lastSyncedNames: [],
-            lastSyncedIdentities: []
-        )
-        expect(
-            Set(neverSyncedToUpload.map { CloudSyncLocalUserScriptReconciler.normalizedName($0.name) }) == ["foo", "bar"],
-            "never-synced, non-tombstoned locals absent from remote should be scheduled for upload (#437)"
-        )
-
-        let nothingToUpload = CloudSyncLocalUserScriptReconciler.localScriptsNeverSyncedToUpload(
-            localScripts: stubScripts(["Foo", "Bar", "Other Script"]),
-            remoteScripts: [other],
-            deletedNames: ["bar"],
-            deletedIdentities: [],
-            lastSyncedNames: ["foo"],
-            lastSyncedIdentities: []
-        )
-        expect(
-            nothingToUpload.isEmpty,
-            "synced, tombstoned, and remote-present locals should not be scheduled for upload"
-        )
-
-        let normalized = CloudSyncLocalUserScriptReconciler.normalizedName("  Bypass Paywalls Clean  ")
-        expect(normalized == "bypass paywalls clean", "names should be normalized consistently")
-
-        // Modern payloads match by stable local identity even after a display-name
-        // override and content change. A remote script cannot participate.
-        let modernLocal = CloudSyncLocalUserScript(
-            name: "Renamed Local",
-            content: "// script changed",
-            isEnabled: true,
-            category: "custom",
-            localImportIdentity: "file:/tmp/source.user.js"
-        )
-        let oldDisplayName = CloudSyncLocalUserScript(
-            name: "Old Display Name",
-            content: "// script old",
-            isEnabled: false,
-            category: "custom",
-            localImportIdentity: "file:/tmp/source.user.js"
-        )
-        expect(
-            CloudSyncLocalUserScriptReconciler.matches(existing: oldDisplayName, remote: modernLocal),
-            "modern payloads should reconcile changed content by local identity"
-        )
-        let sameNameDifferentImport = CloudSyncLocalUserScript(
-            name: "Renamed Local",
-            content: "// other",
-            isEnabled: true,
-            localImportIdentity: "file:/tmp/other.user.js"
-        )
-        expect(
-            !CloudSyncLocalUserScriptReconciler.matches(existing: sameNameDifferentImport, remote: modernLocal),
-            "different stable local identities must not collide on display name"
-        )
-
-        // Legacy payloads have no identity and retain name matching. Missing
-        // category is represented by nil so the apply layer can preserve custom state.
-        let legacy = CloudSyncLocalUserScript(
-            name: "Legacy Name",
-            content: "// legacy",
-            isEnabled: true,
-            category: nil
-        )
-        let legacyExisting = CloudSyncLocalUserScript(
-            name: "Legacy Name",
-            content: "// existing",
-            isEnabled: false,
-            category: "custom",
-            localImportIdentity: "file:/tmp/legacy.user.js"
-        )
-        expect(
-            CloudSyncLocalUserScriptReconciler.matches(existing: legacyExisting, remote: legacy),
-            "legacy payloads should retain name fallback even for identity-bearing local entries"
-        )
-        expect(legacy.category == nil, "legacy payloads must preserve missing category as nil")
-
-        let described = CloudSyncLocalUserScript(
-            name: "Described Local",
-            content: "// described",
-            isEnabled: true,
-            description: "Remote description",
-            localImportIdentity: "file:/tmp/described.user.js"
-        )
-        let decodedDescribed = try! JSONDecoder().decode(
-            CloudSyncLocalUserScript.self,
-            from: JSONEncoder().encode(described)
-        )
-        expect(decodedDescribed == described, "local userscript description must survive encode/decode")
-        let legacyJSON = #"{"name":"Legacy Name","content":"// legacy","isEnabled":true}"#.data(using: .utf8)!
-        let decodedLegacy = try! JSONDecoder().decode(CloudSyncLocalUserScript.self, from: legacyJSON)
-        expect(decodedLegacy.description == nil && decodedLegacy.siteAccess == nil, "legacy payloads must decode absent descriptions and site access")
-        let keptByIdentity = CloudSyncLocalUserScriptReconciler.localScriptsToDeleteDuringRemoteApply(
-            localScripts: [legacyExisting],
-            remoteScripts: [modernLocal, oldDisplayName],
-            deletedNames: [],
-            lastSyncedNames: ["old display name"]
-        )
-        expect(keptByIdentity.isEmpty, "identity-matched modern content must not be deleted")
-
-        // 1. deletedNamesToMergeDuringUploadReconciliation
-        let mergedWithLocalReAdd =
-            CloudSyncLocalUserScriptReconciler.deletedNamesToMergeDuringUploadReconciliation(
-                remoteDeletedNames: ["bypass paywalls clean"],
-                localNames: ["Bypass Paywalls Clean"]
-            )
-        expect(
-            mergedWithLocalReAdd.isEmpty,
-            "a locally re-added local userscript should not be re-deleted by a stale tombstone"
-        )
-
-        let mergedWithoutLocalCopy =
-            CloudSyncLocalUserScriptReconciler.deletedNamesToMergeDuringUploadReconciliation(
-                remoteDeletedNames: ["bypass paywalls clean"],
-                localNames: []
-            )
-        expect(
-            mergedWithoutLocalCopy == ["bypass paywalls clean"],
-            "remote local script tombstones should still merge when the script is absent locally"
-        )
-
-        // 2. deletedNamesToMergeDuringRemoteApply
-        let mergedDuringRemoteApplyWithLiveLocal =
-            CloudSyncLocalUserScriptReconciler.deletedNamesToMergeDuringRemoteApply(
-                remoteDeletedNames: ["bypass paywalls clean"],
-                remoteLocalScripts: [bypass],
-                localNames: []
-            )
-        expect(
-            mergedDuringRemoteApplyWithLiveLocal.isEmpty,
-            "a live local userscript should win over a stale tombstone during remote apply"
-        )
-
-        // 3. deletedNamesToClearDuringUploadReconciliation
-        let deletedToKeepDuringUpload =
-            CloudSyncLocalUserScriptReconciler.deletedNamesToClearDuringUploadReconciliation(
-                existingDeletedNames: ["bypass paywalls clean"],
-                localNames: []
-            )
-        expect(
-            deletedToKeepDuringUpload.isEmpty,
-            "a local delete marker must survive upload reconciliation while only the stale remote payload still has the script"
-        )
-
-        let deletedToClearAfterLocalReAdd =
-            CloudSyncLocalUserScriptReconciler.deletedNamesToClearDuringUploadReconciliation(
-                existingDeletedNames: ["bypass paywalls clean"],
-                localNames: ["Bypass Paywalls Clean"]
-            )
-        expect(
-            deletedToClearAfterLocalReAdd == ["bypass paywalls clean"],
-            "re-adding a local userscript locally should clear the local delete marker before upload"
-        )
-
-        // 4. deletedNamesToClearDuringReconciliation
-        let deletedToClearFromRemoteApply =
-            CloudSyncLocalUserScriptReconciler.deletedNamesToClearDuringReconciliation(
-                existingDeletedNames: ["bypass paywalls clean"],
-                remoteLocalScripts: [bypass],
-                localNames: []
-            )
-        expect(
-            deletedToClearFromRemoteApply == ["bypass paywalls clean"],
-            "a live remote local userscript should clear a stale local delete marker during remote apply"
-        )
-
-        let deletedToClear =
-            CloudSyncLocalUserScriptReconciler.deletedNamesToClearDuringReconciliation(
-                existingDeletedNames: ["bypass paywalls clean"],
-                remoteLocalScripts: [],
-                localNames: ["Bypass Paywalls Clean"]
-            )
-        expect(
-            deletedToClear == ["bypass paywalls clean"],
-            "re-adding a local userscript locally should clear the local delete marker"
-        )
-
-        let staleTombstoneToKeep =
-            CloudSyncLocalUserScriptReconciler.deletedNamesToClearDuringReconciliation(
-                existingDeletedNames: ["bypass paywalls clean"],
-                remoteLocalScripts: [bypass],
-                localNames: [],
-                remoteDeletedNames: ["bypass paywalls clean"]
-            )
-        expect(staleTombstoneToKeep.isEmpty, "a remote tombstone must survive a stale payload copy")
-
-        // Two stable imports may share a display name. A legacy name tombstone
-        // must not delete the surviving stable entry or suppress its restore.
-        let firstDuplicate = CloudSyncLocalUserScript(
-            name: "Duplicate", content: "// first", isEnabled: true,
-            localImportIdentity: "file:/tmp/first.user.js"
-        )
-        let secondDuplicate = CloudSyncLocalUserScript(
-            name: "Duplicate", content: "// second", isEnabled: true,
-            localImportIdentity: "file:/tmp/second.user.js"
-        )
-        let duplicateDeletes = CloudSyncLocalUserScriptReconciler.localScriptsToDeleteDuringRemoteApply(
-            localScripts: [firstDuplicate, secondDuplicate],
-            remoteScripts: [secondDuplicate],
-            deletedNames: ["duplicate"],
-            lastSyncedNames: ["duplicate"]
-        )
-        expect(duplicateDeletes.isEmpty, "name-only tombstones must not delete a distinct stable duplicate")
-
-        let identityTombstone = CloudSyncLocalUserScriptReconciler.localScriptsToDeleteDuringRemoteApply(
-            localScripts: [firstDuplicate],
-            remoteScripts: [firstDuplicate],
-            deletedNames: [],
-            lastSyncedNames: [],
-            deletedIdentities: ["file:/tmp/first.user.js"]
-        )
-        expect(identityTombstone == ["file:/tmp/first.user.js"], "identity tombstones must win over stale live payloads")
-
-        let legacyWithEmptyIdentity = CloudSyncLocalUserScript(
-            name: "Legacy Name", content: "// legacy", isEnabled: true, localImportIdentity: "   "
-        )
-        expect(
-            CloudSyncLocalUserScriptReconciler.matches(existing: legacyWithEmptyIdentity, remote: legacy),
-            "blank identities must retain legacy name matching"
-        )
-
-        let tombstonedStableRestore = CloudSyncLocalUserScriptReconciler.remoteScriptsAllowedAfterTombstones(
-            [firstDuplicate, secondDuplicate],
-            deletedNames: [],
-            deletedIdentities: ["file:/tmp/first.user.js"]
-        )
-        expect(tombstonedStableRestore == [secondDuplicate], "identity-tombstoned stale payload entries must stay out of restore loops")
-
-        let duplicateUpload = CloudSyncLocalUserScriptReconciler.localScriptsNeverSyncedToUpload(
-            localScripts: [firstDuplicate, secondDuplicate],
-            remoteScripts: [secondDuplicate],
-            deletedNames: [],
-            deletedIdentities: [],
-            lastSyncedNames: [],
-            lastSyncedIdentities: []
-        )
-        expect(duplicateUpload == [firstDuplicate], "stable duplicate names must sync independently by identity")
-
-        let nameTombstoneRestore = CloudSyncLocalUserScriptReconciler.remoteScriptsAllowedAfterTombstones(
-            [legacy],
-            deletedNames: ["legacy name"],
-            deletedIdentities: []
-        )
-        expect(nameTombstoneRestore.isEmpty, "name-tombstoned legacy payload entries must stay out of restore loops")
-
-        let suiteName = "CloudSyncLocalUserScriptTests.\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suiteName)!
-        defer { defaults.removePersistentDomain(forName: suiteName) }
-        expect(CloudSyncUserScriptEnabledStatePolicy.syncEnabled(in: defaults), "new installs default to enabled")
-        CloudSyncUserScriptEnabledStatePolicy.setSyncEnabled(true, in: defaults)
-        let enabledDefaults = UserDefaults(suiteName: suiteName)!
-        expect(CloudSyncUserScriptEnabledStatePolicy.syncEnabled(in: enabledDefaults), "enabled preference survives a fresh defaults instance")
-        CloudSyncUserScriptEnabledStatePolicy.setSyncEnabled(false, in: enabledDefaults)
-        let disabledDefaults = UserDefaults(suiteName: suiteName)!
-        expect(!CloudSyncUserScriptEnabledStatePolicy.syncEnabled(in: disabledDefaults), "disabled preference survives a fresh defaults instance")
-
-        let identityKey = CloudSyncUserScriptEnabledStatePolicy.localKey(identity: " file:/tmp/a ", name: "Renamed")
-        var shared = [identityKey: false]
-        expect(!CloudSyncUserScriptEnabledStatePolicy.projectedState(localValue: true, key: identityKey, sharedValues: &shared), "cached false stays false while local state toggles on")
-        expect(!CloudSyncUserScriptEnabledStatePolicy.projectedState(localValue: false, key: identityKey, sharedValues: &shared), "cached false remains frozen after later local toggles")
-
-        let remoteURL = "https://EXAMPLE.com/a#old"
-        let remoteKey = CloudSyncUserScriptEnabledStatePolicy.remoteKey(remoteURL)!
-        expect(!CloudSyncUserScriptEnabledStatePolicy.projectedState(localValue: false, key: remoteKey, sharedValues: &shared), "uncached remote state freezes its first local projection")
-        expect(!CloudSyncUserScriptEnabledStatePolicy.projectedState(localValue: true, key: remoteKey, sharedValues: &shared), "uncached remote state remains frozen after local toggles")
-        shared[remoteKey] = true
-        expect(CloudSyncUserScriptEnabledStatePolicy.projectedState(localValue: false, key: remoteKey, sharedValues: &shared), "remote cache update changes the later projection")
-
-        let bundledAlias = "https://bundled.wblock.invalid/tube-cleaner.user.js"
-        let canonicalBundled = "remote:https://raw.githubusercontent.com/0xCUB3/wBlock-userscripts/main/packages/tube-cleaner/dist/tube-cleaner.user.js"
-        expect(CloudSyncUserScriptEnabledStatePolicy.remoteKey(bundledAlias) == canonicalBundled, "legacy bundled aliases use the current canonical identity")
-        expect(CloudSyncUserScriptEnabledStatePolicy.remoteKey("https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/grouped/example.user.js") == nil, "retired remote URLs are skipped")
-        expect(CloudSyncUserScriptEnabledStatePolicy.localKey(identity: " stable-id ", name: "Renamed") == "local-identity:stable-id", "stable identity wins across renames")
-        expect(CloudSyncUserScriptEnabledStatePolicy.localKey(identity: nil, name: " Legacy Name ") == "local-name:legacy name", "legacy names are normalized")
-
-        print("PASS")
+        precondition(
+          CloudSyncLocalUserScriptReconciler.remoteScriptsAllowedAfterTombstones(
+            candidates, deletedNames: tombNames, deletedIdentities: tombIDs) == expected)
+        precondition(
+          CloudSyncLocalUserScriptReconciler.missingRemoteScriptsToRestore(
+            remoteScripts: candidates, localScripts: [b], deletedNames: tombNames, deletedIdentities: tombIDs)
+            == expected.filter { $0 != b })
+      }
     }
+    precondition(
+      CloudSyncLocalUserScriptReconciler.localScriptsNeverSyncedToUpload(
+        localScripts: [a, b], remoteScripts: [b], deletedNames: [], deletedIdentities: [], lastSyncedNames: [],
+        lastSyncedIdentities: []) == [a])
+    precondition(
+      CloudSyncLocalUserScriptReconciler.localScriptsToDeleteDuringRemoteApply(
+        localScripts: [a, b], remoteScripts: [b], deletedNames: ["duplicate"], lastSyncedNames: ["duplicate"]
+      ).isEmpty)
+    let suite = "CloudSyncLocalUserScriptTests.\(UUID().uuidString)"
+    let defaults = UserDefaults(suiteName: suite)!
+    defer { defaults.removePersistentDomain(forName: suite) }
+    precondition(CloudSyncUserScriptEnabledStatePolicy.syncEnabled(in: defaults))
+    for enabled in [true, false] {
+      CloudSyncUserScriptEnabledStatePolicy.setSyncEnabled(enabled, in: defaults)
+      precondition(CloudSyncUserScriptEnabledStatePolicy.syncEnabled(in: UserDefaults(suiteName: suite)!) == enabled)
+    }
+    for initial in [true, false] {
+      var shared: [String: Bool] = [:]
+      for value in [initial, !initial, initial] {
+        precondition(
+          CloudSyncUserScriptEnabledStatePolicy.projectedState(localValue: value, key: "key", sharedValues: &shared)
+            == initial)
+      }
+      shared["key"] = !initial
+      precondition(
+        CloudSyncUserScriptEnabledStatePolicy.projectedState(localValue: initial, key: "key", sharedValues: &shared)
+          == !initial)
+    }
+    precondition(
+      CloudSyncUserScriptEnabledStatePolicy.localKey(identity: " stable-id ", name: "Renamed")
+        == "local-identity:stable-id")
+    precondition(
+      CloudSyncUserScriptEnabledStatePolicy.localKey(identity: nil, name: " Legacy Name ") == "local-name:legacy name")
+    precondition(
+      CloudSyncUserScriptEnabledStatePolicy.remoteKey("https://bundled.wblock.invalid/tube-cleaner.user.js")
+        == "remote:https://raw.githubusercontent.com/0xCUB3/wBlock-userscripts/main/packages/tube-cleaner/dist/tube-cleaner.user.js"
+    )
+    precondition(
+      CloudSyncUserScriptEnabledStatePolicy.remoteKey(
+        "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/grouped/example.user.js") == nil)
+    print("PASS: cloud script serialization, restore composition, and preferences")
+  }
 }

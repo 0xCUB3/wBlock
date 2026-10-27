@@ -1,0 +1,8 @@
+{
+  "name": "wblock-policy-proofs",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node verify.mjs" },
+  "dependencies": { "gdp-wired": "0.30.0" },
+  "engines": { "node": ">=20" }
+}

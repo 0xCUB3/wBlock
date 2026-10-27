@@ -1,150 +1,36 @@
 import Foundation
 
-func expect(_ condition: @autoclosure () -> Bool, _ message: String) {
-    if !condition() {
-        fputs("FAIL: \(message)\n", stderr)
-        exit(1)
+@main struct CloudSyncCustomFilterTests {
+  static func main() async throws {
+    // Tombstone decisions are proven and compared with Swift in scripts/proofs.
+    // Keep canonicalization and real file reads outside that abstract model.
+    let gitflic = "https://gitflic.ru/bpc.txt"
+    let mirror = "https://r2.example/bpc.txt"
+    let selection = CloudSyncCustomFilterReconciler.builtInSelection(
+      selectedURLs: [gitflic, "https://example.com/base.txt"], knownURLs: [mirror, "https://example.com/base.txt"],
+      customURLs: [gitflic], canonicalize: { $0 == gitflic ? mirror : $0 })
+    precondition(selection.selected == ["https://example.com/base.txt"] && selection.known.contains(mirror))
+    precondition(
+      CloudSyncCustomFilterReconciler.deletedURLsToMergeDuringUploadReconciliation(
+        remoteDeletedURLs: [" https://example.com/list ", ""], localCustomURLs: ["https://example.com/list"]
+      ).isEmpty)
+    let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let readable = directory.appendingPathComponent("list")
+    let empty = directory.appendingPathComponent("empty")
+    let invalid = directory.appendingPathComponent("invalid")
+    try "||example.com^".write(to: readable, atomically: true, encoding: .utf8)
+    try "".write(to: empty, atomically: true, encoding: .utf8)
+    try Data([0xff]).write(to: invalid)
+    let contents = try await CloudSyncInlineFilterContents.read([("list", readable), ("empty", empty)])
+    precondition(contents == ["list": "||example.com^", "empty": ""])
+    for file in [directory.appendingPathComponent("missing"), invalid] {
+      do {
+        _ = try await CloudSyncInlineFilterContents.read([("list", readable), ("failed", file)])
+        fatalError("unreadable inline content must fail the payload")
+      } catch {}
     }
-}
-
-@main
-struct CloudSyncCustomFilterTests {
-    static func main() async throws {
-        let mergedWithLocalReAdd = CloudSyncCustomFilterReconciler.deletedURLsToMergeDuringUploadReconciliation(
-            remoteDeletedURLs: ["https://example.com/filter.txt"],
-            localCustomURLs: ["https://example.com/filter.txt"]
-        )
-        expect(
-            mergedWithLocalReAdd.isEmpty,
-            "a locally re-added custom filter should not be re-deleted by a stale remote tombstone"
-        )
-
-        let mergedWithoutLocalCopy = CloudSyncCustomFilterReconciler.deletedURLsToMergeDuringUploadReconciliation(
-            remoteDeletedURLs: ["https://example.com/filter.txt"],
-            localCustomURLs: []
-        )
-        expect(
-            mergedWithoutLocalCopy == ["https://example.com/filter.txt"],
-            "remote tombstones should still merge when the custom filter is absent locally"
-        )
-
-        let mergedDuringRemoteApplyWithLiveRemote = CloudSyncCustomFilterReconciler.deletedURLsToMergeDuringRemoteApply(
-            remoteDeletedURLs: ["https://example.com/filter.txt"],
-            remoteCustomURLs: ["https://example.com/filter.txt"],
-            localCustomURLs: []
-        )
-        expect(
-            mergedDuringRemoteApplyWithLiveRemote.isEmpty,
-            "a remote custom filter should win over a stale remote tombstone during remote apply"
-        )
-
-        let mergedDuringRemoteApplyWithLiveLocal = CloudSyncCustomFilterReconciler.deletedURLsToMergeDuringRemoteApply(
-            remoteDeletedURLs: ["https://example.com/filter.txt"],
-            remoteCustomURLs: [],
-            localCustomURLs: ["https://example.com/filter.txt"]
-        )
-        expect(
-            mergedDuringRemoteApplyWithLiveLocal.isEmpty,
-            "a local custom filter should not be removed by a stale remote tombstone during remote apply"
-        )
-
-        let deletedToClear = CloudSyncCustomFilterReconciler.deletedURLsToClearDuringReconciliation(
-            existingDeletedURLMarkers: ["https://example.com/filter.txt": 100],
-            remoteCustomURLs: ["https://example.com/filter.txt"],
-            localCustomURLs: [],
-            remoteUpdatedAt: 200
-        )
-        expect(
-            deletedToClear == ["https://example.com/filter.txt"],
-            "live remote custom filters should clear stale local delete markers"
-        )
-
-        let deletedToKeep = CloudSyncCustomFilterReconciler.deletedURLsToClearDuringReconciliation(
-            existingDeletedURLMarkers: ["https://example.com/filter.txt": 300],
-            remoteCustomURLs: ["https://example.com/filter.txt"],
-            localCustomURLs: [],
-            remoteUpdatedAt: 200
-        )
-        expect(
-            deletedToKeep.isEmpty,
-            "a fresh local delete marker should survive an older remote payload during sync"
-        )
-
-        let deletedToClearWithLiveLocal = CloudSyncCustomFilterReconciler.deletedURLsToClearDuringReconciliation(
-            existingDeletedURLMarkers: ["https://example.com/filter.txt": 300],
-            remoteCustomURLs: [],
-            localCustomURLs: ["https://example.com/filter.txt"],
-            remoteUpdatedAt: 200
-        )
-        expect(
-            deletedToClearWithLiveLocal == ["https://example.com/filter.txt"],
-            "a live local custom filter should clear a stale delete marker even when the remote payload is older"
-        )
-
-        let deletedToKeepWithoutFreshRemoteTimestamp = CloudSyncCustomFilterReconciler
-            .deletedURLsToClearDuringReconciliation(
-                existingDeletedURLMarkers: ["https://example.com/filter.txt": 100],
-                remoteCustomURLs: ["https://example.com/filter.txt"],
-                localCustomURLs: [],
-                remoteUpdatedAt: 0
-            )
-        expect(
-            deletedToKeepWithoutFreshRemoteTimestamp.isEmpty,
-            "a remote custom filter with no usable payload timestamp should not clear a delete marker"
-        )
-
-        let addedDuringSync = CloudSyncCustomFilterReconciler.tombstonedURLsToDelete(
-            tombstonedURLs: ["https://example.com/filter.txt"],
-            snapshotCustomURLs: [],
-            liveCustomURLs: ["https://example.com/filter.txt"]
-        )
-        expect(
-            addedDuringSync.isEmpty,
-            "a custom filter added after the sync snapshot must not be deleted by a stale tombstone"
-        )
-
-        let presentAtSnapshot = CloudSyncCustomFilterReconciler.tombstonedURLsToDelete(
-            tombstonedURLs: ["https://example.com/filter.txt"],
-            snapshotCustomURLs: ["https://example.com/filter.txt"],
-            liveCustomURLs: ["https://example.com/filter.txt"]
-        )
-        expect(
-            presentAtSnapshot == ["https://example.com/filter.txt"],
-            "a tombstone still removes a custom filter that was already present at snapshot time"
-        )
-
-        // #871: a selected custom URL that canonicalizes to a built-in must not select that built-in.
-        let gitflic = "https://gitflic.ru/bpc.txt", mirror = "https://r2.example/bpc.txt"
-        let selection = CloudSyncCustomFilterReconciler.builtInSelection(
-            selectedURLs: [gitflic, "https://example.com/base.txt"],
-            knownURLs: [mirror, "https://example.com/base.txt"],
-            customURLs: [gitflic],
-            canonicalize: { $0 == gitflic ? mirror : $0 }
-        )
-        expect(selection.selected == ["https://example.com/base.txt"], "custom selection must stay independent of built-ins")
-        expect(selection.known.contains(mirror), "an unselected built-in remains known so it is turned off")
-
-        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: directory) }
-        let readable = directory.appendingPathComponent("list.txt")
-        let empty = directory.appendingPathComponent("empty.txt")
-        let unreadable = directory.appendingPathComponent("invalid-utf8.txt")
-        try "||example.com^".write(to: readable, atomically: true, encoding: .utf8)
-        try "".write(to: empty, atomically: true, encoding: .utf8)
-        try Data([0xff]).write(to: unreadable)
-        let contents = try await CloudSyncInlineFilterContents.read([("list", readable), ("empty", empty)])
-        expect(contents == ["list": "||example.com^", "empty": ""], "readable and deliberately empty lists retain content")
-        for failedFile in [directory.appendingPathComponent("missing.txt"), unreadable] {
-            var failed = false
-            do {
-                _ = try await CloudSyncInlineFilterContents.read([("list", readable), ("failed", failedFile)])
-            } catch {
-                failed = true
-            }
-            expect(failed, "an unreadable inline list must fail the whole payload read")
-        }
-
-        print("PASS")
-    }
+    print("PASS: custom filter canonicalization and inline file reads")
+  }
 }

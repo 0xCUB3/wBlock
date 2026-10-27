@@ -39,6 +39,13 @@ class CIPlanTests(unittest.TestCase):
         self.assertTrue(select_checks(['wBlock/SwiftUICompatibility.swift'])['sheet_ui'])
         self.assertFalse(select_checks(['wBlock/ContentView.swift'])['sheet_ui'])
 
+    def test_proof_changes_run_native_conformance_without_app_builds(self):
+        for name in ('policies.mjs', 'verify.mjs', 'PolicyProbe.swift', 'package.json', 'package-lock.json'):
+            with self.subTest(name=name):
+                plan = select_checks(['scripts/proofs/' + name])
+                self.assertTrue(plan['native'])
+                self.assertFalse(plan['build'])
+
     def test_full_run_overrides_path_filters(self):
         self.assertTrue(all(select_checks([], full=True).values()))
 
