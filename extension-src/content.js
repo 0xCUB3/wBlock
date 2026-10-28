@@ -172,6 +172,14 @@
    *
    * @param configuration Payload from the native handler.
    */
+  const SCRIPTLET_RETRY_DELAYS_MS = [0, 50, 150, 400, 1000, 2500];
+  const requestScriptletInjection = async scriptlets => {
+    for (const delay of SCRIPTLET_RETRY_DELAYS_MS) {
+      if (delay) await new Promise(resolve => setTimeout(resolve, delay));
+      const response = await browser.runtime.sendMessage({ action: 'wblock:injectScriptlets', scriptlets }).catch(() => null);
+      if (response && response.injected) return;
+    }
+  };
   const applyConfiguration = configuration => {
     try {
       const selectors = configuration.css || [];
@@ -185,8 +193,13 @@
       if (configuration.procedural && configuration.procedural.length > 0) {
         window.wbeProcedural.apply(configuration.procedural);
       }
-      // Scriptlets need the background's page-world injection (see
-      // runScriptlets), which blank frames cannot get.
+      const scriptlets = configuration.scriptlets || [];
+      // Only the background can run scriptlets past the page's CSP. A page
+      // that loaded before joining its tab is asked back once it has joined;
+      // blank frames cannot be targeted at all (WebKit bug 296702).
+      if (scriptlets.length > 0 && location.protocol.startsWith('http')) {
+        void requestScriptletInjection(scriptlets);
+      }
     } catch (error) {
       console.error(`[wBlock] Failed to apply configuration in content script: ${(error && error.stack) || error}`);
     }

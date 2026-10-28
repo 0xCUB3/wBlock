@@ -1231,6 +1231,15 @@
         return { error: error.message || String(error) };
       }
     }
+    // A page that loaded before joining its tab got its payload back (see the
+    // InitContentScript handler) and asks for its scriptlets once it can be
+    // targeted, since only the background can inject them past the page's CSP.
+    if (message && message.action === "wblock:injectScriptlets") {
+      const tabId = sender.tab && sender.tab.id;
+      if (!tabId || !Array.isArray(message.scriptlets)) return { injected: false };
+      await runScriptlets({ tabId, frameIds: [sender.frameId ?? 0] }, message.scriptlets);
+      return { injected: true };
+    }
     if (message && message.action === "validateUserScriptExecution") {
       try {
         return await sendPriorityNativeMessage({
