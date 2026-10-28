@@ -25,7 +25,11 @@ pub fn url_filter(p: &Pattern) -> Option<String> {
         return Some(".*".into());
     }
     if p.kind == PatternKind::Regex {
-        return translate(&p.body);
+        // A regex that reduces to nothing (`/x{0}/`) matches every URL;
+        // WebKit rejects an empty url-filter, so say that as `.*`.
+        return translate(&p.body)
+            .map(|r| if r.is_empty() { ".*".into() } else { r })
+            .filter(|r| webkit_accepts(r));
     }
     let mut out = String::new();
     match p.kind {
@@ -37,7 +41,105 @@ pub fn url_filter(p: &Pattern) -> Option<String> {
     if p.right_anchored {
         out.push('$');
     }
-    Some(out)
+    webkit_accepts(&out).then_some(out)
+}
+
+/// Longest url-filter emitted. Counted repeats expand, so this also bounds
+/// the work a single source rule can cause in WebKit's compiler.
+const MAX_FILTER_LEN: usize = 4096;
+
+/// Final check on an emitted url-filter, so one bad rule never reaches
+/// Safari (a rule WebKit rejects fails its whole content blocker): non-empty,
+/// ASCII, bounded, balanced groups and classes, ascending class ranges, and
+/// quantifiers only after something they can repeat.
+pub fn webkit_accepts(re: &str) -> bool {
+    let b = re.as_bytes();
+    if b.is_empty() || b.len() > MAX_FILTER_LEN || !re.is_ascii() {
+        return false;
+    }
+    let (mut depth, mut i, mut can_repeat) = (0usize, 0usize, false);
+    while i < b.len() {
+        match b[i] {
+            b'\\' => {
+                if i + 1 >= b.len() {
+                    return false;
+                }
+                i += 1;
+                can_repeat = true;
+            }
+            b'(' => {
+                depth += 1;
+                can_repeat = false;
+            }
+            b')' => {
+                if depth == 0 {
+                    return false;
+                }
+                depth -= 1;
+                can_repeat = true;
+            }
+            b'[' => {
+                let Some(end) = class_end(b, i) else {
+                    return false;
+                };
+                i = end;
+                can_repeat = true;
+            }
+            b']' => return false,
+            b'*' | b'+' | b'?' => {
+                if !can_repeat {
+                    return false;
+                }
+                can_repeat = false;
+            }
+            b'^' if i != 0 => return false,
+            b'$' if i != b.len() - 1 => return false,
+            b'|' | b'{' | b'}' => return false,
+            _ => can_repeat = true,
+        }
+        i += 1;
+    }
+    depth == 0
+}
+
+/// Index of the `]` closing the class that opens at `start`, or `None` when
+/// it is unterminated, empty, or has a descending range.
+fn class_end(b: &[u8], start: usize) -> Option<usize> {
+    let mut i = start + 1;
+    if b.get(i) == Some(&b'^') {
+        i += 1;
+    }
+    let first = i;
+    let mut prev: Option<u8> = None;
+    while i < b.len() {
+        let c = match b[i] {
+            b']' if i > first => return Some(i),
+            b'\\' => {
+                i += 1;
+                *b.get(i)?
+            }
+            c => c,
+        };
+        if c == b'-' && prev.is_some() && b.get(i + 1).is_some_and(|&n| n != b']') {
+            let lo = prev?;
+            i += 1;
+            let hi = match b[i] {
+                b'\\' => {
+                    i += 1;
+                    *b.get(i)?
+                }
+                h => h,
+            };
+            if hi < lo {
+                return None;
+            }
+            prev = None;
+        } else {
+            prev = Some(c);
+        }
+        i += 1;
+    }
+    None
 }
 
 /// An `if-top-url` regex for a domain option (uBO `$domain=`/`$to=` item).
@@ -46,6 +148,10 @@ pub fn url_filter(p: &Pattern) -> Option<String> {
 /// suffix list: `google.evil.com` also matches. Regex domains match the host
 /// with the regex, as uBO tests them against the hostname.
 pub fn domain_top_url(m: &DomainMatcher) -> Option<String> {
+    top_url(m).filter(|u| webkit_accepts(u))
+}
+
+fn top_url(m: &DomainMatcher) -> Option<String> {
     match m {
         DomainMatcher::Hostname(h) => {
             let mut out = HOST_START.to_string();
@@ -304,6 +410,40 @@ fn repeat(atom: &str, min: u32, max: Option<u32>, out: &mut String) {
             for _ in n..m {
                 out.push_str(&format!("{atom}?"));
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod emitted_filter_tests {
+    use super::*;
+
+    fn regex(body: &str) -> Pattern {
+        Pattern {
+            kind: PatternKind::Regex,
+            body: body.into(),
+            right_anchored: false,
+        }
+    }
+
+    #[test]
+    fn empty_translation_matches_everything() {
+        assert_eq!(url_filter(&regex("x{0}")).as_deref(), Some(".*"));
+    }
+
+    #[test]
+    fn invalid_output_is_dropped() {
+        assert_eq!(url_filter(&regex("[z-a]")), None);
+        assert_eq!(url_filter(&regex(&"(a{32}){32}".repeat(4))), None);
+    }
+
+    #[test]
+    fn webkit_accepts_checks_structure() {
+        for ok in [".*", "^[^:]+://+([^:/]+\\.)?ads\\.com[^a-zA-Z0-9_.%-]", "a[\\]]b", "[-a]", "x?$"] {
+            assert!(webkit_accepts(ok), "{ok}");
+        }
+        for bad in ["", "(a", "a)", "[ab", "[]", "*a", "a**", "a^", "$a", "a|b", "a{2}", "[b-a]", "é"] {
+            assert!(!webkit_accepts(bad), "{bad}");
         }
     }
 }

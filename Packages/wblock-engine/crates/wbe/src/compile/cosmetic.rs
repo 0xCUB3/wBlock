@@ -310,6 +310,12 @@ fn entity_regex(entity: &str) -> Option<String> {
 /// `pathname + search`, case-insensitively and unanchored, so the path is
 /// matched after the host and before any fragment.
 fn url_regexes(host: &str, path: Option<&str>) -> Option<Vec<String>> {
+    let mut out = url_regex_candidates(host, path)?;
+    out.retain(|r| super::regex::webkit_accepts(r));
+    (!out.is_empty()).then_some(out)
+}
+
+fn url_regex_candidates(host: &str, path: Option<&str>) -> Option<Vec<String>> {
     let head = format!(r"^[^:]+:\/\/{host}");
     let Some(path) = path else {
         return Some(vec![format!(r"{head}([:\/?#].*)?$")]);
