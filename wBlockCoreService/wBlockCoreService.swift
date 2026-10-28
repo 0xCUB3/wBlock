@@ -1589,11 +1589,14 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         let affinityContributors = orderedSelectedFilters.filter {
             !assignedIDs.contains($0.id)
         }
+        let signatureContainer = containerURL ?? FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier)
+        let carveOuts = signatureContainer.map { RemoveParamDNRRuleGenerator.savedRedirectCarveOuts(containerURL: $0) } ?? ""
+        let signatureExtras = (extraRulesText ?? "") + "\n" + carveOuts + "\n" + allTargets.map { "\($0.bundleIdentifier):\($0.slot)" }.joined(separator: "|")
         let currentSignature = ContentBlockerIncrementalCache.computeInputSignature(
             filters: filters,
             affinityContributors: affinityContributors,
             groupIdentifier: groupIdentifier,
-            extraRulesText: extraRulesText,
+            extraRulesText: signatureExtras,
             cosmeticSites: cosmeticSites,
             compileOrder: orderedSelectedFilters,
             containerURL: containerURL
@@ -1641,21 +1644,86 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             )
         }
 
-        let conversion = try convertFiltersMemoryEfficient(
-            filters: filters,
-            orderedSelectedFilters: orderedSelectedFilters,
-            affinitySnapshot: affinitySnapshot,
-            targetInfo: targetInfo,
-            allTargets: allTargets,
-            disabledSites: disabledSites,
-            extraRulesText: extraRulesText,
-            cosmeticSites: cosmeticSites,
-            groupIdentifier: groupIdentifier,
-            containerURL: containerURL,
+        guard let containerURL = containerURL ?? FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: groupIdentifier
+        ), let targetIndex = allTargets.firstIndex(of: targetInfo) else {
+            throw CocoaError(.fileNoSuchFile)
+        }
+        let distribution = ContentBlockerMappingService.plan(selectedFilters: orderedSelectedFilters, across: allTargets)
+        let followsPlan = Set((distribution.filtersByTarget[targetInfo] ?? []).map(\.id)) == Set(filters.map(\.id))
+        let selectedIDs = Set(orderedSelectedFilters.map(\.id))
+        let planFilters = orderedSelectedFilters + filters.filter { !selectedIDs.contains($0.id) }
+        let available = planFilters.compactMap { filter -> (FilterList, URL)? in
+            SafariContentBlockerAffinityProcessor.sourceURL(for: filter, containerURL: containerURL).map { (filter, $0) }
+        }
+        let indexes = Dictionary(uniqueKeysWithValues: available.enumerated().map { ($0.element.0.id, $0.offset) })
+        let lists: [[String: Any]] = available.map { filter, url in
+            ["id": filter.id.uuidString, "path": url.path, "trusted": filter.isTrustedSource,
+             "scope": ["exclude": FilterListSiteExclusion.normalizedDomains(from: filter.appliedExcludedSites),
+                       "only": filter.appliedSelectedSites.map { FilterListSiteExclusion.normalizedDomains(from: $0) } as Any? ?? NSNull()]]
+        }
+        let targets: [[String: Any]] = allTargets.map { target in
+            let custom = target == targetInfo && !followsPlan
+            let assigned = custom ? filters : distribution.filtersByTarget[target] ?? []
+            let targetLists: [[String: Any]] = assigned.compactMap { filter in
+                guard let index = indexes[filter.id] else { return nil }
+                var item: [String: Any] = ["list": index]
+                if !custom, let shard = distribution.shardsByTarget[target]?[filter.id] {
+                    item["shard"] = [shard.index, shard.count]
+                }
+                return item
+            }
+            return ["slot": target.slot, "lists": targetLists]
+        }
+        let safari = SafariVersionDetection.current
+        let request: [String: Any] = ["safari": [safari.major, safari.minor], "lists": lists, "targets": targets,
+            "cosmetics": ["exclude": cosmeticSites.excludedSites,
+                          "only": cosmeticSites.onlySelectedSites ? (cosmeticSites.selectedSites ?? []) as Any : NSNull(),
+                          "generic": cosmeticSites.includesGeneric]]
+        let requestData = try JSONSerialization.data(withJSONObject: request, options: [.sortedKeys])
+        let requestJSON = String(decoding: requestData, as: UTF8.self)
+        let fingerprints = available.map { _, url -> String in
+            let attributes = try? FileManager.default.attributesOfItem(atPath: url.path)
+            return "\(attributes?[.size] ?? 0)|\((attributes?[.modificationDate] as? Date)?.timeIntervalSince1970 ?? 0)"
+        }.joined(separator: "\n")
+        let planKey = "wbe-plan|\(SafariVersionDetection.compilerIdentity)|\(requestJSON)|\(fingerprints)"
+        let makePlan = { try WBEngine.Plan(requestJSON: requestJSON) }
+        let plan = try CompilationScope.current.map { try $0.memoized(planKey, makePlan) } ?? makePlan()
+        if Task.isCancelled || isCancelled?() == true { throw CancellationError() }
+        let extras: [[String: Any]] = [
+            ["text": embeddedCompatibilityRules, "trusted": true],
+            ["text": extraRulesText ?? "", "trusted": true],
+            ["text": RemoveParamDNRRuleGenerator.savedRedirectCarveOuts(containerURL: containerURL), "trusted": false]
+        ]
+        let extrasJSON = String(decoding: try JSONSerialization.data(withJSONObject: extras), as: UTF8.self)
+        let compiled = try plan.compileTarget(targetIndex, extras: extrasJSON)
+        if Task.isCancelled || isCancelled?() == true { throw CancellationError() }
+        let baseJSON = compiled.stats.nativeRules == 0 ? inertContentBlockerRulesJSON : compiled.safariRulesJSON
+        let baseCount = compiled.stats.nativeRules == 0 ? inertContentBlockerRuleCount : compiled.stats.nativeRules
+        let advanced = compiled.runtimeRules.isEmpty ? nil : compiled.runtimeRules
+        let admitted = Dictionary(uniqueKeysWithValues: (compiled.stats.admitted ?? [:]).compactMap { key, value in
+            UUID(uuidString: key).map { ($0, value) }
+        })
+        let baseFilename = ContentBlockerIncrementalCache.baseRulesFilename(for: rulesFilename)
+        let finalized = try finalizeAndSaveContentBlockerIfWithinLimit(
+            baseJSON: baseJSON, disabledSites: disabledSites, knownBaseCount: baseCount,
+            groupIdentifier: groupIdentifier, targetRulesFilename: rulesFilename, containerURL: containerURL,
             isCancelled: isCancelled
         )
+        let conversion = (safariRulesCount: finalized.ruleCount, truncatedRuleCount: finalized.truncatedRuleCount,
+                          advancedRulesText: advanced, outputChanged: finalized.outputChanged,
+                          admittedSourceRuleCountsByFilterID: admitted)
+        if finalized.truncatedRuleCount == 0 {
+            _ = try saveContentBlockerIfChanged(jsonRules: baseJSON, groupIdentifier: groupIdentifier,
+                targetRulesFilename: baseFilename, containerURL: containerURL, knownRuleCount: baseCount)
+            try saveBlockerListFile(contents: String(baseCount), groupIdentifier: groupIdentifier, filename: "\(baseFilename).count", containerURL: containerURL)
+            try saveBlockerListFile(contents: advanced ?? "", groupIdentifier: groupIdentifier, filename: ContentBlockerIncrementalCache.baseAdvancedRulesFilename(for: rulesFilename), containerURL: containerURL)
+            try saveBlockerListFile(contents: SafariVersionDetection.compilerIdentity, groupIdentifier: groupIdentifier, filename: ContentBlockerIncrementalCache.baseCompilerFilename(for: rulesFilename), containerURL: containerURL)
+            let digest = SHA256.hash(data: Data((requestJSON + extrasJSON + fingerprints).utf8)).map { String(format: "%02x", $0) }.joined()
+            try saveBlockerListFile(contents: digest, groupIdentifier: groupIdentifier, filename: "\(baseFilename).sha256", containerURL: containerURL)
+        }
 
-        if let currentSignature {
+        if let currentSignature, conversion.truncatedRuleCount == 0 {
             ContentBlockerIncrementalCache.saveInputSignature(
                 currentSignature,
                 targetRulesFilename: rulesFilename,
