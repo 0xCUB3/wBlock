@@ -1,8 +1,8 @@
-// Behavioral check for the shipped (minified) content script: it must expose
-// window.adguard.contentScript and assemble runnable scriptlet / raw-JS-rule
-// code for the blank-frame fallback path (scriptlets.invoke -> IIFE wrapping
-// of fn.toString()). Guards the esbuild minification step in
-// scripts/minify-extension-js.sh.
+// Behavioral checks for the shipped (minified) content script. It applies the
+// per-page payload in frames the background page hands back (blank frames):
+// selectors as a style element, procedural filters through wbeProcedural, and
+// scriptlets as one page-context script. It also covers the wBlock lifecycle,
+// Init-handoff, and tracking-cleanup behavior that must not change.
 //
 // Run: node scripts/test_content_scriptlet_injection.mjs [path/to/content.js]
 // Defaults to "wBlock Scripts (iOS)/Resources/content.js".
@@ -15,9 +15,6 @@ const repoRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const bundlePath = process.argv[2]
   ?? path.join(repoRoot, "wBlock Scripts (iOS)", "Resources", "content.js");
 const source = readFileSync(bundlePath, "utf8");
-const contentSource = readFileSync(path.join(repoRoot, "extension-src", "content.js"), "utf8");
-const backgroundSource = readFileSync(path.join(repoRoot, "extension-src", "background.js"), "utf8");
-const backgroundBundle = readFileSync(path.join(repoRoot, "wBlock Scripts (iOS)", "Resources", "background.js"), "utf8");
 
 let failures = 0;
 const check = (name, cond) => {
@@ -25,15 +22,6 @@ const check = (name, cond) => {
   if (!cond) failures += 1;
 };
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-
-check("content source keeps Extended CSS", contentSource.includes("class ExtendedCss"));
-check("content source keeps ContentScript", contentSource.includes("class ContentScript"));
-check("content source omits generated scriptlet registry", !contentSource.includes("scriptletsMap") && !contentSource.includes("getScriptletFunction") && !contentSource.includes("scriptlets.invoke"));
-check("shipped content omits generated scriptlet registry", !source.includes("scriptletsMap") && !source.includes("getScriptletFunction"));
-check("background source retains generated scriptlet registry", backgroundSource.includes("var scriptletsMap = {") && backgroundSource.includes("getScriptletFunction") && backgroundSource.includes("var scriptlets = {"));
-check("background source compiles fallback scriptlets", backgroundSource.includes("compileScriptletsForContent") && backgroundSource.includes("code: scriptlets.invoke(source)"));
-check("shipped background retains scriptlet compiler", backgroundBundle.includes("getScriptletFunction") && backgroundBundle.includes("invoke"));
-check("shipped content size stays below regression ceiling", statSync(bundlePath).size < 100 * 1024);
 
 // --- DOM stubs ---
 const appended = [];
@@ -97,63 +85,91 @@ for (const [k, v] of Object.entries(globals)) {
   Object.defineProperty(globalThis, k, { value: v, configurable: true, writable: true });
 }
 
-const browserStub = {
-  runtime: {
-    sendMessage: async () => ({}),
-    onMessage: { addListener() {} },
-  },
+const withGlobals = async (globals, fn) => {
+  const saved = {};
+  for (const [k, v] of Object.entries(globals)) {
+    saved[k] = Object.getOwnPropertyDescriptor(globalThis, k);
+    Object.defineProperty(globalThis, k, { value: v, configurable: true, writable: true });
+  }
+  try {
+    return await fn();
+  } finally {
+    for (const [k, desc] of Object.entries(saved)) {
+      if (desc === undefined) delete globalThis[k];
+      else Object.defineProperty(globalThis, k, desc);
+    }
+  }
+};
+const frameGlobals = document => ({
+  document,
+  Node: class Node {},
+  Element: class Element {},
+  HTMLElement: class HTMLElement {},
+  MutationObserver: class { observe() {} disconnect() {} },
+  getComputedStyle: () => ({}),
+  navigator: { userAgent: "test" },
+  location: { href: "about:blank", hostname: "" },
+  Event: class Event { constructor(name) { this.name = name; } },
+  CustomEvent: class CustomEvent { constructor(name) { this.name = name; } },
+  CSS: { supports: () => false },
+  requestAnimationFrame: cb => setTimeout(cb, 0),
+});
+
+// Blank frames: the background page returns the payload and this script applies it.
+const runBlankFrameWithPayload = async payload => {
+  appended.length = 0;
+  const applied = [];
+  const win = {
+    addEventListener() {},
+    removeEventListener() {},
+    dispatchEvent() { return true; },
+    location: { href: "about:blank", hostname: "" },
+    wbeProcedural: { apply: filters => applied.push(filters) },
+  };
+  const browserPayload = {
+    runtime: {
+      onMessage: { addListener() {} },
+      sendMessage(message) {
+        if (message && message.type === "InitContentScript") {
+          return Promise.resolve({ type: "InitContentScript", disabled: false, paused: false, payload });
+        }
+        return Promise.resolve({});
+      },
+    },
+  };
+  await withGlobals(frameGlobals(documentStub), async () => {
+    new Function("browser", "window", "self", source)(browserPayload, win, win);
+    await sleep(20);
+  });
+  return { applied, styles: appended.filter(el => el.tagName === "style"), scripts: appended.filter(el => el.tagName === "script") };
 };
 
-try {
-  const run = new Function("browser", "window", "self", source);
-  run(browserStub, windowStub, windowStub);
+{
+  const selectorsOnly = await runBlankFrameWithPayload({
+    css: ["#blank-probe", "div.ad"],
+    procedural: ['{"selector":[{"type":"css","arg":"div"}]}'],
+    scriptlets: "(function () { window.__wblockPayloadProbe = 1; })();",
+  });
+  check(
+    "blank frame hides each selector as its own rule",
+    selectorsOnly.styles.length === 1
+      && selectorsOnly.styles[0].textContent === "#blank-probe { display: none !important; }\ndiv.ad { display: none !important; }"
+  );
+  check(
+    "blank frame hands procedural filters to wbeProcedural",
+    selectorsOnly.applied.length === 1 && selectorsOnly.applied[0][0] === '{"selector":[{"type":"css","arg":"div"}]}'
+  );
+  check(
+    "blank frame runs scriptlets in one page-context script",
+    selectorsOnly.scripts.length === 1 && selectorsOnly.scripts[0].textContent.includes("__wblockPayloadProbe")
+  );
 
-  check("window.adguard.contentScript exposed", !!(windowStub.adguard && windowStub.adguard.contentScript));
-
-  const cs = windowStub.adguard.contentScript;
-  appended.length = 0;
-  cs.runScriptlets([{
-    name: "set-constant",
-    args: ["wblockSmokeTest", "1"],
-    code: '(function(source,args){ window.__wblockSmokeTest = source.name; })( {"name":"set-constant"}, []);'
-  }], false);
-
-  const scriptEls = appended.filter(el => el.tagName === "script");
-  check("scriptlet injection appended a script element", scriptEls.length === 1);
-
-  const code = scriptEls[0] ? scriptEls[0].textContent : "";
-  check("assembled code carries precompiled source", code.includes("__wblockSmokeTest"));
-  check("assembled code is an IIFE invocation", code.trim().startsWith("("));
-
-  let parses = true;
-  try { new Function(code); } catch { parses = false; }
-  check("assembled scriptlet code parses", parses);
-
-  appended.length = 0;
-  cs.runScriptlets([
-    { name: "bad", code: "throw new Error('first scriptlet failed');" },
-    { name: "good", code: "window.__wblockSecondScriptlet = true;" }
-  ]);
-  check("fallback keeps per-scriptlet injection isolation", appended.filter(el => el.tagName === "script").length === 2);
-
-  // Raw #%# JS rule path used by the blank-frame fallback.
-  appended.length = 0;
-  cs.runScripts(["window.__wblockRawRule = 42;"]);
-  const rawEls = appended.filter(el => el.tagName === "script");
-  check("raw js rule injection appended a script element", rawEls.length === 1);
-  check("raw js rule code preserved", (rawEls[0]?.textContent || "").includes("__wblockRawRule"));
-} finally {
-  for (const [k, desc] of Object.entries(saved)) {
-    if (desc === undefined) delete globalThis[k];
-    else Object.defineProperty(globalThis, k, desc);
-  }
+  const empty = await runBlankFrameWithPayload({ css: [], procedural: [], scriptlets: "" });
+  check(
+    "empty blank-frame payload injects nothing",
+    empty.styles.length === 0 && empty.scripts.length === 0 && empty.applied.length === 0
+  );
 }
-
-check(
-  "content runtime does not intercept or synthesize lifecycle events",
-  !contentSource.includes("setupDelayedEventDispatcher")
-    && !source.includes("Event has been intercepted"),
-);
 
 // --- InitContentScript state handoff ---
 // Contract: authoritative native state in the Init response removes the
@@ -232,21 +248,16 @@ try {
           fallbackRequested = true;
           return Promise.resolve({ disabled: true, paused: false });
         }
-        // InitContentScript: return a real configuration payload so scriptlet
-        // machinery is observable downstream.
+        // InitContentScript: return a real payload so scriptlet injection is
+        // observable downstream.
         if (msg.type === "InitContentScript") {
           return Promise.resolve({
             disabled: false,
             paused: false,
             payload: {
               css: [],
-              extendedCss: [],
-              scriptlets: [{
-                name: "set-constant",
-                args: ["__wblockRaceProbe", "1"],
-                code: '(function(source,args){ window.__wblockRaceProbe = source.name; })( {"name":"set-constant"}, []);'
-              }],
-              js: [],
+              procedural: [],
+              scriptlets: "(function () { window.__wblockRaceProbe = 1; })();",
             },
           });
         }
@@ -272,11 +283,6 @@ try {
     check(
       "authoritative Init response avoids disabled-state lookup",
       !disabledRequested && !fallbackRequested,
-    );
-
-    check(
-      "contentScript exposed after authoritative state handoff",
-      !!(raceWindow.adguard && raceWindow.adguard.contentScript),
     );
 
     const raceScriptEls = raceAppended.filter(el => el.tagName === "script");
@@ -508,7 +514,7 @@ const runTrackingCleanupScenario = async ({ href, cleanUrlResponse, runtimeError
       runtime: {
         sendMessage(message) {
           if (message && message.type === "InitContentScript") {
-            return Promise.resolve({ type: "InitContentScript", disabled: false, paused: false, payload: { css: [], extendedCss: [], scriptlets: [], js: [] } });
+            return Promise.resolve({ type: "InitContentScript", disabled: false, paused: false, payload: { css: [], procedural: [], scriptlets: "" } });
           }
           if (message && message.action === "wblock:getCleanURL") {
             if (runtimeError) {

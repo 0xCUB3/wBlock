@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Minifies the unminified extension JS sources in extension-src/ into the
-# shipped Safari extension resources in "wBlock Scripts (iOS)/Resources/".
+# Minifies the unminified extension JS sources in extension-src/ and the
+# procedural cosmetic engine in Packages/wblock-engine/js/ into the shipped
+# Safari extension resources in "wBlock Scripts (iOS)/Resources/".
 #
-# extension-src/*.js are the source of truth (spliceable by
-# scripts/update-scriptlets.sh and hand-editable in the wBlock custom
-# sections). The Resources copies are generated artifacts — never edit them.
+# extension-src/*.js and Packages/wblock-engine/js/procedural.js are the source
+# of truth. The Resources copies are generated artifacts — never edit them.
 #
 # Usage: ./scripts/minify-extension-js.sh
 # Prerequisites: node (npx fetches the pinned esbuild on first run)
@@ -28,28 +28,24 @@ error()   { echo -e "${RED}[error]${RESET} $*" >&2; }
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SRC_DIR="${ROOT_DIR}/extension-src"
+ENGINE_JS_DIR="${ROOT_DIR}/Packages/wblock-engine/js"
 RES_DIR="${ROOT_DIR}/wBlock Scripts (iOS)/Resources"
 
 FAIL=0
 
-node "${ROOT_DIR}/scripts/patch-extension-logging.mjs" "${SRC_DIR}/background.js" "${SRC_DIR}/content.js"
-
+# minify_one <source file> <artifact name>
 minify_one() {
-  local name="$1"
-  local src="${SRC_DIR}/${name}.js"
+  local src="$1"
+  local name="$2"
   local out="${RES_DIR}/${name}.js"
+  local rel_src="${src#"${ROOT_DIR}/"}"
 
   if [[ ! -f "${src}" ]]; then
     error "Source not found: ${src}"
     exit 1
   fi
 
-  # Pull version markers out of the unminified source for the banner.
-  local ext_version scriptlets_version
-  ext_version="$(grep -o 'SafariExtension v[0-9][0-9.]*' "${src}" | head -1 || true)"
-  scriptlets_version="$(grep -o 'scriptlets [0-9][0-9.]*' "${src}" | head -1 || true)"
-
-  info "Minifying ${name}.js (${ext_version:-unknown version}${scriptlets_version:+, ${scriptlets_version}})..."
+  info "Minifying ${name}.js (${rel_src})..."
 
   local tmp
   tmp="$(mktemp)"
@@ -61,16 +57,13 @@ minify_one() {
     --log-level=error \
     --outfile="${tmp}"
 
-  # Banner: keeps the version greppable in the artifact and tells editors
-  # where the real source lives. GPL-3.0 notice carried over from upstream.
+  # Banner: tells editors where the real source lives. The no-autoplay gate
+  # keeps its own short banner.
   {
     if [[ "${name}" == "no-autoplay-gate" ]]; then
       printf '/*! wBlock No Autoplay gate. */\n'
-    else
-      printf '/*! %s%s. Upstream (c) Adguard Software Ltd., GPL-3.0, https://github.com/AdguardTeam/SafariConverterLib/tree/master/Extension */\n' \
-      "${ext_version:-SafariExtension}" "${scriptlets_version:+ (${scriptlets_version})}"
     fi
-    printf '/*! Generated artifact — do not edit. Edit extension-src/%s.js and run scripts/minify-extension-js.sh */\n' "${name}"
+    printf '/*! Generated artifact — do not edit. Edit %s and run scripts/minify-extension-js.sh */\n' "${rel_src}"
     cat "${tmp}"
   } > "${out}"
   rm -f "${tmp}"
@@ -119,19 +112,20 @@ check_absent() {
   fi
 }
 
-minify_one "background"
-minify_one "content"
-minify_one "no-autoplay-gate"
+minify_one "${SRC_DIR}/background.js" "background"
+minify_one "${SRC_DIR}/content.js" "content"
+minify_one "${SRC_DIR}/no-autoplay-gate.js" "no-autoplay-gate"
+minify_one "${ENGINE_JS_DIR}/procedural.js" "procedural"
 
 # Symbols the runtime depends on must survive minification.
 check_grep "engineTimestamp" "engineTimestamp" "${RES_DIR}/background.js"
-check_grep "window.adguard"  "window.adguard"  "${RES_DIR}/content.js"
-check_grep "scriptlet registry source" "getScriptletFunction" "${SRC_DIR}/background.js"
-check_grep "scriptlet registry artifact" "getScriptletFunction" "${RES_DIR}/background.js"
-check_absent "content source registry" "scriptletsMap|getScriptletFunction" "${SRC_DIR}/content.js"
-check_absent "content artifact registry" "scriptletsMap|getScriptletFunction" "${RES_DIR}/content.js"
-check_grep "version banner"  "SafariExtension v" "${RES_DIR}/background.js"
-check_grep "version banner"  "SafariExtension v" "${RES_DIR}/content.js"
+check_grep "hide-selector rule" "display: none !important" "${RES_DIR}/background.js"
+check_grep "hide-selector rule" "display: none !important" "${RES_DIR}/content.js"
+check_grep "procedural API" "wbeProcedural" "${RES_DIR}/procedural.js"
+check_grep "procedural API use" "wbeProcedural" "${RES_DIR}/content.js"
+check_grep "procedural API use" "wbeProcedural" "${RES_DIR}/background.js"
+check_absent "retired AdGuard runtime" "adguard|ExtendedCss|getScriptletFunction|scriptletsMap" "${RES_DIR}/background.js"
+check_absent "retired AdGuard runtime" "adguard|ExtendedCss|getScriptletFunction|scriptletsMap" "${RES_DIR}/content.js"
 
 if [[ "${FAIL}" -ne 0 ]]; then
   error "Minification verification failed."
