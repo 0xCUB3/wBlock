@@ -304,15 +304,13 @@ struct ContentView: View {
         .alert("Disable Essential Filter?", isPresented: Binding(
             get: { pendingEssentialFilter != nil },
             set: { if !$0 { pendingEssentialFilter = nil } }
-        )) {
+        ), presenting: pendingEssentialFilter) { filter in
             Button("Cancel", role: .cancel) { pendingEssentialFilter = nil }
             Button("Disable", role: .destructive) {
-                if let filter = pendingEssentialFilter {
-                    filterManager.setFilterListSelection(id: filter.id, selected: false)
-                }
+                filterManager.setFilterListSelection(id: filter.id, selected: false)
                 pendingEssentialFilter = nil
             }
-        } message: {
+        } message: { _ in
             Text("This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage.")
         }
         .riskyFilterAlert($pendingRiskyEnable)
@@ -2454,14 +2452,14 @@ private extension View {
         alert(pending.wrappedValue?.title ?? "", isPresented: Binding(
             get: { pending.wrappedValue != nil },
             set: { if !$0 { pending.wrappedValue = nil } }
-        )) {
+        ), presenting: pending.wrappedValue) { filter in
             Button("Cancel", role: .cancel) { pending.wrappedValue = nil }
             Button("Enable") {
-                pending.wrappedValue?.enable()
+                filter.enable()
                 pending.wrappedValue = nil
             }
-        } message: {
-            if let message = pending.wrappedValue?.message { Text(message) }
+        } message: { filter in
+            Text(filter.message)
         }
     }
 }

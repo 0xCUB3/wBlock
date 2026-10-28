@@ -302,15 +302,14 @@ struct UserScriptManagerView: View {
         .alert("Enable Beta Userscript?", isPresented: Binding(
             get: { pendingBetaEnableScript != nil },
             set: { newValue in if !newValue { pendingBetaEnableScript = nil } }
-        )) {
+        ), presenting: pendingBetaEnableScript) { script in
             Button("Cancel", role: .cancel) { pendingBetaEnableScript = nil }
             Button("Enable") {
-                guard let script = pendingBetaEnableScript else { return }
                 pendingBetaEnableScript = nil
                 BetaUserscriptWarning.acknowledge()
                 applyEnabledState(for: script, newValue: true)
             }
-        } message: {
+        } message: { _ in
             Text("Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time.")
         }
     }
