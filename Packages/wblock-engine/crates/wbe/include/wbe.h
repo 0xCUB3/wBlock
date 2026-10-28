@@ -12,7 +12,8 @@
  * message for the last call on the calling thread; it is valid until that
  * thread's next wbe call and must not be freed.
  *
- * Threading: a WbeEngine must not be used from two threads at once.
+ * Threading: a WbeEngine must not be used from two threads at once. A WbePlan
+ * may compile targets concurrently; free it only after all calls have finished.
  */
 #ifndef WBE_H
 #define WBE_H
@@ -27,11 +28,21 @@ extern "C" {
 
 typedef struct WbeCompileResult WbeCompileResult;
 typedef struct WbeEngine WbeEngine;
+typedef struct WbePlan WbePlan;
 
 const char *wbe_last_error(void);
 
 /* Changes whenever the engine's outputs change for the same input. */
 uint32_t wbe_output_version(void);
+
+/* PlanRequest JSON contains safari, lists, targets, and optional cosmetics.
+ * Each list may provide text or a UTF-8 file path. The plan owns its inputs. */
+WbePlan *wbe_plan_new(const char *request_json);
+/* extras_json is an array of {"text":..., "trusted":...}. The result's
+ * stats JSON additionally contains admitted counts keyed by list ID. */
+WbeCompileResult *wbe_plan_compile_target(const WbePlan *plan, size_t target,
+                                          const char *extras_json);
+void wbe_plan_free(WbePlan *plan);
 
 /* lists: UTF-8 list texts. trusted: one flag per list (may be NULL when count is 0). */
 WbeCompileResult *wbe_compile(const char *const *lists, const bool *trusted, size_t count,

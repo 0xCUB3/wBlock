@@ -39,7 +39,8 @@ struct CompilationProvenanceTests {
             expect(values.isExcludedFromBackup == true, "compiled artifacts must not enter backups")
         }
         let scratch = container.appendingPathComponent("Library/Caches/FilterCompilation")
-        expect(try FileManager.default.contentsOfDirectory(atPath: scratch.path).isEmpty,
+        let scratchIsEmpty = try !FileManager.default.fileExists(atPath: scratch.path) || FileManager.default.contentsOfDirectory(atPath: scratch.path).isEmpty
+        expect(scratchIsEmpty,
                "successful compilation must remove its scratch input")
         expectEqual(
             first.admittedSourceRuleCountsByFilterID[newest.id],

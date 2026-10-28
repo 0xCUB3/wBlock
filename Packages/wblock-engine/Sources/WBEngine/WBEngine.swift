@@ -37,11 +37,39 @@ public enum WBEngine {
         public let nativeRules: Int
         public let runtimeRules: Int
         public let dropped: [String: Int]
+        public let admitted: [String: Int]?
 
         enum CodingKeys: String, CodingKey {
-            case lines, rules, dropped
+            case lines, rules, dropped, admitted
             case nativeRules = "native_rules"
             case runtimeRules = "runtime_rules"
+        }
+    }
+
+    public final class Plan: @unchecked Sendable {
+        private let handle: OpaquePointer
+
+        public init(requestJSON: String) throws {
+            guard let handle = wbe_plan_new(requestJSON) else { throw EngineError.last() }
+            self.handle = handle
+        }
+
+        deinit { wbe_plan_free(handle) }
+
+        public func compileTarget(_ target: Int, extras: String) throws -> Compiled {
+            guard target >= 0 else {
+                throw EngineError(errorDescription: "target index out of bounds")
+            }
+            guard let result = wbe_plan_compile_target(handle, target, extras) else {
+                throw EngineError.last()
+            }
+            defer { wbe_compile_free(result) }
+            let statsJSON = String(cString: wbe_compile_stats_json(result))
+            return Compiled(
+                safariRulesJSON: String(cString: wbe_compile_webkit_json(result)),
+                runtimeRules: String(cString: wbe_compile_runtime_text(result)),
+                stats: try JSONDecoder().decode(Stats.self, from: Data(statsJSON.utf8))
+            )
         }
     }
 

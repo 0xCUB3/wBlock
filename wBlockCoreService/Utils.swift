@@ -276,7 +276,7 @@ public enum FilterListContentProcessing {
 public enum ContentBlockerIncrementalCache {
     // Bump when signature inputs/schema change so stale per-target signatures
     // do not suppress needed rebuilds.
-    private static let inputSignatureSchemaVersion = "12"
+    private static let inputSignatureSchemaVersion = "13"
 
     private struct State: Codable {
         var inputSignature: String
@@ -315,13 +315,13 @@ public enum ContentBlockerIncrementalCache {
 
         for filter in canonicalFilterOrder(filters) {
             let fileMarker = localFileFingerprint(for: filter, containerURL: containerURL)
-            canonical.append("\(filter.id.uuidString)|\(fileMarker)|\(siteScopeMarker(for: filter))\n")
+            canonical.append("\(filter.id.uuidString)|\(fileMarker)|\(filter.isTrustedSource)|\(siteScopeMarker(for: filter))\n")
         }
         if !affinityContributors.isEmpty {
             canonical.append("affinity=\(affinityContributors.count)\n")
             for filter in canonicalFilterOrder(affinityContributors) {
                 let fileMarker = localFileFingerprint(for: filter, containerURL: containerURL)
-                canonical.append("a|\(filter.id.uuidString)|\(fileMarker)|\(siteScopeMarker(for: filter))\n")
+                canonical.append("a|\(filter.id.uuidString)|\(fileMarker)|\(filter.isTrustedSource)|\(siteScopeMarker(for: filter))\n")
             }
         }
 

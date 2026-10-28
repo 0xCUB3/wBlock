@@ -1,9 +1,10 @@
 //! C ABI for Swift (wBlockCoreService). See include/wbe.h.
 //! Every entry point catches panics and reports failure as NULL or false;
 //! the message is available from `wbe_last_error` on the calling thread.
-//! Engine handles are not thread-safe; callers must serialize their use.
+//! Engine handles are not thread-safe; plans support concurrent compilation.
 
 use crate::ast::SourceRef;
+use crate::apply::{Extra, Plan, PlanRequest};
 use crate::compile::{compile, CompileOptions, ListInput};
 use crate::runtime::Engine;
 use crate::webkit::{to_json, SafariVersion};
@@ -17,6 +18,67 @@ pub struct WbeCompileResult {
     webkit: CString,
     runtime: CString,
     stats: CString,
+}
+
+pub struct WbePlan(Plan);
+
+#[no_mangle]
+pub unsafe extern "C" fn wbe_plan_new(request_json: *const c_char) -> *mut WbePlan {
+    guard(ptr::null_mut(), || {
+        let mut request: PlanRequest = serde_json::from_str(cstr(request_json, "request_json")?)
+            .map_err(|error| error.to_string())?;
+        for list in &mut request.lists {
+            if let Some(path) = &list.path {
+                if !list.text.is_empty() {
+                    return Err(format!("list {} specifies both path and text", list.id));
+                }
+                list.text = std::fs::read_to_string(path)
+                    .map_err(|error| format!("cannot read list {}: {error}", list.id))?;
+            }
+        }
+        for target in &request.targets {
+            if target.lists.iter().any(|list| list.list >= request.lists.len()) {
+                return Err("target list index out of bounds".into());
+            }
+            if target.lists.iter().any(|list| {
+                list.shard.is_some_and(|(index, count)| count == 0 || index >= count)
+            }) {
+                return Err("invalid target shard".into());
+            }
+        }
+        Ok(Box::into_raw(Box::new(WbePlan(Plan::new(request)))))
+    })
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn wbe_plan_compile_target(
+    plan: *const WbePlan,
+    target: usize,
+    extras_json: *const c_char,
+) -> *mut WbeCompileResult {
+    guard(ptr::null_mut(), || {
+        let plan = plan.as_ref().ok_or("plan is NULL")?;
+        if target >= plan.0.target_count() {
+            return Err("target index out of bounds".into());
+        }
+        let extras: Vec<Extra> = serde_json::from_str(cstr(extras_json, "extras_json")?)
+            .map_err(|error| error.to_string())?;
+        let compiled = plan.0.compile_target(target, &extras);
+        let mut stats = serde_json::to_value(&compiled.output.stats).map_err(|error| error.to_string())?;
+        stats["admitted"] = serde_json::to_value(compiled.admitted).map_err(|error| error.to_string())?;
+        Ok(Box::into_raw(Box::new(WbeCompileResult {
+            webkit: to_c(to_json(&compiled.output.webkit))?,
+            runtime: to_c(compiled.output.runtime.join("\n"))?,
+            stats: to_c(stats.to_string())?,
+        })))
+    })
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn wbe_plan_free(plan: *mut WbePlan) {
+    if !plan.is_null() {
+        drop(Box::from_raw(plan));
+    }
 }
 
 thread_local! {
@@ -369,6 +431,49 @@ mod tests {
             let bad: [c_char; 3] = [0x66, -1, 0];
             assert!(wbe_classify_line(bad.as_ptr()).is_null());
             assert!(last_error().contains("not UTF-8"));
+        }
+    }
+
+    #[test]
+    fn plan_rejects_invalid_shards_and_compiles_admissions() {
+        unsafe {
+            let invalid = c(r#"{"safari":[18,0],"lists":[{"id":"list","text":"||example.com^"}],"targets":[{"slot":1,"lists":[{"list":0,"shard":[0,0]}]}]}"#);
+            assert!(wbe_plan_new(invalid.as_ptr()).is_null());
+            assert!(last_error().contains("invalid target shard"));
+
+            let request = c(r#"{"safari":[18,0],"lists":[{"id":"list","text":"||example.com^"}],"targets":[{"slot":1,"lists":[{"list":0}]}]}"#);
+            let plan = wbe_plan_new(request.as_ptr());
+            assert!(!plan.is_null(), "{}", last_error());
+            let result = wbe_plan_compile_target(plan, 0, c("[]").as_ptr());
+            assert!(!result.is_null(), "{}", last_error());
+            let stats = CStr::from_ptr(wbe_compile_stats_json(result)).to_str().unwrap();
+            assert_eq!(serde_json::from_str::<serde_json::Value>(stats).unwrap()["admitted"]["list"], 1);
+            wbe_compile_free(result);
+            assert!(wbe_plan_compile_target(plan, 1, c("[]").as_ptr()).is_null());
+            assert!(last_error().contains("target index out of bounds"));
+            wbe_plan_free(plan);
+        }
+    }
+
+    #[test]
+    fn plan_compiles_targets_concurrently() {
+        unsafe {
+            let request = c(r#"{"safari":[18,0],"lists":[{"id":"list","text":"||example.com^"}],"targets":[{"slot":1,"lists":[{"list":0}]},{"slot":2,"lists":[{"list":0}]}]}"#);
+            let plan = wbe_plan_new(request.as_ptr());
+            assert!(!plan.is_null(), "{}", last_error());
+            let shared = &*plan;
+            std::thread::scope(|scope| {
+                for target in 0..2 {
+                    scope.spawn(move || {
+                        let result = wbe_plan_compile_target(shared, target, c("[]").as_ptr());
+                        assert!(!result.is_null(), "{}", last_error());
+                        let stats = CStr::from_ptr(wbe_compile_stats_json(result)).to_str().unwrap();
+                        assert!(serde_json::from_str::<serde_json::Value>(stats).unwrap()["admitted"].is_object());
+                        wbe_compile_free(result);
+                    });
+                }
+            });
+            wbe_plan_free(plan);
         }
     }
 }
