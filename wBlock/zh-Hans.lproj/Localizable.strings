@@ -187,7 +187,7 @@
 "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "Safari 无法应用此列表的 inline-script 规则。对于受支持的英语网站，请在用户脚本中启用 Bypass Paywalls Clean。";
 "Blocks pop-up ads on web pages." = "拦截网页上的弹出广告。";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "拦截促销弹出窗口、时事通讯注册和通知请求。";
-"Hides share and follow buttons on any site, including many that AdGuard Social Media Filter misses." = "在任何网站上隐藏分享和关注按钮，包括许多 AdGuard Social Media Filter 漏掉的按钮。";
+"Hides social media content and icons. Blocks social widgets and scripts, including many that AdGuard Social Media Filter misses." = "隐藏社交媒体内容和图标。拦截社交小部件和脚本，包括许多 AdGuard Social Media Filter 漏掉的项目。";
 "Blocks third-party widgets, chat assistants, and support widgets." = "拦截第三方小部件、聊天助手和支持小部件。";
 "Building combined filter engine..." = "正在构建组合过滤器引擎...";
 "Building filter engine" = "正在构建过滤器引擎";

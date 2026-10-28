@@ -24,6 +24,14 @@ import wBlockCoreService
             precondition(loaded.name == catalog.name && loaded.description == catalog.description && loaded.isSelected)
             precondition(FilterListSetup.hydrate(hydrated, defaults: [catalog]) == hydrated, "setup is idempotent")
         }
-        print("PASS setup category and identity round trips")
+        let first = FilterList(name: "First", url: URL(string: "https://example.com/first")!, category: .annoyances)
+        let restored = FilterList(name: "Restored", url: URL(string: "https://example.com/restored")!, category: .annoyances)
+        let last = FilterList(name: "Last", url: URL(string: "https://example.com/last")!, category: .annoyances)
+        let defaults = [first, restored, last]
+        let upgraded = FilterListSetup.hydrate([first, last, restored, custom, inline], defaults: defaults)
+        precondition(upgraded.map(\.id) == [first.id, restored.id, last.id, custom.id, inline.id],
+                     "restored defaults follow catalog order rather than their appended storage position")
+        precondition(FilterListSetup.hydrate(upgraded, defaults: defaults) == upgraded)
+        print("PASS setup category, identity, and catalog order round trips")
     }
 }

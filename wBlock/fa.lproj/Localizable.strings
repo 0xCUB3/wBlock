@@ -187,7 +187,7 @@
 "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "قوانین اسکریپت درون‌خطی این فهرست را Safari نمی‌تواند اعمال کند. برای سایت‌های انگلیسی‌زبان پشتیبانی‌شده، Bypass Paywalls Clean را در Userscripts فعال کنید.";
 "Blocks pop-up ads on web pages." = "تبلیغات پاپ‌آپ را در صفحات وب مسدود می‌کند.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "پاپ‌آپ‌های تبلیغاتی، ثبت‌نام خبرنامه و درخواست‌های اعلان را مسدود می‌کند.";
-"Hides share and follow buttons on any site, including many that AdGuard Social Media Filter misses." = "دکمه‌های اشتراک‌گذاری و دنبال‌کردن را در هر سایتی پنهان می‌کند، از جمله بسیاری که AdGuard Social Media Filter از قلم می‌اندازد.";
+"Hides social media content and icons. Blocks social widgets and scripts, including many that AdGuard Social Media Filter misses." = "محتوا و نمادهای شبکه‌های اجتماعی را پنهان می‌کند. ابزارک‌ها و اسکریپت‌های اجتماعی را مسدود می‌کند، از جمله بسیاری که AdGuard Social Media Filter از قلم می‌اندازد.";
 "Blocks third-party widgets, chat assistants, and support widgets." = "ابزارک‌های شخص ثالث، دستیاران چت و ابزارک‌های پشتیبانی را مسدود می‌کند.";
 "Building combined filter engine..." = "در حال ساخت موتور فیلتر ترکیبی...";
 "Building filter engine" = "در حال ساخت موتور فیلتر";

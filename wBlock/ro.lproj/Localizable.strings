@@ -187,7 +187,7 @@
 "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "Safari nu poate aplica regulile inline-script din această listă. Activează Bypass Paywalls Clean în Scripturi de utilizator pentru site-urile în engleză acceptate.";
 "Blocks pop-up ads on web pages." = "Blochează reclamele pop-up de pe paginile web.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "Blochează ferestrele pop-up promoționale, înscrierile la buletine informative și solicitările de notificare.";
-"Hides share and follow buttons on any site, including many that AdGuard Social Media Filter misses." = "Ascunde butoanele de distribuire și urmărire pe orice site, inclusiv multe pe care AdGuard Social Media Filter le ratează.";
+"Hides social media content and icons. Blocks social widgets and scripts, including many that AdGuard Social Media Filter misses." = "Ascunde conținutul și pictogramele rețelelor sociale. Blochează widgeturile și scripturile sociale, inclusiv multe pe care AdGuard Social Media Filter le ratează.";
 "Blocks third-party widgets, chat assistants, and support widgets." = "Blochează widgeturile terță parte, asistenții de chat și widgeturile de asistență.";
 "Building combined filter engine..." = "Se construiește motorul de filtre combinat...";
 "Building filter engine" = "Construire motor de filtre";

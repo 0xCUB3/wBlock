@@ -187,7 +187,7 @@
 "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "A Safari nem tudja alkalmazni a lista inline-script szabályait. A támogatott angol nyelvű webhelyekhez engedélyezd a Bypass Paywalls Clean szkriptet a felhasználói szkriptek között.";
 "Blocks pop-up ads on web pages." = "Blokkolja a felugró hirdetéseket a weboldalakon.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "Letiltja a promóciós előugró ablakokat, a hírlevélre való feliratkozást és az értesítési kéréseket.";
-"Hides share and follow buttons on any site, including many that AdGuard Social Media Filter misses." = "Elrejti a megosztás- és követésgombokat minden webhelyen, köztük sok olyat is, amelyet az AdGuard Social Media Filter kihagy.";
+"Hides social media content and icons. Blocks social widgets and scripts, including many that AdGuard Social Media Filter misses." = "Elrejti a közösségi média tartalmait és ikonjait. Blokkolja a közösségi widgeteket és szkripteket, köztük sok olyat is, amelyet az AdGuard Social Media Filter kihagy.";
 "Blocks third-party widgets, chat assistants, and support widgets." = "Letiltja a harmadik féltől származó widgeteket, csevegési asszisztenseket és támogatási widgeteket.";
 "Building combined filter engine..." = "Kombinált szűrőmotor építése...";
 "Building filter engine" = "Szűrőmotor építése";

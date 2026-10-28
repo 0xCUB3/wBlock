@@ -187,7 +187,7 @@
 "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "Safari는 이 목록의 inline-script 규칙을 적용할 수 없습니다. 지원되는 영어 사이트에서는 유저스크립트에서 Bypass Paywalls Clean을 활성화하세요.";
 "Blocks pop-up ads on web pages." = "웹 페이지의 팝업 광고를 차단합니다.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "프로모션 팝업, 뉴스레터 가입, 알림 요청을 차단합니다.";
-"Hides share and follow buttons on any site, including many that AdGuard Social Media Filter misses." = "모든 사이트에서 공유 및 팔로우 버튼을 숨깁니다. AdGuard Social Media Filter가 놓치는 버튼도 많이 포함됩니다.";
+"Hides social media content and icons. Blocks social widgets and scripts, including many that AdGuard Social Media Filter misses." = "소셜 미디어 콘텐츠와 아이콘을 숨깁니다. AdGuard Social Media Filter가 놓치는 많은 항목을 포함해 소셜 위젯과 스크립트를 차단합니다.";
 "Blocks third-party widgets, chat assistants, and support widgets." = "타사 위젯, 채팅 도우미 및 지원 위젯을 차단합니다.";
 "Building combined filter engine..." = "결합 필터 엔진 구축 중...";
 "Building filter engine" = "필터 엔진을 빌드합니다";

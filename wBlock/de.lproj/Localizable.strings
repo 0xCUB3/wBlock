@@ -187,7 +187,7 @@
 "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "Safari kann die Inline-Skript-Regeln dieser Liste nicht anwenden. Aktiviere Bypass Paywalls Clean unter „Benutzerskripte“ für unterstützte englischsprachige Websites.";
 "Blocks pop-up ads on web pages." = "Blockiert Pop-up-Werbung auf Webseiten.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "Blockiert Werbe-Pop-ups, Newsletter-Anmeldungen und Benachrichtigungsanfragen.";
-"Hides share and follow buttons on any site, including many that AdGuard Social Media Filter misses." = "Blendet Teilen- und Folgen-Schaltflächen auf allen Websites aus, auch viele, die AdGuard Social Media Filter übersieht.";
+"Hides social media content and icons. Blocks social widgets and scripts, including many that AdGuard Social Media Filter misses." = "Blendet Social-Media-Inhalte und -Symbole aus. Blockiert Social-Media-Widgets und -Skripte, auch viele, die AdGuard Social Media Filter übersieht.";
 "Blocks third-party widgets, chat assistants, and support widgets." = "Blockiert Widgets, Chat-Assistenten und Support-Widgets von Drittanbietern.";
 "Building combined filter engine..." = "Kombinierte Filter-Engine wird erstellt...";
 "Building filter engine" = "Filter-Engine wird erstellt";

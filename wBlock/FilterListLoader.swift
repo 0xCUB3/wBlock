@@ -396,7 +396,7 @@ class FilterListLoader {
                 url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/123_optimized.txt")!,
                 category: FilterListCategory.annoyances,
                 description:
-                    "Hides share and follow buttons on any site, including many that AdGuard Social Media Filter misses."),
+                    "Hides social media content and icons. Blocks social widgets and scripts, including many that AdGuard Social Media Filter misses."),
             FilterList(
                 id: UUID(), name: "Stevo's AI Blocklist",
                 url: Self.stevoAIBlocklistURL, category: FilterListCategory.annoyances,
