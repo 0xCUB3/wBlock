@@ -39,7 +39,10 @@ impl SiteScope {
 #[derive(Debug, Clone, Deserialize)]
 pub struct ListSpec {
     pub id: String,
+    #[serde(default)]
     pub text: String,
+    #[serde(default)]
+    pub path: Option<String>,
     #[serde(default)]
     pub trusted: bool,
     #[serde(default)]
