@@ -160,9 +160,13 @@ fn top_url(m: &DomainMatcher) -> Option<String> {
             Some(out)
         }
         DomainMatcher::Entity(e) => {
+            let host = format!("{e}.com");
+            if crate::registrable_domain(&host) != Some(host.as_str()) {
+                return None;
+            }
             let mut out = HOST_START.to_string();
             literal(e, &mut out)?;
-            out.push_str("\\.([^:/.]+\\.)?[^:/.]+");
+            out.push_str("\\.com");
             out.push_str(HOST_END);
             Some(out)
         }
@@ -598,8 +602,15 @@ mod tests {
     fn domain_entity_top_url() {
         assert_eq!(
             domain_top_url(&DomainMatcher::Entity("google".into())).unwrap(),
-            "^[^:]+://+([^:/]+\\.)?google\\.([^:/.]+\\.)?[^:/.]+[/:?#]"
+            "^[^:]+://+([^:/]+\\.)?google\\.com[/:?#]"
         );
+    }
+
+    #[test]
+    fn entity_domain_does_not_accept_arbitrary_second_level_suffix() {
+        let filter = domain_top_url(&DomainMatcher::Entity("google".into())).unwrap();
+        assert!(!filter.contains("([^:/.]+\\.)?"));
+        assert!(webkit_accepts(&filter));
     }
 
     #[test]

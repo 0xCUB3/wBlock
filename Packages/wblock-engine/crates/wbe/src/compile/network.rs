@@ -225,9 +225,42 @@ fn compile_scope(r: &NetworkRule, v: SafariVersion, out: &mut Vec<Tiered>) -> Re
         // uBO maps `$genericblock` to an unsupported type that matches nothing.
         return Err("dnr:genericblock".into());
     };
-    let conds = match page_cond(&r.pattern, v) {
-        Some(cond) => vec![Some(cond)],
-        None => domain_conds(&r.from, v, true)?,
+    let conds = match (
+        host_only(&r.pattern),
+        r.from.include.is_empty(),
+        r.from.exclude.is_empty(),
+    ) {
+        (Some(host), false, true)
+            if r.from
+                .include
+                .iter()
+                .all(|d| matches!(d, DomainMatcher::Hostname(_))) =>
+        {
+            let domains = r
+                .from
+                .include
+                .iter()
+                .filter_map(|domain| {
+                    let DomainMatcher::Hostname(domain) = domain else {
+                        unreachable!()
+                    };
+                    if domain == &host || domain.ends_with(&format!(".{host}")) {
+                        Some(format!("*{domain}"))
+                    } else if host.ends_with(&format!(".{domain}")) {
+                        Some(format!("*{host}"))
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<_>>();
+            if domains.is_empty() {
+                return Ok(());
+            }
+            vec![Some(Cond::IfDomain(domains))]
+        }
+        (_, true, true) => vec![page_cond(&r.pattern, v)],
+        _ if r.pattern.is_match_all() => domain_conds(&r.from, v, true)?,
+        _ => return Err("dnr:scope-domain-intersection".into()),
     };
     for cond in conds {
         let mut trigger = WkTrigger {
@@ -363,6 +396,14 @@ fn domain_conds(
     v: SafariVersion,
     exception: bool,
 ) -> Result<Vec<Option<Cond>>, String> {
+    if !exception
+        && list
+            .exclude
+            .iter()
+            .any(|domain| matches!(domain, DomainMatcher::Entity(_)))
+    {
+        return Err("dnr:domain".into());
+    }
     let top = v.at_least(15, 0);
     let split = |items: &[DomainMatcher]| {
         let (mut hosts, mut tops, mut all) = (Vec::new(), Vec::new(), true);
@@ -1095,7 +1136,7 @@ mod tests {
         check(
             std::slice::from_ref(&rule),
             V15,
-            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[^a-zA-Z0-9_.%-]","resource-type":["script"],"if-top-url":["^[^:]+://+([^:/]+\\.)?google\\.([^:/.]+\\.)?[^:/.]+[/:?#]"]},"action":{"type":"block"}}]"#,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[^a-zA-Z0-9_.%-]","resource-type":["script"],"if-top-url":["^[^:]+://+([^:/]+\\.)?google\\.com[/:?#]"]},"action":{"type":"block"}}]"#,
         );
     }
 
@@ -1637,7 +1678,7 @@ mod tests {
     }
 
     #[test]
-    fn entity_exclude_on_block_uses_unless_top_url() {
+    fn entity_exclusion_must_not_overblock_other_suffixes() {
         let rule = NetworkRule {
             from: DomainList {
                 include: vec![],
@@ -1646,11 +1687,20 @@ mod tests {
             types: RT::SCRIPT,
             ..net("||t.com^")
         };
-        check(
-            std::slice::from_ref(&rule),
-            V15,
-            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[^a-zA-Z0-9_.%-]","resource-type":["script"],"unless-top-url":["^[^:]+://+([^:/]+\\.)?google\\.([^:/.]+\\.)?[^:/.]+[/:?#]"]},"action":{"type":"block"}}]"#,
-        );
+        assert!(run(&[rule], V15).0.is_empty());
+    }
+
+    #[test]
+    fn entity_exclude_on_block_is_unsupported() {
+        let rule = NetworkRule {
+            from: DomainList {
+                include: vec![],
+                exclude: vec![DomainMatcher::Entity("google".into())],
+            },
+            types: RT::SCRIPT,
+            ..net("||t.com^")
+        };
+        assert!(run(&[rule], V15).0.is_empty());
     }
 
     #[test]
@@ -1831,6 +1881,20 @@ mod tests {
     }
 
     #[test]
+    fn document_exception_intersects_pattern_and_from_domains() {
+        let rule = NetworkRule {
+            scope: ExceptionScope::DOC,
+            from: list(&["shop.example.com"], &[]),
+            ..exc("@@||example.com^$document")
+        };
+        let (out, _) = run(&[rule], V15);
+        assert_eq!(
+            out[0].rule.trigger.if_domain,
+            Some(vec!["*shop.example.com".into()])
+        );
+    }
+
+    #[test]
     fn generichide_exception_with_entity_uses_if_top_url() {
         let rule = NetworkRule {
             scope: ExceptionScope::GHIDE,
@@ -1843,7 +1907,7 @@ mod tests {
         check(
             std::slice::from_ref(&rule),
             V15,
-            r#"[{"trigger":{"url-filter":".*","if-top-url":["^[^:]+://+([^:/]+\\.)?google\\.([^:/.]+\\.)?[^:/.]+[/:?#]"]},"action":{"type":"ignore-previous-rules"}}]"#,
+            r#"[{"trigger":{"url-filter":".*","if-top-url":["^[^:]+://+([^:/]+\\.)?google\\.com[/:?#]"]},"action":{"type":"ignore-previous-rules"}}]"#,
         );
     }
 
