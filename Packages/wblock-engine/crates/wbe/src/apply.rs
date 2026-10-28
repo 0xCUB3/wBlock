@@ -249,8 +249,11 @@ impl Plan {
         let mut admitted = BTreeMap::new();
         let mut seen = HashSet::new();
         let mut stats = Stats::default();
-        for list in 0..self.lists.len() {
-            let rules = self.included(target, list);
+        let included: Vec<_> = (0..self.lists.len())
+            .map(|list| self.included(target, list))
+            .collect();
+        let replicated = self.replicated_exceptions(target, &included);
+        for (list, rules) in included.into_iter().enumerate() {
             if rules.is_empty() {
                 continue;
             }
@@ -285,7 +288,7 @@ impl Plan {
                 }
             }
         }
-        for rule in self.replicated_exceptions(target) {
+        for rule in replicated {
             set.push(rule);
         }
         for (i, extra) in extras.iter().enumerate() {
@@ -357,12 +360,12 @@ impl Plan {
     /// #836: network exceptions of lists this blocker does not compile, when
     /// they can cancel one of its blocks (Safari applies an exception only in
     /// its own blocker). Matching errs toward copying, which is harmless.
-    fn replicated_exceptions(&self, target: usize) -> Vec<Rule> {
+    fn replicated_exceptions(&self, target: usize, included: &[Vec<Rule>]) -> Vec<Rule> {
         let mut patterns = HashSet::new();
         let mut bare_hosts = HashSet::new();
-        for list in 0..self.lists.len() {
-            for rule in self.included(target, list) {
-                if let Rule::Network(r) = &rule {
+        for rules in included {
+            for rule in rules {
+                if let Rule::Network(r) = rule {
                     if let Some(key) = PatternKey::of(r).filter(|_| !r.exception) {
                         if key.bare {
                             bare_hosts.insert(key.host.clone().unwrap_or_default());
@@ -992,6 +995,35 @@ mod tests {
         assert!(json.contains("sub.example.com"));
         assert!(!json.contains("other.org"));
         assert!(!json.contains(".generic"));
+    }
+
+    #[test]
+    fn selected_scope_discards_disjoint_rules_and_supports_entities() {
+        let plan = plan(
+            json!([{ "id":"list", "text":"||tracker.net^$domain=example.com\nother.org##.gone", "scope":{"only":["example.*"]}}]),
+            json!([{"slot":1,"lists":[{"list":0}]}]),
+            json!({}),
+        );
+        let output = crate::webkit::to_json(&plan.compile_target(0, &[]).output.webkit);
+        assert!(output.contains("example"), "{output}");
+        assert!(!output.contains("gone"), "{output}");
+    }
+
+    #[test]
+    fn replication_matches_both_prefix_directions() {
+        let plan = plan(
+            json!([
+                {"id":"blocks", "text":"||one.test/path\n||two.test/path/deep"},
+                {"id":"exceptions", "text":"@@||one.test/path/deep\n@@||two.test/path\n@@||other.test^"}
+            ]),
+            json!([{"slot":1,"lists":[{"list":0}]},{"slot":2,"lists":[{"list":1}]}]),
+            json!({}),
+        );
+        let output = crate::webkit::to_json(&plan.compile_target(0, &[]).output.webkit);
+        assert!(output.contains("deep"), "{output}");
+        let included: Vec<_> = (0..2).map(|list| plan.included(0, list)).collect();
+        assert_eq!(plan.replicated_exceptions(0, &included).len(), 2);
+        assert!(!output.contains("other\\\\.test"), "{output}");
     }
 
     #[test]
