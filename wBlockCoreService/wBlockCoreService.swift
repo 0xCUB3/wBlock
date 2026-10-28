@@ -817,6 +817,27 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         return result
     }
 
+    /// Rewrites the blocker output without the rules WebKit rejects
+    /// (ContentBlockerRuleRepair). False when WebKit accepts the output as is,
+    /// so the failure had another cause.
+    private static func repairRejectedRules(outputURL: URL, containerURL: URL, targetRulesFilename: String) async -> Bool {
+        guard let data = try? Data(contentsOf: outputURL),
+              let repair = await ContentBlockerRuleRepair.repaired(data)
+        else { return false }
+        let written = (try? withContentBlockerOutputLock(at: containerURL, targetRulesFilename: targetRulesFilename) {
+            // Never overwrite an output another writer replaced meanwhile.
+            guard (try? Data(contentsOf: outputURL)) == data else { return false }
+            try FilterArtifactStorage.write(repair.data, to: outputURL)
+            return true
+        }) ?? false
+        if written {
+            await SharedAutoUpdateManager.shared.recordOperation("reload-repair", fields: [
+                "target": targetRulesFilename, "droppedRules": repair.dropped.joined(separator: " | "),
+            ])
+        }
+        return written
+    }
+
     private static func reloadIfNeededSerially(
         identifier: String,
         targetRulesFilename: String,
@@ -876,6 +897,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
 
         var totalAttempts = 0
         var mustReloadNewestOutput = false
+        var repairedOutput = false
         for _ in 0..<maxReloadVerificationPasses {
             if !recovering, !mustReloadNewestOutput,
                reloadMarkerMatches(snapshot),
@@ -933,6 +955,18 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                 timeout: recovering ? ContentBlockerReloadPolicy.recoveryTimeout : reloadCompletionTimeout
             )
             totalAttempts += reload.attempts
+            // A rule this Safari's WebKit rejects fails the whole blocker. Drop
+            // such rules and reload once more before reporting a failure.
+            if !reload.success, enabledInSafari != false, !repairedOutput,
+               await repairRejectedRules(outputURL: outputURL, containerURL: containerURL, targetRulesFilename: targetRulesFilename),
+               let repaired = try? readReloadSnapshot(markerURL: markerURL, outputURL: outputURL, appGroupURL: containerURL),
+               repaired.outputDigest != nil
+            {
+                repairedOutput = true
+                snapshot = repaired
+                mustReloadNewestOutput = true
+                continue
+            }
             guard reload.success else {
                 return ReloadAttemptResult(
                     success: false,

@@ -246,6 +246,7 @@ compile_core_test blocked-count-dnr scripts/test_blocked_count_dnr_rules.swift
 compile_core_test safari-affinity-snapshot scripts/test_safari_affinity_snapshot_behavior.swift
 compile_core_test safari-rule-limit-cap scripts/test_safari_rule_limit_cap.swift
 compile_core_test content-blocker-domain-case scripts/test_content_blocker_domain_case.swift
+compile_core_test wbe-upgrade scripts/test_wbe_upgrade.swift
 compile_core_test site-component-disable-policy scripts/test_site_component_disable_policy.swift
 compile_core_test user-script-url-support scripts/test_userscript_url_support.swift
 compile_core_test zapper-native-rules scripts/test_zapper_native_rule_generator.swift
