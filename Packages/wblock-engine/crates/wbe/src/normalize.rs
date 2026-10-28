@@ -168,10 +168,18 @@ mod tests {
                 bad.push(format!("{line:?}\n   want {want}\n   got  {got}"));
             }
             if got == *line {
-                assert!(matches!(got, Cow::Borrowed(_)), "unchanged but owned: {line}");
+                assert!(
+                    matches!(got, Cow::Borrowed(_)),
+                    "unchanged but owned: {line}"
+                );
             }
         }
-        assert!(bad.is_empty(), "{} mismatches:\n{}", bad.len(), bad.join("\n"));
+        assert!(
+            bad.is_empty(),
+            "{} mismatches:\n{}",
+            bad.len(),
+            bad.join("\n")
+        );
     }
 
     #[test]
@@ -185,16 +193,34 @@ mod tests {
             ("! comment ##.x", "! comment ##.x"),
             ("# comment ##.x", "# comment ##.x"),
             ("#### section", "#### section"),
-            ("example.com$$script[tag-content=\"x\"]", "example.com$$script[tag-content=\"x\"]"),
-            ("example.com$@$script[tag-content=\"x\"]", "example.com$@$script[tag-content=\"x\"]"),
-            ("example.com##div:-abp-has(span)", "example.com##div:-abp-has(span)"),
-            ("example.com##div:matches-css-before(content: x)", "example.com##div:matches-css-before(content: x)"),
+            (
+                "example.com$$script[tag-content=\"x\"]",
+                "example.com$$script[tag-content=\"x\"]",
+            ),
+            (
+                "example.com$@$script[tag-content=\"x\"]",
+                "example.com$@$script[tag-content=\"x\"]",
+            ),
+            (
+                "example.com##div:-abp-has(span)",
+                "example.com##div:-abp-has(span)",
+            ),
+            (
+                "example.com##div:matches-css-before(content: x)",
+                "example.com##div:matches-css-before(content: x)",
+            ),
             ("example.com##^script", "example.com##^script"),
             ("example.com##+js(aopr, a)", "example.com##+js(aopr, a)"),
             ("example.com#$#log 'x'", "example.com#$#log 'x'"),
-            ("example.com#@$#.ad { color: red; }", "example.com#@$#.ad { color: red; }"),
+            (
+                "example.com#@$#.ad { color: red; }",
+                "example.com#@$#.ad { color: red; }",
+            ),
             ("example.com#$#.a {}", "example.com#$#.a {}"),
-            ("example.com#$#.a { color: red } extra", "example.com#$#.a { color: red } extra"),
+            (
+                "example.com#$#.a { color: red } extra",
+                "example.com#$#.a { color: red } extra",
+            ),
             ("example.com#$#", "example.com#$#"),
         ]);
     }
@@ -302,10 +328,22 @@ mod tests {
                 "example.com#$#.pub { display: block !important; }",
                 "example.com##.pub:style(display: block !important;)",
             ),
-            ("example.com#$#.ad { display: none !important; }", "example.com##.ad"),
-            ("example.com#$#.ad{display:none!important}", "example.com##.ad"),
-            ("example.com#$#.ad { remove: true; }", "example.com##.ad:remove()"),
-            ("example.com#$#.ad { remove: true }", "example.com##.ad:remove()"),
+            (
+                "example.com#$#.ad { display: none !important; }",
+                "example.com##.ad",
+            ),
+            (
+                "example.com#$#.ad{display:none!important}",
+                "example.com##.ad",
+            ),
+            (
+                "example.com#$#.ad { remove: true; }",
+                "example.com##.ad:remove()",
+            ),
+            (
+                "example.com#$#.ad { remove: true }",
+                "example.com##.ad:remove()",
+            ),
             (
                 "example.com#$?#div:has-text(x) { display: none !important; }",
                 "example.com##div:has-text(x)",
@@ -314,7 +352,10 @@ mod tests {
                 "example.com#$?#html > div { remove: true; }",
                 "example.com##html > div:remove()",
             ),
-            ("example.com#$#.a { color : red }", "example.com##.a:style(color : red)"),
+            (
+                "example.com#$#.a { color : red }",
+                "example.com##.a:style(color : red)",
+            ),
             (
                 "example.com#$#.a { background: url(x.png) }",
                 "example.com##.a:style(background: url(x.png))",
@@ -324,31 +365,70 @@ mod tests {
                 "example.com##body > *:style(filter: none !important;)",
             ),
             ("#$#body { color: red }", "##body:style(color: red)"),
-            ("example.com#@$#.ad { display: none !important; }", "example.com#@#.ad"),
-            ("example.com#@$?#.ad { display: none !important; }", "example.com#@#.ad"),
+            (
+                "example.com#@$#.ad { display: none !important; }",
+                "example.com#@#.ad",
+            ),
+            (
+                "example.com#@$?#.ad { display: none !important; }",
+                "example.com#@#.ad",
+            ),
             // uBO takes the last `{` (greedy `(.+)`), so the selector keeps the first block.
-            ("example.com#$#div { color: red; }{ x }", "example.com##div { color: red; }:style(x)"),
+            (
+                "example.com#$#div { color: red; }{ x }",
+                "example.com##div { color: red; }:style(x)",
+            ),
         ]);
     }
 
     #[test]
     fn procedural_markers_and_operators() {
         check(&[
-            ("example.com#?#.a:has-text(x)", "example.com##.a:has-text(x)"),
-            ("example.com#@?#.a:has-text(x)", "example.com#@#.a:has-text(x)"),
+            (
+                "example.com#?#.a:has-text(x)",
+                "example.com##.a:has-text(x)",
+            ),
+            (
+                "example.com#@?#.a:has-text(x)",
+                "example.com#@#.a:has-text(x)",
+            ),
             (
                 "deliveroo.*#?#a[role=\"button\"]:has(p:has-text(Sponsored))",
                 "deliveroo.*##a[role=\"button\"]:has(p:has-text(Sponsored))",
             ),
-            ("example.com#?#div:-abp-has(span)", "example.com##div:has(span)"),
-            ("example.com#?#div:-abp-contains(x)", "example.com##div:has-text(x)"),
-            ("example.com#?#div:-abp-properties(x)", "example.com##div:-abp-properties(x)"),
-            ("example.com##div:contains(x)", "example.com##div:has-text(x)"),
-            ("example.com##div:nth-ancestor(2)", "example.com##div:upward(2)"),
-            ("example.com##a:watch-attrs(href)", "example.com##a:watch-attr(href)"),
+            (
+                "example.com#?#div:-abp-has(span)",
+                "example.com##div:has(span)",
+            ),
+            (
+                "example.com#?#div:-abp-contains(x)",
+                "example.com##div:has-text(x)",
+            ),
+            (
+                "example.com#?#div:-abp-properties(x)",
+                "example.com##div:-abp-properties(x)",
+            ),
+            (
+                "example.com##div:contains(x)",
+                "example.com##div:has-text(x)",
+            ),
+            (
+                "example.com##div:nth-ancestor(2)",
+                "example.com##div:upward(2)",
+            ),
+            (
+                "example.com##a:watch-attrs(href)",
+                "example.com##a:watch-attr(href)",
+            ),
             ("example.com##.a:contains(b)", "example.com##.a:has-text(b)"),
-            ("example.com##.a:contains(b):nth-ancestor(1)", "example.com##.a:has-text(b):upward(1)"),
-            ("example.com##div:matches-css-after(content: x)", "example.com##div:matches-css-after(content: x)"),
+            (
+                "example.com##.a:contains(b):nth-ancestor(1)",
+                "example.com##.a:has-text(b):upward(1)",
+            ),
+            (
+                "example.com##div:matches-css-after(content: x)",
+                "example.com##div:matches-css-after(content: x)",
+            ),
         ]);
     }
 
@@ -364,11 +444,16 @@ mod tests {
             let normalized = adguard_to_ubo(line);
             let parsed = parse_line(&normalized, SourceRef::default());
             assert!(
-                matches!(parsed, ParsedLine::Rule(Rule::Cosmetic(_)) | ParsedLine::Rule(Rule::Scriptlet(_))),
+                matches!(
+                    parsed,
+                    ParsedLine::Rule(Rule::Cosmetic(_)) | ParsedLine::Rule(Rule::Scriptlet(_))
+                ),
                 "{line} -> {normalized} -> {parsed:?}"
             );
         }
-        let ParsedLine::Rule(Rule::Cosmetic(c)) = parse_line("example.com##div:has-text(x)", SourceRef::default()) else {
+        let ParsedLine::Rule(Rule::Cosmetic(c)) =
+            parse_line("example.com##div:has-text(x)", SourceRef::default())
+        else {
             panic!("not a cosmetic rule");
         };
         assert!(matches!(c.body, CosmeticBody::Procedural(_)));

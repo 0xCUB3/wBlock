@@ -35,9 +35,13 @@ pub enum ParsedLine {
     Rule(Rule),
     /// Valid syntax that cannot be enforced in Safari (HTML filtering `##^`,
     /// `$replace`, raw `#%#` JavaScript, ...). Counted, never compiled.
-    Unsupported { reason: String },
+    Unsupported {
+        reason: String,
+    },
     /// Malformed line.
-    Invalid { reason: String },
+    Invalid {
+        reason: String,
+    },
 }
 
 // ---------------------------------------------------------------------------
@@ -167,7 +171,10 @@ pub enum NetworkAction {
     Block,
     /// `$redirect=` (or `$empty`/`$mp4` aliases). `rule_only` for
     /// `$redirect-rule`. Resource name normalized to uBO's canonical name.
-    Redirect { resource: String, rule_only: bool },
+    Redirect {
+        resource: String,
+        rule_only: bool,
+    },
     /// `$removeparam`, `None` = remove all parameters.
     RemoveParam(Option<String>),
     /// `$csp`, `None` only on exceptions (except all CSP rules).
@@ -175,7 +182,10 @@ pub enum NetworkAction {
     Permissions(Option<String>),
     /// `$urlskip=`, `$uritransform=`, `$replace=`, `$header=`/`$responseheader=`,
     /// `$requestheader=`. Kept verbatim; not enforceable natively.
-    Other { option: String, value: Option<String> },
+    Other {
+        option: String,
+        value: Option<String>,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]

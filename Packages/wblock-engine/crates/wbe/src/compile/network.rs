@@ -40,6 +40,7 @@ pub(super) fn compile(
         .map(unlabeled)
         .collect();
     let bad_bodies: HashSet<&str> = bad.iter().map(|b| b.pattern.body.as_str()).collect();
+    let strict = StrictHosts::new(rules);
     let start = out.len();
     for rule in rules {
         if rule.badfilter {
@@ -51,7 +52,7 @@ pub(super) fn compile(
         {
             continue;
         }
-        if let Err(reason) = compile_rule(rule, opts.safari, out) {
+        if let Err(reason) = compile_rule(rule, opts.safari, &strict, out) {
             stats.drop(&reason);
         }
     }
@@ -69,7 +70,12 @@ fn unlabeled(r: &NetworkRule) -> NetworkRule {
     r
 }
 
-fn compile_rule(r: &NetworkRule, v: SafariVersion, out: &mut Vec<Tiered>) -> Result<(), String> {
+fn compile_rule(
+    r: &NetworkRule,
+    v: SafariVersion,
+    strict: &StrictHosts,
+    out: &mut Vec<Tiered>,
+) -> Result<(), String> {
     match &r.action {
         NetworkAction::Block
         | NetworkAction::Redirect {
@@ -106,7 +112,19 @@ fn compile_rule(r: &NetworkRule, v: SafariVersion, out: &mut Vec<Tiered>) -> Res
     let urls = urls(r, exception)?;
     let conds = domain_conds(&r.from, v, exception)?;
     let types = effective_types(r);
-    let type_triggers = type_triggers(types, v);
+    // uBO also strict-blocks top-level navigation for an untyped filter whose
+    // match ends at the hostname (traffic.js, `shouldStrictBlock`), so such a
+    // block is one trigger over every type, documents included. An exception
+    // takes that form only where it must lift such a block: on a page load,
+    // ignore-previous-rules also cancels the page's cosmetic hides.
+    let untyped = r.types.is_empty()
+        && r.negated_types.is_empty()
+        && host_only(&r.pattern).is_some_and(|h| !exception || strict.related(&h));
+    let type_triggers = if untyped {
+        vec![(Vec::new(), None)]
+    } else {
+        type_triggers(types, v)
+    };
     if type_triggers.is_empty() {
         // An exception without a type WebKit can match cancels nothing.
         return if exception {
@@ -128,7 +146,7 @@ fn compile_rule(r: &NetworkRule, v: SafariVersion, out: &mut Vec<Tiered>) -> Res
                 let mut trigger = WkTrigger {
                     url_filter: url.clone(),
                     url_filter_is_case_sensitive: r.match_case.then_some(true),
-                    resource_type: Some(types.clone()),
+                    resource_type: (!types.is_empty()).then(|| types.clone()),
                     load_type: party.map(|p| vec![p]),
                     load_context: context.map(|c| vec![c]),
                     ..Default::default()
@@ -202,6 +220,40 @@ fn page_cond(p: &Pattern, v: SafariVersion) -> Option<Cond> {
         return None;
     }
     Some(Cond::IfTopUrl(vec![url_filter(p)?]))
+}
+
+/// Hosts of untyped `||host^` blocks and all their parents, so an exception
+/// can tell whether it lifts one.
+struct StrictHosts {
+    hosts: FxHashSet<String>,
+    parents: FxHashSet<String>,
+}
+
+impl StrictHosts {
+    fn new(rules: &[NetworkRule]) -> Self {
+        let mut hosts = FxHashSet::default();
+        let mut parents = FxHashSet::default();
+        for r in rules {
+            if r.exception || !r.types.is_empty() || !r.negated_types.is_empty() {
+                continue;
+            }
+            if let Some(h) = host_only(&r.pattern) {
+                for (i, _) in h.match_indices('.') {
+                    parents.insert(h[i + 1..].to_string());
+                }
+                hosts.insert(h);
+            }
+        }
+        Self { hosts, parents }
+    }
+
+    /// A block on `host`, a parent of it, or a subdomain of it.
+    fn related(&self, host: &str) -> bool {
+        self.parents.contains(host)
+            || std::iter::once(host)
+                .chain(host.match_indices('.').map(|(i, _)| &host[i + 1..]))
+                .any(|h| self.hosts.contains(h))
+    }
 }
 
 /// The lowercase hostname of a `||host^` pattern with nothing after the host.
@@ -581,20 +633,47 @@ mod tests {
     }
 
     #[test]
-    fn plain_host_block_default_types() {
+    fn plain_host_block_is_one_untyped_rule() {
+        // uBO strict-blocks navigation to the host too, so documents are in.
         check(
             &[net("||ads.example.com^")],
             V15,
-            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?ads\\.example\\.com[^a-zA-Z0-9_.%-]","resource-type":["image","style-sheet","script","font","media","ping","fetch","websocket","other"]},"action":{"type":"block"}},{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?ads\\.example\\.com[^a-zA-Z0-9_.%-]","resource-type":["document"],"load-context":["child-frame"]},"action":{"type":"block"}}]"#,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?ads\\.example\\.com[^a-zA-Z0-9_.%-]"},"action":{"type":"block"}}]"#,
+        );
+    }
+
+    #[test]
+    fn host_exception_is_untyped_only_next_to_a_host_block() {
+        let lone = check(
+            &[exc("@@||cdn.x.com^")],
+            V15,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?cdn\\.x\\.com[^a-zA-Z0-9_.%-]","resource-type":["image","style-sheet","script","font","media","ping","fetch","websocket","other"]},"action":{"type":"ignore-previous-rules"}},{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?cdn\\.x\\.com[^a-zA-Z0-9_.%-]","resource-type":["document"],"load-context":["child-frame"]},"action":{"type":"ignore-previous-rules"}}]"#,
+        );
+        assert_eq!(lone.len(), 2);
+        for block in ["||x.com^", "||cdn.x.com^", "||a.cdn.x.com^"] {
+            let (out, _) = run(&[net(block), exc("@@||cdn.x.com^")], V15);
+            assert!(
+                out.iter().all(|t| t.rule.trigger.resource_type.is_none()),
+                "{block}"
+            );
+        }
+    }
+
+    #[test]
+    fn path_block_default_types() {
+        check(
+            &[net("||ads.example.com/x")],
+            V15,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?ads\\.example\\.com/x","resource-type":["image","style-sheet","script","font","media","ping","fetch","websocket","other"]},"action":{"type":"block"}},{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?ads\\.example\\.com/x","resource-type":["document"],"load-context":["child-frame"]},"action":{"type":"block"}}]"#,
         );
     }
 
     #[test]
     fn default_types_on_safari_14_use_raw_and_no_documents() {
         check(
-            &[net("||ads.com^")],
+            &[net("||ads.com/x")],
             V14,
-            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?ads\\.com[^a-zA-Z0-9_.%-]","resource-type":["image","style-sheet","script","font","raw","media","ping"]},"action":{"type":"block"}}]"#,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?ads\\.com/x","resource-type":["image","style-sheet","script","font","raw","media","ping"]},"action":{"type":"block"}}]"#,
         );
     }
 
@@ -757,7 +836,7 @@ mod tests {
     fn third_party_and_first_party_load_type() {
         let third = NetworkRule {
             party: Party::Third,
-            ..net("||t.com^")
+            ..net("||t.com/x")
         };
         let first = NetworkRule {
             party: Party::First,
@@ -767,7 +846,7 @@ mod tests {
         check(
             &[third, first],
             V15,
-            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[^a-zA-Z0-9_.%-]","resource-type":["image","style-sheet","script","font","media","ping","fetch","websocket","other"],"load-type":["third-party"]},"action":{"type":"block"}},{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[^a-zA-Z0-9_.%-]","resource-type":["document"],"load-type":["third-party"],"load-context":["child-frame"]},"action":{"type":"block"}},{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[^a-zA-Z0-9_.%-]","resource-type":["script"],"load-type":["first-party"]},"action":{"type":"block"}}]"#,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com/x","resource-type":["image","style-sheet","script","font","media","ping","fetch","websocket","other"],"load-type":["third-party"]},"action":{"type":"block"}},{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com/x","resource-type":["document"],"load-type":["third-party"],"load-context":["child-frame"]},"action":{"type":"block"}},{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[^a-zA-Z0-9_.%-]","resource-type":["script"],"load-type":["first-party"]},"action":{"type":"block"}}]"#,
         );
     }
 
@@ -838,9 +917,9 @@ mod tests {
     #[test]
     fn exception_with_no_types_uses_default_set() {
         let out = check(
-            &[exc("@@||x.com^")],
+            &[exc("@@||x.com/x")],
             V15,
-            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[^a-zA-Z0-9_.%-]","resource-type":["image","style-sheet","script","font","media","ping","fetch","websocket","other"]},"action":{"type":"ignore-previous-rules"}},{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[^a-zA-Z0-9_.%-]","resource-type":["document"],"load-context":["child-frame"]},"action":{"type":"ignore-previous-rules"}}]"#,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com/x","resource-type":["image","style-sheet","script","font","media","ping","fetch","websocket","other"]},"action":{"type":"ignore-previous-rules"}},{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com/x","resource-type":["document"],"load-context":["child-frame"]},"action":{"type":"ignore-previous-rules"}}]"#,
         );
         assert_eq!(tiers(&out), [Tier::Exception, Tier::Exception]);
     }
@@ -1453,10 +1532,10 @@ mod tests {
     #[test]
     fn tiers_follow_block_important_and_exception_order() {
         let rules = [
-            net("||x.com^"),
+            net("||x.com/a"),
             NetworkRule {
                 important: true,
-                ..net("||y.com^")
+                ..net("||y.com/a")
             },
             exc("@@||x.com/ok^"),
         ];

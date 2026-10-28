@@ -363,9 +363,11 @@ function buildIndex(entries: { rule: number, literals: string[] }[]): Map<string
     return buckets;
 }
 
-export function compileRuleList(rules: unknown): CompiledRuleList {
+// `maxRules` is Safari's per-blocker cap; diff.ts lifts it to judge a whole list set
+// as one ordered list, which wBlock spreads over several blockers.
+export function compileRuleList(rules: unknown, { maxRules = MAX_RULES } = {}): CompiledRuleList {
     if (!Array.isArray(rules)) { throw new WebKitRuleError('top level must be an array'); }
-    if (rules.length > MAX_RULES) { throw new WebKitRuleError(`more than ${MAX_RULES} rules`); }
+    if (rules.length > maxRules) { throw new WebKitRuleError(`more than ${maxRules} rules`); }
     if (rules.length === 0) { throw new WebKitRuleError('rule list contains no rules'); }
     const list: CompiledRule[] = [];
     const entries: Record<GateKind, { rule: number, literals: string[] }[]> = { url: [], top: [], frame: [] };

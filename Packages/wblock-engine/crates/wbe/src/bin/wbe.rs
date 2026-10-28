@@ -1,5 +1,6 @@
-//! `wbe compile [--safari 18.0] [--trusted] [--runtime-out FILE] LIST...`
-//! writes Safari JSON to stdout and stats JSON to stderr.
+//! `wbe compile [--safari 18.0] [--runtime-out FILE] [--trusted] LIST...`
+//! writes Safari JSON to stdout and stats JSON to stderr. `--trusted` marks
+//! the list after it as trusted (may use `trusted-*` scriptlets).
 //! `wbe engine-build --resources R --out FILE RUNTIME.txt` serializes a
 //! runtime engine. `wbe lookup [--resources R] [--bench N] ENGINE URL...`
 //! prints PagePayload JSON per URL; with `--bench` it prints p50/p99 JSON for
@@ -20,7 +21,9 @@ fn main() {
         Some("engine-build") => engine_build_cmd(&args[1..]),
         Some("lookup") => lookup_cmd(&args[1..]),
         _ => {
-            eprintln!("usage: wbe compile [--safari 18.0] [--trusted] [--runtime-out FILE] LIST...");
+            eprintln!(
+                "usage: wbe compile [--safari 18.0] [--runtime-out FILE] [--trusted] LIST..."
+            );
             eprintln!("       wbe engine-build --resources R --out FILE RUNTIME.txt");
             eprintln!("       wbe lookup [--resources R] [--bench N] ENGINE URL|URLFILE...");
             std::process::exit(2);
@@ -148,6 +151,7 @@ fn compile_cmd(args: &[String]) {
     let mut trusted = false;
     let mut runtime_out = None;
     let mut paths = Vec::new();
+    let mut trust = Vec::new();
     let mut it = args.iter();
     while let Some(arg) = it.next() {
         match arg.as_str() {
@@ -157,15 +161,24 @@ fn compile_cmd(args: &[String]) {
                 safari = SafariVersion::new(major.parse().unwrap(), minor.parse().unwrap());
             }
             "--trusted" => trusted = true,
-            "--runtime-out" => runtime_out = Some(it.next().expect("--runtime-out needs a path").clone()),
-            _ => paths.push(arg.clone()),
+            "--runtime-out" => {
+                runtime_out = Some(it.next().expect("--runtime-out needs a path").clone())
+            }
+            _ => {
+                paths.push(arg.clone());
+                trust.push(std::mem::take(&mut trusted));
+            }
         }
     }
     let texts: Vec<String> = paths
         .iter()
         .map(|p| std::fs::read_to_string(p).unwrap_or_else(|e| panic!("{p}: {e}")))
         .collect();
-    let inputs: Vec<ListInput> = texts.iter().map(|text| ListInput { text, trusted }).collect();
+    let inputs: Vec<ListInput> = texts
+        .iter()
+        .zip(trust)
+        .map(|(text, trusted)| ListInput { text, trusted })
+        .collect();
 
     let start = Instant::now();
     let out = compile(&inputs, &CompileOptions { safari });

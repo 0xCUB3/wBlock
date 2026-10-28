@@ -25,7 +25,10 @@ pub struct WkRule {
 pub struct WkTrigger {
     #[serde(rename = "url-filter")]
     pub url_filter: String,
-    #[serde(rename = "url-filter-is-case-sensitive", skip_serializing_if = "Option::is_none")]
+    #[serde(
+        rename = "url-filter-is-case-sensitive",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub url_filter_is_case_sensitive: Option<bool>,
     #[serde(rename = "resource-type", skip_serializing_if = "Option::is_none")]
     pub resource_type: Option<Vec<WkResourceType>>,

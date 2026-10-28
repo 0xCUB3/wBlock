@@ -102,7 +102,7 @@ function ruleKey(rule: any): string {
 }
 
 function judge(engineName: string, rules: unknown[], lists: string[], corpus: CorpusRequest[], verdicts: { verdict: Verdict, filter?: string }[]): Report {
-    const compiled = compileRuleList(rules);
+    const compiled = compileRuleList(rules, { maxRules: Infinity });
     const overGroups = new Map<string, Group>();
     const underGroups = new Map<string, Group>();
     const byOrigin: Report['byOrigin'] = {};

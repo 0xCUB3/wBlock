@@ -31,6 +31,7 @@ const SCL_DIR = process.env.SCL_PATH ?? '/tmp/research/bench/scl';
 const ADGUARD_BIN = process.env.ADGUARD_CONVERTER ?? path.join(SCL_DIR, '.build/release/ConverterTool');
 const WK_BIN = process.env.WK_BIN ?? '/tmp/research/bench/wk';
 const WBE_BIN = process.env.WBE_BIN ?? path.join(REPO_DIR, 'target/release/wbe');
+const RESOURCES_FILE = path.join(REPO_DIR, 'resources/resources.json');
 const SAFARI_RULE_LIMIT = 150_000;
 
 const ALL_ENGINES = ['adguard', 'wbe'];
@@ -258,10 +259,14 @@ async function runAdguard(set: PreparedSet, version: string, timed: boolean) {
   };
 }
 
+// uBO trusts its own lists (uAssets) with `trusted-*` scriptlets; wBlock does the same.
+function wbeListArgs(set: PreparedSet): string[] {
+  return set.lists.flatMap((l) => (new URL(l.url).hostname === 'ublockorigin.github.io' ? ['--trusted', l.file] : [l.file]));
+}
+
 // wbe: Safari JSON on stdout, stats JSON as the last stderr line.
 async function runWbe(set: PreparedSet, version: string, runtimeFile: string, timed: boolean) {
-  const files = set.lists.map((l) => l.file);
-  const ex = await exec(WBE_BIN, ['compile', '--safari', version, '--runtime-out', runtimeFile, ...files], { timed });
+  const ex = await exec(WBE_BIN, ['compile', '--safari', version, '--runtime-out', runtimeFile, ...wbeListArgs(set)], { timed });
   if (ex.code !== 0) throw new Error(errorLine(ex.stderr, ex.code, ex.signal));
   const rulesJson = ex.stdout.toString('utf8');
   const rules = JSON.parse(rulesJson) as unknown[];
@@ -352,23 +357,19 @@ async function runLookupAdguard(advancedFile: string, workDir: string, version: 
   };
 }
 
-// wbe lookup benchmark. The subcommands are added by another agent; a missing subcommand is
-// reported as unavailable rather than a failure.
-async function runLookupWbe(set: PreparedSet, version: string, workDir: string, iterations: number): Promise<Lookup> {
+// wbe lookup benchmark: builds the per-page engine from the runtime rules the compile run wrote,
+// then times `iterations` passes over the URL list.
+async function runLookupWbe(runtimeFile: string, workDir: string, iterations: number): Promise<Lookup> {
   await mkdir(workDir, { recursive: true });
   const engineFile = path.join(workDir, 'engine.bin');
-  const files = set.lists.map((l) => l.file);
-  const build = await exec(WBE_BIN, ['engine-build', '--safari', version, '--out', engineFile, ...files], { timed: false });
-  if (build.code !== 0) throw Object.assign(new Error(errorLine(build.stderr, build.code, build.signal)), { unavailable: build.code === 2 });
-  const look = await exec(WBE_BIN, ['lookup', '--bench', String(iterations), engineFile, URLS_FILE]);
-  if (look.code !== 0) throw Object.assign(new Error(errorLine(look.stderr, look.code, look.signal)), { unavailable: look.code === 2 });
-  const text = look.stdout.toString('utf8').trim();
-  try {
-    const j = JSON.parse(text.split('\n').pop() ?? '') as Record<string, number>;
-    return { engineBuildMs: build.wallMs, p50Us: j.p50Us, p99Us: j.p99Us, meanUs: j.meanUs, loadMs: j.loadMs, wallMs: look.wallMs, raw: text.slice(0, 500) };
-  } catch {
-    return { engineBuildMs: build.wallMs, wallMs: look.wallMs, raw: text.slice(0, 500) };
-  }
+  const build = await exec(WBE_BIN, ['engine-build', '--resources', RESOURCES_FILE, '--out', engineFile, runtimeFile], { timed: false });
+  if (build.code !== 0) throw new Error(errorLine(build.stderr, build.code, build.signal));
+  const urls = (await readFile(URLS_FILE, 'utf8')).split('\n').filter((l) => l.trim()).length;
+  const look = await exec(WBE_BIN, ['lookup', '--resources', RESOURCES_FILE, '--bench', String(iterations * urls), engineFile, URLS_FILE]);
+  if (look.code !== 0) throw new Error(errorLine(look.stderr, look.code, look.signal));
+  const j = JSON.parse(look.stdout.toString('utf8').trim().split('\n').pop() ?? '') as Record<string, number>;
+  const built = JSON.parse(build.stderr.split('\n').filter((l) => l.startsWith('{')).pop() ?? '{}') as Record<string, number>;
+  return { engineBuildMs: built.build_ms, loadMs: j.load_ms, p50Us: j.p50_us, p99Us: j.p99_us, meanUs: j.mean_us, wallMs: look.wallMs };
 }
 
 function toMB(bytes: number): number {
@@ -489,7 +490,7 @@ async function main() {
       try {
         run.lookup = run.engine === 'adguard'
           ? await runLookupAdguard(path.join(root, `adguard-${run.set}-${run.safari}`, 'advanced.txt'), workDir, run.safari, opts.lookupIterations)
-          : await runLookupWbe(prepared[run.set], run.safari, workDir, opts.lookupIterations);
+          : await runLookupWbe(path.join(root, `wbe-${run.set}-${run.safari}`, 'runtime.txt'), workDir, opts.lookupIterations);
         run.lookupStatus = 'ok';
       } catch (error) {
         const e = error as Error & { unavailable?: boolean };

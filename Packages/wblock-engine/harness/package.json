@@ -7,9 +7,11 @@
     "oracle": "node --test test/oracle.test.ts",
     "sim": "node --test test/sim.test.ts",
     "diff": "node diff.ts",
-    "test": "node --test test/*.test.ts"
+    "test": "node --test test/*.test.ts",
+    "proofs": "node proofs/precedence.ts"
   },
   "dependencies": {
+    "gdp-wired": "^0.30.0",
     "tldts": "^7.4.19"
   }
 }

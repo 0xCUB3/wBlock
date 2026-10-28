@@ -82,7 +82,10 @@ pub fn compile(inputs: &[ListInput], opts: &CompileOptions) -> CompileOutput {
         for (i, line) in input.text.lines().enumerate() {
             stats.lines += 1;
             let normalized = crate::normalize::adguard_to_ubo(line);
-            let source = SourceRef { list: list as u32, line: i as u32 + 1 };
+            let source = SourceRef {
+                list: list as u32,
+                line: i as u32 + 1,
+            };
             match crate::parse_line(&normalized, source) {
                 ParsedLine::Ignored => {}
                 ParsedLine::Unsupported { reason } | ParsedLine::Invalid { reason } => {
@@ -118,5 +121,9 @@ pub fn compile(inputs: &[ListInput], opts: &CompileOptions) -> CompileOutput {
     tiered.sort_by_key(|t| t.tier);
     let webkit: Vec<WkRule> = tiered.into_iter().map(|t| t.rule).collect();
     stats.native_rules = webkit.len() as u64;
-    CompileOutput { webkit, runtime, stats }
+    CompileOutput {
+        webkit,
+        runtime,
+        stats,
+    }
 }
