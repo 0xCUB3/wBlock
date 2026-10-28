@@ -23,6 +23,7 @@
         {
             "js": [
                 "zapper-content.js",
+                "procedural.js",
                 "content.js"
             ],
             "matches": [

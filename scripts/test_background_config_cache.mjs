@@ -33,10 +33,9 @@ const check = (name, condition) => {
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-const makeConfig = (css, engineTimestamp, js = [], scriptlets = [], state = {}) => ({
+const makeConfig = (css, engineTimestamp, procedural = [], scriptlets = "", state = {}) => ({
   css,
-  extendedCss: [],
-  js,
+  procedural,
   scriptlets,
   engineTimestamp,
   ...state
@@ -484,7 +483,7 @@ const runScriptInjectionScenario = async executeScript => {
   const pageUrl = "https://injection.example/";
   const state = loadBackground({
     storage: {},
-    nativeHandler: () => ({ payload: makeConfig([], 9, ["test script"]) }),
+    nativeHandler: () => ({ payload: makeConfig([], 9, [], "window.__wblockProbe = 1;") }),
     executeScript
   });
   const errors = [];
@@ -535,23 +534,18 @@ const runScriptInjectionScenario = async executeScript => {
   );
 }
 
-// Scenario I: blank-frame fallback receives background-compiled scriptlet source,
-// while normal HTTP frames retain MAIN-world function injection.
+// Scenario I: blank frames receive the payload back so the content script can
+// apply it; normal HTTP frames are applied by the background page.
 {
   const pageUrl = "https://example.com/";
-  const scriptlet = { name: "set-constant", args: ["__wblockBlankProbe", "1"] };
-  const fallbackScriptlets = [
-    { name: "missing-scriptlet", args: [] },
-    scriptlet,
-    { name: "another-missing-scriptlet", args: [] }
-  ];
+  const scriptlets = "(function () { window.__wblockBlankProbe = 1; })();";
   const state = loadBackground({
     nativeHandler: message => {
       if (message && message.action === "getBlockingState") {
         return { disabled: false, paused: false };
       }
       if (message && message.payload && message.payload.url === pageUrl) {
-        return { payload: makeConfig([], 17, [], fallbackScriptlets) };
+        return { payload: makeConfig(["#blank-probe"], 17, ['{"selector":[{"type":"css","arg":"div"}]}'], scriptlets) };
       }
       return { payload: makeConfig([], 17) };
     }
@@ -566,23 +560,21 @@ const runScriptInjectionScenario = async executeScript => {
       { type: "InitContentScript" },
       frameSender(frameUrl, pageUrl)
     );
-    const scriptlets = response && response.payload && response.payload.scriptlets;
-    const compiled = scriptlets && scriptlets[1];
-    check(`${frameUrl} routes through the content fallback`, !!(response && response.payload) && state.executed.length === 0);
-    check(`${frameUrl} carries precompiled scriptlet source`, compiled && compiled.code.includes("__wblockBlankProbe"));
-    check(`${frameUrl} preserves thrown/unknown ordering`, scriptlets && scriptlets[0].code === "" && scriptlets[2].code === "");
-    check(`${frameUrl} preserves blank-frame verbose=false metadata`, compiled
-      && compiled.code.includes('"engine":"safari-extension"')
-      && compiled.code.includes('"name":"set-constant"')
-      && compiled.code.includes('"verbose":false'));
+    const payload = response && response.payload;
+    check(`${frameUrl} routes through the content fallback`, !!payload && state.executed.length === 0 && state.cssInserted.length === 0);
+    check(`${frameUrl} carries the scriptlet source unchanged`, !!payload && payload.scriptlets === scriptlets);
+    check(`${frameUrl} carries selectors and procedural filters`, !!payload && payload.css[0] === "#blank-probe" && payload.procedural.length === 1);
   }
 
   const httpState = loadBackground({
-    nativeHandler: () => ({ payload: makeConfig([], 18, [], [scriptlet]) })
+    nativeHandler: () => ({ payload: makeConfig(["#http-probe"], 18, ['{"selector":[{"type":"css","arg":"div"}]}'], scriptlets) })
   });
-  await httpState.onMessage({ type: "InitContentScript" }, topFrameSender(pageUrl));
-  check("HTTP frame still uses MAIN-world scriptlet injection", httpState.executed.some(injection => injection.world === "MAIN" && typeof injection.func === "function"));
-  check("HTTP frame does not receive fallback payload", httpState.executed.every(injection => injection.world !== "ISOLATED" || injection.args === undefined || !injection.args.some(arg => arg && arg.code)));
+  const httpResponse = await httpState.onMessage({ type: "InitContentScript" }, topFrameSender(pageUrl));
+  check("HTTP frame does not receive fallback payload", !(httpResponse && httpResponse.payload));
+  check("HTTP frame hides selectors one rule each", httpState.cssInserted.some(injection => injection.css === "#http-probe { display: none !important; }"));
+  check("HTTP frame runs scriptlets in the MAIN world", httpState.executed.some(injection => injection.world === "MAIN" && typeof injection.func === "function" && injection.args[0] === scriptlets));
+  check("HTTP frame loads procedural.js into the ISOLATED world", httpState.executed.some(injection => injection.files && injection.files[0] === "procedural.js" && injection.world === undefined));
+  check("HTTP frame applies procedural filters after loading them", httpState.executed.some(injection => typeof injection.func === "function" && injection.args && injection.args[0][0] === '{"selector":[{"type":"css","arg":"div"}]}'));
 }
 
 // Scenario J: disabled/paused cache misses remain uncached, and the first
@@ -597,7 +589,7 @@ for (const [label, inertState, activeCSS] of [
     nativeHandler: message => {
       if (message && message.payload && message.payload.url === pageUrl) {
         const css = stateValue.disabled || stateValue.paused ? ["#must-not-run"] : [activeCSS];
-        return { payload: makeConfig(css, 23, [], [], stateValue) };
+        return { payload: makeConfig(css, 23, [], "", stateValue) };
       }
       return { payload: makeConfig([], 23) };
     }
@@ -658,7 +650,7 @@ for (const [label, inertState, activeCSS] of [
       }
       const url = message && message.payload ? message.payload.url : "";
       if (url === WARMUP_URL) return { payload: makeConfig([], 31) };
-      return { payload: makeConfig(["#cached-state"], 31, [], [], { disabled: false, paused: false }) };
+      return { payload: makeConfig(["#cached-state"], 31, [], "", { disabled: false, paused: false }) };
     }
   });
 
@@ -714,7 +706,7 @@ for (const [label, inertState, activeCSS] of [
       if (message && message.action === "getBlockingState") {
         return new Promise(resolve => setTimeout(() => resolve({ disabled: false, paused: false }), 1500));
       }
-      return { payload: makeConfig(["#slow-state"], 32, [], [], { disabled: false, paused: false }) };
+      return { payload: makeConfig(["#slow-state"], 32, [], "", { disabled: false, paused: false }) };
     }
   });
   await sleep(20);
@@ -1171,7 +1163,7 @@ for (const source of [canonicalSource, bundleSource]) {
     if (url === "https://race.example/slow") {
       return new Promise(resolve => { releaseSlow = () => resolve({ payload: makeConfig(["#race"], 40) }); });
     }
-    return { payload: makeConfig(["#race"], 40, [], [], { disabled: false, paused }) };
+    return { payload: makeConfig(["#race"], 40, [], "", { disabled: false, paused }) };
   } });
   await sleep(20);
   const popupSender = { origin: "null" };

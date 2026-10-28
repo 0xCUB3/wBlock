@@ -342,6 +342,7 @@
 				"Resources/no-autoplay-gate.js",
 				"Resources/no-autoplay.js",
 				Resources/pages,
+				Resources/procedural.js,
 				Resources/redirects,
 				Resources/rules/csp_strip_rules.json,
 				"Resources/userscript-injector.js",

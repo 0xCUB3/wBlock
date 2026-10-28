@@ -39,7 +39,7 @@ for (const file of ['extension-src/background.js', 'wBlock Scripts (iOS)/Resourc
         if (request.action === 'getRemoveParamDNRRules') return { ok: true, version: 'test', count: 0, rules: [] };
         if (request.action === 'getBlockingState') return { disabled: false, paused: false };
         return { payload: { css: [`/*${request.payload?.url}: ${'x'.repeat(16384)}*/ .ad`],
-          extendedCss: [], js: [], scriptlets: [], engineTimestamp: revision, disabled: false, paused: false } };
+          procedural: [], scriptlets: "", engineTimestamp: revision, disabled: false, paused: false } };
       }
     },
     storage: { local: {
