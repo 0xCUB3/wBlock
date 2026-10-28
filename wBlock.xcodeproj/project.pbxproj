@@ -512,6 +512,7 @@
 				Resources/assets,
 				Resources/pages,
 				Resources/redirects,
+				Resources/scriptlets,
 			);
 			path = "wBlock Scripts (iOS)";
 			sourceTree = "<group>";
