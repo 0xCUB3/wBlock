@@ -49,12 +49,6 @@ struct Main {
         if single == 0 { fail("single list must compile to rules") }
         if both != single { fail("an identical second list must not change the Safari rule count") }
 
-        // Direct unit check on the line filter.
-        let lines = ["! comment", "||a.example^", "!#if (adguard)", "||a.example^", "!#endif", "# host comment", "# host comment", "##.ad", " ##.ad "]
-        let kept = ContentBlockerService.deduplicatedRuleLines(lines)
-        let expected = ["! comment", "||a.example^", "!#if (adguard)", "!#endif", "# host comment", "# host comment", "##.ad"]
-        if kept != expected { fail("dedupe must keep comments and directives and drop repeated rules; got \(kept)") }
-
         var left = FilterList(name: "Left", url: URL(string: "https://example.com/left")!, category: .ads, isSelected: true)
         var right = FilterList(name: "Right", url: URL(string: "https://example.com/right")!, category: .privacy, isSelected: true)
         left.sourceRuleCount = 200

@@ -66,6 +66,10 @@ struct WbeUpgradeTests {
             targetRulesFilename: target.rulesFilename, groupIdentifier: groupIdentifier, containerURL: container
         ), "the new base is marked with this engine")
         check(!(result.advancedRulesText ?? "").contains("legacy"), "legacy advanced rules are not carried over")
+        // Trust markers between lists never become rules themselves.
+        let outputText = String(decoding: output, as: UTF8.self)
+        check(!outputText.contains("wbe-trust") && !outputText.contains(#""url-filter":"on""#) && !outputText.contains(#""url-filter":"off""#),
+              "trust markers stay out of the output")
         check((result.advancedRulesText ?? "").contains("+js(set-constant"), "scriptlets reach the runtime: \(result.advancedRulesText ?? "nil")")
         let accepted = await ContentBlockerRuleRepair.repaired(output)
         check(accepted == nil, "WebKit compiles the output as is")

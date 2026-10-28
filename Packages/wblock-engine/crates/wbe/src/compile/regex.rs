@@ -439,10 +439,18 @@ mod emitted_filter_tests {
 
     #[test]
     fn webkit_accepts_checks_structure() {
-        for ok in [".*", "^[^:]+://+([^:/]+\\.)?ads\\.com[^a-zA-Z0-9_.%-]", "a[\\]]b", "[-a]", "x?$"] {
+        for ok in [
+            ".*",
+            "^[^:]+://+([^:/]+\\.)?ads\\.com[^a-zA-Z0-9_.%-]",
+            "a[\\]]b",
+            "[-a]",
+            "x?$",
+        ] {
             assert!(webkit_accepts(ok), "{ok}");
         }
-        for bad in ["", "(a", "a)", "[ab", "[]", "*a", "a**", "a^", "$a", "a|b", "a{2}", "[b-a]", "é"] {
+        for bad in [
+            "", "(a", "a)", "[ab", "[]", "*a", "a**", "a^", "$a", "a|b", "a{2}", "[b-a]", "é",
+        ] {
             assert!(!webkit_accepts(bad), "{bad}");
         }
     }

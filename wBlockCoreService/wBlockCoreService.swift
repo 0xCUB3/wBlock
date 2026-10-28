@@ -360,28 +360,6 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
 m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,youtube-nocookie.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefined')
 """
 
-    /// Drops rule lines that repeat an earlier rule identity. Two lists
-    /// that share rules (a fork of a list, or overlapping upstreams) otherwise
-    /// send every shared rule to the converter twice, and each copy counts
-    /// against Safari's per-extension limit (#681). Comments, section headers
-    /// and `!#` preprocessor directives are kept, since their position matters.
-    public static func deduplicatedRuleLines(_ lines: [String]) -> [String] {
-        var seen = Set<String>(minimumCapacity: lines.count)
-        var result: [String] = []
-        result.reserveCapacity(lines.count)
-        for line in lines {
-            let trimmed = RuleText.trimmed(line)
-            guard FilterRuleAnalysis.isRuleLine(trimmed) else {
-                result.append(line)
-                continue
-            }
-            if seen.insert(FilterRuleAnalysis.ruleIdentity(trimmed)).inserted {
-                result.append(line)
-            }
-        }
-        return result
-    }
-
     private static func combinedRulesWithEmbeddedCompatibility(_ rawRules: String) -> String {
         let trimmedExtraRules = embeddedCompatibilityRules.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedExtraRules.isEmpty else { return rawRules }
@@ -1309,11 +1287,14 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         jsonRules: String,
         groupIdentifier: String,
         targetRulesFilename: String,
-        containerURL explicitContainerURL: URL? = nil
+        containerURL explicitContainerURL: URL? = nil,
+        knownRuleCount: Int? = nil
     ) throws -> ContentBlockerSaveResult {
         os_log(.info, "Saving pre-formatted JSON content blocker rules to %@", targetRulesFilename)
         let data = Data(jsonRules.utf8)
-        guard let ruleCount = ContentBlockerRuleArray.count(data) else {
+        // Callers that built the array pass its count; parsing a 20 MB array
+        // again just to count it was a large share of each compile.
+        guard let ruleCount = knownRuleCount ?? ContentBlockerRuleArray.count(data) else {
             throw CocoaError(.fileReadCorruptFile)
         }
 
@@ -1371,7 +1352,8 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             jsonRules: finalized.json,
             groupIdentifier: groupIdentifier,
             targetRulesFilename: targetRulesFilename,
-            containerURL: containerURL
+            containerURL: containerURL,
+            knownRuleCount: finalized.ruleCount
         )
         return (
             ruleCount: finalized.ruleCount,
@@ -1521,7 +1503,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         if cancellationRequested() {
             throw CancellationError()
         }
-        var safariRulesJSON = normalizedSafariRules(result.safariRulesJSON)
+        var safariRulesJSON = result.safariRulesJSON
         var safariRulesCount = result.safariRulesCount
         var discardedRulesCount = result.discardedSafariRules
         if let ignoreSegment, !ignoreSegment.rules.isEmpty {
@@ -1529,7 +1511,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             discardedRulesCount += segment.discardedSafariRules
             let sites = FilterListSiteExclusion.normalizedDomains(from: ignoreSegment.sites)
             let segmentJSON = injectIgnoreRulesForDisabledSites(
-                json: normalizedSafariRules(segment.safariRulesJSON), disabledSites: sites
+                json: segment.safariRulesJSON, disabledSites: sites
             )
             safariRulesJSON = concatenatedRuleArrays(segmentJSON, safariRulesJSON)
             safariRulesCount += segment.safariRulesCount + sites.count
@@ -1550,7 +1532,8 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             jsonRules: safariRulesJSON,
             groupIdentifier: groupIdentifier,
             targetRulesFilename: baseFilename,
-            containerURL: containerURL
+            containerURL: containerURL,
+            knownRuleCount: safariRulesCount
         )
         try saveBlockerListFile(contents: String(safariRulesCount), groupIdentifier: groupIdentifier, filename: baseCountFilename, containerURL: containerURL)
         try saveBlockerListFile(contents: result.advancedRulesText ?? "", groupIdentifier: groupIdentifier, filename: advancedFilename, containerURL: containerURL)
@@ -2264,81 +2247,6 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             .replacingOccurrences(of: "\"", with: "\\\"")
     }
 
-    /// One byte buffer passes through both rewrites; the JSON can be over 10 MB.
-    static func normalizedSafariRules(_ json: String) -> String {
-        var bytes = Array(json.utf8)
-        let lowercased = lowercaseTriggerDomains(&bytes)
-        guard let scoped = documentScopingDomainCosmetics(bytes) else {
-            return lowercased ? String(decoding: bytes, as: UTF8.self) : json
-        }
-        bytes = []
-        return String(decoding: scoped, as: UTF8.self)
-    }
-
-    /// SafariConverterLib keeps domains as written (`Karo.Studio##…`), but WebKit rejects the whole
-    /// list with "Domains must be lower case ASCII" (#898). Hostnames are case-insensitive.
-    /// Scans bytes because a regex over the full JSON cost as much as the rest of
-    /// the wrapper around conversion. Domains are punycoded ASCII.
-    private static func lowercaseTriggerDomains(_ bytes: inout [UInt8]) -> Bool {
-        let key = Array(#"-domain":["#.utf8)
-        var changed = false
-        var index = 0
-        while index + key.count <= bytes.count {
-            guard bytes[index] == key[0], bytes[index..<(index + key.count)].elementsEqual(key) else {
-                index += 1
-                continue
-            }
-            index += key.count
-            while index < bytes.count, bytes[index] != UInt8(ascii: "]") {
-                if (UInt8(ascii: "A")...UInt8(ascii: "Z")).contains(bytes[index]) {
-                    bytes[index] += 32
-                    changed = true
-                }
-                index += 1
-            }
-        }
-        return changed
-    }
-
-    /// WebKit runs every conditional rule with a matching url-filter (`.*` for cosmetics) on each
-    /// subresource load, then re-adds its selector to the document. A page-domain condition gives the
-    /// same answer for the document load, so hiding rules only need that load. The per-load work cost
-    /// ~10% of Speedometer on sites none of these rules match (#873). Frame-URL rules stay as they are:
-    /// on a document load WebKit checks them against the frame's previous URL.
-    /// Converter JSON is `{"trigger":{…},"action":{…}}`; these quoted keys cannot occur unescaped in strings.
-    private static func documentScopingDomainCosmetics(_ bytes: [UInt8]) -> [UInt8]? {
-        let triggerStart = Array(#"{"trigger":{"#.utf8)
-        let cosmeticAction = Array(#"},"action":{"type":"css-display-none""#.utf8)
-        let pageConditions = ["if-domain", "unless-domain", "if-top-url", "unless-top-url"].map { Array("\"\($0)\":".utf8) }
-        let resourceType = Array(#""resource-type":"#.utf8)
-        let documentOnly = Array(#","resource-type":["document"]"#.utf8)
-        var output: [UInt8] = []
-        output.reserveCapacity(bytes.count + bytes.count / 50)
-        var trigger = 0
-        var copied = 0
-        func matches(_ pattern: [UInt8], at index: Int) -> Bool {
-            index + pattern.count <= bytes.count && bytes[index..<(index + pattern.count)].elementsEqual(pattern)
-        }
-        func contains(_ pattern: [UInt8], in range: Range<Int>) -> Bool {
-            range.contains(where: { bytes[$0] == pattern[0] && $0 + pattern.count <= range.upperBound && matches(pattern, at: $0) })
-        }
-        for index in bytes.indices where bytes[index] == UInt8(ascii: "{") || bytes[index] == UInt8(ascii: "}") {
-            if matches(triggerStart, at: index) {
-                trigger = index
-            } else if matches(cosmeticAction, at: index) {
-                let triggerBody = trigger..<index
-                guard pageConditions.contains(where: { contains($0, in: triggerBody) }),
-                      !contains(resourceType, in: triggerBody) else { continue }
-                output += bytes[copied..<index]
-                output += documentOnly
-                copied = index
-            }
-        }
-        guard copied > 0 else { return nil }
-        output += bytes[copied...]
-        return output
-    }
-
     private static func disabledSiteIgnoreRuleJSON(for site: String) -> String {
         let trimmedSite = site.trimmingCharacters(in: .whitespacesAndNewlines)
         // if-domain has no TLD wildcard; a list's `name.*` exclusion (#1032)
@@ -2424,8 +2332,10 @@ extension ContentBlockerService {
     /// per-install secret, so a downloaded list cannot claim trust by
     /// containing this line.
     static func trustMarker(trusted: Bool) -> String {
-        "!#wbe-trust \(trustToken) \(trusted ? "on" : "off")"
+        trustMarkerPrefix + (trusted ? "on" : "off")
     }
+
+    private static let trustMarkerPrefix = "!#wbe-trust \(trustToken) "
 
     private static let trustToken: String = {
         let key = "wbeTrustToken"
@@ -2449,25 +2359,22 @@ extension ContentBlockerService {
             throw CancellationError()
         }
 
-        // Lines between trust markers form one list each, so trust follows the
-        // list a rule came from. Markers are `!#` lines, which dedup keeps.
-        var all: [String] = []
-        RuleText.forEachLine(rules) { all.append(String($0)) }
-        let on = trustMarker(trusted: true), off = trustMarker(trusted: false)
+        // Text between trust markers is one list each, so trust follows the
+        // list a rule came from. The engine dedupes its output itself.
+        let marker = trustMarkerPrefix
         var lists: [WBEngine.List] = []
-        var current: [String] = []
+        var rest = rules[...]
         var trusted = false
-        for line in deduplicatedRuleLines(all) {
-            guard line == on || line == off else {
-                current.append(line)
-                continue
-            }
-            if !current.isEmpty { lists.append(WBEngine.List(text: current.joined(separator: "\n"), trusted: trusted)) }
-            current = []
-            trusted = line == on
+        while !rest.isEmpty {
+            let next = rest.range(of: marker)
+            let text = next.map { rest[..<$0.lowerBound] } ?? rest
+            if text.contains(where: { !$0.isWhitespace }) { lists.append(WBEngine.List(text: String(text), trusted: trusted)) }
+            guard let next else { break }
+            // The rest of the marker line is "on" or "off"; none of it is a rule.
+            let lineEnd = rest[next.upperBound...].firstIndex(of: "\n") ?? rest.endIndex
+            trusted = rest[next.upperBound..<lineEnd] == "on"
+            rest = rest[lineEnd...]
         }
-        if !current.isEmpty { lists.append(WBEngine.List(text: current.joined(separator: "\n"), trusted: trusted)) }
-        all = []
         if cancellationRequested() {
             throw CancellationError()
         }

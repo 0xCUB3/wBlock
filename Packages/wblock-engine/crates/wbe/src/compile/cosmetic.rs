@@ -8,7 +8,7 @@
 
 use super::{CompileOptions, Stats, Tier, Tiered};
 use crate::ast::{CosmeticBody, CosmeticRule, DomainMatcher};
-use crate::webkit::{SafariVersion, WkAction, WkRule, WkTrigger};
+use crate::webkit::{SafariVersion, WkAction, WkResourceType, WkRule, WkTrigger};
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 
 /// Selectors per emitted rule. AdGuard's Compiler uses the same limit
@@ -172,11 +172,14 @@ impl Trigger {
             ..WkTrigger::default()
         };
         match self {
-            Trigger::Generic => {}
+            Trigger::Generic => return trigger,
             Trigger::Unless(d) => trigger.unless_domain = Some(d.clone()),
             Trigger::IfDomain(d) => trigger.if_domain = Some(d.clone()),
             Trigger::TopUrl(r) => trigger.if_top_url = Some(r.clone()),
         }
+        // A scoped hide only needs checking when a document loads, not on
+        // every subresource (wBlock #873).
+        trigger.resource_type = Some(vec![WkResourceType::Document]);
         trigger
     }
 }
@@ -775,7 +778,7 @@ mod tests {
     fn domain_hide_uses_if_domain_with_subdomains() {
         assert_eq!(
             json(&[hide(".ad").on("example.com")]),
-            r#"[{"trigger":{"url-filter":".*","if-domain":["*example.com"]},"action":{"type":"css-display-none","selector":".ad"}}]"#
+            r#"[{"trigger":{"url-filter":".*","resource-type":["document"],"if-domain":["*example.com"]},"action":{"type":"css-display-none","selector":".ad"}}]"#
         );
     }
 
@@ -783,7 +786,7 @@ mod tests {
     fn same_domain_set_shares_one_rule() {
         assert_eq!(
             json(&[hide(".b").on("example.com"), hide(".a").on("example.com")]),
-            r#"[{"trigger":{"url-filter":".*","if-domain":["*example.com"]},"action":{"type":"css-display-none","selector":".a, .b"}}]"#
+            r#"[{"trigger":{"url-filter":".*","resource-type":["document"],"if-domain":["*example.com"]},"action":{"type":"css-display-none","selector":".a, .b"}}]"#
         );
     }
 
@@ -792,8 +795,8 @@ mod tests {
         assert_eq!(
             json(&[hide(".a").on("example.com"), hide(".a").on("example.org")]),
             concat!(
-                r#"[{"trigger":{"url-filter":".*","if-domain":["*example.com"]},"action":{"type":"css-display-none","selector":".a"}},"#,
-                r#"{"trigger":{"url-filter":".*","if-domain":["*example.org"]},"action":{"type":"css-display-none","selector":".a"}}]"#
+                r#"[{"trigger":{"url-filter":".*","resource-type":["document"],"if-domain":["*example.com"]},"action":{"type":"css-display-none","selector":".a"}},"#,
+                r#"{"trigger":{"url-filter":".*","resource-type":["document"],"if-domain":["*example.org"]},"action":{"type":"css-display-none","selector":".a"}}]"#
             )
         );
     }
@@ -802,7 +805,7 @@ mod tests {
     fn multiple_include_domains_share_if_domain_list() {
         assert_eq!(
             json(&[hide(".a").on("example.org").on("example.com")]),
-            r#"[{"trigger":{"url-filter":".*","if-domain":["*example.com","*example.org"]},"action":{"type":"css-display-none","selector":".a"}}]"#
+            r#"[{"trigger":{"url-filter":".*","resource-type":["document"],"if-domain":["*example.com","*example.org"]},"action":{"type":"css-display-none","selector":".a"}}]"#
         );
     }
 
@@ -810,7 +813,7 @@ mod tests {
     fn exclude_only_hide_is_unless_domain_generic() {
         assert_eq!(
             json(&[hide(".a").off("example.com")]),
-            r#"[{"trigger":{"url-filter":".*","unless-domain":["*example.com"]},"action":{"type":"css-display-none","selector":".a"}}]"#
+            r#"[{"trigger":{"url-filter":".*","resource-type":["document"],"unless-domain":["*example.com"]},"action":{"type":"css-display-none","selector":".a"}}]"#
         );
     }
 
@@ -827,7 +830,7 @@ mod tests {
         assert_eq!(
             json(&[hide(".a").on("example.*")]),
             concat!(
-                r#"[{"trigger":{"url-filter":".*","if-top-url":["^[^:]+:\\/\\/([^\\/:]+\\.)?example\\.(com?\\.)?[^\\/:.]+([:\\/?#].*)?$"]},"#,
+                r#"[{"trigger":{"url-filter":".*","resource-type":["document"],"if-top-url":["^[^:]+:\\/\\/([^\\/:]+\\.)?example\\.(com?\\.)?[^\\/:.]+([:\\/?#].*)?$"]},"#,
                 r#""action":{"type":"css-display-none","selector":".a"}}]"#
             )
         );
@@ -958,7 +961,7 @@ mod tests {
     fn domain_exception_excludes_generic_hide_on_domain_and_subdomains() {
         assert_eq!(
             json(&[hide(".a"), exc(".a").on("example.com")]),
-            r#"[{"trigger":{"url-filter":".*","unless-domain":["*example.com"]},"action":{"type":"css-display-none","selector":".a"}}]"#
+            r#"[{"trigger":{"url-filter":".*","resource-type":["document"],"unless-domain":["*example.com"]},"action":{"type":"css-display-none","selector":".a"}}]"#
         );
     }
 
@@ -966,7 +969,7 @@ mod tests {
     fn domain_exception_merges_with_generic_exclude() {
         assert_eq!(
             json(&[hide(".a").off("x.org"), exc(".a").on("example.com")]),
-            r#"[{"trigger":{"url-filter":".*","unless-domain":["*example.com","*x.org"]},"action":{"type":"css-display-none","selector":".a"}}]"#
+            r#"[{"trigger":{"url-filter":".*","resource-type":["document"],"unless-domain":["*example.com","*x.org"]},"action":{"type":"css-display-none","selector":".a"}}]"#
         );
     }
 
@@ -1016,7 +1019,7 @@ mod tests {
             json(&[hide(".a"), exc(".a").on("sub.example.com"), hide(".b")]),
             concat!(
                 r#"[{"trigger":{"url-filter":".*"},"action":{"type":"css-display-none","selector":".b"}},"#,
-                r#"{"trigger":{"url-filter":".*","unless-domain":["*sub.example.com"]},"action":{"type":"css-display-none","selector":".a"}}]"#
+                r#"{"trigger":{"url-filter":".*","resource-type":["document"],"unless-domain":["*sub.example.com"]},"action":{"type":"css-display-none","selector":".a"}}]"#
             )
         );
     }
@@ -1064,7 +1067,7 @@ mod tests {
             ]),
             concat!(
                 r#"[{"trigger":{"url-filter":".*"},"action":{"type":"css-display-none","selector":".a"}},"#,
-                r#"{"trigger":{"url-filter":".*","if-domain":["*example.com"]},"action":{"type":"css-display-none","selector":".b"}}]"#
+                r#"{"trigger":{"url-filter":".*","resource-type":["document"],"if-domain":["*example.com"]},"action":{"type":"css-display-none","selector":".b"}}]"#
             )
         );
     }
@@ -1097,7 +1100,7 @@ mod tests {
         assert_eq!(
             json(&[hide(".a").path("/news")]),
             concat!(
-                r#"[{"trigger":{"url-filter":".*","if-top-url":["^[^:]+:\\/\\/[^\\/]+(:[^\\/#]*)?\\/[^#]*\\/news[^#]*","^[^:]+:\\/\\/[^\\/]+(:[^\\/#]*)?\\/news[^#]*"]},"#,
+                r#"[{"trigger":{"url-filter":".*","resource-type":["document"],"if-top-url":["^[^:]+:\\/\\/[^\\/]+(:[^\\/#]*)?\\/[^#]*\\/news[^#]*","^[^:]+:\\/\\/[^\\/]+(:[^\\/#]*)?\\/news[^#]*"]},"#,
                 r#""action":{"type":"css-display-none","selector":".a"}}]"#
             )
         );
@@ -1108,7 +1111,7 @@ mod tests {
         assert_eq!(
             json(&[hide(".a").on("example.com").path("news")]),
             concat!(
-                r#"[{"trigger":{"url-filter":".*","if-top-url":["^[^:]+:\\/\\/([^\\/:]+\\.)?example\\.com(:[^\\/#]*)?\\/[^#]*news[^#]*"]},"#,
+                r#"[{"trigger":{"url-filter":".*","resource-type":["document"],"if-top-url":["^[^:]+:\\/\\/([^\\/:]+\\.)?example\\.com(:[^\\/#]*)?\\/[^#]*news[^#]*"]},"#,
                 r#""action":{"type":"css-display-none","selector":".a"}}]"#
             )
         );
@@ -1187,8 +1190,8 @@ mod tests {
         assert_eq!(
             json(&[hide(".a").on("example.com").on("example.*")]),
             concat!(
-                r#"[{"trigger":{"url-filter":".*","if-domain":["*example.com"]},"action":{"type":"css-display-none","selector":".a"}},"#,
-                r#"{"trigger":{"url-filter":".*","if-top-url":["^[^:]+:\\/\\/([^\\/:]+\\.)?example\\.(com?\\.)?[^\\/:.]+([:\\/?#].*)?$"]},"action":{"type":"css-display-none","selector":".a"}}]"#
+                r#"[{"trigger":{"url-filter":".*","resource-type":["document"],"if-domain":["*example.com"]},"action":{"type":"css-display-none","selector":".a"}},"#,
+                r#"{"trigger":{"url-filter":".*","resource-type":["document"],"if-top-url":["^[^:]+:\\/\\/([^\\/:]+\\.)?example\\.(com?\\.)?[^\\/:.]+([:\\/?#].*)?$"]},"action":{"type":"css-display-none","selector":".a"}}]"#
             )
         );
     }
