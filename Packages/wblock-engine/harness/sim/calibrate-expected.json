@@ -1,0 +1,506 @@
+{
+  "hosts": {
+    "top": "app.localtest.me",
+    "first": "static.localtest.me",
+    "third": "ads.lvh.me"
+  },
+  "port": 8799,
+  "cases": [
+    {
+      "id": "k01",
+      "pageReached": true,
+      "reached": {
+        "a": false,
+        "b": true,
+        "c": true
+      },
+      "hidden": []
+    },
+    {
+      "id": "k02",
+      "pageReached": true,
+      "reached": {
+        "a": false,
+        "b": false
+      },
+      "hidden": []
+    },
+    {
+      "id": "k03",
+      "pageReached": true,
+      "reached": {
+        "a": true,
+        "b": false
+      },
+      "hidden": []
+    },
+    {
+      "id": "k04",
+      "pageReached": true,
+      "reached": {
+        "a": false,
+        "b": true
+      },
+      "hidden": []
+    },
+    {
+      "id": "k05",
+      "pageReached": true,
+      "reached": {
+        "a": true,
+        "b": true
+      },
+      "hidden": []
+    },
+    {
+      "id": "k06",
+      "pageReached": true,
+      "reached": {
+        "a": false,
+        "b": true
+      },
+      "hidden": []
+    },
+    {
+      "id": "k07",
+      "pageReached": true,
+      "reached": {
+        "a": false,
+        "b": false,
+        "c": true
+      },
+      "hidden": []
+    },
+    {
+      "id": "k08",
+      "pageReached": true,
+      "reached": {
+        "a": false,
+        "b": true
+      },
+      "hidden": []
+    },
+    {
+      "id": "k09",
+      "pageReached": true,
+      "reached": {
+        "a": false,
+        "b": true
+      },
+      "hidden": []
+    },
+    {
+      "id": "k10",
+      "rejected": "The operation couldn’t be completed. (WKErrorDomain error 6.)",
+      "pageReached": false,
+      "reached": {},
+      "hidden": []
+    },
+    {
+      "id": "k11",
+      "rejected": "The operation couldn’t be completed. (WKErrorDomain error 6.)",
+      "pageReached": false,
+      "reached": {},
+      "hidden": []
+    },
+    {
+      "id": "k12",
+      "rejected": "The operation couldn’t be completed. (WKErrorDomain error 6.)",
+      "pageReached": false,
+      "reached": {},
+      "hidden": []
+    },
+    {
+      "id": "k13",
+      "pageReached": true,
+      "reached": {
+        "a": false,
+        "b": true
+      },
+      "hidden": []
+    },
+    {
+      "id": "k14",
+      "pageReached": true,
+      "reached": {
+        "f": false,
+        "a": true
+      },
+      "hidden": []
+    },
+    {
+      "id": "k15",
+      "pageReached": true,
+      "reached": {
+        "a": false,
+        "b": false,
+        "c": true
+      },
+      "hidden": []
+    },
+    {
+      "id": "k16",
+      "pageReached": true,
+      "reached": {
+        "a": false,
+        "b": true
+      },
+      "hidden": []
+    },
+    {
+      "id": "k17",
+      "pageReached": true,
+      "reached": {
+        "a": false,
+        "b": true
+      },
+      "hidden": []
+    },
+    {
+      "id": "k18",
+      "pageReached": true,
+      "reached": {
+        "a": false,
+        "b": false,
+        "c": true
+      },
+      "hidden": []
+    },
+    {
+      "id": "k19",
+      "pageReached": true,
+      "reached": {
+        "a": true,
+        "b": true
+      },
+      "hidden": []
+    },
+    {
+      "id": "k51",
+      "pageReached": true,
+      "reached": {
+        "a": false,
+        "b": true
+      },
+      "hidden": []
+    },
+    {
+      "id": "k20",
+      "pageReached": true,
+      "reached": {
+        "a": false,
+        "b": false,
+        "c": true
+      },
+      "hidden": []
+    },
+    {
+      "id": "k21",
+      "pageReached": true,
+      "reached": {
+        "a": false,
+        "b": true,
+        "c": true
+      },
+      "hidden": []
+    },
+    {
+      "id": "k22",
+      "pageReached": true,
+      "reached": {
+        "a": true,
+        "b": false,
+        "c": false
+      },
+      "hidden": []
+    },
+    {
+      "id": "k23",
+      "pageReached": true,
+      "reached": {
+        "f": true,
+        "a": true,
+        "b": false
+      },
+      "hidden": []
+    },
+    {
+      "id": "k24",
+      "pageReached": true,
+      "reached": {
+        "f": true,
+        "a": false,
+        "b": true
+      },
+      "hidden": []
+    },
+    {
+      "id": "k25",
+      "pageReached": true,
+      "reached": {
+        "f": true
+      },
+      "hidden": []
+    },
+    {
+      "id": "k26",
+      "pageReached": true,
+      "reached": {
+        "f": false
+      },
+      "hidden": []
+    },
+    {
+      "id": "k27",
+      "pageReached": true,
+      "reached": {
+        "a": false,
+        "b": false
+      },
+      "hidden": []
+    },
+    {
+      "id": "k28",
+      "pageReached": true,
+      "reached": {
+        "a": true
+      },
+      "hidden": []
+    },
+    {
+      "id": "k29",
+      "pageReached": true,
+      "reached": {
+        "a": true
+      },
+      "hidden": []
+    },
+    {
+      "id": "k30",
+      "pageReached": true,
+      "reached": {
+        "a": false
+      },
+      "hidden": []
+    },
+    {
+      "id": "k31",
+      "pageReached": true,
+      "reached": {
+        "a": true
+      },
+      "hidden": []
+    },
+    {
+      "id": "k32",
+      "pageReached": true,
+      "reached": {
+        "a": false
+      },
+      "hidden": []
+    },
+    {
+      "id": "k33",
+      "pageReached": true,
+      "reached": {
+        "a": false
+      },
+      "hidden": []
+    },
+    {
+      "id": "k34",
+      "pageReached": true,
+      "reached": {
+        "a": true
+      },
+      "hidden": []
+    },
+    {
+      "id": "k35",
+      "pageReached": true,
+      "reached": {
+        "f": true,
+        "a": false,
+        "b": true
+      },
+      "hidden": []
+    },
+    {
+      "id": "k36",
+      "pageReached": true,
+      "reached": {
+        "f": true,
+        "a": true,
+        "b": false
+      },
+      "hidden": []
+    },
+    {
+      "id": "k37",
+      "pageReached": true,
+      "reached": {
+        "a": true,
+        "b": false
+      },
+      "hidden": []
+    },
+    {
+      "id": "k38",
+      "pageReached": true,
+      "reached": {
+        "a": true
+      },
+      "hidden": []
+    },
+    {
+      "id": "k39",
+      "pageReached": true,
+      "reached": {
+        "a": false
+      },
+      "hidden": []
+    },
+    {
+      "id": "k40",
+      "pageReached": true,
+      "reached": {},
+      "hidden": [
+        "A",
+        "B"
+      ]
+    },
+    {
+      "id": "k41",
+      "pageReached": true,
+      "reached": {},
+      "hidden": []
+    },
+    {
+      "id": "k42",
+      "pageReached": true,
+      "reached": {},
+      "hidden": []
+    },
+    {
+      "id": "k43",
+      "pageReached": true,
+      "reached": {
+        "zz43": false,
+        "b": true
+      },
+      "hidden": []
+    },
+    {
+      "id": "k44",
+      "pageReached": true,
+      "reached": {
+        "f": true,
+        "a": true,
+        "b": false
+      },
+      "hidden": []
+    },
+    {
+      "id": "k45",
+      "pageReached": false,
+      "reached": {},
+      "hidden": []
+    },
+    {
+      "id": "k46",
+      "rejected": "The operation couldn’t be completed. (WKErrorDomain error 6.)",
+      "pageReached": false,
+      "reached": {},
+      "hidden": []
+    },
+    {
+      "id": "k47",
+      "rejected": "The operation couldn’t be completed. (WKErrorDomain error 6.)",
+      "pageReached": false,
+      "reached": {},
+      "hidden": []
+    },
+    {
+      "id": "k48",
+      "rejected": "The operation couldn’t be completed. (WKErrorDomain error 6.)",
+      "pageReached": false,
+      "reached": {},
+      "hidden": []
+    },
+    {
+      "id": "k49",
+      "rejected": "The operation couldn’t be completed. (WKErrorDomain error 6.)",
+      "pageReached": false,
+      "reached": {},
+      "hidden": []
+    },
+    {
+      "id": "k50",
+      "pageReached": true,
+      "reached": {
+        "f": true,
+        "a": false,
+        "b": true
+      },
+      "hidden": []
+    },
+    {
+      "id": "k52",
+      "pageReached": true,
+      "reached": {
+        "f": true
+      },
+      "hidden": []
+    },
+    {
+      "id": "k53",
+      "pageReached": true,
+      "reached": {
+        "f": true
+      },
+      "hidden": []
+    },
+    {
+      "id": "k54",
+      "pageReached": true,
+      "reached": {
+        "f": false
+      },
+      "hidden": []
+    },
+    {
+      "id": "k55",
+      "pageReached": true,
+      "reached": {
+        "f": false,
+        "g": true
+      },
+      "hidden": []
+    },
+    {
+      "id": "k56",
+      "pageReached": true,
+      "reached": {
+        "f": false
+      },
+      "hidden": []
+    },
+    {
+      "id": "k57",
+      "pageReached": true,
+      "reached": {
+        "f": false
+      },
+      "hidden": []
+    },
+    {
+      "id": "k58",
+      "pageReached": true,
+      "reached": {
+        "f": true,
+        "a": false
+      },
+      "hidden": []
+    }
+  ]
+}
