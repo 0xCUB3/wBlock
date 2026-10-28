@@ -689,7 +689,7 @@ public actor SharedAutoUpdateManager {
     // MARK: - State Management Helpers
 
     // MARK: - Core Logic
-    /// App-group key where the app records "version|compatibility" after
+    /// App-group key where the app records "version|compatibility|compiler" after
     /// every successful apply (AppFilterManager.persistUpgradeRebuildSignature).
     public static let lastAppliedUpgradeSignatureKey = "wBlock.lastAppliedUpgradeSignature"
 

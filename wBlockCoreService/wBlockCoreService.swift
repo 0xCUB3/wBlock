@@ -116,6 +116,8 @@ private struct StoredTargetSourceRuleProvenance: Codable {
     // 8: defuse Urban Dictionary's AdShield fallback without triggering its sentinel redirect.
     // 9: remove the Valnet sites' anti-adblock dialog (#895).
     public static let embeddedCompatibilityRulesVersion = "9"
+    /// The engine and Safari level outputs are compiled for; see SafariVersionDetection.
+    public static var compilerIdentity: String { SafariVersionDetection.compilerIdentity }
     private static let contentBlockerOutputLockTimeout: TimeInterval = 10
 
     /// Built-in compatibility rules that improve blocking of common dynamic ad script

@@ -198,7 +198,8 @@ class AppFilterManager: ObservableObject {
 
     private func currentUpgradeSignature() -> String {
         let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
-        return "\(appVersion)|\(ContentBlockerService.embeddedCompatibilityRulesVersion)"
+        // A new engine or Safari level recompiles on launch like an app update.
+        return "\(appVersion)|\(ContentBlockerService.embeddedCompatibilityRulesVersion)|\(ContentBlockerService.compilerIdentity)"
     }
 
     private func storedUpgradeSignature() -> String? {
