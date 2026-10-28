@@ -69,8 +69,17 @@ class FilterListLoader {
         _ lists: [FilterList], hasContent: (FilterList) -> Bool
     ) -> (lists: [FilterList], removed: [FilterList]) {
         let byName = Dictionary(lists.filter { !$0.isCustom }.map { ($0.name, $0) }, uniquingKeysWith: { a, _ in a })
-        let ready = lists.filter(isReplacedAdGuardList).filter { list in
+        let pending = lists.filter(isReplacedAdGuardList)
+        var ready = pending.filter { list in
             !list.isSelected || (adGuardReplacements[list.name] ?? []).allSatisfy { byName[$0].map(hasContent) == true }
+        }
+        while true {
+            let readyIDs = Set(ready.map(\.id))
+            let blockedNames = Set(pending.filter { $0.isSelected && !readyIDs.contains($0.id) }
+                .flatMap { adGuardReplacements[$0.name] ?? [] })
+            let next = ready.filter { !$0.isSelected || blockedNames.isDisjoint(with: adGuardReplacements[$0.name] ?? []) }
+            if next.count == ready.count { break }
+            ready = next
         }
         guard !ready.isEmpty else { return (lists, []) }
         var predecessors: [String: [FilterList]] = [:]

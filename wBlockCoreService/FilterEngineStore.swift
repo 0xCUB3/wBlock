@@ -8,17 +8,17 @@ internal import WBEngine
 /// serialized by the app and read by the extension from the app group.
 enum FilterEngineStore {
     private static let directoryName = ".wbe"
-    private static let engineFileName = "engine.bin"
-    private static let metaFileName = "engine.json"
+    private static let engineFileName = "engine.snapshot"
     private static let lockFileName = "publish.lock"
     private static let latestRequestFileName = "latest.request"
     /// The engine AdGuard's FilterEngine kept here before wBlock 4.
     private static let legacyDirectoryName = ".webext"
     private static let lockTimeout: TimeInterval = 10
 
-    private struct Meta: Codable {
+    private struct Snapshot: Codable {
         let fingerprint: String
         let timestamp: Int64
+        let engine: Data
     }
 
     enum PublishError: Error {
@@ -52,8 +52,7 @@ enum FilterEngineStore {
         // the fingerprint as well as the rules.
         let fingerprint = SHA256.hash(data: Data((SafariVersionDetection.compilerIdentity + "\n" + runtimeRules).utf8))
             .map { String(format: "%02x", $0) }.joined()
-        if readMeta(in: directory)?.fingerprint == fingerprint,
-           FileManager.default.fileExists(atPath: directory.appendingPathComponent(engineFileName).path) {
+        if readSnapshot(in: directory)?.fingerprint == fingerprint {
             return
         }
         let engine = try measure(label: "Building filter engine") {
@@ -62,9 +61,11 @@ enum FilterEngineStore {
         let published = try withLock(in: directory) {
             let latest = try? String(contentsOf: directory.appendingPathComponent(latestRequestFileName), encoding: .utf8)
             guard latest == request else { return false }
-            try engine.write(to: directory.appendingPathComponent(engineFileName), options: .atomic)
-            let meta = Meta(fingerprint: fingerprint, timestamp: Int64(Date().timeIntervalSince1970 * 1000))
-            try JSONEncoder().encode(meta).write(to: directory.appendingPathComponent(metaFileName), options: .atomic)
+            let timestamp = max(Int64(Date().timeIntervalSince1970 * 1000), (readSnapshot(in: directory)?.timestamp ?? 0) + 1)
+            let snapshot = Snapshot(fingerprint: fingerprint, timestamp: timestamp, engine: engine)
+            let encoder = PropertyListEncoder()
+            encoder.outputFormat = .binary
+            try encoder.encode(snapshot).write(to: directory.appendingPathComponent(engineFileName), options: .atomic)
             return true
         }
         os_log(.info, published ? "Published filter engine: %d bytes" : "Abandoned filter engine (%d bytes) for a newer publish", engine.count)
@@ -76,8 +77,7 @@ enum FilterEngineStore {
             forSecurityApplicationGroupIdentifier: groupIdentifier
         ) else { return false }
         let directory = containerURL.appendingPathComponent(directoryName, isDirectory: true)
-        return readMeta(in: directory) != nil
-            && FileManager.default.fileExists(atPath: directory.appendingPathComponent(engineFileName).path)
+        return readSnapshot(in: directory) != nil
     }
 
     /// The per-page payload for `url` (see Packages/wblock-engine/docs/BRIEF.md),
@@ -88,12 +88,11 @@ enum FilterEngineStore {
                 forSecurityApplicationGroupIdentifier: groupIdentifier
             ) else { throw PublishError.containerNotFound }
             let directory = containerURL.appendingPathComponent(directoryName, isDirectory: true)
-            guard let meta = readMeta(in: directory) else { return nil }
-            if cached?.timestamp != meta.timestamp {
-                let data = try Data(contentsOf: directory.appendingPathComponent(engineFileName))
-                cached = (meta.timestamp, try WBEngine.Engine(data: data))
+            guard let snapshot = readSnapshot(in: directory) else { return nil }
+            if cached?.fingerprint != snapshot.fingerprint || cached?.timestamp != snapshot.timestamp {
+                cached = (snapshot.fingerprint, snapshot.timestamp, try WBEngine.Engine(data: snapshot.engine))
             }
-            guard let (timestamp, engine) = cached,
+            guard let (_, timestamp, engine) = cached,
                   var payload = try JSONSerialization.jsonObject(with: engine.lookup(url: url.absoluteString)) as? [String: Any]
             else { return nil }
             payload["css"] = payload.removeValue(forKey: "hide")
@@ -103,11 +102,11 @@ enum FilterEngineStore {
     }
 
     /// The engine the extension process last loaded. Guarded by WebExtensionGate.
-    nonisolated(unsafe) private static var cached: (timestamp: Int64, engine: WBEngine.Engine)?
+    nonisolated(unsafe) private static var cached: (fingerprint: String, timestamp: Int64, engine: WBEngine.Engine)?
 
-    private static func readMeta(in directory: URL) -> Meta? {
-        (try? Data(contentsOf: directory.appendingPathComponent(metaFileName)))
-            .flatMap { try? JSONDecoder().decode(Meta.self, from: $0) }
+    private static func readSnapshot(in directory: URL) -> Snapshot? {
+        (try? Data(contentsOf: directory.appendingPathComponent(engineFileName)))
+            .flatMap { try? PropertyListDecoder().decode(Snapshot.self, from: $0) }
     }
 
     private static func withLock<T>(in directory: URL, _ body: () throws -> T) throws -> T {

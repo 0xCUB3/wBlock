@@ -98,6 +98,13 @@ private final class TestLoader: FilterListLoader {
         precondition(offline.removed.map(\.name) == ["AdGuard Popups"], "offline: \(offline.removed.map(\.name))")
         precondition(offline.lists.contains { $0.name == "AdGuard Base Filter" && $0.isSelected }, "a list keeps protecting until it can hand over")
 
+        var urlTracking = adGuard("AdGuard URL Tracking Protection Filter", selected: true)
+        urlTracking.excludedSites = ["url.example"]
+        let overlap = defaults.map { list -> FilterList in var list = list; list.isSelected = false; return list } + [tracking, urlTracking]
+        let first = FilterListLoader.handingOverReplacedAdGuardLists(overlap, hasContent: { $0.name == "uBlock filters – Privacy" })
+        let second = FilterListLoader.handingOverReplacedAdGuardLists(first.lists, hasContent: { _ in true })
+        precondition(second.lists.first { $0.name == "uBlock filters – Privacy" }!.excludedSites == ["b.com", "url.example"], "overlapping handovers must combine settings regardless of download order")
+
         // Only Base's replacements arrived: Base hands over, Tracking waits.
         let baseReplacements = Set(FilterListLoader.adGuardReplacements["AdGuard Base Filter"]!)
         let partial = FilterListLoader.handingOverReplacedAdGuardLists(offline.lists, hasContent: { baseReplacements.contains($0.name) })

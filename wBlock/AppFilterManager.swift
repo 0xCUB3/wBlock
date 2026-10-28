@@ -844,9 +844,6 @@ class AppFilterManager: ObservableObject {
         guard !handover.removed.isEmpty else { return }
         filterLists = handover.lists
         refreshMissingItems()
-        for list in handover.removed {
-            await dataManager.removeFilterList(withId: list.id)
-        }
         await saveFilterLists()
         await ConcurrentLogManager.shared.info(
             .system, LocalizedStrings.text("Replaced AdGuard filter list(s) with uBlock Origin lists"),
