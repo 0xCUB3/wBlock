@@ -54,6 +54,23 @@ private final class TestLoader: FilterListLoader {
             loader.migrateBuiltInFilterFilesIfNeeded(current)
             precondition(fm.fileExists(atPath: newURL.path) && fm.fileExists(atPath: newBaseline.path))
         }
+        // wBlock 4: AdGuard lists hand their selection to the uBO lists.
+        let byName = Dictionary(defaults.map { ($0.name, $0) }, uniquingKeysWith: { a, _ in a })
+        for (adGuard, replacements) in FilterListLoader.adGuardReplacements {
+            // AdGuard's own lists can be platform-specific (Mobile Filter is iOS only).
+            precondition(Set(replacements).isSubset(of: Set(byName.keys)), "unknown list in \(adGuard) handover")
+        }
+        var stored = defaults.map { list -> FilterList in
+            var list = list
+            list.isSelected = ["AdGuard Base Filter", "AdGuard Tracking Protection Filter", "AdGuard Social Media Filter"].contains(list.name)
+            return list
+        }
+        stored = FilterListLoader.handingOverAdGuardSelections(stored)
+        let selected = Set(stored.filter(\.isSelected).map(\.name))
+        precondition(selected == ["AdGuard Social Media Filter", "uBlock filters – Ads", "uBlock filters – Badware risks",
+                                  "uBlock filters – Quick fixes", "uBlock filters – Unbreak", "EasyList",
+                                  "Online Malicious URL Blocklist", "uBlock filters – Privacy", "EasyPrivacy"], "handover: \(selected)")
+
         // A default name that matches no catalog entry would silently drop that list from the defaults.
         let catalogNames = Set(defaults.map(\.name))
         for names in [FilterListLoader.recommendedFilterNames, FilterListLoader.minimalFilterNames, FilterListLoader.essentialFilterNames] {

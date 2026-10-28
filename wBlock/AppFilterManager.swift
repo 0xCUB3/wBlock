@@ -711,6 +711,15 @@ class AppFilterManager: ObservableObject {
                 }
             }
         }
+        // wBlock 4 moved to uBlock Origin's lists; existing selections move once.
+        var handedOverSelections = false
+        let handoverKey = "adGuardListsHandedOverToUBO"
+        if !migratedFilterLists.isEmpty, !UserDefaults.standard.bool(forKey: handoverKey) {
+            let before = migratedFilterLists.map(\.isSelected)
+            migratedFilterLists = FilterListLoader.handingOverAdGuardSelections(migratedFilterLists)
+            handedOverSelections = migratedFilterLists.map(\.isSelected) != before
+            UserDefaults.standard.set(true, forKey: handoverKey)
+        }
         migratedFilterLists = FilterListSetup.hydrate(migratedFilterLists, defaults: defaultLists)
         migratedFilterLists = deduplicateFilterIDs(migratedFilterLists)
         validatorClearIDs = migratedFilterLists.compactMap { filter in
@@ -727,7 +736,7 @@ class AppFilterManager: ObservableObject {
             guard let originalURL = originalURLsByID[filter.id] else { return false }
             return originalURL != filter.url
         }
-        if hasURLMigrations || addedDefaultFilters || selectedDeprecatedListWasRemoved {
+        if hasURLMigrations || addedDefaultFilters || selectedDeprecatedListWasRemoved || handedOverSelections {
             Task { await self.saveFilterLists() }
         }
 
@@ -748,7 +757,7 @@ class AppFilterManager: ObservableObject {
         let storedSignature = storedUpgradeSignature()
         let signatureMismatch = storedSignature != currentSignature
         let needsRebuild = dataManager.hasCompletedOnboarding
-            && (hasURLMigrations || selectedDeprecatedListWasRemoved || signatureMismatch)
+            && (hasURLMigrations || selectedDeprecatedListWasRemoved || handedOverSelections || signatureMismatch)
         if needsRebuild {
             markNonSelectionChangesPending()
             if storedFailedUpgradeSignature() != currentSignature {

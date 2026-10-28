@@ -31,6 +31,42 @@ class FilterListLoader {
         "uBlock filters – Quick fixes", "uBlock filters – Unbreak", "wBlock Ad and Tracking Hosts",
     ])
 
+    /// wBlock 4 moved from AdGuard's lists to uBlock Origin's. Each AdGuard list
+    /// here hands its selection to these uBO-side lists.
+    static let adGuardReplacements: [String: [String]] = {
+        let ads = ["uBlock filters – Ads", "uBlock filters – Badware risks", "uBlock filters – Quick fixes",
+                   "uBlock filters – Unbreak", "EasyList", "Online Malicious URL Blocklist"]
+        let annoyances = ["uBlock filters – Annoyances", "EasyList – Annoyances"]
+        return [
+            "AdGuard Base Filter": ads,
+            "AdGuard Mobile Filter": ads,
+            "AdGuard Tracking Protection Filter": ["uBlock filters – Privacy", "EasyPrivacy"],
+            "AdGuard URL Tracking Protection Filter": ["uBlock filters – Privacy"],
+            "AdGuard Cookie Notices": ["uBlock filters – Cookie Notices", "EasyList – Cookie Notices"],
+            "AdGuard Popups": annoyances,
+            "AdGuard Other Annoyances": annoyances,
+            "AdGuard Mobile App Banners": annoyances,
+            "AdGuard Widgets": annoyances,
+        ]
+    }()
+
+    /// Turns off each selected AdGuard list that has a uBO replacement and turns
+    /// its replacements on. Run once per install (see AppFilterManager), so
+    /// later choices are left alone.
+    static func handingOverAdGuardSelections(_ lists: [FilterList]) -> [FilterList] {
+        var lists = lists
+        var turnOn = Set<String>()
+        for index in lists.indices where !lists[index].isCustom && lists[index].isSelected {
+            guard let replacements = adGuardReplacements[lists[index].name] else { continue }
+            lists[index].isSelected = false
+            turnOn.formUnion(replacements)
+        }
+        for index in lists.indices where !lists[index].isCustom && turnOn.contains(lists[index].name) {
+            lists[index].isSelected = true
+        }
+        return lists
+    }
+
     /// Was built into wBlock 5 while any list was on, so upgrades turn it on
     /// whenever another list is on (#994).
     static let adTrackingHostsURL = URL(
