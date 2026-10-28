@@ -1052,3 +1052,23 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Import…" = "Importă…";
 "Excluded Sites" = "Site-uri excluse";
 "Cosmetic filtering applies only on these sites." = "Filtrarea cosmetică se aplică doar pe aceste site-uri.";
+
+"uBlock filters – Ads" = "uBlock filters – Ads";
+"uBlock filters – Privacy" = "uBlock filters – Privacy";
+"uBlock filters – Badware risks" = "uBlock filters – Badware risks";
+"uBlock filters – Quick fixes" = "uBlock filters – Quick fixes";
+"uBlock filters – Unbreak" = "uBlock filters – Unbreak";
+"uBlock filters – Annoyances" = "uBlock filters – Annoyances";
+"uBlock filters – Cookie Notices" = "uBlock filters – Cookie Notices";
+"EasyList" = "EasyList";
+"EasyList – Cookie Notices" = "EasyList – Cookie Notices";
+"EasyList – Annoyances" = "EasyList – Annoyances";
+"Ad blocking rules from the uBlock Origin project. Meant to be used alongside EasyList." = "Reguli de blocare a reclamelor din proiectul uBlock Origin. Destinate utilizării împreună cu EasyList.";
+"Blocks trackers and removes tracking parameters from URLs, from the uBlock Origin project." = "Blochează urmăritoarele și elimină parametrii de urmărire din adresele URL. Listă din proiectul uBlock Origin.";
+"Blocks sites documented to install adware or malware, or to steal login credentials." = "Blochează site-urile documentate că instalează adware sau malware ori că fură datele de autentificare.";
+"Short-term rules that fix sites broken by other filter lists." = "Reguli temporare care repară site-urile defectate de alte liste de filtre.";
+"Rules that keep sites working when default lists break them." = "Reguli care mențin site-urile funcționale când listele implicite le defectează.";
+"Hides annoying page elements, such as overlays and promotional banners, from the uBlock Origin project." = "Ascunde elementele deranjante ale paginilor, precum suprapunerile și bannerele promoționale. Listă din proiectul uBlock Origin.";
+"Blocks ads on websites, from the EasyList project." = "Blochează reclamele de pe site-uri. Listă din proiectul EasyList.";
+"Blocks URLs that distribute malware, based on URLhaus data." = "Blochează adresele URL care distribuie malware, pe baza datelor URLhaus.";
+"Hides miscellaneous annoyances on websites, from the EasyList project." = "Ascunde diverse neplăceri de pe site-uri. Listă din proiectul EasyList.";

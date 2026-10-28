@@ -9,35 +9,26 @@ import Foundation
 import wBlockCoreService
 
 class FilterListLoader {
-    #if os(macOS)
-        static let minimalFilterNames: Set<String> = ["AdGuard Base Filter"]
-        static let recommendedFilterNames: Set<String> = [
-            "AdGuard Base Filter",
-            "AdGuard Tracking Protection Filter",
-            "AdGuard URL Tracking Protection Filter",
-            "Actually Legitimate URL Shortener Tool",
-            "Peter Lowe's Blocklist",
-            "AdGuard Cookie Notices",
-            "wBlock Ad and Tracking Hosts",
-        ]
-    #else
-        static let minimalFilterNames: Set<String> = ["AdGuard Base Filter", "AdGuard Mobile Filter"]
-        static let recommendedFilterNames: Set<String> = [
-            "AdGuard Base Filter",
-            "AdGuard Tracking Protection Filter",
-            "AdGuard URL Tracking Protection Filter",
-            "Actually Legitimate URL Shortener Tool",
-            "Peter Lowe's Blocklist",
-            "AdGuard Cookie Notices",
-            "AdGuard Mobile Filter",
-            "wBlock Ad and Tracking Hosts",
-        ]
-    #endif
+    // Defaults mirror uBlock Origin's default-enabled lists, plus wBlock's own hosts list.
+    static let minimalFilterNames: Set<String> = ["uBlock filters – Ads", "EasyList"]
+    static let recommendedFilterNames: Set<String> = [
+        "uBlock filters – Ads",
+        "uBlock filters – Privacy",
+        "uBlock filters – Badware risks",
+        "uBlock filters – Quick fixes",
+        "uBlock filters – Unbreak",
+        "EasyList",
+        "EasyPrivacy",
+        "Peter Lowe's Blocklist",
+        "Online Malicious URL Blocklist",
+        "Actually Legitimate URL Shortener Tool",
+        "wBlock Ad and Tracking Hosts",
+    ]
 
     // Lists that prompt an "essential protection" warning before they are disabled.
-    // Cookie Notices is on by default (#655) but is a convenience, not protection.
+    // Compatibility fixes and the hosts list are convenience, not protection.
     static let essentialFilterNames: Set<String> = recommendedFilterNames.subtracting([
-        "AdGuard Cookie Notices", "wBlock Ad and Tracking Hosts",
+        "uBlock filters – Quick fixes", "uBlock filters – Unbreak", "wBlock Ad and Tracking Hosts",
     ])
 
     /// Was built into wBlock 5 while any list was on, so upgrades turn it on
@@ -51,6 +42,11 @@ class FilterListLoader {
     )!
 
     private static let filterURLMigrations: [String: URL] = [
+        // EasyPrivacy and Peter Lowe's Blocklist now come from uBlock Origin's sources.
+        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/118_optimized.txt":
+            URL(string: "https://cdn.jsdelivr.net/gh/uBlockOrigin/uAssetsCDN@main/thirdparties/easyprivacy.txt")!,
+        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/204_optimized.txt":
+            URL(string: "https://pgl.yoyo.org/adservers/serverlist.php?hostformat=hosts&showintro=1&mimetype=plaintext")!,
         "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_17_TrackParam/filter.txt":
             URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/mac_v3/filters/17_optimized.txt")!,
         "https://raw.githubusercontent.com/DandelionSprout/adfilt/master/LegitimateURLShortener.txt":
@@ -302,22 +298,84 @@ class FilterListLoader {
     private func createDefaultFilterLists() -> [FilterList] {
         var filterLists = [
             FilterList(
+                id: UUID(), name: "uBlock filters – Ads",
+                url: URL(string: "https://ublockorigin.github.io/uAssetsCDN/filters/filters.min.txt")!,
+                category: FilterListCategory.ads,
+                description: "Ad blocking rules from the uBlock Origin project. Meant to be used alongside EasyList.",
+                trustLevel: "high"),
+            FilterList(
+                id: UUID(), name: "uBlock filters – Privacy",
+                url: URL(string: "https://ublockorigin.github.io/uAssetsCDN/filters/privacy.min.txt")!,
+                category: FilterListCategory.privacy,
+                description: "Blocks trackers and removes tracking parameters from URLs, from the uBlock Origin project.",
+                trustLevel: "high"),
+            FilterList(
+                id: UUID(), name: "uBlock filters – Badware risks",
+                url: URL(string: "https://ublockorigin.github.io/uAssetsCDN/filters/badware.min.txt")!,
+                category: FilterListCategory.security,
+                description: "Blocks sites documented to install adware or malware, or to steal login credentials.",
+                trustLevel: "high"),
+            FilterList(
+                id: UUID(), name: "uBlock filters – Quick fixes",
+                url: URL(string: "https://ublockorigin.github.io/uAssetsCDN/filters/quick-fixes.min.txt")!,
+                category: FilterListCategory.allowlists,
+                description: "Short-term rules that fix sites broken by other filter lists.",
+                trustLevel: "high"),
+            FilterList(
+                id: UUID(), name: "uBlock filters – Unbreak",
+                url: URL(string: "https://ublockorigin.github.io/uAssetsCDN/filters/unbreak.min.txt")!,
+                category: FilterListCategory.allowlists,
+                description: "Rules that keep sites working when default lists break them.",
+                trustLevel: "high"),
+            FilterList(
+                id: UUID(), name: "EasyList",
+                url: URL(string: "https://cdn.jsdelivr.net/gh/uBlockOrigin/uAssetsCDN@main/thirdparties/easylist.txt")!,
+                category: FilterListCategory.ads,
+                description: "Blocks ads on websites, from the EasyList project."),
+            FilterList(
+                id: UUID(), name: "Online Malicious URL Blocklist",
+                url: URL(string: "https://curbengh.github.io/malware-filter/urlhaus-filter-vivaldi-online.txt")!,
+                category: FilterListCategory.security,
+                description: "Blocks URLs that distribute malware, based on URLhaus data."),
+            FilterList(
+                id: UUID(), name: "uBlock filters – Annoyances",
+                url: URL(string: "https://ublockorigin.github.io/uAssetsCDN/filters/annoyances.min.txt")!,
+                category: FilterListCategory.annoyances,
+                description: "Hides annoying page elements, such as overlays and promotional banners, from the uBlock Origin project.",
+                trustLevel: "high"),
+            FilterList(
+                id: UUID(), name: "uBlock filters – Cookie Notices",
+                url: URL(string: "https://ublockorigin.github.io/uAssetsCDN/filters/annoyances-cookies.txt")!,
+                category: FilterListCategory.annoyances,
+                description: "Blocks cookie notices on web pages.",
+                trustLevel: "high"),
+            FilterList(
+                id: UUID(), name: "EasyList – Cookie Notices",
+                url: URL(string: "https://ublockorigin.github.io/uAssetsCDN/thirdparties/easylist-cookies.txt")!,
+                category: FilterListCategory.annoyances,
+                description: "Blocks cookie notices on web pages."),
+            FilterList(
+                id: UUID(), name: "EasyList – Annoyances",
+                url: URL(string: "https://ublockorigin.github.io/uAssetsCDN/thirdparties/easylist-annoyances.txt")!,
+                category: FilterListCategory.annoyances,
+                description: "Hides miscellaneous annoyances on websites, from the EasyList project."),
+            FilterList(
                 id: UUID(), name: "AdGuard Base Filter",
                 url: URL(
                     string:
                         "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/2_optimized.txt"
-                )!, category: FilterListCategory.ads, isSelected: true,
+                )!, category: FilterListCategory.ads,
                 description: "EasyList + AdGuard English filter. This filter is necessary for quality ad blocking."),
             FilterList(
                 id: UUID(), name: "AdGuard Tracking Protection Filter",
                 url: URL(
                     string:
                         "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/3_optimized.txt"
-                )!, category: FilterListCategory.privacy, isSelected: true,
+                )!, category: FilterListCategory.privacy,
                 description: "The most comprehensive list of various online counters and web analytics tools. Use this filter if you do not want your actions on the Internet to be tracked."),
             FilterList(
                 id: UUID(), name: "wBlock Ad and Tracking Hosts",
-                url: Self.adTrackingHostsURL, category: FilterListCategory.privacy, isSelected: true,
+                url: Self.adTrackingHostsURL, category: FilterListCategory.privacy,
                 description: "Blocks ad and tracking hosts that the other lists only block in part.",
                 trustLevel: "high"),
             FilterList(
@@ -334,7 +392,7 @@ class FilterListLoader {
                 url: URL(
                     string:
                         "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/mac_v3/filters/17_optimized.txt"
-                )!, category: FilterListCategory.privacy, isSelected: true,
+                )!, category: FilterListCategory.privacy,
                 description: "Filter that enhances privacy by removing tracking parameters from URLs.",
                 trustLevel: "high"),
             FilterList(
@@ -342,7 +400,7 @@ class FilterListLoader {
                 url: URL(
                     string:
                         "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/mac_v3/filters/251_optimized.txt"
-                )!, category: FilterListCategory.privacy, isSelected: true,
+                )!, category: FilterListCategory.privacy,
                 description: "Automatically removes unnecessary '$' and '&' values from URLs, making them easier to copy from the URL bar and pasting elsewhere as links. Already included in Dandelion Sprout's Annoyances List.",
                 trustLevel: "high"),
             FilterList(
@@ -350,7 +408,7 @@ class FilterListLoader {
                 url: URL(
                     string:
                         "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/18_optimized.txt"
-                )!, category: FilterListCategory.annoyances, isSelected: true,
+                )!, category: FilterListCategory.annoyances,
                 description: "Blocks cookie notices on web pages."),
             FilterList(
                 id: UUID(), name: "AdGuard Popups",
@@ -428,15 +486,15 @@ class FilterListLoader {
                 id: UUID(), name: "Peter Lowe's Blocklist",
                 url: URL(
                     string:
-                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/204_optimized.txt"
-                )!, category: FilterListCategory.multipurpose, isSelected: true,
+                        "https://pgl.yoyo.org/adservers/serverlist.php?hostformat=hosts&showintro=1&mimetype=plaintext"
+                )!, category: FilterListCategory.multipurpose,
                 description: "Filter that blocks ads, trackers, and other nasty things."),
             FilterList(
                 id: UUID(), name: "Adblock Warning Removal List",
                 url: URL(
                     string:
                         "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/207_optimized.txt"
-                )!, category: FilterListCategory.annoyances, isSelected: true,
+                )!, category: FilterListCategory.annoyances,
                 description: "Removes anti-adblock warnings and other obtrusive messages."),
             FilterList(
                 id: UUID(), name: "AdGuard Allowlist",
@@ -731,8 +789,8 @@ class FilterListLoader {
                 id: UUID(), name: "EasyPrivacy",
                 url: URL(
                     string:
-                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/118_optimized.txt"
-                )!, category: FilterListCategory.privacy, isSelected: true,
+                        "https://cdn.jsdelivr.net/gh/uBlockOrigin/uAssetsCDN@main/thirdparties/easyprivacy.txt"
+                )!, category: FilterListCategory.privacy,
                 description:
                     "Privacy protection supplement for EasyList."))
         #if os(iOS)
@@ -742,7 +800,7 @@ class FilterListLoader {
                     url: URL(
                         string:
                             "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/ios/filters/11_optimized.txt"
-                    )!, category: FilterListCategory.ads, isSelected: true,
+                    )!, category: FilterListCategory.ads,
                     description: "Filter for all known mobile ad networks. Useful for mobile devices."))
         #endif
 

@@ -24,8 +24,21 @@ enum BuiltInFilterCredits {
     private static let adGuard = credit("AdGuard", "https://github.com/AdguardTeam/AdguardFilters")
     private static let hagezi = credit("hagezi", "https://github.com/hagezi/dns-blocklists")
     private static let dandelionSprout = credit("DandelionSprout", "https://github.com/DandelionSprout/adfilt")
+    private static let uAssets = credit("Raymond Hill and the uAssets contributors", "https://github.com/uBlockOrigin/uAssets")
+    private static let easyList = credit("EasyList team", "https://easylist.to/")
 
     private static let byName: [String: Credit] = [
+        "uBlock filters – Ads": uAssets,
+        "uBlock filters – Privacy": uAssets,
+        "uBlock filters – Badware risks": uAssets,
+        "uBlock filters – Quick fixes": uAssets,
+        "uBlock filters – Unbreak": uAssets,
+        "uBlock filters – Annoyances": uAssets,
+        "uBlock filters – Cookie Notices": uAssets,
+        "EasyList": easyList,
+        "EasyList – Cookie Notices": easyList,
+        "EasyList – Annoyances": easyList,
+        "Online Malicious URL Blocklist": credit("curbengh", "https://gitlab.com/malware-filter/urlhaus-filter"),
         "HaGeZi Referral Allowlist": hagezi,
         "HaGeZi Multi Pro Mini": hagezi,
         "Actually Legitimate URL Shortener Tool": credit("iam-py-test, DandelionSprout", "https://github.com/DandelionSprout/adfilt"),

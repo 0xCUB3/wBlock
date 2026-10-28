@@ -1052,3 +1052,23 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Import…" = "Εισαγωγή…";
 "Excluded Sites" = "Εξαιρούμενοι ιστότοποι";
 "Cosmetic filtering applies only on these sites." = "Το αισθητικό φιλτράρισμα εφαρμόζεται μόνο σε αυτούς τους ιστότοπους.";
+
+"uBlock filters – Ads" = "uBlock filters – Ads";
+"uBlock filters – Privacy" = "uBlock filters – Privacy";
+"uBlock filters – Badware risks" = "uBlock filters – Badware risks";
+"uBlock filters – Quick fixes" = "uBlock filters – Quick fixes";
+"uBlock filters – Unbreak" = "uBlock filters – Unbreak";
+"uBlock filters – Annoyances" = "uBlock filters – Annoyances";
+"uBlock filters – Cookie Notices" = "uBlock filters – Cookie Notices";
+"EasyList" = "EasyList";
+"EasyList – Cookie Notices" = "EasyList – Cookie Notices";
+"EasyList – Annoyances" = "EasyList – Annoyances";
+"Ad blocking rules from the uBlock Origin project. Meant to be used alongside EasyList." = "Κανόνες αποκλεισμού διαφημίσεων από το έργο uBlock Origin. Προορίζονται για χρήση μαζί με το EasyList.";
+"Blocks trackers and removes tracking parameters from URLs, from the uBlock Origin project." = "Αποκλείει τους ιχνηλάτες και αφαιρεί τις παραμέτρους παρακολούθησης από τις διευθύνσεις URL. Από το έργο uBlock Origin.";
+"Blocks sites documented to install adware or malware, or to steal login credentials." = "Αποκλείει ιστότοπους που έχει τεκμηριωθεί ότι εγκαθιστούν adware ή κακόβουλο λογισμικό ή κλέβουν στοιχεία σύνδεσης.";
+"Short-term rules that fix sites broken by other filter lists." = "Προσωρινοί κανόνες που επιδιορθώνουν ιστότοπους που χάλασαν από άλλες λίστες φίλτρων.";
+"Rules that keep sites working when default lists break them." = "Κανόνες που διατηρούν τους ιστότοπους σε λειτουργία όταν οι προεπιλεγμένες λίστες τους χαλούν.";
+"Hides annoying page elements, such as overlays and promotional banners, from the uBlock Origin project." = "Αποκρύπτει ενοχλητικά στοιχεία των σελίδων, όπως επικαλύψεις και διαφημιστικά banner. Από το έργο uBlock Origin.";
+"Blocks ads on websites, from the EasyList project." = "Αποκλείει διαφημίσεις στους ιστότοπους. Από το έργο EasyList.";
+"Blocks URLs that distribute malware, based on URLhaus data." = "Αποκλείει διευθύνσεις URL που διανέμουν κακόβουλο λογισμικό, με βάση δεδομένα του URLhaus.";
+"Hides miscellaneous annoyances on websites, from the EasyList project." = "Αποκρύπτει διάφορες ενοχλήσεις στους ιστότοπους. Από το έργο EasyList.";

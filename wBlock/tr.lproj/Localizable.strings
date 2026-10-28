@@ -1061,3 +1061,23 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Import…" = "İçe aktar…";
 "Excluded Sites" = "Hariç tutulan siteler";
 "Cosmetic filtering applies only on these sites." = "Kozmetik filtreleme yalnızca bu sitelerde uygulanır.";
+
+"uBlock filters – Ads" = "uBlock filters – Ads";
+"uBlock filters – Privacy" = "uBlock filters – Privacy";
+"uBlock filters – Badware risks" = "uBlock filters – Badware risks";
+"uBlock filters – Quick fixes" = "uBlock filters – Quick fixes";
+"uBlock filters – Unbreak" = "uBlock filters – Unbreak";
+"uBlock filters – Annoyances" = "uBlock filters – Annoyances";
+"uBlock filters – Cookie Notices" = "uBlock filters – Cookie Notices";
+"EasyList" = "EasyList";
+"EasyList – Cookie Notices" = "EasyList – Cookie Notices";
+"EasyList – Annoyances" = "EasyList – Annoyances";
+"Ad blocking rules from the uBlock Origin project. Meant to be used alongside EasyList." = "uBlock Origin projesinden reklam engelleme kuralları. EasyList ile birlikte kullanılması amaçlanmıştır.";
+"Blocks trackers and removes tracking parameters from URLs, from the uBlock Origin project." = "İzleyicileri engeller ve URL'lerden izleme parametrelerini kaldırır. uBlock Origin projesinin listesi.";
+"Blocks sites documented to install adware or malware, or to steal login credentials." = "Reklam yazılımı veya kötü amaçlı yazılım yüklediği ya da oturum bilgilerini çaldığı belgelenmiş siteleri engeller.";
+"Short-term rules that fix sites broken by other filter lists." = "Diğer filtre listelerinin bozduğu siteleri onaran geçici kurallar.";
+"Rules that keep sites working when default lists break them." = "Varsayılan listeler siteleri bozduğunda onların çalışmaya devam etmesini sağlayan kurallar.";
+"Hides annoying page elements, such as overlays and promotional banners, from the uBlock Origin project." = "Açılır katmanlar ve promosyon afişleri gibi sayfadaki rahatsız edici öğeleri gizler. uBlock Origin projesinin listesi.";
+"Blocks ads on websites, from the EasyList project." = "Web sitelerindeki reklamları engeller. EasyList projesinin listesi.";
+"Blocks URLs that distribute malware, based on URLhaus data." = "URLhaus verilerine dayanarak kötü amaçlı yazılım dağıtan URL'leri engeller.";
+"Hides miscellaneous annoyances on websites, from the EasyList project." = "Web sitelerindeki çeşitli rahatsızlıkları gizler. EasyList projesinin listesi.";

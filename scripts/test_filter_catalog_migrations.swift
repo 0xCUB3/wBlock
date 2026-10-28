@@ -54,6 +54,24 @@ private final class TestLoader: FilterListLoader {
             loader.migrateBuiltInFilterFilesIfNeeded(current)
             precondition(fm.fileExists(atPath: newURL.path) && fm.fileExists(atPath: newBaseline.path))
         }
+        // A default name that matches no catalog entry would silently drop that list from the defaults.
+        let catalogNames = Set(defaults.map(\.name))
+        for names in [FilterListLoader.recommendedFilterNames, FilterListLoader.minimalFilterNames, FilterListLoader.essentialFilterNames] {
+            precondition(names.isSubset(of: catalogNames), "default names missing from catalog: \(names.subtracting(catalogNames))")
+        }
+        // Lists whose source moved to uBlock Origin's copy keep the selection their users already have.
+        let moved = [
+            ("https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/118_optimized.txt", "EasyPrivacy"),
+            ("https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/204_optimized.txt", "Peter Lowe's Blocklist"),
+        ]
+        for (oldURL, name) in moved {
+            let current = defaults.first { $0.name == name }!
+            for selected in [false, true] {
+                let old = FilterList(name: name, url: URL(string: oldURL)!, category: .privacy, isSelected: selected)
+                let hydrated = FilterListSetup.hydrate(loader.migrateFilterURLs(in: [old]), defaults: defaults)[0]
+                precondition(hydrated.url == current.url && hydrated.isSelected == selected, "moved list \(name) lost its URL or selection")
+            }
+        }
         print("PASS: replacement migrations preserve selection and discard legacy content")
     }
 }

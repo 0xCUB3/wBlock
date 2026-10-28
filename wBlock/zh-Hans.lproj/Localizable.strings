@@ -1052,3 +1052,23 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Import…" = "导入…";
 "Excluded Sites" = "排除的网站";
 "Cosmetic filtering applies only on these sites." = "外观过滤仅在这些网站上应用。";
+
+"uBlock filters – Ads" = "uBlock filters – Ads";
+"uBlock filters – Privacy" = "uBlock filters – Privacy";
+"uBlock filters – Badware risks" = "uBlock filters – Badware risks";
+"uBlock filters – Quick fixes" = "uBlock filters – Quick fixes";
+"uBlock filters – Unbreak" = "uBlock filters – Unbreak";
+"uBlock filters – Annoyances" = "uBlock filters – Annoyances";
+"uBlock filters – Cookie Notices" = "uBlock filters – Cookie Notices";
+"EasyList" = "EasyList";
+"EasyList – Cookie Notices" = "EasyList – Cookie Notices";
+"EasyList – Annoyances" = "EasyList – Annoyances";
+"Ad blocking rules from the uBlock Origin project. Meant to be used alongside EasyList." = "来自 uBlock Origin 项目的广告拦截规则，建议与 EasyList 一起使用。";
+"Blocks trackers and removes tracking parameters from URLs, from the uBlock Origin project." = "拦截追踪器，并从网址中移除追踪参数。来自 uBlock Origin 项目。";
+"Blocks sites documented to install adware or malware, or to steal login credentials." = "拦截已被证实会安装广告软件或恶意软件、或窃取登录凭据的网站。";
+"Short-term rules that fix sites broken by other filter lists." = "临时规则，用于修复被其他过滤列表弄坏的网站。";
+"Rules that keep sites working when default lists break them." = "当默认列表导致网站失效时，保持网站正常运行的规则。";
+"Hides annoying page elements, such as overlays and promotional banners, from the uBlock Origin project." = "隐藏页面中令人烦扰的元素，例如遮罩层和促销横幅。来自 uBlock Origin 项目。";
+"Blocks ads on websites, from the EasyList project." = "拦截网站上的广告。来自 EasyList 项目。";
+"Blocks URLs that distribute malware, based on URLhaus data." = "根据 URLhaus 数据拦截传播恶意软件的网址。";
+"Hides miscellaneous annoyances on websites, from the EasyList project." = "隐藏网站上各种令人烦扰的内容。来自 EasyList 项目。";
