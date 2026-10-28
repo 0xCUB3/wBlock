@@ -117,6 +117,23 @@ minify_one "${SRC_DIR}/content.js" "content"
 minify_one "${SRC_DIR}/no-autoplay-gate.js" "no-autoplay-gate"
 minify_one "${ENGINE_JS_DIR}/procedural.js" "procedural"
 
+# One file per uBO scriptlet, generated from the engine's resources.
+info "Generating scriptlets/ (Packages/wblock-engine/resources/resources.json)..."
+SCRIPTLETS_TMP="$(mktemp -d)"
+node "${ENGINE_JS_DIR}/build-scriptlets.mjs" "${SCRIPTLETS_TMP}"
+rm -rf "${RES_DIR}/scriptlets"
+npx --yes "esbuild@${ESBUILD_VERSION}" "${SCRIPTLETS_TMP}"/*.js \
+  --minify \
+  --target="${ESBUILD_TARGET}" \
+  --legal-comments=none \
+  --log-level=error \
+  --outdir="${RES_DIR}/scriptlets"
+rm -rf "${SCRIPTLETS_TMP}"
+for file in "${RES_DIR}"/scriptlets/*.js; do
+  node --check "${file}" 2>/dev/null || { error "JS syntax INVALID: scriptlets/$(basename "${file}")"; FAIL=1; }
+done
+success "scriptlets/: $(ls "${RES_DIR}/scriptlets" | wc -l | tr -d ' ') files, $(du -sk "${RES_DIR}/scriptlets" | cut -f1)KB"
+
 # Symbols the runtime depends on must survive minification.
 check_grep "engineTimestamp" "engineTimestamp" "${RES_DIR}/background.js"
 check_grep "hide-selector rule" "display: none !important" "${RES_DIR}/background.js"

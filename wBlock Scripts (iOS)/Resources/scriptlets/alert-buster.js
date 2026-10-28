@@ -1,0 +1,1 @@
+(function(){const e=globalThis.__wbeScriptletCalls,r=e&&e["alert-buster"];if(!r)return;delete e["alert-buster"];var o={};function l(){window.alert=new Proxy(window.alert,{apply:function(t){console.info(t)},get(t,n){return n==="toString"?t.toString.bind(t):Reflect.get(t,n)}})}for(const t of r)try{l(...t)}catch{}})();

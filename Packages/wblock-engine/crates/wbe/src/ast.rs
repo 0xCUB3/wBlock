@@ -89,9 +89,9 @@ impl DomainList {
             return self;
         };
         let reachable = |x: &str| {
-            hosts
-                .iter()
-                .any(|h| x == h.as_str() || x.strip_suffix(h.as_str()).is_some_and(|p| p.ends_with('.')))
+            hosts.iter().any(|h| {
+                x == h.as_str() || x.strip_suffix(h.as_str()).is_some_and(|p| p.ends_with('.'))
+            })
         };
         let kept = self
             .exclude

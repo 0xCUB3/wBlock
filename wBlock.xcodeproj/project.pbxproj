@@ -345,6 +345,7 @@
 				Resources/procedural.js,
 				Resources/redirects,
 				Resources/rules/csp_strip_rules.json,
+				Resources/scriptlets,
 				"Resources/userscript-injector.js",
 				"Resources/zapper-content.js",
 			);

@@ -41,15 +41,12 @@ const char *wbe_compile_runtime_text(const WbeCompileResult *result);
 const char *wbe_compile_stats_json(const WbeCompileResult *result);
 void wbe_compile_free(WbeCompileResult *result);
 
-/* resources_json may be NULL for the built-in resources. On success *out holds
- * *out_len bytes; free with wbe_bytes_free. */
-bool wbe_engine_build(const char *runtime_text, const char *resources_json, uint8_t **out,
-                      size_t *out_len);
+/* On success *out holds *out_len bytes; free with wbe_bytes_free. */
+bool wbe_engine_build(const char *runtime_text, uint8_t **out, size_t *out_len);
 void wbe_bytes_free(uint8_t *bytes, size_t len);
 
-/* resources_json: the array passed to wbe_engine_build; NULL for the built-in resources. */
-WbeEngine *wbe_engine_open(const uint8_t *bytes, size_t len, const char *resources_json);
-/* PagePayload JSON: {"hide":[..],"procedural":[..],"scriptlets":"..","generichide":bool}. */
+WbeEngine *wbe_engine_open(const uint8_t *bytes, size_t len);
+/* PagePayload JSON: {"hide":[..],"procedural":[..],"scriptlets":[[name,args..],..],"generichide":bool}. */
 char *wbe_engine_lookup(const WbeEngine *engine, const char *url);
 void wbe_engine_free(WbeEngine *engine);
 

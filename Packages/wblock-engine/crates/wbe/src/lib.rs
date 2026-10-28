@@ -25,8 +25,14 @@ pub fn registrable_domain(host: &str) -> Option<&str> {
 mod tests {
     #[test]
     fn registrable_domain_follows_the_public_suffix_list() {
-        assert_eq!(super::registrable_domain("news.bbc.co.uk"), Some("bbc.co.uk"));
-        assert_eq!(super::registrable_domain("example.com"), Some("example.com"));
+        assert_eq!(
+            super::registrable_domain("news.bbc.co.uk"),
+            Some("bbc.co.uk")
+        );
+        assert_eq!(
+            super::registrable_domain("example.com"),
+            Some("example.com")
+        );
         assert_eq!(super::registrable_domain("co.uk"), None);
         assert_eq!(super::registrable_domain("github.io"), None);
     }

@@ -53,7 +53,7 @@ public enum WebExtensionRequestHandler {
         [
             "css": [],
             "procedural": [],
-            "scriptlets": "",
+            "scriptlets": [],
             "userScripts": [],
             "engineTimestamp": 0,
             "disabled": disabled,

@@ -17,7 +17,7 @@ const bundlePath = path.join(repoRoot, "wBlock Scripts (iOS)", "Resources", "bac
 const bundleSource = readFileSync(bundlePath, "utf8");
 const canonicalSource = readFileSync(path.join(repoRoot, "extension-src", "background.js"), "utf8");
 
-const CACHE_KEY = "wblockConfigCacheV1";
+const CACHE_KEY = "wblockConfigCacheV2";
 const DOCUMENT_START_SCRIPT_CACHE_KEY = "wblockDocumentStartScriptCacheV1";
 const WARMUP_URL = "https://warmup.wblock.invalid/";
 
@@ -33,7 +33,7 @@ const check = (name, condition) => {
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-const makeConfig = (css, engineTimestamp, procedural = [], scriptlets = "", state = {}) => ({
+const makeConfig = (css, engineTimestamp, procedural = [], scriptlets = [], state = {}) => ({
   css,
   procedural,
   scriptlets,
@@ -483,7 +483,7 @@ const runScriptInjectionScenario = async executeScript => {
   const pageUrl = "https://injection.example/";
   const state = loadBackground({
     storage: {},
-    nativeHandler: () => ({ payload: makeConfig([], 9, [], "window.__wblockProbe = 1;") }),
+    nativeHandler: () => ({ payload: makeConfig([], 9, [], [["set-constant", "probe", "1"]]) }),
     executeScript
   });
   const errors = [];
@@ -538,7 +538,7 @@ const runScriptInjectionScenario = async executeScript => {
 // apply it; normal HTTP frames are applied by the background page.
 {
   const pageUrl = "https://example.com/";
-  const scriptlets = "(function () { window.__wblockBlankProbe = 1; })();";
+  const scriptlets = [["set-constant", "blankProbe", "1"], ["set-constant", "other", "2"], ["abort-on-property-read", "x"]];
   const state = loadBackground({
     nativeHandler: message => {
       if (message && message.action === "getBlockingState") {
@@ -562,7 +562,7 @@ const runScriptInjectionScenario = async executeScript => {
     );
     const payload = response && response.payload;
     check(`${frameUrl} routes through the content fallback`, !!payload && state.executed.length === 0 && state.cssInserted.length === 0);
-    check(`${frameUrl} carries the scriptlet source unchanged`, !!payload && payload.scriptlets === scriptlets);
+    check(`${frameUrl} carries the scriptlet calls unchanged`, !!payload && JSON.stringify(payload.scriptlets) === JSON.stringify(scriptlets));
     check(`${frameUrl} carries selectors and procedural filters`, !!payload && payload.css[0] === "#blank-probe" && payload.procedural.length === 1);
   }
 
@@ -572,7 +572,8 @@ const runScriptInjectionScenario = async executeScript => {
   const httpResponse = await httpState.onMessage({ type: "InitContentScript" }, topFrameSender(pageUrl));
   check("HTTP frame does not receive fallback payload", !(httpResponse && httpResponse.payload));
   check("HTTP frame hides selectors one rule each", httpState.cssInserted.some(injection => injection.css === "#http-probe { display: none !important; }"));
-  check("HTTP frame runs scriptlets in the MAIN world", httpState.executed.some(injection => injection.world === "MAIN" && typeof injection.func === "function" && injection.args[0] === scriptlets));
+  check("HTTP frame queues scriptlet calls in the MAIN world", httpState.executed.some(injection => injection.world === "MAIN" && typeof injection.func === "function" && injection.args[0] === scriptlets));
+  check("HTTP frame injects each scriptlet file once in the MAIN world", httpState.executed.some(injection => injection.world === "MAIN" && JSON.stringify(injection.files) === JSON.stringify(["scriptlets/set-constant.js", "scriptlets/abort-on-property-read.js"])));
   check("HTTP frame loads procedural.js into the ISOLATED world", httpState.executed.some(injection => injection.files && injection.files[0] === "procedural.js" && injection.world === undefined));
   check("HTTP frame applies procedural filters after loading them", httpState.executed.some(injection => typeof injection.func === "function" && injection.args && injection.args[0][0] === '{"selector":[{"type":"css","arg":"div"}]}'));
 }

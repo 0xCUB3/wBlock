@@ -1294,7 +1294,9 @@ mod tests {
         let (out, stats) = run(&[rule], V15);
         assert!(stats.dropped.is_empty());
         assert_eq!(tiers(&out), [Tier::Block, Tier::Exception, Tier::Exception]);
-        assert!(out.iter().all(|t| t.rule.trigger.if_domain == Some(vec!["*s.com".into()])));
+        assert!(out
+            .iter()
+            .all(|t| t.rule.trigger.if_domain == Some(vec!["*s.com".into()])));
     }
 
     #[test]

@@ -31,7 +31,6 @@ const SCL_DIR = process.env.SCL_PATH ?? '/tmp/research/bench/scl';
 const ADGUARD_BIN = process.env.ADGUARD_CONVERTER ?? path.join(SCL_DIR, '.build/release/ConverterTool');
 const WK_BIN = process.env.WK_BIN ?? '/tmp/research/bench/wk';
 const WBE_BIN = process.env.WBE_BIN ?? path.join(REPO_DIR, 'target/release/wbe');
-const RESOURCES_FILE = path.join(REPO_DIR, 'resources/resources.json');
 const SAFARI_RULE_LIMIT = 150_000;
 
 const ALL_ENGINES = ['adguard', 'wbe'];
@@ -362,10 +361,10 @@ async function runLookupAdguard(advancedFile: string, workDir: string, version: 
 async function runLookupWbe(runtimeFile: string, workDir: string, iterations: number): Promise<Lookup> {
   await mkdir(workDir, { recursive: true });
   const engineFile = path.join(workDir, 'engine.bin');
-  const build = await exec(WBE_BIN, ['engine-build', '--resources', RESOURCES_FILE, '--out', engineFile, runtimeFile], { timed: false });
+  const build = await exec(WBE_BIN, ['engine-build', '--out', engineFile, runtimeFile], { timed: false });
   if (build.code !== 0) throw new Error(errorLine(build.stderr, build.code, build.signal));
   const urls = (await readFile(URLS_FILE, 'utf8')).split('\n').filter((l) => l.trim()).length;
-  const look = await exec(WBE_BIN, ['lookup', '--resources', RESOURCES_FILE, '--bench', String(iterations * urls), engineFile, URLS_FILE]);
+  const look = await exec(WBE_BIN, ['lookup', '--bench', String(iterations * urls), engineFile, URLS_FILE]);
   if (look.code !== 0) throw new Error(errorLine(look.stderr, look.code, look.signal));
   const j = JSON.parse(look.stdout.toString('utf8').trim().split('\n').pop() ?? '') as Record<string, number>;
   const built = JSON.parse(build.stderr.split('\n').filter((l) => l.startsWith('{')).pop() ?? '{}') as Record<string, number>;

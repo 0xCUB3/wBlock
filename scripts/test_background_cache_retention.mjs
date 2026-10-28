@@ -39,7 +39,7 @@ for (const file of ['extension-src/background.js', 'wBlock Scripts (iOS)/Resourc
         if (request.action === 'getRemoveParamDNRRules') return { ok: true, version: 'test', count: 0, rules: [] };
         if (request.action === 'getBlockingState') return { disabled: false, paused: false };
         return { payload: { css: [`/*${request.payload?.url}: ${'x'.repeat(16384)}*/ .ad`],
-          procedural: [], scriptlets: "", engineTimestamp: revision, disabled: false, paused: false } };
+          procedural: [], scriptlets: [], engineTimestamp: revision, disabled: false, paused: false } };
       }
     },
     storage: { local: {
@@ -84,7 +84,7 @@ for (const file of ['extension-src/background.js', 'wBlock Scripts (iOS)/Resourc
       'old configurations are evicted rather than dropping new cache entries');
     assert.ok(timers.size <= 1, 'only the debounced persistence timer remains');
     await new Promise(resolve => setTimeout(resolve, 1100));
-    const persisted = storage.wblockConfigCacheV1;
+    const persisted = storage.wblockConfigCacheV2;
     assert.ok(persisted.entries.length <= 40);
     assert.ok(persisted.entries.every(([key]) => key.endsWith('#')), 'only top frames persist');
     assert.equal(timers.size, 0);

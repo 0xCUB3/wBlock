@@ -1,0 +1,1 @@
+(function(){const e=globalThis.__wbeScriptletCalls,n=e&&e["window.name-defuser"];if(!n)return;delete e["window.name-defuser"];var i={};function o(){window===window.top&&(window.name="")}for(const t of n)try{o(...t)}catch{}})();

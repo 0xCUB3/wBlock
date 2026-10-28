@@ -27,14 +27,18 @@
   let engineTimestamp = 0;
   let configurationGeneration = 0;
   const CSS_SELECTORS_PER_INSERT = 1000;
-  // Runs in the page (MAIN world) as a function, so it must not close over
-  // anything. Page-world code arrives as text, so it goes through a script
-  // element; a page whose CSP forbids inline scripts runs no scriptlets.
-  const runPageScript = code => {
-    const script = document.createElement('script');
-    script.textContent = code;
-    (document.head || document.documentElement).appendChild(script);
-    script.remove();
+  // Queues scriptlet calls in the page (MAIN world) for the scriptlets/*.js
+  // files injected right after; each file runs and removes its own queue.
+  // Injected functions and files are exempt from the page's CSP, unlike a
+  // page script element. Runs as a function, so it must not close over anything.
+  const queueScriptletCalls = calls => {
+    const queue = globalThis.__wbeScriptletCalls || (globalThis.__wbeScriptletCalls = {});
+    for (const [name, ...args] of calls) (queue[name] || (queue[name] = [])).push(args);
+  };
+  const runScriptlets = async (target, calls) => {
+    await executeInFrame({ target, world: 'MAIN', injectImmediately: true, func: queueScriptletCalls, args: [calls] });
+    const files = [...new Set(calls.map(([name]) => `scriptlets/${name}.js`))];
+    await executeInFrame({ target, world: 'MAIN', injectImmediately: true, files });
   };
   // Safari's extension error summary shows only the first console argument, so
   // each line is one string with its details folded in.
@@ -79,8 +83,9 @@
     const selectors = configuration.css || [];
     const procedural = configuration.procedural || [];
     const pending = [];
-    if (configuration.scriptlets) {
-      pending.push(executeInFrame({ target, world: 'MAIN', injectImmediately: true, func: runPageScript, args: [configuration.scriptlets] }));
+    const scriptlets = configuration.scriptlets || [];
+    if (scriptlets.length > 0) {
+      pending.push(runScriptlets(target, scriptlets));
     }
     // One rule per selector: a selector the engine rejects drops only itself.
     for (let i = 0; i < selectors.length; i += CSS_SELECTORS_PER_INSERT) {
@@ -118,7 +123,7 @@
    * engineTimestamp check drops them as soon as the native host reports a
    * newer engine.
    */
-  const PERSISTED_CONFIG_CACHE_KEY = "wblockConfigCacheV1";
+  const PERSISTED_CONFIG_CACHE_KEY = "wblockConfigCacheV2";
   const PERSISTED_CONFIG_CACHE_LIMIT = 40;
   const PERSIST_CONFIG_CACHE_DELAY_MS = 1000;
   let persistConfigCacheTimer = null;
@@ -432,7 +437,7 @@
   const emptyConfigurationForState = (disabled, paused) => ({
     css: [],
     procedural: [],
-    scriptlets: "",
+    scriptlets: [],
     userScripts: [],
     engineTimestamp: 0,
     disabled,

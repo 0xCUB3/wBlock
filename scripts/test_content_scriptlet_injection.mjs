@@ -1,7 +1,7 @@
 // Behavioral checks for the shipped (minified) content script. It applies the
 // per-page payload in frames the background page hands back (blank frames):
 // selectors as a style element, procedural filters through wbeProcedural, and
-// scriptlets as one page-context script. It also covers the wBlock lifecycle,
+// no page-context scripts (scriptlets need the background). It also covers the wBlock lifecycle,
 // Init-handoff, and tracking-cleanup behavior that must not change.
 //
 // Run: node scripts/test_content_scriptlet_injection.mjs [path/to/content.js]
@@ -148,7 +148,7 @@ const runBlankFrameWithPayload = async payload => {
   const selectorsOnly = await runBlankFrameWithPayload({
     css: ["#blank-probe", "div.ad"],
     procedural: ['{"selector":[{"type":"css","arg":"div"}]}'],
-    scriptlets: "(function () { window.__wblockPayloadProbe = 1; })();",
+    scriptlets: [["set-constant", "payloadProbe", "1"]],
   });
   check(
     "blank frame hides each selector as its own rule",
@@ -160,11 +160,11 @@ const runBlankFrameWithPayload = async payload => {
     selectorsOnly.applied.length === 1 && selectorsOnly.applied[0][0] === '{"selector":[{"type":"css","arg":"div"}]}'
   );
   check(
-    "blank frame runs scriptlets in one page-context script",
-    selectorsOnly.scripts.length === 1 && selectorsOnly.scripts[0].textContent.includes("__wblockPayloadProbe")
+    "blank frame adds no page script (scriptlets need the background's injection)",
+    selectorsOnly.scripts.length === 0
   );
 
-  const empty = await runBlankFrameWithPayload({ css: [], procedural: [], scriptlets: "" });
+  const empty = await runBlankFrameWithPayload({ css: [], procedural: [], scriptlets: [] });
   check(
     "empty blank-frame payload injects nothing",
     empty.styles.length === 0 && empty.scripts.length === 0 && empty.applied.length === 0
@@ -255,9 +255,9 @@ try {
             disabled: false,
             paused: false,
             payload: {
-              css: [],
+              css: ["#race-probe"],
               procedural: [],
-              scriptlets: "(function () { window.__wblockRaceProbe = 1; })();",
+              scriptlets: [],
             },
           });
         }
@@ -285,10 +285,10 @@ try {
       !disabledRequested && !fallbackRequested,
     );
 
-    const raceScriptEls = raceAppended.filter(el => el.tagName === "script");
+    const raceStyleEls = raceAppended.filter(el => el.tagName === "style");
     check(
-      "scriptlet from authoritative Init response is applied",
-      raceScriptEls.length >= 1 && raceScriptEls.some(el => (el.textContent || "").includes("__wblockRaceProbe")),
+      "payload from authoritative Init response is applied",
+      raceStyleEls.some(el => (el.textContent || "").includes("#race-probe")),
     );
 
     const errorMessages = [];
@@ -514,7 +514,7 @@ const runTrackingCleanupScenario = async ({ href, cleanUrlResponse, runtimeError
       runtime: {
         sendMessage(message) {
           if (message && message.type === "InitContentScript") {
-            return Promise.resolve({ type: "InitContentScript", disabled: false, paused: false, payload: { css: [], procedural: [], scriptlets: "" } });
+            return Promise.resolve({ type: "InitContentScript", disabled: false, paused: false, payload: { css: [], procedural: [], scriptlets: [] } });
           }
           if (message && message.action === "wblock:getCleanURL") {
             if (runtimeError) {

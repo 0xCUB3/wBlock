@@ -77,7 +77,8 @@ Licensing: wBlock is GPL-3.0. uBO (GPL-3.0) and adblock-rust/brave resources
 {
   "css": [String],         // plain selectors to hide (insertCSS, `display: none !important`)
   "procedural": [String],  // JSON filters for js/procedural.js (`wbeProcedural.apply`)
-  "scriptlets": String,    // ready-to-run JS (uBO scriptlets, already bound to args); MAIN world
+  "scriptlets": [[String]],// uBO scriptlet calls [name, args...]; background injects
+                           // Resources/scriptlets/<name>.js in the MAIN world (CSP-exempt)
   "generichide": Bool,
   "engineTimestamp": Number,
   "disabled": Bool,
@@ -86,5 +87,6 @@ Licensing: wBlock is GPL-3.0. uBO (GPL-3.0) and adblock-rust/brave resources
 }
 ```
 
-`extendedCss`, `js` and the old `scriptlets: [{name, args}]` are gone; AdGuard's
-extended-css and scriptlets bundles are no longer shipped.
+`extendedCss` and `js` are gone; AdGuard's extended-css and scriptlets bundles
+are no longer shipped. Scriptlet files are generated from resources/resources.json
+by js/build-scriptlets.mjs (run by scripts/minify-extension-js.sh).

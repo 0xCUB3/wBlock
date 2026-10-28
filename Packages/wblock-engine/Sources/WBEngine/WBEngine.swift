@@ -63,7 +63,7 @@ public enum WBEngine {
     public static func buildEngine(runtimeRules: String) throws -> Data {
         var bytes: UnsafeMutablePointer<UInt8>?
         var length = 0
-        guard wbe_engine_build(runtimeRules, nil, &bytes, &length), let bytes else {
+        guard wbe_engine_build(runtimeRules, &bytes, &length), let bytes else {
             throw EngineError.last()
         }
         defer { wbe_bytes_free(bytes, length) }
@@ -76,7 +76,7 @@ public enum WBEngine {
 
         public init(data: Data) throws {
             let handle = data.withUnsafeBytes { raw in
-                wbe_engine_open(raw.bindMemory(to: UInt8.self).baseAddress, raw.count, nil)
+                wbe_engine_open(raw.bindMemory(to: UInt8.self).baseAddress, raw.count)
             }
             guard let handle else { throw EngineError.last() }
             self.handle = handle
@@ -84,7 +84,7 @@ public enum WBEngine {
 
         deinit { wbe_engine_free(handle) }
 
-        /// `{"hide":[..],"procedural":[..],"scriptlets":"..","generichide":bool}`.
+        /// `{"hide":[..],"procedural":[..],"scriptlets":[[name, args..]],"generichide":bool}`.
         public func lookup(url: String) throws -> Data {
             guard let json = wbe_engine_lookup(handle, url) else { throw EngineError.last() }
             defer { wbe_string_free(json) }

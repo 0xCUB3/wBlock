@@ -4,70 +4,9 @@
   /**
    * @file Contains the implementation of the content script.
    *
-   * executeScripts and protectStyleElementContent are adapted from AdGuard
-   * SafariConverterLib's extension (GPL-3.0).
+   * protectStyleElementContent is adapted from AdGuard SafariConverterLib's
+   * extension (GPL-3.0).
    */
-  /**
-   * Executes code in the context of the page via new script tag and text content.
-   *
-   * @param {string} code String of scripts to be executed.
-   * @returns {boolean} Returns true if code was executed, otherwise returns false.
-   */
-  const executeScriptsViaTextContent = code => {
-    const scriptTag = document.createElement('script');
-    scriptTag.setAttribute('type', 'text/javascript');
-    scriptTag.textContent = code;
-    const parent = document.head || document.documentElement;
-    parent.appendChild(scriptTag);
-    if (scriptTag.parentNode) {
-      scriptTag.parentNode.removeChild(scriptTag);
-      return false;
-    }
-    return true;
-  };
-  /**
-   * Executes code in the context of page via new script tag and blob. We use
-   * this way as a fallback if we fail to inject via textContent.
-   *
-   * @param {string} code String of scripts to be executed
-   * @returns {boolean} Returns true if code was executed, otherwise returns false.
-   */
-  const executeScriptsViaBlob = code => {
-    const blob = new Blob([code], {
-      type: 'text/javascript'
-    });
-    const url = URL.createObjectURL(blob);
-    const scriptTag = document.createElement('script');
-    scriptTag.src = url;
-    const parent = document.head || document.documentElement;
-    parent.appendChild(scriptTag);
-    URL.revokeObjectURL(url);
-    if (scriptTag.parentNode) {
-      scriptTag.parentNode.removeChild(scriptTag);
-      return false;
-    }
-    return true;
-  };
-  /**
-   * Execute scripts in a page context and cleanup itself when execution
-   * completes.
-   *
-   * @param {string[]} scripts Array of scripts to execute.
-   */
-  const executeScripts = function () {
-    let scripts = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
-    scripts.unshift('( function () { try {');
-    // we use this script detect if the script was applied,
-    // if the script tag was removed, then it means that code was applied, otherwise no
-    scripts.push(';document.currentScript && document.currentScript.remove();');
-    scripts.push("} catch (ex) { console.error('[wBlock] Error executing page script: ' + ex); } })();");
-    const code = scripts.join('\r\n');
-    if (!executeScriptsViaTextContent(code)) {
-      if (!executeScriptsViaBlob(code)) {
-        console.warn('[wBlock] Page script injection was blocked; continuing without page-context scripts.');
-      }
-    }
-  };
   /**
    * Protects specified style element from changes to the current document
    * Add a mutation observer, which is adds our rules again if it was removed
@@ -246,9 +185,8 @@
       if (configuration.procedural && configuration.procedural.length > 0) {
         window.wbeProcedural.apply(configuration.procedural);
       }
-      if (configuration.scriptlets) {
-        executeScripts([configuration.scriptlets]);
-      }
+      // Scriptlets need the background's page-world injection (see
+      // runScriptlets), which blank frames cannot get.
     } catch (error) {
       console.error(`[wBlock] Failed to apply configuration in content script: ${(error && error.stack) || error}`);
     }

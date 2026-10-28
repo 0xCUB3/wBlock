@@ -1,8 +1,8 @@
 //! `wbe compile [--safari 18.0] [--runtime-out FILE] [--trusted] LIST...`
 //! writes Safari JSON to stdout and stats JSON to stderr. `--trusted` marks
 //! the list after it as trusted (may use `trusted-*` scriptlets).
-//! `wbe engine-build --resources R --out FILE RUNTIME.txt` serializes a
-//! runtime engine. `wbe lookup [--resources R] [--bench N] ENGINE URL...`
+//! `wbe engine-build --out FILE RUNTIME.txt` serializes a runtime engine.
+//! `wbe lookup [--bench N] ENGINE URL...`
 //! prints PagePayload JSON per URL; with `--bench` it prints p50/p99 JSON for
 //! N lookups over the URLs in the file.
 
@@ -21,8 +21,8 @@ fn main() {
             eprintln!(
                 "usage: wbe compile [--safari 18.0] [--runtime-out FILE] [--trusted] LIST..."
             );
-            eprintln!("       wbe engine-build --resources R --out FILE RUNTIME.txt");
-            eprintln!("       wbe lookup [--resources R] [--bench N] ENGINE URL|URLFILE...");
+            eprintln!("       wbe engine-build --out FILE RUNTIME.txt");
+            eprintln!("       wbe lookup [--bench N] ENGINE URL|URLFILE...");
             std::process::exit(2);
         }
     }
@@ -33,26 +33,24 @@ fn read(path: &str) -> String {
 }
 
 fn engine_build_cmd(args: &[String]) {
-    let mut resources = None;
     let mut out = None;
     let mut runtime = None;
     let mut it = args.iter();
     while let Some(arg) = it.next() {
         match arg.as_str() {
-            "--resources" => resources = it.next().cloned(),
             "--out" => out = it.next().cloned(),
             _ => runtime = Some(arg.clone()),
         }
     }
-    let (Some(resources), Some(out), Some(runtime)) = (resources, out, runtime) else {
-        eprintln!("usage: wbe engine-build --resources R --out FILE RUNTIME.txt");
+    let (Some(out), Some(runtime)) = (out, runtime) else {
+        eprintln!("usage: wbe engine-build --out FILE RUNTIME.txt");
         std::process::exit(2);
     };
     let text = read(&runtime);
     let lines: Vec<String> = text.lines().map(str::to_owned).collect();
 
     let start = Instant::now();
-    let engine = Engine::build(&lines, &read(&resources)).unwrap_or_else(|e| panic!("{e}"));
+    let engine = Engine::build(&lines);
     let bytes = engine.serialize();
     let build_ms = start.elapsed().as_secs_f64() * 1000.0;
 
@@ -63,13 +61,11 @@ fn engine_build_cmd(args: &[String]) {
 }
 
 fn lookup_cmd(args: &[String]) {
-    let mut resources = None;
     let mut bench = None;
     let mut rest = Vec::new();
     let mut it = args.iter();
     while let Some(arg) = it.next() {
         match arg.as_str() {
-            "--resources" => resources = it.next().cloned(),
             "--bench" => {
                 bench = Some(
                     it.next()
@@ -82,14 +78,13 @@ fn lookup_cmd(args: &[String]) {
         }
     }
     let Some((engine_path, inputs)) = rest.split_first() else {
-        eprintln!("usage: wbe lookup [--resources R] [--bench N] ENGINE URL|URLFILE...");
+        eprintln!("usage: wbe lookup [--bench N] ENGINE URL|URLFILE...");
         std::process::exit(2);
     };
-    let resources_json = resources.map_or_else(|| wbe::runtime::RESOURCES.to_owned(), |p| read(&p));
 
     let start = Instant::now();
     let bytes = std::fs::read(engine_path).unwrap_or_else(|e| panic!("{engine_path}: {e}"));
-    let engine = Engine::deserialize(&bytes, &resources_json).unwrap_or_else(|e| panic!("{e}"));
+    let engine = Engine::deserialize(&bytes).unwrap_or_else(|e| panic!("{e}"));
     let load_ms = start.elapsed().as_secs_f64() * 1000.0;
 
     match bench {

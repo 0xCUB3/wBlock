@@ -1,0 +1,1 @@
+(function(){const p=globalThis.__wbeScriptletCalls,r=p&&p["proxy-apply-config"];if(!r)return;delete p["proxy-apply-config"];var e={};function o(t=""){try{if(typeof proxyApplyFn!="function"||(t=JSON.parse(t),typeof t!="object"))return;Object.assign(proxyApplyFn,t)}catch{}}for(const t of r)try{o(...t)}catch{}})();

@@ -45,15 +45,6 @@ fn guard<T>(failed: T, f: impl FnOnce() -> Result<T, String>) -> T {
 
 /// # Safety
 /// `p` must be NULL or a valid NUL-terminated string.
-/// `resources_json`, or the built-in resources when it is NULL.
-unsafe fn resources_or_builtin<'a>(p: *const c_char) -> Result<&'a str, String> {
-    if p.is_null() {
-        Ok(crate::runtime::RESOURCES)
-    } else {
-        cstr(p, "resources_json")
-    }
-}
-
 unsafe fn cstr<'a>(p: *const c_char, what: &str) -> Result<&'a str, String> {
     if p.is_null() {
         return Err(format!("{what} is NULL"));
@@ -156,12 +147,11 @@ pub unsafe extern "C" fn wbe_compile_free(result: *mut WbeCompileResult) {
 /// `*out` owns `*out_len` bytes; release them with `wbe_bytes_free`.
 ///
 /// # Safety
-/// `runtime_text` and `resources_json` must be valid NUL-terminated strings;
+/// `runtime_text` must be a valid NUL-terminated string;
 /// `out` and `out_len` must be valid pointers.
 #[no_mangle]
 pub unsafe extern "C" fn wbe_engine_build(
     runtime_text: *const c_char,
-    resources_json: *const c_char,
     out: *mut *mut u8,
     out_len: *mut usize,
 ) -> bool {
@@ -173,11 +163,8 @@ pub unsafe extern "C" fn wbe_engine_build(
     *out_len = 0;
     guard(false, || {
         let text = cstr(runtime_text, "runtime_text")?;
-        let resources = resources_or_builtin(resources_json)?;
         let lines: Vec<String> = text.lines().map(str::to_owned).collect();
-        let bytes = Engine::build(&lines, resources)?
-            .serialize()
-            .into_boxed_slice();
+        let bytes = Engine::build(&lines).serialize().into_boxed_slice();
         *out_len = bytes.len();
         *out = Box::into_raw(bytes) as *mut u8;
         Ok(true)
@@ -194,23 +181,15 @@ pub unsafe extern "C" fn wbe_bytes_free(bytes: *mut u8, len: usize) {
 }
 
 /// # Safety
-/// `bytes` must point to `len` readable bytes; `resources_json` must be a
-/// valid NUL-terminated string.
+/// `bytes` must point to `len` readable bytes.
 #[no_mangle]
-pub unsafe extern "C" fn wbe_engine_open(
-    bytes: *const u8,
-    len: usize,
-    resources_json: *const c_char,
-) -> *mut Engine {
+pub unsafe extern "C" fn wbe_engine_open(bytes: *const u8, len: usize) -> *mut Engine {
     guard(ptr::null_mut(), || {
         if bytes.is_null() {
             return Err("bytes is NULL".into());
         }
         let bytes = slice::from_raw_parts(bytes, len);
-        let resources = resources_or_builtin(resources_json)?;
-        Ok(Box::into_raw(Box::new(Engine::deserialize(
-            bytes, resources,
-        )?)))
+        Ok(Box::into_raw(Box::new(Engine::deserialize(bytes)?)))
     })
 }
 
@@ -261,9 +240,11 @@ pub unsafe extern "C" fn wbe_classify_line(line: *const c_char) -> *mut c_char {
 /// `host` must be a valid NUL-terminated string.
 #[no_mangle]
 pub unsafe extern "C" fn wbe_registrable_domain(host: *const c_char) -> *mut c_char {
-    guard(ptr::null_mut(), || match crate::registrable_domain(cstr(host, "host")?) {
-        Some(root) => Ok(to_c(root.to_string())?.into_raw()),
-        None => Ok(ptr::null_mut()),
+    guard(ptr::null_mut(), || {
+        match crate::registrable_domain(cstr(host, "host")?) {
+            Some(root) => Ok(to_c(root.to_string())?.into_raw()),
+            None => Ok(ptr::null_mut()),
+        }
     })
 }
 
@@ -274,7 +255,11 @@ pub unsafe extern "C" fn wbe_registrable_domain(host: *const c_char) -> *mut c_c
 /// `line` must be a valid NUL-terminated string; `start` and `len` must be
 /// writable.
 #[no_mangle]
-pub unsafe extern "C" fn wbe_cosmetic_marker(line: *const c_char, start: *mut usize, len: *mut usize) -> bool {
+pub unsafe extern "C" fn wbe_cosmetic_marker(
+    line: *const c_char,
+    start: *mut usize,
+    len: *mut usize,
+) -> bool {
     guard(false, || {
         let Some((at, marker)) = crate::parse::cosmetic::find_marker(cstr(line, "line")?) else {
             return Ok(false);
@@ -299,8 +284,6 @@ mod tests {
     use super::*;
     use std::ffi::CStr;
 
-    const RESOURCES: &str = include_str!("../../../resources/resources.json");
-
     fn c(s: &str) -> CString {
         CString::new(s).unwrap()
     }
@@ -319,14 +302,9 @@ mod tests {
     }
 
     unsafe fn build_bytes(rules: &str) -> Vec<u8> {
-        let (rules, resources) = (c(rules), c(RESOURCES));
+        let rules = c(rules);
         let (mut out, mut len) = (ptr::null_mut(), 0);
-        assert!(wbe_engine_build(
-            rules.as_ptr(),
-            resources.as_ptr(),
-            &mut out,
-            &mut len
-        ));
+        assert!(wbe_engine_build(rules.as_ptr(), &mut out, &mut len));
         let bytes = slice::from_raw_parts(out, len).to_vec();
         wbe_bytes_free(out, len);
         bytes
@@ -336,13 +314,15 @@ mod tests {
     fn engine_round_trip_through_c_abi() {
         unsafe {
             let bytes = build_bytes("example.com##.ad\nexample.com##+js(set-constant, a, true)");
-            let resources = c(RESOURCES);
-            let engine = wbe_engine_open(bytes.as_ptr(), bytes.len(), resources.as_ptr());
+            let engine = wbe_engine_open(bytes.as_ptr(), bytes.len());
             assert!(!engine.is_null(), "{}", last_error());
             let url = c("https://example.com/");
             let json = take(wbe_engine_lookup(engine, url.as_ptr()));
             assert!(json.contains(r#""hide":[".ad"]"#), "{json}");
-            assert!(json.contains("setConstantFn("), "{json}");
+            assert!(
+                json.contains(r#""scriptlets":[["set-constant","a","true"]]"#),
+                "{json}"
+            );
             wbe_engine_free(engine);
         }
     }
@@ -350,36 +330,18 @@ mod tests {
     #[test]
     fn null_and_invalid_inputs_fail_cleanly() {
         unsafe {
-            let resources = c(RESOURCES);
             let (mut out, mut len) = (ptr::null_mut(), 0);
-            assert!(!wbe_engine_build(
-                ptr::null(),
-                resources.as_ptr(),
-                &mut out,
-                &mut len
-            ));
+            assert!(!wbe_engine_build(ptr::null(), &mut out, &mut len));
             assert!(last_error().contains("runtime_text is NULL"));
             assert!(out.is_null());
 
-            let rules = c("example.com##.ad");
-            assert!(!wbe_engine_build(
-                rules.as_ptr(),
-                c("nope").as_ptr(),
-                &mut out,
-                &mut len
-            ));
-            assert!(last_error().contains("resources"));
-
-            assert!(wbe_engine_open(ptr::null(), 0, resources.as_ptr()).is_null());
-            assert!(wbe_engine_open([1u8, 2, 3].as_ptr(), 3, resources.as_ptr()).is_null());
+            assert!(wbe_engine_open(ptr::null(), 0).is_null());
+            assert!(wbe_engine_open([1u8, 2, 3].as_ptr(), 3).is_null());
             assert!(last_error().contains("engine"));
 
             assert!(wbe_engine_lookup(ptr::null(), c("https://a/").as_ptr()).is_null());
-            let engine = wbe_engine_open(
-                build_bytes("").as_ptr(),
-                build_bytes("").len(),
-                resources.as_ptr(),
-            );
+            let empty = build_bytes("");
+            let engine = wbe_engine_open(empty.as_ptr(), empty.len());
             assert!(wbe_engine_lookup(engine, ptr::null()).is_null());
             assert!(last_error().contains("url is NULL"));
             wbe_engine_free(engine);
