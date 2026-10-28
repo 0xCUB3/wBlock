@@ -747,6 +747,9 @@ fn scoped(rule: &Rule, scope: &SiteScope, out: &mut Vec<Rule>) {
                     },
                     ..r.clone()
                 });
+            // An important block would outrank its companion; the user's
+            // exclusion wins over `important`.
+            rule.important &= companion.is_none();
             out.push(Rule::Network(rule));
             out.extend(companion.map(Rule::Network));
         }
@@ -1166,6 +1169,36 @@ mod tests {
         let included: Vec<_> = (0..2).map(|list| plan.included(0, list)).collect();
         assert_eq!(plan.replicated_exceptions(0, &included).len(), 2);
         assert!(!output.contains("other\\\\.test"), "{output}");
+    }
+
+    #[test]
+    fn segment_block_survives_cosmetic_exception() {
+        let plan = plan(
+            json!([{ "id":"list", "text":"||cdn.example^\n@@||example.com^$generichide", "scope":{"exclude":["other.org"]}}]),
+            json!([{"slot":1,"lists":[{"list":0}]}]),
+            json!({}),
+        );
+        let rules = rules(&plan, 0);
+        let block = rules.iter().position(|r| r["action"]["type"] == "block").unwrap();
+        for r in &rules[block + 1..] {
+            if r["action"]["type"] == "ignore-previous-rules" && r["trigger"]["if-domain"].to_string().contains("example.com") {
+                assert_eq!(r["trigger"]["resource-type"], json!(["document"]), "{rules:?}");
+            }
+        }
+    }
+
+    #[test]
+    fn important_block_honors_excluded_subdomain() {
+        let plan = plan(
+            json!([{ "id":"list", "text":"||cdn.example^$script,domain=example.com,important", "scope":{"exclude":["shop.example.com"]}}]),
+            json!([{"slot":1,"lists":[{"list":0}]}]),
+            json!({}),
+        );
+        let rules = rules(&plan, 0);
+        let exception = rules.iter().rposition(|r| r["action"]["type"] == "ignore-previous-rules"
+            && r["trigger"]["if-domain"].to_string().contains("shop.example.com"));
+        let block = rules.iter().rposition(|r| r["action"]["type"] == "block");
+        assert!(exception > block, "{rules:?}");
     }
 
     #[test]

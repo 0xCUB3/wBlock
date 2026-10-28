@@ -270,6 +270,12 @@ fn compile_scope(r: &NetworkRule, v: SafariVersion, out: &mut Vec<Tiered>) -> Re
         if let Some(cond) = cond {
             cond.apply(&mut trigger);
         }
+        // Hides fire on the page's document request, so a cosmetic exception
+        // needs only that; it must not cancel the network blocks a #925
+        // segment places ahead of it.
+        if tier != Tier::DocumentException {
+            trigger.resource_type = Some(vec![WkResourceType::Document]);
+        }
         out.push(Tiered {
             tier,
             rule: WkRule {
@@ -1393,7 +1399,7 @@ mod tests {
         let out = check(
             std::slice::from_ref(&rule),
             V15,
-            r#"[{"trigger":{"url-filter":".*","if-domain":["*example.org"]},"action":{"type":"ignore-previous-rules"}}]"#,
+            r#"[{"trigger":{"url-filter":".*","resource-type":["document"],"if-domain":["*example.org"]},"action":{"type":"ignore-previous-rules"}}]"#,
         );
         assert_eq!(tiers(&out), [Tier::GenericHideException]);
     }
@@ -1419,7 +1425,7 @@ mod tests {
         check(
             std::slice::from_ref(&rule),
             V14,
-            r#"[{"trigger":{"url-filter":".*"},"action":{"type":"ignore-previous-rules"}}]"#,
+            r#"[{"trigger":{"url-filter":".*","resource-type":["document"]},"action":{"type":"ignore-previous-rules"}}]"#,
         );
     }
 
@@ -1890,7 +1896,7 @@ mod tests {
         check(
             std::slice::from_ref(&rule),
             V15,
-            r#"[{"trigger":{"url-filter":".*","if-top-url":["^[^:]+://+([^:/]+\\.)?google\\.(com?\\.)?[^:/.]+[/:?#]"]},"action":{"type":"ignore-previous-rules"}}]"#,
+            r#"[{"trigger":{"url-filter":".*","resource-type":["document"],"if-top-url":["^[^:]+://+([^:/]+\\.)?google\\.(com?\\.)?[^:/.]+[/:?#]"]},"action":{"type":"ignore-previous-rules"}}]"#,
         );
     }
 
