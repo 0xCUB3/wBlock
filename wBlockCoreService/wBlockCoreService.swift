@@ -407,7 +407,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         baseRulesHashHex: String,
         cosmeticSites: CosmeticFilteringPreference.Sites = .all
     ) -> String {
-        let fingerprint = compatibilityRulesFingerprintHex() + "|identity-v5"
+        let fingerprint = compatibilityRulesFingerprintHex() + "|identity-v6|" + SafariVersionDetection.compilerIdentity
         let material = cosmeticSites.cacheMarker.map { "\(baseRulesHashHex)|\(fingerprint)|cosmetic=\($0)" }
             ?? "\(baseRulesHashHex)|\(fingerprint)"
         let digest = SHA256.hash(data: Data(material.utf8))
@@ -1520,6 +1520,10 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         )
         try saveBlockerListFile(contents: String(safariRulesCount), groupIdentifier: groupIdentifier, filename: baseCountFilename, containerURL: containerURL)
         try saveBlockerListFile(contents: result.advancedRulesText ?? "", groupIdentifier: groupIdentifier, filename: advancedFilename, containerURL: containerURL)
+        try saveBlockerListFile(
+            contents: SafariVersionDetection.compilerIdentity, groupIdentifier: groupIdentifier,
+            filename: ContentBlockerIncrementalCache.baseCompilerFilename(for: targetRulesFilename), containerURL: containerURL
+        )
 
         let finalized = try finalizeAndSaveContentBlockerIfWithinLimit(
             baseJSON: safariRulesJSON,
@@ -2304,9 +2308,9 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
     private static func disabledSiteIgnoreRuleJSON(for site: String) -> String {
         let trimmedSite = site.trimmingCharacters(in: .whitespacesAndNewlines)
         // if-domain has no TLD wildcard; a list's `name.*` exclusion (#1032)
-        // matches the frame URL the way the converter does.
-        if let pattern = FilterListSiteExclusion.wildcardFrameURLPattern(trimmedSite) {
-            return "{\"action\":{\"type\":\"ignore-previous-rules\"},\"trigger\":{\"url-filter\":\".*\",\"if-frame-url\":[\"\(escapeForJSONString(pattern))\"]}}"
+        // matches the page URL instead.
+        if let pattern = FilterListSiteExclusion.wildcardTopURLPattern(trimmedSite) {
+            return "{\"action\":{\"type\":\"ignore-previous-rules\"},\"trigger\":{\"url-filter\":\".*\",\"if-top-url\":[\"\(escapeForJSONString(pattern))\"]}}"
         }
         let wildcardDomain = trimmedSite.hasPrefix("*") ? trimmedSite : "*\(trimmedSite)"
         let escapedDomain = escapeForJSONString(wildcardDomain)
@@ -2352,6 +2356,12 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         return "[" + parts.joined(separator: ",") + "]"
     }
 
+
+    /// Whether the Scripts extension has a per-page engine to read. An upgrade
+    /// from before wBlock 4 has none until its first apply.
+    public static func hasPublishedFilterEngine(groupIdentifier: String) -> Bool {
+        FilterEngineStore.hasPublishedEngine(groupIdentifier: groupIdentifier)
+    }
 
     /// Publishes the per-page engine built from the advanced (runtime) rules of
     /// every blocker. Empty rules publish an empty engine.

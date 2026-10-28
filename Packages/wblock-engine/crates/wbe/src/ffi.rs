@@ -234,6 +234,12 @@ pub unsafe extern "C" fn wbe_classify_line(line: *const c_char) -> *mut c_char {
     })
 }
 
+/// `wbe::OUTPUT_VERSION`.
+#[no_mangle]
+pub extern "C" fn wbe_output_version() -> u32 {
+    crate::OUTPUT_VERSION
+}
+
 /// The registrable domain of `host` (`wbe::registrable_domain`), or NULL.
 ///
 /// # Safety

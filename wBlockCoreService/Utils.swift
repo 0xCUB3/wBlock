@@ -310,7 +310,7 @@ public enum ContentBlockerIncrementalCache {
             return nil
         }
 
-        var canonical = "schema=\(inputSignatureSchemaVersion)\ncount=\(filters.count)\n"
+        var canonical = "schema=\(inputSignatureSchemaVersion)\ncompiler=\(SafariVersionDetection.compilerIdentity)\ncount=\(filters.count)\n"
         canonical.reserveCapacity((filters.count + affinityContributors.count) * 64)
 
         for filter in canonicalFilterOrder(filters) {
@@ -403,6 +403,7 @@ public enum ContentBlockerIncrementalCache {
         let baseURL = containerURL.appendingPathComponent(baseRulesFilename(for: targetRulesFilename))
         let countURL = containerURL.appendingPathComponent("\(baseURL.lastPathComponent).count")
         let advancedURL = containerURL.appendingPathComponent(baseAdvancedRulesFilename(for: targetRulesFilename))
+        let compilerURL = containerURL.appendingPathComponent(baseCompilerFilename(for: targetRulesFilename))
         // The base JSON is parsed once at the call site, which also compares
         // the parsed rule count against the .count sidecar. Here we only check
         // the sidecars and the outer array shape so a multi-megabyte file is
@@ -412,7 +413,9 @@ public enum ContentBlockerIncrementalCache {
               count >= 0,
               looksLikeJSONArrayFile(at: baseURL),
               FileManager.default.fileExists(atPath: advancedURL.path),
-              (try? String(contentsOf: advancedURL, encoding: .utf8)) != nil
+              (try? String(contentsOf: advancedURL, encoding: .utf8)) != nil,
+              // Written last, so it also marks the cache complete.
+              (try? String(contentsOf: compilerURL, encoding: .utf8)) == SafariVersionDetection.compilerIdentity
         else { return false }
         return true
     }
@@ -452,8 +455,12 @@ public enum ContentBlockerIncrementalCache {
         ) else {
             return nil
         }
+        // Only a cache this engine wrote: AdGuard-era advanced rules must not
+        // reach the new runtime.
+        guard hasCoherentBaseRulesCache(
+            targetRulesFilename: targetRulesFilename, groupIdentifier: groupIdentifier, containerURL: containerURL
+        ) else { return nil }
         let advancedURL = containerURL.appendingPathComponent(baseAdvancedRulesFilename(for: targetRulesFilename))
-        guard FileManager.default.fileExists(atPath: advancedURL.path) else { return nil }
         return try? String(contentsOf: advancedURL, encoding: .utf8)
     }
 
@@ -588,6 +595,12 @@ public enum ContentBlockerIncrementalCache {
             return "\(stem).base.json"
         }
         return "\(targetRulesFilename).base"
+    }
+
+    /// The compiler identity (SafariVersionDetection.compilerIdentity) that
+    /// produced the base cache.
+    public static func baseCompilerFilename(for targetRulesFilename: String) -> String {
+        "\(baseRulesFilename(for: targetRulesFilename)).compiler"
     }
 
     public static func baseAdvancedRulesFilename(for targetRulesFilename: String) -> String {

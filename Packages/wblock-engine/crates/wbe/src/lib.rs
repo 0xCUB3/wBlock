@@ -15,6 +15,11 @@ pub mod ffi;
 pub use compile::{compile, CompileOptions, CompileOutput, ListInput, Stats};
 pub use parse::parse_line;
 
+/// Version of everything the engine writes: Safari JSON, runtime rules, and
+/// the serialized per-page engine. Bump it whenever any of them changes for
+/// the same input, so callers discard outputs cached by an older engine.
+pub const OUTPUT_VERSION: u32 = 1;
+
 /// The registrable domain (eTLD+1) of `host`, or `None` for a public suffix
 /// or an invalid name.
 pub fn registrable_domain(host: &str) -> Option<&str> {

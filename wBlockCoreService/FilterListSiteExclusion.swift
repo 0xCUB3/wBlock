@@ -36,8 +36,10 @@ public enum FilterListSiteExclusion {
         Array(Set(raw.compactMap(normalizedDomain))).sorted()
     }
 
-    /// The frame-URL pattern the converter writes for a `name.*` domain.
-    static func wildcardFrameURLPattern(_ site: String) -> String? {
+    /// The page-URL pattern for a `name.*` domain, which `if-domain` cannot
+    /// express. Used with `if-top-url`, which every supported Safari has
+    /// (`if-frame-url` needs a newer one).
+    static func wildcardTopURLPattern(_ site: String) -> String? {
         guard site.hasSuffix(".*") else { return nil }
         let name = NSRegularExpression.escapedPattern(for: String(site.dropLast(2)))
         return #"^[^:]+://+([^:/]+\.)?"# + name + #"\.[^/:]+([/:?#].*)?$"#

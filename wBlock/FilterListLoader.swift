@@ -50,20 +50,43 @@ class FilterListLoader {
         ]
     }()
 
-    /// Removes the built-in AdGuard lists that uBO lists replaced, turning on
-    /// the replacements of each one that was on. Runs on every load; a removed
-    /// list is gone, so each one hands over exactly once.
-    static func handingOverReplacedAdGuardLists(_ lists: [FilterList]) -> (lists: [FilterList], removed: [FilterList]) {
-        let isReplaced = { (list: FilterList) in !list.isCustom && adGuardReplacements[list.name] != nil }
-        let removed = lists.filter(isReplaced)
-        guard !removed.isEmpty else { return (lists, []) }
-        let turnOn = Set(removed.filter(\.isSelected).flatMap { adGuardReplacements[$0.name] ?? [] })
-        let kept = lists.filter { !isReplaced($0) }.map { list -> FilterList in
+    static func isReplacedAdGuardList(_ list: FilterList) -> Bool {
+        !list.isCustom && adGuardReplacements[list.name] != nil
+    }
+
+    /// Retires the built-in AdGuard lists that uBO lists replaced. An unselected
+    /// one is simply removed. A selected one hands over only once every
+    /// replacement `hasContent`, so it keeps protecting (offline, say) until
+    /// then. Its replacements are turned on and, unless the user had already
+    /// turned one on, inherit its settings: automatic updates stay off if any
+    /// predecessor had them off, excluded sites are combined, and site-only
+    /// scoping is kept only when every predecessor used it.
+    static func handingOverReplacedAdGuardLists(
+        _ lists: [FilterList], hasContent: (FilterList) -> Bool
+    ) -> (lists: [FilterList], removed: [FilterList]) {
+        let byName = Dictionary(lists.filter { !$0.isCustom }.map { ($0.name, $0) }, uniquingKeysWith: { a, _ in a })
+        let ready = lists.filter(isReplacedAdGuardList).filter { list in
+            !list.isSelected || (adGuardReplacements[list.name] ?? []).allSatisfy { byName[$0].map(hasContent) == true }
+        }
+        guard !ready.isEmpty else { return (lists, []) }
+        var predecessors: [String: [FilterList]] = [:]
+        for list in ready where list.isSelected {
+            for name in adGuardReplacements[list.name] ?? [] { predecessors[name, default: []].append(list) }
+        }
+        let retired = Set(ready.map(\.id))
+        let kept = lists.filter { !retired.contains($0.id) }.map { list -> FilterList in
+            guard !list.isCustom, let from = predecessors[list.name] else { return list }
             var list = list
-            if !list.isCustom, turnOn.contains(list.name) { list.isSelected = true }
+            if !list.isSelected {
+                list.updatesAutomatically = from.allSatisfy(\.updatesAutomatically)
+                list.excludedSites = Array(Set(from.flatMap(\.excludedSites))).sorted()
+                list.onlySelectedSites = from.allSatisfy(\.onlySelectedSites)
+                list.selectedSites = list.onlySelectedSites ? Array(Set(from.flatMap(\.selectedSites))).sorted() : []
+            }
+            list.isSelected = true
             return list
         }
-        return (kept, removed)
+        return (kept, ready)
     }
 
     /// Was built into wBlock 5 while any list was on, so upgrades turn it on

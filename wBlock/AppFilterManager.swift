@@ -27,7 +27,7 @@ struct ApplyRunSnapshot {
 
 @MainActor
 class AppFilterManager: ObservableObject {
-    private static let lastAppliedUpgradeSignatureKey = "wBlock.lastAppliedUpgradeSignature"
+    private static let lastAppliedUpgradeSignatureKey = SharedAutoUpdateManager.lastAppliedUpgradeSignatureKey
     private static let lastFailedUpgradeSignatureKey = "wBlock.lastFailedUpgradeSignature"
     @Published var filterLists: [FilterList] = []
     @Published var isLoading: Bool = false
@@ -273,7 +273,7 @@ class AppFilterManager: ObservableObject {
                 self.autoApplyWaitingForAutoUpdate = true
                 return
             }
-            guard self.hasUnappliedChanges,
+            guard self.hasUnappliedChanges || self.filterLists.contains(where: FilterListLoader.isReplacedAdGuardList),
                   !self.isLoading,
                   !self.isApplyInFlight,
                   !self.pausedComponents.contains(.filters)
@@ -629,6 +629,7 @@ class AppFilterManager: ObservableObject {
             let rules = ContentBlockerTargetManager.shared.targets.flatMap { target -> [String] in
                 let base = ContentBlockerIncrementalCache.baseRulesFilename(for: target.rulesFilename)
                 return [target.rulesFilename, base, "\(base).count", "\(base).sha256",
+                        ContentBlockerIncrementalCache.baseCompilerFilename(for: target.rulesFilename),
                         ContentBlockerIncrementalCache.baseAdvancedRulesFilename(for: target.rulesFilename),
                         "\(target.rulesFilename).incremental-state.json", "\(target.rulesFilename).source-rule-provenance.json"]
             }
@@ -713,22 +714,10 @@ class AppFilterManager: ObservableObject {
                 }
             }
         }
-        // AdGuard lists that uBO lists replaced in wBlock 4 are removed; each
-        // one that was on turns its replacements on.
-        let handover = FilterListLoader.handingOverReplacedAdGuardLists(migratedFilterLists)
-        migratedFilterLists = handover.lists
-        let handedOverSelections = !handover.removed.isEmpty
-        if handedOverSelections {
-            Task {
-                for list in handover.removed {
-                    await self.dataManager.removeFilterList(withId: list.id)
-                }
-                await ConcurrentLogManager.shared.info(
-                    .system, LocalizedStrings.text("Replaced AdGuard filter list(s) with uBlock Origin lists"),
-                    metadata: ["filters": handover.removed.map(\.name).joined(separator: ", ")]
-                )
-            }
-        }
+        // AdGuard lists that uBO lists replaced in wBlock 4 are handed over by
+        // the next apply, which first downloads the replacements
+        // (completeAdGuardHandover). Start it at once.
+        let handedOverSelections = migratedFilterLists.contains(where: FilterListLoader.isReplacedAdGuardList)
         migratedFilterLists = FilterListSetup.hydrate(migratedFilterLists, defaults: defaultLists)
         migratedFilterLists = deduplicateFilterIDs(migratedFilterLists)
         validatorClearIDs = migratedFilterLists.compactMap { filter in
@@ -745,7 +734,7 @@ class AppFilterManager: ObservableObject {
             guard let originalURL = originalURLsByID[filter.id] else { return false }
             return originalURL != filter.url
         }
-        if hasURLMigrations || addedDefaultFilters || selectedDeprecatedListWasRemoved || handedOverSelections {
+        if hasURLMigrations || addedDefaultFilters || selectedDeprecatedListWasRemoved {
             Task { await self.saveFilterLists() }
         }
 
@@ -769,7 +758,9 @@ class AppFilterManager: ObservableObject {
             && (hasURLMigrations || selectedDeprecatedListWasRemoved || handedOverSelections || signatureMismatch)
         if needsRebuild {
             markNonSelectionChangesPending()
-            if handedOverSelections {
+            // Lists to hand over, or no engine for wBlock Scripts yet: protection
+            // is incomplete until this apply, so it does not wait.
+            if handedOverSelections || !ContentBlockerService.hasPublishedFilterEngine(groupIdentifier: GroupIdentifier.shared.value) {
                 scheduleAutoApplyDebounce(delay: 0)
             } else if storedFailedUpgradeSignature() != currentSignature {
                 scheduleAutoApplyDebounce()
@@ -838,6 +829,31 @@ class AppFilterManager: ObservableObject {
         }
     }
 
+    /// Downloads the replacements of each selected AdGuard list that wBlock 4
+    /// replaced, then retires those whose replacements all arrived
+    /// (FilterListLoader.handingOverReplacedAdGuardLists). One that cannot
+    /// hand over yet keeps protecting and is retried on the next apply.
+    func completeAdGuardHandover() async {
+        let pending = filterLists.filter(FilterListLoader.isReplacedAdGuardList)
+        guard !pending.isEmpty else { return }
+        let needed = Set(pending.filter(\.isSelected).flatMap { FilterListLoader.adGuardReplacements[$0.name] ?? [] })
+        for list in filterLists where !list.isCustom && needed.contains(list.name) && !loader.filterFileExists(list) {
+            _ = await filterUpdater.fetchAndProcessFilter(list)
+        }
+        let handover = FilterListLoader.handingOverReplacedAdGuardLists(filterLists, hasContent: loader.filterFileExists)
+        guard !handover.removed.isEmpty else { return }
+        filterLists = handover.lists
+        refreshMissingItems()
+        for list in handover.removed {
+            await dataManager.removeFilterList(withId: list.id)
+        }
+        await saveFilterLists()
+        await ConcurrentLogManager.shared.info(
+            .system, LocalizedStrings.text("Replaced AdGuard filter list(s) with uBlock Origin lists"),
+            metadata: ["filters": handover.removed.map(\.name).joined(separator: ", ")]
+        )
+    }
+
     /// `checkForUpdates: false` skips refreshing downloaded lists. Selected lists that have never
     /// been fetched are downloaded only when `downloadMissing` (default: `checkForUpdates`) is true.
     @discardableResult
@@ -847,6 +863,8 @@ class AppFilterManager: ObservableObject {
         refreshMissingItems()
 
         let started = await performExclusiveApply {
+            // Before the snapshot, so the run compiles the handed-over selection.
+            await self.completeAdGuardHandover()
             self.prepareApplyRunState()
             self.failedReloadTargets = []
             self.showingApplyProgressSheet = showProgress

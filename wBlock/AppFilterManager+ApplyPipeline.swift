@@ -250,6 +250,7 @@ extension AppFilterManager {
         // (e.g. selected-update download → apply).
         if prepareState {
             let started = await performExclusiveApply {
+                await self.completeAdGuardHandover()
                 await self.applyChangesUnlocked(
                     allowUserInteraction: allowUserInteraction,
                     prepareState: true,
@@ -857,7 +858,59 @@ extension AppFilterManager {
             return
         }
 
-        // Reloading phase - reload all content blockers FIRST before building advanced engine
+        // The per-page engine goes first: it is quick, and a Scripts extension
+        // that sees the new native rules then finds the matching engine. A
+        // failed publish is reported, but the native reloads still run.
+        let advancedEngineSucceeded: Bool
+        do {
+            if !advancedRulesByTarget.isEmpty {
+                await MainActor.run {
+                    self.applyProgressViewModel.updateStageDescription(
+                        LocalizedStrings.text("Building combined filter engine...", comment: "Apply pipeline stage")
+                    )
+                }
+
+                let orderedAdvancedRules = platformTargets.compactMap {
+                    advancedRulesByTarget[$0.bundleIdentifier]
+                }
+
+                try await Task.detached {
+                    let combinedAdvancedRules = orderedAdvancedRules.joined(separator: "\n")
+                    let totalLines = combinedAdvancedRules.components(separatedBy: "\n").count
+                    await ConcurrentLogManager.shared.info(
+                        .filterApply, LocalizedStrings.text("Building filter engine"),
+                        metadata: [
+                            "targetCount": "\(advancedRulesByTarget.count)",
+                            "totalLines": "\(totalLines)",
+                        ])
+
+                    try ContentBlockerService.publishCombinedFilterEngine(
+                        combinedAdvancedRules: combinedAdvancedRules,
+                        groupIdentifier: GroupIdentifier.shared.value
+                    )
+                }.value
+            } else {
+                await ConcurrentLogManager.shared.debug(
+                    .filterApply, LocalizedStrings.text("No advanced rules found, clearing filter engine"), metadata: [:])
+                try await Task.detached {
+                    try ContentBlockerService.publishCombinedFilterEngine(
+                        combinedAdvancedRules: "",
+                        groupIdentifier: GroupIdentifier.shared.value
+                    )
+                }.value
+            }
+            advancedEngineSucceeded = true
+        } catch {
+            advancedEngineSucceeded = false
+            await failApplyRun(
+                logMessage: LocalizedStrings.text("Advanced engine publish failed"),
+                metadata: ["error": LogErrorDescriber.describe(error)],
+                dismissProgressSheet: false
+            )
+        }
+
+
+        // Reloading phase
         await MainActor.run {
             self.processedFiltersCount = 0
             self.applyProgressViewModel.updateStageDescription(
@@ -927,60 +980,11 @@ extension AppFilterManager {
                 metadata: reloadMetadata)
         }
 
-        // Build the combined filter engine after all content blockers are reloaded.
         if await failApplyIfCancelled() { return }
 
         await MainActor.run {
             self.progress = 0.9
             self.applyProgressViewModel.updatePhaseCompletion(reloading: true, saving: false)
-        }
-
-        let advancedEngineSucceeded: Bool
-        do {
-            if !advancedRulesByTarget.isEmpty {
-                await MainActor.run {
-                    self.applyProgressViewModel.updateStageDescription(
-                        LocalizedStrings.text("Building combined filter engine...", comment: "Apply pipeline stage")
-                    )
-                }
-
-                let orderedAdvancedRules = platformTargets.compactMap {
-                    advancedRulesByTarget[$0.bundleIdentifier]
-                }
-
-                try await Task.detached {
-                    let combinedAdvancedRules = orderedAdvancedRules.joined(separator: "\n")
-                    let totalLines = combinedAdvancedRules.components(separatedBy: "\n").count
-                    await ConcurrentLogManager.shared.info(
-                        .filterApply, LocalizedStrings.text("Building filter engine"),
-                        metadata: [
-                            "targetCount": "\(advancedRulesByTarget.count)",
-                            "totalLines": "\(totalLines)",
-                        ])
-
-                    try ContentBlockerService.publishCombinedFilterEngine(
-                        combinedAdvancedRules: combinedAdvancedRules,
-                        groupIdentifier: GroupIdentifier.shared.value
-                    )
-                }.value
-            } else {
-                await ConcurrentLogManager.shared.debug(
-                    .filterApply, LocalizedStrings.text("No advanced rules found, clearing filter engine"), metadata: [:])
-                try await Task.detached {
-                    try ContentBlockerService.publishCombinedFilterEngine(
-                        combinedAdvancedRules: "",
-                        groupIdentifier: GroupIdentifier.shared.value
-                    )
-                }.value
-            }
-            advancedEngineSucceeded = true
-        } catch {
-            advancedEngineSucceeded = false
-            await failApplyRun(
-                logMessage: LocalizedStrings.text("Advanced engine publish failed"),
-                metadata: ["error": LogErrorDescriber.describe(error)],
-                dismissProgressSheet: false
-            )
         }
 
         let advancedEngineStatus = advancedRulesByTarget.isEmpty

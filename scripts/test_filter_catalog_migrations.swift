@@ -64,18 +64,42 @@ private final class TestLoader: FilterListLoader {
         func adGuard(_ name: String, selected: Bool, custom: Bool = false) -> FilterList {
             FilterList(name: name, url: URL(string: "https://example.com/\(UUID())")!, category: .ads, isCustom: custom, isSelected: selected)
         }
-        let stored = defaults.map { list -> FilterList in var list = list; list.isSelected = false; return list } + [
-            adGuard("AdGuard Base Filter", selected: true), adGuard("AdGuard Tracking Protection Filter", selected: true),
+        var base = adGuard("AdGuard Base Filter", selected: true)
+        base.updatesAutomatically = false
+        base.excludedSites = ["a.com"]
+        var tracking = adGuard("AdGuard Tracking Protection Filter", selected: true)
+        tracking.excludedSites = ["b.com"]
+        var stored = defaults.map { list -> FilterList in var list = list; list.isSelected = false; return list } + [
+            base, tracking,
             adGuard("AdGuard Popups", selected: false), adGuard("AdGuard Cookie Notices", selected: true, custom: true),
         ]
-        let handover = FilterListLoader.handingOverReplacedAdGuardLists(stored)
-        precondition(Set(handover.removed.map(\.name)) == ["AdGuard Base Filter", "AdGuard Tracking Protection Filter", "AdGuard Popups"])
-        let selected = Set(handover.lists.filter(\.isSelected).map(\.name))
+        // The user already runs EasyPrivacy with their own settings.
+        let easyPrivacy = stored.firstIndex { $0.name == "EasyPrivacy" }!
+        stored[easyPrivacy].isSelected = true
+        stored[easyPrivacy].excludedSites = ["mine.com"]
+
+        // Offline: no replacement has content, so only the unselected list goes.
+        let offline = FilterListLoader.handingOverReplacedAdGuardLists(stored, hasContent: { _ in false })
+        precondition(offline.removed.map(\.name) == ["AdGuard Popups"], "offline: \(offline.removed.map(\.name))")
+        precondition(offline.lists.contains { $0.name == "AdGuard Base Filter" && $0.isSelected }, "a list keeps protecting until it can hand over")
+
+        // Only Base's replacements arrived: Base hands over, Tracking waits.
+        let baseReplacements = Set(FilterListLoader.adGuardReplacements["AdGuard Base Filter"]!)
+        let partial = FilterListLoader.handingOverReplacedAdGuardLists(offline.lists, hasContent: { baseReplacements.contains($0.name) })
+        precondition(partial.removed.map(\.name) == ["AdGuard Base Filter"], "partial: \(partial.removed.map(\.name))")
+        let ads = partial.lists.first { $0.name == "uBlock filters – Ads" }!
+        precondition(ads.isSelected && !ads.updatesAutomatically && ads.excludedSites == ["a.com"], "settings move with the selection: \(ads)")
+
+        let done = FilterListLoader.handingOverReplacedAdGuardLists(partial.lists, hasContent: { _ in true })
+        precondition(done.removed.map(\.name) == ["AdGuard Tracking Protection Filter"])
+        let selected = Set(done.lists.filter(\.isSelected).map(\.name))
         let expected: Set<String> = ["uBlock filters – Ads", "uBlock filters – Badware risks", "uBlock filters – Quick fixes",
                                      "uBlock filters – Unbreak", "EasyList", "Online Malicious URL Blocklist",
                                      "uBlock filters – Privacy", "EasyPrivacy", "AdGuard Cookie Notices"]
         precondition(selected == expected, "handover: \(selected)")
-        precondition(FilterListLoader.handingOverReplacedAdGuardLists(handover.lists).removed.isEmpty, "runs once")
+        precondition(done.lists.first { $0.name == "uBlock filters – Privacy" }!.excludedSites == ["b.com"])
+        precondition(done.lists.first { $0.name == "EasyPrivacy" }!.excludedSites == ["mine.com"], "a list the user set up keeps its settings")
+        precondition(FilterListLoader.handingOverReplacedAdGuardLists(done.lists, hasContent: { _ in true }).removed.isEmpty, "runs once")
 
         // A default name that matches no catalog entry would silently drop that list from the defaults.
         let catalogNames = Set(defaults.map(\.name))

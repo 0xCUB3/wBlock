@@ -48,7 +48,10 @@ enum FilterEngineStore {
         try withLock(in: directory) {
             try Data(request.utf8).write(to: directory.appendingPathComponent(latestRequestFileName), options: .atomic)
         }
-        let fingerprint = SHA256.hash(data: Data(runtimeRules.utf8)).map { String(format: "%02x", $0) }.joined()
+        // The serialized format belongs to the engine version, so it is part of
+        // the fingerprint as well as the rules.
+        let fingerprint = SHA256.hash(data: Data((SafariVersionDetection.compilerIdentity + "\n" + runtimeRules).utf8))
+            .map { String(format: "%02x", $0) }.joined()
         if readMeta(in: directory)?.fingerprint == fingerprint,
            FileManager.default.fileExists(atPath: directory.appendingPathComponent(engineFileName).path) {
             return
@@ -65,6 +68,16 @@ enum FilterEngineStore {
             return true
         }
         os_log(.info, published ? "Published filter engine: %d bytes" : "Abandoned filter engine (%d bytes) for a newer publish", engine.count)
+    }
+
+    /// Whether an engine has been published, so the Scripts extension has one.
+    static func hasPublishedEngine(groupIdentifier: String) -> Bool {
+        guard let containerURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: groupIdentifier
+        ) else { return false }
+        let directory = containerURL.appendingPathComponent(directoryName, isDirectory: true)
+        return readMeta(in: directory) != nil
+            && FileManager.default.fileExists(atPath: directory.appendingPathComponent(engineFileName).path)
     }
 
     /// The per-page payload for `url` (see Packages/wblock-engine/docs/BRIEF.md),

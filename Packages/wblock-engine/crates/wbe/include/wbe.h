@@ -30,6 +30,9 @@ typedef struct WbeEngine WbeEngine;
 
 const char *wbe_last_error(void);
 
+/* Changes whenever the engine's outputs change for the same input. */
+uint32_t wbe_output_version(void);
+
 /* lists: UTF-8 list texts. trusted: one flag per list (may be NULL when count is 0). */
 WbeCompileResult *wbe_compile(const char *const *lists, const bool *trusted, size_t count,
                               uint16_t safari_major, uint16_t safari_minor);

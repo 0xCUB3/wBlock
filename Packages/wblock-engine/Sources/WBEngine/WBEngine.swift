@@ -10,6 +10,9 @@ public enum WBEngine {
         }
     }
 
+    /// Changes whenever the engine's outputs change for the same input.
+    public static var outputVersion: UInt32 { wbe_output_version() }
+
     public struct List {
         public let text: String
         /// May use uBO's `trusted-*` scriptlets.
