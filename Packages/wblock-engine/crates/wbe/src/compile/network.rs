@@ -396,14 +396,6 @@ fn domain_conds(
     v: SafariVersion,
     exception: bool,
 ) -> Result<Vec<Option<Cond>>, String> {
-    if !exception
-        && list
-            .exclude
-            .iter()
-            .any(|domain| matches!(domain, DomainMatcher::Entity(_)))
-    {
-        return Err("dnr:domain".into());
-    }
     let top = v.at_least(15, 0);
     let split = |items: &[DomainMatcher]| {
         let (mut hosts, mut tops, mut all) = (Vec::new(), Vec::new(), true);
@@ -1136,7 +1128,7 @@ mod tests {
         check(
             std::slice::from_ref(&rule),
             V15,
-            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[^a-zA-Z0-9_.%-]","resource-type":["script"],"if-top-url":["^[^:]+://+([^:/]+\\.)?google\\.com[/:?#]"]},"action":{"type":"block"}}]"#,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[^a-zA-Z0-9_.%-]","resource-type":["script"],"if-top-url":["^[^:]+://+([^:/]+\\.)?google\\.(com?\\.)?[^:/.]+[/:?#]"]},"action":{"type":"block"}}]"#,
         );
     }
 
@@ -1678,7 +1670,7 @@ mod tests {
     }
 
     #[test]
-    fn entity_exclusion_must_not_overblock_other_suffixes() {
+    fn entity_exclude_on_block_uses_unless_top_url() {
         let rule = NetworkRule {
             from: DomainList {
                 include: vec![],
@@ -1687,20 +1679,11 @@ mod tests {
             types: RT::SCRIPT,
             ..net("||t.com^")
         };
-        assert!(run(&[rule], V15).0.is_empty());
-    }
-
-    #[test]
-    fn entity_exclude_on_block_is_unsupported() {
-        let rule = NetworkRule {
-            from: DomainList {
-                include: vec![],
-                exclude: vec![DomainMatcher::Entity("google".into())],
-            },
-            types: RT::SCRIPT,
-            ..net("||t.com^")
-        };
-        assert!(run(&[rule], V15).0.is_empty());
+        check(
+            std::slice::from_ref(&rule),
+            V15,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[^a-zA-Z0-9_.%-]","resource-type":["script"],"unless-top-url":["^[^:]+://+([^:/]+\\.)?google\\.(com?\\.)?[^:/.]+[/:?#]"]},"action":{"type":"block"}}]"#,
+        );
     }
 
     #[test]
@@ -1907,7 +1890,7 @@ mod tests {
         check(
             std::slice::from_ref(&rule),
             V15,
-            r#"[{"trigger":{"url-filter":".*","if-top-url":["^[^:]+://+([^:/]+\\.)?google\\.com[/:?#]"]},"action":{"type":"ignore-previous-rules"}}]"#,
+            r#"[{"trigger":{"url-filter":".*","if-top-url":["^[^:]+://+([^:/]+\\.)?google\\.(com?\\.)?[^:/.]+[/:?#]"]},"action":{"type":"ignore-previous-rules"}}]"#,
         );
     }
 

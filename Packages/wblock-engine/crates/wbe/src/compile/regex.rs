@@ -143,9 +143,10 @@ fn class_end(b: &[u8], start: usize) -> Option<usize> {
 }
 
 /// An `if-top-url` regex for a domain option (uBO `$domain=`/`$to=` item).
-/// Hostnames match themselves and subdomains. Entities (`google.*`) accept any
-/// suffix of one or two labels, which is an approximation of uBO's public
-/// suffix list: `google.evil.com` also matches. Regex domains match the host
+/// Hostnames match themselves and subdomains. Entities (`google.*`) accept a
+/// one-label suffix or `co.`/`com.` plus one label, approximating uBO's public
+/// suffix list: `google.de` and `google.co.uk` match, `google.evil.com` does
+/// not, and rarer two-label suffixes (`google.ne.jp`) are missed. Regex domains match the host
 /// with the regex, as uBO tests them against the hostname.
 pub fn domain_top_url(m: &DomainMatcher) -> Option<String> {
     top_url(m).filter(|u| webkit_accepts(u))
@@ -160,13 +161,10 @@ fn top_url(m: &DomainMatcher) -> Option<String> {
             Some(out)
         }
         DomainMatcher::Entity(e) => {
-            let host = format!("{e}.com");
-            if crate::registrable_domain(&host) != Some(host.as_str()) {
-                return None;
-            }
             let mut out = HOST_START.to_string();
             literal(e, &mut out)?;
-            out.push_str("\\.com");
+            // `name.<tld>` or `name.co.<tld>`/`name.com.<tld>`, not `name.evil.com`.
+            out.push_str("\\.(com?\\.)?[^:/.]+");
             out.push_str(HOST_END);
             Some(out)
         }
@@ -602,14 +600,14 @@ mod tests {
     fn domain_entity_top_url() {
         assert_eq!(
             domain_top_url(&DomainMatcher::Entity("google".into())).unwrap(),
-            "^[^:]+://+([^:/]+\\.)?google\\.com[/:?#]"
+            "^[^:]+://+([^:/]+\\.)?google\\.(com?\\.)?[^:/.]+[/:?#]"
         );
     }
 
     #[test]
     fn entity_domain_does_not_accept_arbitrary_second_level_suffix() {
         let filter = domain_top_url(&DomainMatcher::Entity("google".into())).unwrap();
-        assert!(!filter.contains("([^:/.]+\\.)?"));
+        assert!(!filter.contains("([^:/.]+\\.)?[^:/.]"));
         assert!(webkit_accepts(&filter));
     }
 
