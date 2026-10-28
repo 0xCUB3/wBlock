@@ -1,0 +1,15 @@
+{
+  "name": "wblock-engine-harness",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "setup": "./setup.sh",
+    "oracle": "node --test test/oracle.test.ts",
+    "sim": "node --test test/sim.test.ts",
+    "diff": "node diff.ts",
+    "test": "node --test test/*.test.ts"
+  },
+  "dependencies": {
+    "tldts": "^7.4.19"
+  }
+}
