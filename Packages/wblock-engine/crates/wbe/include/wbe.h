@@ -1,0 +1,63 @@
+/*
+ * C ABI of the wbe filter engine (crates/wbe/src/ffi.rs), used by
+ * wBlockCoreService through module.modulemap.
+ *
+ * Ownership: every pointer returned by a function named *_new, *_build,
+ * *_open or *_lookup, or by wbe_classify_line, is owned by the caller and
+ * released with the matching free function. Accessors such as
+ * wbe_compile_webkit_json return borrowed pointers that stay valid until
+ * the owning WbeCompileResult is freed.
+ *
+ * Failure: functions return NULL or false. wbe_last_error returns the
+ * message for the last call on the calling thread; it is valid until that
+ * thread's next wbe call and must not be freed.
+ *
+ * Threading: a WbeEngine must not be used from two threads at once.
+ */
+#ifndef WBE_H
+#define WBE_H
+
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef struct WbeCompileResult WbeCompileResult;
+typedef struct WbeEngine WbeEngine;
+
+const char *wbe_last_error(void);
+
+/* lists: UTF-8 list texts. trusted: one flag per list (may be NULL when count is 0). */
+WbeCompileResult *wbe_compile(const char *const *lists, const bool *trusted, size_t count,
+                              uint16_t safari_major, uint16_t safari_minor);
+/* Safari content-blocker JSON array. */
+const char *wbe_compile_webkit_json(const WbeCompileResult *result);
+/* uBO rule lines for wbe_engine_build, joined with newlines. */
+const char *wbe_compile_runtime_text(const WbeCompileResult *result);
+/* {"lines":..,"rules":..,"native_rules":..,"runtime_rules":..,"dropped":{..}} */
+const char *wbe_compile_stats_json(const WbeCompileResult *result);
+void wbe_compile_free(WbeCompileResult *result);
+
+/* On success *out holds *out_len bytes; free with wbe_bytes_free. */
+bool wbe_engine_build(const char *runtime_text, const char *resources_json, uint8_t **out,
+                      size_t *out_len);
+void wbe_bytes_free(uint8_t *bytes, size_t len);
+
+/* resources_json: the same resource array passed to wbe_engine_build. */
+WbeEngine *wbe_engine_open(const uint8_t *bytes, size_t len, const char *resources_json);
+/* PagePayload JSON: {"hide":[..],"procedural":[..],"scriptlets":"..","generichide":bool}. */
+char *wbe_engine_lookup(const WbeEngine *engine, const char *url);
+void wbe_engine_free(WbeEngine *engine);
+
+/* ParsedLine JSON for one filter line, for the rule editor. */
+char *wbe_classify_line(const char *line);
+void wbe_string_free(char *s);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* WBE_H */

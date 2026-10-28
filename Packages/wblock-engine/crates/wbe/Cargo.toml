@@ -17,6 +17,10 @@ rustc-hash = "2"
 cssparser = "0.35"
 selectors = "0.32"
 precomputed-hash = "0.1"
+# Cosmetic, procedural, and scriptlet matching only; network rules are compiled
+# to Safari JSON, so the adblock-rust network features are off. css-validation
+# is required: without it `:has-text(...)` is treated as a plain CSS selector.
+adblock = { version = "=0.13.3", default-features = false, features = ["embedded-domain-resolver", "single-thread", "css-validation"] }
 
 [features]
 default = []

@@ -1,0 +1,4 @@
+module WBE {
+    header "wbe.h"
+    export *
+}
