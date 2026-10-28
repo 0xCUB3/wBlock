@@ -68,3 +68,23 @@ Licensing: wBlock is GPL-3.0. uBO (GPL-3.0) and adblock-rust/brave resources
   Cite the uBO function you followed in a one-line comment.
 - Finish with a short report: what you built, what tests show, what you
   could not do, and any change you need in shared files.
+
+## Per-page payload (native handler -> wBlock Scripts background.js)
+
+`WebExtensionRequestHandler.swift` answers `{payload: {url, topUrl}}` with:
+
+```
+{
+  "css": [String],         // plain selectors to hide (insertCSS, `display: none !important`)
+  "procedural": [String],  // JSON filters for js/procedural.js (`wbeProcedural.apply`)
+  "scriptlets": String,    // ready-to-run JS (uBO scriptlets, already bound to args); MAIN world
+  "generichide": Bool,
+  "engineTimestamp": Number,
+  "disabled": Bool,
+  "paused": Bool,
+  "userScripts": []        // only in the empty payload, as today
+}
+```
+
+`extendedCss`, `js` and the old `scriptlets: [{name, args}]` are gone; AdGuard's
+extended-css and scriptlets bundles are no longer shipped.
