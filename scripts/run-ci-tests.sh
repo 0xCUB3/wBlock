@@ -239,11 +239,9 @@ compile_core_test protobuf-reliability scripts/test_protobuf_reliability.swift
 compile_core_test filter-update-work-lifetime scripts/test_filter_update_work_lifetime.swift
 compile_core_test issue-508-import-identity scripts/test_issue_508_import_identity.swift
 compile_core_test issue-508-oversized-import scripts/test_issue_508_oversized_import.swift
-compile_core_test issue-531-custom-exception-affinity scripts/test_issue_531_custom_exception_affinity.swift
 compile_core_test removeparam-dnr scripts/test_removeparam_dnr_rule_generator.swift
 compile_core_test redirect-dnr scripts/test_redirect_dnr_rules.swift
 compile_core_test blocked-count-dnr scripts/test_blocked_count_dnr_rules.swift
-compile_core_test safari-affinity-snapshot scripts/test_safari_affinity_snapshot_behavior.swift
 compile_core_test safari-rule-limit-cap scripts/test_safari_rule_limit_cap.swift
 compile_core_test content-blocker-domain-case scripts/test_content_blocker_domain_case.swift
 compile_core_test wbe-upgrade scripts/test_wbe_upgrade.swift

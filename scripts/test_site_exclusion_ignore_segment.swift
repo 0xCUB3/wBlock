@@ -25,7 +25,6 @@ struct SiteExclusionIgnoreSegmentTests {
         let ordered = ContentBlockerMappingService.orderedForCompilation([excluded, other])
         _ = try ContentBlockerService.compileTargetRules(
             filters: [excluded, other], orderedSelectedFilters: ordered,
-            affinitySnapshot: SafariContentBlockerAffinityProcessor.snapshot(for: ordered, containerURL: container),
             targetInfo: target, allTargets: [target], disabledSites: [], extraRulesText: nil,
             groupIdentifier: groupIdentifier, containerURL: container
         )

@@ -13,16 +13,6 @@ public enum WBEngine {
     /// Changes whenever the engine's outputs change for the same input.
     public static var outputVersion: UInt32 { wbe_output_version() }
 
-    public struct List {
-        public let text: String
-        /// May use uBO's `trusted-*` scriptlets.
-        public let trusted: Bool
-        public init(text: String, trusted: Bool) {
-            self.text = text
-            self.trusted = trusted
-        }
-    }
-
     public struct Compiled {
         /// Safari content-blocker JSON array.
         public let safariRulesJSON: String
@@ -73,23 +63,6 @@ public enum WBEngine {
         }
     }
 
-    public static func compile(_ lists: [List], safariVersion: (major: UInt16, minor: UInt16)) throws -> Compiled {
-        let cStrings = lists.map { strdup($0.text) }
-        defer { cStrings.forEach { free($0) } }
-        let pointers = cStrings.map { UnsafePointer($0) }
-        let trusted = lists.map(\.trusted)
-        guard let result = wbe_compile(pointers, trusted, lists.count, safariVersion.major, safariVersion.minor) else {
-            throw EngineError.last()
-        }
-        defer { wbe_compile_free(result) }
-        let statsJSON = String(cString: wbe_compile_stats_json(result))
-        return Compiled(
-            safariRulesJSON: String(cString: wbe_compile_webkit_json(result)),
-            runtimeRules: String(cString: wbe_compile_runtime_text(result)),
-            stats: try JSONDecoder().decode(Stats.self, from: Data(statsJSON.utf8))
-        )
-    }
-
     /// Serializes a per-page engine for `runtimeRules`.
     public static func buildEngine(runtimeRules: String) throws -> Data {
         var bytes: UnsafeMutablePointer<UInt8>?
@@ -128,13 +101,6 @@ public enum WBEngine {
         guard let root = wbe_registrable_domain(host) else { return nil }
         defer { wbe_string_free(root) }
         return String(cString: root)
-    }
-
-    /// UTF-8 offset and length of the leftmost cosmetic marker (`##`, `#@#`,
-    /// `#$#`, `$$`, ...) in `line`, found exactly as the parser finds it.
-    public static func cosmeticMarker(in line: String) -> (offset: Int, length: Int)? {
-        var start = 0, length = 0
-        return wbe_cosmetic_marker(line, &start, &length) ? (start, length) : nil
     }
 
     /// The parsed form of one rule line as JSON, for the rule editor.

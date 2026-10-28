@@ -42,7 +42,6 @@ struct Main {
         let selection = [blocker, excepter]
         let ordered = ContentBlockerMappingService.orderedForCompilation(selection)
         let mapping = ContentBlockerMappingService.distribute(selectedFilters: selection, across: targets)
-        let snapshot = SafariContentBlockerAffinityProcessor.snapshot(for: ordered, containerURL: container)
         guard let blockerSlot = mapping.first(where: { $0.value.contains(where: { $0.id == blocker.id }) })?.key,
               let excepterSlot = mapping.first(where: { $0.value.contains(where: { $0.id == excepter.id }) })?.key,
               blockerSlot != excepterSlot
@@ -51,7 +50,7 @@ struct Main {
         func compile(_ slot: ContentBlockerTargetInfo) throws -> [[String: Any]] {
             _ = try ContentBlockerService.compileTargetRules(
                 filters: mapping[slot] ?? [], orderedSelectedFilters: ordered,
-                affinitySnapshot: snapshot, targetInfo: slot, allTargets: targets,
+                targetInfo: slot, allTargets: targets,
                 disabledSites: [], extraRulesText: nil, groupIdentifier: groupIdentifier,
                 containerURL: container
             )
@@ -97,7 +96,7 @@ struct Main {
         // Cache identity must cover the other slot's exceptions.
         let cached = try ContentBlockerService.compileTargetRules(
             filters: mapping[blockerSlot] ?? [], orderedSelectedFilters: ordered,
-            affinitySnapshot: snapshot, targetInfo: blockerSlot, allTargets: targets,
+            targetInfo: blockerSlot, allTargets: targets,
             disabledSites: [], extraRulesText: nil, groupIdentifier: groupIdentifier, containerURL: container
         )
         if !cached.reusedCachedBase { fail("unchanged inputs must hit the cache") }
@@ -105,7 +104,7 @@ struct Main {
         try write(excepter, "||ads.example^\n@@||unrelated.example^\n")
         let rebuilt = try ContentBlockerService.compileTargetRules(
             filters: mapping[blockerSlot] ?? [], orderedSelectedFilters: ordered,
-            affinitySnapshot: snapshot, targetInfo: blockerSlot, allTargets: targets,
+            targetInfo: blockerSlot, allTargets: targets,
             disabledSites: [], extraRulesText: nil, groupIdentifier: groupIdentifier, containerURL: container
         )
         if rebuilt.reusedCachedBase { fail("changing another slot's exceptions must rebuild this slot") }

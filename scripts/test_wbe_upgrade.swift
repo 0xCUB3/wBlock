@@ -55,7 +55,6 @@ struct WbeUpgradeTests {
         let ordered = ContentBlockerMappingService.orderedForCompilation([list])
         let result = try ContentBlockerService.compileTargetRules(
             filters: [list], orderedSelectedFilters: ordered,
-            affinitySnapshot: SafariContentBlockerAffinityProcessor.snapshot(for: ordered, containerURL: container),
             targetInfo: target, allTargets: [target], disabledSites: ["example.*"], extraRulesText: nil,
             groupIdentifier: groupIdentifier, containerURL: container
         )
@@ -83,7 +82,6 @@ struct WbeUpgradeTests {
         let scriptsOrdered = ContentBlockerMappingService.orderedForCompilation([scriptsOnly])
         _ = try ContentBlockerService.compileTargetRules(
             filters: [scriptsOnly], orderedSelectedFilters: scriptsOrdered,
-            affinitySnapshot: SafariContentBlockerAffinityProcessor.snapshot(for: scriptsOrdered, containerURL: container),
             targetInfo: second, allTargets: [second], disabledSites: [], extraRulesText: nil,
             groupIdentifier: groupIdentifier, containerURL: container
         )

@@ -23,7 +23,6 @@ struct ContentBlockerDomainCaseTests {
         _ = try ContentBlockerService.compileTargetRules(
             filters: [list],
             orderedSelectedFilters: ordered,
-            affinitySnapshot: SafariContentBlockerAffinityProcessor.snapshot(for: ordered, containerURL: container),
             targetInfo: target,
             allTargets: [target],
             disabledSites: [],

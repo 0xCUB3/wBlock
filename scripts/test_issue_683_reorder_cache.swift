@@ -45,7 +45,6 @@ struct ReorderCacheTests {
         func compile(_ assigned: [FilterList], _ ordered: [FilterList], extra: String? = nil) throws -> ContentBlockerService.ContentBlockerTargetOutcome {
             try ContentBlockerService.compileTargetRules(
                 filters: assigned, orderedSelectedFilters: ordered,
-                affinitySnapshot: SafariContentBlockerAffinityProcessor.snapshot(for: ordered, containerURL: container),
                 targetInfo: target, allTargets: targets, disabledSites: [], extraRulesText: extra,
                 groupIdentifier: group, containerURL: container
             )

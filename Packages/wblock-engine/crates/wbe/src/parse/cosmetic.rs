@@ -190,6 +190,20 @@ pub(crate) fn is_comment(line: &str) -> bool {
             .is_some_and(u8::is_ascii_whitespace)
 }
 
+/// `raw` with its domain prefix rewritten to `domains`, so the runtime engine
+/// sees the scope a rule was narrowed to.
+pub(crate) fn with_domains(raw: &str, domains: &DomainList) -> String {
+    let at = find_marker(raw).map_or(0, |(at, _)| at);
+    let one = |m: &DomainMatcher| match m {
+        DomainMatcher::Hostname(h) => h.clone(),
+        DomainMatcher::Entity(e) => format!("{e}.*"),
+        DomainMatcher::Regex(r) => format!("/{r}/"),
+    };
+    let mut parts: Vec<String> = domains.include.iter().map(one).collect();
+    parts.extend(domains.exclude.iter().map(|m| format!("~{}", one(m))));
+    format!("{}{}", parts.join(","), &raw[at..])
+}
+
 /// Leftmost cosmetic marker and its byte offset. The marker needs at least one
 /// character after it (uBO's `.{1,2}` in `reExtAnchor`). An HTML marker only
 /// counts when the text before it looks like a domain list.

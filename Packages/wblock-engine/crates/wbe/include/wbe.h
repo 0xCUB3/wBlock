@@ -44,9 +44,6 @@ WbeCompileResult *wbe_plan_compile_target(const WbePlan *plan, size_t target,
                                           const char *extras_json);
 void wbe_plan_free(WbePlan *plan);
 
-/* lists: UTF-8 list texts. trusted: one flag per list (may be NULL when count is 0). */
-WbeCompileResult *wbe_compile(const char *const *lists, const bool *trusted, size_t count,
-                              uint16_t safari_major, uint16_t safari_minor);
 /* Safari content-blocker JSON array. */
 const char *wbe_compile_webkit_json(const WbeCompileResult *result);
 /* uBO rule lines for wbe_engine_build, joined with newlines. */
@@ -66,9 +63,6 @@ void wbe_engine_free(WbeEngine *engine);
 
 /* Registrable domain (eTLD+1) of host, or NULL for a public suffix; free with wbe_string_free. */
 char *wbe_registrable_domain(const char *host);
-
-/* Byte offset and length of the leftmost cosmetic marker in line; false if none. */
-bool wbe_cosmetic_marker(const char *line, size_t *start, size_t *len);
 
 /* ParsedLine JSON for one filter line, for the rule editor. */
 char *wbe_classify_line(const char *line);

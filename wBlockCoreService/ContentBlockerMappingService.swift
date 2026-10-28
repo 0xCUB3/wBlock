@@ -123,44 +123,10 @@ public struct ContentBlockerDistribution: Sendable {
     public var shardsByTarget: [ContentBlockerTargetInfo: [UUID: ContentBlockerShard]] = [:]
 }
 
-/// One of `count` parts of a list. Block rules are spread by a stable hash so a
-/// list update moves few rules between blockers. Exceptions, `$badfilter`,
-/// directives, and affinity blocks stay in every part: Safari applies them only
-/// inside their own blocker, and each part needs the full set.
+/// One of `count` parts of a list too big for one blocker. The engine splits
+/// block rules between the parts by a stable hash and keeps exceptions,
+/// `$badfilter`, and directives in every part (wbe apply.rs).
 public struct ContentBlockerShard: Hashable, Sendable {
     public let index: Int
     public let count: Int
-
-    private func keeps(_ identity: String) -> Bool {
-        var hash: UInt64 = 0xcbf29ce484222325
-        for byte in identity.utf8 { hash = (hash ^ UInt64(byte)) &* 0x100000001b3 }
-        // FNV's low bits are a plain parity of the input; mix before the modulo.
-        hash = (hash ^ (hash >> 33)) &* 0xff51afd7ed558ccd
-        hash = (hash ^ (hash >> 33)) &* 0xc4ceb9fe1a85ec53
-        hash ^= hash >> 33
-        return Int(hash % UInt64(count)) == index
-    }
-
-    /// Whether every part keeps `trimmed` rather than one.
-    static func isShared(_ trimmed: Substring) -> Bool {
-        !FilterRuleAnalysis.isRuleLine(trimmed) || trimmed.utf8.starts(with: "@@".utf8)
-            || RuleText.contains(trimmed, "#@") || RuleText.contains(trimmed, "$badfilter")
-            || RuleText.contains(trimmed, ",badfilter")
-    }
-
-    func apply(to text: String) -> String {
-        var kept: [Substring] = []
-        var insideAffinity = false
-        RuleText.forEachLine(text, emptyLines: .keptPerScalar) { line in
-            let trimmed = RuleText.trimmed(line)
-            if trimmed.utf8.starts(with: SafariContentBlockerAffinityProcessor.directivePrefix.utf8) {
-                insideAffinity = trimmed.utf8.count > SafariContentBlockerAffinityProcessor.directivePrefix.utf8.count
-            } else if !insideAffinity, !Self.isShared(trimmed),
-                      !keeps(FilterRuleAnalysis.ruleIdentity(trimmed)) {
-                return
-            }
-            kept.append(line)
-        }
-        return kept.joined(separator: "\n")
-    }
 }

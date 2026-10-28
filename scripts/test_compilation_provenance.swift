@@ -99,11 +99,9 @@ struct CompilationProvenanceTests {
         container: URL
     ) throws -> ContentBlockerService.ContentBlockerTargetOutcome {
         let ordered = ContentBlockerMappingService.orderedForCompilation(filters)
-        let snapshot = SafariContentBlockerAffinityProcessor.snapshot(for: ordered, containerURL: container)
         return try ContentBlockerService.compileTargetRules(
             filters: filters,
             orderedSelectedFilters: ordered,
-            affinitySnapshot: snapshot,
             targetInfo: target,
             allTargets: [target],
             disabledSites: [],

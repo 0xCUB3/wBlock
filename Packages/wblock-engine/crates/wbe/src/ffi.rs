@@ -3,11 +3,10 @@
 //! the message is available from `wbe_last_error` on the calling thread.
 //! Engine handles are not thread-safe; plans support concurrent compilation.
 
-use crate::ast::SourceRef;
 use crate::apply::{Extra, Plan, PlanRequest};
-use crate::compile::{compile, CompileOptions, ListInput};
+use crate::ast::SourceRef;
 use crate::runtime::Engine;
-use crate::webkit::{to_json, SafariVersion};
+use crate::webkit::to_json;
 use std::cell::RefCell;
 use std::ffi::{c_char, CStr, CString};
 use std::panic::{catch_unwind, AssertUnwindSafe};
@@ -37,11 +36,16 @@ pub unsafe extern "C" fn wbe_plan_new(request_json: *const c_char) -> *mut WbePl
             }
         }
         for target in &request.targets {
-            if target.lists.iter().any(|list| list.list >= request.lists.len()) {
+            if target
+                .lists
+                .iter()
+                .any(|list| list.list >= request.lists.len())
+            {
                 return Err("target list index out of bounds".into());
             }
             if target.lists.iter().any(|list| {
-                list.shard.is_some_and(|(index, count)| count == 0 || index >= count)
+                list.shard
+                    .is_some_and(|(index, count)| count == 0 || index >= count)
             }) {
                 return Err("invalid target shard".into());
             }
@@ -64,8 +68,10 @@ pub unsafe extern "C" fn wbe_plan_compile_target(
         let extras: Vec<Extra> = serde_json::from_str(cstr(extras_json, "extras_json")?)
             .map_err(|error| error.to_string())?;
         let compiled = plan.0.compile_target(target, &extras);
-        let mut stats = serde_json::to_value(&compiled.output.stats).map_err(|error| error.to_string())?;
-        stats["admitted"] = serde_json::to_value(compiled.admitted).map_err(|error| error.to_string())?;
+        let mut stats =
+            serde_json::to_value(&compiled.output.stats).map_err(|error| error.to_string())?;
+        stats["admitted"] =
+            serde_json::to_value(compiled.admitted).map_err(|error| error.to_string())?;
         Ok(Box::into_raw(Box::new(WbeCompileResult {
             webkit: to_c(to_json(&compiled.output.webkit))?,
             runtime: to_c(compiled.output.runtime.join("\n"))?,
@@ -126,61 +132,14 @@ pub extern "C" fn wbe_last_error() -> *const c_char {
 }
 
 /// # Safety
-/// `lists` and `trusted` must each point to `count` valid elements, each list
-/// a valid NUL-terminated UTF-8 string.
-#[no_mangle]
-pub unsafe extern "C" fn wbe_compile(
-    lists: *const *const c_char,
-    trusted: *const bool,
-    count: usize,
-    safari_major: u16,
-    safari_minor: u16,
-) -> *mut WbeCompileResult {
-    guard(ptr::null_mut(), || {
-        if count > 0 && (lists.is_null() || trusted.is_null()) {
-            return Err("lists is NULL".into());
-        }
-        let (ptrs, flags): (&[*const c_char], &[bool]) = if count == 0 {
-            (&[], &[])
-        } else {
-            (
-                slice::from_raw_parts(lists, count),
-                slice::from_raw_parts(trusted, count),
-            )
-        };
-        let texts = ptrs
-            .iter()
-            .map(|&p| cstr(p, "list"))
-            .collect::<Result<Vec<_>, _>>()?;
-        let inputs: Vec<ListInput> = texts
-            .iter()
-            .zip(flags)
-            .map(|(&text, &trusted)| ListInput { text, trusted })
-            .collect();
-        let out = compile(
-            &inputs,
-            &CompileOptions {
-                safari: SafariVersion::new(safari_major, safari_minor),
-            },
-        );
-        let stats = serde_json::to_string(&out.stats).map_err(|e| e.to_string())?;
-        Ok(Box::into_raw(Box::new(WbeCompileResult {
-            webkit: to_c(to_json(&out.webkit))?,
-            runtime: to_c(out.runtime.join("\n"))?,
-            stats: to_c(stats)?,
-        })))
-    })
-}
-
-/// # Safety
-/// `result` must be NULL or a live pointer from `wbe_compile`.
+/// `result` must be NULL or a live pointer from `wbe_plan_compile_target`.
 #[no_mangle]
 pub unsafe extern "C" fn wbe_compile_webkit_json(result: *const WbeCompileResult) -> *const c_char {
     result.as_ref().map_or(ptr::null(), |r| r.webkit.as_ptr())
 }
 
 /// # Safety
-/// `result` must be NULL or a live pointer from `wbe_compile`.
+/// `result` must be NULL or a live pointer from `wbe_plan_compile_target`.
 #[no_mangle]
 pub unsafe extern "C" fn wbe_compile_runtime_text(
     result: *const WbeCompileResult,
@@ -189,14 +148,14 @@ pub unsafe extern "C" fn wbe_compile_runtime_text(
 }
 
 /// # Safety
-/// `result` must be NULL or a live pointer from `wbe_compile`.
+/// `result` must be NULL or a live pointer from `wbe_plan_compile_target`.
 #[no_mangle]
 pub unsafe extern "C" fn wbe_compile_stats_json(result: *const WbeCompileResult) -> *const c_char {
     result.as_ref().map_or(ptr::null(), |r| r.stats.as_ptr())
 }
 
 /// # Safety
-/// `result` must be NULL or a live pointer from `wbe_compile`, not yet freed.
+/// `result` must be NULL or a live pointer from `wbe_plan_compile_target`, not yet freed.
 /// Pointers from the accessors become invalid.
 #[no_mangle]
 pub unsafe extern "C" fn wbe_compile_free(result: *mut WbeCompileResult) {
@@ -316,28 +275,6 @@ pub unsafe extern "C" fn wbe_registrable_domain(host: *const c_char) -> *mut c_c
     })
 }
 
-/// Byte range of the leftmost cosmetic marker (`##`, `#@#`, `#$#`, `$$`, ...)
-/// in `line`, as the parser finds it.
-///
-/// # Safety
-/// `line` must be a valid NUL-terminated string; `start` and `len` must be
-/// writable.
-#[no_mangle]
-pub unsafe extern "C" fn wbe_cosmetic_marker(
-    line: *const c_char,
-    start: *mut usize,
-    len: *mut usize,
-) -> bool {
-    guard(false, || {
-        let Some((at, marker)) = crate::parse::cosmetic::find_marker(cstr(line, "line")?) else {
-            return Ok(false);
-        };
-        *start = at;
-        *len = marker.len();
-        Ok(true)
-    })
-}
-
 /// # Safety
 /// `s` must be NULL or a string returned by this library, not yet freed.
 #[no_mangle]
@@ -415,8 +352,6 @@ mod tests {
             wbe_engine_free(engine);
 
             assert!(wbe_classify_line(ptr::null()).is_null());
-            assert!(wbe_compile(ptr::null(), ptr::null(), 1, 18, 0).is_null());
-            assert!(last_error().contains("lists is NULL"));
 
             wbe_engine_free(ptr::null_mut());
             wbe_compile_free(ptr::null_mut());
@@ -437,17 +372,26 @@ mod tests {
     #[test]
     fn plan_rejects_invalid_shards_and_compiles_admissions() {
         unsafe {
-            let invalid = c(r#"{"safari":[18,0],"lists":[{"id":"list","text":"||example.com^"}],"targets":[{"slot":1,"lists":[{"list":0,"shard":[0,0]}]}]}"#);
+            let invalid = c(
+                r#"{"safari":[18,0],"lists":[{"id":"list","text":"||example.com^"}],"targets":[{"slot":1,"lists":[{"list":0,"shard":[0,0]}]}]}"#,
+            );
             assert!(wbe_plan_new(invalid.as_ptr()).is_null());
             assert!(last_error().contains("invalid target shard"));
 
-            let request = c(r#"{"safari":[18,0],"lists":[{"id":"list","text":"||example.com^"}],"targets":[{"slot":1,"lists":[{"list":0}]}]}"#);
+            let request = c(
+                r#"{"safari":[18,0],"lists":[{"id":"list","text":"||example.com^"}],"targets":[{"slot":1,"lists":[{"list":0}]}]}"#,
+            );
             let plan = wbe_plan_new(request.as_ptr());
             assert!(!plan.is_null(), "{}", last_error());
             let result = wbe_plan_compile_target(plan, 0, c("[]").as_ptr());
             assert!(!result.is_null(), "{}", last_error());
-            let stats = CStr::from_ptr(wbe_compile_stats_json(result)).to_str().unwrap();
-            assert_eq!(serde_json::from_str::<serde_json::Value>(stats).unwrap()["admitted"]["list"], 1);
+            let stats = CStr::from_ptr(wbe_compile_stats_json(result))
+                .to_str()
+                .unwrap();
+            assert_eq!(
+                serde_json::from_str::<serde_json::Value>(stats).unwrap()["admitted"]["list"],
+                1
+            );
             wbe_compile_free(result);
             assert!(wbe_plan_compile_target(plan, 1, c("[]").as_ptr()).is_null());
             assert!(last_error().contains("target index out of bounds"));
@@ -458,7 +402,9 @@ mod tests {
     #[test]
     fn plan_compiles_targets_concurrently() {
         unsafe {
-            let request = c(r#"{"safari":[18,0],"lists":[{"id":"list","text":"||example.com^"}],"targets":[{"slot":1,"lists":[{"list":0}]},{"slot":2,"lists":[{"list":0}]}]}"#);
+            let request = c(
+                r#"{"safari":[18,0],"lists":[{"id":"list","text":"||example.com^"}],"targets":[{"slot":1,"lists":[{"list":0}]},{"slot":2,"lists":[{"list":0}]}]}"#,
+            );
             let plan = wbe_plan_new(request.as_ptr());
             assert!(!plan.is_null(), "{}", last_error());
             let shared = &*plan;
@@ -467,8 +413,12 @@ mod tests {
                     scope.spawn(move || {
                         let result = wbe_plan_compile_target(shared, target, c("[]").as_ptr());
                         assert!(!result.is_null(), "{}", last_error());
-                        let stats = CStr::from_ptr(wbe_compile_stats_json(result)).to_str().unwrap();
-                        assert!(serde_json::from_str::<serde_json::Value>(stats).unwrap()["admitted"].is_object());
+                        let stats = CStr::from_ptr(wbe_compile_stats_json(result))
+                            .to_str()
+                            .unwrap();
+                        assert!(serde_json::from_str::<serde_json::Value>(stats).unwrap()
+                            ["admitted"]
+                            .is_object());
                         wbe_compile_free(result);
                     });
                 }

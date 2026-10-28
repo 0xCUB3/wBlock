@@ -336,7 +336,7 @@ public enum RemoveParamDNRRuleGenerator {
         var cacheChanged = false
 
         for filter in filters {
-            guard let sourceURL = SafariContentBlockerAffinityProcessor.sourceURL(
+            guard let sourceURL = ContentBlockerIncrementalCache.existingLocalFileURL(
                 for: filter,
                 containerURL: containerURL
             ) else { continue }

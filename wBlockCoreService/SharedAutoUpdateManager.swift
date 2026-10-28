@@ -2063,7 +2063,6 @@ public actor SharedAutoUpdateManager {
         public let filters: [FilterList]
         public let allTargets: [ContentBlockerTargetInfo]
         public let disabledSites: [String]
-        public let affinitySnapshot: SafariContentBlockerAffinitySnapshot
         public let orderedFilters: [FilterList]
         public let extraRulesText: String?
         public let deadline: Date?
@@ -2075,7 +2074,6 @@ public actor SharedAutoUpdateManager {
             filters: [FilterList],
             allTargets: [ContentBlockerTargetInfo],
             disabledSites: [String],
-            affinitySnapshot: SafariContentBlockerAffinitySnapshot,
             orderedFilters: [FilterList],
             extraRulesText: String?,
             deadline: Date?,
@@ -2086,7 +2084,6 @@ public actor SharedAutoUpdateManager {
             self.filters = filters
             self.allTargets = allTargets
             self.disabledSites = disabledSites
-            self.affinitySnapshot = affinitySnapshot
             self.orderedFilters = orderedFilters
             self.extraRulesText = extraRulesText
             self.deadline = deadline
@@ -2133,7 +2130,6 @@ public actor SharedAutoUpdateManager {
                 let outcome = try ContentBlockerService.compileTargetRules(
                     filters: request.filters,
                     orderedSelectedFilters: request.orderedFilters,
-                    affinitySnapshot: request.affinitySnapshot,
                     targetInfo: request.target,
                     allTargets: request.allTargets,
                     disabledSites: request.disabledSites,
@@ -2171,7 +2167,7 @@ public actor SharedAutoUpdateManager {
         let detectedPlatform: Platform = .macOS
         #endif
         let targets = ContentBlockerTargetManager.shared.allTargets(forPlatform: detectedPlatform)
-        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value) else {
+        guard FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value) != nil else {
             throw AutoUpdateError.sharedContainerUnavailable
         }
         let disabledSites = await getDisabledSites()
@@ -2183,7 +2179,6 @@ public actor SharedAutoUpdateManager {
         } catch { appendSharedLog("Failed to prepare removeparam DNR rules: \(error.localizedDescription)") }
         let ordered = ContentBlockerMappingService.orderedForCompilation(selectedFilters)
         let byTarget = ContentBlockerMappingService.distribute(selectedFilters: selectedFilters, across: targets)
-        let affinitySnapshot = SafariContentBlockerAffinityProcessor.snapshot(for: ordered, containerURL: containerURL)
         let zapper = await MainActor.run {
             BlockingPauseStore.isPaused(.elementZapper)
                 ? nil
@@ -2197,7 +2192,6 @@ public actor SharedAutoUpdateManager {
                 filters: byTarget[target] ?? [],
                 allTargets: targets,
                 disabledSites: disabledSites,
-                affinitySnapshot: affinitySnapshot,
                 orderedFilters: ordered,
                 extraRulesText: target.slot == 5 ? zapper : nil,
                 deadline: policy.isBackground ? policy.deadline : nil,

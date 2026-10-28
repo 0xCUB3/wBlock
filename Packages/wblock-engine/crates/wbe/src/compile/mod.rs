@@ -97,10 +97,15 @@ pub fn parse_list(text: &str, list: u32, trusted: bool, stats: &mut Stats) -> Ve
     for (i, line) in text.lines().enumerate() {
         stats.lines += 1;
         let normalized = crate::normalize::adguard_to_ubo(line);
-        let source = SourceRef { list, line: i as u32 + 1 };
+        let source = SourceRef {
+            list,
+            line: i as u32 + 1,
+        };
         match crate::parse_line(&normalized, source) {
             ParsedLine::Ignored => {}
-            ParsedLine::Unsupported { reason } | ParsedLine::Invalid { reason } => stats.drop(&reason),
+            ParsedLine::Unsupported { reason } | ParsedLine::Invalid { reason } => {
+                stats.drop(&reason)
+            }
             ParsedLine::Rule(Rule::Scriptlet(r)) if !trusted && r.name.starts_with("trusted-") => {
                 stats.drop("untrusted trusted-* scriptlet")
             }

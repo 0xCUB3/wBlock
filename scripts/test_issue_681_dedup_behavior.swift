@@ -33,7 +33,6 @@ struct Main {
             try ContentBlockerService.compileTargetRules(
                 filters: filters,
                 orderedSelectedFilters: filters,
-                affinitySnapshot: SafariContentBlockerAffinityProcessor.snapshot(for: filters, containerURL: container),
                 targetInfo: target,
                 allTargets: targets,
                 disabledSites: [],
@@ -61,11 +60,10 @@ struct Main {
         func compileSlots(_ selection: [FilterList]) throws -> [ContentBlockerService.ContentBlockerTargetOutcome] {
             let ordered = ContentBlockerMappingService.orderedForCompilation(selection)
             let mapping = ContentBlockerMappingService.distribute(selectedFilters: selection, across: targets)
-            let snapshot = SafariContentBlockerAffinityProcessor.snapshot(for: ordered, containerURL: container)
             return try targets.map { slot in
                 try ContentBlockerService.compileTargetRules(
                     filters: mapping[slot] ?? [], orderedSelectedFilters: ordered,
-                    affinitySnapshot: snapshot, targetInfo: slot, allTargets: targets,
+                    targetInfo: slot, allTargets: targets,
                     disabledSites: [], extraRulesText: nil, groupIdentifier: groupIdentifier,
                     containerURL: container
                 )

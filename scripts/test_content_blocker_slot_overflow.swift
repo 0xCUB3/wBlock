@@ -29,7 +29,6 @@ struct Main {
             let ordered = ContentBlockerMappingService.orderedForCompilation(selection)
             return try ContentBlockerService.compileTargetRules(
                 filters: filters, orderedSelectedFilters: ordered,
-                affinitySnapshot: SafariContentBlockerAffinityProcessor.snapshot(for: ordered, containerURL: container),
                 targetInfo: slot, allTargets: targets, disabledSites: [], extraRulesText: nil,
                 groupIdentifier: groupIdentifier, containerURL: container
             )

@@ -15,6 +15,7 @@
 use crate::ast::{
     DomainList, DomainMatcher, NetworkAction, NetworkRule, Party, ResourceTypes, Rule,
 };
+use crate::parse::cosmetic::with_domains;
 use crate::compile::{compile_rules, parse_list, CompileOptions, CompileOutput, RuleSet, Stats};
 use crate::webkit::{SafariVersion, WkAction, WkRule, WkTrigger};
 use serde::{Deserialize, Serialize};
@@ -355,8 +356,7 @@ impl Plan {
             return Some(Rule::Cosmetic(r));
         }
         let restricted = restrict(&r.domains, &self.cosmetics.sites)?;
-        r.domains = restricted.list;
-        r.domains.exclude.extend(restricted.uncovered);
+        narrow(&mut r.domains, &mut r.raw, restricted);
         Some(Rule::Cosmetic(r))
     }
 
@@ -700,6 +700,14 @@ fn restrict(domains: &DomainList, scope: &SiteScope) -> Option<Restricted> {
     })
 }
 
+/// Gives a cosmetic or scriptlet rule its narrowed domains, in `raw` too so
+/// the runtime engine applies the same scope as Safari.
+fn narrow(domains: &mut DomainList, raw: &mut String, restricted: Restricted) {
+    *domains = restricted.list;
+    domains.exclude.extend(restricted.uncovered);
+    *raw = with_domains(raw, domains);
+}
+
 /// Applies a list's site scope to one rule: zero rules when it no longer
 /// applies anywhere, two when a block needs a companion exception for an
 /// excluded subdomain of its scope (#767).
@@ -733,8 +741,7 @@ fn scoped(rule: &Rule, scope: &SiteScope, out: &mut Vec<Rule>) {
                 return;
             };
             let mut rule = r.clone();
-            rule.domains = restricted.list;
-            rule.domains.exclude.extend(restricted.uncovered);
+            narrow(&mut rule.domains, &mut rule.raw, restricted);
             out.push(Rule::Cosmetic(rule));
         }
         Rule::Scriptlet(r) => {
@@ -742,8 +749,7 @@ fn scoped(rule: &Rule, scope: &SiteScope, out: &mut Vec<Rule>) {
                 return;
             };
             let mut rule = r.clone();
-            rule.domains = restricted.list;
-            rule.domains.exclude.extend(restricted.uncovered);
+            narrow(&mut rule.domains, &mut rule.raw, restricted);
             out.push(Rule::Scriptlet(rule));
         }
     }
@@ -988,16 +994,25 @@ mod tests {
 
     #[test]
     fn selected_scope_and_cosmetic_preferences() {
-        let plan = plan(
+        let selected = plan(
             json!([{ "id":"list", "text":"||tracker.net^$domain=example.com\nexample.com##.specific\nother.org##.gone", "scope":{"only":["sub.example.com"]}}, {"id":"generic", "text":"##.generic"}]),
             json!([{"slot":1,"lists":[{"list":0},{"list":1}]}]),
             json!({"generic":false}),
         );
-        let output = plan.compile_target(0, &[]);
+        let output = selected.compile_target(0, &[]);
         let json = crate::webkit::to_json(&output.output.webkit);
         assert!(json.contains("sub.example.com"));
         assert!(!json.contains("other.org"));
         assert!(!json.contains(".generic"));
+
+        // #899 reaches runtime rules too.
+        let scoped = plan(
+            json!([{"id":"list", "text":"example.com##div:has-text(Ad)"}]),
+            json!([{"slot":1,"lists":[{"list":0}]}]),
+            json!({"exclude": ["sub.example.com"]}),
+        );
+        let runtime = scoped.compile_target(0, &[]).output.runtime;
+        assert!(runtime.contains(&"example.com,~sub.example.com##div:has-text(Ad)".to_string()), "{runtime:?}");
     }
 
     #[test]
@@ -1010,6 +1025,38 @@ mod tests {
         let output = crate::webkit::to_json(&plan.compile_target(0, &[]).output.webkit);
         assert!(output.contains("example"), "{output}");
         assert!(!output.contains("gone"), "{output}");
+    }
+
+    #[test]
+    fn site_scope_cases() {
+        // (rule, exclude, only, expected substring or None when dropped)
+        let cases: [(&str, &[&str], Option<&[&str]>, Option<&str>); 9] = [
+            ("##.ad", &[], Some(&["amazon.*"]), Some("amazon.*##.ad")), // #1032
+            ("amazon.*##.ad", &[], Some(&["amazon.it"]), Some("amazon.it##.ad")), // #1031
+            ("amazon.it,ebay.it##.ad", &[], Some(&["amazon.*"]), Some("amazon.it##.ad")),
+            ("amazon.it,ebay.it##.ad", &["amazon.*"], None, Some("ebay.it##.ad")),
+            ("##.ad", &["amazon.*"], None, Some("~amazon.*##.ad")),
+            ("~example.com##.ad", &[], Some(&["example.com"]), None),
+            ("other.test##.ad", &[], Some(&["example.com"]), None),
+            ("example.com##+js(set, a, 1)", &[], Some(&["news.example.com"]), Some("news.example.com##+js(set, a, 1)")),
+            ("amazon.it##.ad", &["notamazon.*", "amazon.it.example.com"], None, Some("amazon.it##.ad")),
+        ];
+        for (rule, exclude, only, expected) in cases {
+            let scope = match only {
+                Some(only) => json!({"exclude": exclude, "only": only}),
+                None => json!({"exclude": exclude}),
+            };
+            let plan = plan(
+                json!([{"id":"list", "text": rule, "scope": scope}]),
+                json!([{"slot":1,"lists":[{"list":0}]}]),
+                json!({}),
+            );
+            let kept: Vec<String> = plan.included(0, 0).iter().map(|r| raw(r).to_string()).collect();
+            match expected {
+                Some(expected) => assert!(kept.iter().any(|r| r == expected), "{rule}: {kept:?}"),
+                None => assert!(kept.is_empty(), "{rule}: {kept:?}"),
+            }
+        }
     }
 
     #[test]

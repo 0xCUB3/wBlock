@@ -665,18 +665,6 @@ extension AppFilterManager {
             )
         }
         if await failApplyIfCancelled() { return }
-        let affinitySnapshot = await Task.detached(priority: .utility) {
-            guard let containerURL = FileManager.default.containerURL(
-                forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value
-            ) else {
-                return SafariContentBlockerAffinitySnapshot(contentsByFilterID: [:])
-            }
-
-            return SafariContentBlockerAffinityProcessor.snapshot(
-                for: orderedSelectedFilters,
-                containerURL: containerURL
-            )
-        }.value
 
         await MainActor.run {
             self.applyProgressViewModel.updatePhaseCompletion(reading: true, converting: false)
@@ -693,7 +681,6 @@ extension AppFilterManager {
                 filters: filtersByTargetInfo[targetInfo] ?? [],
                 allTargets: platformTargets,
                 disabledSites: disabledSites,
-                affinitySnapshot: affinitySnapshot,
                 orderedFilters: orderedSelectedFilters,
                 extraRulesText: targetInfo.slot == 5 ? generatedZapperRulesText : nil,
                 deadline: nil,
