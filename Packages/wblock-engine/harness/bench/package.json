@@ -1,0 +1,9 @@
+{
+  "name": "wblock-engine-bench",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "bench": "node run.ts",
+    "bench:quick": "node run.ts --engines adguard,wbe --sets ubo-default,wblock-current --quick"
+  }
+}
