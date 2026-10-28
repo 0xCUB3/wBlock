@@ -88,9 +88,14 @@ enum FilterEngineStore {
                 forSecurityApplicationGroupIdentifier: groupIdentifier
             ) else { throw PublishError.containerNotFound }
             let directory = containerURL.appendingPathComponent(directoryName, isDirectory: true)
-            guard let snapshot = readSnapshot(in: directory) else { return nil }
-            if cached?.fingerprint != snapshot.fingerprint || cached?.timestamp != snapshot.timestamp {
-                cached = (snapshot.fingerprint, snapshot.timestamp, try WBEngine.Engine(data: snapshot.engine))
+            // Each publish atomically replaces the file, so its file number
+            // changes; the snapshot is read and decoded only then.
+            let file = directory.appendingPathComponent(engineFileName)
+            guard let fileNumber = (try? FileManager.default.attributesOfItem(atPath: file.path))?[.systemFileNumber] as? Int
+            else { return nil }
+            if cached?.fileNumber != fileNumber {
+                guard let snapshot = readSnapshot(in: directory) else { return nil }
+                cached = (fileNumber, snapshot.timestamp, try WBEngine.Engine(data: snapshot.engine))
             }
             guard let (_, timestamp, engine) = cached,
                   var payload = try JSONSerialization.jsonObject(with: engine.lookup(url: url.absoluteString)) as? [String: Any]
@@ -102,7 +107,7 @@ enum FilterEngineStore {
     }
 
     /// The engine the extension process last loaded. Guarded by WebExtensionGate.
-    nonisolated(unsafe) private static var cached: (fingerprint: String, timestamp: Int64, engine: WBEngine.Engine)?
+    nonisolated(unsafe) private static var cached: (fileNumber: Int, timestamp: Int64, engine: WBEngine.Engine)?
 
     private static func readSnapshot(in directory: URL) -> Snapshot? {
         (try? Data(contentsOf: directory.appendingPathComponent(engineFileName)))
