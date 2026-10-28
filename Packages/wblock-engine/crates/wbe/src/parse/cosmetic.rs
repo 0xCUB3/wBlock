@@ -342,12 +342,13 @@ fn scriptlet(
 
 /// uBO's YouTube workaround for server-side ad insertion: it reloads the video
 /// with a disguised user agent when it thinks an ad was stitched in, and the
-/// inbound-object edits tag the requests for it. In Safari it fires on plain
-/// loads too, so every video restarts two or three times before it plays.
+/// inbound-object edits tag requests with that user agent or strip it again.
+/// In Safari the reload fires on plain loads too, so every video restarts two
+/// or three times, and the edits alone hold playback back about 3.5 s.
 fn is_youtube_reload_workaround(name: &str, args: &[String]) -> bool {
     match name {
         "trusted-replace-node-text" => args.iter().any(|a| a.contains("loadVideoById")),
-        "trusted-edit-inbound-object" => args.iter().any(|a| a.contains("attestationRequest")),
+        "trusted-edit-inbound-object" => args.iter().any(|a| a.contains("client.userAgent")),
         _ => false,
     }
 }
@@ -874,6 +875,10 @@ mod tests {
             ),
             (
                 r#"www.youtube.com##+js(trusted-edit-inbound-object, JSON.stringify, 0, [?.attestationRequest][?.context.client.userAgent*="yahi"]+={"params":"YAHI"})"#,
+                dropped,
+            ),
+            (
+                r#"www.youtube.com##+js(trusted-edit-inbound-object, JSON.stringify, 0, [?.createCommentParams].context.client.userAgent=repl({"regex":"/; (adunit|channel)\b/","replacement":""}))"#,
                 dropped,
             ),
             (
