@@ -54,22 +54,28 @@ private final class TestLoader: FilterListLoader {
             loader.migrateBuiltInFilterFilesIfNeeded(current)
             precondition(fm.fileExists(atPath: newURL.path) && fm.fileExists(atPath: newBaseline.path))
         }
-        // wBlock 4: AdGuard lists hand their selection to the uBO lists.
+        // wBlock 4: replaced AdGuard lists are removed and hand their selection
+        // to the uBO lists; other lists, custom ones included, are untouched.
         let byName = Dictionary(defaults.map { ($0.name, $0) }, uniquingKeysWith: { a, _ in a })
         for (adGuard, replacements) in FilterListLoader.adGuardReplacements {
-            // AdGuard's own lists can be platform-specific (Mobile Filter is iOS only).
+            precondition(byName[adGuard] == nil, "\(adGuard) is replaced and must leave the catalog")
             precondition(Set(replacements).isSubset(of: Set(byName.keys)), "unknown list in \(adGuard) handover")
         }
-        var stored = defaults.map { list -> FilterList in
-            var list = list
-            list.isSelected = ["AdGuard Base Filter", "AdGuard Tracking Protection Filter", "AdGuard Social Media Filter"].contains(list.name)
-            return list
+        func adGuard(_ name: String, selected: Bool, custom: Bool = false) -> FilterList {
+            FilterList(name: name, url: URL(string: "https://example.com/\(UUID())")!, category: .ads, isCustom: custom, isSelected: selected)
         }
-        stored = FilterListLoader.handingOverAdGuardSelections(stored)
-        let selected = Set(stored.filter(\.isSelected).map(\.name))
-        precondition(selected == ["AdGuard Social Media Filter", "uBlock filters – Ads", "uBlock filters – Badware risks",
-                                  "uBlock filters – Quick fixes", "uBlock filters – Unbreak", "EasyList",
-                                  "Online Malicious URL Blocklist", "uBlock filters – Privacy", "EasyPrivacy"], "handover: \(selected)")
+        let stored = defaults.map { list -> FilterList in var list = list; list.isSelected = false; return list } + [
+            adGuard("AdGuard Base Filter", selected: true), adGuard("AdGuard Tracking Protection Filter", selected: true),
+            adGuard("AdGuard Popups", selected: false), adGuard("AdGuard Cookie Notices", selected: true, custom: true),
+        ]
+        let handover = FilterListLoader.handingOverReplacedAdGuardLists(stored)
+        precondition(Set(handover.removed.map(\.name)) == ["AdGuard Base Filter", "AdGuard Tracking Protection Filter", "AdGuard Popups"])
+        let selected = Set(handover.lists.filter(\.isSelected).map(\.name))
+        let expected: Set<String> = ["uBlock filters – Ads", "uBlock filters – Badware risks", "uBlock filters – Quick fixes",
+                                     "uBlock filters – Unbreak", "EasyList", "Online Malicious URL Blocklist",
+                                     "uBlock filters – Privacy", "EasyPrivacy", "AdGuard Cookie Notices"]
+        precondition(selected == expected, "handover: \(selected)")
+        precondition(FilterListLoader.handingOverReplacedAdGuardLists(handover.lists).removed.isEmpty, "runs once")
 
         // A default name that matches no catalog entry would silently drop that list from the defaults.
         let catalogNames = Set(defaults.map(\.name))

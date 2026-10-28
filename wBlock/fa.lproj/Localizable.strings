@@ -98,26 +98,17 @@
 "Additional filter list for websites in Latvian." = "فهرست فیلتر اضافی برای وب‌سایت‌های لتونیایی.";
 "Additional filter list for websites in Lithuanian." = "فهرست فیلتر اضافی برای وب‌سایت‌های لیتوانیایی.";
 "Additional filter list for websites in Slovenian." = "فهرست فیلتر اضافی برای وب‌سایت‌های اسلوونیایی.";
-"AdGuard Base Filter" = "AdGuard Base Filter";
 "AdGuard Chinese filter" = "AdGuard Chinese filter";
-"AdGuard Cookie Notices" = "AdGuard Cookie Notices";
 "AdGuard Dutch filter" = "AdGuard Dutch filter";
 "AdGuard Experimental Filter" = "AdGuard Experimental Filter";
 "AdGuard French filter" = "AdGuard French filter";
 "AdGuard German filter" = "AdGuard German filter";
 "AdGuard Japanese filter" = "AdGuard Japanese filter";
-"AdGuard Mobile App Banners" = "AdGuard Mobile App Banners";
-"AdGuard Mobile Filter" = "AdGuard Mobile Filter";
-"AdGuard Other Annoyances" = "AdGuard Other Annoyances";
-"AdGuard Popups" = "AdGuard Popups";
 "AdGuard Russian filter" = "AdGuard Russian filter";
 "AdGuard Social Media Filter" = "AdGuard Social Media Filter";
 "AdGuard Spanish/Portuguese filter" = "AdGuard Spanish/Portuguese filter";
-"AdGuard Tracking Protection Filter" = "AdGuard Tracking Protection Filter";
 "AdGuard Turkish filter" = "AdGuard Turkish filter";
 "AdGuard Ukrainian filter" = "AdGuard Ukrainian filter";
-"AdGuard URL Tracking Protection Filter" = "AdGuard URL Tracking Protection Filter";
-"AdGuard Widgets" = "AdGuard Widgets";
 "Ads" = "تبلیغات";
 "Advanced engine publish failed" = "انتشار موتور پیشرفته ناموفق بود";
 "All" = "همه";
@@ -503,6 +494,7 @@
 "Remove Older Versions" = "حذف نسخه‌های قدیمی‌تر";
 "Removed custom filter" = "فیلتر سفارشی حذف شد";
 "Removed deprecated filter list(s)" = "فهرست(های) فیلتر منسوخ‌شده حذف شد";
+"Replaced AdGuard filter list(s) with uBlock Origin lists" = "فهرست(های) فیلتر AdGuard با فهرست‌های uBlock Origin جایگزین شد";
 "Removing userscript" = "در حال حذف اسکریپت کاربر";
 "Replace" = "جایگزینی";
 "replace" = "جایگزینی";
@@ -1002,15 +994,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps." = "عناصر را در همهٔ سایت‌ها با قوانینی که نام سایت مشخصی را ذکر نمی‌کنند پنهان می‌کند. خاموش کردن این گزینه پنهان‌سازی ویژهٔ سایت را حفظ کرده و صفحات، به‌ویژه برنامه‌های وب شلوغ، را سبک‌تر می‌کند.";
 "AdGuard Italian filter" = "فیلتر ایتالیایی AdGuard";
 "AdGuard Polish filter" = "فیلتر لهستانی AdGuard";
-"EasyList + AdGuard English filter. This filter is necessary for quality ad blocking." = "\U200FEasyList + AdGuard English filter. این فیلتر برای مسدود کردن باکیفیت تبلیغات ضروری است.";
-"The most comprehensive list of various online counters and web analytics tools. Use this filter if you do not want your actions on the Internet to be tracked." = "جامع‌ترین فهرست از شمارنده‌های آنلاین گوناگون و ابزارهای تحلیل وب. اگر نمی‌خواهید فعالیت‌های شما در اینترنت ردیابی شود از این فیلتر استفاده کنید.";
-"Filter that enhances privacy by removing tracking parameters from URLs." = "فیلتری که با حذف پارامترهای ردیابی از URLها حریم خصوصی را بهبود می‌بخشد.";
 "Automatically removes unnecessary '$' and '&' values from URLs, making them easier to copy from the URL bar and pasting elsewhere as links. Already included in Dandelion Sprout's Annoyances List." = "به‌طور خودکار مقادیر غیرضروری «$» و «&» را از URLها حذف می‌کند و کپی کردن آن‌ها از نوار آدرس و جای‌گذاری در جاهای دیگر به صورت پیوند را آسان‌تر می‌سازد. از قبل در Dandelion Sprout's Annoyances List گنجانده شده است.";
 "Blocks cookie notices on web pages." = "پیام‌های مربوط به کوکی را در صفحات وب مسدود می‌کند.";
-"Blocks all kinds of pop-ups that are not necessary for websites' operation according to our Filter policy." = "انواع پاپ‌آپ‌هایی را که طبق خط‌مشی فیلتر ما برای عملکرد وب‌سایت‌ها ضروری نیستند مسدود می‌کند.";
-"Blocks irritating banners that promote mobile apps of websites." = "بنرهای آزاردهنده‌ای را که برنامه‌های موبایل وب‌سایت‌ها را تبلیغ می‌کنند مسدود می‌کند.";
-"Blocks irritating elements that do not fall under popular categories of annoyances, such as website promotional offers and restrictions on copying and text selection." = "عناصر آزاردهنده‌ای را که در دسته‌های رایج مزاحمت‌ها قرار نمی‌گیرند، مانند پیشنهادهای تبلیغاتی وب‌سایت و محدودیت‌های کپی و انتخاب متن، مسدود می‌کند.";
-"Blocks annoying third-party widgets: online assistants, live support chats, etc." = "ویجت‌های آزاردهندهٔ شخص ثالث را مسدود می‌کند: دستیارهای آنلاین، چت‌های پشتیبانی زنده و غیره.";
 "Filter for social media widgets such as 'Like' and 'Share' buttons and more." = "فیلتر ویجت‌های شبکه‌های اجتماعی مانند دکمه‌های «پسندیدن» و «اشتراک‌گذاری» و موارد دیگر.";
 "Hides website features that use generative AI and AI-generated content." = "قابلیت‌های وب‌سایت را که از هوش مصنوعی مولد و محتوای تولیدشده توسط هوش مصنوعی استفاده می‌کنند پنهان می‌کند.";
 "This filter blocks tracking pixels in email clients." = "این فیلتر پیکسل‌های ردیابی را در کلاینت‌های ایمیل مسدود می‌کند.";
@@ -1026,7 +1011,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "The filterslist-KO Classic filter list for AdGuard blocks ads and disables anti-adblock scripts on Korean-language websites and apps." = "فهرست فیلتر filterslist-KO Classic برای AdGuard تبلیغات را مسدود کرده و اسکریپت‌های ضد مسدودکنندهٔ تبلیغات را در وب‌سایت‌ها و برنامه‌های زبان کره‌ای غیرفعال می‌کند.";
 "Official Polish filters for AdBlock, uBlock Origin & AdGuard + AdGuard Polish filter. Filter list that specifically removes ads on websites in the Polish language." = "\U200FOfficial Polish filters for AdBlock, uBlock Origin & AdGuard + AdGuard Polish filter. فهرست فیلتری که به‌طور خاص تبلیغات را در وب‌سایت‌های به زبان لهستانی حذف می‌کند.";
 "Privacy protection supplement for EasyList." = "مکمل محافظت از حریم خصوصی برای EasyList.";
-"Filter for all known mobile ad networks. Useful for mobile devices." = "فیلتر برای همهٔ شبکه‌های تبلیغاتی تلفن همراه شناخته‌شده. مفید برای دستگاه‌های همراه.";
 
 /* Add Filter List: Find */
 "Name, language, or topic" = "نام، زبان یا موضوع";

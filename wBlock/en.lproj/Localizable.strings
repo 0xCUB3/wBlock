@@ -98,26 +98,17 @@
 "Additional filter list for websites in Latvian." = "Additional filter list for websites in Latvian.";
 "Additional filter list for websites in Lithuanian." = "Additional filter list for websites in Lithuanian.";
 "Additional filter list for websites in Slovenian." = "Additional filter list for websites in Slovenian.";
-"AdGuard Base Filter" = "AdGuard Base Filter";
 "AdGuard Chinese filter" = "AdGuard Chinese filter";
-"AdGuard Cookie Notices" = "AdGuard Cookie Notices";
 "AdGuard Dutch filter" = "AdGuard Dutch filter";
 "AdGuard Experimental Filter" = "AdGuard Experimental Filter";
 "AdGuard French filter" = "AdGuard French filter";
 "AdGuard German filter" = "AdGuard German filter";
 "AdGuard Japanese filter" = "AdGuard Japanese filter";
-"AdGuard Mobile App Banners" = "AdGuard Mobile App Banners";
-"AdGuard Mobile Filter" = "AdGuard Mobile Filter";
-"AdGuard Other Annoyances" = "AdGuard Other Annoyances";
-"AdGuard Popups" = "AdGuard Popups";
 "AdGuard Russian filter" = "AdGuard Russian filter";
 "AdGuard Social Media Filter" = "AdGuard Social Media Filter";
 "AdGuard Spanish/Portuguese filter" = "AdGuard Spanish/Portuguese filter";
-"AdGuard Tracking Protection Filter" = "AdGuard Tracking Protection Filter";
 "AdGuard Turkish filter" = "AdGuard Turkish filter";
 "AdGuard Ukrainian filter" = "AdGuard Ukrainian filter";
-"AdGuard URL Tracking Protection Filter" = "AdGuard URL Tracking Protection Filter";
-"AdGuard Widgets" = "AdGuard Widgets";
 "Ads" = "Ads";
 "Advanced engine publish failed" = "Advanced engine publish failed";
 "All" = "All";
@@ -503,6 +494,7 @@
 "Remove Older Versions" = "Remove Older Versions";
 "Removed custom filter" = "Removed custom filter";
 "Removed deprecated filter list(s)" = "Removed deprecated filter list(s)";
+"Replaced AdGuard filter list(s) with uBlock Origin lists" = "Replaced AdGuard filter list(s) with uBlock Origin lists";
 "Removing userscript" = "Removing userscript";
 "Replace" = "Replace";
 "replace" = "replace";
@@ -1002,15 +994,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps." = "Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps.";
 "AdGuard Italian filter" = "AdGuard Italian filter";
 "AdGuard Polish filter" = "AdGuard Polish filter";
-"EasyList + AdGuard English filter. This filter is necessary for quality ad blocking." = "EasyList plus the AdGuard English filter. Needed for good ad blocking.";
-"The most comprehensive list of various online counters and web analytics tools. Use this filter if you do not want your actions on the Internet to be tracked." = "Blocks a wide range of trackers and web analytics tools, so your activity online isn't tracked.";
-"Filter that enhances privacy by removing tracking parameters from URLs." = "Removes tracking parameters from URLs for better privacy.";
 "Automatically removes unnecessary '$' and '&' values from URLs, making them easier to copy from the URL bar and pasting elsewhere as links. Already included in Dandelion Sprout's Annoyances List." = "Removes unneeded '$' and '&' parameters from URLs, so links are easier to copy and share. Already included in Dandelion Sprout's Annoyances List.";
 "Blocks cookie notices on web pages." = "Blocks cookie notices on web pages.";
-"Blocks all kinds of pop-ups that are not necessary for websites' operation according to our Filter policy." = "Blocks pop-ups that websites don't need to work.";
-"Blocks irritating banners that promote mobile apps of websites." = "Blocks irritating banners that promote mobile apps of websites.";
-"Blocks irritating elements that do not fall under popular categories of annoyances, such as website promotional offers and restrictions on copying and text selection." = "Blocks annoyances that other lists don't cover, such as promotional offers and restrictions on copying or selecting text.";
-"Blocks annoying third-party widgets: online assistants, live support chats, etc." = "Blocks third-party widgets such as online assistants and live support chats.";
 "Filter for social media widgets such as 'Like' and 'Share' buttons and more." = "Blocks social media widgets such as Like and Share buttons.";
 "Hides website features that use generative AI and AI-generated content." = "Hides website features that use generative AI and AI-generated content.";
 "This filter blocks tracking pixels in email clients." = "This filter blocks tracking pixels in email clients.";
@@ -1026,7 +1011,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "The filterslist-KO Classic filter list for AdGuard blocks ads and disables anti-adblock scripts on Korean-language websites and apps." = "Blocks ads and anti-adblock scripts on Korean-language websites.";
 "Official Polish filters for AdBlock, uBlock Origin & AdGuard + AdGuard Polish filter. Filter list that specifically removes ads on websites in the Polish language." = "Blocks ads on Polish-language websites. Combines the official Polish filters and the AdGuard Polish filter.";
 "Privacy protection supplement for EasyList." = "Privacy protection supplement for EasyList.";
-"Filter for all known mobile ad networks. Useful for mobile devices." = "Filter for all known mobile ad networks. Useful for mobile devices.";
 
 /* Add Filter List: Find */
 "Name, language, or topic" = "Name, language, or topic";

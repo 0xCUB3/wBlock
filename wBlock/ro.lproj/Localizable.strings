@@ -98,26 +98,17 @@
 "Additional filter list for websites in Latvian." = "Listă suplimentară de filtre pentru site-urile web în limba letonă.";
 "Additional filter list for websites in Lithuanian." = "Listă suplimentară de filtre pentru site-urile web în limba lituaniană.";
 "Additional filter list for websites in Slovenian." = "Listă suplimentară de filtre pentru site-urile web în limba slovenă.";
-"AdGuard Base Filter" = "AdGuard Base Filter";
 "AdGuard Chinese filter" = "AdGuard Chinese filter";
-"AdGuard Cookie Notices" = "AdGuard Cookie Notices";
 "AdGuard Dutch filter" = "AdGuard Dutch filter";
 "AdGuard Experimental Filter" = "AdGuard Experimental Filter";
 "AdGuard French filter" = "AdGuard French filter";
 "AdGuard German filter" = "AdGuard German filter";
 "AdGuard Japanese filter" = "AdGuard Japanese filter";
-"AdGuard Mobile App Banners" = "AdGuard Mobile App Banners";
-"AdGuard Mobile Filter" = "AdGuard Mobile Filter";
-"AdGuard Other Annoyances" = "AdGuard Other Annoyances";
-"AdGuard Popups" = "AdGuard Popups";
 "AdGuard Russian filter" = "AdGuard Russian filter";
 "AdGuard Social Media Filter" = "AdGuard Social Media Filter";
 "AdGuard Spanish/Portuguese filter" = "AdGuard Spanish/Portuguese filter";
-"AdGuard Tracking Protection Filter" = "AdGuard Tracking Protection Filter";
 "AdGuard Turkish filter" = "AdGuard Turkish filter";
 "AdGuard Ukrainian filter" = "AdGuard Ukrainian filter";
-"AdGuard URL Tracking Protection Filter" = "AdGuard URL Tracking Protection Filter";
-"AdGuard Widgets" = "AdGuard Widgets";
 "Ads" = "Reclame";
 "Advanced engine publish failed" = "Publicarea motorului avansat a eșuat";
 "All" = "Toate";
@@ -503,6 +494,7 @@
 "Remove Older Versions" = "Elimină versiunile mai vechi";
 "Removed custom filter" = "Filtru personalizat eliminat";
 "Removed deprecated filter list(s)" = "Liste de filtre învechite eliminate";
+"Replaced AdGuard filter list(s) with uBlock Origin lists" = "Listele de filtre AdGuard au fost înlocuite cu liste uBlock Origin";
 "Removing userscript" = "Se elimină scriptul de utilizator";
 "Replace" = "Înlocuiește";
 "replace" = "înlocuiește";
@@ -993,15 +985,8 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps." = "Ascunde elemente pe toate site-urile cu reguli care nu numesc un site. Dezactivarea păstrează ascunderea specifică fiecărui site și face paginile mai ușoare, mai ales aplicațiile web complexe.";
 "AdGuard Italian filter" = "AdGuard Italian filter";
 "AdGuard Polish filter" = "AdGuard Polish filter";
-"EasyList + AdGuard English filter. This filter is necessary for quality ad blocking." = "EasyList + AdGuard English filter. Acest filtru este necesar pentru o blocare de calitate a reclamelor.";
-"The most comprehensive list of various online counters and web analytics tools. Use this filter if you do not want your actions on the Internet to be tracked." = "Cea mai cuprinzătoare listă de contoare online și instrumente de analiză web. Folosește acest filtru dacă nu vrei ca acțiunile tale pe Internet să fie urmărite.";
-"Filter that enhances privacy by removing tracking parameters from URLs." = "Filtru care îmbunătățește confidențialitatea prin eliminarea parametrilor de urmărire din URL-uri.";
 "Automatically removes unnecessary '$' and '&' values from URLs, making them easier to copy from the URL bar and pasting elsewhere as links. Already included in Dandelion Sprout's Annoyances List." = "Înlătură automat valorile '$' și '&' inutile de pe adresele URL, ceea ce le face mai ușor de copiat din bara URL și de lipit în altă parte ca linkuri. Deja inclus în lista Dandelion Sprout's Annoyances List.";
 "Blocks cookie notices on web pages." = "Blochează notificările privind cookie-urile de pe paginile web.";
-"Blocks all kinds of pop-ups that are not necessary for websites' operation according to our Filter policy." = "Blochează toate tipurile de pop-up-uri care nu sunt necesare pentru funcționarea site-urilor web în conformitate cu Politica noastră de filtrare.";
-"Blocks irritating banners that promote mobile apps of websites." = "Blochează bannerele iritante prin care sunt promovate aplicațiile mobile ale site-urilor web.";
-"Blocks irritating elements that do not fall under popular categories of annoyances, such as website promotional offers and restrictions on copying and text selection." = "Blochează elementele iritante care nu se încadrează în categoriile populare de elemente deranjante, cum ar fi ofertele promoționale ale site-urilor web și restricțiile privind copierea și selectarea textului.";
-"Blocks annoying third-party widgets: online assistants, live support chats, etc." = "Blochează widget-urile enervante ale părților terțe: asistenți online, chat-uri de asistență în direct etc.";
 "Filter for social media widgets such as 'Like' and 'Share' buttons and more." = "Filtru pentru widgeturile rețelelor sociale, cum ar fi butoanele „Îmi place” și „Distribuie”, și altele.";
 "Hides website features that use generative AI and AI-generated content." = "Ascunde funcționalitățile site-urilor web care folosesc IA generativă și conținut generat de IA.";
 "This filter blocks tracking pixels in email clients." = "Acest filtru blochează pixelii de urmărire în clienți de e-mail.";
@@ -1017,7 +1002,6 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "The filterslist-KO Classic filter list for AdGuard blocks ads and disables anti-adblock scripts on Korean-language websites and apps." = "Lista de filtre filterslist-KO Classic pentru AdGuard blochează reclamele și dezactivează scripturile anti-blocare a reclamelor de pe site-urile web și din aplicațiile în limba coreeană.";
 "Official Polish filters for AdBlock, uBlock Origin & AdGuard + AdGuard Polish filter. Filter list that specifically removes ads on websites in the Polish language." = "Official Polish filters for AdBlock, uBlock Origin & AdGuard + AdGuard Polish filter. Listă de filtre care elimină în mod specific reclamele de pe site-urile web în limba poloneză.";
 "Privacy protection supplement for EasyList." = "Supliment de protecție a confidențialității pentru EasyList.";
-"Filter for all known mobile ad networks. Useful for mobile devices." = "Filtru pentru toate rețelele de reclame mobile cunoscute. Util pentru dispozitive mobile.";
 
 /* Add Filter List: Find */
 "Name, language, or topic" = "Nume, limbă sau subiect";

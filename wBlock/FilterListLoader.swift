@@ -31,8 +31,8 @@ class FilterListLoader {
         "uBlock filters – Quick fixes", "uBlock filters – Unbreak", "wBlock Ad and Tracking Hosts",
     ])
 
-    /// wBlock 4 moved from AdGuard's lists to uBlock Origin's. Each AdGuard list
-    /// here hands its selection to these uBO-side lists.
+    /// wBlock 4 replaced these AdGuard lists with uBlock Origin's. Each one
+    /// hands its selection to the lists it maps to.
     static let adGuardReplacements: [String: [String]] = {
         let ads = ["uBlock filters – Ads", "uBlock filters – Badware risks", "uBlock filters – Quick fixes",
                    "uBlock filters – Unbreak", "EasyList", "Online Malicious URL Blocklist"]
@@ -50,21 +50,20 @@ class FilterListLoader {
         ]
     }()
 
-    /// Turns off each selected AdGuard list that has a uBO replacement and turns
-    /// its replacements on. Run once per install (see AppFilterManager), so
-    /// later choices are left alone.
-    static func handingOverAdGuardSelections(_ lists: [FilterList]) -> [FilterList] {
-        var lists = lists
-        var turnOn = Set<String>()
-        for index in lists.indices where !lists[index].isCustom && lists[index].isSelected {
-            guard let replacements = adGuardReplacements[lists[index].name] else { continue }
-            lists[index].isSelected = false
-            turnOn.formUnion(replacements)
+    /// Removes the built-in AdGuard lists that uBO lists replaced, turning on
+    /// the replacements of each one that was on. Runs on every load; a removed
+    /// list is gone, so each one hands over exactly once.
+    static func handingOverReplacedAdGuardLists(_ lists: [FilterList]) -> (lists: [FilterList], removed: [FilterList]) {
+        let isReplaced = { (list: FilterList) in !list.isCustom && adGuardReplacements[list.name] != nil }
+        let removed = lists.filter(isReplaced)
+        guard !removed.isEmpty else { return (lists, []) }
+        let turnOn = Set(removed.filter(\.isSelected).flatMap { adGuardReplacements[$0.name] ?? [] })
+        let kept = lists.filter { !isReplaced($0) }.map { list -> FilterList in
+            var list = list
+            if !list.isCustom, turnOn.contains(list.name) { list.isSelected = true }
+            return list
         }
-        for index in lists.indices where !lists[index].isCustom && turnOn.contains(lists[index].name) {
-            lists[index].isSelected = true
-        }
-        return lists
+        return (kept, removed)
     }
 
     /// Was built into wBlock 5 while any list was on, so upgrades turn it on
@@ -83,8 +82,6 @@ class FilterListLoader {
             URL(string: "https://cdn.jsdelivr.net/gh/uBlockOrigin/uAssetsCDN@main/thirdparties/easyprivacy.txt")!,
         "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/204_optimized.txt":
             URL(string: "https://pgl.yoyo.org/adservers/serverlist.php?hostformat=hosts&showintro=1&mimetype=plaintext")!,
-        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_17_TrackParam/filter.txt":
-            URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/mac_v3/filters/17_optimized.txt")!,
         "https://raw.githubusercontent.com/DandelionSprout/adfilt/master/LegitimateURLShortener.txt":
             URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/mac_v3/filters/251_optimized.txt")!,
         "https://raw.githubusercontent.com/ABPindo/indonesianadblockrules/master/subscriptions/abpindo.txt":
@@ -170,12 +167,6 @@ class FilterListLoader {
             string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/25_optimized.txt")!,
         "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/10.txt": URL(
             string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/10_optimized.txt")!,
-        // AdGuard Mobile Filter moved to the GitHub registry so it gets the same
-        // jsDelivr and adtidy fallbacks as the other AdGuard lists (#912).
-        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_11_Mobile/filter.txt":
-            URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/ios/filters/11_optimized.txt")!,
-        "https://filters.adtidy.org/ios/filters/11.txt": URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/ios/filters/11_optimized.txt")!,
-        "https://filters.adtidy.org/ios/filters/11_optimized.txt": URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/ios/filters/11_optimized.txt")!,
     ]
 
     /// Legacy names whose list came from a different source than the current
@@ -396,20 +387,6 @@ class FilterListLoader {
                 category: FilterListCategory.annoyances,
                 description: "Hides miscellaneous annoyances on websites, from the EasyList project."),
             FilterList(
-                id: UUID(), name: "AdGuard Base Filter",
-                url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/2_optimized.txt"
-                )!, category: FilterListCategory.ads,
-                description: "EasyList + AdGuard English filter. This filter is necessary for quality ad blocking."),
-            FilterList(
-                id: UUID(), name: "AdGuard Tracking Protection Filter",
-                url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/3_optimized.txt"
-                )!, category: FilterListCategory.privacy,
-                description: "The most comprehensive list of various online counters and web analytics tools. Use this filter if you do not want your actions on the Internet to be tracked."),
-            FilterList(
                 id: UUID(), name: "wBlock Ad and Tracking Hosts",
                 url: Self.adTrackingHostsURL, category: FilterListCategory.privacy,
                 description: "Blocks ad and tracking hosts that the other lists only block in part.",
@@ -424,14 +401,6 @@ class FilterListLoader {
                     "Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects.",
                 trustLevel: "high"),
             FilterList(
-                id: UUID(), name: "AdGuard URL Tracking Protection Filter",
-                url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/mac_v3/filters/17_optimized.txt"
-                )!, category: FilterListCategory.privacy,
-                description: "Filter that enhances privacy by removing tracking parameters from URLs.",
-                trustLevel: "high"),
-            FilterList(
                 id: UUID(), name: "Actually Legitimate URL Shortener Tool",
                 url: URL(
                     string:
@@ -439,43 +408,6 @@ class FilterListLoader {
                 )!, category: FilterListCategory.privacy,
                 description: "Automatically removes unnecessary '$' and '&' values from URLs, making them easier to copy from the URL bar and pasting elsewhere as links. Already included in Dandelion Sprout's Annoyances List.",
                 trustLevel: "high"),
-            FilterList(
-                id: UUID(), name: "AdGuard Cookie Notices",
-                url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/18_optimized.txt"
-                )!, category: FilterListCategory.annoyances,
-                description: "Blocks cookie notices on web pages."),
-            FilterList(
-                id: UUID(), name: "AdGuard Popups",
-                url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/19_optimized.txt"
-                )!, category: FilterListCategory.annoyances,
-                description:
-                    "Blocks all kinds of pop-ups that are not necessary for websites' operation according to our Filter policy."),
-            FilterList(
-                id: UUID(), name: "AdGuard Mobile App Banners",
-                url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/20_optimized.txt"
-                )!, category: FilterListCategory.annoyances,
-                description: "Blocks irritating banners that promote mobile apps of websites."),
-            FilterList(
-                id: UUID(), name: "AdGuard Other Annoyances",
-                url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/21_optimized.txt"
-                )!, category: FilterListCategory.annoyances,
-                description:
-                    "Blocks irritating elements that do not fall under popular categories of annoyances, such as website promotional offers and restrictions on copying and text selection."),
-            FilterList(
-                id: UUID(), name: "AdGuard Widgets",
-                url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/22_optimized.txt"
-                )!, category: FilterListCategory.annoyances,
-                description: "Blocks annoying third-party widgets: online assistants, live support chats, etc."),
             FilterList(
                 id: UUID(), name: "AdGuard Social Media Filter",
                 url: URL(
@@ -829,16 +761,6 @@ class FilterListLoader {
                 )!, category: FilterListCategory.privacy,
                 description:
                     "Privacy protection supplement for EasyList."))
-        #if os(iOS)
-            filterLists.append(
-                FilterList(
-                    id: UUID(), name: "AdGuard Mobile Filter",
-                    url: URL(
-                        string:
-                            "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/ios/filters/11_optimized.txt"
-                    )!, category: FilterListCategory.ads,
-                    description: "Filter for all known mobile ad networks. Useful for mobile devices."))
-        #endif
 
         // Multi Pro Mini is the size-optimized browser/mobile list. Keep its catalog
         // identity on every platform; it remains opt-in like other extras.

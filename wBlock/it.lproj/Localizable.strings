@@ -98,26 +98,17 @@
 "Additional filter list for websites in Latvian." = "Elenco di filtri aggiuntivo per i siti web in lettone.";
 "Additional filter list for websites in Lithuanian." = "Elenco di filtri aggiuntivo per i siti web in lituano.";
 "Additional filter list for websites in Slovenian." = "Elenco di filtri aggiuntivo per i siti web in sloveno.";
-"AdGuard Base Filter" = "AdGuard Base Filter";
 "AdGuard Chinese filter" = "AdGuard Chinese filter";
-"AdGuard Cookie Notices" = "AdGuard Cookie Notices";
 "AdGuard Dutch filter" = "AdGuard Dutch filter";
 "AdGuard Experimental Filter" = "AdGuard Experimental Filter";
 "AdGuard French filter" = "AdGuard French filter";
 "AdGuard German filter" = "AdGuard German filter";
 "AdGuard Japanese filter" = "AdGuard Japanese filter";
-"AdGuard Mobile App Banners" = "AdGuard Mobile App Banners";
-"AdGuard Mobile Filter" = "AdGuard Mobile Filter";
-"AdGuard Other Annoyances" = "AdGuard Other Annoyances";
-"AdGuard Popups" = "AdGuard Popups";
 "AdGuard Russian filter" = "AdGuard Russian filter";
 "AdGuard Social Media Filter" = "AdGuard Social Media Filter";
 "AdGuard Spanish/Portuguese filter" = "AdGuard Spanish/Portuguese filter";
-"AdGuard Tracking Protection Filter" = "AdGuard Tracking Protection Filter";
 "AdGuard Turkish filter" = "AdGuard Turkish filter";
 "AdGuard Ukrainian filter" = "AdGuard Ukrainian filter";
-"AdGuard URL Tracking Protection Filter" = "AdGuard URL Tracking Protection Filter";
-"AdGuard Widgets" = "AdGuard Widgets";
 "Ads" = "Annunci";
 "Advanced engine publish failed" = "Pubblicazione del motore avanzato non riuscita";
 "All" = "Tutti";
@@ -503,6 +494,7 @@
 "Remove Older Versions" = "Rimuovi versioni precedenti";
 "Removed custom filter" = "Filtro personalizzato rimosso";
 "Removed deprecated filter list(s)" = "Elenchi di filtri deprecati rimossi";
+"Replaced AdGuard filter list(s) with uBlock Origin lists" = "Elenchi di filtri AdGuard sostituiti con elenchi di uBlock Origin";
 "Removing userscript" = "Rimozione dello userscript";
 "Replace" = "Sostituisci";
 "replace" = "sostituisci";
@@ -993,15 +985,8 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps." = "Nasconde elementi su tutti i siti con regole che non ne indicano uno. Disattivandole resta l'occultamento specifico per sito e le pagine sono più leggere, soprattutto le app web complesse.";
 "AdGuard Italian filter" = "AdGuard Italian filter";
 "AdGuard Polish filter" = "AdGuard Polish filter";
-"EasyList + AdGuard English filter. This filter is necessary for quality ad blocking." = "EasyList + AdGuard English filter. Questo filtro è necessario per un blocco degli annunci di qualità.";
-"The most comprehensive list of various online counters and web analytics tools. Use this filter if you do not want your actions on the Internet to be tracked." = "L'elenco più esaustivo dei vari contatori online e strumenti di analisi web. Utilizza questo filtro se non vuoi che le tue azioni su Internet vengano tracciate.";
-"Filter that enhances privacy by removing tracking parameters from URLs." = "Filtro che migliora la privacy rimuovendo i parametri di tracciamento dagli URL.";
 "Automatically removes unnecessary '$' and '&' values from URLs, making them easier to copy from the URL bar and pasting elsewhere as links. Already included in Dandelion Sprout's Annoyances List." = "Rimuove automaticamente i valori \"$\" e \"&\" non necessari dagli URL, rendendoli più facili da copiare dalla barra degli URL e da incollare altrove come link. Già incluso in Dandelion Sprout's Annoyances List.";
 "Blocks cookie notices on web pages." = "Blocca gli avvisi sui cookie nelle pagine web.";
-"Blocks all kinds of pop-ups that are not necessary for websites' operation according to our Filter policy." = "Blocca tutti i tipi di popup che non sono necessari per il funzionamento dei siti web in base alla nostra Politica di filtraggio.";
-"Blocks irritating banners that promote mobile apps of websites." = "Blocca gli irritanti banner che promuovono le applicazioni mobili dei siti web.";
-"Blocks irritating elements that do not fall under popular categories of annoyances, such as website promotional offers and restrictions on copying and text selection." = "Blocca gli elementi fastidiosi che non rientrano nelle categorie più comuni di fastidi, come le offerte promozionali dei siti web e le restrizioni sulla copia e sulla selezione del testo.";
-"Blocks annoying third-party widgets: online assistants, live support chats, etc." = "Blocca i fastidiosi widget di terze parti: assistenti online, chat di assistenza in diretta, ecc.";
 "Filter for social media widgets such as 'Like' and 'Share' buttons and more." = "Filtro per i widget degli elementi social (pulsanti \"Mi piace\" e simili).";
 "Hides website features that use generative AI and AI-generated content." = "Nasconde le funzionalità dei siti web che utilizzano l'intelligenza artificiale generativa e i contenuti generati dall'IA.";
 "This filter blocks tracking pixels in email clients." = "Questo filtro blocca i pixel di tracciamento nei client di posta elettronica.";
@@ -1017,7 +1002,6 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "The filterslist-KO Classic filter list for AdGuard blocks ads and disables anti-adblock scripts on Korean-language websites and apps." = "L'elenco di filtri filterslist-KO Classic per AdGuard blocca gli annunci e disabilita gli script anti-adblock su siti e app in lingua coreana.";
 "Official Polish filters for AdBlock, uBlock Origin & AdGuard + AdGuard Polish filter. Filter list that specifically removes ads on websites in the Polish language." = "Official Polish filters for AdBlock, uBlock Origin & AdGuard + AdGuard Polish filter. Elenco di filtri che rimuove specificamente gli annunci sui siti web in lingua polacca.";
 "Privacy protection supplement for EasyList." = "Supplemento di protezione privacy per EasyList.";
-"Filter for all known mobile ad networks. Useful for mobile devices." = "Filtro per tutte le reti di annunci mobili note. Utile per dispositivi portatili.";
 
 /* Add Filter List: Find */
 "Name, language, or topic" = "Nome, lingua o argomento";

@@ -711,14 +711,21 @@ class AppFilterManager: ObservableObject {
                 }
             }
         }
-        // wBlock 4 moved to uBlock Origin's lists; existing selections move once.
-        var handedOverSelections = false
-        let handoverKey = "adGuardListsHandedOverToUBO"
-        if !migratedFilterLists.isEmpty, !UserDefaults.standard.bool(forKey: handoverKey) {
-            let before = migratedFilterLists.map(\.isSelected)
-            migratedFilterLists = FilterListLoader.handingOverAdGuardSelections(migratedFilterLists)
-            handedOverSelections = migratedFilterLists.map(\.isSelected) != before
-            UserDefaults.standard.set(true, forKey: handoverKey)
+        // AdGuard lists that uBO lists replaced in wBlock 4 are removed; each
+        // one that was on turns its replacements on.
+        let handover = FilterListLoader.handingOverReplacedAdGuardLists(migratedFilterLists)
+        migratedFilterLists = handover.lists
+        let handedOverSelections = !handover.removed.isEmpty
+        if handedOverSelections {
+            Task {
+                for list in handover.removed {
+                    await self.dataManager.removeFilterList(withId: list.id)
+                }
+                await ConcurrentLogManager.shared.info(
+                    .system, LocalizedStrings.text("Replaced AdGuard filter list(s) with uBlock Origin lists"),
+                    metadata: ["filters": handover.removed.map(\.name).joined(separator: ", ")]
+                )
+            }
         }
         migratedFilterLists = FilterListSetup.hydrate(migratedFilterLists, defaults: defaultLists)
         migratedFilterLists = deduplicateFilterIDs(migratedFilterLists)

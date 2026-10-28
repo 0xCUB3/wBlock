@@ -98,26 +98,17 @@
 "Additional filter list for websites in Latvian." = "Πρόσθετη λίστα φίλτρων για ιστότοπους στα λετονικά.";
 "Additional filter list for websites in Lithuanian." = "Πρόσθετη λίστα φίλτρων για ιστότοπους στα λιθουανικά.";
 "Additional filter list for websites in Slovenian." = "Πρόσθετη λίστα φίλτρων για ιστότοπους στα σλοβενικά.";
-"AdGuard Base Filter" = "AdGuard Base Filter";
 "AdGuard Chinese filter" = "AdGuard Chinese filter";
-"AdGuard Cookie Notices" = "AdGuard Cookie Notices";
 "AdGuard Dutch filter" = "AdGuard Dutch filter";
 "AdGuard Experimental Filter" = "AdGuard Experimental Filter";
 "AdGuard French filter" = "AdGuard French filter";
 "AdGuard German filter" = "AdGuard German filter";
 "AdGuard Japanese filter" = "AdGuard Japanese filter";
-"AdGuard Mobile App Banners" = "AdGuard Mobile App Banners";
-"AdGuard Mobile Filter" = "AdGuard Mobile Filter";
-"AdGuard Other Annoyances" = "AdGuard Other Annoyances";
-"AdGuard Popups" = "AdGuard Popups";
 "AdGuard Russian filter" = "AdGuard Russian filter";
 "AdGuard Social Media Filter" = "AdGuard Social Media Filter";
 "AdGuard Spanish/Portuguese filter" = "AdGuard Spanish/Portuguese filter";
-"AdGuard Tracking Protection Filter" = "AdGuard Tracking Protection Filter";
 "AdGuard Turkish filter" = "AdGuard Turkish filter";
 "AdGuard Ukrainian filter" = "AdGuard Ukrainian filter";
-"AdGuard URL Tracking Protection Filter" = "AdGuard URL Tracking Protection Filter";
-"AdGuard Widgets" = "AdGuard Widgets";
 "Ads" = "Διαφημίσεις";
 "Advanced engine publish failed" = "Αποτυχία δημοσίευσης προηγμένης μηχανής";
 "All" = "Όλα";
@@ -505,6 +496,7 @@
 "Remove Older Versions" = "Κατάργηση Παλαιότερων Εκδόσεων";
 "Removed custom filter" = "Απομακρύνθηκε το προσαρμοσμένο φίλτρο";
 "Removed deprecated filter list(s)" = "Αφαιρέθηκαν οι παρωχημένες λίστες φίλτρων";
+"Replaced AdGuard filter list(s) with uBlock Origin lists" = "Οι λίστες φίλτρων AdGuard αντικαταστάθηκαν με λίστες uBlock Origin";
 "Removing userscript" = "Αφαίρεση κώδικα χρήστη";
 "Replace" = "Αντικατάσταση";
 "replace" = "αντικατάσταση";
@@ -993,15 +985,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps." = "Κρύβει στοιχεία σε κάθε ιστότοπο με κανόνες που δεν ορίζουν ιστότοπο. Αν το απενεργοποιήσετε, η απόκρυψη ανά ιστότοπο παραμένει και οι σελίδες γίνονται πιο ελαφριές, ειδικά οι απαιτητικές εφαρμογές ιστού.";
 "AdGuard Italian filter" = "AdGuard Italian filter";
 "AdGuard Polish filter" = "AdGuard Polish filter";
-"EasyList + AdGuard English filter. This filter is necessary for quality ad blocking." = "EasyList + AdGuard English filter. Αυτό το φίλτρο είναι απαραίτητο για ποιοτικό αποκλεισμό διαφημίσεων.";
-"The most comprehensive list of various online counters and web analytics tools. Use this filter if you do not want your actions on the Internet to be tracked." = "Η πιο ολοκληρωμένη λίστα διαφόρων διαδικτυακών μετρητών και εργαλείων ανάλυσης ιστού. Χρησιμοποιήστε αυτό το φίλτρο, εάν δεν θέλετε να παρακολουθούνται οι ενέργειές σας στο Διαδίκτυο.";
-"Filter that enhances privacy by removing tracking parameters from URLs." = "Το φίλτρο αυτό ενισχύει την προστασία του απορρήτου με την αφαίρεση παραμέτρων παρακολούθησης από τις διευθύνσεις URL.";
 "Automatically removes unnecessary '$' and '&' values from URLs, making them easier to copy from the URL bar and pasting elsewhere as links. Already included in Dandelion Sprout's Annoyances List." = "Αφαιρεί αυτόματα τις περιττές τιμές «$» και «&» από τα URL, κάνοντάς τα ευκολότερα να αντιγραφούν από τη γραμμή URL και να επικολληθούν οπουδήποτε αλλού ως σύνδεσμοι. Περιλαμβάνεται ήδη στη Dandelion Sprout's Annoyances List.";
 "Blocks cookie notices on web pages." = "Αποκλείει τις ειδοποιήσεις cookie σε ιστοσελίδες.";
-"Blocks all kinds of pop-ups that are not necessary for websites' operation according to our Filter policy." = "Αποκλείει όλα τα είδη αναδυόμενων παραθύρων που δεν είναι απαραίτητα για τη λειτουργία των ιστότοπων σύμφωνα με την πολιτική φίλτρων.";
-"Blocks irritating banners that promote mobile apps of websites." = "Αποκλείει ενοχλητικά banner που προωθούν εφαρμογές ιστοτόπων για κινητές συσκευές.";
-"Blocks irritating elements that do not fall under popular categories of annoyances, such as website promotional offers and restrictions on copying and text selection." = "Αποκλείει ενοχλητικά στοιχεία που δεν εμπίπτουν στις δημοφιλείς κατηγορίες ενοχλήσεων, όπως προωθητικές προσφορές ιστοτόπων και περιορισμούς στην αντιγραφή και την επιλογή κειμένου.";
-"Blocks annoying third-party widgets: online assistants, live support chats, etc." = "Αποκλείει ενοχλητικά γραφικά στοιχεία τρίτων: διαδικτυακούς βοηθούς, ζωντανές συνομιλίες υποστήριξης κ.λπ.";
 "Filter for social media widgets such as 'Like' and 'Share' buttons and more." = "Φίλτρο για γραφικά στοιχεία μέσων κοινωνικής δικτύωσης, όπως τα κουμπιά 'Μου αρέσει' και 'Κοινοποίηση', και άλλα.";
 "Hides website features that use generative AI and AI-generated content." = "Αποκρύπτει λειτουργίες ιστότοπων που χρησιμοποιούν γενετική τεχνητή νοημοσύνη και περιεχόμενο που δημιουργείται από AI.";
 "This filter blocks tracking pixels in email clients." = "Αυτό το φίλτρο αποκλείει pixels παρακολούθησης σε πελάτες ηλεκτρονικού ταχυδρομείου.";
@@ -1017,7 +1002,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "The filterslist-KO Classic filter list for AdGuard blocks ads and disables anti-adblock scripts on Korean-language websites and apps." = "Η κλασική λίστα φίλτρων filterslist-KO για το AdGuard αποκλείει διαφημίσεις και απενεργοποιεί κώδικες κατά του αποκλεισμού διαφημίσεων σε κορεατόφωνους ιστοτόπους και εφαρμογές.";
 "Official Polish filters for AdBlock, uBlock Origin & AdGuard + AdGuard Polish filter. Filter list that specifically removes ads on websites in the Polish language." = "Official Polish filters for AdBlock, uBlock Origin & AdGuard + AdGuard Polish filter. Λίστα φίλτρων που αφαιρεί ειδικά τις διαφημίσεις σε ιστότοπους στην πολωνική γλώσσα.";
 "Privacy protection supplement for EasyList." = "Συμπλήρωμα προστασίας απορρήτου για το EasyList.";
-"Filter for all known mobile ad networks. Useful for mobile devices." = "Φίλτρο για όλα τα γνωστά δίκτυα διαφημίσεων για κινητά. Χρήσιμο για φορητές συσκευές.";
 
 /* Add Filter List: Find */
 "Name, language, or topic" = "Όνομα, γλώσσα ή θέμα";

@@ -98,26 +98,17 @@
 "Additional filter list for websites in Latvian." = "拉脫維亞語網站的附加過濾器清單。";
 "Additional filter list for websites in Lithuanian." = "立陶宛語網站的附加過濾器清單。";
 "Additional filter list for websites in Slovenian." = "斯洛維尼亞語網站的附加過濾器清單。";
-"AdGuard Base Filter" = "AdGuard Base Filter";
 "AdGuard Chinese filter" = "AdGuard Chinese filter";
-"AdGuard Cookie Notices" = "AdGuard Cookie Notices";
 "AdGuard Dutch filter" = "AdGuard Dutch filter";
 "AdGuard Experimental Filter" = "AdGuard Experimental Filter";
 "AdGuard French filter" = "AdGuard French filter";
 "AdGuard German filter" = "AdGuard German filter";
 "AdGuard Japanese filter" = "AdGuard Japanese filter";
-"AdGuard Mobile App Banners" = "AdGuard Mobile App Banners";
-"AdGuard Mobile Filter" = "AdGuard Mobile Filter";
-"AdGuard Other Annoyances" = "AdGuard Other Annoyances";
-"AdGuard Popups" = "AdGuard Popups";
 "AdGuard Russian filter" = "AdGuard Russian filter";
 "AdGuard Social Media Filter" = "AdGuard Social Media Filter";
 "AdGuard Spanish/Portuguese filter" = "AdGuard Spanish/Portuguese filter";
-"AdGuard Tracking Protection Filter" = "AdGuard Tracking Protection Filter";
 "AdGuard Turkish filter" = "AdGuard Turkish filter";
 "AdGuard Ukrainian filter" = "AdGuard Ukrainian filter";
-"AdGuard URL Tracking Protection Filter" = "AdGuard URL Tracking Protection Filter";
-"AdGuard Widgets" = "AdGuard Widgets";
 "Ads" = "廣告";
 "Advanced engine publish failed" = "進階引擎發佈失敗";
 "All" = "全部";
@@ -505,6 +496,7 @@
 "Remove Older Versions" = "移除舊版本";
 "Removed custom filter" = "已移除自訂過濾器";
 "Removed deprecated filter list(s)" = "已移除已棄用的過濾器清單";
+"Replaced AdGuard filter list(s) with uBlock Origin lists" = "已將 AdGuard 過濾器清單替換為 uBlock Origin 清單";
 "Removing userscript" = "正在移除使用者腳本";
 "Replace" = "取代";
 "replace" = "取代";
@@ -993,15 +985,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps." = "使用未指定網站的規則在所有網站上隱藏元素。關閉後仍保留針對特定網站的隱藏，並讓頁面更輕快，尤其是複雜的網頁應用程式。";
 "AdGuard Italian filter" = "AdGuard Italian filter";
 "AdGuard Polish filter" = "AdGuard Polish filter";
-"EasyList + AdGuard English filter. This filter is necessary for quality ad blocking." = "EasyList + AdGuard English filter。此過濾器是優質廣告封鎖的必要條件。";
-"The most comprehensive list of various online counters and web analytics tools. Use this filter if you do not want your actions on the Internet to be tracked." = "最全面的各種線上計數器和網路分析工具清單。如果你不想讓自己在網際網路上的活動被追蹤，請使用此過濾器。";
-"Filter that enhances privacy by removing tracking parameters from URLs." = "透過從網址中移除追蹤參數來提升隱私的過濾器。";
 "Automatically removes unnecessary '$' and '&' values from URLs, making them easier to copy from the URL bar and pasting elsewhere as links. Already included in Dandelion Sprout's Annoyances List." = "自動移除網址中不必要的「$」和「&」值，讓網址更容易從網址列複製並作為連結貼到其他地方。已包含在 Dandelion Sprout's Annoyances List 中。";
 "Blocks cookie notices on web pages." = "封鎖網頁上的 Cookie 通知。";
-"Blocks all kinds of pop-ups that are not necessary for websites' operation according to our Filter policy." = "根據我們的過濾政策，封鎖網站運作非必要的各類彈出式視窗。";
-"Blocks irritating banners that promote mobile apps of websites." = "封鎖宣傳網站行動應用程式的惱人橫幅。";
-"Blocks irritating elements that do not fall under popular categories of annoyances, such as website promotional offers and restrictions on copying and text selection." = "封鎖不屬於常見干擾類別的惱人元素，例如網站促銷優惠，以及對複製和文字選取的限制。";
-"Blocks annoying third-party widgets: online assistants, live support chats, etc." = "封鎖惱人的第三方小工具：線上助理、即時支援聊天等。";
 "Filter for social media widgets such as 'Like' and 'Share' buttons and more." = "用於社群媒體小工具（例如「讚」和「分享」按鈕等）的過濾器。";
 "Hides website features that use generative AI and AI-generated content." = "隱藏使用生成式 AI 及 AI 生成內容的網站功能。";
 "This filter blocks tracking pixels in email clients." = "此過濾器會封鎖電子郵件用戶端中的追蹤像素。";
@@ -1017,7 +1002,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "The filterslist-KO Classic filter list for AdGuard blocks ads and disables anti-adblock scripts on Korean-language websites and apps." = "filterslist-KO Classic 過濾器清單適用於 AdGuard，可封鎖韓語網站及應用程式中的廣告，並停用反廣告封鎖腳本。";
 "Official Polish filters for AdBlock, uBlock Origin & AdGuard + AdGuard Polish filter. Filter list that specifically removes ads on websites in the Polish language." = "Official Polish filters for AdBlock, uBlock Origin & AdGuard + AdGuard Polish filter。專門移除波蘭語網站廣告的過濾器清單。";
 "Privacy protection supplement for EasyList." = "用於 EasyList 的隱私保護補充規則。";
-"Filter for all known mobile ad networks. Useful for mobile devices." = "適用於所有已知行動廣告網路的過濾器。適合行動裝置使用。";
 
 /* Add Filter List: Find */
 "Name, language, or topic" = "名稱、語言或主題";

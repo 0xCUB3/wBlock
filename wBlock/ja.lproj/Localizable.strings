@@ -98,26 +98,17 @@
 "Additional filter list for websites in Latvian." = "ラトビア語のウェブサイト用の追加フィルターリスト。";
 "Additional filter list for websites in Lithuanian." = "リトアニア語のウェブサイト用の追加フィルターリスト。";
 "Additional filter list for websites in Slovenian." = "スロベニア語のウェブサイト用の追加フィルターリスト。";
-"AdGuard Base Filter" = "AdGuard Base Filter";
 "AdGuard Chinese filter" = "AdGuard Chinese filter";
-"AdGuard Cookie Notices" = "AdGuard Cookie Notices";
 "AdGuard Dutch filter" = "AdGuard Dutch filter";
 "AdGuard Experimental Filter" = "AdGuard Experimental Filter";
 "AdGuard French filter" = "AdGuard French filter";
 "AdGuard German filter" = "AdGuard German filter";
 "AdGuard Japanese filter" = "AdGuard Japanese filter";
-"AdGuard Mobile App Banners" = "AdGuard Mobile App Banners";
-"AdGuard Mobile Filter" = "AdGuard Mobile Filter";
-"AdGuard Other Annoyances" = "AdGuard Other Annoyances";
-"AdGuard Popups" = "AdGuard Popups";
 "AdGuard Russian filter" = "AdGuard Russian filter";
 "AdGuard Social Media Filter" = "AdGuard Social Media Filter";
 "AdGuard Spanish/Portuguese filter" = "AdGuard Spanish/Portuguese filter";
-"AdGuard Tracking Protection Filter" = "AdGuard Tracking Protection Filter";
 "AdGuard Turkish filter" = "AdGuard Turkish filter";
 "AdGuard Ukrainian filter" = "AdGuard Ukrainian filter";
-"AdGuard URL Tracking Protection Filter" = "AdGuard URL Tracking Protection Filter";
-"AdGuard Widgets" = "AdGuard Widgets";
 "Ads" = "広告";
 "Advanced engine publish failed" = "高度なエンジンの公開に失敗しました";
 "All" = "全て";
@@ -505,6 +496,7 @@
 "Remove Older Versions" = "古いバージョンを削除";
 "Removed custom filter" = "カスタムフィルターを削除しました";
 "Removed deprecated filter list(s)" = "非推奨のフィルターリストを削除しました";
+"Replaced AdGuard filter list(s) with uBlock Origin lists" = "AdGuard のフィルターリストを uBlock Origin のリストに置き換えました";
 "Removing userscript" = "ユーザースクリプトを削除しています";
 "Replace" = "置換";
 "replace" = "置換";
@@ -962,15 +954,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps." = "サイトを指定しないルールで、すべてのサイトの要素を非表示にします。オフにすると、サイト別の非表示は残り、特に重いウェブアプリでページが軽くなります。";
 "AdGuard Italian filter" = "AdGuard イタリア語フィルター";
 "AdGuard Polish filter" = "AdGuard ポーランド語フィルター";
-"EasyList + AdGuard English filter. This filter is necessary for quality ad blocking." = "EasyListとAdGuard English filterを合わせたフィルターです。このフィルターは品質の高い広告ブロックに必要です。";
-"The most comprehensive list of various online counters and web analytics tools. Use this filter if you do not want your actions on the Internet to be tracked." = "最も幅広い様々なオンラインカウンターおよびウェブ分析ツールのリスト。インターネット上での操作を追跡されたくない場合は、このフィルターをご利用ください。";
-"Filter that enhances privacy by removing tracking parameters from URLs." = "URLからトラッキング（追跡）パラメーターを除去し、プライバシーを向上させるフィルター。";
 "Automatically removes unnecessary '$' and '&' values from URLs, making them easier to copy from the URL bar and pasting elsewhere as links. Already included in Dandelion Sprout's Annoyances List." = "URLから不要な「$」や「&」値を自動的に削除し、URLバーからコピーして他の場所にリンクとして貼り付けやすくします。既に Dandelion Sprout の Annoyances List にも含まれています。";
 "Blocks cookie notices on web pages." = "ウェブページで表示されるCookie（クッキー）使用同意通知をブロックします。";
-"Blocks all kinds of pop-ups that are not necessary for websites' operation according to our Filter policy." = "AdGuardのフィルターポリシーに従って、Webサイトの動作に関係ないポップアップをすべてブロックします。";
-"Blocks irritating banners that promote mobile apps of websites." = "Webサイトのモバイルアプリを宣伝する迷惑なバナーをブロックします。";
-"Blocks irritating elements that do not fall under popular categories of annoyances, such as website promotional offers and restrictions on copying and text selection." = "一般的な迷惑要素カテゴリに該当しない要素（テキストのコピーや選択が制限されている場合やウェブサイトの自己宣伝広告など）をブロックします。";
-"Blocks annoying third-party widgets: online assistants, live support chats, etc." = "オンラインアシスタント、ライブサポートチャットなど、迷惑なサードパーティウィジェットをブロックします。";
 "Filter for social media widgets such as 'Like' and 'Share' buttons and more." = "SNSウィジェット用フィルター(いいね! ボタンなど)。";
 "Hides website features that use generative AI and AI-generated content." = "生成AIとAI生成コンテンツを使用しているウェブサイト機能を非表示にします。";
 "This filter blocks tracking pixels in email clients." = "メールクライアント内のトラッキングピクセルをブロックしてくれるフィルターです。";
@@ -986,7 +971,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "The filterslist-KO Classic filter list for AdGuard blocks ads and disables anti-adblock scripts on Korean-language websites and apps." = "AdGuard用のfilterslist-KO Classic filter list は、韓国語ウェブサイトやアプリ上の広告をブロックし、広告ブロック対策スクリプトを無効にします。";
 "Official Polish filters for AdBlock, uBlock Origin & AdGuard + AdGuard Polish filter. Filter list that specifically removes ads on websites in the Polish language." = "Official Polish filters for AdBlock, uBlock Origin & AdGuard＋AdGuardポーランド語フィルター。ポーランド語のウェブサイト上の広告を削除することに特化したフィルターリスト。";
 "Privacy protection supplement for EasyList." = "EasyList用のプライバシー保護補足フィルター。";
-"Filter for all known mobile ad networks. Useful for mobile devices." = "すべての既知のモバイル広告ネットワーク用フィルター。モバイル端末に有用です。";
 
 /* Add Filter List: Find */
 "Name, language, or topic" = "名前、言語、またはトピック";

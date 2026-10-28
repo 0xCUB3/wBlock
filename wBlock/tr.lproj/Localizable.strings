@@ -98,26 +98,17 @@
 "Additional filter list for websites in Latvian." = "Letonca siteler için ek filtre listesi.";
 "Additional filter list for websites in Lithuanian." = "Litvanca siteler için ek filtre listesi.";
 "Additional filter list for websites in Slovenian." = "Slovence siteler için ek filtre listesi.";
-"AdGuard Base Filter" = "AdGuard Temel Filtresi";
 "AdGuard Chinese filter" = "AdGuard Çince filtresi";
-"AdGuard Cookie Notices" = "AdGuard Çerez Bildirimleri";
 "AdGuard Dutch filter" = "AdGuard Hollandaca filtresi";
 "AdGuard Experimental Filter" = "AdGuard Deneysel Filtresi";
 "AdGuard French filter" = "AdGuard Fransızca filtresi";
 "AdGuard German filter" = "AdGuard Almanca filtresi";
 "AdGuard Japanese filter" = "AdGuard Japonca filtresi";
-"AdGuard Mobile App Banners" = "AdGuard Mobil Uygulama Afişleri";
-"AdGuard Mobile Filter" = "AdGuard Mobil Filtresi";
-"AdGuard Other Annoyances" = "AdGuard Diğer Can Sıkıcılar";
-"AdGuard Popups" = "AdGuard Açılır Pencereler";
 "AdGuard Russian filter" = "AdGuard Rusça filtresi";
 "AdGuard Social Media Filter" = "AdGuard Sosyal Medya Filtresi";
 "AdGuard Spanish/Portuguese filter" = "AdGuard İspanyolca/Portekizce filtresi";
-"AdGuard Tracking Protection Filter" = "AdGuard İzleme Koruması Filtresi";
 "AdGuard Turkish filter" = "AdGuard Türkçe filtresi";
 "AdGuard Ukrainian filter" = "AdGuard Ukraynaca filtresi";
-"AdGuard URL Tracking Protection Filter" = "AdGuard URL İzleme Koruması Filtresi";
-"AdGuard Widgets" = "AdGuard Araçlar";
 "Ads" = "Reklam";
 "Advanced engine publish failed" = "Gelişmiş motor yayınlanamadı";
 "All" = "Tümü";
@@ -503,6 +494,7 @@
 "Remove Older Versions" = "Eski sürümleri kaldır";
 "Removed custom filter" = "Özel filtre kaldırıldı";
 "Removed deprecated filter list(s)" = "Kullanımdan kaldırılan filtre listeleri silindi";
+"Replaced AdGuard filter list(s) with uBlock Origin lists" = "AdGuard filtre listeleri uBlock Origin listeleriyle değiştirildi";
 "Removing userscript" = "Kullanıcı betiği kaldırılıyor";
 "Replace" = "Değiştir";
 "replace" = "değiştir";
@@ -1002,15 +994,8 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps." = "Genel kurallarla tüm sitelerdeki öğeleri gizler. Kapatırsanız sadece siteye özel kurallar çalışır ve özellikle yoğun siteler daha hızlı yüklenir.";
 "AdGuard Italian filter" = "AdGuard İtalyanca filtresi";
 "AdGuard Polish filter" = "AdGuard Polonya filtresi";
-"EasyList + AdGuard English filter. This filter is necessary for quality ad blocking." = "EasyList + AdGuard İngilizce filtresi. Bu filtre, kaliteli bir reklam engelleme için gereklidir.";
-"The most comprehensive list of various online counters and web analytics tools. Use this filter if you do not want your actions on the Internet to be tracked." = "Çeşitli çevrim içi sayaçların ve web analiz araçlarının en kapsamlı listesidir. İnternetteki hareketlerinizin takip edilmesini istemiyorsanız bu filtreyi kullanın.";
-"Filter that enhances privacy by removing tracking parameters from URLs." = "URL'lerden takip parametrelerini temizleyerek gizliliği artıran filtre.";
 "Automatically removes unnecessary '$' and '&' values from URLs, making them easier to copy from the URL bar and pasting elsewhere as links. Already included in Dandelion Sprout's Annoyances List." = "URL'lerden gereksiz '$' ve '&' değerlerini otomatik olarak kaldırarak bunların adres çubuğundan kopyalanmasını ve başka bir yere bağlantı olarak yapıştırılmasını kolaylaştırır. Zaten Dandelion Sprout's Annoyances List filtresinde mevcut.";
 "Blocks cookie notices on web pages." = "Web sayfalarındaki çerez bildirimlerini engeller.";
-"Blocks all kinds of pop-ups that are not necessary for websites' operation according to our Filter policy." = "Filtre politikamıza göre web sitelerinin çalışması için gerekli olmayan her türlü açılır pencereyi engeller.";
-"Blocks irritating banners that promote mobile apps of websites." = "Web sitelerinin mobil uygulamalarını tanıtan rahatsız edici afişleri engeller.";
-"Blocks irritating elements that do not fall under popular categories of annoyances, such as website promotional offers and restrictions on copying and text selection." = "Web sitesi promosyon teklifleri ile kopyalama ve metin seçme kısıtlamaları gibi yaygın rahatsızlık kategorilerine girmeyen sinir bozucu öğeleri engeller.";
-"Blocks annoying third-party widgets: online assistants, live support chats, etc." = "Canlı destek sohbetleri ve çevrim içi asistanlar gibi rahatsız edici üçüncü taraf araçları engeller.";
 "Filter for social media widgets such as 'Like' and 'Share' buttons and more." = "Beğen' ve 'Paylaş' düğmeleri gibi sosyal medya araçlarını ve daha fazlasını engelleyen filtre.";
 "Hides website features that use generative AI and AI-generated content." = "Üretken yapay zekâ kullanan web sitesi özelliklerini ve yapay zekâ tarafından oluşturulan içerikleri gizler.";
 "This filter blocks tracking pixels in email clients." = "Bu filtre, e-posta istemcilerindeki izleme piksellerini engeller.";
@@ -1026,7 +1011,6 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "The filterslist-KO Classic filter list for AdGuard blocks ads and disables anti-adblock scripts on Korean-language websites and apps." = "AdGuard için filterslist-KO Classic filtre listesi, Korece sitelerde ve uygulamalarda reklamları engeller ve reklam engelleyici tespit betiklerini devre dışı bırakır.";
 "Official Polish filters for AdBlock, uBlock Origin & AdGuard + AdGuard Polish filter. Filter list that specifically removes ads on websites in the Polish language." = "AdBlock, uBlock Origin ve AdGuard için Resmi Polonya filtreleri + AdGuard Polonya filtresi. Polonya sitelerindeki reklamları özel olarak kaldıran filtre listesi.";
 "Privacy protection supplement for EasyList." = "EasyList için gizlilik koruması takviyesi.";
-"Filter for all known mobile ad networks. Useful for mobile devices." = "Bilinen tüm mobil reklam ağları için filtre. Mobil cihazlar için kullanışlıdır.";
 
 /* Add Filter List: Find */
 "Name, language, or topic" = "Ad, dil veya konu";

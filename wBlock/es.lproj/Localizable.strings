@@ -98,26 +98,17 @@
 "Additional filter list for websites in Latvian." = "Lista de filtros adicional para sitios web en letón.";
 "Additional filter list for websites in Lithuanian." = "Lista de filtros adicional para sitios web en lituano.";
 "Additional filter list for websites in Slovenian." = "Lista de filtros adicional para sitios web en esloveno.";
-"AdGuard Base Filter" = "AdGuard Base Filter";
 "AdGuard Chinese filter" = "AdGuard Chinese filter";
-"AdGuard Cookie Notices" = "AdGuard Cookie Notices";
 "AdGuard Dutch filter" = "AdGuard Dutch filter";
 "AdGuard Experimental Filter" = "AdGuard Experimental Filter";
 "AdGuard French filter" = "AdGuard French filter";
 "AdGuard German filter" = "AdGuard German filter";
 "AdGuard Japanese filter" = "AdGuard Japanese filter";
-"AdGuard Mobile App Banners" = "AdGuard Mobile App Banners";
-"AdGuard Mobile Filter" = "AdGuard Mobile Filter";
-"AdGuard Other Annoyances" = "AdGuard Other Annoyances";
-"AdGuard Popups" = "AdGuard Popups";
 "AdGuard Russian filter" = "AdGuard Russian filter";
 "AdGuard Social Media Filter" = "AdGuard Social Media Filter";
 "AdGuard Spanish/Portuguese filter" = "AdGuard Spanish/Portuguese filter";
-"AdGuard Tracking Protection Filter" = "AdGuard Tracking Protection Filter";
 "AdGuard Turkish filter" = "AdGuard Turkish filter";
 "AdGuard Ukrainian filter" = "AdGuard Ukrainian filter";
-"AdGuard URL Tracking Protection Filter" = "AdGuard URL Tracking Protection Filter";
-"AdGuard Widgets" = "AdGuard Widgets";
 "Ads" = "Anuncios";
 "Advanced engine publish failed" = "Error al publicar el motor avanzado";
 "All" = "Todos";
@@ -503,6 +494,7 @@
 "Remove Older Versions" = "Eliminar versiones antiguas";
 "Removed custom filter" = "Filtro personalizado eliminado";
 "Removed deprecated filter list(s)" = "Lista(s) de filtros obsoleta(s) eliminada(s)";
+"Replaced AdGuard filter list(s) with uBlock Origin lists" = "Lista(s) de filtros de AdGuard sustituida(s) por listas de uBlock Origin";
 "Removing userscript" = "Eliminando el script de usuario";
 "Replace" = "Reemplazar";
 "replace" = "reemplazar";
@@ -993,15 +985,8 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps." = "Oculta elementos en todos los sitios con reglas que no indican ninguno. Al desactivarlo se mantiene la ocultación específica de cada sitio y las páginas son más ligeras, sobre todo las aplicaciones web exigentes.";
 "AdGuard Italian filter" = "AdGuard Italian filter";
 "AdGuard Polish filter" = "AdGuard Polish filter";
-"EasyList + AdGuard English filter. This filter is necessary for quality ad blocking." = "EasyList + AdGuard English filter. Este filtro es necesario para un bloqueo de anuncios de calidad.";
-"The most comprehensive list of various online counters and web analytics tools. Use this filter if you do not want your actions on the Internet to be tracked." = "La lista más completa de varios contadores en línea y herramientas de análisis web. Utiliza este filtro si no deseas que se realice el rastreo de tus acciones en Internet.";
-"Filter that enhances privacy by removing tracking parameters from URLs." = "Filtro que mejora la privacidad eliminando los parámetros de rastreo de las URL.";
 "Automatically removes unnecessary '$' and '&' values from URLs, making them easier to copy from the URL bar and pasting elsewhere as links. Already included in Dandelion Sprout's Annoyances List." = "Elimina automáticamente los valores '$' y '&' innecesarios de las URL, lo que facilita la copia de la barra de URL y el pegado en otros lugares como enlaces. Ya incluido en la lista Dandelion Sprout's Annoyances.";
 "Blocks cookie notices on web pages." = "Bloquea avisos de cookies en sitios web.";
-"Blocks all kinds of pop-ups that are not necessary for websites' operation according to our Filter policy." = "Bloquea todo tipo de ventanas emergentes no necesarias para el funcionamiento de los sitios web según nuestra Política de filtros.";
-"Blocks irritating banners that promote mobile apps of websites." = "Bloquea banners irritantes que promocionan aplicaciones móviles de sitios web.";
-"Blocks irritating elements that do not fall under popular categories of annoyances, such as website promotional offers and restrictions on copying and text selection." = "Bloquea elementos irritantes que no se ajustan a las categorías más comunes de molestias, como las ofertas promocionales de los sitios web y las restricciones a la copia y la selección de texto.";
-"Blocks annoying third-party widgets: online assistants, live support chats, etc." = "Bloquea widgets molestos de terceros: asistentes en línea, chats de soporte en vivo, etc.";
 "Filter for social media widgets such as 'Like' and 'Share' buttons and more." = "Filtro para widgets de redes sociales, como los botones 'Me gusta' y 'Compartir', y más.";
 "Hides website features that use generative AI and AI-generated content." = "Oculta funciones de sitios web que utilizan IA generativa y contenido generado por IA.";
 "This filter blocks tracking pixels in email clients." = "Este filtro bloquea los píxeles de rastreo en los clientes de correo electrónico.";
@@ -1017,7 +1002,6 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "The filterslist-KO Classic filter list for AdGuard blocks ads and disables anti-adblock scripts on Korean-language websites and apps." = "La lista de filtros filterslist-KO Classic para AdGuard bloquea los anuncios y desactiva los scripts anti-bloqueo de anuncios en sitios web y aplicaciones en idioma coreano.";
 "Official Polish filters for AdBlock, uBlock Origin & AdGuard + AdGuard Polish filter. Filter list that specifically removes ads on websites in the Polish language." = "Official Polish filters for AdBlock, uBlock Origin & AdGuard + AdGuard Polish filter. Lista de filtros que elimina específicamente anuncios en sitios web en idioma polaco.";
 "Privacy protection supplement for EasyList." = "Suplemento de protección de privacidad para EasyList.";
-"Filter for all known mobile ad networks. Useful for mobile devices." = "Filtro para todas las redes de anuncios móviles conocidas. Útil para dispositivos móviles.";
 
 /* Add Filter List: Find */
 "Name, language, or topic" = "Nombre, idioma o tema";
