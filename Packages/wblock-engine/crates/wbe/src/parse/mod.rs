@@ -1,7 +1,7 @@
 //! Line parser. Mirrors uBO's static-filtering-parser.js: which marker a line
 //! uses, which options exist (and their aliases), and what is invalid.
 
-mod cosmetic;
+pub(crate) mod cosmetic;
 mod network;
 
 use crate::ast::{ParsedLine, SourceRef};
