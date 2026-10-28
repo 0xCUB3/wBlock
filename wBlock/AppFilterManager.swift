@@ -261,10 +261,12 @@ class AppFilterManager: ObservableObject {
         }
     }
 
-    func scheduleAutoApplyDebounce() {
+    /// `delay` is in seconds; a list handover applies at once so its new lists
+    /// do not sit undownloaded behind the edit debounce.
+    func scheduleAutoApplyDebounce(delay: UInt64 = 60) {
         autoApplyTask?.cancel()
         autoApplyTask = Task { @MainActor [weak self] in
-            try? await Task.sleep(nanoseconds: 60_000_000_000)
+            try? await Task.sleep(nanoseconds: delay * 1_000_000_000)
             guard !Task.isCancelled else { return }
             guard let self else { return }
             if self.isAutoUpdateRunning {
@@ -767,7 +769,9 @@ class AppFilterManager: ObservableObject {
             && (hasURLMigrations || selectedDeprecatedListWasRemoved || handedOverSelections || signatureMismatch)
         if needsRebuild {
             markNonSelectionChangesPending()
-            if storedFailedUpgradeSignature() != currentSignature {
+            if handedOverSelections {
+                scheduleAutoApplyDebounce(delay: 0)
+            } else if storedFailedUpgradeSignature() != currentSignature {
                 scheduleAutoApplyDebounce()
             }
         } else {
