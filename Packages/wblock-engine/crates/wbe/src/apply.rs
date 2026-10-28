@@ -15,8 +15,8 @@
 use crate::ast::{
     DomainList, DomainMatcher, NetworkAction, NetworkRule, Party, ResourceTypes, Rule,
 };
-use crate::parse::cosmetic::with_domains;
 use crate::compile::{compile_rules, parse_list, CompileOptions, CompileOutput, RuleSet, Stats};
+use crate::parse::cosmetic::with_domains;
 use crate::webkit::{SafariVersion, WkAction, WkRule, WkTrigger};
 use serde::{Deserialize, Serialize};
 use std::collections::hash_map::DefaultHasher;
@@ -280,9 +280,12 @@ impl Plan {
         if let Some(list) = segment_list {
             let assignment = self.assigned(target, list).cloned();
             for p in &self.parsed[list].rules {
+                if matches!(&p.rule, Rule::Network(r) if r.badfilter) {
+                    segment.push(p.rule.clone());
+                }
                 let keep = assignment.as_ref().is_some_and(|a| {
                     a.shard
-                        .map_or(true, |(i, n)| p.identity % n as u64 == i as u64)
+                        .is_none_or(|(i, n)| p.identity % n as u64 == i as u64)
                 });
                 if keep
                     && is_plain_block(&p.rule)
@@ -293,6 +296,9 @@ impl Plan {
             }
         }
         for rule in replicated {
+            if matches!(&rule, Rule::Network(r) if r.badfilter) {
+                segment.push(rule.clone());
+            }
             set.push(rule);
         }
         for (i, extra) in extras.iter().enumerate() {
@@ -378,9 +384,6 @@ impl Plan {
                 }
             }
         }
-        if patterns.is_empty() {
-            return Vec::new();
-        }
         let mut sorted: Vec<&String> = patterns.iter().collect();
         sorted.sort_unstable();
         let mut seen = HashSet::new();
@@ -394,12 +397,23 @@ impl Plan {
                 scoped(&p.rule, &self.lists[list].scope, &mut scoped_rules);
             }
             for rule in scoped_rules {
-                let Rule::Network(r) = &rule else { continue };
-                let Some(key) = PatternKey::of(r).filter(|_| r.exception) else {
-                    continue;
-                };
-                if key.cancels(&patterns, &bare_hosts, &sorted) && seen.insert(identity(&r.raw)) {
-                    out.push(rule);
+                match &rule {
+                    Rule::Cosmetic(r) if r.exception => {
+                        if seen.insert(identity(&r.raw)) {
+                            if let Some(rule) = self.cosmetic_scoped(rule) {
+                                out.push(rule);
+                            }
+                        }
+                    }
+                    Rule::Network(r) if r.exception || r.badfilter => {
+                        let matches = PatternKey::of(r).is_none_or(|key| {
+                            key.host.is_none() || key.cancels(&patterns, &bare_hosts, &sorted)
+                        });
+                        if matches && seen.insert(identity(&r.raw)) {
+                            out.push(rule);
+                        }
+                    }
+                    _ => {}
                 }
             }
         }
@@ -926,6 +940,52 @@ mod tests {
         .unwrap()
     }
 
+    fn two_lists(left: &str, right: &str) -> Plan {
+        plan(
+            json!([{ "id":"left", "text":left }, { "id":"right", "text":right }]),
+            json!([{ "slot":1, "lists":[{"list":0}] }, { "slot":2, "lists":[{"list":1}] }]),
+            json!({}),
+        )
+    }
+
+    #[test]
+    fn cross_blocker_cosmetic_exception() {
+        let plan = two_lists("##.consent-dialog", "example.com#@#.consent-dialog");
+        let output = rules(&plan, 0);
+        assert!(
+            output.iter().any(|r| r["trigger"]["unless-domain"]
+                .to_string()
+                .contains("example.com")),
+            "{output:?}"
+        );
+    }
+
+    #[test]
+    fn cross_blocker_wildcard_exception() {
+        let plan = two_lists("||cdn.example^", "@@*$script,domain=example.com");
+        assert!(rules(&plan, 0)
+            .iter()
+            .any(|r| r["action"]["type"] == "ignore-previous-rules"));
+    }
+
+    #[test]
+    fn cross_blocker_badfilter() {
+        let plan = two_lists("||cdn.example^", "||cdn.example^$badfilter");
+        assert!(rules(&plan, 0).is_empty());
+    }
+
+    #[test]
+    fn excluded_segment_respects_badfilter() {
+        let plan = plan(
+            json!([{ "id":"list", "text":"||cdn.example^\n||cdn.example^$badfilter", "scope":{"exclude":["other.com"]} }]),
+            json!([{ "slot":1, "lists":[{"list":0}] }]),
+            json!({}),
+        );
+        assert!(!rules(&plan, 0)
+            .iter()
+            .any(|r| r["action"]["type"] == "block"));
+    }
+
     #[test]
     fn duplicate_owner_survives_multiple_targets() {
         let plan = plan(
@@ -1012,7 +1072,10 @@ mod tests {
             json!({"exclude": ["sub.example.com"]}),
         );
         let runtime = scoped.compile_target(0, &[]).output.runtime;
-        assert!(runtime.contains(&"example.com,~sub.example.com##div:has-text(Ad)".to_string()), "{runtime:?}");
+        assert!(
+            runtime.contains(&"example.com,~sub.example.com##div:has-text(Ad)".to_string()),
+            "{runtime:?}"
+        );
     }
 
     #[test]
@@ -1032,14 +1095,39 @@ mod tests {
         // (rule, exclude, only, expected substring or None when dropped)
         let cases: [(&str, &[&str], Option<&[&str]>, Option<&str>); 9] = [
             ("##.ad", &[], Some(&["amazon.*"]), Some("amazon.*##.ad")), // #1032
-            ("amazon.*##.ad", &[], Some(&["amazon.it"]), Some("amazon.it##.ad")), // #1031
-            ("amazon.it,ebay.it##.ad", &[], Some(&["amazon.*"]), Some("amazon.it##.ad")),
-            ("amazon.it,ebay.it##.ad", &["amazon.*"], None, Some("ebay.it##.ad")),
+            (
+                "amazon.*##.ad",
+                &[],
+                Some(&["amazon.it"]),
+                Some("amazon.it##.ad"),
+            ), // #1031
+            (
+                "amazon.it,ebay.it##.ad",
+                &[],
+                Some(&["amazon.*"]),
+                Some("amazon.it##.ad"),
+            ),
+            (
+                "amazon.it,ebay.it##.ad",
+                &["amazon.*"],
+                None,
+                Some("ebay.it##.ad"),
+            ),
             ("##.ad", &["amazon.*"], None, Some("~amazon.*##.ad")),
             ("~example.com##.ad", &[], Some(&["example.com"]), None),
             ("other.test##.ad", &[], Some(&["example.com"]), None),
-            ("example.com##+js(set, a, 1)", &[], Some(&["news.example.com"]), Some("news.example.com##+js(set, a, 1)")),
-            ("amazon.it##.ad", &["notamazon.*", "amazon.it.example.com"], None, Some("amazon.it##.ad")),
+            (
+                "example.com##+js(set, a, 1)",
+                &[],
+                Some(&["news.example.com"]),
+                Some("news.example.com##+js(set, a, 1)"),
+            ),
+            (
+                "amazon.it##.ad",
+                &["notamazon.*", "amazon.it.example.com"],
+                None,
+                Some("amazon.it##.ad"),
+            ),
         ];
         for (rule, exclude, only, expected) in cases {
             let scope = match only {
@@ -1051,7 +1139,11 @@ mod tests {
                 json!([{"slot":1,"lists":[{"list":0}]}]),
                 json!({}),
             );
-            let kept: Vec<String> = plan.included(0, 0).iter().map(|r| raw(r).to_string()).collect();
+            let kept: Vec<String> = plan
+                .included(0, 0)
+                .iter()
+                .map(|r| raw(r).to_string())
+                .collect();
             match expected {
                 Some(expected) => assert!(kept.iter().any(|r| r == expected), "{rule}: {kept:?}"),
                 None => assert!(kept.is_empty(), "{rule}: {kept:?}"),
