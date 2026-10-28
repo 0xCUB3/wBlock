@@ -2478,9 +2478,12 @@ extension ContentBlockerService {
         if cancellationRequested() {
             throw CancellationError()
         }
-        let count = compiled.stats.nativeRules
+        // Safari fails to reload a blocker whose list is `[]` (a blocker with
+        // only Scripts rules, or none), so an empty output is the inert rule.
+        let empty = compiled.stats.nativeRules == 0
+        let count = empty ? inertContentBlockerRuleCount : compiled.stats.nativeRules
         return ConversionResult(
-            safariRulesJSON: compiled.safariRulesJSON,
+            safariRulesJSON: empty ? inertContentBlockerRulesJSON : compiled.safariRulesJSON,
             safariRulesCount: count,
             discardedSafariRules: max(0, count - safariContentBlockerRuleLimit),
             advancedRulesText: compiled.runtimeRules.isEmpty ? nil : compiled.runtimeRules

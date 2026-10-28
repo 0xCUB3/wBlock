@@ -70,6 +70,23 @@ struct WbeUpgradeTests {
         let accepted = await ContentBlockerRuleRepair.repaired(output)
         check(accepted == nil, "WebKit compiles the output as is")
 
+        // A blocker with no native rules still gets a list Safari can load.
+        let scriptsOnly = FilterList(name: "scripts only", url: URL(string: "https://example.com/s.txt")!, category: .ads, isSelected: true)
+        try "example.com##+js(set-constant, a, 1)\n! nothing native\n".write(
+            to: container.appendingPathComponent(ContentBlockerIncrementalCache.localFilename(for: scriptsOnly)), atomically: true, encoding: .utf8
+        )
+        let second = ContentBlockerTargetManager.shared.allTargets(forPlatform: .macOS)[1]
+        let scriptsOrdered = ContentBlockerMappingService.orderedForCompilation([scriptsOnly])
+        _ = try ContentBlockerService.compileTargetRules(
+            filters: [scriptsOnly], orderedSelectedFilters: scriptsOrdered,
+            affinitySnapshot: SafariContentBlockerAffinityProcessor.snapshot(for: scriptsOrdered, containerURL: container),
+            targetInfo: second, allTargets: [second], disabledSites: [], extraRulesText: nil,
+            groupIdentifier: groupIdentifier, containerURL: container
+        )
+        let emptyOutput = try Data(contentsOf: container.appendingPathComponent(second.rulesFilename))
+        let emptyAccepted = await ContentBlockerRuleRepair.repaired(emptyOutput)
+        check(emptyAccepted == nil && String(decoding: emptyOutput, as: UTF8.self) != "[]", "an empty blocker loads: \(String(decoding: emptyOutput, as: UTF8.self))")
+
         // One rule WebKit rejects (an empty url-filter) among good ones.
         let rules = #"[{"trigger":{"url-filter":"a"},"action":{"type":"block"}},{"trigger":{"url-filter":""},"action":{"type":"block"}},{"trigger":{"url-filter":"b"},"action":{"type":"block"}}]"#
         let repair = await ContentBlockerRuleRepair.repaired(Data(rules.utf8))
