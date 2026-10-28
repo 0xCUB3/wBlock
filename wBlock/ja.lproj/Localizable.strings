@@ -912,9 +912,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "実験的フィルターは、メインのリストに入る前の新しいルールを試すもので、ウェブサイトが正しく表示されなくなることがあります。不具合を見つけて報告できる場合にのみ有効にしてください。";
 "Enable HaGeZi Multi Pro Mini?" = "HaGeZi Multi Pro Mini を有効にしますか？";
 "HaGeZi Multi Pro Mini is better suited to a DNS blocker than Safari. Its many domain rules can consume a large share of Safari’s limited rule capacity, leaving less room for browser-focused filters, and may break websites by blocking services they need. We recommend leaving it off and using wBlock’s recommended filter lists instead." = "HaGeZi Multi Pro Mini は、Safari よりも DNS ブロッカーでの使用に適しています。多数のドメインルールが Safari の限られたルール容量を大きく消費し、ブラウザー向けフィルターの余地を減らすほか、必要なサービスを遮断してサイトの動作を妨げることがあります。このリストはオフのままにし、代わりに wBlock の推奨フィルターリストを使用することをおすすめします。";
-"Reset Ordering" = "並び順をリセット";
 "Reset" = "リセット";
-"Return built-in lists and userscripts to their default categories and order, and move custom ones to Other." = "内蔵のリストとユーザースクリプトをデフォルトのカテゴリと順序に戻し、カスタムのものを「その他」に移動します。";
 "No sites selected. Cosmetic filtering will not apply." = "サイトが選択されていません。コスメティックフィルタリングは適用されません。";
 "Cosmetic filtering will not apply on these sites. Network blocking still applies." = "これらのサイトではコスメティックフィルタリングは適用されません。ネットワークブロックは引き続き適用されます。";
 "When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device." = "オンにすると、ユーザースクリプトの有効／無効の状態がiCloud経由で同期されます。オフにすると、このデバイス上だけに保存されます。";

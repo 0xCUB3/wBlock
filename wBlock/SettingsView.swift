@@ -25,7 +25,6 @@ struct SettingsView: View {
     @State private var launchAgentNeedsApproval = false
     #endif
     @State private var showingRestartConfirmation = false
-    @State private var showingResetOrderingConfirmation = false
     @State private var isRestarting = false
     @State private var showingImportDialog = false
     @State private var showingRestoreBackupConfirmation = false
@@ -74,12 +73,6 @@ struct SettingsView: View {
             await MainActor.run { startTimer() }
         }
         .onDisappear { stopTimer() }
-        .alert("Reset Ordering", isPresented: $showingResetOrderingConfirmation) {
-            Button("Cancel", role: .cancel) {}
-            Button("Reset", role: .destructive, action: resetOrdering)
-        } message: {
-            Text("Return built-in lists and userscripts to their default categories and order, and move custom ones to Other.")
-        }
         .alert("Restart Onboarding?", isPresented: $showingRestartConfirmation) {
             Button("Cancel", role: .cancel) {}
             Button("Restart", role: .destructive) { restartOnboarding() }
@@ -802,16 +795,6 @@ struct SettingsView: View {
         Section {
             #if os(macOS)
             CompatibleLabeledContent {
-                Button("Reset", role: .destructive) { showingResetOrderingConfirmation = true }
-                    .buttonStyle(.bordered)
-                    .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] }
-            } label: {
-                rowLabel(
-                    "Reset Ordering",
-                    detail: Text("Return built-in lists and userscripts to their default categories and order, and move custom ones to Other.")
-                )
-            }
-            CompatibleLabeledContent {
                 Button(isRestarting ? "Restarting…" : "Restart", role: .destructive) {
                     showingRestartConfirmation = true
                 }
@@ -825,17 +808,6 @@ struct SettingsView: View {
                 )
             }
             #else
-            Button { showingResetOrderingConfirmation = true } label: {
-                Label {
-                    rowLabel(
-                        "Reset Ordering",
-                        detail: Text("Return built-in lists and userscripts to their default categories and order, and move custom ones to Other.")
-                    )
-                } icon: {
-                    Image(systemName: "arrow.up.arrow.down")
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
             Button(role: .destructive) {
                 showingRestartConfirmation = true
             } label: {
@@ -1067,12 +1039,6 @@ extension SettingsView {
     }
 
     // MARK: - User Defaults / Onboarding
-
-    private func resetOrdering() {
-        ListDisplayOrder.reset()
-        filterManager.resetCategories()
-        Task { await UserScriptManager.shared.resetCategories() }
-    }
 
     private func restartOnboarding() {
         guard !isRestarting else { return }
