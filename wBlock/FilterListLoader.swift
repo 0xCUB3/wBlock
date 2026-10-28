@@ -51,6 +51,8 @@ class FilterListLoader {
     )!
 
     private static let filterURLMigrations: [String: URL] = [
+        "https://easylist.to/easylist/fanboy-social.txt":
+            URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/123_optimized.txt")!,
         "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_17_TrackParam/filter.txt":
             URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/mac_v3/filters/17_optimized.txt")!,
         "https://raw.githubusercontent.com/DandelionSprout/adfilt/master/LegitimateURLShortener.txt":
@@ -391,7 +393,7 @@ class FilterListLoader {
                 description: "Filter for social media widgets such as 'Like' and 'Share' buttons and more."),
             FilterList(
                 id: UUID(), name: "Fanboy's Social Blocking List",
-                url: URL(string: "https://easylist.to/easylist/fanboy-social.txt")!,
+                url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/123_optimized.txt")!,
                 category: FilterListCategory.annoyances,
                 description:
                     "Hides share and follow buttons on any site, including many that AdGuard Social Media Filter misses."),
