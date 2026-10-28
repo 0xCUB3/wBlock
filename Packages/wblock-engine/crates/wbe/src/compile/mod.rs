@@ -12,7 +12,9 @@ mod cosmetic;
 mod network;
 pub mod regex;
 
-use crate::ast::{CosmeticRule, NetworkRule, ParsedLine, Rule, ScriptletRule, SourceRef};
+use crate::ast::{
+    CosmeticRule, ExceptionScope, NetworkRule, ParsedLine, Rule, ScriptletRule, SourceRef,
+};
 use crate::webkit::{SafariVersion, WkRule};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -135,6 +137,17 @@ pub fn compile_rules(set: &RuleSet, opts: &CompileOptions, mut stats: Stats) -> 
     let mut runtime = Vec::new();
     network::compile(&set.network, opts, &mut tiered, &mut stats);
     cosmetic::compile(&set.cosmetic, opts, &mut tiered, &mut runtime, &mut stats);
+    runtime.extend(
+        set.network
+            .iter()
+            .filter(|r| {
+                r.exception
+                    && r.scope.intersects(
+                        ExceptionScope::DOC | ExceptionScope::EHIDE | ExceptionScope::GHIDE,
+                    )
+            })
+            .map(|r| r.raw.clone()),
+    );
     for s in &set.scriptlets {
         runtime.push(s.raw.clone());
     }

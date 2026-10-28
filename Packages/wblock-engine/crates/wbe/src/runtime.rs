@@ -6,7 +6,7 @@
 //! script string would be subject to the page's CSP). The lines come from
 //! `compile`, which already dropped untrusted `trusted-*` scriptlets.
 
-use crate::ast::{DomainList, DomainMatcher, ParsedLine, Rule};
+use crate::ast::{DomainList, DomainMatcher, ExceptionScope, ParsedLine, Rule};
 use adblock::lists::{FilterSet, ParseOptions, RuleTypes};
 use adblock::resources::PermissionMask;
 use serde::{Deserialize, Serialize};
@@ -14,6 +14,8 @@ use std::collections::{HashMap, HashSet};
 
 pub struct Engine {
     cosmetic: adblock::Engine,
+    elemhide: adblock::Engine,
+    document: adblock::Engine,
     scriptlets: Scriptlets,
 }
 
@@ -168,11 +170,51 @@ impl Engine {
         let mut scriptlets = Scriptlets::default();
         let mut index = HashMap::new();
         let mut cosmetic = Vec::new();
+        let mut elemhide = Vec::new();
+        let mut document = Vec::new();
         for line in lines {
             match crate::parse_line(line, Default::default()) {
                 ParsedLine::Rule(Rule::Scriptlet(r)) => {
                     let call = std::iter::once(r.name).chain(r.args).collect();
                     scriptlets.add(&mut index, r.exception, r.domains, call);
+                }
+                ParsedLine::Rule(Rule::Network(r)) if r.exception && !r.scope.is_empty() => {
+                    if r.scope.contains(ExceptionScope::GHIDE) {
+                        cosmetic.push(line.as_str());
+                    }
+                    if r.scope
+                        .intersects(ExceptionScope::EHIDE | ExceptionScope::DOC)
+                    {
+                        let (pattern, options) = line.rsplit_once('$').unwrap_or((line, ""));
+                        let options: Vec<&str> = options
+                            .split(',')
+                            .filter(|option| {
+                                !matches!(
+                                    *option,
+                                    "elemhide"
+                                        | "ehide"
+                                        | "document"
+                                        | "doc"
+                                        | "generichide"
+                                        | "ghide"
+                                )
+                            })
+                            .collect();
+                        let filter = format!(
+                            "{pattern}$generichide{}",
+                            if options.is_empty() {
+                                String::new()
+                            } else {
+                                format!(",{}", options.join(","))
+                            }
+                        );
+                        if r.scope.contains(ExceptionScope::EHIDE) {
+                            elemhide.push(filter.clone());
+                        }
+                        if r.scope.contains(ExceptionScope::DOC) {
+                            document.push(filter);
+                        }
+                    }
                 }
                 _ => cosmetic.push(line.as_str()),
             }
@@ -181,22 +223,29 @@ impl Engine {
         set.add_filter_list(
             cosmetic.join("\n"),
             ParseOptions {
-                rule_types: RuleTypes::CosmeticOnly,
+                rule_types: RuleTypes::All,
                 permissions: PermissionMask::from_bits(u8::MAX),
                 ..Default::default()
             },
         );
         Self {
             cosmetic: adblock::Engine::new_with_filter_set(set),
+            elemhide: exception_engine(&elemhide),
+            document: exception_engine(&document),
             scriptlets,
         }
     }
 
-    /// `[adblock-rust engine length: u32 LE][adblock-rust engine][scriptlets JSON]`.
+    /// Three length-prefixed adblock engines followed by scriptlets JSON.
     pub fn serialize(&self) -> Vec<u8> {
         let cosmetic = self.cosmetic.serialize();
         let mut out = (cosmetic.len() as u32).to_le_bytes().to_vec();
         out.extend(cosmetic);
+        for engine in [&self.elemhide, &self.document] {
+            let bytes = engine.serialize();
+            out.extend((bytes.len() as u32).to_le_bytes());
+            out.extend(bytes);
+        }
         out.extend(serde_json::to_vec(&self.scriptlets).expect("scriptlets serialize"));
         out
     }
@@ -207,28 +256,65 @@ impl Engine {
         if rest.len() < len {
             return Err("engine: truncated".into());
         }
-        let (cosmetic_bytes, scriptlet_bytes) = rest.split_at(len);
+        let (cosmetic_bytes, mut rest) = rest.split_at(len);
         let mut cosmetic = adblock::Engine::new_with_filter_set(FilterSet::new(false));
         cosmetic
             .deserialize(cosmetic_bytes)
             .map_err(|e| format!("engine: {e}"))?;
-        let scriptlets =
-            serde_json::from_slice(scriptlet_bytes).map_err(|e| format!("engine: {e}"))?;
+        let mut read_engine = || -> Result<adblock::Engine, String> {
+            let (len, remaining) = rest.split_first_chunk::<4>().ok_or("engine: truncated")?;
+            let len = u32::from_le_bytes(*len) as usize;
+            if remaining.len() < len {
+                return Err("engine: truncated".into());
+            }
+            let (bytes, remaining) = remaining.split_at(len);
+            rest = remaining;
+            let mut engine = adblock::Engine::new_with_filter_set(FilterSet::new(false));
+            engine
+                .deserialize(bytes)
+                .map_err(|e| format!("engine: {e}"))?;
+            Ok(engine)
+        };
+        let elemhide = read_engine()?;
+        let document = read_engine()?;
+        let scriptlets = serde_json::from_slice(rest).map_err(|e| format!("engine: {e}"))?;
         Ok(Self {
             cosmetic,
+            elemhide,
+            document,
             scriptlets,
         })
     }
 
     pub fn lookup(&self, url: &str) -> PagePayload {
         let r = self.cosmetic.url_cosmetic_resources(url);
+        let document = self.document.url_cosmetic_resources(url).generichide;
+        let elemhide = document || self.elemhide.url_cosmetic_resources(url).generichide;
         PagePayload {
-            hide: sorted(r.hide_selectors),
-            procedural: sorted(r.procedural_actions),
-            scriptlets: self.scriptlets.lookup(&host_of(url).to_ascii_lowercase()),
-            generichide: r.generichide,
+            hide: if elemhide {
+                Vec::new()
+            } else {
+                sorted(r.hide_selectors)
+            },
+            procedural: if elemhide {
+                Vec::new()
+            } else {
+                sorted(r.procedural_actions)
+            },
+            scriptlets: if document {
+                Vec::new()
+            } else {
+                self.scriptlets.lookup(&host_of(url).to_ascii_lowercase())
+            },
+            generichide: elemhide || r.generichide,
         }
     }
+}
+
+fn exception_engine(lines: &[String]) -> adblock::Engine {
+    let mut set = FilterSet::new(false);
+    set.add_filter_list(lines.join("\n"), ParseOptions::default());
+    adblock::Engine::new_with_filter_set(set)
 }
 
 fn sorted(set: HashSet<String>) -> Vec<String> {
@@ -259,6 +345,48 @@ example.com##+js(set-constant, adsEnabled, false)
 
     fn call(parts: &[&str]) -> Vec<String> {
         parts.iter().map(|p| p.to_string()).collect()
+    }
+
+    #[test]
+    fn page_exceptions_apply_after_compilation_and_round_trip() {
+        let source = "##[data-ad]\nexample.com##.ad\nexample.com##.ad:has-text(Ad)\nexample.com##+js(set-constant, adsEnabled, false)\n";
+        for (option, hides, procedural, scripts, generic) in [
+            ("elemhide", false, false, true, true),
+            ("ehide", false, false, true, true),
+            ("document", false, false, false, true),
+            ("generichide", true, true, true, true),
+            ("ghide", true, true, true, true),
+        ] {
+            let text = format!("{source}@@||example.com^${option}\n");
+            let output = crate::compile(
+                &[crate::ListInput {
+                    text: &text,
+                    trusted: false,
+                }],
+                &crate::CompileOptions {
+                    safari: crate::webkit::SafariVersion {
+                        major: 18,
+                        minor: 0,
+                    },
+                },
+            );
+            assert!(output
+                .runtime
+                .iter()
+                .any(|line| line == &format!("@@||example.com^${option}")));
+            let mut runtime = lines(source);
+            runtime.extend(output.runtime);
+            let engine = Engine::deserialize(&Engine::build(&runtime).serialize()).unwrap();
+            let page = engine.lookup("https://example.com/");
+            assert_eq!(page.hide.contains(&".ad".to_string()), hides, "{option}");
+            assert!(!page.hide.contains(&"[data-ad]".to_string()), "{option}");
+            assert_eq!(!page.procedural.is_empty(), procedural, "{option}");
+            assert_eq!(!page.scriptlets.is_empty(), scripts, "{option}");
+            assert_eq!(page.generichide, generic, "{option}");
+            let other = engine.lookup("https://example.org/");
+            assert!(!other.generichide, "{option}");
+            assert!(other.hide.contains(&"[data-ad]".to_string()), "{option}");
+        }
     }
 
     #[test]
