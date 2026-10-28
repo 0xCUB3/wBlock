@@ -1,11 +1,10 @@
 use super::{CompileOptions, Stats, Tiered};
-use crate::ast::{CosmeticRule, NetworkRule};
+use crate::ast::CosmeticRule;
 
-/// `network` is passed so page-level exceptions (`$elemhide`,
-/// `$generichide`, `$specifichide`) can be applied to cosmetic output.
+/// Page-level exceptions (`$elemhide`, `$generichide`) are network rules and
+/// are emitted by `network::compile`.
 pub(super) fn compile(
     _rules: &[CosmeticRule],
-    _network: &[NetworkRule],
     _opts: &CompileOptions,
     _out: &mut Vec<Tiered>,
     _runtime: &mut Vec<String>,

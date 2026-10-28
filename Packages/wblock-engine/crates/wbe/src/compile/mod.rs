@@ -3,8 +3,10 @@
 //! Output order matters: WebKit applies rules top to bottom and
 //! `ignore-previous-rules` only cancels earlier matches. Each sub-compiler
 //! tags its rules with a `Tier`; the final list is a stable sort by tier.
-//! The tier order is the precedence policy proven in
-//! scripts/proofs (block < exception < important < document exception).
+//! The tier order is the precedence policy proven in scripts/proofs.
+//! Because `ignore-previous-rules` cancels every earlier match, page-level
+//! cosmetic exceptions sit right after the hides they cancel and before any
+//! network rule.
 
 mod cosmetic;
 mod network;
@@ -18,12 +20,16 @@ use std::collections::BTreeMap;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub enum Tier {
     GenericHide = 0,
-    SpecificHide = 1,
-    Block = 2,
-    Exception = 3,
-    ImportantBlock = 4,
-    /// `$document`, `$elemhide`, `$generichide`, ... page-level exceptions.
-    DocumentException = 5,
+    /// `$generichide`: cancels generic hides only.
+    GenericHideException = 1,
+    SpecificHide = 2,
+    /// `$elemhide` (and `$specifichide`, widened): cancels all hides.
+    ElemHideException = 3,
+    Block = 4,
+    Exception = 5,
+    ImportantBlock = 6,
+    /// `@@...$document`: cancels everything on the page.
+    DocumentException = 7,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -103,7 +109,7 @@ pub fn compile(inputs: &[ListInput], opts: &CompileOptions) -> CompileOutput {
     let mut tiered = Vec::new();
     let mut runtime = Vec::new();
     network::compile(&network_rules, opts, &mut tiered, &mut stats);
-    cosmetic::compile(&cosmetic_rules, &network_rules, opts, &mut tiered, &mut runtime, &mut stats);
+    cosmetic::compile(&cosmetic_rules, opts, &mut tiered, &mut runtime, &mut stats);
     for s in &scriptlets {
         runtime.push(s.raw.clone());
     }
