@@ -16,8 +16,7 @@ private final class TestLoader: FilterListLoader {
         let loader = TestLoader(container: container)
         let defaults = loader.getDefaultFilterLists()
         let replacements = [
-            ("EasyList Italy", "https://easylist-downloads.adblockplus.org/easylistitaly.txt", "AdGuard Italian filter"),
-            ("Official Polish filters for AdBlock, uBlock Origin & AdGuard", "https://raw.githubusercontent.com/MajkiIT/polish-ads-filter/master/polish-adblock-filters/adblock.txt", "AdGuard Polish filter"),
+            ("Fanboy's Anti-AI Suggestions", "https://raw.githubusercontent.com/easylist/easylist/refs/heads/master/fanboy-addon/fanboy_ai_suggestions.txt", "Stevo's AI Blocklist"),
         ]
         for (oldName, oldURL, newName) in replacements {
             let current = defaults.first { $0.name == newName }!
@@ -60,6 +59,22 @@ private final class TestLoader: FilterListLoader {
         for (adGuard, replacements) in FilterListLoader.adGuardReplacements {
             precondition(byName[adGuard] == nil, "\(adGuard) is replaced and must leave the catalog")
             precondition(Set(replacements).isSubset(of: Set(byName.keys)), "unknown list in \(adGuard) handover")
+        }
+        // Regional AdGuard lists whose language uBlock Origin covers with a different list hand over to that list.
+        for (adGuard, target) in [
+            ("AdGuard German filter", "EasyList Germany"),
+            ("AdGuard Italian filter", "EasyList Italy"),
+            ("AdGuard Polish filter", "Official Polish filters for AdBlock, uBlock Origin & AdGuard"),
+            ("AdGuard Russian filter", "RU AdList"),
+        ] {
+            precondition(FilterListLoader.adGuardReplacements[adGuard] == [target], "\(adGuard) must hand over to \(target)")
+            precondition(byName[target] != nil, "\(target) must be in the catalog")
+        }
+        // A catalog URL that is also a migration source would reset its validators on every launch.
+        for list in defaults {
+            var probe = list
+            probe.etag = "kept"
+            precondition(loader.migrateFilterURLs(in: [probe])[0].etag == "kept", "\(list.name) is migrated away from its own URL")
         }
         func adGuard(_ name: String, selected: Bool, custom: Bool = false) -> FilterList {
             FilterList(name: name, url: URL(string: "https://example.com/\(UUID())")!, category: .ads, isCustom: custom, isSelected: selected)
@@ -110,6 +125,9 @@ private final class TestLoader: FilterListLoader {
         let moved = [
             ("https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/118_optimized.txt", "EasyPrivacy"),
             ("https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/204_optimized.txt", "Peter Lowe's Blocklist"),
+            // Regional lists that now come from uBlock Origin's sources: the AdGuard copy and the old upstream URL.
+            ("https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/112_optimized.txt", "Liste AR"),
+            ("https://adblock.ee/list.txt", "Estonian List"),
         ]
         for (oldURL, name) in moved {
             let current = defaults.first { $0.name == name }!

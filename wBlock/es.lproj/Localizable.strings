@@ -102,9 +102,7 @@
 "AdGuard Dutch filter" = "AdGuard Dutch filter";
 "AdGuard Experimental Filter" = "AdGuard Experimental Filter";
 "AdGuard French filter" = "AdGuard French filter";
-"AdGuard German filter" = "AdGuard German filter";
 "AdGuard Japanese filter" = "AdGuard Japanese filter";
-"AdGuard Russian filter" = "AdGuard Russian filter";
 "AdGuard Social Media Filter" = "AdGuard Social Media Filter";
 "AdGuard Spanish/Portuguese filter" = "AdGuard Spanish/Portuguese filter";
 "AdGuard Turkish filter" = "AdGuard Turkish filter";
@@ -247,7 +245,6 @@
 "EasyList China + AdGuard Chinese filter. Filter list that specifically removes ads on websites in Chinese language." = "EasyList China + AdGuard Chinese filter. Lista de filtros que elimina específicamente anuncios en sitios web en idioma chino.";
 "EasyList Czech and Slovak" = "EasyList Czech and Slovak";
 "EasyList Dutch + AdGuard Dutch filter. Filter list that specifically removes ads on websites in Dutch language." = "EasyList Dutch + AdGuard Dutch filter. Lista de filtros que elimina específicamente anuncios en sitios web en idioma neerlandés.";
-"EasyList Germany + AdGuard German filter. Filter list that specifically removes ads on websites in German language." = "EasyList Germany + AdGuard German filter. Lista de filtros que elimina específicamente anuncios en sitios web en idioma alemán.";
 "EasyList Hebrew" = "EasyList Hebrew";
 "EasyList Lithuania" = "EasyList Lithuania";
 "EasyList Thailand" = "EasyList Thailand";
@@ -983,8 +980,6 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Available when the current sync finishes." = "Disponible cuando termine la sincronización actual.";
 "Generic Rules" = "Reglas genéricas";
 "Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps." = "Oculta elementos en todos los sitios con reglas que no indican ninguno. Al desactivarlo se mantiene la ocultación específica de cada sitio y las páginas son más ligeras, sobre todo las aplicaciones web exigentes.";
-"AdGuard Italian filter" = "AdGuard Italian filter";
-"AdGuard Polish filter" = "AdGuard Polish filter";
 "Automatically removes unnecessary '$' and '&' values from URLs, making them easier to copy from the URL bar and pasting elsewhere as links. Already included in Dandelion Sprout's Annoyances List." = "Elimina automáticamente los valores '$' y '&' innecesarios de las URL, lo que facilita la copia de la barra de URL y el pegado en otros lugares como enlaces. Ya incluido en la lista Dandelion Sprout's Annoyances.";
 "Blocks cookie notices on web pages." = "Bloquea avisos de cookies en sitios web.";
 "Filter for social media widgets such as 'Like' and 'Share' buttons and more." = "Filtro para widgets de redes sociales, como los botones 'Me gusta' y 'Compartir', y más.";
@@ -997,10 +992,7 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Filter that unblocks search ads in Google, DuckDuckGo, Bing, or Yahoo and self-promotion on websites." = "Filtro que desbloquea anuncios de búsqueda en Google, DuckDuckGo, Bing o Yahoo y autopromoción en sitios web.";
 "Filter designed to test certain hazardous filtering rules before they are added to the basic filters." = "Filtro diseñado para probar ciertas reglas de filtrado peligrosas antes de que se añadan a los filtros básicos.";
 "Additional filter list for websites in Indonesian and Malay." = "Lista de filtros adicional para sitios web en indonesio y malayo.";
-"EasyList Italy + AdGuard Italian filter. Filter list that specifically removes ads on websites in the Italian language." = "EasyList Italy + AdGuard Italian filter. Lista de filtros que elimina específicamente anuncios en sitios web en idioma italiano.";
 "Hufilter. Filter list that specifically removes ads, privacy threats, and security risks on websites in the Hungarian language." = "Hufilter. Lista de filtros que elimina específicamente anuncios, amenazas a la privacidad y riesgos de seguridad en sitios web en idioma húngaro.";
-"The filterslist-KO Classic filter list for AdGuard blocks ads and disables anti-adblock scripts on Korean-language websites and apps." = "La lista de filtros filterslist-KO Classic para AdGuard bloquea los anuncios y desactiva los scripts anti-bloqueo de anuncios en sitios web y aplicaciones en idioma coreano.";
-"Official Polish filters for AdBlock, uBlock Origin & AdGuard + AdGuard Polish filter. Filter list that specifically removes ads on websites in the Polish language." = "Official Polish filters for AdBlock, uBlock Origin & AdGuard + AdGuard Polish filter. Lista de filtros que elimina específicamente anuncios en sitios web en idioma polaco.";
 "Privacy protection supplement for EasyList." = "Suplemento de protección de privacidad para EasyList.";
 
 /* Add Filter List: Find */
@@ -1048,11 +1040,27 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "EasyList – Cookie Notices" = "EasyList – Cookie Notices";
 "EasyList – Annoyances" = "EasyList – Annoyances";
 "Ad blocking rules from the uBlock Origin project. Meant to be used alongside EasyList." = "Reglas para bloquear anuncios del proyecto uBlock Origin. Pensadas para usarse junto con EasyList.";
+"Additional filter list for websites in German." = "Lista de filtros adicional para sitios web en alemán.";
+"Additional filter list for websites in Italian." = "Lista de filtros adicional para sitios web en italiano.";
+"Additional filter list for websites in Korean." = "Lista de filtros adicional para sitios web en coreano.";
+"Additional filter list for websites in Persian." = "Lista de filtros adicional para sitios web en persa.";
+"Additional filter list for websites in Polish." = "Lista de filtros adicional para sitios web en polaco.";
+"Additional filter list for websites in Spanish." = "Lista de filtros adicional para sitios web en español.";
 "Blocks trackers and removes tracking parameters from URLs, from the uBlock Origin project." = "Bloquea rastreadores y elimina los parámetros de seguimiento de las URL. Lista del proyecto uBlock Origin.";
 "Blocks sites documented to install adware or malware, or to steal login credentials." = "Bloquea sitios documentados por instalar adware o malware, o por robar credenciales de inicio de sesión.";
 "Short-term rules that fix sites broken by other filter lists." = "Reglas temporales que arreglan sitios rotos por otras listas de filtros.";
 "Rules that keep sites working when default lists break them." = "Reglas que mantienen los sitios funcionando cuando las listas predeterminadas los rompen.";
 "Hides annoying page elements, such as overlays and promotional banners, from the uBlock Origin project." = "Oculta elementos molestos de las páginas, como superposiciones y banners promocionales. Lista del proyecto uBlock Origin.";
 "Blocks ads on websites, from the EasyList project." = "Bloquea anuncios en sitios web. Lista del proyecto EasyList.";
+"Blocks phishing and malware domains flagged by CERT Polska." = "Bloquea los dominios de phishing y malware señalados por CERT Polska.";
 "Blocks URLs that distribute malware, based on URLhaus data." = "Bloquea las URL que distribuyen malware, según los datos de URLhaus.";
+"Blocks visitor counters on Russian-language websites." = "Bloquea los contadores de visitas en sitios web en ruso.";
+"CERT.PL's Warning List" = "CERT.PL's Warning List";
+"EasyList Germany" = "EasyList Germany";
+"EasyList Italy" = "EasyList Italy";
+"EasyList Spanish" = "EasyList Spanish";
 "Hides miscellaneous annoyances on websites, from the EasyList project." = "Oculta diversas molestias de los sitios web. Lista del proyecto EasyList.";
+"Official Polish filters for AdBlock, uBlock Origin & AdGuard" = "Official Polish filters for AdBlock, uBlock Origin & AdGuard";
+"PersianBlockerNG" = "PersianBlockerNG";
+"RU AdList" = "RU AdList";
+"RU AdList: Counters" = "RU AdList: Counters";

@@ -79,7 +79,7 @@ struct FilterRegistrySearchSections: View {
             } else {
                 ForEach(registryMatches) { list in
                     HStack {
-                        row(list.filter, note: list.knownURLs.contains(where: FilterListLoader.wasBuiltInURL)
+                        row(list.filter, note: list.knownURLs.contains(where: FilterListLoader.isRetiredBuiltInURL)
                             ? LocalizedStrings.text("No longer built into wBlock", comment: "Registry list wBlock removed from its built-ins")
                             : nil)
                         Spacer()
