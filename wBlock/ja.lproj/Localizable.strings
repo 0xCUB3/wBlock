@@ -1021,3 +1021,23 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Import…" = "インポート…";
 "Excluded Sites" = "除外したサイト";
 "Cosmetic filtering applies only on these sites." = "コスメティックフィルタリングはこれらのサイトでのみ適用されます。";
+
+"uBlock filters – Ads" = "uBlock filters – Ads";
+"uBlock filters – Privacy" = "uBlock filters – Privacy";
+"uBlock filters – Badware risks" = "uBlock filters – Badware risks";
+"uBlock filters – Quick fixes" = "uBlock filters – Quick fixes";
+"uBlock filters – Unbreak" = "uBlock filters – Unbreak";
+"uBlock filters – Annoyances" = "uBlock filters – Annoyances";
+"uBlock filters – Cookie Notices" = "uBlock filters – Cookie Notices";
+"EasyList" = "EasyList";
+"EasyList – Cookie Notices" = "EasyList – Cookie Notices";
+"EasyList – Annoyances" = "EasyList – Annoyances";
+"Ad blocking rules from the uBlock Origin project. Meant to be used alongside EasyList." = "uBlock Origin プロジェクトの広告ブロックルール。EasyList と併用することを想定しています。";
+"Blocks trackers and removes tracking parameters from URLs, from the uBlock Origin project." = "トラッカーをブロックし、URL から追跡パラメータを削除します。uBlock Origin プロジェクトのリストです。";
+"Blocks sites documented to install adware or malware, or to steal login credentials." = "アドウェアやマルウェアのインストール、ログイン情報の窃取が確認されているサイトをブロックします。";
+"Short-term rules that fix sites broken by other filter lists." = "他のフィルターリストによって表示が崩れたサイトを修正する一時的なルールです。";
+"Rules that keep sites working when default lists break them." = "標準リストによってサイトが動作しなくなったとき、動作を維持するためのルールです。";
+"Hides annoying page elements, such as overlays and promotional banners, from the uBlock Origin project." = "オーバーレイやプロモーションバナーなど、ページ上の煩わしい要素を非表示にします。uBlock Origin プロジェクトのリストです。";
+"Blocks ads on websites, from the EasyList project." = "ウェブサイトの広告をブロックします。EasyList プロジェクトのリストです。";
+"Blocks URLs that distribute malware, based on URLhaus data." = "URLhaus のデータに基づき、マルウェアを配布する URL をブロックします。";
+"Hides miscellaneous annoyances on websites, from the EasyList project." = "ウェブサイト上のさまざまな煩わしい要素を非表示にします。EasyList プロジェクトのリストです。";

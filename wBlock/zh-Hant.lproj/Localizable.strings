@@ -1052,3 +1052,23 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Import…" = "匯入…";
 "Excluded Sites" = "排除的網站";
 "Cosmetic filtering applies only on these sites." = "外觀過濾僅在這些網站上套用。";
+
+"uBlock filters – Ads" = "uBlock filters – Ads";
+"uBlock filters – Privacy" = "uBlock filters – Privacy";
+"uBlock filters – Badware risks" = "uBlock filters – Badware risks";
+"uBlock filters – Quick fixes" = "uBlock filters – Quick fixes";
+"uBlock filters – Unbreak" = "uBlock filters – Unbreak";
+"uBlock filters – Annoyances" = "uBlock filters – Annoyances";
+"uBlock filters – Cookie Notices" = "uBlock filters – Cookie Notices";
+"EasyList" = "EasyList";
+"EasyList – Cookie Notices" = "EasyList – Cookie Notices";
+"EasyList – Annoyances" = "EasyList – Annoyances";
+"Ad blocking rules from the uBlock Origin project. Meant to be used alongside EasyList." = "來自 uBlock Origin 專案的廣告封鎖規則，建議與 EasyList 一起使用。";
+"Blocks trackers and removes tracking parameters from URLs, from the uBlock Origin project." = "封鎖追蹤器，並從網址中移除追蹤參數。來自 uBlock Origin 專案。";
+"Blocks sites documented to install adware or malware, or to steal login credentials." = "封鎖已被證實會安裝廣告軟體或惡意軟體、或竊取登入憑證的網站。";
+"Short-term rules that fix sites broken by other filter lists." = "暫時性規則，用於修復被其他過濾清單弄壞的網站。";
+"Rules that keep sites working when default lists break them." = "當預設清單導致網站失效時，維持網站正常運作的規則。";
+"Hides annoying page elements, such as overlays and promotional banners, from the uBlock Origin project." = "隱藏頁面中令人厭煩的元素，例如覆蓋層和促銷橫幅。來自 uBlock Origin 專案。";
+"Blocks ads on websites, from the EasyList project." = "封鎖網站上的廣告。來自 EasyList 專案。";
+"Blocks URLs that distribute malware, based on URLhaus data." = "根據 URLhaus 資料封鎖散布惡意軟體的網址。";
+"Hides miscellaneous annoyances on websites, from the EasyList project." = "隱藏網站上各種令人厭煩的內容。來自 EasyList 專案。";

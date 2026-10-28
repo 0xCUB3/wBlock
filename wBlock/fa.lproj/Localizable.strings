@@ -1061,3 +1061,23 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Import…" = "درون‌ریزی…";
 "Excluded Sites" = "سایت‌های مستثنا";
 "Cosmetic filtering applies only on these sites." = "فیلتر کردن ظاهری فقط در این سایت‌ها اعمال می‌شود.";
+
+"uBlock filters – Ads" = "uBlock filters – Ads";
+"uBlock filters – Privacy" = "uBlock filters – Privacy";
+"uBlock filters – Badware risks" = "uBlock filters – Badware risks";
+"uBlock filters – Quick fixes" = "uBlock filters – Quick fixes";
+"uBlock filters – Unbreak" = "uBlock filters – Unbreak";
+"uBlock filters – Annoyances" = "uBlock filters – Annoyances";
+"uBlock filters – Cookie Notices" = "uBlock filters – Cookie Notices";
+"EasyList" = "EasyList";
+"EasyList – Cookie Notices" = "EasyList – Cookie Notices";
+"EasyList – Annoyances" = "EasyList – Annoyances";
+"Ad blocking rules from the uBlock Origin project. Meant to be used alongside EasyList." = "قوانین مسدودسازی تبلیغات از پروژه uBlock Origin. برای استفاده همراه با EasyList طراحی شده‌اند.";
+"Blocks trackers and removes tracking parameters from URLs, from the uBlock Origin project." = "ردیاب‌ها را مسدود می‌کند و پارامترهای ردیابی را از نشانی‌ها حذف می‌کند. از پروژه uBlock Origin.";
+"Blocks sites documented to install adware or malware, or to steal login credentials." = "سایت‌هایی را مسدود می‌کند که مستند شده‌اند و نرم‌افزار تبلیغاتی یا بدافزار نصب می‌کنند یا اطلاعات ورود را می‌دزدند.";
+"Short-term rules that fix sites broken by other filter lists." = "قوانین موقتی که سایت‌هایی را که فهرست‌های فیلتر دیگر خراب کرده‌اند، درست می‌کنند.";
+"Rules that keep sites working when default lists break them." = "قوانینی که وقتی فهرست‌های پیش‌فرض سایتی را خراب می‌کنند، آن را کار نگه می‌دارند.";
+"Hides annoying page elements, such as overlays and promotional banners, from the uBlock Origin project." = "عناصر آزاردهندهٔ صفحه، مانند لایه‌های روی صفحه و بنرهای تبلیغاتی را پنهان می‌کند. از پروژه uBlock Origin.";
+"Blocks ads on websites, from the EasyList project." = "تبلیغات وب‌سایت‌ها را مسدود می‌کند. از پروژه EasyList.";
+"Blocks URLs that distribute malware, based on URLhaus data." = "نشانی‌هایی را که بدافزار پخش می‌کنند بر اساس داده‌های URLhaus مسدود می‌کند.";
+"Hides miscellaneous annoyances on websites, from the EasyList project." = "انواع مزاحمت‌های وب‌سایت‌ها را پنهان می‌کند. از پروژه EasyList.";

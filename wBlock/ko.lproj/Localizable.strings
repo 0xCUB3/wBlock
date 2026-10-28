@@ -1052,3 +1052,23 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Import…" = "가져오기…";
 "Excluded Sites" = "제외한 사이트";
 "Cosmetic filtering applies only on these sites." = "코스메틱 필터링은 이 사이트에서만 적용됩니다.";
+
+"uBlock filters – Ads" = "uBlock filters – Ads";
+"uBlock filters – Privacy" = "uBlock filters – Privacy";
+"uBlock filters – Badware risks" = "uBlock filters – Badware risks";
+"uBlock filters – Quick fixes" = "uBlock filters – Quick fixes";
+"uBlock filters – Unbreak" = "uBlock filters – Unbreak";
+"uBlock filters – Annoyances" = "uBlock filters – Annoyances";
+"uBlock filters – Cookie Notices" = "uBlock filters – Cookie Notices";
+"EasyList" = "EasyList";
+"EasyList – Cookie Notices" = "EasyList – Cookie Notices";
+"EasyList – Annoyances" = "EasyList – Annoyances";
+"Ad blocking rules from the uBlock Origin project. Meant to be used alongside EasyList." = "uBlock Origin 프로젝트의 광고 차단 규칙입니다. EasyList와 함께 사용하도록 만들어졌습니다.";
+"Blocks trackers and removes tracking parameters from URLs, from the uBlock Origin project." = "추적기를 차단하고 URL에서 추적 매개변수를 제거합니다. uBlock Origin 프로젝트의 목록입니다.";
+"Blocks sites documented to install adware or malware, or to steal login credentials." = "애드웨어나 악성코드를 설치하거나 로그인 정보를 훔치는 것으로 확인된 사이트를 차단합니다.";
+"Short-term rules that fix sites broken by other filter lists." = "다른 필터 목록 때문에 깨진 사이트를 고치는 단기 규칙입니다.";
+"Rules that keep sites working when default lists break them." = "기본 목록 때문에 사이트가 작동하지 않을 때 작동하도록 유지하는 규칙입니다.";
+"Hides annoying page elements, such as overlays and promotional banners, from the uBlock Origin project." = "오버레이와 프로모션 배너처럼 페이지의 성가신 요소를 숨깁니다. uBlock Origin 프로젝트의 목록입니다.";
+"Blocks ads on websites, from the EasyList project." = "웹사이트의 광고를 차단합니다. EasyList 프로젝트의 목록입니다.";
+"Blocks URLs that distribute malware, based on URLhaus data." = "URLhaus 데이터를 바탕으로 악성코드를 배포하는 URL을 차단합니다.";
+"Hides miscellaneous annoyances on websites, from the EasyList project." = "웹사이트의 여러 성가신 요소를 숨깁니다. EasyList 프로젝트의 목록입니다.";

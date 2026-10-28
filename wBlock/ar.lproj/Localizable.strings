@@ -1052,3 +1052,23 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Import…" = "استيراد…";
 "Excluded Sites" = "المواقع المستثناة";
 "Cosmetic filtering applies only on these sites." = "تُطبَّق التصفية التجميلية على هذه المواقع فقط.";
+
+"uBlock filters – Ads" = "uBlock filters – Ads";
+"uBlock filters – Privacy" = "uBlock filters – Privacy";
+"uBlock filters – Badware risks" = "uBlock filters – Badware risks";
+"uBlock filters – Quick fixes" = "uBlock filters – Quick fixes";
+"uBlock filters – Unbreak" = "uBlock filters – Unbreak";
+"uBlock filters – Annoyances" = "uBlock filters – Annoyances";
+"uBlock filters – Cookie Notices" = "uBlock filters – Cookie Notices";
+"EasyList" = "EasyList";
+"EasyList – Cookie Notices" = "EasyList – Cookie Notices";
+"EasyList – Annoyances" = "EasyList – Annoyances";
+"Ad blocking rules from the uBlock Origin project. Meant to be used alongside EasyList." = "قواعد حظر الإعلانات من مشروع uBlock Origin. مُعدّة للاستخدام مع EasyList.";
+"Blocks trackers and removes tracking parameters from URLs, from the uBlock Origin project." = "تحظر أدوات التتبع وتزيل معاملات التتبع من عناوين URL. من مشروع uBlock Origin.";
+"Blocks sites documented to install adware or malware, or to steal login credentials." = "تحظر المواقع الموثّقة بتثبيت برامج الإعلانات أو البرمجيات الخبيثة، أو بسرقة بيانات تسجيل الدخول.";
+"Short-term rules that fix sites broken by other filter lists." = "قواعد مؤقتة تُصلح المواقع التي تعطّلت بسبب قوائم فلاتر أخرى.";
+"Rules that keep sites working when default lists break them." = "قواعد تُبقي المواقع تعمل عندما تعطّلها القوائم الافتراضية.";
+"Hides annoying page elements, such as overlays and promotional banners, from the uBlock Origin project." = "تخفي العناصر المزعجة في الصفحات، مثل الطبقات المتراكبة والإعلانات الترويجية. من مشروع uBlock Origin.";
+"Blocks ads on websites, from the EasyList project." = "تحظر الإعلانات في المواقع. من مشروع EasyList.";
+"Blocks URLs that distribute malware, based on URLhaus data." = "تحظر عناوين URL التي تنشر البرمجيات الخبيثة، استنادًا إلى بيانات URLhaus.";
+"Hides miscellaneous annoyances on websites, from the EasyList project." = "تخفي أنواع الإزعاج المختلفة في المواقع. من مشروع EasyList.";

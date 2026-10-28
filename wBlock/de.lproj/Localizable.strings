@@ -1052,3 +1052,23 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Import…" = "Importieren…";
 "Excluded Sites" = "Ausgeschlossene Websites";
 "Cosmetic filtering applies only on these sites." = "Kosmetisches Filtern wird nur auf diesen Websites angewendet.";
+
+"uBlock filters – Ads" = "uBlock filters – Ads";
+"uBlock filters – Privacy" = "uBlock filters – Privacy";
+"uBlock filters – Badware risks" = "uBlock filters – Badware risks";
+"uBlock filters – Quick fixes" = "uBlock filters – Quick fixes";
+"uBlock filters – Unbreak" = "uBlock filters – Unbreak";
+"uBlock filters – Annoyances" = "uBlock filters – Annoyances";
+"uBlock filters – Cookie Notices" = "uBlock filters – Cookie Notices";
+"EasyList" = "EasyList";
+"EasyList – Cookie Notices" = "EasyList – Cookie Notices";
+"EasyList – Annoyances" = "EasyList – Annoyances";
+"Ad blocking rules from the uBlock Origin project. Meant to be used alongside EasyList." = "Werberegeln aus dem uBlock-Origin-Projekt. Sie sind für die Nutzung zusammen mit EasyList gedacht.";
+"Blocks trackers and removes tracking parameters from URLs, from the uBlock Origin project." = "Blockiert Tracker und entfernt Tracking-Parameter aus URLs. Liste des uBlock-Origin-Projekts.";
+"Blocks sites documented to install adware or malware, or to steal login credentials." = "Blockiert Websites, die nachweislich Adware oder Malware installieren oder Zugangsdaten stehlen.";
+"Short-term rules that fix sites broken by other filter lists." = "Kurzfristige Regeln, die Websites reparieren, die durch andere Filterlisten beschädigt wurden.";
+"Rules that keep sites working when default lists break them." = "Regeln, die Websites funktionsfähig halten, wenn Standardlisten sie stören.";
+"Hides annoying page elements, such as overlays and promotional banners, from the uBlock Origin project." = "Blendet lästige Seitenelemente aus, etwa Overlays und Werbebanner. Liste des uBlock-Origin-Projekts.";
+"Blocks ads on websites, from the EasyList project." = "Blockiert Werbung auf Websites. Liste des EasyList-Projekts.";
+"Blocks URLs that distribute malware, based on URLhaus data." = "Blockiert URLs, über die Malware verbreitet wird, basierend auf URLhaus-Daten.";
+"Hides miscellaneous annoyances on websites, from the EasyList project." = "Blendet verschiedene Ärgernisse auf Websites aus. Liste des EasyList-Projekts.";
