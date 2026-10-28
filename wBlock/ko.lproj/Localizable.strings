@@ -102,9 +102,7 @@
 "AdGuard Dutch filter" = "AdGuard Dutch filter";
 "AdGuard Experimental Filter" = "AdGuard Experimental Filter";
 "AdGuard French filter" = "AdGuard French filter";
-"AdGuard German filter" = "AdGuard German filter";
 "AdGuard Japanese filter" = "AdGuard Japanese filter";
-"AdGuard Russian filter" = "AdGuard Russian filter";
 "AdGuard Social Media Filter" = "AdGuard Social Media Filter";
 "AdGuard Spanish/Portuguese filter" = "AdGuard Spanish/Portuguese filter";
 "AdGuard Turkish filter" = "AdGuard Turkish filter";
@@ -247,7 +245,6 @@
 "EasyList China + AdGuard Chinese filter. Filter list that specifically removes ads on websites in Chinese language." = "EasyList China + AdGuard Chinese filter. 중국어로 된 웹사이트의 광고를 구체적으로 제거하는 필터 목록입니다.";
 "EasyList Czech and Slovak" = "EasyList Czech and Slovak";
 "EasyList Dutch + AdGuard Dutch filter. Filter list that specifically removes ads on websites in Dutch language." = "EasyList Dutch + AdGuard Dutch filter. 네덜란드어로 된 웹사이트의 광고를 구체적으로 제거하는 필터 목록입니다.";
-"EasyList Germany + AdGuard German filter. Filter list that specifically removes ads on websites in German language." = "EasyList Germany + AdGuard German filter. 독일어로 된 웹사이트의 광고를 구체적으로 제거하는 필터 목록입니다.";
 "EasyList Hebrew" = "EasyList Hebrew";
 "EasyList Lithuania" = "EasyList Lithuania";
 "EasyList Thailand" = "EasyList Thailand";
@@ -983,8 +980,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Available when the current sync finishes." = "현재 동기화가 끝나면 사용할 수 있습니다.";
 "Generic Rules" = "일반 규칙";
 "Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps." = "사이트를 지정하지 않는 규칙으로 모든 사이트의 요소를 숨깁니다. 끄면 사이트별 숨기기는 유지되고, 특히 무거운 웹 앱에서 페이지가 가벼워집니다.";
-"AdGuard Italian filter" = "AdGuard Italian filter";
-"AdGuard Polish filter" = "AdGuard Polish filter";
 "Automatically removes unnecessary '$' and '&' values from URLs, making them easier to copy from the URL bar and pasting elsewhere as links. Already included in Dandelion Sprout's Annoyances List." = "URL에서 불필요한 '$' 및 '&' 값을 자동으로 제거하여 URL 표시줄에서 쉽게 복사하고 다른 곳에 링크로 붙여넣을 수 있도록 합니다. 이미 Dandelion Sprout's Annoyances List에 포함되어 있습니다.";
 "Blocks cookie notices on web pages." = "웹 페이지의 쿠키 알림을 차단합니다.";
 "Filter for social media widgets such as 'Like' and 'Share' buttons and more." = "'좋아요', '공유' 버튼 등 소셜 미디어 위젯을 위한 필터입니다.";
@@ -997,10 +992,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Filter that unblocks search ads in Google, DuckDuckGo, Bing, or Yahoo and self-promotion on websites." = "Google, DuckDuckGo, Bing 또는 Yahoo의 검색 광고와 웹사이트의 자체 홍보를 차단 해제하는 필터입니다.";
 "Filter designed to test certain hazardous filtering rules before they are added to the basic filters." = "위험할 수 있는 필터링 규칙을 기본 필터에 추가하기 전 실험하기 위한 필터입니다.";
 "Additional filter list for websites in Indonesian and Malay." = "인도네시아어 및 말레이어 웹사이트를 위한 추가 필터 목록입니다.";
-"EasyList Italy + AdGuard Italian filter. Filter list that specifically removes ads on websites in the Italian language." = "EasyList Italy + AdGuard Italian filter. 이탈리아어로 된 웹사이트의 광고를 구체적으로 제거하는 필터 목록입니다.";
 "Hufilter. Filter list that specifically removes ads, privacy threats, and security risks on websites in the Hungarian language." = "Hufilter. 헝가리어로 된 웹사이트의 광고, 개인정보 위협, 보안 위험을 구체적으로 제거하는 필터 목록입니다.";
-"The filterslist-KO Classic filter list for AdGuard blocks ads and disables anti-adblock scripts on Korean-language websites and apps." = "AdGuard용 filterslist-KO Classic 필터 목록은 한국어 웹사이트와 앱에서 광고를 차단하고 광고 차단 방지 스크립트를 비활성화합니다.";
-"Official Polish filters for AdBlock, uBlock Origin & AdGuard + AdGuard Polish filter. Filter list that specifically removes ads on websites in the Polish language." = "Official Polish filters for AdBlock, uBlock Origin & AdGuard + AdGuard Polish filter. 폴란드어로 된 웹사이트의 광고를 구체적으로 제거하는 필터 목록입니다.";
 "Privacy protection supplement for EasyList." = "EasyList의 개인정보 보호 보완 필터입니다.";
 
 /* Add Filter List: Find */
@@ -1048,11 +1040,27 @@ To re-enable these filters, disable other large filters and apply changes again.
 "EasyList – Cookie Notices" = "EasyList – Cookie Notices";
 "EasyList – Annoyances" = "EasyList – Annoyances";
 "Ad blocking rules from the uBlock Origin project. Meant to be used alongside EasyList." = "uBlock Origin 프로젝트의 광고 차단 규칙입니다. EasyList와 함께 사용하도록 만들어졌습니다.";
+"Additional filter list for websites in German." = "독일어 웹사이트에 대한 추가 필터 목록입니다.";
+"Additional filter list for websites in Italian." = "이탈리아어 웹사이트에 대한 추가 필터 목록입니다.";
+"Additional filter list for websites in Korean." = "한국어 웹사이트에 대한 추가 필터 목록입니다.";
+"Additional filter list for websites in Persian." = "페르시아어 웹사이트에 대한 추가 필터 목록입니다.";
+"Additional filter list for websites in Polish." = "폴란드어 웹사이트에 대한 추가 필터 목록입니다.";
+"Additional filter list for websites in Spanish." = "스페인어 웹사이트에 대한 추가 필터 목록입니다.";
 "Blocks trackers and removes tracking parameters from URLs, from the uBlock Origin project." = "추적기를 차단하고 URL에서 추적 매개변수를 제거합니다. uBlock Origin 프로젝트의 목록입니다.";
 "Blocks sites documented to install adware or malware, or to steal login credentials." = "애드웨어나 악성코드를 설치하거나 로그인 정보를 훔치는 것으로 확인된 사이트를 차단합니다.";
 "Short-term rules that fix sites broken by other filter lists." = "다른 필터 목록 때문에 깨진 사이트를 고치는 단기 규칙입니다.";
 "Rules that keep sites working when default lists break them." = "기본 목록 때문에 사이트가 작동하지 않을 때 작동하도록 유지하는 규칙입니다.";
 "Hides annoying page elements, such as overlays and promotional banners, from the uBlock Origin project." = "오버레이와 프로모션 배너처럼 페이지의 성가신 요소를 숨깁니다. uBlock Origin 프로젝트의 목록입니다.";
 "Blocks ads on websites, from the EasyList project." = "웹사이트의 광고를 차단합니다. EasyList 프로젝트의 목록입니다.";
+"Blocks phishing and malware domains flagged by CERT Polska." = "CERT Polska가 표시한 피싱 및 악성코드 도메인을 차단합니다.";
 "Blocks URLs that distribute malware, based on URLhaus data." = "URLhaus 데이터를 바탕으로 악성코드를 배포하는 URL을 차단합니다.";
+"Blocks visitor counters on Russian-language websites." = "러시아어 웹사이트의 방문자 카운터를 차단합니다.";
+"CERT.PL's Warning List" = "CERT.PL's Warning List";
+"EasyList Germany" = "EasyList Germany";
+"EasyList Italy" = "EasyList Italy";
+"EasyList Spanish" = "EasyList Spanish";
 "Hides miscellaneous annoyances on websites, from the EasyList project." = "웹사이트의 여러 성가신 요소를 숨깁니다. EasyList 프로젝트의 목록입니다.";
+"Official Polish filters for AdBlock, uBlock Origin & AdGuard" = "Official Polish filters for AdBlock, uBlock Origin & AdGuard";
+"PersianBlockerNG" = "PersianBlockerNG";
+"RU AdList" = "RU AdList";
+"RU AdList: Counters" = "RU AdList: Counters";

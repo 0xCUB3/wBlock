@@ -102,9 +102,7 @@
 "AdGuard Dutch filter" = "AdGuard Dutch filter";
 "AdGuard Experimental Filter" = "AdGuard Experimental Filter";
 "AdGuard French filter" = "AdGuard French filter";
-"AdGuard German filter" = "AdGuard German filter";
 "AdGuard Japanese filter" = "AdGuard Japanese filter";
-"AdGuard Russian filter" = "AdGuard Russian filter";
 "AdGuard Social Media Filter" = "AdGuard Social Media Filter";
 "AdGuard Spanish/Portuguese filter" = "AdGuard Spanish/Portuguese filter";
 "AdGuard Turkish filter" = "AdGuard Turkish filter";
@@ -247,7 +245,6 @@
 "EasyList China + AdGuard Chinese filter. Filter list that specifically removes ads on websites in Chinese language." = "EasyList China + AdGuard kínai szűrő. Szűrőlista, amely kifejezetten eltávolítja a hirdetéseket a kínai nyelvű webhelyekről.";
 "EasyList Czech and Slovak" = "EasyList Czech and Slovak";
 "EasyList Dutch + AdGuard Dutch filter. Filter list that specifically removes ads on websites in Dutch language." = "EasyList holland + AdGuard holland szűrő. Szűrőlista, amely kifejezetten eltávolítja a hirdetéseket a holland nyelvű webhelyekről.";
-"EasyList Germany + AdGuard German filter. Filter list that specifically removes ads on websites in German language." = "EasyList Németország + AdGuard német szűrő. Szűrőlista, amely kifejezetten eltávolítja a hirdetéseket német nyelvű webhelyekről.";
 "EasyList Hebrew" = "EasyList Hebrew";
 "EasyList Lithuania" = "EasyList Lithuania";
 "EasyList Thailand" = "EasyList Thailand";
@@ -983,8 +980,6 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Available when the current sync finishes." = "Az aktuális szinkronizálás befejezése után érhető el.";
 "Generic Rules" = "Általános szabályok";
 "Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps." = "Minden webhelyen elrejt elemeket olyan szabályokkal, amelyek nem neveznek meg webhelyet. Kikapcsolva a webhelyekre szabott elrejtés megmarad, az oldalak pedig könnyebbek lesznek, főleg az összetett webalkalmazások.";
-"AdGuard Italian filter" = "AdGuard olasz szűrő";
-"AdGuard Polish filter" = "AdGuard lengyel szűrő";
 "Automatically removes unnecessary '$' and '&' values from URLs, making them easier to copy from the URL bar and pasting elsewhere as links. Already included in Dandelion Sprout's Annoyances List." = "Automatikusan eltávolítja a felesleges '$' és '&' értékeket az URL-ekből, így azok könnyebben másolhatók az URL-sávból, és máshová beilleszthetők linkként. Már szerepel a Dandelion Sprout kártevők elleni listáján.";
 "Blocks cookie notices on web pages." = "Blokkolja a weboldalakon megjelenő cookie-értesítéseket.";
 "Filter for social media widgets such as 'Like' and 'Share' buttons and more." = "Szűrő a közösségi média widgetekhez (\"Lájk\" gombok és hasonlók).";
@@ -997,10 +992,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Filter that unblocks search ads in Google, DuckDuckGo, Bing, or Yahoo and self-promotion on websites." = "Szűrő, amely feloldja a Google, DuckDuckGo, Bing vagy Yahoo keresőhirdetéseket és a weboldalakon megjelenő önreklámokat.";
 "Filter designed to test certain hazardous filtering rules before they are added to the basic filters." = "Szűrő, amelynek célja a kockázatosabb szűrési szabályok tesztelése, mielőtt azok bekerülnének az alap szűrőkbe.";
 "Additional filter list for websites in Indonesian and Malay." = "Kiegészítő szűrőlista indonéz és maláj nyelvű weboldalakhoz.";
-"EasyList Italy + AdGuard Italian filter. Filter list that specifically removes ads on websites in the Italian language." = "EasyList Italy + AdGuard olasz szűrő. Szűrőlista, amely kifejezetten eltávolítja a hirdetéseket az olasz nyelvű weboldalakon.";
 "Hufilter. Filter list that specifically removes ads, privacy threats, and security risks on websites in the Hungarian language." = "Hufilter. Szűrőlista, amely kifejezetten eltávolítja a hirdetéseket, az adatvédelmi fenyegetéseket és a biztonsági kockázatokat a magyar nyelvű weboldalakon.";
-"The filterslist-KO Classic filter list for AdGuard blocks ads and disables anti-adblock scripts on Korean-language websites and apps." = "Az AdGuardhoz készült filterslist-KO Classic szűrőlista blokkolja a hirdetéseket, és letiltja a reklámblokkolás elleni szkripteket a koreai nyelvű webhelyeken és alkalmazásokban.";
-"Official Polish filters for AdBlock, uBlock Origin & AdGuard + AdGuard Polish filter. Filter list that specifically removes ads on websites in the Polish language." = "Official Polish filters for AdBlock, uBlock Origin & AdGuard + AdGuard lengyel szűrő. Szűrőlista, amely kifejezetten a lengyel nyelvű weboldalakon távolítja el a hirdetéseket.";
 "Privacy protection supplement for EasyList." = "Adatvédelmi kiegészítő az EasyList-hez.";
 
 /* Add Filter List: Find */
@@ -1048,11 +1040,27 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "EasyList – Cookie Notices" = "EasyList – Cookie Notices";
 "EasyList – Annoyances" = "EasyList – Annoyances";
 "Ad blocking rules from the uBlock Origin project. Meant to be used alongside EasyList." = "Hirdetésblokkoló szabályok az uBlock Origin projekttől. Az EasyListtel együtt használatra készültek.";
+"Additional filter list for websites in German." = "További szűrőlista német nyelvű webhelyekhez.";
+"Additional filter list for websites in Italian." = "További szűrőlista olasz nyelvű webhelyekhez.";
+"Additional filter list for websites in Korean." = "További szűrőlista koreai nyelvű webhelyekhez.";
+"Additional filter list for websites in Persian." = "További szűrőlista perzsa nyelvű webhelyekhez.";
+"Additional filter list for websites in Polish." = "További szűrőlista lengyel nyelvű webhelyekhez.";
+"Additional filter list for websites in Spanish." = "További szűrőlista spanyol nyelvű webhelyekhez.";
 "Blocks trackers and removes tracking parameters from URLs, from the uBlock Origin project." = "Blokkolja a nyomkövetőket, és eltávolítja a követési paramétereket az URL-ekből. Az uBlock Origin projekt listája.";
 "Blocks sites documented to install adware or malware, or to steal login credentials." = "Olyan webhelyeket blokkol, amelyekről dokumentálták, hogy adware-t vagy kártevőt telepítenek, vagy bejelentkezési adatokat lopnak.";
 "Short-term rules that fix sites broken by other filter lists." = "Rövid távú szabályok, amelyek javítják a más szűrőlisták miatt elromlott webhelyeket.";
 "Rules that keep sites working when default lists break them." = "Olyan szabályok, amelyek működésben tartják a webhelyeket, ha az alapértelmezett listák elrontják őket.";
 "Hides annoying page elements, such as overlays and promotional banners, from the uBlock Origin project." = "Elrejti a zavaró oldalelemeket, például a rétegeket és a promóciós bannereket. Az uBlock Origin projekt listája.";
 "Blocks ads on websites, from the EasyList project." = "Blokkolja a hirdetéseket a webhelyeken. Az EasyList projekt listája.";
+"Blocks phishing and malware domains flagged by CERT Polska." = "Blokkolja a CERT Polska által jelentett adathalász és kártevő domaineket.";
 "Blocks URLs that distribute malware, based on URLhaus data." = "Blokkolja a kártevőket terjesztő URL-eket, az URLhaus adatai alapján.";
+"Blocks visitor counters on Russian-language websites." = "Blokkolja a látogatószámlálókat az orosz nyelvű webhelyeken.";
+"CERT.PL's Warning List" = "CERT.PL's Warning List";
+"EasyList Germany" = "EasyList Germany";
+"EasyList Italy" = "EasyList Italy";
+"EasyList Spanish" = "EasyList Spanish";
 "Hides miscellaneous annoyances on websites, from the EasyList project." = "Elrejti a webhelyek különféle bosszantó elemeit. Az EasyList projekt listája.";
+"Official Polish filters for AdBlock, uBlock Origin & AdGuard" = "Official Polish filters for AdBlock, uBlock Origin & AdGuard";
+"PersianBlockerNG" = "PersianBlockerNG";
+"RU AdList" = "RU AdList";
+"RU AdList: Counters" = "RU AdList: Counters";
