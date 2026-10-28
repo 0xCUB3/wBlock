@@ -58,6 +58,10 @@ struct Main {
             let data = try Data(contentsOf: container.appendingPathComponent(slot.rulesFilename))
             return try JSONSerialization.jsonObject(with: data) as? [[String: Any]] ?? []
         }
+        // A rule may compile to several triggers; only the order of actions matters.
+        func runs(_ actions: [String]) -> [String] {
+            actions.reduce(into: []) { if $0.last != $1 { $0.append($1) } }
+        }
         func actions(_ rules: [[String: Any]], containing fragment: String) -> [String] {
             rules.compactMap { rule in
                 guard let trigger = rule["trigger"] as? [String: Any],
@@ -69,7 +73,7 @@ struct Main {
         }
 
         let blockerRules = try compile(blockerSlot)
-        if actions(blockerRules, containing: "GLinkPing") != ["block", "ignore-previous-rules"] {
+        if runs(actions(blockerRules, containing: "GLinkPing")) != ["block", "ignore-previous-rules"] {
             fail("exception for a block in another slot must be replicated after that block; got \(actions(blockerRules, containing: "GLinkPing"))")
         }
         if actions(blockerRules, containing: "tracker").last != "ignore-previous-rules" {
@@ -83,7 +87,7 @@ struct Main {
         }
 
         let excepterRules = try compile(excepterSlot)
-        if actions(excepterRules, containing: "ads\\.example") != ["block", "ignore-previous-rules"] {
+        if runs(actions(excepterRules, containing: "ads\\.example")) != ["block", "ignore-previous-rules"] {
             fail("same-slot exceptions must keep working")
         }
         if actions(excepterRules, containing: "GLinkPing").contains("block") {
@@ -107,7 +111,7 @@ struct Main {
         if rebuilt.reusedCachedBase { fail("changing another slot's exceptions must rebuild this slot") }
         let data = try Data(contentsOf: container.appendingPathComponent(blockerSlot.rulesFilename))
         let after = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] ?? []
-        if actions(after, containing: "GLinkPing") != ["block"] {
+        if runs(actions(after, containing: "GLinkPing")) != ["block"] {
             fail("a removed exception must disappear from the other slot")
         }
 
