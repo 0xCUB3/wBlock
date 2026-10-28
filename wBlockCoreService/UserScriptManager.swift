@@ -165,7 +165,7 @@ public class UserScriptManager: ObservableObject {
     @Published public private(set) var playerCleanerFeatures = PlayerCleanerPreference.features()
 
     private let sharedContainerIdentifier = GroupIdentifier.shared.value
-    private let dataManager = ProtobufDataManager.shared
+    private let dataManager: ProtobufDataManager
     private let logger = Logger(subsystem: "com.skula.wBlock", category: "UserScriptManager")
     private var cancellables = Set<AnyCancellable>()
     private var initialLoadTask: Task<Void, Never>?
@@ -635,6 +635,16 @@ public class UserScriptManager: ObservableObject {
     // MARK: - Singleton
     public static let shared = UserScriptManager()
 
+    #if DEBUG
+    /// Points every manager at one scripts folder so a test can run an app and an
+    /// extension manager against the same temporary container.
+    nonisolated(unsafe) public static var scriptsDirectoryOverrideForTesting: URL?
+
+    public static func makeIsolatedForTesting(dataManager: ProtobufDataManager) -> UserScriptManager {
+        UserScriptManager(dataManager: dataManager)
+    }
+    #endif
+
     private let defaultUserScripts = BuiltInUserScripts.definitions
 
     public func isDefaultUserScript(_ userScript: UserScript) -> Bool {
@@ -750,7 +760,8 @@ public class UserScriptManager: ObservableObject {
         }
     }
 
-    private init() {
+    private init(dataManager: ProtobufDataManager = .shared) {
+        self.dataManager = dataManager
         logger.info("🔧 UserScriptManager initializing...")
 
         // Using ProtobufDataManager for data persistence
@@ -970,6 +981,9 @@ public class UserScriptManager: ObservableObject {
     nonisolated private static let compiledStyleSidecarSuffix = ".user.css.compiled.v1.json"
 
     nonisolated private static func scriptsDirectoryURLs() -> [URL] {
+        #if DEBUG
+        if let scriptsDirectoryOverrideForTesting { return [scriptsDirectoryOverrideForTesting] }
+        #endif
         var urls: [URL] = []
         if let group = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value)?.appendingPathComponent("userscripts") {
             urls.append(group)
@@ -1165,13 +1179,19 @@ public class UserScriptManager: ObservableObject {
     // MARK: - Scripts Directory Locations
     /// URL for group container scripts directory, if available
     private var groupScriptsDirectoryURL: URL? {
-        FileManager.default.containerURL(
+        #if DEBUG
+        if let override = Self.scriptsDirectoryOverrideForTesting { return override }
+        #endif
+        return FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: sharedContainerIdentifier)?
             .appendingPathComponent("userscripts")
     }
     /// URL for fallback scripts directory in Application Support
     private var fallbackScriptsDirectoryURL: URL? {
-        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
+        #if DEBUG
+        if Self.scriptsDirectoryOverrideForTesting != nil { return nil }
+        #endif
+        return FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
             .appendingPathComponent("wBlock").appendingPathComponent("userscripts")
     }
     private func checkAndCreateUserScriptsFolder() {
@@ -3286,8 +3306,8 @@ public class UserScriptManager: ObservableObject {
     }
 
     private func scriptFreshnessInterval() async -> TimeInterval {
-        await ProtobufDataManager.shared.waitUntilLoaded()
-        let hours = ProtobufDataManager.shared.autoUpdateIntervalHours
+        await dataManager.waitUntilLoaded()
+        let hours = dataManager.autoUpdateIntervalHours
         let intervalHours = hours.isFinite && hours > 0 ? min(max(hours, 1), 24 * 7) : 6
         return intervalHours * 3600
     }
@@ -3295,9 +3315,12 @@ public class UserScriptManager: ObservableObject {
     /// Evicts downloaded copies at a successful checkpoint, never local imports or the record.
     @discardableResult
     public func removeDisabledRemoteScriptDownloads(disabledScriptIDs: Set<UUID>) async -> Bool {
+        // Another process may have enabled a script since this one loaded (#1041).
+        _ = await dataManager.refreshFromDiskIfModified(forceRead: true)
+        let persistedDisabledIDs = Set(dataManager.getUserScripts().filter { !$0.isEnabled }.map(\.id))
         let eligibleIDs = Set(userScripts.filter {
             !$0.isEnabled && !$0.isLocal && $0.resolvedDownloadURL != nil
-                && disabledScriptIDs.contains($0.id)
+                && disabledScriptIDs.contains($0.id) && persistedDisabledIDs.contains($0.id)
         }.map(\.id))
         var clearedIDs = userScriptsPendingPersistence.intersection(eligibleIDs)
         var succeeded = true
@@ -3343,7 +3366,7 @@ public class UserScriptManager: ObservableObject {
             candidates = Self.scriptsRequiringNetworkCheck(
                 candidates,
                 lastChecked: { id in
-                    ProtobufDataManager.shared.getScriptLastChecked(id.uuidString)
+                    dataManager.getScriptLastChecked(id.uuidString)
                         .map { Date(timeIntervalSince1970: TimeInterval($0)) }
                 },
                 interval: interval
@@ -3398,7 +3421,7 @@ public class UserScriptManager: ObservableObject {
             }
         }
 
-        await ProtobufDataManager.shared.setScriptLastChecked(verifiedTimes)
+        await dataManager.setScriptLastChecked(verifiedTimes)
 
         if updatedCount > 0 {
             logger.info("✅ Auto-updated \(updatedCount) userscripts (\(failedCount) failed)")
