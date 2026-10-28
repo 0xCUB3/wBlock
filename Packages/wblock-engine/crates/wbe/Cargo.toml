@@ -17,6 +17,8 @@ rustc-hash = "2"
 cssparser = "0.35"
 selectors = "0.32"
 precomputed-hash = "0.1"
+# Public suffix list, for registrable domains (the same crate adblock embeds).
+addr = { version = "0.15", default-features = false, features = ["psl"] }
 # Cosmetic, procedural, and scriptlet matching only; network rules are compiled
 # to Safari JSON, so the adblock-rust network features are off. css-validation
 # is required: without it `:has-text(...)` is treated as a plain CSS selector.

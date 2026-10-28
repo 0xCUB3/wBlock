@@ -20,7 +20,7 @@
 //  rule for the excluded sites; see `ignoreSegment`.
 //
 
-internal import ContentBlockerConverter
+internal import WBEngine
 import Foundation
 
 public enum FilterListSiteExclusion {
@@ -145,15 +145,17 @@ public enum FilterListSiteExclusion {
         return restrictNetworkLine(trimmed, excluding: sites, including: selected) ?? ""
     }
 
-    /// Splits at the marker the converter itself finds, so marker text inside
-    /// a selector or CSS body is never mistaken for the rule's separator.
+    /// Splits at the marker the engine itself finds, so marker text inside a
+    /// selector or CSS body is never mistaken for the rule's separator.
     private static func splitCosmetic(_ line: String) -> (domains: String, separator: String, body: String)? {
-        let found = CosmeticRuleMarker.findCosmeticRuleMarker(ruleText: line)
-        guard let marker = found.marker, marker != .html, marker != .htmlException else { return nil }
+        guard let found = WBEngine.cosmeticMarker(in: line) else { return nil }
         let utf8 = line.utf8
-        let start = utf8.index(utf8.startIndex, offsetBy: found.index)
-        let end = utf8.index(start, offsetBy: marker.rawValue.utf8.count)
-        return (String(line[..<start]), marker.rawValue, String(line[end...]))
+        let start = utf8.index(utf8.startIndex, offsetBy: found.offset)
+        let end = utf8.index(start, offsetBy: found.length)
+        let marker = String(line[start..<end])
+        // AdGuard HTML filters (`$$`) are not restricted.
+        guard !marker.hasPrefix("$") else { return nil }
+        return (String(line[..<start]), marker, String(line[end...]))
     }
 
     private struct RestrictedDomains {

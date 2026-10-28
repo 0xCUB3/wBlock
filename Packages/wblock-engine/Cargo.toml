@@ -5,5 +5,6 @@ members = ["crates/wbe"]
 [profile.release]
 lto = "fat"
 codegen-units = 1
-panic = "abort"
+# ffi.rs catches panics at the C boundary, which needs unwinding.
+panic = "unwind"
 opt-level = 3

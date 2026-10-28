@@ -25,9 +25,10 @@ pub enum Rule {
     Scriptlet(ScriptletRule),
 }
 
-/// Result of parsing one line.
+/// Result of parsing one line. Tagged `status` because a `Rule` inside
+/// carries its own `kind` tag.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "kind", rename_all = "snake_case")]
+#[serde(tag = "status", rename_all = "snake_case")]
 pub enum ParsedLine {
     /// Blank line, comment, `[Adblock Plus ...]` header, or preprocessor
     /// directive (directives are evaluated before the engine sees the text).

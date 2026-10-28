@@ -5,7 +5,6 @@
 //  Created by Andrey Meshkov on 11/04/2025.
 //
 
-internal import FilterEngine
 import Foundation
 #if os(macOS)
 import AppKit
@@ -53,9 +52,8 @@ public enum WebExtensionRequestHandler {
     private static func emptyRulesPayload(disabled: Bool, paused: Bool) -> [String: Any] {
         [
             "css": [],
-            "extendedCss": [],
-            "js": [],
-            "scriptlets": [],
+            "procedural": [],
+            "scriptlets": "",
             "userScripts": [],
             "engineTimestamp": 0,
             "disabled": disabled,
@@ -228,12 +226,12 @@ public enum WebExtensionRequestHandler {
                         if disabled {
                             message?["payload"] = emptyRulesPayload(disabled: true, paused: false)
                         } else {
-                            let topUrl = (payload["topUrl"] as? String).flatMap(URL.init(string:))
-                            // The engine read can block on its file lock or a cold
-                            // deserialize; keep it off the main actor so state and
-                            // userscript requests are not stuck behind it.
+                            // A cold engine load reads and deserializes a file; keep it
+                            // off the main actor so state and userscript requests are
+                            // not stuck behind it. Cosmetic rules follow the frame URL,
+                            // as in uBO, so the top URL is not needed.
                             let lookup = await Task.detached(priority: .userInitiated) {
-                                lookupEnginePayload(url: url, topUrl: topUrl)
+                                lookupEnginePayload(url: url)
                             }.value
                             if let errorMessage = lookup.error {
                                 os_log(.error, "%@", errorMessage)
@@ -291,58 +289,19 @@ public enum WebExtensionRequestHandler {
         }
     }
 
-    private static func lookupEnginePayload(url: URL, topUrl: URL?) -> (payload: [String: Any]?, error: String?) {
-        #if os(iOS)
-        // Reading the engine holds a kernel flock on the app group; if Safari
-        // backgrounds mid-read the extension is killed with 0xDEAD10CC. Defer
-        // suspension until the lookup returns.
-        let shield = SuspensionShield(reason: "wBlock engine lookup")
-        defer { shield.release() }
-        #endif
+    // The engine is replaced by atomic rename, so reading it takes no app group
+    // flock and needs no suspension shield.
+    private static func lookupEnginePayload(url: URL) -> (payload: [String: Any]?, error: String?) {
         do {
-            let configuration = try WebExtensionGate.shared.withLock {
-                try WebExtension.shared(groupID: GroupIdentifier.shared.value)
-                    .lookup(pageUrl: url, topUrl: topUrl)
+            guard var payload = try FilterEngineStore.lookup(url: url, groupIdentifier: GroupIdentifier.shared.value) else {
+                return (nil, "No filter engine published")
             }
-            guard let configuration else {
-                return (nil, "No WebExtension configuration available")
-            }
-            return (convertToPayload(configuration, disabled: false, paused: false), nil)
+            payload["disabled"] = false
+            payload["paused"] = false
+            return (payload, nil)
         } catch {
-            return (nil, "Failed to get WebExtension instance: \(error.localizedDescription)")
+            return (nil, "Filter engine lookup failed: \(error.localizedDescription)")
         }
-    }
-
-    /// Converts a WebExtension.Configuration object to a dictionary payload.
-    ///
-    /// - Parameters:
-    ///   - configuration: The WebExtension.Configuration object to convert.
-    /// - Returns: A dictionary containing CSS, extended CSS, JS, and scriptlets
-    ///           that should be applied to the web page.
-    private static func convertToPayload(
-        _ configuration: WebExtension.Configuration,
-        disabled: Bool,
-        paused: Bool
-    ) -> [String: Any] {
-        var payload: [String: Any] = [:]
-        payload["css"] = configuration.css
-        payload["extendedCss"] = configuration.extendedCss
-        payload["js"] = configuration.js
-
-        var scriptlets: [[String: Any]] = []
-        for scriptlet in configuration.scriptlets {
-            var scriptletData: [String: Any] = [:]
-            scriptletData["name"] = scriptlet.name
-            scriptletData["args"] = scriptlet.args
-            scriptlets.append(scriptletData)
-        }
-
-        payload["scriptlets"] = scriptlets
-        payload["engineTimestamp"] = configuration.engineTimestamp
-        payload["disabled"] = disabled
-        payload["paused"] = paused
-
-        return payload
     }
 
     /// Creates an NSExtensionItem response with the provided JSON payload.

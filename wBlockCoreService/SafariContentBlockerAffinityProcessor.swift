@@ -1,4 +1,3 @@
-internal import ContentBlockerConverter
 import CryptoKit
 import Foundation
 
@@ -253,9 +252,9 @@ public enum SafariContentBlockerAffinityProcessor {
         let defaultType = includeBaseRules
             ? defaultContentBlockerType(for: target)
             : excludedDefaultContentBlockerType(for: targetTypes)
-        let groupedRules = AffinityRulesGrouper.group(rules: [
-            (defaultType, RuleText.lines(content, emptyLines: .keptPerScalar).map(String.init))
-        ])
+        let groupedRules = groupedByAffinity(
+            RuleText.lines(content, emptyLines: .keptPerScalar).map(String.init), defaultType: defaultType
+        )
         if isCancelled?() == true {
             throw CancellationError()
         }
@@ -315,6 +314,42 @@ public enum SafariContentBlockerAffinityProcessor {
         for targetTypes: [ContentBlockerType]
     ) -> ContentBlockerType {
         ContentBlockerType.allCases.first { !targetTypes.contains($0) } ?? .general
+    }
+
+
+    /// Blocker categories that AdGuard's `!#safari_cb_affinity(...)` directive names.
+    enum ContentBlockerType: CaseIterable {
+        case general, privacy, socialWidgetsAndAnnoyances, other, custom, security
+    }
+
+    private static let affinityDirective = "!#safari_cb_affinity"
+    private static let affinityKeywords: [String: [ContentBlockerType]] = [
+        "general": [.general], "privacy": [.privacy], "social": [.socialWidgetsAndAnnoyances],
+        "other": [.other], "custom": [.custom], "security": [.security], "all": ContentBlockerType.allCases,
+    ]
+
+    /// Rules by the blocker types they go to: the types named by the enclosing
+    /// `!#safari_cb_affinity(...)` block, else `defaultType`. Comments and
+    /// blank lines are dropped, as AdGuard's SafariConverterLib does.
+    static func groupedByAffinity(_ lines: [String], defaultType: ContentBlockerType) -> [ContentBlockerType: [String]] {
+        var result: [ContentBlockerType: [String]] = [:]
+        var affinity: Set<ContentBlockerType>?
+        for (index, line) in lines.enumerated() {
+            if index == 0, line.lowercased().contains("adblock plus") { continue }
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if trimmed.hasPrefix(affinityDirective + "("), trimmed.hasSuffix(")") {
+                let names = trimmed.dropFirst(affinityDirective.count + 1).dropLast().split(separator: ",")
+                let types = names.flatMap { affinityKeywords[$0.trimmingCharacters(in: .whitespaces)] ?? [] }
+                affinity = types.isEmpty ? nil : Set(types)
+                continue
+            }
+            if trimmed == affinityDirective { affinity = nil; continue }
+            guard !trimmed.isEmpty, !trimmed.hasPrefix("!") else { continue }
+            for type in affinity ?? [defaultType] {
+                result[type, default: []].append(trimmed)
+            }
+        }
+        return result
     }
 
 }

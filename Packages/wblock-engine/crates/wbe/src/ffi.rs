@@ -45,6 +45,15 @@ fn guard<T>(failed: T, f: impl FnOnce() -> Result<T, String>) -> T {
 
 /// # Safety
 /// `p` must be NULL or a valid NUL-terminated string.
+/// `resources_json`, or the built-in resources when it is NULL.
+unsafe fn resources_or_builtin<'a>(p: *const c_char) -> Result<&'a str, String> {
+    if p.is_null() {
+        Ok(crate::runtime::RESOURCES)
+    } else {
+        cstr(p, "resources_json")
+    }
+}
+
 unsafe fn cstr<'a>(p: *const c_char, what: &str) -> Result<&'a str, String> {
     if p.is_null() {
         return Err(format!("{what} is NULL"));
@@ -164,7 +173,7 @@ pub unsafe extern "C" fn wbe_engine_build(
     *out_len = 0;
     guard(false, || {
         let text = cstr(runtime_text, "runtime_text")?;
-        let resources = cstr(resources_json, "resources_json")?;
+        let resources = resources_or_builtin(resources_json)?;
         let lines: Vec<String> = text.lines().map(str::to_owned).collect();
         let bytes = Engine::build(&lines, resources)?
             .serialize()
@@ -198,7 +207,7 @@ pub unsafe extern "C" fn wbe_engine_open(
             return Err("bytes is NULL".into());
         }
         let bytes = slice::from_raw_parts(bytes, len);
-        let resources = cstr(resources_json, "resources_json")?;
+        let resources = resources_or_builtin(resources_json)?;
         Ok(Box::into_raw(Box::new(Engine::deserialize(
             bytes, resources,
         )?)))
@@ -243,6 +252,36 @@ pub unsafe extern "C" fn wbe_classify_line(line: *const c_char) -> *mut c_char {
         let parsed = crate::parse_line(&normalized, SourceRef::default());
         let json = serde_json::to_string(&parsed).map_err(|e| e.to_string())?;
         Ok(to_c(json)?.into_raw())
+    })
+}
+
+/// The registrable domain of `host` (`wbe::registrable_domain`), or NULL.
+///
+/// # Safety
+/// `host` must be a valid NUL-terminated string.
+#[no_mangle]
+pub unsafe extern "C" fn wbe_registrable_domain(host: *const c_char) -> *mut c_char {
+    guard(ptr::null_mut(), || match crate::registrable_domain(cstr(host, "host")?) {
+        Some(root) => Ok(to_c(root.to_string())?.into_raw()),
+        None => Ok(ptr::null_mut()),
+    })
+}
+
+/// Byte range of the leftmost cosmetic marker (`##`, `#@#`, `#$#`, `$$`, ...)
+/// in `line`, as the parser finds it.
+///
+/// # Safety
+/// `line` must be a valid NUL-terminated string; `start` and `len` must be
+/// writable.
+#[no_mangle]
+pub unsafe extern "C" fn wbe_cosmetic_marker(line: *const c_char, start: *mut usize, len: *mut usize) -> bool {
+    guard(false, || {
+        let Some((at, marker)) = crate::parse::cosmetic::find_marker(cstr(line, "line")?) else {
+            return Ok(false);
+        };
+        *start = at;
+        *len = marker.len();
+        Ok(true)
     })
 }
 

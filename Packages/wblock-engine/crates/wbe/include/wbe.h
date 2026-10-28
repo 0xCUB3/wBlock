@@ -41,16 +41,23 @@ const char *wbe_compile_runtime_text(const WbeCompileResult *result);
 const char *wbe_compile_stats_json(const WbeCompileResult *result);
 void wbe_compile_free(WbeCompileResult *result);
 
-/* On success *out holds *out_len bytes; free with wbe_bytes_free. */
+/* resources_json may be NULL for the built-in resources. On success *out holds
+ * *out_len bytes; free with wbe_bytes_free. */
 bool wbe_engine_build(const char *runtime_text, const char *resources_json, uint8_t **out,
                       size_t *out_len);
 void wbe_bytes_free(uint8_t *bytes, size_t len);
 
-/* resources_json: the same resource array passed to wbe_engine_build. */
+/* resources_json: the array passed to wbe_engine_build; NULL for the built-in resources. */
 WbeEngine *wbe_engine_open(const uint8_t *bytes, size_t len, const char *resources_json);
 /* PagePayload JSON: {"hide":[..],"procedural":[..],"scriptlets":"..","generichide":bool}. */
 char *wbe_engine_lookup(const WbeEngine *engine, const char *url);
 void wbe_engine_free(WbeEngine *engine);
+
+/* Registrable domain (eTLD+1) of host, or NULL for a public suffix; free with wbe_string_free. */
+char *wbe_registrable_domain(const char *host);
+
+/* Byte offset and length of the leftmost cosmetic marker in line; false if none. */
+bool wbe_cosmetic_marker(const char *line, size_t *start, size_t *len);
 
 /* ParsedLine JSON for one filter line, for the rule editor. */
 char *wbe_classify_line(const char *line);

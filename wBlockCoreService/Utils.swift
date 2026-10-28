@@ -705,8 +705,8 @@ public enum UserScriptMetadataParser {
     }
 }
 
-/// Serializes access to the shared WebExtension instance to prevent data races
-/// between concurrent lookup() and buildFilterEngine() calls.
+/// Serializes use of the per-page engine (FilterEngineStore), which is not
+/// safe for concurrent lookups.
 public final class WebExtensionGate: @unchecked Sendable {
     public static let shared = WebExtensionGate()
     private let lock = NSLock()

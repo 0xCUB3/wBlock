@@ -1,5 +1,5 @@
 import Foundation
-internal import ContentBlockerConverter
+internal import WBEngine
 
 /// Per-line classification of a filter list for the rules viewer (#675).
 ///
@@ -314,132 +314,6 @@ public struct FilterRuleAnalysis: Sendable {
         return (isException ? "@@" : "") + RuleText.lowercased(pattern) + body[dollar...]
     }
 
-    /// Route unsupported uBO selectors through ExtendedCss instead of Safari's
-    /// merged hiding selector, and normalize unsupported network-rule options.
-    public static func adGuardEquivalent(_ rule: String) -> String {
-        let trimmed = String(RuleText.trimmed(rule))
-        // Use the converter's own marker, so `#$##id` or `#?#.a #b` isn't read as
-        // a hiding rule or a network rule with a trailing comment (#1029).
-        let found = CosmeticRuleMarker.findCosmeticRuleMarker(ruleText: trimmed)
-        guard let kind = found.marker else {
-            if let comment = inlineCommentStart(trimmed) {
-                return adGuardEquivalent(String(RuleText.trimmed(trimmed[..<comment])))
-            }
-            // Only these options are rewritten outside cosmetic rules.
-            guard !trimmed.utf8.allSatisfy({ $0 < 0x80 }) || RuleText.containsIgnoringASCIICase(trimmed, "denyallow")
-                || RuleText.containsIgnoringASCIICase(trimmed, "object") else { return rule }
-            return expandingDenyAllow(trimmed) ?? droppingObjectType(trimmed) ?? rule
-        }
-        guard kind == .elementHiding || kind == .elementHidingException else { return rule }
-        let exception = kind == .elementHidingException
-        let start = trimmed.utf8.index(trimmed.startIndex, offsetBy: found.index)
-        let marker = start..<trimmed.utf8.index(start, offsetBy: kind.rawValue.utf8.count)
-        let body = trimmed[marker.upperBound...]
-        // The rewrites below need a parenthesis, a style block, or a shadow-DOM combinator.
-        guard body.utf8.contains(where: { $0 == UInt8(ascii: "(") || $0 == UInt8(ascii: "{") })
-            || RuleText.contains(body, ">>>") else { return rule }
-        // `##selector { style }` is CSS injection. As a hiding rule the style block
-        // landed in the site's merged selector, and Safari rejected all of it (#918).
-        if body.hasSuffix("}"), let brace = unquotedIndex(of: "{", in: body) {
-            let selector = body[..<brace]
-            let extended = selector.contains(">>>") || hasUnknownFunctionalPseudo(selector)
-            return trimmed[..<marker.lowerBound] + (exception ? "#@" : "#") + (extended ? "$?#" : "$#") + body
-        }
-        // Syntax Safari's CSS engine does not know, anywhere in the selector
-        // (#949), would be merged into the site's shared hiding selector, and
-        // Safari rejects the merged selector whole. Run it as extended CSS instead.
-        if body.contains(">>>") || hasUnknownFunctionalPseudo(body) {
-            return trimmed[..<marker.lowerBound] + (exception ? "#@?#" : "#?#") + body
-        }
-        return rule
-    }
-
-    /// uBO reads whitespace then `#` in a network rule as the start of a comment,
-    /// and lists like `||ls.apple.com^$badfilter  # apple maps` rely on it. The
-    /// converter took the comment as part of the options and rejected the rule
-    /// (#975). URL patterns can't hold whitespace, but a regex pattern can.
-    private static func inlineCommentStart(_ rule: String) -> String.Index? {
-        guard !rule.hasPrefix("/"), !rule.hasPrefix("@@/") else { return nil }
-        let space = RuleText.range(of: " #", in: rule) ?? RuleText.range(of: "\t#", in: rule)
-        return space?.lowerBound
-    }
-
-    /// Safari has no plugin resource type, so the converter rejects any rule that
-    /// names `object` (#975). Plugin requests never happen, so `~object` excludes
-    /// nothing and `object` can go from a type list. A rule left with no other
-    /// type would match everything instead of nothing, so it stays rejected.
-    private static func droppingObjectType(_ rule: String) -> String? {
-        guard let dollar = rule.lastIndex(of: "$") else { return nil }
-        let options = rule[rule.index(after: dollar)...].split(separator: ",", omittingEmptySubsequences: false)
-        let kept = options.filter { !["object", "~object"].contains($0.lowercased()) }
-        guard kept.count < options.count else { return nil }
-        if options.contains(where: { $0.lowercased() == "object" }),
-           !kept.contains(where: { resourceTypes.contains($0.lowercased()) }) { return nil }
-        return String(rule[..<dollar]) + (kept.isEmpty ? "" : "$" + kept.joined(separator: ","))
-    }
-
-    /// Content blockers can't exclude request domains from a block rule, so the
-    /// converter rejects `denyallow` (#975). A pattern-less, site-scoped block
-    /// with `denyallow=a.com|b.com` becomes the block plus one exception per
-    /// allowed domain under the same options, one rule per line. An exception
-    /// also lifts other lists' blocks of those domains on those sites, so only
-    /// pattern-less rules are expanded; a pattern would widen it further.
-    private static func expandingDenyAllow(_ rule: String) -> String? {
-        guard !rule.hasPrefix("@@"), let dollar = rule.lastIndex(of: "$"),
-              ["", "*"].contains(rule[..<dollar]) else { return nil }
-        let options = rule[rule.index(after: dollar)...].split(separator: ",").map(String.init)
-        guard let deny = options.first(where: { $0.lowercased().hasPrefix("denyallow=") }),
-              options.contains(where: { $0.lowercased().hasPrefix("domain=") }),
-              !options.contains(where: { $0.lowercased().hasPrefix("removeparam") }) else { return nil }
-        let domains = deny.dropFirst("denyallow=".count).split(separator: "|")
-        guard !domains.isEmpty, domains.allSatisfy({
-            RemoveParamDNRRuleGenerator.isSupportedDomain($0.lowercased())
-        }) else { return nil }
-        let suffix = "$" + options.filter { $0 != deny }.joined(separator: ",")
-        return ([suffix] + domains.map { "@@||\($0)^" + suffix }).joined(separator: "\n")
-    }
-
-    private static let resourceTypes: Set<String> = [
-        "script", "image", "stylesheet", "css", "xmlhttprequest", "xhr", "subdocument", "frame",
-        "media", "font", "websocket", "ping", "other", "document", "doc", "popup",
-    ]
-
-    /// Functional pseudo-classes WebKit compiles in content blocker selectors.
-    private static let nativeFunctionalPseudos: Set<String> = [
-        "has", "is", "not", "where", "matches", "lang", "dir",
-        "nth-child", "nth-last-child", "nth-of-type", "nth-last-of-type",
-    ]
-
-    private static func unquotedIndex(of target: Character, in text: Substring) -> String.Index? {
-        var quote: Character?
-        for index in text.indices {
-            let character = text[index]
-            if let open = quote { if character == open { quote = nil }; continue }
-            if character == "\"" || character == "'" { quote = character } else if character == target { return index }
-        }
-        return nil
-    }
-
-    private static func hasUnknownFunctionalPseudo<S: StringProtocol>(_ selector: S) -> Bool {
-        var quote: Character?
-        var name: String?
-        for character in selector {
-            if let open = quote { if character == open { quote = nil }; continue }
-            switch character {
-            case "\"", "'": quote = character; name = nil
-            case ":": name = ""
-            case "(":
-                if let pseudo = name?.lowercased(), !pseudo.isEmpty, !nativeFunctionalPseudos.contains(pseudo) { return true }
-                name = nil
-            default:
-                if name != nil {
-                    if character.isLetter || character.isNumber || character == "-" { name?.append(character) } else { name = nil }
-                }
-            }
-        }
-        return false
-    }
-
     public static func isRuleLine<S: StringProtocol>(_ trimmed: S) -> Bool {
         let utf8 = trimmed.utf8
         guard let first = utf8.first, first != UInt8(ascii: "!"), first != UInt8(ascii: "[") else { return false }
@@ -458,7 +332,6 @@ public struct FilterRuleAnalysis: Sendable {
         seenInEarlierLists: Set<String> = [],
         isCancelled: @escaping () -> Bool = { false }
     ) -> FilterRuleAnalysis {
-        let safariVersion = SafariVersion.autodetect()
         var seen = Set(seenInEarlierLists.map(ruleIdentity))
         var lines: [Line] = []
         var stop = false
@@ -473,36 +346,32 @@ public struct FilterRuleAnalysis: Sendable {
                 lines.append(Line(text: raw, kind: .duplicate))
                 return
             }
-            let rewritten = adGuardEquivalent(trimmed).split(separator: "\n").map(String.init)
-            let kinds = rewritten.map { classify($0, safariVersion: safariVersion) }
-            lines.append(Line(text: raw, kind: kinds.first { $0 == .unsupported } ?? kinds[0]))
+            lines.append(Line(text: raw, kind: classify(trimmed)))
         }
         if stop { return FilterRuleAnalysis(lines: []) }
         return FilterRuleAnalysis(lines: lines)
     }
 
-    static func classify(_ rule: String, safariVersion: SafariVersion) -> FilterRuleKind {
+    static func classify(_ rule: String) -> FilterRuleKind {
         if let supported = RemoveParamDNRRuleGenerator.supportsRule(rule) {
             return supported ? .removeParam : .unsupported
         }
-        do {
-            guard let parsed = try RuleFactory.createRule(ruleText: rule, for: safariVersion) else {
-                return .comment
+        // The engine's own parse: procedural cosmetics and scriptlets need
+        // wBlock Scripts; everything else Safari applies natively.
+        guard let data = WBEngine.classify(line: rule),
+              let parsed = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+        else { return .unsupported }
+        switch parsed["status"] as? String {
+        case "ignored": return .comment
+        case "rule":
+            switch parsed["kind"] as? String {
+            case "network": return .network
+            case "cosmetic":
+                let body = parsed["body"] as? [String: Any]
+                return body?["type"] as? String == "hide" ? .elementHiding : .advanced
+            default: return .advanced
             }
-            // Same split the converter applies: extended CSS, scripts,
-            // scriptlets, and CSS injection need wBlock Scripts, as do
-            // exceptions that only exist to modify those ($jsinject).
-            if let cosmetic = parsed as? CosmeticRule {
-                return cosmetic.isScript || cosmetic.isScriptlet || cosmetic.isExtendedCss || cosmetic.isInjectCss
-                    ? .advanced : .elementHiding
-            }
-            if let network = parsed as? NetworkRule, network.isWhiteList, network.isJsInject,
-               !network.isDocumentWhiteList, !network.isCssExceptionRule {
-                return .advanced
-            }
-            return .network
-        } catch {
-            return .unsupported
+        default: return .unsupported
         }
     }
 }

@@ -8,7 +8,7 @@
 //  Scriptlet rules are not cosmetic and are kept.
 //
 
-internal import ContentBlockerConverter
+internal import WBEngine
 import Foundation
 
 public enum CosmeticFilteringPreference {
@@ -86,17 +86,18 @@ public enum CosmeticFilteringPreference {
             : Sites(excludedSites: saved.excludedSites, includesGeneric: saved.includesGeneric)
     }
 
-    /// True for element-hiding and CSS injection rules, using the converter's own
-    /// marker detection so classification matches what it would compile.
+    /// True for element-hiding and CSS injection rules (not scriptlets or HTML
+    /// filters), using the engine's own marker detection so classification
+    /// matches what it compiles.
     public static func isCosmeticRule(_ line: String) -> Bool {
-        // Comments can contain marker text; the converter drops them anyway.
-        guard let first = line.utf8.first, first != UInt8(ascii: "!") else { return false }
-        switch CosmeticRuleMarker.findCosmeticRuleMarker(ruleText: line).marker {
-        case .elementHiding, .elementHidingException, .elementHidingExtCSS, .elementHidingExtCSSException,
-             .css, .cssException, .cssExtCSS, .cssExtCSSException:
-            return true
-        case .javascript, .javascriptException, .html, .htmlException, nil:
-            return false
-        }
+        // Comments can contain marker text; the engine drops them anyway.
+        guard let first = line.utf8.first, first != UInt8(ascii: "!"),
+              let found = WBEngine.cosmeticMarker(in: line) else { return false }
+        let utf8 = line.utf8
+        let start = utf8.index(utf8.startIndex, offsetBy: found.offset)
+        let end = utf8.index(start, offsetBy: found.length)
+        let marker = line[start..<end], body = line[end...]
+        return !marker.hasPrefix("$") && !marker.contains("%")
+            && !body.hasPrefix("+js(") && !body.hasPrefix("^")
     }
 }

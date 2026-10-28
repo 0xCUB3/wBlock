@@ -228,6 +228,16 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
         url.scheme?.lowercased() == "wblock" && url.host?.lowercased() == "userlist"
     }
 
+    /// Whether this list may use uBO's `trusted-*` scriptlets. uBO trusts its
+    /// own lists and the user's own rules; so does wBlock.
+    public var isTrustedSource: Bool {
+        if isInlineUserList { return true }
+        let host = url.host?.lowercased() ?? "", path = url.path
+        return host == "ublockorigin.github.io" || host == "ublockorigin.pages.dev"
+            || (host == "raw.githubusercontent.com" && path.hasPrefix("/uBlockOrigin/"))
+            || (host == "cdn.jsdelivr.net" && path.hasPrefix("/gh/uBlockOrigin/"))
+    }
+
     /// Whether this list is fetched over HTTP(S).
     public var isRemoteURL: Bool {
         guard let scheme = url.scheme?.lowercased() else { return false }

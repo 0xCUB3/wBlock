@@ -11,9 +11,6 @@ use wbe::runtime::Engine;
 use wbe::webkit::{to_json, SafariVersion};
 use wbe::{compile, CompileOptions, ListInput};
 
-/// Used by `lookup` when `--resources` is not given.
-const DEFAULT_RESOURCES: &str = include_str!("../../../../resources/resources.json");
-
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
     match args.first().map(String::as_str) {
@@ -88,7 +85,7 @@ fn lookup_cmd(args: &[String]) {
         eprintln!("usage: wbe lookup [--resources R] [--bench N] ENGINE URL|URLFILE...");
         std::process::exit(2);
     };
-    let resources_json = resources.map_or_else(|| DEFAULT_RESOURCES.to_owned(), |p| read(&p));
+    let resources_json = resources.map_or_else(|| wbe::runtime::RESOURCES.to_owned(), |p| read(&p));
 
     let start = Instant::now();
     let bytes = std::fs::read(engine_path).unwrap_or_else(|e| panic!("{engine_path}: {e}"));

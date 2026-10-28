@@ -5,8 +5,7 @@
 //  Created by Alexander Skula on 5/23/25.
 //
 
-internal import ContentBlockerConverter
-internal import FilterEngine
+internal import WBEngine
 import CryptoKit
 import Foundation
 import SafariServices
@@ -140,26 +139,7 @@ private struct SourceRuleAdmissionCounter {
     // 8: defuse Urban Dictionary's AdShield fallback without triggering its sentinel redirect.
     // 9: remove the Valnet sites' anti-adblock dialog (#895).
     public static let embeddedCompatibilityRulesVersion = "9"
-    private static let combinedEngineMarkerFileName = "combined-rules.sha256"
-    private static let combinedEngineMarkerFormatVersion = 2
-    private static let combinedEngineBuildLockFileName = "combined-engine-build.lock"
-    private static let combinedEngineBuildLockTimeout: TimeInterval = 120
-    private static let combinedEngineRequestLockFileName = "combined-engine-request.lock"
-    private static let combinedEngineLatestRequestFileName = "combined-engine-latest.request"
-    private static let combinedEngineRequestLockTimeout: TimeInterval = 2
-    private static let engineFileLockTimeout: TimeInterval = 2
     private static let contentBlockerOutputLockTimeout: TimeInterval = 10
-    private static let engineStorageFileNames = [
-        Schema.FILTER_RULE_STORAGE_FILE_NAME,
-        Schema.FILTER_ENGINE_INDEX_FILE_NAME,
-        Schema.RULES_FILE_NAME,
-        Schema.ENGINE_META_FILE_NAME,
-    ]
-
-    private enum CombinedEnginePublishError: Error {
-        case supersededRequest
-        case suspensionImminent
-    }
 
     /// Built-in compatibility rules that improve blocking of common dynamic ad script
     /// patterns and dynamic ad containers across filter sets.
@@ -406,10 +386,12 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         let trimmedExtraRules = embeddedCompatibilityRules.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedExtraRules.isEmpty else { return rawRules }
 
+        // wBlock's own rules may use trusted scriptlets.
+        let trustedExtraRules = trustMarker(trusted: true) + "\n" + trimmedExtraRules
         let trimmedBaseRules = rawRules.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedBaseRules.isEmpty else { return trimmedExtraRules }
+        guard !trimmedBaseRules.isEmpty else { return trustedExtraRules }
 
-        return rawRules + "\n" + trimmedExtraRules
+        return rawRules + "\n" + trustedExtraRules
     }
 
     private static func compatibilityRulesFingerprintHex() -> String {
@@ -1931,6 +1913,10 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                 )
             }
             guard includeBaseRules || hasAffinity else { continue }
+            try ContentBlockerInputWriter.appendInline(
+                trustMarker(trusted: filter.isTrustedSource), to: fileHandle, hasher: &hasher,
+                newlineData: newlineData, isCancelled: cancellationRequested
+            )
 
             if hasAffinity {
                 let filtered = try SafariContentBlockerAffinityProcessor.filteredContent(
@@ -2030,6 +2016,10 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             }
         }
 
+        try ContentBlockerInputWriter.appendInline(
+            trustMarker(trusted: false), to: fileHandle, hasher: &hasher,
+            newlineData: newlineData, isCancelled: cancellationRequested
+        )
         let replicatedExceptions = try replication.exceptions(isCancelled: cancellationRequested)
         if !replicatedExceptions.isEmpty {
             try ContentBlockerInputWriter.appendInline(
@@ -2054,8 +2044,9 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         }
 
         if let extraRulesText, !extraRulesText.isEmpty {
+            // Element-zapper rules the user made.
             try ContentBlockerInputWriter.appendInline(
-                extraRulesText,
+                trustMarker(trusted: true) + "\n" + extraRulesText,
                 to: fileHandle,
                 hasher: &hasher,
                 newlineData: newlineData,
@@ -2362,511 +2353,51 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
     }
 
 
-    /// Publishes the filter engine built from combined advanced rules from all filter groups.
-    ///
-    /// - Parameters:
-    ///   - combinedAdvancedRules: Combined advanced rules text from all filter groups.
-    ///   - groupIdentifier: Group ID to use for the shared container.
+    /// Publishes the per-page engine built from the advanced (runtime) rules of
+    /// every blocker. Empty rules publish an empty engine.
     public static func publishCombinedFilterEngine(
         combinedAdvancedRules: String,
         groupIdentifier: String
     ) throws {
-        guard let containerURL = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: groupIdentifier
-        ) else {
-            throw WebExtension.WebExtensionError.containerURLNotFound(groupID: groupIdentifier)
-        }
-
-        let baseURL = containerURL.appendingPathComponent(Schema.BASE_DIR, isDirectory: true)
-        try FileManager.default.createDirectory(at: baseURL, withIntermediateDirectories: true)
-        FilterArtifactStorage.excludeFromBackup(baseURL)
-        let requestToken = try recordCombinedEngineRequest(at: baseURL)
-        let safariVersion = SafariVersion.autodetect()
-        let rulesData = Data(combinedAdvancedRules.utf8)
-
-        #if os(iOS)
-        // The section below holds exclusive kernel flocks on app group files for
-        // the entire rebuild. Defer suspension while they are held and unwind
-        // (releasing the locks) when suspension becomes imminent (0xDEAD10CC).
-        let shield = SuspensionShield(reason: "wBlock combined engine publish")
-        defer { shield.release() }
-        let ensureNotSuspending: () throws -> Void = {
-            if shield.isExpired {
-                os_log(.info, "Abandoning combined filter engine publish before suspension")
-                throw CombinedEnginePublishError.suspensionImminent
-            }
-        }
-        let isEnginePublishCancelled = {
-            shield.isExpired || Task.isCancelled
-        }
-        #else
-        let ensureNotSuspending: () throws -> Void = {}
-        let isEnginePublishCancelled = { Task.isCancelled }
-        #endif
-
-        let fingerprint = try combinedEngineFingerprint(
-            rulesData: rulesData,
-            safariVersion: safariVersion,
-            isCancelled: isEnginePublishCancelled
-        )
-
-        try measure(label: combinedAdvancedRules.isEmpty ? "Clearing filter engine" : "Building combined filter engine") {
-            try withCombinedEngineBuildLock(at: baseURL) {
-                try ensureNotSuspending()
-                let skipped = try withEngineCriticalSection(at: baseURL) {
-                    try withCombinedEngineRequestLock(at: baseURL) {
-                        try ensureCombinedEngineRequestIsCurrent(at: baseURL, requestToken: requestToken)
-                        return try canSkipCombinedEnginePublish(
-                            fingerprint: fingerprint,
-                            baseURL: baseURL,
-                            isCancelled: isEnginePublishCancelled
-                        )
-                    }
-                }
-                if skipped {
-                    os_log(.info, "Skipping unchanged combined filter engine publish")
-                    return
-                }
-
-                try ensureNotSuspending()
-                let temporaryBuild = try buildTemporaryEngine(
-                    rulesData: rulesData,
-                    safariVersion: safariVersion,
-                    baseURL: baseURL,
-                    cancellationCheck: ensureNotSuspending,
-                    isCancelled: isEnginePublishCancelled
-                )
-                defer { try? FileManager.default.removeItem(at: temporaryBuild.directory) }
-
-                let published = try withEngineCriticalSection(at: baseURL) {
-                    try withCombinedEngineRequestLock(at: baseURL) {
-                        try ensureNotSuspending()
-                        try ensureCombinedEngineRequestIsCurrent(at: baseURL, requestToken: requestToken)
-                        if try canSkipCombinedEnginePublish(
-                            fingerprint: fingerprint,
-                            baseURL: baseURL,
-                            isCancelled: isEnginePublishCancelled
-                        ) {
-                            return false
-                        }
-
-                        try publishEngineFiles(
-                            from: temporaryBuild,
-                            fingerprint: fingerprint,
-                            baseURL: baseURL,
-                            isCancelled: isEnginePublishCancelled
-                        )
-                        return true
-                    }
-                }
-
-                if published {
-                    os_log(
-                        .info,
-                        "Successfully published combined filter engine with %d characters of advanced rules",
-                        combinedAdvancedRules.count
-                    )
-                }
-            }
-        }
-    }
-
-    private struct CombinedEngineFingerprint: Equatable {
-        let rulesHash: String
-        let schemaVersion: Int
-        let safariBuildContext: String
-        let markerFormatVersion: Int
-        let value: String
-    }
-
-    private struct TemporaryEngineBuild {
-        let directory: URL
-        let artifactDigests: [String: String]
-    }
-
-    private struct CombinedEngineMarker: Codable, Equatable {
-        let markerFormatVersion: Int
-        let schemaVersion: Int
-        let safariBuildContext: String
-        let rulesHash: String
-        let fingerprint: String
-        let artifactDigests: [String: String]
-    }
-
-    private static func combinedEngineFingerprint(
-        rulesData: Data,
-        safariVersion: SafariVersion,
-        isCancelled: (() -> Bool)? = nil
-    ) throws -> CombinedEngineFingerprint {
-        let rulesHash = try combinedRulesHash(rulesData, isCancelled: isCancelled)
-        let safariBuildContext = "\(currentPlatform)-safari-\(safariVersion.doubleValue)"
-        let markerFormatVersion = combinedEngineMarkerFormatVersion
-        let schemaVersion = Schema.VERSION
-        let value = try combinedRulesHash(
-            Data("\(markerFormatVersion)|\(schemaVersion)|\(safariBuildContext)|\(rulesHash)".utf8),
-            isCancelled: isCancelled
-        )
-        return CombinedEngineFingerprint(
-            rulesHash: rulesHash,
-            schemaVersion: schemaVersion,
-            safariBuildContext: safariBuildContext,
-            markerFormatVersion: markerFormatVersion,
-            value: value
-        )
-    }
-
-    private static var currentPlatform: String {
-        #if os(macOS)
-        return "macOS"
-        #elseif os(iOS)
-        return "iOS"
-        #else
-        return "unknown"
-        #endif
-    }
-
-    private static func combinedRulesHash(
-        _ data: Data,
-        isCancelled: (() -> Bool)? = nil
-    ) throws -> String {
-        try ContentBlockerChunkedHasher.hexDigest(
-            for: data,
-            isCancelled: {
-                Task.isCancelled || isCancelled?() == true
-            }
-        )
-    }
-
-    private static func expectedMarker(
-        for fingerprint: CombinedEngineFingerprint,
-        artifactDigests: [String: String]
-    ) -> CombinedEngineMarker {
-        CombinedEngineMarker(
-            markerFormatVersion: fingerprint.markerFormatVersion,
-            schemaVersion: fingerprint.schemaVersion,
-            safariBuildContext: fingerprint.safariBuildContext,
-            rulesHash: fingerprint.rulesHash,
-            fingerprint: fingerprint.value,
-            artifactDigests: artifactDigests
-        )
-    }
-
-    private static func canSkipCombinedEnginePublish(
-        fingerprint: CombinedEngineFingerprint,
-        baseURL: URL,
-        isCancelled: (() -> Bool)? = nil
-    ) throws -> Bool {
-        let migrationMarkerURL = baseURL.appendingPathComponent(Schema.MIGRATION_MARKER_FILE_NAME)
-        guard !FileManager.default.fileExists(atPath: migrationMarkerURL.path) else { return false }
-
-        let markerURL = baseURL.appendingPathComponent(combinedEngineMarkerFileName)
-        guard let markerData = try? Data(contentsOf: markerURL),
-              let marker = try? JSONDecoder().decode(CombinedEngineMarker.self, from: markerData),
-              marker.markerFormatVersion == fingerprint.markerFormatVersion,
-              marker.schemaVersion == fingerprint.schemaVersion,
-              marker.safariBuildContext == fingerprint.safariBuildContext,
-              marker.rulesHash == fingerprint.rulesHash,
-              marker.fingerprint == fingerprint.value,
-              Set(marker.artifactDigests.keys) == Set(engineStorageFileNames)
-        else { return false }
-
-        return try validatePublishedEngineFiles(
-            at: baseURL,
-            artifactDigests: marker.artifactDigests,
-            isCancelled: isCancelled
-        )
-    }
-
-    private static func validatePublishedEngineFiles(
-        at baseURL: URL,
-        artifactDigests: [String: String],
-        isCancelled: (() -> Bool)? = nil
-    ) throws -> Bool {
-        guard Set(artifactDigests.keys) == Set(engineStorageFileNames) else { return false }
-        return try engineArtifactDigests(
-            at: baseURL,
-            isCancelled: isCancelled
-        ) == artifactDigests
-    }
-
-    private static func engineArtifactDigests(
-        at baseURL: URL,
-        isCancelled: (() -> Bool)? = nil
-    ) throws -> [String: String] {
-        Dictionary(uniqueKeysWithValues: try engineStorageFileNames.map { fileName in
-            let data = try Data(contentsOf: baseURL.appendingPathComponent(fileName))
-            return (
-                fileName,
-                try combinedRulesHash(data, isCancelled: isCancelled)
-            )
-        })
-    }
-
-    private static func validateTemporaryEngine(
-        at directory: URL,
-        fingerprint: CombinedEngineFingerprint,
-        isCancelled: (() -> Bool)? = nil
-    ) throws -> Bool {
-        let artifactDigests = try engineArtifactDigests(
-            at: directory,
-            isCancelled: isCancelled
-        )
-        guard artifactDigests[Schema.RULES_FILE_NAME] == fingerprint.rulesHash,
-              let metaData = try? Data(contentsOf: directory.appendingPathComponent(Schema.ENGINE_META_FILE_NAME)),
-              let meta = EngineMeta.fromData(metaData),
-              meta.schemaVersion == Int32(fingerprint.schemaVersion)
-        else { return false }
-
-        do {
-            let storage = try FilterRuleStorage(
-                fileURL: directory.appendingPathComponent(Schema.FILTER_RULE_STORAGE_FILE_NAME)
-            )
-            _ = try FilterEngine(
-                storage: storage,
-                indexFileURL: directory.appendingPathComponent(Schema.FILTER_ENGINE_INDEX_FILE_NAME)
-            )
-
-            let iterator = try storage.makeIterator()
-            var decodedRuleCount = 0
-            while iterator.next() != nil {
-                decodedRuleCount += 1
-            }
-            return decodedRuleCount == storage.count
-        } catch is CancellationError {
-            throw CancellationError()
-        } catch {
-            return false
-        }
-    }
-
-    private static func withCombinedEngineBuildLock<T>(at baseURL: URL, _ body: () throws -> T) throws -> T {
-        guard let fileLock = FileLock(
-            filePath: baseURL.appendingPathComponent(combinedEngineBuildLockFileName).path
-        ), fileLock.lock(before: Date().addingTimeInterval(combinedEngineBuildLockTimeout)) else {
-            throw WebExtension.WebExtensionError.buildEngineFailed(
-                underlyingError: CocoaError(.fileWriteUnknown)
-            )
-        }
-        defer { _ = fileLock.unlock() }
-        return try body()
-    }
-
-    private static func withCombinedEngineRequestLock<T>(at baseURL: URL, _ body: () throws -> T) throws -> T {
-        guard let fileLock = FileLock(
-            filePath: baseURL.appendingPathComponent(combinedEngineRequestLockFileName).path
-        ), fileLock.lock(before: Date().addingTimeInterval(combinedEngineRequestLockTimeout)) else {
-            throw WebExtension.WebExtensionError.buildEngineFailed(
-                underlyingError: CocoaError(.fileWriteUnknown)
-            )
-        }
-        defer { _ = fileLock.unlock() }
-        return try body()
-    }
-
-    private static func recordCombinedEngineRequest(at baseURL: URL) throws -> String {
-        let token = UUID().uuidString
-        try withCombinedEngineRequestLock(at: baseURL) {
-            try Data(token.utf8).write(
-                to: baseURL.appendingPathComponent(combinedEngineLatestRequestFileName),
-                options: .atomic
-            )
-        }
-        return token
-    }
-
-    private static func latestCombinedEngineRequestToken(at baseURL: URL) -> String? {
-        guard let token = try? String(
-            contentsOf: baseURL.appendingPathComponent(combinedEngineLatestRequestFileName),
-            encoding: .utf8
-        ) else {
-            return nil
-        }
-        let trimmedToken = token.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmedToken.isEmpty ? nil : trimmedToken
-    }
-
-    private static func ensureCombinedEngineRequestIsCurrent(
-        at baseURL: URL,
-        requestToken: String
-    ) throws {
-        guard latestCombinedEngineRequestToken(at: baseURL) == requestToken else {
-            os_log(.info, "Abandoning superseded combined filter engine publish")
-            throw CombinedEnginePublishError.supersededRequest
-        }
-    }
-
-    private static func withEngineCriticalSection<T>(at baseURL: URL, _ body: () throws -> T) throws -> T {
-        try WebExtensionGate.shared.withLock {
-            try withEngineFileLock(at: baseURL, body)
-        }
-    }
-
-    private static func withEngineFileLock<T>(at baseURL: URL, _ body: () throws -> T) throws -> T {
-        guard let fileLock = FileLock(
-            filePath: baseURL.appendingPathComponent(Schema.LOCK_FILE_NAME).path
-        ), fileLock.lock(before: Date().addingTimeInterval(engineFileLockTimeout)) else {
-            throw WebExtension.WebExtensionError.buildEngineFailed(
-                underlyingError: CocoaError(.fileWriteUnknown)
-            )
-        }
-        defer { _ = fileLock.unlock() }
-        return try body()
-    }
-
-    private static func buildTemporaryEngine(
-        rulesData: Data,
-        safariVersion: SafariVersion,
-        baseURL: URL,
-        cancellationCheck: () throws -> Void,
-        isCancelled: (() -> Bool)? = nil
-    ) throws -> TemporaryEngineBuild {
-        let fileManager = FileManager.default
-        let temporaryDirectory = try FilterArtifactStorage.scratchDirectory(in: baseURL.deletingLastPathComponent()).appendingPathComponent(
-            "engine-rebuild-\(UUID().uuidString)",
-            isDirectory: true
-        )
-        try fileManager.createDirectory(at: temporaryDirectory, withIntermediateDirectories: true)
-
-        do {
-            let rulesURL = temporaryDirectory.appendingPathComponent(Schema.RULES_FILE_NAME)
-            let storageURL = temporaryDirectory.appendingPathComponent(Schema.FILTER_RULE_STORAGE_FILE_NAME)
-            let indexURL = temporaryDirectory.appendingPathComponent(Schema.FILTER_ENGINE_INDEX_FILE_NAME)
-            let metaURL = temporaryDirectory.appendingPathComponent(Schema.ENGINE_META_FILE_NAME)
-
-            try cancellationCheck()
-            let rules = String(decoding: rulesData, as: UTF8.self)
-            let storage = try FilterRuleStorage(
-                from: rules.components(separatedBy: "\n"),
-                for: safariVersion,
-                fileURL: storageURL
-            )
-            try cancellationCheck()
-            let engine = try FilterEngine(storage: storage)
-            try engine.write(to: indexURL)
-            try cancellationCheck()
-            try rulesData.write(to: rulesURL, options: .atomic)
-
-            try cancellationCheck()
-            let meta = EngineMeta(
-                timestamp: Date().timeIntervalSince1970,
-                schemaVersion: Int32(Schema.VERSION)
-            )
-            try meta.toData().write(to: metaURL, options: .atomic)
-            try cancellationCheck()
-
-            let fingerprint = try combinedEngineFingerprint(
-                rulesData: rulesData,
-                safariVersion: safariVersion,
-                isCancelled: isCancelled
-            )
-            guard try validateTemporaryEngine(
-                at: temporaryDirectory,
-                fingerprint: fingerprint,
-                isCancelled: isCancelled
-            ) else {
-                throw WebExtension.WebExtensionError.buildEngineFailed(
-                    underlyingError: CocoaError(.fileReadCorruptFile)
-                )
-            }
-            let artifactDigests = try engineArtifactDigests(
-                at: temporaryDirectory,
-                isCancelled: isCancelled
-            )
-            return TemporaryEngineBuild(directory: temporaryDirectory, artifactDigests: artifactDigests)
-        } catch {
-            try? fileManager.removeItem(at: temporaryDirectory)
-            throw error
-        }
-    }
-
-    private static func publishEngineFiles(
-        from temporaryBuild: TemporaryEngineBuild,
-        fingerprint: CombinedEngineFingerprint,
-        baseURL: URL,
-        isCancelled: (() -> Bool)? = nil
-    ) throws {
-        let migrationMarkerURL = baseURL.appendingPathComponent(Schema.MIGRATION_MARKER_FILE_NAME)
-        try Data().write(to: migrationMarkerURL, options: .atomic)
-        try invalidateExistingEngineMeta(at: baseURL)
-
-        for fileName in engineStorageFileNames where fileName != Schema.ENGINE_META_FILE_NAME {
-            try replaceEngineFile(
-                temporaryBuild.directory.appendingPathComponent(fileName),
-                in: baseURL,
-                named: fileName
-            )
-        }
-        try replaceEngineFile(
-            temporaryBuild.directory.appendingPathComponent(Schema.ENGINE_META_FILE_NAME),
-            in: baseURL,
-            named: Schema.ENGINE_META_FILE_NAME
-        )
-
-        guard try validatePublishedEngineFiles(
-            at: baseURL,
-            artifactDigests: temporaryBuild.artifactDigests,
-            isCancelled: isCancelled
-        ) else {
-            throw WebExtension.WebExtensionError.buildEngineFailed(
-                underlyingError: CocoaError(.fileReadCorruptFile)
-            )
-        }
-
-        let marker = expectedMarker(
-            for: fingerprint,
-            artifactDigests: temporaryBuild.artifactDigests
-        )
-        let markerData = try JSONEncoder().encode(marker)
-        try markerData.write(
-            to: baseURL.appendingPathComponent(combinedEngineMarkerFileName),
-            options: .atomic
-        )
-        try FileManager.default.removeItem(at: migrationMarkerURL)
-    }
-
-    private static func invalidateExistingEngineMeta(at baseURL: URL) throws {
-        let metaURL = baseURL.appendingPathComponent(Schema.ENGINE_META_FILE_NAME)
-        guard FileManager.default.fileExists(atPath: metaURL.path) else { return }
-        try FileManager.default.removeItem(at: metaURL)
-    }
-
-    private static func replaceEngineFile(_ sourceURL: URL, in baseURL: URL, named fileName: String) throws {
-        let destinationURL = baseURL.appendingPathComponent(fileName)
-        let fileManager = FileManager.default
-
-        if fileManager.fileExists(atPath: destinationURL.path) {
-            _ = try fileManager.replaceItemAt(destinationURL, withItemAt: sourceURL)
-        } else {
-            try fileManager.moveItem(at: sourceURL, to: destinationURL)
-        }
+        try FilterEngineStore.publish(runtimeRules: combinedAdvancedRules, groupIdentifier: groupIdentifier)
     }
 }
 
 // MARK: - Safari Content Blocker functions
 
 extension ContentBlockerService {
-    private enum RuleConversionError: LocalizedError {
-        case stoppedUnexpectedly
-
-        var errorDescription: String? {
-            "Rule conversion stopped without a cancellation request."
-        }
+    struct ConversionResult {
+        let safariRulesJSON: String
+        let safariRulesCount: Int
+        /// Rules past Safari's per-blocker limit. The output is then incomplete.
+        let discardedSafariRules: Int
+        /// Rules for the per-page engine, one per line.
+        let advancedRulesText: String?
     }
 
-    /// Converts AdGuard rules into the Safari content blocking rules syntax.
-    ///
-    /// - Parameters:
-    ///   - rules: AdGuard rules to convert.
-    /// - Returns: A ConversionResult containing the converted Safari rules in JSON format
-    ///           and advanced rules in text format, or nil when converter resources are unavailable.
+    /// Marks where a trusted list (one that may use uBO's `trusted-*`
+    /// scriptlets) starts or ends in a blocker's input. The token is a
+    /// per-install secret, so a downloaded list cannot claim trust by
+    /// containing this line.
+    static func trustMarker(trusted: Bool) -> String {
+        "!#wbe-trust \(trustToken) \(trusted ? "on" : "off")"
+    }
+
+    private static let trustToken: String = {
+        let key = "wbeTrustToken"
+        let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
+        if let token = defaults.string(forKey: key) { return token }
+        let token = UUID().uuidString
+        defaults.set(token, forKey: key)
+        return token
+    }()
+
+    /// Compiles filter rules (uBO syntax, or AdGuard/ABP syntax as far as uBO
+    /// accepts it) into Safari content-blocker JSON and per-page engine rules.
     private static func convertRules(
         rules: String,
         isCancelled: (() -> Bool)? = nil
     ) throws -> ConversionResult {
-        guard publicSuffixListResourcesAreAvailable() else {
-            throw CocoaError(.fileReadNoSuchFile)
-        }
-
         let cancellationRequested = {
             Task.isCancelled || isCancelled?() == true
         }
@@ -2874,108 +2405,42 @@ extension ContentBlockerService {
             throw CancellationError()
         }
 
-        var filterRules = rules
-        if !filterRules.isContiguousUTF8 {
-            measure(label: "Make contigious UTF-8") {
-                // This is super important for the conversion performance.
-                // In a normal app make sure you're storing filter lists as
-                // contigious UTF-8 strings.
-                filterRules.makeContiguousUTF8()
+        // Lines between trust markers form one list each, so trust follows the
+        // list a rule came from. Markers are `!#` lines, which dedup keeps.
+        var all: [String] = []
+        RuleText.forEachLine(rules) { all.append(String($0)) }
+        let on = trustMarker(trusted: true), off = trustMarker(trusted: false)
+        var lists: [WBEngine.List] = []
+        var current: [String] = []
+        var trusted = false
+        for line in deduplicatedRuleLines(all) {
+            guard line == on || line == off else {
+                current.append(line)
+                continue
             }
+            if !current.isEmpty { lists.append(WBEngine.List(text: current.joined(separator: "\n"), trusted: trusted)) }
+            current = []
+            trusted = line == on
         }
-
-        // Important: many filter lists use CRLF, which Swift can treat as a single `Character`.
-        // Splitting on "\n" alone may fail and yield a single giant line, resulting in 0 converted rules.
-        var rewritten: [String] = []
-        RuleText.forEachLine(filterRules) { line in
-            let rule = FilterRuleAnalysis.adGuardEquivalent(String(line))
-            if rule.utf8.contains(0x0A) {
-                rewritten += rule.split(separator: "\n").map(String.init)
-            } else {
-                rewritten.append(rule)
-            }
-        }
-        let lines = deduplicatedRuleLines(rewritten)
-        rewritten = []
+        if !current.isEmpty { lists.append(WBEngine.List(text: current.joined(separator: "\n"), trusted: trusted)) }
+        all = []
         if cancellationRequested() {
             throw CancellationError()
         }
 
-        let progress = Progress.discreteProgress(totalUnitCount: Int64(lines.count))
-        let cancellationMonitor = DispatchSource.makeTimerSource(
-            queue: DispatchQueue.global(qos: .utility)
+        let compiled = try measure(label: "Conversion") {
+            try WBEngine.compile(lists, safariVersion: SafariVersionDetection.current)
+        }
+        if cancellationRequested() {
+            throw CancellationError()
+        }
+        let count = compiled.stats.nativeRules
+        return ConversionResult(
+            safariRulesJSON: compiled.safariRulesJSON,
+            safariRulesCount: count,
+            discardedSafariRules: max(0, count - safariContentBlockerRuleLimit),
+            advancedRulesText: compiled.runtimeRules.isEmpty ? nil : compiled.runtimeRules
         )
-        cancellationMonitor.schedule(deadline: .now(), repeating: .milliseconds(20))
-        cancellationMonitor.setEventHandler {
-            if cancellationRequested() {
-                progress.cancel()
-            }
-        }
-        cancellationMonitor.resume()
-        defer {
-            cancellationMonitor.setEventHandler {}
-            cancellationMonitor.cancel()
-        }
-
-        let result = measure(label: "Conversion") {
-            ContentBlockerConverter().convertArray(
-                rules: lines,
-                safariVersion: .autodetect(),
-                advancedBlocking: true,
-                maxJsonSizeBytes: nil,
-                progress: progress
-            )
-        }
-        if cancellationRequested() {
-            throw CancellationError()
-        }
-        if progress.isCancelled {
-            throw RuleConversionError.stoppedUnexpectedly
-        }
-        return result
-    }
-
-    private static func publicSuffixListResourcesAreAvailable() -> Bool {
-        let bundleName = "swift-psl_PublicSuffixList"
-        let candidateURLs = [
-            Bundle.main.resourceURL,
-            Bundle(for: ContentBlockerServiceBundleMarker.self).resourceURL,
-            Bundle.main.bundleURL
-        ].compactMap { $0 }
-
-        for candidateURL in candidateURLs {
-            guard let resourceBundle = Bundle(
-                url: candidateURL.appendingPathComponent("\(bundleName).bundle")
-            ) else { continue }
-
-            let requiredResources = ["common", "negated", "asterisk"]
-            let missingResources = requiredResources.filter { resourceName in
-                guard let resourceURL = resourceBundle.url(
-                    forResource: resourceName,
-                    withExtension: "bin"
-                ),
-                FileManager.default.isReadableFile(atPath: resourceURL.path),
-                let resourceValues = try? resourceURL.resourceValues(forKeys: [.fileSizeKey]),
-                let fileSize = resourceValues.fileSize,
-                fileSize > 0
-                else { return true }
-                return false
-            }
-
-            if missingResources.isEmpty {
-                return true
-            }
-
-            os_log(
-                .error,
-                "Public Suffix List bundle is missing or unreadable resource(s): %@ (%@)",
-                missingResources.joined(separator: ", "),
-                resourceBundle.bundleURL.path
-            )
-        }
-
-        os_log(.error, "Could not locate a usable swift-psl_PublicSuffixList resource bundle")
-        return false
     }
 
     /// Saves the blocker list file contents to the shared directory specified by the group identifier.

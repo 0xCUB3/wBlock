@@ -14,3 +14,20 @@ pub mod ffi;
 
 pub use compile::{compile, CompileOptions, CompileOutput, ListInput, Stats};
 pub use parse::parse_line;
+
+/// The registrable domain (eTLD+1) of `host`, or `None` for a public suffix
+/// or an invalid name.
+pub fn registrable_domain(host: &str) -> Option<&str> {
+    addr::parse_domain_name(host).ok()?.root()
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn registrable_domain_follows_the_public_suffix_list() {
+        assert_eq!(super::registrable_domain("news.bbc.co.uk"), Some("bbc.co.uk"));
+        assert_eq!(super::registrable_domain("example.com"), Some("example.com"));
+        assert_eq!(super::registrable_domain("co.uk"), None);
+        assert_eq!(super::registrable_domain("github.io"), None);
+    }
+}

@@ -9,9 +9,6 @@ WORK="$OUT/slices"
 HEADERS="$ROOT/crates/wbe/include"
 export MACOSX_DEPLOYMENT_TARGET=12.3
 export IPHONEOS_DEPLOYMENT_TARGET=15.4
-# The workspace release profile sets panic = "abort", which would turn a panic
-# inside the C ABI into a process abort. ffi.rs needs unwinding to catch it.
-export CARGO_PROFILE_RELEASE_PANIC=unwind
 
 MAC_ARM=aarch64-apple-darwin
 MAC_X86=x86_64-apple-darwin

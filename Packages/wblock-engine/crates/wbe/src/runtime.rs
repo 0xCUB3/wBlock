@@ -5,6 +5,11 @@
 //! `compile`, which already dropped untrusted `trusted-*` scriptlets, so every
 //! line is parsed with full permissions.
 
+/// Scriptlet and redirect resources (brave/adblock-resources plus uBO
+/// scriptlets, see resources/README.md), built in so callers need not ship
+/// the file.
+pub const RESOURCES: &str = include_str!("../../../resources/resources.json");
+
 use adblock::lists::{FilterSet, ParseOptions, RuleTypes};
 use adblock::resources::{PermissionMask, Resource};
 use serde::Serialize;
@@ -83,8 +88,6 @@ fn sorted(set: HashSet<String>) -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    const RESOURCES: &str = include_str!("../../../resources/resources.json");
 
     fn lines(text: &str) -> Vec<String> {
         text.lines().map(str::to_owned).collect()
