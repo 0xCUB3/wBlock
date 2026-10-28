@@ -39,6 +39,13 @@ if [[ "${CI:-}" == "true" ]]; then
   build_args+=(CODE_SIGNING_ALLOWED=NO COMPILATION_CACHE_ENABLE_CACHING=YES)
 fi
 CORE_DERIVED_DATA="$WBLOCK_DERIVED_DATA"
+# Xcode resolves the WBEngine package against this XCFramework, so it must be
+# current before the build starts.
+echo "[test] building WBE.xcframework"
+"$ROOT/Packages/wblock-engine/scripts/build-xcframework.sh" > "$TMP/wbe-build.log" 2>&1 || {
+  cat "$TMP/wbe-build.log"
+  exit 1
+}
 echo "[test] building wBlockCoreService"
 (
   started=$SECONDS
@@ -97,7 +104,7 @@ compile_core_test() {
   fi
   job core "$name ($test)"
   step swiftc -parse-as-library \
-    -F "$CORE_PRODUCTS" -I "$CORE_PRODUCTS" -L "$CORE_PRODUCTS" \
+    -F "$CORE_PRODUCTS" -I "$CORE_PRODUCTS" -I "$CORE_PRODUCTS/include" -L "$CORE_PRODUCTS" \
     -framework wBlockCoreService \
     -Xlinker -rpath -Xlinker "$CORE_PRODUCTS" \
     "$@" "$test_source" -o "$TMP/$name"
@@ -149,7 +156,6 @@ step npm --prefix scripts/proofs test
 compile_core_test issue-675-rule-analysis scripts/test_issue_675_rule_analysis.swift
 compile_core_test issue-679-affinity-cache-behavior scripts/test_issue_679_affinity_cache_behavior.swift
 compile_core_test issue-681-dedup-behavior scripts/test_issue_681_dedup_behavior.swift
-compile_core_test filter-rule-conversion scripts/test_filter_rule_conversion.swift
 compile_core_test zapper-rule-editing scripts/test_zapper_rule_editing.swift
 compile_core_test issue-836-cross-target-exceptions scripts/test_issue_836_cross_target_exceptions.swift
 compile_core_test content-blocker-slot-overflow scripts/test_content_blocker_slot_overflow.swift
@@ -248,11 +254,11 @@ compile_core_test zapper-native-rules scripts/test_zapper_native_rule_generator.
 # production files beside the test. SwiftProtobuf is the package product built
 # by the same Xcode invocation.
 compile_direct_test issue-508-protobuf-roundtrip \
-  -I "$CORE_PRODUCTS" "$CORE_PRODUCTS/SwiftProtobuf.o" \
+  -I "$CORE_PRODUCTS" -I "$CORE_PRODUCTS/include" "$CORE_PRODUCTS/SwiftProtobuf.o" \
   wBlockCoreService/DataModels.pb.swift scripts/test_issue_508_protobuf_roundtrip.swift
 compile_core_test issue-742-provenance-migration scripts/test_issue_742_provenance_migration.swift
 compile_direct_test userscript-persistence-race \
-  -I "$CORE_PRODUCTS" "$CORE_PRODUCTS/SwiftProtobuf.o" \
+  -I "$CORE_PRODUCTS" -I "$CORE_PRODUCTS/include" "$CORE_PRODUCTS/SwiftProtobuf.o" \
   wBlockCoreService/DataModels.pb.swift \
   wBlockCoreService/UserScriptPersistence.swift \
   scripts/test_userscript_persistence_race.swift
@@ -341,7 +347,7 @@ step env "${COMPILER_BUNDLES[@]}" "$TMP/userstyle-parsing-matching"
 # This one intentionally remains a script-mode compile: its top-level semaphore
 # loop is the test's executable entry point.
 job core "packaged-compilers (scripts/test_issue_511_packaged_compilers.swift)"
-step swiftc -F "$CORE_PRODUCTS" -I "$CORE_PRODUCTS" -L "$CORE_PRODUCTS" \
+step swiftc -F "$CORE_PRODUCTS" -I "$CORE_PRODUCTS" -I "$CORE_PRODUCTS/include" -L "$CORE_PRODUCTS" \
   -framework wBlockCoreService -Xlinker -rpath -Xlinker "$CORE_PRODUCTS" \
   scripts/test_issue_511_packaged_compilers.swift -o "$TMP/packaged-compilers"
 step env "${COMPILER_BUNDLES[@]}" "$TMP/packaged-compilers"

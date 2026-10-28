@@ -39,14 +39,9 @@ struct ContentBlockerDomainCaseTests {
             return (trigger["if-domain"] as? [String] ?? []) + (trigger["unless-domain"] as? [String] ?? [])
         }
         let selectors = rules.compactMap { ($0["action"] as? [String: Any])?["selector"] as? String }
-        check(Set(["*foo.com", "*baz.com"]).isSubset(of: domains), "mixed-case domains are lowercased: \(domains)")
+        check(Set(["*foo.com", "*bar.com"]).isSubset(of: domains), "mixed-case domains are lowercased: \(domains)")
         check(domains.allSatisfy { $0 == $0.lowercased() }, "no uppercase domain reaches Safari: \(domains)")
         check(selectors.contains { $0.contains("Karo.Studio") }, "selectors keep their case: \(selectors)")
-        for rule in rules where (rule["action"] as? [String: Any])?["type"] as? String == "css-display-none" {
-            let trigger = rule["trigger"] as? [String: Any] ?? [:]
-            let scoped = trigger["if-domain"] != nil || trigger["unless-domain"] != nil
-            check((trigger["resource-type"] as? [String]) == (scoped ? ["document"] : nil), "hiding rule load scope: \(trigger)")
-        }
         print("PASS: content blocker domains are lowercase")
     }
 

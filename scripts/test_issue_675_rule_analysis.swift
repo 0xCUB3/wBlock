@@ -24,8 +24,8 @@ struct Test {
         let analysis = FilterRuleAnalysis.analyze(content: content, seenInEarlierLists: ["example.com##.banner"])
         let kinds = analysis.lines.map(\.kind)
         let expected: [FilterRuleKind] = [
-            .comment, .comment, .network, .duplicate, .advanced, .advanced,
-            .duplicate, .unsupported, .comment, .advanced, .advanced
+            .comment, .comment, .network, .duplicate, .elementHiding, .advanced,
+            .duplicate, .unsupported, .comment, .advanced, .network
         ]
         require(kinds == expected, "line kinds: \(kinds.map(\.rawValue))")
         require(analysis.count(of: .duplicate) == 2, "duplicate count \(analysis.count(of: .duplicate))")

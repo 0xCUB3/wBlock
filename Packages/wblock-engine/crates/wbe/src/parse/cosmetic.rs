@@ -493,7 +493,7 @@ fn parse_domains(list: &str) -> Result<DomainList, Reject> {
         }
         match next {
             Some(r) => rest = r,
-            None => return Ok(out),
+            None => return Ok(out.without_unreachable_excludes()),
         }
     }
 }
@@ -1124,8 +1124,8 @@ mod tests {
             ("example.com#@#+js()", "@[h:example.com] js []"),
             ("#@#+js(aopr)", "@js abort-on-property-read[]"),
             (
-                "example.com,~a.com#@#+js(aopr)",
-                "@[h:example.com,~h:a.com] js abort-on-property-read[]",
+                "example.com,~a.example.com#@#+js(aopr)",
+                "@[h:example.com,~h:a.example.com] js abort-on-property-read[]",
             ),
             ("##+js()", "invalid: scriptlet without a name"),
             ("##+js(, x)", "invalid: scriptlet without a name"),

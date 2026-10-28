@@ -73,6 +73,35 @@ impl DomainList {
     pub fn is_empty(&self) -> bool {
         self.include.is_empty() && self.exclude.is_empty()
     }
+
+    /// Drops excludes that no include can match, so `a.com,~b.com` is just
+    /// `a.com`, as uBO matches it. Only hostname lists are judged.
+    pub fn without_unreachable_excludes(mut self) -> Self {
+        let hosts: Option<Vec<&String>> = self
+            .include
+            .iter()
+            .map(|m| match m {
+                DomainMatcher::Hostname(h) => Some(h),
+                _ => None,
+            })
+            .collect();
+        let Some(hosts) = hosts.filter(|h| !h.is_empty()) else {
+            return self;
+        };
+        let reachable = |x: &str| {
+            hosts
+                .iter()
+                .any(|h| x == h.as_str() || x.strip_suffix(h.as_str()).is_some_and(|p| p.ends_with('.')))
+        };
+        let kept = self
+            .exclude
+            .iter()
+            .filter(|m| !matches!(m, DomainMatcher::Hostname(x) if !reachable(x)))
+            .cloned()
+            .collect();
+        self.exclude = kept;
+        self
+    }
 }
 
 // ---------------------------------------------------------------------------

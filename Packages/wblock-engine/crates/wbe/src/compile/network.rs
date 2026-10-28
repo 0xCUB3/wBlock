@@ -111,7 +111,7 @@ fn compile_rule(
         return Err("dnr:method".into());
     }
     if !exception && !r.denyallow.is_empty() {
-        return Err("dnr:denyallow".into());
+        return compile_denyallow(r, v, strict, out);
     }
     let party = party(r.party, exception)?;
     let urls = urls(r, exception)?;
@@ -169,6 +169,43 @@ fn compile_rule(
             }
         }
     }
+    Ok(())
+}
+
+/// uBO blocks what the rule matches except requests to the `$denyallow`
+/// hosts. For a match-all rule scoped to pages that is the block plus one
+/// exception per allowed host under the same options. The exceptions also
+/// lift other lists' blocks of those hosts on those pages (under-blocking);
+/// with a pattern they would lift more, so only match-all rules expand.
+fn compile_denyallow(
+    r: &NetworkRule,
+    v: SafariVersion,
+    strict: &StrictHosts,
+    out: &mut Vec<Tiered>,
+) -> Result<(), String> {
+    if !r.pattern.is_match_all() || r.from.include.is_empty() {
+        return Err("dnr:denyallow".into());
+    }
+    let block = NetworkRule {
+        denyallow: Vec::new(),
+        ..r.clone()
+    };
+    let mut emitted = Vec::new();
+    compile_rule(&block, v, strict, &mut emitted)?;
+    for host in &r.denyallow {
+        let allow = NetworkRule {
+            exception: true,
+            important: false,
+            pattern: Pattern {
+                kind: PatternKind::Hostname,
+                body: format!("{host}^"),
+                right_anchored: false,
+            },
+            ..block.clone()
+        };
+        compile_rule(&allow, v, strict, &mut emitted)?;
+    }
+    out.append(&mut emitted);
     Ok(())
 }
 
@@ -1243,6 +1280,21 @@ mod tests {
         // The three exceptions differ only in options that are ignored, so
         // they collapse to one rule.
         assert_eq!(out.len(), 1);
+    }
+
+    #[test]
+    fn match_all_denyallow_is_a_block_plus_exceptions() {
+        let rule = NetworkRule {
+            types: RT::SCRIPT,
+            party: Party::Third,
+            from: list(&["s.com"], &[]),
+            denyallow: vec!["a.net".into(), "b.com".into()],
+            ..net("*")
+        };
+        let (out, stats) = run(&[rule], V15);
+        assert!(stats.dropped.is_empty());
+        assert_eq!(tiers(&out), [Tier::Block, Tier::Exception, Tier::Exception]);
+        assert!(out.iter().all(|t| t.rule.trigger.if_domain == Some(vec!["*s.com".into()])));
     }
 
     #[test]

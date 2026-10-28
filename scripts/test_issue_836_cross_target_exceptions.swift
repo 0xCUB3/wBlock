@@ -61,7 +61,7 @@ struct Main {
         func actions(_ rules: [[String: Any]], containing fragment: String) -> [String] {
             rules.compactMap { rule in
                 guard let trigger = rule["trigger"] as? [String: Any],
-                      let filter = trigger["url-filter"] as? String, filter.contains(fragment),
+                      let filter = trigger["url-filter"] as? String, filter.lowercased().contains(fragment.lowercased()),
                       let action = rule["action"] as? [String: Any]
                 else { return nil }
                 return action["type"] as? String
