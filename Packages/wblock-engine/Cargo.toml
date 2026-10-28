@@ -1,0 +1,9 @@
+[workspace]
+resolver = "2"
+members = ["crates/wbe"]
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+opt-level = 3

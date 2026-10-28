@@ -1,0 +1,116 @@
+//! Rules to Safari JSON.
+//!
+//! Output order matters: WebKit applies rules top to bottom and
+//! `ignore-previous-rules` only cancels earlier matches. Each sub-compiler
+//! tags its rules with a `Tier`; the final list is a stable sort by tier.
+//! The tier order is the precedence policy proven in
+//! scripts/proofs (block < exception < important < document exception).
+
+mod cosmetic;
+mod network;
+pub mod regex;
+
+use crate::ast::{ParsedLine, Rule, SourceRef};
+use crate::webkit::{SafariVersion, WkRule};
+use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+pub enum Tier {
+    GenericHide = 0,
+    SpecificHide = 1,
+    Block = 2,
+    Exception = 3,
+    ImportantBlock = 4,
+    /// `$document`, `$elemhide`, `$generichide`, ... page-level exceptions.
+    DocumentException = 5,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CompileOptions {
+    pub safari: SafariVersion,
+}
+
+pub struct ListInput<'a> {
+    pub text: &'a str,
+    /// Trusted lists may use `trusted-*` scriptlets (uBO: its own lists and
+    /// the user's rules).
+    pub trusted: bool,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct Stats {
+    pub lines: u64,
+    pub rules: u64,
+    pub native_rules: u64,
+    pub runtime_rules: u64,
+    /// Reason -> count, for rules neither native nor runtime.
+    pub dropped: BTreeMap<String, u64>,
+}
+
+impl Stats {
+    pub fn drop(&mut self, reason: &str) {
+        *self.dropped.entry(reason.to_string()).or_default() += 1;
+    }
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct CompileOutput {
+    pub webkit: Vec<WkRule>,
+    /// Normalized uBO lines for `runtime::Engine`, one per rule.
+    pub runtime: Vec<String>,
+    pub stats: Stats,
+}
+
+pub(crate) struct Tiered {
+    pub tier: Tier,
+    pub rule: WkRule,
+}
+
+pub fn compile(inputs: &[ListInput], opts: &CompileOptions) -> CompileOutput {
+    let mut stats = Stats::default();
+    let mut network_rules = Vec::new();
+    let mut cosmetic_rules = Vec::new();
+    let mut scriptlets = Vec::new();
+    for (list, input) in inputs.iter().enumerate() {
+        for (i, line) in input.text.lines().enumerate() {
+            stats.lines += 1;
+            let normalized = crate::normalize::adguard_to_ubo(line);
+            let source = SourceRef { list: list as u32, line: i as u32 + 1 };
+            match crate::parse_line(&normalized, source) {
+                ParsedLine::Ignored => {}
+                ParsedLine::Unsupported { reason } | ParsedLine::Invalid { reason } => {
+                    stats.drop(&reason)
+                }
+                ParsedLine::Rule(rule) => {
+                    stats.rules += 1;
+                    match rule {
+                        Rule::Network(r) => network_rules.push(r),
+                        Rule::Cosmetic(r) => cosmetic_rules.push(r),
+                        Rule::Scriptlet(r) => {
+                            if !input.trusted && r.name.starts_with("trusted-") {
+                                stats.drop("untrusted trusted-* scriptlet");
+                            } else {
+                                scriptlets.push(r)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    let mut tiered = Vec::new();
+    let mut runtime = Vec::new();
+    network::compile(&network_rules, opts, &mut tiered, &mut stats);
+    cosmetic::compile(&cosmetic_rules, &network_rules, opts, &mut tiered, &mut runtime, &mut stats);
+    for s in &scriptlets {
+        runtime.push(s.raw.clone());
+    }
+    stats.runtime_rules = runtime.len() as u64;
+
+    tiered.sort_by_key(|t| t.tier);
+    let webkit: Vec<WkRule> = tiered.into_iter().map(|t| t.rule).collect();
+    stats.native_rules = webkit.len() as u64;
+    CompileOutput { webkit, runtime, stats }
+}
