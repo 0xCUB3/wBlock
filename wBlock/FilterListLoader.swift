@@ -637,6 +637,13 @@ class FilterListLoader {
                     "This list covers websites for Norway, Denmark, Iceland, Danish territories, and the Sami indigenous population.",
                 languages: ["nb", "nn", "da", "is", "fo", "kl", "se", "smn", "sma", "smj", "sms", "sje", "sju", "sjd"], trustLevel: "high"),
             FilterList(
+                id: UUID(), name: "Persian Blocker",
+                url: URL(
+                    string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/235_optimized.txt"
+                )!, category: .foreign,
+                description: "Additional filter list for websites in Persian.",
+                languages: ["fa"], trustLevel: "high"),
+            FilterList(
                 id: UUID(), name: "AdGuard Polish filter",
                 url: URL(
                     string:
