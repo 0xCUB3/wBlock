@@ -2,6 +2,7 @@
 //! ABP) filter lists and compiles them to Safari content-blocker JSON, plus
 //! the leftover rules the wBlock Scripts extension applies per page.
 
+pub mod apply;
 pub mod ast;
 pub mod compile;
 pub mod normalize;

@@ -12,7 +12,7 @@ mod cosmetic;
 mod network;
 pub mod regex;
 
-use crate::ast::{ParsedLine, Rule, SourceRef};
+use crate::ast::{CosmeticRule, NetworkRule, ParsedLine, Rule, ScriptletRule, SourceRef};
 use crate::webkit::{SafariVersion, WkRule};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -73,47 +73,64 @@ pub(crate) struct Tiered {
     pub rule: WkRule,
 }
 
-pub fn compile(inputs: &[ListInput], opts: &CompileOptions) -> CompileOutput {
-    let mut stats = Stats::default();
-    let mut network_rules = Vec::new();
-    let mut cosmetic_rules = Vec::new();
-    let mut scriptlets = Vec::new();
-    for (list, input) in inputs.iter().enumerate() {
-        for (i, line) in input.text.lines().enumerate() {
-            stats.lines += 1;
-            let normalized = crate::normalize::adguard_to_ubo(line);
-            let source = SourceRef {
-                list: list as u32,
-                line: i as u32 + 1,
-            };
-            match crate::parse_line(&normalized, source) {
-                ParsedLine::Ignored => {}
-                ParsedLine::Unsupported { reason } | ParsedLine::Invalid { reason } => {
-                    stats.drop(&reason)
-                }
-                ParsedLine::Rule(rule) => {
-                    stats.rules += 1;
-                    match rule {
-                        Rule::Network(r) => network_rules.push(r),
-                        Rule::Cosmetic(r) => cosmetic_rules.push(r),
-                        Rule::Scriptlet(r) => {
-                            if !input.trusted && r.name.starts_with("trusted-") {
-                                stats.drop("untrusted trusted-* scriptlet");
-                            } else {
-                                scriptlets.push(r)
-                            }
-                        }
-                    }
-                }
+/// Parsed rules, split by kind, ready for `compile_rules`.
+#[derive(Debug, Clone, Default)]
+pub struct RuleSet {
+    pub network: Vec<NetworkRule>,
+    pub cosmetic: Vec<CosmeticRule>,
+    pub scriptlets: Vec<ScriptletRule>,
+}
+
+impl RuleSet {
+    pub fn push(&mut self, rule: Rule) {
+        match rule {
+            Rule::Network(r) => self.network.push(r),
+            Rule::Cosmetic(r) => self.cosmetic.push(r),
+            Rule::Scriptlet(r) => self.scriptlets.push(r),
+        }
+    }
+}
+
+/// Parses one list. Untrusted lists lose `trusted-*` scriptlets, as in uBO.
+pub fn parse_list(text: &str, list: u32, trusted: bool, stats: &mut Stats) -> Vec<Rule> {
+    let mut rules = Vec::new();
+    for (i, line) in text.lines().enumerate() {
+        stats.lines += 1;
+        let normalized = crate::normalize::adguard_to_ubo(line);
+        let source = SourceRef { list, line: i as u32 + 1 };
+        match crate::parse_line(&normalized, source) {
+            ParsedLine::Ignored => {}
+            ParsedLine::Unsupported { reason } | ParsedLine::Invalid { reason } => stats.drop(&reason),
+            ParsedLine::Rule(Rule::Scriptlet(r)) if !trusted && r.name.starts_with("trusted-") => {
+                stats.drop("untrusted trusted-* scriptlet")
+            }
+            ParsedLine::Rule(rule) => {
+                stats.rules += 1;
+                rules.push(rule);
             }
         }
     }
+    rules
+}
 
+pub fn compile(inputs: &[ListInput], opts: &CompileOptions) -> CompileOutput {
+    let mut stats = Stats::default();
+    let mut set = RuleSet::default();
+    for (list, input) in inputs.iter().enumerate() {
+        for rule in parse_list(input.text, list as u32, input.trusted, &mut stats) {
+            set.push(rule);
+        }
+    }
+    compile_rules(&set, opts, stats)
+}
+
+/// Compiles parsed rules. `stats` carries what parsing counted.
+pub fn compile_rules(set: &RuleSet, opts: &CompileOptions, mut stats: Stats) -> CompileOutput {
     let mut tiered = Vec::new();
     let mut runtime = Vec::new();
-    network::compile(&network_rules, opts, &mut tiered, &mut stats);
-    cosmetic::compile(&cosmetic_rules, opts, &mut tiered, &mut runtime, &mut stats);
-    for s in &scriptlets {
+    network::compile(&set.network, opts, &mut tiered, &mut stats);
+    cosmetic::compile(&set.cosmetic, opts, &mut tiered, &mut runtime, &mut stats);
+    for s in &set.scriptlets {
         runtime.push(s.raw.clone());
     }
     stats.runtime_rules = runtime.len() as u64;
