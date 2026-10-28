@@ -99,6 +99,11 @@ fn compile_rule(
         };
     }
     let exception = r.exception;
+    // `@@...$cname` only exempts a request from CNAME uncloaking; it never
+    // allows one (static-net-filtering.js), so it has nothing to lift here.
+    if exception && r.runtime_only_options.iter().any(|o| o == "cname") {
+        return Err("dnr:cname-exception".into());
+    }
     if !exception && !r.runtime_only_options.is_empty() {
         return Err("dnr:runtime-option".into());
     }
@@ -266,7 +271,9 @@ fn host_only(p: &Pattern) -> Option<String> {
         .find(|c: char| !(c.is_ascii_alphanumeric() || c == '-' || c == '.'))
         .unwrap_or(body.len());
     let (host, rest) = body.split_at(end);
-    (!host.is_empty() && (rest.is_empty() || rest == "^")).then(|| host.to_string())
+    // A body cut at `*` (`||google.*^`) leaves a trailing dot: not a host.
+    (!host.is_empty() && !host.ends_with('.') && (rest.is_empty() || rest == "^"))
+        .then(|| host.to_string())
 }
 
 fn party(p: Party, exception: bool) -> Result<Option<WkLoadType>, String> {
@@ -1236,6 +1243,17 @@ mod tests {
         // The three exceptions differ only in options that are ignored, so
         // they collapse to one rule.
         assert_eq!(out.len(), 1);
+    }
+
+    #[test]
+    fn cname_exception_lifts_nothing() {
+        let cname = NetworkRule {
+            runtime_only_options: vec!["cname".into()],
+            ..exc("@@||google.*^")
+        };
+        let (out, stats) = run(&[net("||mail-ads.google.com^"), cname], V15);
+        assert_eq!(out.len(), 1);
+        assert_eq!(stats.dropped.get("dnr:cname-exception"), Some(&1));
     }
 
     #[test]

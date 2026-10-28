@@ -258,7 +258,7 @@ fn parse_rule(line: &str, source: SourceRef) -> Result<NetworkRule, ParsedLine> 
     if let Some(host) = fast_hosts(line) {
         let pattern = Pattern {
             kind: PatternKind::Hostname,
-            body: host.into(),
+            body: format!("{host}^"),
             right_anchored: false,
         };
         return Ok(NetworkRule {
@@ -296,6 +296,8 @@ fn parse_rule(line: &str, source: SourceRef) -> Result<NetworkRule, ParsedLine> 
 
 /// Fast path of uBO `parse` for `127.0.0.1 host` and `0.0.0.0 host` lines.
 /// Unlike the general hosts path it does not check for localhost-style names.
+/// Hosts entries take the body of `||host^`, so `$badfilter` and the compiler
+/// treat them exactly like that filter (uBO compiles both the same way).
 fn fast_hosts(line: &str) -> Option<&str> {
     let host = line
         .strip_prefix("127.0.0.1 ")
@@ -860,7 +862,7 @@ fn parse_pattern(
             }
             return Ok(Pattern {
                 kind: PatternKind::Hostname,
-                body: host.into(),
+                body: format!("{host}^"),
                 right_anchored: false,
             });
         }
@@ -1737,7 +1739,7 @@ mod tests {
         ("||example.com/ü", "||example.com/%c3%bc"),
         ("*$image", "* $image"),
         ("@@$~document", "@@* $~doc"),
-        ("foo bar", "||bar"),
+        ("foo bar", "||bar^"),
         ("||foo bar^", "invalid: pattern contains whitespace"),
         ("*", "invalid: pattern is too short without options"),
         ("@@", "invalid: pattern is too short without options"),
@@ -1755,10 +1757,10 @@ mod tests {
         ("/a$image/", "invalid: trailing option separator"),
         ("||example.com^$match-case", "invalid: $match-case is only valid on regular expression patterns"),
         // Hosts-file lines
-        ("0.0.0.0 ads.example.com", "||ads.example.com"),
-        ("127.0.0.1 ads.example.com", "||ads.example.com"),
-        ("::1 ads.example.com", "||ads.example.com"),
-        ("0.0.0.0 ads.example.com # comment", "||ads.example.com"),
+        ("0.0.0.0 ads.example.com", "||ads.example.com^"),
+        ("127.0.0.1 ads.example.com", "||ads.example.com^"),
+        ("::1 ads.example.com", "||ads.example.com^"),
+        ("0.0.0.0 ads.example.com # comment", "||ads.example.com^"),
         ("ads.example.com # comment", "||ads.example.com"),
         ("127.0.0.1 localhost", "ignored"),
         ("::1 localhost", "ignored"),
@@ -1766,7 +1768,7 @@ mod tests {
         ("255.255.255.255 broadcasthost", "ignored"),
         ("127.0.0.1 local", "ignored"),
         ("0.0.0.0 Ads.example.com", "ignored"),
-        ("127.0.0.1 localhost.localdomain", "||localhost.localdomain"),
+        ("127.0.0.1 localhost.localdomain", "||localhost.localdomain^"),
         ("# just a comment", "ignored"),
         // Request types and aliases
         ("||example.com^$script", "||example.com^ $script"),
