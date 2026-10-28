@@ -1,0 +1,13 @@
+{
+  "name": "wblock-engine-js",
+  "private": true,
+  "description": "Dev-only tests and benchmarks for procedural.js",
+  "scripts": {
+    "test": "node --test",
+    "bench": "node bench/bench.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0",
+    "jsdom": "^26.0.0"
+  }
+}
