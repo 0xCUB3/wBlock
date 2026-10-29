@@ -209,6 +209,7 @@ struct ContentView: View {
                 filterManager: filterManager,
                 userScriptManager: userScriptManager,
                 dataManager: dataManager,
+                applyProgress: filterManager.applyProgressViewModel,
                 showingAddFilterSheet: $showingAddFilterSheet,
                 scenePhase: scenePhase
             ))
@@ -304,15 +305,13 @@ struct ContentView: View {
         .alert("Disable Essential Filter?", isPresented: Binding(
             get: { pendingEssentialFilter != nil },
             set: { if !$0 { pendingEssentialFilter = nil } }
-        )) {
+        ), presenting: pendingEssentialFilter) { filter in
             Button("Cancel", role: .cancel) { pendingEssentialFilter = nil }
             Button("Disable", role: .destructive) {
-                if let filter = pendingEssentialFilter {
-                    filterManager.setFilterListSelection(id: filter.id, selected: false)
-                }
+                filterManager.setFilterListSelection(id: filter.id, selected: false)
                 pendingEssentialFilter = nil
             }
-        } message: {
+        } message: { _ in
             Text("This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage.")
         }
         .riskyFilterAlert($pendingRiskyEnable)
@@ -398,11 +397,7 @@ struct ContentView: View {
     private var filtersView: some View {
         CompatibleNavigationStack(requiresNavigationView: false) {
             nativeFiltersListView
-                .safeAreaInset(edge: .top) {
-                    if filterManager.isBlockingPaused {
-                        pauseBlockingBanner
-                    }
-                }
+                .modifier(topBanners)
             #if os(iOS)
                 .navigationBarTitleDisplayMode(.inline)
             #endif
@@ -495,11 +490,7 @@ struct ContentView: View {
                 },
                 applyButton: AnyView(applyChangesToolbarButton)
             )
-                .safeAreaInset(edge: .top) {
-                    if filterManager.isBlockingPaused {
-                        pauseBlockingBanner
-                    }
-                }
+                .modifier(topBanners)
                 #if os(iOS)
                     .navigationBarTitleDisplayMode(.inline)
                 #endif
@@ -508,6 +499,17 @@ struct ContentView: View {
 
     private var settingsView: some View {
         SettingsView(filterManager: filterManager)
+    }
+
+    private var topBanners: some ViewModifier {
+        ApplyProgressBar(
+            viewModel: filterManager.applyProgressViewModel,
+            isRunVisible: filterManager.showingApplyProgressSheet
+        ) {
+            if filterManager.isBlockingPaused {
+                pauseBlockingBanner
+            }
+        }
     }
 
     @ViewBuilder
@@ -711,7 +713,7 @@ struct ContentView: View {
                 downloadingFilterIDs.remove(filter.id)
                 if succeeded, let current {
                     downloadedFilterIDs.insert(filter.id)
-                    // Get also enables the list after its content is safely persisted.
+                    // The switch enables the list only after its content is persisted.
                     filterManager.setFilterListSelection(id: current.id, selected: true)
                 }
             }
@@ -930,12 +932,7 @@ struct FilterRowView: View {
                 .infoPopoverAnchor(filter.id)
             #endif
             if filter.isRemoteURL && (isDownloading || !isDownloaded) {
-                // A switch is meaningless until the list exists, so the row
-                // offers Get in its place.
-                ContentDownloadControl(
-                    isDownloaded: isDownloaded, isDownloading: isDownloading,
-                    name: text.name, action: onDownload
-                )
+                ContentDownloadControl(isDownloading: isDownloading, name: text.name, action: onDownload)
             } else {
                 Toggle(
                     "",
@@ -980,21 +977,6 @@ struct FilterRowView: View {
                     #if os(iOS)
                     RowDisclosureChevron()
                     #endif
-                    if filter.isInlineUserList {
-                        Text("Local Import")
-                            .font(.caption2.weight(.medium))
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.secondary.opacity(0.15), in: Capsule())
-                            .foregroundStyle(.secondary)
-                    } else if filter.isCustom {
-                        Text("Custom")
-                            .font(.caption2.weight(.medium))
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.secondary.opacity(0.15), in: Capsule())
-                            .foregroundStyle(.secondary)
-                    }
                 }
                 .font(.body)
 
@@ -1068,6 +1050,7 @@ struct ContentModifiers: ViewModifier {
     @ObservedObject var filterManager: AppFilterManager
     @ObservedObject var userScriptManager: UserScriptManager
     @ObservedObject var dataManager: ProtobufDataManager
+    @ObservedObject var applyProgress: ApplyChangesViewModel
     @Binding var showingAddFilterSheet: Bool
     let scenePhase: ScenePhase
 
@@ -1089,8 +1072,24 @@ struct ContentModifiers: ViewModifier {
             && (filterManager.showingNoUpdatesAlert || (filterManager.isLoading && !filterManager.suppressBlockingOverlay))
     }
 
-    private var progressSheetPresented: Bool {
+    private var applyRunVisible: Bool {
         onboardingSettled && filterManager.showingApplyProgressSheet
+    }
+
+    /// A running apply shows a banner under the toolbar instead of a sheet
+    /// (#1051). The sheet is left for picking updates and for runs that
+    /// failed or finished with a warning.
+    private var progressSheetPresented: Bool {
+        guard applyRunVisible else { return false }
+        switch applyProgress.state.mode {
+        case .progress: return false
+        case .result: return resultNeedsAttention
+        case .review, .failed: return true
+        }
+    }
+
+    private var resultNeedsAttention: Bool {
+        applyProgress.state.resultNeedsAttention || !filterManager.failedReloadTargets.isEmpty
     }
 
     func body(content: Content) -> some View {
@@ -1112,6 +1111,11 @@ struct ContentModifiers: ViewModifier {
                     viewModel: filterManager.applyProgressViewModel,
                     isPresented: $filterManager.showingApplyProgressSheet
                 )
+            }
+            .onChangeCompat(of: applyProgress.state.mode) { _, mode in
+                if mode == .result && !resultNeedsAttention {
+                    filterManager.showingApplyProgressSheet = false
+                }
             }
             .overlay {
                 if checkCardVisible {
@@ -2454,14 +2458,14 @@ private extension View {
         alert(pending.wrappedValue?.title ?? "", isPresented: Binding(
             get: { pending.wrappedValue != nil },
             set: { if !$0 { pending.wrappedValue = nil } }
-        )) {
+        ), presenting: pending.wrappedValue) { filter in
             Button("Cancel", role: .cancel) { pending.wrappedValue = nil }
             Button("Enable") {
-                pending.wrappedValue?.enable()
+                filter.enable()
                 pending.wrappedValue = nil
             }
-        } message: {
-            if let message = pending.wrappedValue?.message { Text(message) }
+        } message: { filter in
+            Text(filter.message)
         }
     }
 }

@@ -95,6 +95,8 @@
 "Additional filter list for websites in Hebrew." = "Dodatkowa lista filtrów dla stron internetowych w języku hebrajskim.";
 "Additional filter list for websites in Hindi, Tamil and other Dravidian and Indic languages." = "Dodatkowa lista filtrów dla stron internetowych w językach hindi, tamilskim i innych językach drawidyjskich i indyjskich.";
 "Additional filter list for websites in Icelandic." = "Dodatkowa lista filtrów dla stron internetowych w języku islandzkim.";
+"Persian Blocker" = "Persian Blocker";
+"Additional filter list for websites in Persian." = "Dodatkowa lista filtrów dla stron internetowych w języku perskim.";
 "Additional filter list for websites in Latvian." = "Dodatkowa lista filtrów dla stron internetowych w języku łotewskim.";
 "Additional filter list for websites in Lithuanian." = "Dodatkowa lista filtrów dla stron internetowych w języku litewskim.";
 "Additional filter list for websites in Slovenian." = "Dodatkowa lista filtrów dla stron internetowych w języku słoweńskim.";
@@ -174,7 +176,7 @@
 "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "Safari nie może stosować reguł inline-script z tej listy. Włącz Bypass Paywalls Clean w skryptach użytkownika dla obsługiwanych stron anglojęzycznych.";
 "Blocks pop-up ads on web pages." = "Blokuje reklamy wyskakujące na stronach internetowych.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "Blokuje promocyjne wyskakujące okienka, zapisy do biuletynu i prośby o powiadomienia.";
-"Hides share and follow buttons on any site, including many that AdGuard Social Media Filter misses." = "Ukrywa przyciski udostępniania i obserwowania na każdej stronie, w tym wiele pomijanych przez AdGuard Social Media Filter.";
+"Hides social media content and icons. Blocks social widgets and scripts, including many that AdGuard Social Media Filter misses." = "Ukrywa treści i ikony mediów społecznościowych. Blokuje widżety i skrypty społecznościowe, w tym wiele pomijanych przez AdGuard Social Media Filter.";
 "Blocks third-party widgets, chat assistants, and support widgets." = "Blokuje widżety innych firm, asystentów czatu i widżety wsparcia.";
 "Building combined filter engine..." = "Budowanie połączonego silnika filtrów...";
 "Building filter engine" = "Budowanie silnika filtrów";
@@ -203,7 +205,6 @@
 "Conditional check failed" = "Sprawdzanie warunkowe nie powiodło się";
 "Content filtering" = "Filtrowanie treści";
 "Continue" = "Kontynuuj";
-"Conversion" = "Konwersja";
 "Conversion phase summary" = "Podsumowanie fazy konwersji";
 "Converted rules, but one or more extensions failed to reload after 5 attempts." = "Reguły zostały przekonwertowane, ale jedno lub więcej rozszerzeń nie zostało ponownie załadowanych po 5 próbach.";
 "Converting %@…" = "Konwertowanie %@…";
@@ -447,7 +448,7 @@
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "Dla %@ dostępne są tylko listy utrzymywane przez społeczność. Włącz je, jeśli Ci to odpowiada.";
 "Only pasted user lists can be edited." = "Można edytować tylko wklejone listy użytkownika.";
 "Open Login Items" = "Otwórz elementy logowania";
-"Open Safari Settings" = "Otwórz ustawienia Safari";
+"Open Safari Extension Settings" = "Otwórz ustawienia rozszerzeń Safari";
 "Other" = "Inne";
 "Overdue catch-up" = "Spóźnione wyrównanie";
 "Paste" = "Wklej";
@@ -482,7 +483,6 @@
 "Regional filters: %@" = "Filtry regionalne: %@";
 "Registered" = "Zarejestrowano";
 "Registration: %@" = "Rejestracja: %@";
-"Reload" = "Przeładuj";
 "Reload phase had failures; continuing with advanced rules processing" = "Faza przeładowania miała błędy; kontynuacja przetwarzania reguł zaawansowanych";
 "Reload phase summary" = "Podsumowanie fazy przeładowania";
 "Reloading Extensions" = "Ponowne ładowanie rozszerzeń";
@@ -764,8 +764,6 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Report Issues" = "Zgłoś problem";
 "Contact Us" = "Kontakt";
 "Version" = "Wersja";
-"Developer" = "Deweloper";
-"GPL-3.0 License" = "Licencja GPL-3.0";
 "Privacy Policy" = "Polityka prywatności";
 
 /* Issue 508 UI */
@@ -916,7 +914,6 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 
 "Edit Info" = "Edytuj informacje";
 
-"Get" = "Pobierz";
 "Autoplay" = "Autoodtwarzanie";
 "Autoplay off" = "Autoodtwarzanie wyłączone";
 "Userscripts off" = "Skrypty użytkownika wyłączone";
@@ -932,9 +929,7 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "Filtry eksperymentalne testują nowe reguły, zanim trafią do głównych list, i mogą psuć strony internetowe. Włącz je tylko, jeśli chcesz wyszukiwać i zgłaszać błędy.";
 "Enable HaGeZi Multi Pro Mini?" = "Włączyć HaGeZi Multi Pro Mini?";
 "HaGeZi Multi Pro Mini is better suited to a DNS blocker than Safari. Its many domain rules can consume a large share of Safari’s limited rule capacity, leaving less room for browser-focused filters, and may break websites by blocking services they need. We recommend leaving it off and using wBlock’s recommended filter lists instead." = "HaGeZi Multi Pro Mini lepiej nadaje się do blokowania DNS niż do Safari. Liczne reguły domen mogą zajmować dużą część ograniczonej pojemności Safari, pozostawiając mniej miejsca na filtry przeznaczone do przeglądarek, oraz zakłócać działanie witryn przez blokowanie potrzebnych im usług. Zalecamy pozostawienie tej listy wyłączonej i korzystanie z list filtrów polecanych przez wBlock.";
-"Reset Ordering" = "Zresetuj kolejność";
 "Reset" = "Zresetuj";
-"Return built-in lists and userscripts to their default categories and order, and move custom ones to Other." = "Przywraca wbudowane listy i skrypty użytkownika do domyślnych kategorii i kolejności, a własne przenosi do kategorii Inne.";
 "No sites selected. Cosmetic filtering will not apply." = "Nie wybrano witryn. Filtrowanie kosmetyczne nie będzie stosowane.";
 "Cosmetic filtering will not apply on these sites. Network blocking still applies." = "Filtrowanie kosmetyczne nie będzie stosowane na tych witrynach. Blokowanie sieciowe nadal działa.";
 "When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device." = "Po włączeniu stany włączenia skryptów użytkownika są synchronizowane przez iCloud. Wyłącz tę opcję, aby zachować te ustawienia tylko na tym urządzeniu.";
@@ -1064,3 +1059,5 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "PersianBlockerNG" = "PersianBlockerNG";
 "RU AdList" = "RU AdList";
 "RU AdList: Counters" = "RU AdList: Counters";
+"Custom URL" = "Własny URL";
+"Links" = "Linki";

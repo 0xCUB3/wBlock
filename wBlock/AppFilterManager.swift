@@ -81,7 +81,6 @@ class AppFilterManager: ObservableObject {
     @Published private(set) var isAutoUpdateRunning = false
     /// False when the run started while the sheet showed something else.
     private var autoUpdateOwnsProgressSheet = false
-    var exclusiveApplyTask: Task<Void, Never>?
     /// Set only after the current apply has reached a successful terminal state.
     var lastApplySucceeded = false
 

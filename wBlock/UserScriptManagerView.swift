@@ -302,15 +302,14 @@ struct UserScriptManagerView: View {
         .alert("Enable Beta Userscript?", isPresented: Binding(
             get: { pendingBetaEnableScript != nil },
             set: { newValue in if !newValue { pendingBetaEnableScript = nil } }
-        )) {
+        ), presenting: pendingBetaEnableScript) { script in
             Button("Cancel", role: .cancel) { pendingBetaEnableScript = nil }
             Button("Enable") {
-                guard let script = pendingBetaEnableScript else { return }
                 pendingBetaEnableScript = nil
                 BetaUserscriptWarning.acknowledge()
                 applyEnabledState(for: script, newValue: true)
             }
-        } message: {
+        } message: { _ in
             Text("Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time.")
         }
     }
@@ -644,8 +643,8 @@ struct UserScriptManagerView: View {
     }
 
     /// Fetches a remote script's content without changing its enabled state (#665).
-    /// Get and the switch both enable through here, so Get turns the script
-    /// on as it does for filter lists, and a beta warns before downloading (#941).
+    /// Every switch enables through here, so a missing script downloads and
+    /// turns on as filter lists do, and a beta warns before downloading (#941).
     private func requestEnable(_ script: UserScriptListItem) {
         guard !downloadingScriptIDs.contains(script.id) else { return }
         if script.isBeta, !BetaUserscriptWarning.hasAcknowledged {
@@ -705,11 +704,6 @@ struct UserScriptManagerView: View {
                         .fontWeight(.medium)
                         .foregroundStyle(.primary)
                         .fixedSize(horizontal: false, vertical: true)
-                    if script.isLocal {
-                        Badge(text: "Local Import", color: .blue)
-                    } else if script.isCustom {
-                        Badge(text: "Custom", color: .blue)
-                    }
                     if script.isBeta {
                         Badge(text: "Beta", color: .orange)
                     }
@@ -813,10 +807,7 @@ struct UserScriptManagerView: View {
             #endif
 
             if !script.isLocal && (downloadingScriptIDs.contains(script.id) || !script.isDownloaded) {
-                // A switch is meaningless until the script exists, so the
-                // row offers Get in its place.
                 ContentDownloadControl(
-                    isDownloaded: script.isDownloaded,
                     isDownloading: downloadingScriptIDs.contains(script.id),
                     name: script.name, action: { requestEnable(script) }
                 )
@@ -949,13 +940,15 @@ private struct ScriptStatusBadgesView: View {
     let script: UserScript
     let isDownloaded: Bool
     let isBuiltIn: Bool
+    let isRecommended: Bool
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 ForEach(Array(InfoBadgeSupport.userScriptBadges(
                     script,
                     isDownloaded: isDownloaded,
-                    isBuiltIn: isBuiltIn
+                    isBuiltIn: isBuiltIn,
+                    isRecommended: isRecommended
                 ).enumerated()), id: \.offset) { _, badge in
                     InfoBadgeView(kind: badge)
                 }
@@ -1114,6 +1107,7 @@ struct UserScriptSettingsView: View {
 
 
 struct UserScriptInfoSidebar: View {
+    let isRecommended: Bool
     let script: UserScript
     let contentLength: Int
     let isDownloaded: Bool
@@ -1135,7 +1129,7 @@ struct UserScriptInfoSidebar: View {
                         .textSelection(.enabled)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                ScriptStatusBadgesView(script: script, isDownloaded: isDownloaded, isBuiltIn: isBuiltIn)
+                ScriptStatusBadgesView(script: script, isDownloaded: isDownloaded, isBuiltIn: isBuiltIn, isRecommended: isRecommended)
             }
             InfoMetadataList {
                 InfoMetadataRow(title: "Type", value: NSLocalizedString(
@@ -1194,6 +1188,7 @@ struct UserScriptInfoView: View {
                     } onDismiss: { dismiss() }
                 } content: {
                     UserScriptInfoSidebar(
+                        isRecommended: userScriptManager.isEnabledByDefault(script),
                         script: script,
                         contentLength: script.content.utf8.count,
                         isDownloaded: userScriptManager.hasDownloadedContent(for: script),

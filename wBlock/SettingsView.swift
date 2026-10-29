@@ -9,9 +9,7 @@ struct SettingsView: View {
     @ObservedObject private var syncManager = CloudSyncManager.shared
     private static let autoUpdateIntervalPresets: [Double] = [1, 2, 4, 6, 12, 24, 48, 72, 168]
     static let reportIssueURL = URL(string: "https://github.com/0xCUB3/wBlock/issues/new/choose")!
-    private static let developerURL = URL(string: "https://github.com/0xCUB3")!
     static let sourceCodeURL = URL(string: "https://github.com/0xCUB3/wBlock")!
-    private static let licenseURL = URL(string: "https://www.gnu.org/licenses/gpl-3.0.html")!
     private static let privacyPolicyURL = URL(string: "https://github.com/0xCUB3/wBlock/blob/main/PRIVACY_POLICY.md")!
     static let faqURL = URL(string: "https://github.com/0xCUB3/wBlock#faq")!
     static let contactURL = URL(string: "https://discord.gg/5kmuEbwsut")!
@@ -25,7 +23,6 @@ struct SettingsView: View {
     @State private var launchAgentNeedsApproval = false
     #endif
     @State private var showingRestartConfirmation = false
-    @State private var showingResetOrderingConfirmation = false
     @State private var isRestarting = false
     @State private var showingImportDialog = false
     @State private var showingRestoreBackupConfirmation = false
@@ -74,12 +71,6 @@ struct SettingsView: View {
             await MainActor.run { startTimer() }
         }
         .onDisappear { stopTimer() }
-        .alert("Reset Ordering", isPresented: $showingResetOrderingConfirmation) {
-            Button("Cancel", role: .cancel) {}
-            Button("Reset", role: .destructive, action: resetOrdering)
-        } message: {
-            Text("Return built-in lists and userscripts to their default categories and order, and move custom ones to Other.")
-        }
         .alert("Restart Onboarding?", isPresented: $showingRestartConfirmation) {
             Button("Cancel", role: .cancel) {}
             Button("Restart", role: .destructive) { restartOnboarding() }
@@ -409,7 +400,7 @@ struct SettingsView: View {
         Button {
             SafariExtensionSetupSupport.openScriptsExtensionSettings()
         } label: {
-            SettingsRowLabel("Open Safari Settings", systemImage: "gear", accessory: .app)
+            SettingsRowLabel("Open Safari Extension Settings", systemImage: "gear", accessory: .app)
         }
         #if os(macOS)
         .buttonStyle(.plain)
@@ -771,26 +762,22 @@ struct SettingsView: View {
                         as? String ?? "Unknown"
                 )
             }
-            Link(destination: Self.faqURL) {
-                SettingsRowLabel("FAQ", systemImage: "questionmark.circle", accessory: .external)
-            }
-            Link(destination: Self.reportIssueURL) {
-                SettingsRowLabel("Report Issues", systemImage: "exclamationmark.triangle", accessory: .external)
-            }
-            Link(destination: Self.contactURL) {
-                SettingsRowLabel("Contact Us", systemImage: "bubble.left", accessory: .external)
-            }
-            Link(destination: Self.developerURL) {
-                SettingsRowLabel("Developer", systemImage: "person", accessory: .external)
-            }
-            Link(destination: Self.sourceCodeURL) {
-                SettingsRowLabel("Source Code", systemImage: "chevron.left.forwardslash.chevron.right", accessory: .external)
-            }
-            Link(destination: Self.licenseURL) {
-                SettingsRowLabel("GPL-3.0 License", systemImage: "doc.text", accessory: .external)
-            }
-            Link(destination: Self.privacyPolicyURL) {
-                SettingsRowLabel("Privacy Policy", systemImage: "hand.raised", accessory: .external)
+            DisclosureGroup("Links") {
+                Link(destination: Self.faqURL) {
+                    SettingsRowLabel("FAQ", systemImage: "questionmark.circle", accessory: .external)
+                }
+                Link(destination: Self.reportIssueURL) {
+                    SettingsRowLabel("Report Issues", systemImage: "exclamationmark.triangle", accessory: .external)
+                }
+                Link(destination: Self.contactURL) {
+                    SettingsRowLabel("Contact Us", systemImage: "bubble.left", accessory: .external)
+                }
+                Link(destination: Self.sourceCodeURL) {
+                    SettingsRowLabel("Source Code", systemImage: "chevron.left.forwardslash.chevron.right", accessory: .external)
+                }
+                Link(destination: Self.privacyPolicyURL) {
+                    SettingsRowLabel("Privacy Policy", systemImage: "hand.raised", accessory: .external)
+                }
             }
         } header: {
             sectionHeader(.about)
@@ -801,16 +788,6 @@ struct SettingsView: View {
     private var dangerZoneSection: some View {
         Section {
             #if os(macOS)
-            CompatibleLabeledContent {
-                Button("Reset", role: .destructive) { showingResetOrderingConfirmation = true }
-                    .buttonStyle(.bordered)
-                    .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] }
-            } label: {
-                rowLabel(
-                    "Reset Ordering",
-                    detail: Text("Return built-in lists and userscripts to their default categories and order, and move custom ones to Other.")
-                )
-            }
             CompatibleLabeledContent {
                 Button(isRestarting ? "Restarting…" : "Restart", role: .destructive) {
                     showingRestartConfirmation = true
@@ -825,17 +802,6 @@ struct SettingsView: View {
                 )
             }
             #else
-            Button { showingResetOrderingConfirmation = true } label: {
-                Label {
-                    rowLabel(
-                        "Reset Ordering",
-                        detail: Text("Return built-in lists and userscripts to their default categories and order, and move custom ones to Other.")
-                    )
-                } icon: {
-                    Image(systemName: "arrow.up.arrow.down")
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
             Button(role: .destructive) {
                 showingRestartConfirmation = true
             } label: {
@@ -1067,12 +1033,6 @@ extension SettingsView {
     }
 
     // MARK: - User Defaults / Onboarding
-
-    private func resetOrdering() {
-        ListDisplayOrder.reset()
-        filterManager.resetCategories()
-        Task { await UserScriptManager.shared.resetCategories() }
-    }
 
     private func restartOnboarding() {
         guard !isRestarting else { return }

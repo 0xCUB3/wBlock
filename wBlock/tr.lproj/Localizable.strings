@@ -95,6 +95,8 @@
 "Additional filter list for websites in Hebrew." = "İbranice siteler için ek filtre listesi.";
 "Additional filter list for websites in Hindi, Tamil and other Dravidian and Indic languages." = "Hintçe, Tamilce ve diğer Dravid dilleri ile Hint dillerindeki siteler için ek filtre listesi.";
 "Additional filter list for websites in Icelandic." = "İzlandaca siteler için ek filtre listesi.";
+"Persian Blocker" = "Persian Blocker";
+"Additional filter list for websites in Persian." = "Farsça siteler için ek filtre listesi.";
 "Additional filter list for websites in Latvian." = "Letonca siteler için ek filtre listesi.";
 "Additional filter list for websites in Lithuanian." = "Litvanca siteler için ek filtre listesi.";
 "Additional filter list for websites in Slovenian." = "Slovence siteler için ek filtre listesi.";
@@ -174,7 +176,7 @@
 "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "Safari, bu listenin satır içi komut dosyası kurallarını uygulayamıyor. Desteklenen İngilizce siteler için kullanıcı betikleri üzerinden Bypass Paywalls Clean'i etkinleştirin.";
 "Blocks pop-up ads on web pages." = "Web sayfalarındaki açılır reklamları engeller.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "Tanıtım amaçlı açılır pencereleri, bülten kayıtlarını ve bildirim isteklerini engeller.";
-"Hides share and follow buttons on any site, including many that AdGuard Social Media Filter misses." = "Her sitede paylaşma ve takip etme düğmelerini gizler; AdGuard Social Media Filter'ın kaçırdığı pek çoğu da buna dahildir.";
+"Hides social media content and icons. Blocks social widgets and scripts, including many that AdGuard Social Media Filter misses." = "Sosyal medya içeriğini ve simgelerini gizler. AdGuard Social Media Filter'ın kaçırdığı pek çok öğe dahil sosyal araçları ve betikleri engeller.";
 "Blocks third-party widgets, chat assistants, and support widgets." = "Üçüncü taraf araçları, sohbet asistanlarını ve destek pencere ögelerini engeller.";
 "Building combined filter engine..." = "Birleşik filtreleme motoru oluşturuluyor...";
 "Building filter engine" = "Filtreleme motoru oluşturuluyor";
@@ -203,7 +205,6 @@
 "Conditional check failed" = "Koşullu denetim başarısız oldu";
 "Content filtering" = "İçerik filtreleme";
 "Continue" = "Devam";
-"Conversion" = "Dönüşüm";
 "Conversion phase summary" = "Dönüştürme süreci özeti";
 "Converted rules, but one or more extensions failed to reload after 5 attempts." = "Kurallar dönüştürüldü, ancak bir veya daha fazla genişletme 5 denemenin ardından yeniden yüklenemedi.";
 "Converting %@…" = "%@ dönüştürülüyor…";
@@ -447,7 +448,7 @@
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "%@ için yalnızca topluluk tarafından yönetilen listeler mevcuttur. Dilerseniz bunları etkinleştirebilirsiniz.";
 "Only pasted user lists can be edited." = "Yalnızca yapıştırılan kullanıcı listeleri düzenlenebilir.";
 "Open Login Items" = "Giriş öğelerini aç";
-"Open Safari Settings" = "Safari ayarlarını aç";
+"Open Safari Extension Settings" = "Safari uzantı ayarlarını aç";
 "Other" = "Diğer";
 "Overdue catch-up" = "Gecikmiş görev";
 "Paste" = "Yapıştır";
@@ -482,7 +483,6 @@
 "Regional filters: %@" = "Bölgesel filtreler: %@";
 "Registered" = "Kayıtlı";
 "Registration: %@" = "Kayıt: %@";
-"Reload" = "Yeniden yükleme";
 "Reload phase had failures; continuing with advanced rules processing" = "Yeniden yükleme sürecinde hatalar oluştu; gelişmiş kuralların işlenmesine geçiliyor";
 "Reload phase summary" = "Yeniden yükleme süreci özeti";
 "Reloading Extensions" = "Genişletmeler yeniden yükleniyor";
@@ -764,8 +764,6 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Report Issues" = "Sorun bildir";
 "Contact Us" = "Bize ulaşın";
 "Version" = "Sürüm";
-"Developer" = "Geliştirici";
-"GPL-3.0 License" = "GPL-3.0 Lisans";
 "Privacy Policy" = "Gizlilik politikası";
 
 /* Issue 508 UI */
@@ -925,7 +923,6 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 
 "Edit Info" = "Bilgileri düzenle";
 
-"Get" = "Al";
 "Autoplay" = "Otomatik oynatma";
 "Autoplay off" = "Otomatik oynatma kapalı";
 "Userscripts off" = "Kullanıcı betikleri kapalı";
@@ -941,9 +938,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "Deneysel filtreler yeni kuralları ana listelere eklenmeden önce test etmek içindir ve sitelerin düzgün çalışmasını engelleyebilir. Bunları sadece site bozulmalarını tespit edip bildirebilecek düzeydeyseniz açın.";
 "Enable HaGeZi Multi Pro Mini?" = "HaGeZi Multi Pro Mini etkinleştirilsin mi?";
 "HaGeZi Multi Pro Mini is better suited to a DNS blocker than Safari. Its many domain rules can consume a large share of Safari’s limited rule capacity, leaving less room for browser-focused filters, and may break websites by blocking services they need. We recommend leaving it off and using wBlock’s recommended filter lists instead." = "HaGeZi Multi Pro Mini, Safari yerine bir DNS engelleyiciyle kullanıma daha uygundur. Çok sayıdaki alan adı kuralı, Safari’nin sınırlı kural kapasitesinin büyük bir bölümünü kullanarak tarayıcı odaklı filtrelere daha az yer bırakabilir ve sitelerin ihtiyaç duyduğu hizmetleri engelleyerek sitelerin çalışmasını bozabilir. Bu listeyi kapalı bırakmanızı ve bunun yerine wBlock’un önerdiği filtre listelerini kullanmanızı öneririz.";
-"Reset Ordering" = "Sıralamayı sıfırla";
 "Reset" = "Sıfırla";
-"Return built-in lists and userscripts to their default categories and order, and move custom ones to Other." = "Yerleşik listeleri ve kullanıcı betiklerini varsayılan kategorilerine ve sıralamalarına döndürür, özel olanları ise Diğer kategorisine taşır.";
 "No sites selected. Cosmetic filtering will not apply." = "Hiçbir site seçilmedi. Kozmetik filtreleme uygulanmayacak.";
 "Cosmetic filtering will not apply on these sites. Network blocking still applies." = "Bu sitelerde kozmetik filtreleme uygulanmayacak. Ağ düzeyinde engelleme ise devam eder.";
 "When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device." = "Etkinleştirildiğinde, kullanıcı betiği durum tercihleri iCloud ile eşitlenir. Tercihlerinizi sadece bu cihazda saklamak için bu ayarı kapatın.";
@@ -1073,3 +1068,5 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "PersianBlockerNG" = "PersianBlockerNG";
 "RU AdList" = "RU AdList";
 "RU AdList: Counters" = "RU AdList: Counters";
+"Custom URL" = "Özel URL";
+"Links" = "Bağlantılar";

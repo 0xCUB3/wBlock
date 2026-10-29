@@ -95,6 +95,8 @@
 "Additional filter list for websites in Hebrew." = "További szűrőlista héber nyelvű webhelyekhez.";
 "Additional filter list for websites in Hindi, Tamil and other Dravidian and Indic languages." = "További szűrőlista hindi, tamil és más dravida és indiai nyelvű webhelyekhez.";
 "Additional filter list for websites in Icelandic." = "További szűrőlista izlandi nyelvű webhelyekhez.";
+"Persian Blocker" = "Persian Blocker";
+"Additional filter list for websites in Persian." = "További szűrőlista perzsa nyelvű webhelyekhez.";
 "Additional filter list for websites in Latvian." = "További szűrőlista lett nyelvű webhelyekhez.";
 "Additional filter list for websites in Lithuanian." = "További szűrőlista litván nyelvű webhelyekhez.";
 "Additional filter list for websites in Slovenian." = "További szűrőlista szlovén nyelvű webhelyekhez.";
@@ -174,7 +176,7 @@
 "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "A Safari nem tudja alkalmazni a lista inline-script szabályait. A támogatott angol nyelvű webhelyekhez engedélyezd a Bypass Paywalls Clean szkriptet a felhasználói szkriptek között.";
 "Blocks pop-up ads on web pages." = "Blokkolja a felugró hirdetéseket a weboldalakon.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "Letiltja a promóciós előugró ablakokat, a hírlevélre való feliratkozást és az értesítési kéréseket.";
-"Hides share and follow buttons on any site, including many that AdGuard Social Media Filter misses." = "Elrejti a megosztás- és követésgombokat minden webhelyen, köztük sok olyat is, amelyet az AdGuard Social Media Filter kihagy.";
+"Hides social media content and icons. Blocks social widgets and scripts, including many that AdGuard Social Media Filter misses." = "Elrejti a közösségi média tartalmait és ikonjait. Blokkolja a közösségi widgeteket és szkripteket, köztük sok olyat is, amelyet az AdGuard Social Media Filter kihagy.";
 "Blocks third-party widgets, chat assistants, and support widgets." = "Letiltja a harmadik féltől származó widgeteket, csevegési asszisztenseket és támogatási widgeteket.";
 "Building combined filter engine..." = "Kombinált szűrőmotor építése...";
 "Building filter engine" = "Szűrőmotor építése";
@@ -203,7 +205,6 @@
 "Conditional check failed" = "A feltételes ellenőrzés sikertelen";
 "Content filtering" = "Tartalomszűrés";
 "Continue" = "Folytatás";
-"Conversion" = "Konverzió";
 "Conversion phase summary" = "A konvertálási fázis összegzése";
 "Converted rules, but one or more extensions failed to reload after 5 attempts." = "A szabályok konvertálva lettek, de egy vagy több bővítmény 5 próbálkozás után sem töltődött újra.";
 "Converting %@…" = "%@â¦ konvertálása";
@@ -447,7 +448,7 @@
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "%@ esetén csak közösség által karbantartott listák érhetők el. Engedélyezd őket, ha ez számodra megfelelő.";
 "Only pasted user lists can be edited." = "Csak a beillesztett felhasználói listák szerkeszthetők.";
 "Open Login Items" = "Bejelentkezési elemek megnyitása";
-"Open Safari Settings" = "Safari beállítások megnyitása";
+"Open Safari Extension Settings" = "Safari bővítménybeállítások megnyitása";
 "Other" = "Egyéb";
 "Overdue catch-up" = "Túllépett felzárkózás";
 "Paste" = "Beillesztés";
@@ -484,7 +485,6 @@
 "Regional filters: %@" = "Regionális szűrők: %@";
 "Registered" = "Regisztrálva";
 "Registration: %@" = "Regisztráció: %@";
-"Reload" = "Újratöltés";
 "Reload phase had failures; continuing with advanced rules processing" = "Az újratöltési fázis hibákat tartalmazott; folytatódik a speciális szabályok feldolgozása";
 "Reload phase summary" = "Az újratöltési fázis összegzése";
 "Reloading Extensions" = "Bővítmények újratöltése";
@@ -766,8 +766,6 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Report Issues" = "Probléma bejelentése";
 "Contact Us" = "Kapcsolat";
 "Version" = "Verzió";
-"Developer" = "Fejlesztő";
-"GPL-3.0 License" = "GPL-3.0 licenc";
 "Privacy Policy" = "Adatvédelmi irányelvek";
 
 /* Issue 508 UI */
@@ -916,7 +914,6 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 
 "Edit Info" = "Adatok szerkesztése";
 
-"Get" = "Letöltés";
 "Autoplay" = "Automatikus lejátszás";
 "Autoplay off" = "Automatikus lejátszás ki";
 "Userscripts off" = "Userscriptek ki";
@@ -932,9 +929,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "A kísérleti szűrők új szabályokat tesztelnek, mielőtt azok a fő listákba kerülnének, és elronthatnak weboldalakat. Csak akkor engedélyezd őket, ha szívesen keresed és jelented a hibákat.";
 "Enable HaGeZi Multi Pro Mini?" = "Bekapcsolod a HaGeZi Multi Pro Mini listát?";
 "HaGeZi Multi Pro Mini is better suited to a DNS blocker than Safari. Its many domain rules can consume a large share of Safari’s limited rule capacity, leaving less room for browser-focused filters, and may break websites by blocking services they need. We recommend leaving it off and using wBlock’s recommended filter lists instead." = "A HaGeZi Multi Pro Mini inkább DNS-blokkolóhoz való, mint a Safarihoz. Számos tartományszabálya elfoglalhatja a Safari korlátozott szabálykapacitásának nagy részét, kevesebb helyet hagyva a böngészőkhöz készült szűrőknek, és a szükséges szolgáltatások blokkolásával megzavarhatja a webhelyek működését. Javasoljuk, hogy hagyd kikapcsolva, és használd inkább a wBlock ajánlott szűrőlistáit.";
-"Reset Ordering" = "Sorrend visszaállítása";
 "Reset" = "Visszaállítás";
-"Return built-in lists and userscripts to their default categories and order, and move custom ones to Other." = "Visszaállítja a beépített listákat és userscripteket az alapértelmezett kategóriájukba és sorrendjükbe, az egyéniekat pedig az Egyéb kategóriába helyezi.";
 "No sites selected. Cosmetic filtering will not apply." = "Nincs kiválasztott webhely. A kozmetikai szűrés nem lesz alkalmazva.";
 "Cosmetic filtering will not apply on these sites. Network blocking still applies." = "A kozmetikai szűrés nem lesz alkalmazva ezeken a webhelyeken. A hálózati blokkolás továbbra is érvényes.";
 "When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device." = "Bekapcsolva az iCloud szinkronizálja a userscriptek be- és kikapcsolt állapotát. Kapcsold ki, ha ezeket a beállításokat csak ezen az eszközön szeretnéd megtartani.";
@@ -1064,3 +1059,5 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "PersianBlockerNG" = "PersianBlockerNG";
 "RU AdList" = "RU AdList";
 "RU AdList: Counters" = "RU AdList: Counters";
+"Custom URL" = "Egyéni URL";
+"Links" = "Hivatkozások";

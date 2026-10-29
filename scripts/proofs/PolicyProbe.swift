@@ -258,7 +258,7 @@ extension Dictionary where Key == String, Value == Any {
           let done = e.b("complete")
           switch e.n("op") {
           case 1: vm.markFailed(message: "failed")
-          case 2: vm.updateStatistics(sourceRules: 0, safariRules: 0, conversionTime: "0", reloadTime: "0")
+          case 2: vm.markFinished()
           case 3: vm.beginProgressRun()
           default:
             switch e.n("phase") {

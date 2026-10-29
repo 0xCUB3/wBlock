@@ -4,6 +4,7 @@ import wBlockCoreService
 
 /// The complete, ordered badge matrix shared by the metadata-only Info views.
 enum InfoBadgeKind: Equatable {
+    case recommended
     case builtIn
     case custom
     case localImport
@@ -18,10 +19,12 @@ struct InfoBadgeView: View {
 
     var body: some View {
         switch kind {
+        case .recommended:
+            Badge(text: "Recommended", color: .green)
         case .builtIn:
             Badge(text: "Built-in", color: .orange)
         case .custom:
-            Badge(text: "Custom", color: .blue)
+            Badge(text: "Custom URL", color: .blue)
         case .localImport:
             Badge(text: "Local Import", color: .blue)
         case .downloaded:
@@ -46,6 +49,9 @@ enum InfoBadgeSupport {
         } else {
             badges.append(.builtIn)
         }
+        if !filter.isCustom && FilterListLoader.recommendedFilterNames.contains(filter.name) {
+            badges.append(.recommended)
+        }
         badges.append(filter.isSelected ? .enabled : .disabled)
         if isDownloaded ?? (filter.sourceRuleCount != nil) {
             badges.append(.downloaded)
@@ -58,7 +64,8 @@ enum InfoBadgeSupport {
     static func userScriptBadges(
         _ script: UserScript,
         isDownloaded: Bool,
-        isBuiltIn: Bool
+        isBuiltIn: Bool,
+        isRecommended: Bool
     ) -> [InfoBadgeKind] {
         var badges: [InfoBadgeKind] = []
         if isBuiltIn {
@@ -68,6 +75,7 @@ enum InfoBadgeSupport {
         } else {
             badges.append(.custom)
         }
+        if isBuiltIn && isRecommended { badges.append(.recommended) }
         badges.append(script.isEnabled ? .enabled : .disabled)
         if isDownloaded {
             badges.append(.downloaded)

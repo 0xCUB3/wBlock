@@ -63,7 +63,7 @@
 			<key>one</key>
 			<string>Die Erweiterung %d wird vorbereitet</string>
 			<key>other</key>
-			<string>%d-Erweiterungen werden vorbereitet</string>
+			<string>%d Erweiterungen werden vorbereitet</string>
 		</dict>
 	</dict>
 	<key>Every %d days</key>

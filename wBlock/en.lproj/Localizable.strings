@@ -95,6 +95,8 @@
 "Additional filter list for websites in Hebrew." = "Additional filter list for websites in Hebrew.";
 "Additional filter list for websites in Hindi, Tamil and other Dravidian and Indic languages." = "Blocks ads on websites in Hindi, Tamil, and other Indic and Dravidian languages.";
 "Additional filter list for websites in Icelandic." = "Additional filter list for websites in Icelandic.";
+"Persian Blocker" = "Persian Blocker";
+"Additional filter list for websites in Persian." = "Additional filter list for websites in Persian.";
 "Additional filter list for websites in Latvian." = "Additional filter list for websites in Latvian.";
 "Additional filter list for websites in Lithuanian." = "Additional filter list for websites in Lithuanian.";
 "Additional filter list for websites in Slovenian." = "Additional filter list for websites in Slovenian.";
@@ -174,7 +176,7 @@
 "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "Safari can't apply this list's inline script rules. For supported English-language sites, turn on Bypass Paywalls Clean in Userscripts.";
 "Blocks pop-up ads on web pages." = "Blocks pop-up ads on web pages.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "Blocks promotional pop-ups, newsletter sign-ups, and notification prompts.";
-"Hides share and follow buttons on any site, including many that AdGuard Social Media Filter misses." = "Hides share and follow buttons on any site, including many that AdGuard Social Media Filter misses.";
+"Hides social media content and icons. Blocks social widgets and scripts, including many that AdGuard Social Media Filter misses." = "Hides social media content and icons. Blocks social widgets and scripts, including many that AdGuard Social Media Filter misses.";
 "Blocks third-party widgets, chat assistants, and support widgets." = "Blocks third-party widgets, chat assistants, and support widgets.";
 "Building combined filter engine..." = "Building combined filter engine...";
 "Building filter engine" = "Building filter engine";
@@ -203,7 +205,6 @@
 "Conditional check failed" = "Conditional check failed";
 "Content filtering" = "Content filtering";
 "Continue" = "Continue";
-"Conversion" = "Conversion";
 "Conversion phase summary" = "Conversion phase summary";
 "Converted rules, but one or more extensions failed to reload after 5 attempts." = "Rules converted, but one or more extensions didn't reload after 5 tries.";
 "Converting %@…" = "Converting %@…";
@@ -447,7 +448,7 @@
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "Only community-maintained lists are available for %@. Turn them on if you're comfortable with that.";
 "Only pasted user lists can be edited." = "Only pasted user lists can be edited.";
 "Open Login Items" = "Open Login Items";
-"Open Safari Settings" = "Open Safari Settings";
+"Open Safari Extension Settings" = "Open Safari Extension Settings";
 "Other" = "Other";
 "Overdue catch-up" = "Overdue catch-up";
 "Paste" = "Paste";
@@ -482,7 +483,6 @@
 "Regional filters: %@" = "Regional filters: %@";
 "Registered" = "Registered";
 "Registration: %@" = "Registration: %@";
-"Reload" = "Reload";
 "Reload phase had failures; continuing with advanced rules processing" = "Reload phase had failures; continuing with advanced rules processing";
 "Reload phase summary" = "Reload phase summary";
 "Reloading Extensions" = "Reloading Extensions";
@@ -764,8 +764,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Report Issues" = "Report Issues";
 "Contact Us" = "Contact Us";
 "Version" = "Version";
-"Developer" = "Developer";
-"GPL-3.0 License" = "GPL-3.0 License";
 "Privacy Policy" = "Privacy Policy";
 
 /* Issue 508 UI */
@@ -886,7 +884,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 
 "Operation details" = "Operation details";
-
+/* Native name; keep in Montenegrin in every display language. */
 "crnogorski" = "crnogorski";
 
 "URL entry mode" = "URL entry mode";
@@ -925,7 +923,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Edit Info" = "Edit Info";
 
-"Get" = "Get";
 "Autoplay" = "Autoplay";
 "Autoplay off" = "Autoplay off";
 "Userscripts off" = "Userscripts off";
@@ -941,9 +938,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "Experimental lists try out new rules before they reach the main lists, and they can break websites. Turn them on only if you're comfortable spotting and reporting problems.";
 "Enable HaGeZi Multi Pro Mini?" = "Turn On HaGeZi Multi Pro Mini?";
 "HaGeZi Multi Pro Mini is better suited to a DNS blocker than Safari. Its many domain rules can consume a large share of Safari’s limited rule capacity, leaving less room for browser-focused filters, and may break websites by blocking services they need. We recommend leaving it off and using wBlock’s recommended filter lists instead." = "HaGeZi Multi Pro Mini is better suited to a DNS blocker than Safari. Its many domain rules can consume a large share of Safari’s limited rule capacity, leaving less room for browser-focused filters, and may break websites by blocking services they need. We recommend leaving it off and using wBlock’s recommended filter lists instead.";
-"Reset Ordering" = "Reset Ordering";
 "Reset" = "Reset";
-"Return built-in lists and userscripts to their default categories and order, and move custom ones to Other." = "Return built-in lists and userscripts to their default categories and order, and move custom ones to Other.";
 "No sites selected. Cosmetic filtering will not apply." = "No sites selected. Cosmetic filtering will not apply.";
 "Cosmetic filtering will not apply on these sites. Network blocking still applies." = "Cosmetic filtering will not apply on these sites. Network blocking still applies.";
 "When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device." = "When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device.";
@@ -1073,3 +1068,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "PersianBlockerNG" = "PersianBlockerNG";
 "RU AdList" = "RU AdList";
 "RU AdList: Counters" = "RU AdList: Counters";
+"Custom URL" = "Custom URL";
+"Links" = "Links";

@@ -95,6 +95,8 @@
 "Additional filter list for websites in Hebrew." = "Πρόσθετη λίστα φίλτρων για ιστότοπους στα εβραϊκά.";
 "Additional filter list for websites in Hindi, Tamil and other Dravidian and Indic languages." = "Πρόσθετη λίστα φίλτρων για ιστότοπους στα χίντι, στα ταμιλικά και σε άλλες δραβιδικές και ινδικές γλώσσες.";
 "Additional filter list for websites in Icelandic." = "Πρόσθετη λίστα φίλτρων για ιστότοπους στα ισλανδικά.";
+"Persian Blocker" = "Persian Blocker";
+"Additional filter list for websites in Persian." = "Πρόσθετη λίστα φίλτρων για ιστότοπους στα περσικά.";
 "Additional filter list for websites in Latvian." = "Πρόσθετη λίστα φίλτρων για ιστότοπους στα λετονικά.";
 "Additional filter list for websites in Lithuanian." = "Πρόσθετη λίστα φίλτρων για ιστότοπους στα λιθουανικά.";
 "Additional filter list for websites in Slovenian." = "Πρόσθετη λίστα φίλτρων για ιστότοπους στα σλοβενικά.";
@@ -174,7 +176,7 @@
 "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "Το Safari δεν μπορεί να εφαρμόσει τους κανόνες inline-script αυτής της λίστας. Ενεργοποιήστε το Bypass Paywalls Clean στους Κώδικες χρήστη για τους υποστηριζόμενους αγγλόφωνους ιστότοπους.";
 "Blocks pop-up ads on web pages." = "Αποκλείει τις αναδυόμενες διαφημίσεις στις ιστοσελίδες.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "Αποκλείει διαφημιστικά αναδυόμενα παράθυρα, εγγραφές σε ενημερωτικά δελτία και αιτήματα ειδοποιήσεων.";
-"Hides share and follow buttons on any site, including many that AdGuard Social Media Filter misses." = "Κρύβει τα κουμπιά κοινοποίησης και ακολούθησης σε κάθε ιστότοπο, μαζί με πολλά που ξεφεύγουν από το AdGuard Social Media Filter.";
+"Hides social media content and icons. Blocks social widgets and scripts, including many that AdGuard Social Media Filter misses." = "Κρύβει περιεχόμενο και εικονίδια κοινωνικών δικτύων. Αποκλείει γραφικά στοιχεία και σενάρια κοινωνικών δικτύων, μαζί με πολλά που ξεφεύγουν από το AdGuard Social Media Filter.";
 "Blocks third-party widgets, chat assistants, and support widgets." = "Αποκλείει γραφικά στοιχεία τρίτων, βοηθούς συνομιλίας και γραφικά στοιχεία υποστήριξης.";
 "Building combined filter engine..." = "Δημιουργία συνδυασμένης μηχανής φίλτρων...";
 "Building filter engine" = "Δημιουργία μηχανής φίλτρων";
@@ -203,7 +205,6 @@
 "Conditional check failed" = "Αποτυχία υπό όρους ελέγχου";
 "Content filtering" = "Φιλτράρισμα περιεχομένου";
 "Continue" = "Συνέχεια";
-"Conversion" = "Μετατροπή";
 "Conversion phase summary" = "Σύνοψη φάσης μετατροπής";
 "Converted rules, but one or more extensions failed to reload after 5 attempts." = "Οι κανόνες μετατράπηκαν, αλλά μία ή περισσότερες επεκτάσεις απέτυχαν να επαναφορτωθούν μετά από 5 προσπάθειες.";
 "Converting %@…" = "Μετατροπή %@…";
@@ -447,7 +448,7 @@
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "Μόνο λίστες που διατηρούνται από την κοινότητα είναι διαθέσιμες για %@. Ενεργοποιήστε τις αν νιώθετε άνετα.";
 "Only pasted user lists can be edited." = "Μόνο οι επικολλημένες λίστες χρήστη μπορούν να υποστούν επεξεργασία.";
 "Open Login Items" = "Άνοιγμα στοιχείων σύνδεσης";
-"Open Safari Settings" = "Άνοιγμα ρυθμίσεων Safari";
+"Open Safari Extension Settings" = "Άνοιγμα ρυθμίσεων επεκτάσεων Safari";
 "Other" = "Άλλα";
 "Overdue catch-up" = "Καθυστερημένη ανάκτηση";
 "Paste" = "Επικόλληση";
@@ -484,7 +485,6 @@
 "Regional filters: %@" = "Τοπικά φίλτρα: %@";
 "Registered" = "Καταχωρήθηκε";
 "Registration: %@" = "Καταχώριση: %@";
-"Reload" = "Επαναφόρτωση";
 "Reload phase had failures; continuing with advanced rules processing" = "Η φάση επαναφόρτωσης είχε αποτυχίες· συνέχεια με επεξεργασία προηγμένων κανόνων";
 "Reload phase summary" = "Σύνοψη φάσης επαναφόρτωσης";
 "Reloading Extensions" = "Επαναφόρτωση επεκτάσεων";
@@ -766,8 +766,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Report Issues" = "Αναφορά προβλημάτων";
 "Contact Us" = "Επικοινωνία";
 "Version" = "Έκδοση";
-"Developer" = "Προγραμματιστής";
-"GPL-3.0 License" = "Άδεια GPL-3.0";
 "Privacy Policy" = "Πολιτική απορρήτου";
 
 /* Issue 508 UI */
@@ -916,7 +914,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Edit Info" = "Επεξεργασία πληροφοριών";
 
-"Get" = "Λήψη";
 "Autoplay" = "Αυτόματη αναπαραγωγή";
 "Autoplay off" = "Αυτόματη αναπαραγωγή ανενεργή";
 "Userscripts off" = "Κώδικες χρήστη ανενεργοί";
@@ -932,9 +929,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "Τα πειραματικά φίλτρα δοκιμάζουν νέους κανόνες πριν φτάσουν στις κύριες λίστες και μπορεί να χαλάσουν ιστότοπους. Ενεργοποιήστε τα μόνο αν σας βολεύει να εντοπίζετε και να αναφέρετε προβλήματα.";
 "Enable HaGeZi Multi Pro Mini?" = "Ενεργοποίηση του HaGeZi Multi Pro Mini;";
 "HaGeZi Multi Pro Mini is better suited to a DNS blocker than Safari. Its many domain rules can consume a large share of Safari’s limited rule capacity, leaving less room for browser-focused filters, and may break websites by blocking services they need. We recommend leaving it off and using wBlock’s recommended filter lists instead." = "Το HaGeZi Multi Pro Mini ταιριάζει περισσότερο σε αποκλεισμό DNS παρά στο Safari. Οι πολλοί κανόνες τομέων μπορούν να καταλάβουν μεγάλο μέρος της περιορισμένης χωρητικότητας κανόνων του Safari, αφήνοντας λιγότερο χώρο για φίλτρα σχεδιασμένα για προγράμματα περιήγησης, και να προκαλέσουν προβλήματα σε ιστοτόπους αποκλείοντας απαραίτητες υπηρεσίες. Συνιστούμε να το αφήσετε απενεργοποιημένο και να χρησιμοποιήσετε τις προτεινόμενες λίστες φίλτρων του wBlock.";
-"Reset Ordering" = "Επαναφορά σειράς";
 "Reset" = "Επαναφορά";
-"Return built-in lists and userscripts to their default categories and order, and move custom ones to Other." = "Επαναφέρει τις ενσωματωμένες λίστες και τους κώδικες χρήστη στις προεπιλεγμένες κατηγορίες και σειρά τους και μετακινεί τα προσαρμοσμένα στοιχεία στο «Άλλα».";
 "No sites selected. Cosmetic filtering will not apply." = "Δεν έχουν επιλεγεί ιστότοποι. Το αισθητικό φιλτράρισμα δεν θα εφαρμόζεται.";
 "Cosmetic filtering will not apply on these sites. Network blocking still applies." = "Το αισθητικό φιλτράρισμα δεν θα εφαρμόζεται σε αυτούς τους ιστότοπους. Ο αποκλεισμός δικτύου εξακολουθεί να ισχύει.";
 "When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device." = "Όταν είναι ενεργό, οι καταστάσεις ενεργοποίησης των κωδίκων χρήστη συγχρονίζονται μέσω iCloud. Απενεργοποιήστε το για να παραμείνουν αυτές οι ρυθμίσεις μόνο σε αυτή τη συσκευή.";
@@ -1064,3 +1059,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "PersianBlockerNG" = "PersianBlockerNG";
 "RU AdList" = "RU AdList";
 "RU AdList: Counters" = "RU AdList: Counters";
+"Custom URL" = "Προσαρμοσμένο URL";
+"Links" = "Σύνδεσμοι";

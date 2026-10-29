@@ -69,8 +69,7 @@ struct ApplyChangesProgressView: View {
         guard !fillsAvailableHeight else { return nil }
         let part: ApplySheetPart = mode == .progress ? .progress : .result
         let contentHeight = measuredHeights[part] ?? (mode == .progress ? 480 : 240)
-        let toolbarHeight = mode == .progress ? (measuredHeights[.toolbar] ?? 48) : 0
-        return ceil((measuredHeights[.header] ?? 52) + contentHeight + toolbarHeight)
+        return ceil((measuredHeights[.header] ?? 52) + contentHeight)
     }
 
     var body: some View {
@@ -85,8 +84,6 @@ struct ApplyChangesProgressView: View {
 
             if mode == .review {
                 reviewToolbar
-            } else if mode == .progress {
-                progressToolbar.measureApplySheetPart(.toolbar)
             }
             #if os(iOS)
             // Before iOS 18 an iPad form sheet ignores the fitted detent and keeps
@@ -157,13 +154,7 @@ struct ApplyChangesProgressView: View {
         case .progress:
             fittedContent { progressField }
         case .result:
-            fittedContent {
-                VStack(alignment: .leading, spacing: 16) {
-                    if let summary = viewModel.state.summary {
-                        summaryCard(summary)
-                    }
-                }
-            }
+            fittedContent { resultWarnings }
         case .failed:
             fittedContent {
                 VStack(alignment: .leading, spacing: 16) {
@@ -258,26 +249,6 @@ struct ApplyChangesProgressView: View {
         #endif
     }
 
-    private var progressToolbar: some View {
-        SheetBottomToolbar {
-            #if os(macOS)
-            Spacer()
-            #endif
-            // An auto-update run can't be stopped from here; Close only hides it.
-            Button {
-                if filterManager.isApplyInFlight {
-                    filterManager.cancelInFlightApply()
-                } else {
-                    filterManager.showingApplyProgressSheet = false
-                }
-            } label: {
-                Text(filterManager.isApplyInFlight ? String(localized: "Cancel") : String(localized: "Close"))
-                    .sheetActionWidth()
-            }
-            .keyboardShortcut(.cancelAction)
-        }
-    }
-
     private var reviewToolbar: some View {
         SheetBottomToolbar {
             #if os(macOS)
@@ -325,31 +296,9 @@ struct ApplyChangesProgressView: View {
 
     // MARK: - Result
 
-    private func summaryCard(_ summary: ApplyChangesSummary) -> some View {
+    /// Shown only when the run left something to fix; a clean run closes itself.
+    private var resultWarnings: some View {
         VStack(alignment: .leading, spacing: 12) {
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                StatCard(
-                    title: String(localized: "Safari Rules"),
-                    value: summary.safariRules.formatted(),
-                    icon: "shield.lefthalf.filled"
-                )
-                StatCard(
-                    title: String(localized: "Source Rules"),
-                    value: summary.sourceRules.formatted(),
-                    icon: "doc.text"
-                )
-                StatCard(
-                    title: String(localized: "Conversion"),
-                    value: summary.conversionTime,
-                    icon: "clock"
-                )
-                StatCard(
-                    title: String(localized: "Reload"),
-                    value: summary.reloadTime,
-                    icon: "arrow.clockwise"
-                )
-            }
-
             if !viewModel.state.resultWarning.isEmpty || !filterManager.failedReloadTargets.isEmpty {
                 HStack(alignment: .firstTextBaseline, spacing: 12) {
                     if !viewModel.state.resultWarning.isEmpty {
@@ -549,7 +498,7 @@ private extension View {
 }
 
 private enum ApplySheetPart: Hashable {
-    case header, progress, result, toolbar
+    case header, progress, result
 }
 
 private struct ApplySheetHeightsKey: PreferenceKey {

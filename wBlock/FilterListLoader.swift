@@ -131,6 +131,10 @@ class FilterListLoader {
             URL(string: "https://cdn.jsdelivr.net/gh/uBlockOrigin/uAssetsCDN@main/thirdparties/easyprivacy.txt")!,
         registryURL(204):
             URL(string: "https://pgl.yoyo.org/adservers/serverlist.php?hostformat=hosts&showintro=1&mimetype=plaintext")!,
+        "https://easylist.to/easylist/fanboy-social.txt":
+            URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/123_optimized.txt")!,
+        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_17_TrackParam/filter.txt":
+            URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/mac_v3/filters/17_optimized.txt")!,
         "https://raw.githubusercontent.com/DandelionSprout/adfilt/master/LegitimateURLShortener.txt":
             URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/mac_v3/filters/251_optimized.txt")!,
         "https://raw.githubusercontent.com/realodix/AdBlockID/main/dist/adblockid.adfl.txt":
@@ -447,10 +451,10 @@ class FilterListLoader {
                 description: "Filter for social media widgets such as 'Like' and 'Share' buttons and more."),
             FilterList(
                 id: UUID(), name: "Fanboy's Social Blocking List",
-                url: URL(string: "https://easylist.to/easylist/fanboy-social.txt")!,
+                url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/123_optimized.txt")!,
                 category: FilterListCategory.annoyances,
                 description:
-                    "Hides share and follow buttons on any site, including many that AdGuard Social Media Filter misses."),
+                    "Hides social media content and icons. Blocks social widgets and scripts, including many that AdGuard Social Media Filter misses."),
             FilterList(
                 id: UUID(), name: "Stevo's AI Blocklist",
                 url: Self.stevoAIBlocklistURL, category: FilterListCategory.annoyances,
@@ -665,10 +669,25 @@ class FilterListLoader {
                     "This list covers websites for Norway, Denmark, Iceland, Danish territories, and the Sami indigenous population.",
                 languages: ["nb", "nn", "no", "da", "is"], trustLevel: "high"),
             FilterList(
+                id: UUID(), name: "Persian Blocker",
+                url: URL(
+                    string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/235_optimized.txt"
+                )!, category: .foreign,
+                description: "Additional filter list for websites in Persian.",
+                languages: ["fa"], trustLevel: "high"),
+            FilterList(
                 id: UUID(), name: "Official Polish filters for AdBlock, uBlock Origin & AdGuard",
                 url: URL(string: "https://raw.githubusercontent.com/MajkiIT/polish-ads-filter/master/polish-adblock-filters/adblock.txt")!,
                 category: .foreign, description: "Additional filter list for websites in Polish.",
                 languages: ["szl", "pl"], trustLevel: "high"),
+            FilterList(
+                id: UUID(), name: "AdGuard Polish filter",
+                url: URL(
+                    string:
+                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/27_optimized.txt"
+                )!, category: .foreign,
+                description: "Official Polish filters for AdBlock, uBlock Origin & AdGuard + AdGuard Polish filter. Filter list that specifically removes ads on websites in the Polish language.", languages: ["pl"],
+                trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "KAD - Anti-Scam",
                 url: URL(

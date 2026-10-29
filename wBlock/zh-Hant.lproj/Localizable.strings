@@ -95,6 +95,8 @@
 "Additional filter list for websites in Hebrew." = "希伯來語網站的附加過濾器清單。";
 "Additional filter list for websites in Hindi, Tamil and other Dravidian and Indic languages." = "印地語、泰米爾語和其他德拉威語和印度語網站的附加過濾器清單。";
 "Additional filter list for websites in Icelandic." = "冰島語網站的附加過濾器清單。";
+"Persian Blocker" = "Persian Blocker";
+"Additional filter list for websites in Persian." = "波斯語網站的附加過濾器清單。";
 "Additional filter list for websites in Latvian." = "拉脫維亞語網站的附加過濾器清單。";
 "Additional filter list for websites in Lithuanian." = "立陶宛語網站的附加過濾器清單。";
 "Additional filter list for websites in Slovenian." = "斯洛維尼亞語網站的附加過濾器清單。";
@@ -174,7 +176,7 @@
 "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "Safari 無法套用此清單的 inline-script 規則。對於支援的英語網站，請在使用者腳本中啟用 Bypass Paywalls Clean。";
 "Blocks pop-up ads on web pages." = "封鎖網頁上的彈出式廣告。";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "封鎖促銷彈出視窗、電子報訂閱和通知請求。";
-"Hides share and follow buttons on any site, including many that AdGuard Social Media Filter misses." = "在任何網站上隱藏分享和追蹤按鈕，包括許多 AdGuard Social Media Filter 漏掉的按鈕。";
+"Hides social media content and icons. Blocks social widgets and scripts, including many that AdGuard Social Media Filter misses." = "隱藏社群媒體內容和圖示。封鎖社群小工具和指令碼，包括許多 AdGuard Social Media Filter 漏掉的項目。";
 "Blocks third-party widgets, chat assistants, and support widgets." = "封鎖第三方小工具、聊天助理和支援小工具。";
 "Building combined filter engine..." = "正在建置合併的過濾器引擎...";
 "Building filter engine" = "正在建置過濾器引擎";
@@ -203,7 +205,6 @@
 "Conditional check failed" = "條件檢查失敗";
 "Content filtering" = "內容過濾";
 "Continue" = "繼續";
-"Conversion" = "轉換";
 "Conversion phase summary" = "轉換階段摘要";
 "Converted rules, but one or more extensions failed to reload after 5 attempts." = "規則已轉換，但有一個或多個延伸功能在 5 次嘗試後仍未能重新載入。";
 "Converting %@…" = "正在轉換 %@…";
@@ -447,7 +448,7 @@
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "%@ 僅提供社群維護清單。若你可以接受，請啟用它們。";
 "Only pasted user lists can be edited." = "只能編輯貼上的使用者清單。";
 "Open Login Items" = "開啟登入項目";
-"Open Safari Settings" = "開啟 Safari 設定";
+"Open Safari Extension Settings" = "開啟 Safari 延伸功能設定";
 "Other" = "其他";
 "Overdue catch-up" = "逾期補跑";
 "Paste" = "貼上";
@@ -484,7 +485,6 @@
 "Regional filters: %@" = "區域過濾器：%@";
 "Registered" = "已註冊";
 "Registration: %@" = "註冊：%@";
-"Reload" = "重新載入";
 "Reload phase had failures; continuing with advanced rules processing" = "重新載入階段出現失敗；繼續處理進階規則";
 "Reload phase summary" = "重新載入階段摘要";
 "Reloading Extensions" = "正在重新載入延伸功能";
@@ -766,8 +766,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Report Issues" = "回報問題";
 "Contact Us" = "聯絡我們";
 "Version" = "版本";
-"Developer" = "開發者";
-"GPL-3.0 License" = "GPL-3.0 授權條款";
 "Privacy Policy" = "隱私政策";
 
 /* Issue 508 UI */
@@ -916,7 +914,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Edit Info" = "編輯資訊";
 
-"Get" = "取得";
 "Autoplay" = "自動播放";
 "Autoplay off" = "自動播放已關閉";
 "Userscripts off" = "使用者腳本已關閉";
@@ -932,9 +929,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "實驗性過濾器會在新規則進入主要清單之前進行測試，可能導致網站出現問題。僅在你願意發現並回報問題時啟用。";
 "Enable HaGeZi Multi Pro Mini?" = "要啟用 HaGeZi Multi Pro Mini 嗎？";
 "HaGeZi Multi Pro Mini is better suited to a DNS blocker than Safari. Its many domain rules can consume a large share of Safari’s limited rule capacity, leaving less room for browser-focused filters, and may break websites by blocking services they need. We recommend leaving it off and using wBlock’s recommended filter lists instead." = "HaGeZi Multi Pro Mini 更適合用於 DNS 封鎖工具，而非 Safari。它包含大量網域規則，可能佔用 Safari 有限規則容量中的很大一部分，壓縮瀏覽器專用過濾器的空間，還可能封鎖網站所需的服務，導致網站無法正常運作。我們建議保持關閉，改用 wBlock 推薦的過濾清單。";
-"Reset Ordering" = "重設排序";
 "Reset" = "重設";
-"Return built-in lists and userscripts to their default categories and order, and move custom ones to Other." = "將內建清單和使用者腳本恢復為預設分類與順序，並將自訂項目移至「其他」。";
 "No sites selected. Cosmetic filtering will not apply." = "未選取任何網站。外觀過濾將不會套用。";
 "Cosmetic filtering will not apply on these sites. Network blocking still applies." = "外觀過濾不會在這些網站上套用。網路封鎖仍然有效。";
 "When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device." = "開啟後，使用者腳本的啟用狀態會透過 iCloud 同步。關閉後，這些狀態只保留在這部裝置上。";
@@ -1064,3 +1059,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "PersianBlockerNG" = "PersianBlockerNG";
 "RU AdList" = "RU AdList";
 "RU AdList: Counters" = "RU AdList: Counters";
+"Custom URL" = "自訂 URL";
+"Links" = "連結";

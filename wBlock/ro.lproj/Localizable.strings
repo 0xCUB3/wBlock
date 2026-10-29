@@ -95,6 +95,8 @@
 "Additional filter list for websites in Hebrew." = "Listă suplimentară de filtre pentru site-urile web în limba ebraică.";
 "Additional filter list for websites in Hindi, Tamil and other Dravidian and Indic languages." = "Listă suplimentară de filtre pentru site-urile web în limbile hindi, tamilă și alte limbi dravidiene și indice.";
 "Additional filter list for websites in Icelandic." = "Listă suplimentară de filtre pentru site-urile web în limba islandeză.";
+"Persian Blocker" = "Persian Blocker";
+"Additional filter list for websites in Persian." = "Listă suplimentară de filtre pentru site-urile web în limba persană.";
 "Additional filter list for websites in Latvian." = "Listă suplimentară de filtre pentru site-urile web în limba letonă.";
 "Additional filter list for websites in Lithuanian." = "Listă suplimentară de filtre pentru site-urile web în limba lituaniană.";
 "Additional filter list for websites in Slovenian." = "Listă suplimentară de filtre pentru site-urile web în limba slovenă.";
@@ -174,7 +176,7 @@
 "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "Safari nu poate aplica regulile inline-script din această listă. Activează Bypass Paywalls Clean în Scripturi de utilizator pentru site-urile în engleză acceptate.";
 "Blocks pop-up ads on web pages." = "Blochează reclamele pop-up de pe paginile web.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "Blochează ferestrele pop-up promoționale, înscrierile la buletine informative și solicitările de notificare.";
-"Hides share and follow buttons on any site, including many that AdGuard Social Media Filter misses." = "Ascunde butoanele de distribuire și urmărire pe orice site, inclusiv multe pe care AdGuard Social Media Filter le ratează.";
+"Hides social media content and icons. Blocks social widgets and scripts, including many that AdGuard Social Media Filter misses." = "Ascunde conținutul și pictogramele rețelelor sociale. Blochează widgeturile și scripturile sociale, inclusiv multe pe care AdGuard Social Media Filter le ratează.";
 "Blocks third-party widgets, chat assistants, and support widgets." = "Blochează widgeturile terță parte, asistenții de chat și widgeturile de asistență.";
 "Building combined filter engine..." = "Se construiește motorul de filtre combinat...";
 "Building filter engine" = "Construire motor de filtre";
@@ -203,7 +205,6 @@
 "Conditional check failed" = "Verificarea condiționată a eșuat";
 "Content filtering" = "Filtrarea conținutului";
 "Continue" = "Continuă";
-"Conversion" = "Conversie";
 "Conversion phase summary" = "Rezumat faza de conversie";
 "Converted rules, but one or more extensions failed to reload after 5 attempts." = "Regulile au fost convertite, dar una sau mai multe extensii nu s-au reîncărcat după 5 încercări.";
 "Converting %@…" = "Se convertește %@…";
@@ -447,7 +448,7 @@
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "Pentru %@ sunt disponibile doar liste menținute de comunitate. Activează-le dacă te simți confortabil.";
 "Only pasted user lists can be edited." = "Numai listele de utilizator lipite pot fi editate.";
 "Open Login Items" = "Deschide Elementele de conectare";
-"Open Safari Settings" = "Deschide setările Safari";
+"Open Safari Extension Settings" = "Deschide setările extensiilor Safari";
 "Other" = "Altă limbă";
 "Overdue catch-up" = "Recuperare întârziată";
 "Paste" = "Lipește";
@@ -482,7 +483,6 @@
 "Regional filters: %@" = "Filtre regionale: %@";
 "Registered" = "Înregistrat";
 "Registration: %@" = "Înregistrare: %@";
-"Reload" = "Reîncărcare";
 "Reload phase had failures; continuing with advanced rules processing" = "Faza de reîncărcare a avut eșecuri; continuă procesarea regulilor avansate";
 "Reload phase summary" = "Rezumat faza de reîncărcare";
 "Reloading Extensions" = "Se reîncarcă extensiile";
@@ -764,8 +764,6 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Report Issues" = "Raportează probleme";
 "Contact Us" = "Contact";
 "Version" = "Versiune";
-"Developer" = "Dezvoltator";
-"GPL-3.0 License" = "Licență GPL-3.0";
 "Privacy Policy" = "Politica de confidențialitate";
 
 /* Issue 508 UI */
@@ -916,7 +914,6 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 
 "Edit Info" = "Editează informațiile";
 
-"Get" = "Obține";
 "Autoplay" = "Redare automată";
 "Autoplay off" = "Redare automată dezactivată";
 "Userscripts off" = "Scripturi de utilizator dezactivate";
@@ -932,9 +929,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "Filtrele experimentale testează reguli noi înainte să ajungă în listele principale și pot strica site-uri web. Activează-le doar dacă ești dispus să găsești și să raportezi problemele.";
 "Enable HaGeZi Multi Pro Mini?" = "Activezi HaGeZi Multi Pro Mini?";
 "HaGeZi Multi Pro Mini is better suited to a DNS blocker than Safari. Its many domain rules can consume a large share of Safari’s limited rule capacity, leaving less room for browser-focused filters, and may break websites by blocking services they need. We recommend leaving it off and using wBlock’s recommended filter lists instead." = "HaGeZi Multi Pro Mini este mai potrivit pentru un blocant DNS decât pentru Safari. Numeroasele sale reguli de domeniu pot ocupa o mare parte din capacitatea limitată a Safari, lăsând mai puțin loc pentru filtrele concepute pentru browsere, și pot afecta site-urile prin blocarea serviciilor necesare. Recomandăm să îl lași dezactivat și să folosești listele de filtre recomandate de wBlock.";
-"Reset Ordering" = "Resetează ordinea";
 "Reset" = "Resetează";
-"Return built-in lists and userscripts to their default categories and order, and move custom ones to Other." = "Readuce listele și scripturile de utilizator încorporate la categoriile și ordinea implicite și mută elementele personalizate în Altele.";
 "No sites selected. Cosmetic filtering will not apply." = "Niciun site selectat. Filtrarea cosmetică nu se va aplica.";
 "Cosmetic filtering will not apply on these sites. Network blocking still applies." = "Filtrarea cosmetică nu se va aplica pe aceste site-uri. Blocarea de rețea rămâne activă.";
 "When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device." = "Când este activată, această opțiune sincronizează prin iCloud starea de activare a scripturilor de utilizator. Dezactiveaz-o pentru a păstra aceste alegeri doar pe acest dispozitiv.";
@@ -1064,3 +1059,5 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "PersianBlockerNG" = "PersianBlockerNG";
 "RU AdList" = "RU AdList";
 "RU AdList: Counters" = "RU AdList: Counters";
+"Custom URL" = "URL personalizat";
+"Links" = "Linkuri";

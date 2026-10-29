@@ -95,6 +95,8 @@
 "Additional filter list for websites in Hebrew." = "قائمة فلاتر إضافية لمواقع الويب باللغة العبرية.";
 "Additional filter list for websites in Hindi, Tamil and other Dravidian and Indic languages." = "قائمة فلاتر إضافية لمواقع الويب باللغات الهندية والتاميلية واللغات الدرافيدية والهندية الأخرى.";
 "Additional filter list for websites in Icelandic." = "قائمة فلاتر إضافية لمواقع الويب باللغة الأيسلندية.";
+"Persian Blocker" = "Persian Blocker";
+"Additional filter list for websites in Persian." = "قائمة فلاتر إضافية للمواقع باللغة الفارسية.";
 "Additional filter list for websites in Latvian." = "قائمة فلاتر إضافية لمواقع الويب باللغة اللاتفية.";
 "Additional filter list for websites in Lithuanian." = "قائمة فلاتر إضافية لمواقع الويب باللغة الليتوانية.";
 "Additional filter list for websites in Slovenian." = "قائمة فلاتر إضافية لمواقع الويب باللغة السلوفينية.";
@@ -174,7 +176,7 @@
 "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "لا يستطيع Safari تطبيق قواعد inline-script في هذه القائمة. فعّل Bypass Paywalls Clean في سكربتات المستخدم للمواقع المدعومة باللغة الإنجليزية.";
 "Blocks pop-up ads on web pages." = "يحظر الإعلانات المنبثقة على صفحات الويب.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "يحظر النوافذ المنبثقة الترويجية والاشتراكات في الرسائل الإخبارية وطلبات الإشعارات.";
-"Hides share and follow buttons on any site, including many that AdGuard Social Media Filter misses." = "يخفي أزرار المشاركة والمتابعة على أي موقع، بما في ذلك كثير مما يفوته AdGuard Social Media Filter.";
+"Hides social media content and icons. Blocks social widgets and scripts, including many that AdGuard Social Media Filter misses." = "يخفي محتوى وسائل التواصل الاجتماعي وأيقوناتها. ويحظر أدواتها وسكربتاتها، بما في ذلك كثير مما يفوته AdGuard Social Media Filter.";
 "Blocks third-party widgets, chat assistants, and support widgets." = "يحظر أدوات الطرف الثالث ومساعدي الدردشة وأدوات الدعم.";
 "Building combined filter engine..." = "جارٍ بناء محرك الفلاتر المدمج...";
 "Building filter engine" = "بناء محرك الفلاتر";
@@ -203,7 +205,6 @@
 "Conditional check failed" = "فشل الفحص الشرطي";
 "Content filtering" = "تصفية المحتوى";
 "Continue" = "متابعة";
-"Conversion" = "التحويل";
 "Conversion phase summary" = "ملخص مرحلة التحويل";
 "Converted rules, but one or more extensions failed to reload after 5 attempts." = "تم تحويل القواعد، لكن تعذّر إعادة تحميل امتداد واحد أو أكثر بعد 5 محاولات.";
 "Converting %@…" = "جارٍ تحويل %@…";
@@ -447,7 +448,7 @@
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "لا تتوفر لـ %@ إلا القوائم التي يديرها المجتمع. فعّلها إذا كنت مرتاحًا لذلك.";
 "Only pasted user lists can be edited." = "يمكن تحرير قوائم المستخدم الملصوقة فقط.";
 "Open Login Items" = "فتح عناصر تسجيل الدخول";
-"Open Safari Settings" = "فتح إعدادات Safari";
+"Open Safari Extension Settings" = "فتح إعدادات ملحقات Safari";
 "Other" = "أخرى";
 "Overdue catch-up" = "استدراك متأخر";
 "Paste" = "لصق";
@@ -484,7 +485,6 @@
 "Regional filters: %@" = "الفلاتر الإقليمية: %@";
 "Registered" = "تم التسجيل";
 "Registration: %@" = "التسجيل: %@";
-"Reload" = "إعادة التحميل";
 "Reload phase had failures; continuing with advanced rules processing" = "حدثت إخفاقات في مرحلة إعادة التحميل؛ يتابع معالجة القواعد المتقدمة";
 "Reload phase summary" = "ملخص مرحلة إعادة التحميل";
 "Reloading Extensions" = "جارٍ إعادة تحميل الامتدادات";
@@ -766,8 +766,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Report Issues" = "الإبلاغ عن المشكلات";
 "Contact Us" = "اتصل بنا";
 "Version" = "الإصدار";
-"Developer" = "المطور";
-"GPL-3.0 License" = "ترخيص GPL-3.0";
 "Privacy Policy" = "سياسة الخصوصية";
 
 /* Issue 508 UI */
@@ -916,7 +914,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Edit Info" = "تعديل المعلومات";
 
-"Get" = "تنزيل";
 "Autoplay" = "التشغيل التلقائي";
 "Autoplay off" = "التشغيل التلقائي متوقف";
 "Userscripts off" = "سكربتات المستخدم متوقفة";
@@ -932,9 +929,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "تختبر الفلاتر التجريبية قواعد جديدة قبل وصولها إلى القوائم الرئيسية وقد تتسبب في تعطل المواقع. فعّلها فقط إذا كنت مرتاحًا لاكتشاف الأعطال والإبلاغ عنها.";
 "Enable HaGeZi Multi Pro Mini?" = "تفعيل HaGeZi Multi Pro Mini؟";
 "HaGeZi Multi Pro Mini is better suited to a DNS blocker than Safari. Its many domain rules can consume a large share of Safari’s limited rule capacity, leaving less room for browser-focused filters, and may break websites by blocking services they need. We recommend leaving it off and using wBlock’s recommended filter lists instead." = "قائمة HaGeZi Multi Pro Mini أنسب لأداة حظر DNS منها إلى Safari. قد تستهلك قواعد النطاقات الكثيرة جزءًا كبيرًا من سعة القواعد المحدودة في Safari، مما يترك مساحة أقل للفلاتر المصممة للمتصفحات، وقد تعطل المواقع بحظر خدمات تحتاج إليها. نوصي بتركها معطلة واستخدام قوائم الفلاتر الموصى بها في wBlock بدلًا منها.";
-"Reset Ordering" = "إعادة تعيين الترتيب";
 "Reset" = "إعادة تعيين";
-"Return built-in lists and userscripts to their default categories and order, and move custom ones to Other." = "إعادة القوائم والسكربتات المدمجة إلى فئاتها وترتيبها الافتراضي، ونقل المخصصة إلى «أخرى».";
 "No sites selected. Cosmetic filtering will not apply." = "لم يتم تحديد أي مواقع. لن تُطبَّق التصفية التجميلية.";
 "Cosmetic filtering will not apply on these sites. Network blocking still applies." = "لن تُطبَّق التصفية التجميلية على هذه المواقع. يظل حظر الشبكة مطبَّقًا.";
 "When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device." = "عند تفعيل هذا الخيار، تتم مزامنة حالات تشغيل وإيقاف سكربتات المستخدم عبر iCloud. أوقفه للاحتفاظ بهذه الحالات على هذا الجهاز فقط.";
@@ -1064,3 +1059,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "PersianBlockerNG" = "PersianBlockerNG";
 "RU AdList" = "RU AdList";
 "RU AdList: Counters" = "RU AdList: Counters";
+"Custom URL" = "رابط مخصص";
+"Links" = "روابط";

@@ -22,6 +22,13 @@ enum FilterListSetup {
             }
             result.append(filter)
         }
-        return result
+        // Stored arrays append newly introduced lists. Saved user ordering is
+        // applied separately, so the base order must come from the current catalog.
+        let ranks = Dictionary(defaults.enumerated().map { ($0.element.url, $0.offset) }, uniquingKeysWith: min)
+        return result.sorted {
+            let lhs = $0.isCustom ? defaults.count : ranks[$0.url, default: defaults.count]
+            let rhs = $1.isCustom ? defaults.count : ranks[$1.url, default: defaults.count]
+            return lhs < rhs
+        }
     }
 }

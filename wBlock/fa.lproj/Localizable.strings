@@ -95,6 +95,8 @@
 "Additional filter list for websites in Hebrew." = "فهرست فیلتر اضافی برای وب‌سایت‌های عبری.";
 "Additional filter list for websites in Hindi, Tamil and other Dravidian and Indic languages." = "فهرست فیلتر اضافی برای وب‌سایت‌های به زبان‌های هندی، تامیلی و سایر زبان‌های دراویدی و هندوآریایی.";
 "Additional filter list for websites in Icelandic." = "فهرست فیلتر اضافی برای وب‌سایت‌های ایسلندی.";
+"Persian Blocker" = "Persian Blocker";
+"Additional filter list for websites in Persian." = "فهرست فیلتر اضافی برای وب‌سایت‌های فارسی‌زبان.";
 "Additional filter list for websites in Latvian." = "فهرست فیلتر اضافی برای وب‌سایت‌های لتونیایی.";
 "Additional filter list for websites in Lithuanian." = "فهرست فیلتر اضافی برای وب‌سایت‌های لیتوانیایی.";
 "Additional filter list for websites in Slovenian." = "فهرست فیلتر اضافی برای وب‌سایت‌های اسلوونیایی.";
@@ -174,7 +176,7 @@
 "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "قوانین اسکریپت درون‌خطی این فهرست را Safari نمی‌تواند اعمال کند. برای سایت‌های انگلیسی‌زبان پشتیبانی‌شده، Bypass Paywalls Clean را در Userscripts فعال کنید.";
 "Blocks pop-up ads on web pages." = "تبلیغات پاپ‌آپ را در صفحات وب مسدود می‌کند.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "پاپ‌آپ‌های تبلیغاتی، ثبت‌نام خبرنامه و درخواست‌های اعلان را مسدود می‌کند.";
-"Hides share and follow buttons on any site, including many that AdGuard Social Media Filter misses." = "دکمه‌های اشتراک‌گذاری و دنبال‌کردن را در هر سایتی پنهان می‌کند، از جمله بسیاری که AdGuard Social Media Filter از قلم می‌اندازد.";
+"Hides social media content and icons. Blocks social widgets and scripts, including many that AdGuard Social Media Filter misses." = "محتوا و نمادهای شبکه‌های اجتماعی را پنهان می‌کند. ابزارک‌ها و اسکریپت‌های اجتماعی را مسدود می‌کند، از جمله بسیاری که AdGuard Social Media Filter از قلم می‌اندازد.";
 "Blocks third-party widgets, chat assistants, and support widgets." = "ابزارک‌های شخص ثالث، دستیاران چت و ابزارک‌های پشتیبانی را مسدود می‌کند.";
 "Building combined filter engine..." = "در حال ساخت موتور فیلتر ترکیبی...";
 "Building filter engine" = "در حال ساخت موتور فیلتر";
@@ -203,7 +205,6 @@
 "Conditional check failed" = "بررسی شرطی ناموفق بود";
 "Content filtering" = "فیلتر کردن محتوا";
 "Continue" = "ادامه";
-"Conversion" = "تبدیل";
 "Conversion phase summary" = "خلاصهٔ مرحلهٔ تبدیل";
 "Converted rules, but one or more extensions failed to reload after 5 attempts." = "قوانین تبدیل شدند، اما بارگیری مجدد یک یا چند افزونه پس از ۵ بار تلاش ناموفق بود.";
 "Converting %@…" = "در حال تبدیل %@…";
@@ -447,7 +448,7 @@
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "تنها فهرست‌های نگهداری‌شده توسط جامعه برای %@ در دسترس هستند. در صورت تمایل آن‌ها را فعال کنید.";
 "Only pasted user lists can be edited." = "فقط فهرست‌های چسبانده‌شده توسط کاربر قابل ویرایش هستند.";
 "Open Login Items" = "باز کردن Login Items";
-"Open Safari Settings" = "باز کردن تنظیمات Safari";
+"Open Safari Extension Settings" = "باز کردن تنظیمات افزونه‌های Safari";
 "Other" = "سایر";
 "Overdue catch-up" = "همگام‌سازی عقب‌افتاده";
 "Paste" = "جای‌گذاری";
@@ -482,7 +483,6 @@
 "Regional filters: %@" = "فیلترهای منطقه‌ای: %@";
 "Registered" = "ثبت‌شده";
 "Registration: %@" = "ثبت: %@";
-"Reload" = "بارگیری مجدد";
 "Reload phase had failures; continuing with advanced rules processing" = "مرحلهٔ بارگیری مجدد با شکست مواجه شد؛ ادامه با پردازش قوانین پیشرفته";
 "Reload phase summary" = "خلاصهٔ مرحلهٔ بارگیری مجدد";
 "Reloading Extensions" = "در حال بارگیری مجدد افزونه‌ها";
@@ -764,8 +764,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Report Issues" = "گزارش مشکلات";
 "Contact Us" = "تماس با ما";
 "Version" = "نسخه";
-"Developer" = "توسعه‌دهنده";
-"GPL-3.0 License" = "مجوز GPL-3.0";
 "Privacy Policy" = "سیاست حفظ حریم خصوصی";
 
 /* Issue 508 UI */
@@ -925,7 +923,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Edit Info" = "ویرایش اطلاعات";
 
-"Get" = "دریافت";
 "Autoplay" = "پخش خودکار";
 "Autoplay off" = "پخش خودکار خاموش";
 "Userscripts off" = "اسکریپت‌های کاربر خاموش";
@@ -941,9 +938,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "فیلترهای آزمایشی قوانین جدید را قبل از رسیدن به فهرست‌های اصلی آزمایش می‌کنند و ممکن است کارکرد وب‌سایت‌ها را مختل کنند. آن‌ها را تنها در صورتی فعال کنید که با یافتن و گزارش اشکالات مشکلی ندارید.";
 "Enable HaGeZi Multi Pro Mini?" = "\U200FHaGeZi Multi Pro Mini فعال شود؟";
 "HaGeZi Multi Pro Mini is better suited to a DNS blocker than Safari. Its many domain rules can consume a large share of Safari’s limited rule capacity, leaving less room for browser-focused filters, and may break websites by blocking services they need. We recommend leaving it off and using wBlock’s recommended filter lists instead." = "فهرست HaGeZi Multi Pro Mini برای مسدودکنندهٔ DNS مناسب‌تر از Safari است. قوانین فراوان دامنهٔ آن ممکن است بخش بزرگی از ظرفیت محدود قوانین Safari را اشغال کند و فضای کمتری برای فیلترهای ویژهٔ مرورگر باقی بگذارد. همچنین ممکن است با مسدود کردن سرویس‌های ضروری، عملکرد وب‌سایت‌ها را مختل کند. توصیه می‌کنیم آن را خاموش نگه دارید و به‌جای آن از فهرست‌های فیلتر پیشنهادی wBlock استفاده کنید.";
-"Reset Ordering" = "بازنشانی ترتیب";
 "Reset" = "بازنشانی";
-"Return built-in lists and userscripts to their default categories and order, and move custom ones to Other." = "بازگرداندن فهرست‌ها و اسکریپت‌های کاربر داخلی به دسته‌ها و ترتیب پیش‌فرضشان، و انتقال موارد سفارشی به «سایر».";
 "No sites selected. Cosmetic filtering will not apply." = "هیچ سایتی انتخاب نشده است. فیلتر کردن ظاهری اعمال نخواهد شد.";
 "Cosmetic filtering will not apply on these sites. Network blocking still applies." = "فیلتر کردن ظاهری در این سایت‌ها اعمال نخواهد شد. مسدود کردن شبکه همچنان اعمال می‌شود.";
 "When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device." = "وقتی روشن باشد، گزینه‌های فعال/غیرفعال بودن اسکریپت کاربر از طریق iCloud همگام‌سازی می‌شوند. این گزینه را خاموش کنید تا آن گزینه‌ها روی این دستگاه باقی بمانند.";
@@ -1073,3 +1068,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "PersianBlockerNG" = "PersianBlockerNG";
 "RU AdList" = "RU AdList";
 "RU AdList: Counters" = "RU AdList: Counters";
+"Custom URL" = "نشانی سفارشی";
+"Links" = "پیوندها";

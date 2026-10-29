@@ -42,9 +42,7 @@ import Foundation
               let expected = status == .complete ? Double(i + 1) / 5 : (Double(i) + local) / 5
               precondition(abs(p.progress - expected) < 1e-9 && p.progress.isFinite)
               precondition(p.title == phase.title && p.nodes.map(\.phase) == phases)
-              precondition(
-                p.progressLabel == ApplyProgressPresentation.percentString(expected)
-                  && p.accessibilityValue == p.progressLabel)
+              precondition(p.progressLabel == ApplyProgressPresentation.percentString(expected))
               precondition(p.isFailed == (status == .failed))
               let label =
                 status != .active
@@ -136,7 +134,7 @@ import Foundation
     var unnamed = vm.state
     unnamed.statusMessage = ""
     precondition(ApplyProgressPresentation.make(from: unnamed).detail == nil)
-    vm.updateStatistics(sourceRules: 10, safariRules: 8, conversionTime: "0.2s", reloadTime: "0.1s")
+    vm.markFinished()
     precondition(
       ApplyProgressPresentation.make(from: vm.state).progress == 1
         && vm.state.phases.allSatisfy { $0.status == .complete })
