@@ -216,7 +216,6 @@
 "Conditional check failed" = "A feltételes ellenőrzés sikertelen";
 "Content filtering" = "Tartalomszűrés";
 "Continue" = "Folytatás";
-"Conversion" = "Konverzió";
 "Conversion phase summary" = "A konvertálási fázis összegzése";
 "Converted rules, but one or more extensions failed to reload after 5 attempts." = "A szabályok konvertálva lettek, de egy vagy több bővítmény 5 próbálkozás után sem töltődött újra.";
 "Converting %@…" = "%@â¦ konvertálása";
@@ -498,7 +497,6 @@
 "Regional filters: %@" = "Regionális szűrők: %@";
 "Registered" = "Regisztrálva";
 "Registration: %@" = "Regisztráció: %@";
-"Reload" = "Újratöltés";
 "Reload phase had failures; continuing with advanced rules processing" = "Az újratöltési fázis hibákat tartalmazott; folytatódik a speciális szabályok feldolgozása";
 "Reload phase summary" = "Az újratöltési fázis összegzése";
 "Reloading Extensions" = "Bővítmények újratöltése";

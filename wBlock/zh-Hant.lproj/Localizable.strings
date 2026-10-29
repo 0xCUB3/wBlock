@@ -216,7 +216,6 @@
 "Conditional check failed" = "條件檢查失敗";
 "Content filtering" = "內容過濾";
 "Continue" = "繼續";
-"Conversion" = "轉換";
 "Conversion phase summary" = "轉換階段摘要";
 "Converted rules, but one or more extensions failed to reload after 5 attempts." = "規則已轉換，但有一個或多個延伸功能在 5 次嘗試後仍未能重新載入。";
 "Converting %@…" = "正在轉換 %@…";
@@ -498,7 +497,6 @@
 "Regional filters: %@" = "區域過濾器：%@";
 "Registered" = "已註冊";
 "Registration: %@" = "註冊：%@";
-"Reload" = "重新載入";
 "Reload phase had failures; continuing with advanced rules processing" = "重新載入階段出現失敗；繼續處理進階規則";
 "Reload phase summary" = "重新載入階段摘要";
 "Reloading Extensions" = "正在重新載入延伸功能";

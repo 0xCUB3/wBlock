@@ -7,26 +7,20 @@ import UIKit
 
 /// Cooperative cancel flag for the in-flight apply. Expiration callbacks set
 /// this off the MainActor so checkpoints can unwind and drop app-group file
-/// locks before iOS suspends (0xDEAD10CC). User-initiated cancel uses the same
-/// checkpoints but dismisses the sheet instead of the failure UI.
+/// locks before iOS suspends (0xDEAD10CC).
 private enum ApplyCancellation {
     private static let lock = NSLock()
     private static var cancelled = false
-    private static var userInitiated = false
 
     static func reset() {
         lock.lock()
         cancelled = false
-        userInitiated = false
         lock.unlock()
     }
 
-    static func cancel(userInitiated: Bool = false) {
+    static func cancel() {
         lock.lock()
         cancelled = true
-        if userInitiated {
-            self.userInitiated = true
-        }
         lock.unlock()
     }
 
@@ -34,12 +28,6 @@ private enum ApplyCancellation {
         lock.lock()
         defer { lock.unlock() }
         return cancelled
-    }
-
-    static var isUserInitiated: Bool {
-        lock.lock()
-        defer { lock.unlock() }
-        return userInitiated
     }
 }
 
@@ -118,13 +106,6 @@ extension AppFilterManager {
         }
     }
 
-    /// Stops an in-flight apply started from the progress sheet (idempotent).
-    func cancelInFlightApply() {
-        guard isApplyInFlight else { return }
-        ApplyCancellation.cancel(userInitiated: true)
-        exclusiveApplyTask?.cancel()
-    }
-
     private func unwindApplyAfterUserCancel() async {
         await ConcurrentLogManager.shared.info(
             .filterApply,
@@ -141,14 +122,10 @@ extension AppFilterManager {
         }
     }
 
-    /// Fails the in-flight apply when cancelled (user dismiss vs iOS suspension).
+    /// Fails the in-flight apply when cancelled for iOS suspension.
     private func failApplyIfCancelled() async -> Bool {
         guard ApplyCancellation.isCancelled || Task.isCancelled else {
             return false
-        }
-        if ApplyCancellation.isUserInitiated {
-            await unwindApplyAfterUserCancel()
-            return true
         }
         #if os(iOS)
         await failApplyRun(
@@ -219,8 +196,6 @@ extension AppFilterManager {
         let applyTask = Task {
             await work()
         }
-        exclusiveApplyTask = applyTask
-        defer { exclusiveApplyTask = nil }
         #if os(iOS)
         let shield = SuspensionShield(reason: "wBlock apply") {
             ApplyCancellation.cancel()
@@ -1031,11 +1006,7 @@ extension AppFilterManager {
                 resultWarning = self.statusDescription
             }
 
-            self.applyProgressViewModel.updateStatistics(
-                sourceRules: self.sourceRulesCount,
-                safariRules: self.lastRuleCount,
-                conversionTime: self.lastConversionTime,
-                reloadTime: self.lastReloadTime,
+            self.applyProgressViewModel.markFinished(
                 statusMessage: self.statusDescription,
                 resultWarning: resultWarning
             )
@@ -1430,11 +1401,7 @@ extension AppFilterManager {
                     )
                     self.statusDescription = warning ?? self.statusDescription
                 }
-                self.applyProgressViewModel.updateStatistics(
-                    sourceRules: self.sourceRulesCount,
-                    safariRules: self.lastRuleCount,
-                    conversionTime: self.lastConversionTime,
-                    reloadTime: self.lastReloadTime,
+                self.applyProgressViewModel.markFinished(
                     statusMessage: self.statusDescription,
                     resultWarning: warning
                 )

@@ -216,7 +216,6 @@
 "Conditional check failed" = "Verificação condicional falhou";
 "Content filtering" = "Filtragem de conteúdo";
 "Continue" = "Continuar";
-"Conversion" = "Conversão";
 "Conversion phase summary" = "Resumo da fase de conversão";
 "Converted rules, but one or more extensions failed to reload after 5 attempts." = "Regras convertidas, mas uma ou mais extensões não recarregaram após 5 tentativas.";
 "Converting %@…" = "Convertendo %@…";
@@ -496,7 +495,6 @@
 "Regional filters: %@" = "Filtros regionais: %@";
 "Registered" = "Registrado";
 "Registration: %@" = "Registro: %@";
-"Reload" = "Recarregar";
 "Reload phase had failures; continuing with advanced rules processing" = "A fase de recarregamento teve falhas; continuando o processamento de regras avançadas";
 "Reload phase summary" = "Resumo da fase de recarregamento";
 "Reloading Extensions" = "Recarregando extensões";

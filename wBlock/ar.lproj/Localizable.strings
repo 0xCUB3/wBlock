@@ -216,7 +216,6 @@
 "Conditional check failed" = "فشل الفحص الشرطي";
 "Content filtering" = "تصفية المحتوى";
 "Continue" = "متابعة";
-"Conversion" = "التحويل";
 "Conversion phase summary" = "ملخص مرحلة التحويل";
 "Converted rules, but one or more extensions failed to reload after 5 attempts." = "تم تحويل القواعد، لكن تعذّر إعادة تحميل امتداد واحد أو أكثر بعد 5 محاولات.";
 "Converting %@…" = "جارٍ تحويل %@…";
@@ -498,7 +497,6 @@
 "Regional filters: %@" = "الفلاتر الإقليمية: %@";
 "Registered" = "تم التسجيل";
 "Registration: %@" = "التسجيل: %@";
-"Reload" = "إعادة التحميل";
 "Reload phase had failures; continuing with advanced rules processing" = "حدثت إخفاقات في مرحلة إعادة التحميل؛ يتابع معالجة القواعد المتقدمة";
 "Reload phase summary" = "ملخص مرحلة إعادة التحميل";
 "Reloading Extensions" = "جارٍ إعادة تحميل الامتدادات";

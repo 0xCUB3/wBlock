@@ -216,7 +216,6 @@
 "Conditional check failed" = "Условная проверка не удалась";
 "Content filtering" = "Фильтрация содержимого";
 "Continue" = "Продолжить";
-"Conversion" = "Конвертация";
 "Conversion phase summary" = "Сводка фазы конвертации";
 "Converted rules, but one or more extensions failed to reload after 5 attempts." = "Правила преобразованы, но одно или несколько расширений не удалось перезагрузить после 5 попыток.";
 "Converting %@…" = "Преобразование %@…";
@@ -498,7 +497,6 @@
 "Regional filters: %@" = "Региональные фильтры: %@";
 "Registered" = "Зарегистрировано";
 "Registration: %@" = "Регистрация: %@";
-"Reload" = "Перезагрузить";
 "Reload phase had failures; continuing with advanced rules processing" = "Фаза перезагрузки содержит ошибки; продолжается обработка продвинутых правил";
 "Reload phase summary" = "Сводка фазы перезагрузки";
 "Reloading Extensions" = "Перезагрузка расширений";

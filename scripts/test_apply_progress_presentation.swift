@@ -136,7 +136,7 @@ import Foundation
     var unnamed = vm.state
     unnamed.statusMessage = ""
     precondition(ApplyProgressPresentation.make(from: unnamed).detail == nil)
-    vm.updateStatistics(sourceRules: 10, safariRules: 8, conversionTime: "0.2s", reloadTime: "0.1s")
+    vm.markFinished()
     precondition(
       ApplyProgressPresentation.make(from: vm.state).progress == 1
         && vm.state.phases.allSatisfy { $0.status == .complete })

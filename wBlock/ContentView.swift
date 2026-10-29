@@ -209,6 +209,7 @@ struct ContentView: View {
                 filterManager: filterManager,
                 userScriptManager: userScriptManager,
                 dataManager: dataManager,
+                applyProgress: filterManager.applyProgressViewModel,
                 showingAddFilterSheet: $showingAddFilterSheet,
                 scenePhase: scenePhase
             ))
@@ -1046,6 +1047,7 @@ struct ContentModifiers: ViewModifier {
     @ObservedObject var filterManager: AppFilterManager
     @ObservedObject var userScriptManager: UserScriptManager
     @ObservedObject var dataManager: ProtobufDataManager
+    @ObservedObject var applyProgress: ApplyChangesViewModel
     @Binding var showingAddFilterSheet: Bool
     let scenePhase: ScenePhase
 
@@ -1067,8 +1069,24 @@ struct ContentModifiers: ViewModifier {
             && (filterManager.showingNoUpdatesAlert || (filterManager.isLoading && !filterManager.suppressBlockingOverlay))
     }
 
-    private var progressSheetPresented: Bool {
+    private var applyRunVisible: Bool {
         onboardingSettled && filterManager.showingApplyProgressSheet
+    }
+
+    /// A running apply shows a thin bar under the toolbar instead of a sheet
+    /// (#1051). The sheet is left for picking updates and for runs that
+    /// failed or finished with a warning.
+    private var progressSheetPresented: Bool {
+        guard applyRunVisible else { return false }
+        switch applyProgress.state.mode {
+        case .progress: return false
+        case .result: return resultNeedsAttention
+        case .review, .failed: return true
+        }
+    }
+
+    private var resultNeedsAttention: Bool {
+        applyProgress.state.resultNeedsAttention || !filterManager.failedReloadTargets.isEmpty
     }
 
     func body(content: Content) -> some View {
@@ -1090,6 +1108,22 @@ struct ContentModifiers: ViewModifier {
                     viewModel: filterManager.applyProgressViewModel,
                     isPresented: $filterManager.showingApplyProgressSheet
                 )
+            }
+            .overlay(alignment: .top) {
+                if applyRunVisible && applyProgress.state.mode == .progress {
+                    let presentation = ApplyProgressPresentation.make(from: applyProgress.state)
+                    ProgressView(value: presentation.progress)
+                        .progressViewStyle(.linear)
+                        .accessibilityLabel(presentation.progressLabel)
+                        .accessibilityValue(presentation.accessibilityValue)
+                        .transition(.opacity)
+                }
+            }
+            .animation(.easeInOut(duration: 0.2), value: applyRunVisible && applyProgress.state.mode == .progress)
+            .onChangeCompat(of: applyProgress.state.mode) { _, mode in
+                if mode == .result && !resultNeedsAttention {
+                    filterManager.showingApplyProgressSheet = false
+                }
             }
             .overlay {
                 if checkCardVisible {

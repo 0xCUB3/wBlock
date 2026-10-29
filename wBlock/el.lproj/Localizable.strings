@@ -216,7 +216,6 @@
 "Conditional check failed" = "Αποτυχία υπό όρους ελέγχου";
 "Content filtering" = "Φιλτράρισμα περιεχομένου";
 "Continue" = "Συνέχεια";
-"Conversion" = "Μετατροπή";
 "Conversion phase summary" = "Σύνοψη φάσης μετατροπής";
 "Converted rules, but one or more extensions failed to reload after 5 attempts." = "Οι κανόνες μετατράπηκαν, αλλά μία ή περισσότερες επεκτάσεις απέτυχαν να επαναφορτωθούν μετά από 5 προσπάθειες.";
 "Converting %@…" = "Μετατροπή %@…";
@@ -498,7 +497,6 @@
 "Regional filters: %@" = "Τοπικά φίλτρα: %@";
 "Registered" = "Καταχωρήθηκε";
 "Registration: %@" = "Καταχώριση: %@";
-"Reload" = "Επαναφόρτωση";
 "Reload phase had failures; continuing with advanced rules processing" = "Η φάση επαναφόρτωσης είχε αποτυχίες· συνέχεια με επεξεργασία προηγμένων κανόνων";
 "Reload phase summary" = "Σύνοψη φάσης επαναφόρτωσης";
 "Reloading Extensions" = "Επαναφόρτωση επεκτάσεων";

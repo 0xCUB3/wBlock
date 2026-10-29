@@ -52,14 +52,6 @@ struct ApplyChangesPhaseProgress: Equatable, Identifiable {
     var id: ApplyChangesPhase { phase }
 }
 
-/// Summary statistics surfaced once the run finishes.
-struct ApplyChangesSummary: Equatable {
-    var sourceRules: Int
-    var safariRules: Int
-    var conversionTime: String
-    var reloadTime: String
-}
-
 /// Consolidated state for the apply progress presentation.
 struct ApplyChangesState: Equatable {
     var mode: ApplyChangesSheetMode = .progress
@@ -89,7 +81,9 @@ struct ApplyChangesState: Equatable {
     var phases: [ApplyChangesPhaseProgress] = ApplyChangesPhase.allCases.map {
         ApplyChangesPhaseProgress(phase: $0, status: .pending)
     }
-    var summary: ApplyChangesSummary? = nil
+
+    /// A finished run only stays on screen when something needs a look.
+    var resultNeedsAttention: Bool { !resultWarning.isEmpty || scriptsFailedCount > 0 }
 }
 
 private extension ClosedRange where Bound == Double {
@@ -126,7 +120,6 @@ class ApplyChangesViewModel: ObservableObject {
                 state.mode = .progress
             }
             state.failureMessage = ""
-            state.summary = nil
             resetPhases()
         }
     }
@@ -227,23 +220,10 @@ class ApplyChangesViewModel: ObservableObject {
         state.scriptsFailedCount = failedClamped
     }
 
-    func updateStatistics(
-        sourceRules: Int,
-        safariRules: Int,
-        conversionTime: String,
-        reloadTime: String,
-        statusMessage: String? = nil,
-        resultWarning: String? = nil
-    ) {
-        state.summary = ApplyChangesSummary(
-            sourceRules: sourceRules,
-            safariRules: safariRules,
-            conversionTime: conversionTime,
-            reloadTime: reloadTime
-        )
+    func markFinished(statusMessage: String? = nil, resultWarning: String? = nil) {
         state.isLoading = false
 
-        // Never let a summary overwrite a hard failure (e.g. advanced engine publish failed).
+        // Never let a finished run overwrite a hard failure (e.g. advanced engine publish failed).
         if state.mode == .failed {
             if let statusMessage, !statusMessage.isEmpty {
                 state.statusMessage = statusMessage

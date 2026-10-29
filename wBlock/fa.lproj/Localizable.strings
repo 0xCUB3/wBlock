@@ -216,7 +216,6 @@
 "Conditional check failed" = "بررسی شرطی ناموفق بود";
 "Content filtering" = "فیلتر کردن محتوا";
 "Continue" = "ادامه";
-"Conversion" = "تبدیل";
 "Conversion phase summary" = "خلاصهٔ مرحلهٔ تبدیل";
 "Converted rules, but one or more extensions failed to reload after 5 attempts." = "قوانین تبدیل شدند، اما بارگیری مجدد یک یا چند افزونه پس از ۵ بار تلاش ناموفق بود.";
 "Converting %@…" = "در حال تبدیل %@…";
@@ -496,7 +495,6 @@
 "Regional filters: %@" = "فیلترهای منطقه‌ای: %@";
 "Registered" = "ثبت‌شده";
 "Registration: %@" = "ثبت: %@";
-"Reload" = "بارگیری مجدد";
 "Reload phase had failures; continuing with advanced rules processing" = "مرحلهٔ بارگیری مجدد با شکست مواجه شد؛ ادامه با پردازش قوانین پیشرفته";
 "Reload phase summary" = "خلاصهٔ مرحلهٔ بارگیری مجدد";
 "Reloading Extensions" = "در حال بارگیری مجدد افزونه‌ها";

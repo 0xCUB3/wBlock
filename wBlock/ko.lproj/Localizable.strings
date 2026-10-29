@@ -216,7 +216,6 @@
 "Conditional check failed" = "조건 검사에 실패했습니다";
 "Content filtering" = "콘텐츠 필터링";
 "Continue" = "계속";
-"Conversion" = "변환";
 "Conversion phase summary" = "변환 단계 요약";
 "Converted rules, but one or more extensions failed to reload after 5 attempts." = "규칙은 변환되었지만 확장 프로그램 하나 이상이 5번 시도 후에도 다시 로드되지 않았습니다.";
 "Converting %@…" = "%@ 변환 중…";
@@ -498,7 +497,6 @@
 "Regional filters: %@" = "지역 필터: %@";
 "Registered" = "등록됨";
 "Registration: %@" = "등록: %@";
-"Reload" = "새로고침";
 "Reload phase had failures; continuing with advanced rules processing" = "다시 로드 단계에 실패가 있음; 고급 규칙 처리를 계속합니다";
 "Reload phase summary" = "다시 로드 단계 요약";
 "Reloading Extensions" = "확장 프로그램 다시 로드 중";

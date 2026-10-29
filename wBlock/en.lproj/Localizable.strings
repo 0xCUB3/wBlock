@@ -216,7 +216,6 @@
 "Conditional check failed" = "Conditional check failed";
 "Content filtering" = "Content filtering";
 "Continue" = "Continue";
-"Conversion" = "Conversion";
 "Conversion phase summary" = "Conversion phase summary";
 "Converted rules, but one or more extensions failed to reload after 5 attempts." = "Rules converted, but one or more extensions didn't reload after 5 tries.";
 "Converting %@…" = "Converting %@…";
@@ -496,7 +495,6 @@
 "Regional filters: %@" = "Regional filters: %@";
 "Registered" = "Registered";
 "Registration: %@" = "Registration: %@";
-"Reload" = "Reload";
 "Reload phase had failures; continuing with advanced rules processing" = "Reload phase had failures; continuing with advanced rules processing";
 "Reload phase summary" = "Reload phase summary";
 "Reloading Extensions" = "Reloading Extensions";

@@ -216,7 +216,6 @@
 "Conditional check failed" = "Verificarea condiționată a eșuat";
 "Content filtering" = "Filtrarea conținutului";
 "Continue" = "Continuă";
-"Conversion" = "Conversie";
 "Conversion phase summary" = "Rezumat faza de conversie";
 "Converted rules, but one or more extensions failed to reload after 5 attempts." = "Regulile au fost convertite, dar una sau mai multe extensii nu s-au reîncărcat după 5 încercări.";
 "Converting %@…" = "Se convertește %@…";
@@ -496,7 +495,6 @@
 "Regional filters: %@" = "Filtre regionale: %@";
 "Registered" = "Înregistrat";
 "Registration: %@" = "Înregistrare: %@";
-"Reload" = "Reîncărcare";
 "Reload phase had failures; continuing with advanced rules processing" = "Faza de reîncărcare a avut eșecuri; continuă procesarea regulilor avansate";
 "Reload phase summary" = "Rezumat faza de reîncărcare";
 "Reloading Extensions" = "Se reîncarcă extensiile";

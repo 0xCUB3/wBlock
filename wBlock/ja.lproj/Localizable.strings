@@ -216,7 +216,6 @@
 "Conditional check failed" = "条件チェックに失敗しました";
 "Content filtering" = "コンテンツフィルタリング";
 "Continue" = "続ける";
-"Conversion" = "変換";
 "Conversion phase summary" = "変換フェーズの概要";
 "Converted rules, but one or more extensions failed to reload after 5 attempts." = "ルールは変換されましたが、5回試行した後も1つ以上の機能拡張の再読み込みに失敗しました。";
 "Converting %@…" = "%@ を変換中...";
@@ -498,7 +497,6 @@
 "Regional filters: %@" = "地域フィルター: %@";
 "Registered" = "登録済み";
 "Registration: %@" = "登録: %@";
-"Reload" = "再読み込み";
 "Reload phase had failures; continuing with advanced rules processing" = "再読み込みフェーズで失敗が発生しました — 高度なルール処理を続行します";
 "Reload phase summary" = "再読み込みフェーズの概要";
 "Reloading Extensions" = "機能拡張を再読み込み中";
