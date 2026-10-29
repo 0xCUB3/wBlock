@@ -352,10 +352,6 @@ struct ApplyProgressPresentation: Equatable {
         Self.percentString(progress)
     }
 
-    var accessibilityValue: String {
-        progressLabel
-    }
-
     static func make(from state: ApplyChangesState) -> ApplyProgressPresentation {
         let focused = focusedStep(in: state)
         let nodes = state.phases.map { step in

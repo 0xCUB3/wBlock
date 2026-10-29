@@ -397,11 +397,7 @@ struct ContentView: View {
     private var filtersView: some View {
         CompatibleNavigationStack(requiresNavigationView: false) {
             nativeFiltersListView
-                .safeAreaInset(edge: .top) {
-                    if filterManager.isBlockingPaused {
-                        pauseBlockingBanner
-                    }
-                }
+                .topBarCompat { topBanners }
             #if os(iOS)
                 .navigationBarTitleDisplayMode(.inline)
             #endif
@@ -494,11 +490,7 @@ struct ContentView: View {
                 },
                 applyButton: AnyView(applyChangesToolbarButton)
             )
-                .safeAreaInset(edge: .top) {
-                    if filterManager.isBlockingPaused {
-                        pauseBlockingBanner
-                    }
-                }
+                .topBarCompat { topBanners }
                 #if os(iOS)
                     .navigationBarTitleDisplayMode(.inline)
                 #endif
@@ -507,6 +499,18 @@ struct ContentView: View {
 
     private var settingsView: some View {
         SettingsView(filterManager: filterManager)
+    }
+
+    private var topBanners: some View {
+        VStack(spacing: 0) {
+            if filterManager.isBlockingPaused {
+                pauseBlockingBanner
+            }
+            if filterManager.showingApplyProgressSheet {
+                ApplyProgressBanner(viewModel: filterManager.applyProgressViewModel)
+            }
+        }
+        .animation(.easeInOut(duration: 0.2), value: filterManager.showingApplyProgressSheet)
     }
 
     @ViewBuilder
@@ -1073,7 +1077,7 @@ struct ContentModifiers: ViewModifier {
         onboardingSettled && filterManager.showingApplyProgressSheet
     }
 
-    /// A running apply shows a thin bar under the toolbar instead of a sheet
+    /// A running apply shows a banner under the toolbar instead of a sheet
     /// (#1051). The sheet is left for picking updates and for runs that
     /// failed or finished with a warning.
     private var progressSheetPresented: Bool {
@@ -1109,17 +1113,6 @@ struct ContentModifiers: ViewModifier {
                     isPresented: $filterManager.showingApplyProgressSheet
                 )
             }
-            .overlay(alignment: .top) {
-                if applyRunVisible && applyProgress.state.mode == .progress {
-                    let presentation = ApplyProgressPresentation.make(from: applyProgress.state)
-                    ProgressView(value: presentation.progress)
-                        .progressViewStyle(.linear)
-                        .accessibilityLabel(presentation.progressLabel)
-                        .accessibilityValue(presentation.accessibilityValue)
-                        .transition(.opacity)
-                }
-            }
-            .animation(.easeInOut(duration: 0.2), value: applyRunVisible && applyProgress.state.mode == .progress)
             .onChangeCompat(of: applyProgress.state.mode) { _, mode in
                 if mode == .result && !resultNeedsAttention {
                     filterManager.showingApplyProgressSheet = false

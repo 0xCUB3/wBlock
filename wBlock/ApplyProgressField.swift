@@ -112,3 +112,31 @@ private struct ApplyProgressRow: View {
         }
     }
 }
+
+/// Shown under the toolbar while an apply runs without its sheet (#1051):
+/// the current step, what it is working on, and how far along it is.
+struct ApplyProgressBanner: View {
+    @ObservedObject var viewModel: ApplyChangesViewModel
+
+    var body: some View {
+        if viewModel.state.mode == .progress {
+            let presentation = ApplyProgressPresentation.make(from: viewModel.state)
+            ProgressView(value: presentation.progress) {
+                Text(presentation.title)
+            } currentValueLabel: {
+                Text(
+                    [presentation.detail, presentation.fractionLabel ?? presentation.progressLabel]
+                        .compactMap { $0 }
+                        .joined(separator: " · ")
+                )
+                .monospacedDigit()
+                .lineLimit(1)
+                .truncationMode(.middle)
+            }
+            .progressViewStyle(.linear)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .transition(.move(edge: .top).combined(with: .opacity))
+        }
+    }
+}
