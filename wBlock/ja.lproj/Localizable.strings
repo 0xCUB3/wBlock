@@ -58,10 +58,10 @@
 "7d" = "7日";
 "Autoplay on" = "自動再生オン";
 "\\(filteredEntries.count) entries" = "\\(filteredEntries.count) 件";
-"\\(index + 1)." = "\\(インデックス + 1)。";
+"\\(index + 1)." = "\\(index + 1).";
 "\\(Int(refreshProgress * 100))%" = "\\(Int(refreshProgress * 100))%";
 "\\(level.emoji) \\(level.localizedName)" = "\\(level.emoji) \\(level.localizedName)";
-"\\(progressPercentage)%" = "\\(進捗率)%";
+"\\(progressPercentage)%" = "\\(progressPercentage)%";
 "A filter list for websites in Serbian, Montenegrin, Croatian, and Bosnian." = "セルビア語、モンテネグロ語、クロアチア語、ボスニア語のウェブサイトのフィルターリスト。";
 "A filter list with this name already exists." = "この名前のフィルターリストは既に存在します。";
 "A filter list with this URL already exists in wBlock." = "このURLのフィルターリストは既にwBlock内に存在します。";
@@ -313,7 +313,7 @@
 "Failed to export logs" = "ログのエクスポートに失敗しました";
 "Failed to fetch filter - HTTP error" = "フィルターの取得に失敗しました — HTTP エラー";
 "Failed to import dropped userscript" = "ドロップされたユーザースクリプトのインポートに失敗しました";
-"Failed to load dropped item" = "ドロップされた項目のインポートに失敗しました";
+"Failed to load dropped item" = "ドロップされた項目の読み込みに失敗しました";
 "Failed to prepare removeparam DNR rules" = "removeparam DNR ルールの準備に失敗しました";
 "Failed to read backup: %@" = "バックアップの読み込みに失敗しました: %@";
 "Failed to read filter content" = "フィルター内容の読み込みに失敗しました";
@@ -468,7 +468,7 @@
 "Paste one or more filter URLs, one per line." = "1行に1つずつ、1つ以上のフィルターURLをペーストしてください。";
 "Pause Blocking" = "ブロックを一時停止";
 "Paused Components" = "一時停止中の機能";
-"Enabled Userscripts & Userstyles" = "ユーザースクリプトとユーザースタイル";
+"Enabled Userscripts & Userstyles" = "有効なユーザースクリプトとユーザースタイル";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "選択した機能が一時停止している間は、「ブロックを一時停止」が有効になります。再開すると、全ての機能の一時停止が解除されます。";
 "Pausing blocking..." = "ブロックを一時停止しています…";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";
