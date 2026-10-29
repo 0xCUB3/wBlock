@@ -745,12 +745,14 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                 identifier: identifier, groupIdentifier: groupIdentifier, success: result.success,
                 attempts: result.attempts, disabledInSafari: result.disabledInSafari
             )
-            await SharedAutoUpdateManager.shared.recordOperation("reload-result", fields: [
+            var fields: [String: String] = [
                 "target": identifier, "result": result.disabledInSafari ? "disabled" : result.skipped ? "skipped" : result.success ? "succeeded" : "failed",
                 "attempts": String(result.attempts), "durationMs": String(result.durationMs),
                 "skipped": String(result.skipped), "disabledInSafari": String(result.disabledInSafari),
                 "failureStreak": String(ContentBlockerReloadPolicy.failureStreak(identifier: identifier, groupIdentifier: groupIdentifier))
-            ])
+            ]
+            fields["failureReason"] = result.failureReason
+            await SharedAutoUpdateManager.shared.recordOperation("reload-result", fields: fields)
             return result
         }
         guard let result = gatedResult else {
