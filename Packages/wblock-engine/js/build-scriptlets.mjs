@@ -17,7 +17,15 @@ if (!out) {
   process.exit(2);
 }
 const resources = JSON.parse(readFileSync(path.join(here, '../resources/resources.json'), 'utf8'));
+resources.push({
+  name: 'trusted-youtube-player-request.js',
+  content: readFileSync(path.join(here, 'youtube-player-request.js'), 'utf8'),
+});
 const byName = new Map(resources.map(r => [r.name, r]));
+// Keep literal response replacements streaming; full-body predicates still use uBO's path.
+const responseHook = byName.get('replace-fetch-response.fn');
+if (!responseHook) throw new Error('missing replace-fetch-response.fn');
+responseHook.content = readFileSync(path.join(here, 'replace-fetch-response.js'), 'utf8');
 const source = r => (/^[A-Za-z0-9+/=\s]+$/.test(r.content) ? Buffer.from(r.content, 'base64').toString('utf8') : r.content);
 
 // Dependencies first, each once.

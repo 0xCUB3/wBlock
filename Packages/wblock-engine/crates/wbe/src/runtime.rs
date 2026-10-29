@@ -101,9 +101,42 @@ impl Scriptlets {
             .collect();
         ids.sort_unstable();
         ids.dedup();
-        ids.into_iter()
+        let mut calls: Vec<Vec<String>> = ids
+            .into_iter()
             .map(|id| self.calls[id as usize].clone())
-            .collect()
+            .collect();
+        // Pair matched response rules with Safari's player requests and watch mode.
+        const REQUEST: &str = "trusted-youtube-player-request";
+        let request_excepted = excepted
+            .iter()
+            .any(|id| self.calls[*id as usize].as_slice() == [REQUEST]);
+        if matches!(host, "youtube.com" | "www.youtube.com")
+            && !request_excepted
+            && calls.iter().any(|call| {
+                call.len() == 4
+                    && matches!(
+                        call[0].as_str(),
+                        "trusted-replace-fetch-response" | "trusted-replace-xhr-response"
+                    )
+                    && matches!(call[1].as_str(), "\"adPlacements\"" | "\"adSlots\"")
+                    && call[2] == "\"no_ads\""
+            })
+        {
+            if !calls.iter().any(|call| call.as_slice() == [REQUEST]) {
+                calls.push(vec![REQUEST.to_string()]);
+            }
+            let watch = vec![
+                "set-constant".to_string(),
+                "ytcfg.data_.EXPERIMENT_FLAGS.web_streaming_watch".to_string(),
+                "false".to_string(),
+            ];
+            if !calls.contains(&watch)
+                && !excepted.iter().any(|id| self.calls[*id as usize] == watch)
+            {
+                calls.push(watch);
+            }
+        }
+        calls
     }
 }
 
@@ -386,6 +419,77 @@ example.com##+js(set-constant, adsEnabled, false)
             let other = engine.lookup("https://example.org/");
             assert!(!other.generichide, "{option}");
             assert!(other.hide.contains(&"[data-ad]".to_string()), "{option}");
+        }
+    }
+
+    #[test]
+    fn youtube_request_policy_follows_matching_rules_and_exceptions() {
+        let rule = r#"www.youtube.com,example.com##+js(trusted-replace-fetch-response, '"adSlots"', '"no_ads"', get_watch?)"#;
+        let url = "https://www.youtube.com/watch?v=video";
+        let wanted = call(&["trusted-youtube-player-request"]);
+        let watch = call(&[
+            "set-constant",
+            "ytcfg.data_.EXPERIMENT_FLAGS.web_streaming_watch",
+            "false",
+        ]);
+        let opts = crate::CompileOptions {
+            safari: crate::webkit::SafariVersion {
+                major: 18,
+                minor: 0,
+            },
+        };
+        let engine = Engine::deserialize(&Engine::build(&lines(rule)).serialize()).unwrap();
+        assert!(engine.lookup(url).scriptlets.contains(&wanted));
+        assert!(engine.lookup(url).scriptlets.contains(&watch));
+        let flag_rule = "www.youtube.com##+js(set-constant, ytcfg.data_.EXPERIMENT_FLAGS.web_streaming_watch, false)";
+        let flag_exception = flag_rule.replacen("##", "#@#", 1);
+        let page = Engine::build(&lines(&format!("{rule}\n{flag_exception}"))).lookup(url);
+        assert!(page.scriptlets.contains(&wanted));
+        assert!(!page.scriptlets.contains(&watch));
+        let page = Engine::build(&lines(&format!(
+            "{rule}\n{flag_rule}\nwww.youtube.com##+js(trusted-youtube-player-request)"
+        )))
+        .lookup(url);
+        assert_eq!(page.scriptlets.iter().filter(|c| *c == &wanted).count(), 1);
+        assert_eq!(page.scriptlets.iter().filter(|c| *c == &watch).count(), 1);
+        assert!(!engine
+            .lookup("https://example.com/")
+            .scriptlets
+            .contains(&wanted));
+        assert!(!engine
+            .lookup("https://music.youtube.com/")
+            .scriptlets
+            .contains(&wanted));
+        for exception in [
+            "www.youtube.com#@#+js()",
+            "www.youtube.com#@#+js(trusted-youtube-player-request)",
+            r#"www.youtube.com#@#+js(trusted-replace-fetch-response, '"adSlots"', '"no_ads"', get_watch?)"#,
+            "@@||youtube.com^$document",
+        ] {
+            let output = crate::compile(
+                &[crate::ListInput {
+                    text: &format!("{rule}\n{exception}"),
+                    trusted: true,
+                }],
+                &opts,
+            );
+            let page = Engine::build(&output.runtime).lookup(url);
+            assert!(
+                !page.scriptlets.contains(&wanted) && !page.scriptlets.contains(&watch),
+                "{exception}"
+            );
+        }
+        for trusted in [false, true] {
+            let output = crate::compile(
+                &[crate::ListInput {
+                    text: rule,
+                    trusted,
+                }],
+                &opts,
+            );
+            let page = Engine::build(&output.runtime).lookup(url);
+            assert_eq!(page.scriptlets.contains(&wanted), trusted);
+            assert_eq!(page.scriptlets.contains(&watch), trusted);
         }
     }
 
