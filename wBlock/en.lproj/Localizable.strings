@@ -899,7 +899,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 
 "Operation details" = "Operation details";
-
+/* Native name; keep in Montenegrin in every display language. */
 "crnogorski" = "crnogorski";
 
 "URL entry mode" = "URL entry mode";
