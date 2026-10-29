@@ -704,11 +704,6 @@ struct UserScriptManagerView: View {
                         .fontWeight(.medium)
                         .foregroundStyle(.primary)
                         .fixedSize(horizontal: false, vertical: true)
-                    if script.isLocal {
-                        Badge(text: "Local Import", color: .blue)
-                    } else if script.isCustom {
-                        Badge(text: "Custom", color: .blue)
-                    }
                     if script.isBeta {
                         Badge(text: "Beta", color: .orange)
                     }
@@ -948,13 +943,15 @@ private struct ScriptStatusBadgesView: View {
     let script: UserScript
     let isDownloaded: Bool
     let isBuiltIn: Bool
+    let isRecommended: Bool
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 ForEach(Array(InfoBadgeSupport.userScriptBadges(
                     script,
                     isDownloaded: isDownloaded,
-                    isBuiltIn: isBuiltIn
+                    isBuiltIn: isBuiltIn,
+                    isRecommended: isRecommended
                 ).enumerated()), id: \.offset) { _, badge in
                     InfoBadgeView(kind: badge)
                 }
@@ -1113,6 +1110,7 @@ struct UserScriptSettingsView: View {
 
 
 struct UserScriptInfoSidebar: View {
+    let isRecommended: Bool
     let script: UserScript
     let contentLength: Int
     let isDownloaded: Bool
@@ -1134,7 +1132,7 @@ struct UserScriptInfoSidebar: View {
                         .textSelection(.enabled)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                ScriptStatusBadgesView(script: script, isDownloaded: isDownloaded, isBuiltIn: isBuiltIn)
+                ScriptStatusBadgesView(script: script, isDownloaded: isDownloaded, isBuiltIn: isBuiltIn, isRecommended: isRecommended)
             }
             InfoMetadataList {
                 InfoMetadataRow(title: "Type", value: NSLocalizedString(
@@ -1193,6 +1191,7 @@ struct UserScriptInfoView: View {
                     } onDismiss: { dismiss() }
                 } content: {
                     UserScriptInfoSidebar(
+                        isRecommended: userScriptManager.isEnabledByDefault(script),
                         script: script,
                         contentLength: script.content.utf8.count,
                         isDownloaded: userScriptManager.hasDownloadedContent(for: script),

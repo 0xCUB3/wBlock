@@ -1052,3 +1052,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Import…" = "가져오기…";
 "Excluded Sites" = "제외한 사이트";
 "Cosmetic filtering applies only on these sites." = "코스메틱 필터링은 이 사이트에서만 적용됩니다.";
+"Custom URL" = "사용자 지정 URL";

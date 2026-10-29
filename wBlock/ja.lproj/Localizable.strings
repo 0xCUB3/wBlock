@@ -1021,3 +1021,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Import…" = "インポート…";
 "Excluded Sites" = "除外したサイト";
 "Cosmetic filtering applies only on these sites." = "コスメティックフィルタリングはこれらのサイトでのみ適用されます。";
+"Custom URL" = "カスタムURL";

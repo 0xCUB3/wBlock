@@ -978,21 +978,6 @@ struct FilterRowView: View {
                     #if os(iOS)
                     RowDisclosureChevron()
                     #endif
-                    if filter.isInlineUserList {
-                        Text("Local Import")
-                            .font(.caption2.weight(.medium))
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.secondary.opacity(0.15), in: Capsule())
-                            .foregroundStyle(.secondary)
-                    } else if filter.isCustom {
-                        Text("Custom")
-                            .font(.caption2.weight(.medium))
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.secondary.opacity(0.15), in: Capsule())
-                            .foregroundStyle(.secondary)
-                    }
                 }
                 .font(.body)
 

@@ -1061,3 +1061,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Import…" = "درون‌ریزی…";
 "Excluded Sites" = "سایت‌های مستثنا";
 "Cosmetic filtering applies only on these sites." = "فیلتر کردن ظاهری فقط در این سایت‌ها اعمال می‌شود.";
+"Custom URL" = "نشانی سفارشی";

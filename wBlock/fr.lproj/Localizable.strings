@@ -1052,3 +1052,4 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Import…" = "Importer…";
 "Excluded Sites" = "Sites exclus";
 "Cosmetic filtering applies only on these sites." = "Le filtrage cosmétique s’applique uniquement sur ces sites.";
+"Custom URL" = "URL personnalisée";

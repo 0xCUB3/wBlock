@@ -1052,3 +1052,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Import…" = "Импорт…";
 "Excluded Sites" = "Исключённые сайты";
 "Cosmetic filtering applies only on these sites." = "Косметическая фильтрация применяется только на этих сайтах.";
+"Custom URL" = "Свой URL";
