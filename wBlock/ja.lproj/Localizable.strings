@@ -796,8 +796,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Userstyles and scripts that change the appearance of websites." = "ウェブサイトの外観を変更するユーザースタイルとスクリプトです。";
 "Custom, remote, and local scripts that do not have a more specific display category." = "より具体的な表示カテゴリに分類されないカスタム、リモート、ローカルスクリプトです。";
 "Beta userscripts and scripts that are still being evaluated or may change." = "評価中または変更される可能性があるベータ版ユーザースクリプトとスクリプトです。";
-"Enabled Userscripts & Userstyles = "有効なユーザースクリプトとユーザースタイル";
-"Pause Blocking is on while any selected component is paused. Resume restores all components. = "選択した機能が一時停止している間は、「ブロックを一時停止」が有効になります。再開すると、全ての機能の一時停止が解除されます。";
+"Enabled Userscripts & Userstyles" = "有効なユーザースクリプトとユーザースタイル";
+"Pause Blocking is on while any selected component is paused. Resume restores all components." = "選択した機能が一時停止している間は、「ブロックを一時停止」が有効になります。再開すると、全ての機能の一時停止が解除されます。";
 
 /* Userstyle compiler diagnostics */
 "Choose a .user.js, .js, .user.css, .less, or .styl file." = ".user.js、.js、.user.css、.less、または .styl ファイルを選択してください。";
