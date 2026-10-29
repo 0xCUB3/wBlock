@@ -927,7 +927,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Edit Info" = "정보 편집";
 
-"Get" = "받기";
 "Autoplay" = "자동 재생";
 "Autoplay off" = "자동 재생 꺼짐";
 "Userscripts off" = "유저스크립트 꺼짐";

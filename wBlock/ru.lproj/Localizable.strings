@@ -927,7 +927,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Edit Info" = "Изменить сведения";
 
-"Get" = "Загрузить";
 "Autoplay" = "Автовоспроизведение";
 "Autoplay off" = "Автовоспроизведение выключено";
 "Userscripts off" = "Пользовательские скрипты выключены";

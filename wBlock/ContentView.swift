@@ -709,7 +709,7 @@ struct ContentView: View {
                 downloadingFilterIDs.remove(filter.id)
                 if succeeded, let current {
                     downloadedFilterIDs.insert(filter.id)
-                    // Get also enables the list after its content is safely persisted.
+                    // The switch enables the list only after its content is persisted.
                     filterManager.setFilterListSelection(id: current.id, selected: true)
                 }
             }
@@ -928,12 +928,7 @@ struct FilterRowView: View {
                 .infoPopoverAnchor(filter.id)
             #endif
             if filter.isRemoteURL && (isDownloading || !isDownloaded) {
-                // A switch is meaningless until the list exists, so the row
-                // offers Get in its place.
-                ContentDownloadControl(
-                    isDownloaded: isDownloaded, isDownloading: isDownloading,
-                    name: text.name, action: onDownload
-                )
+                ContentDownloadControl(isDownloading: isDownloading, name: text.name, action: onDownload)
             } else {
                 Toggle(
                     "",

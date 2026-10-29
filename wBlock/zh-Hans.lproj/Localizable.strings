@@ -927,7 +927,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Edit Info" = "编辑信息";
 
-"Get" = "获取";
 "Autoplay" = "自动播放";
 "Autoplay off" = "自动播放已关闭";
 "Userscripts off" = "用户脚本已关闭";

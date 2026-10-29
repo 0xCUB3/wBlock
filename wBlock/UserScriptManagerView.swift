@@ -643,8 +643,8 @@ struct UserScriptManagerView: View {
     }
 
     /// Fetches a remote script's content without changing its enabled state (#665).
-    /// Get and the switch both enable through here, so Get turns the script
-    /// on as it does for filter lists, and a beta warns before downloading (#941).
+    /// Every switch enables through here, so a missing script downloads and
+    /// turns on as filter lists do, and a beta warns before downloading (#941).
     private func requestEnable(_ script: UserScriptListItem) {
         guard !downloadingScriptIDs.contains(script.id) else { return }
         if script.isBeta, !BetaUserscriptWarning.hasAcknowledged {
@@ -807,10 +807,7 @@ struct UserScriptManagerView: View {
             #endif
 
             if !script.isLocal && (downloadingScriptIDs.contains(script.id) || !script.isDownloaded) {
-                // A switch is meaningless until the script exists, so the
-                // row offers Get in its place.
                 ContentDownloadControl(
-                    isDownloaded: script.isDownloaded,
                     isDownloading: downloadingScriptIDs.contains(script.id),
                     name: script.name, action: { requestEnable(script) }
                 )

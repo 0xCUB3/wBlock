@@ -896,7 +896,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Edit Info" = "情報を編集";
 
-"Get" = "入手";
 "Autoplay" = "自動再生";
 "Autoplay off" = "自動再生オフ";
 "Userscripts off" = "ユーザースクリプトオフ";
