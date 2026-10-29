@@ -397,7 +397,7 @@ struct ContentView: View {
     private var filtersView: some View {
         CompatibleNavigationStack(requiresNavigationView: false) {
             nativeFiltersListView
-                .topBarCompat { topBanners }
+                .modifier(topBanners)
             #if os(iOS)
                 .navigationBarTitleDisplayMode(.inline)
             #endif
@@ -490,7 +490,7 @@ struct ContentView: View {
                 },
                 applyButton: AnyView(applyChangesToolbarButton)
             )
-                .topBarCompat { topBanners }
+                .modifier(topBanners)
                 #if os(iOS)
                     .navigationBarTitleDisplayMode(.inline)
                 #endif
@@ -501,16 +501,15 @@ struct ContentView: View {
         SettingsView(filterManager: filterManager)
     }
 
-    private var topBanners: some View {
-        VStack(spacing: 0) {
+    private var topBanners: some ViewModifier {
+        ApplyProgressBar(
+            viewModel: filterManager.applyProgressViewModel,
+            isRunVisible: filterManager.showingApplyProgressSheet
+        ) {
             if filterManager.isBlockingPaused {
                 pauseBlockingBanner
             }
-            if filterManager.showingApplyProgressSheet {
-                ApplyProgressBanner(viewModel: filterManager.applyProgressViewModel)
-            }
         }
-        .animation(.easeInOut(duration: 0.2), value: filterManager.showingApplyProgressSheet)
     }
 
     @ViewBuilder

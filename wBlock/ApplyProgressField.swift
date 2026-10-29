@@ -113,30 +113,55 @@ private struct ApplyProgressRow: View {
     }
 }
 
-/// Shown under the toolbar while an apply runs without its sheet (#1051):
-/// the current step, what it is working on, and how far along it is.
-struct ApplyProgressBanner: View {
+/// Puts the running apply under the toolbar, below `leading`, while it runs
+/// without its sheet (#1051), and moves the content with it as it comes and goes.
+struct ApplyProgressBar<Leading: View>: ViewModifier {
     @ObservedObject var viewModel: ApplyChangesViewModel
+    let isRunVisible: Bool
+    @ViewBuilder let leading: Leading
+
+    private var isVisible: Bool { isRunVisible && viewModel.state.mode == .progress }
+
+    func body(content: Content) -> some View {
+        content
+            .topBarCompat {
+                VStack(spacing: 0) {
+                    leading
+                    if isVisible {
+                        ApplyProgressBanner(presentation: .make(from: viewModel.state))
+                            .transition(.move(edge: .top).combined(with: .opacity))
+                    }
+                }
+            }
+            .animation(.easeInOut(duration: 0.25), value: isVisible)
+    }
+}
+
+/// The current step, what it is working on, and how far along it is.
+private struct ApplyProgressBanner: View {
+    let presentation: ApplyProgressPresentation
 
     var body: some View {
-        if viewModel.state.mode == .progress {
-            let presentation = ApplyProgressPresentation.make(from: viewModel.state)
-            ProgressView(value: presentation.progress) {
-                Text(presentation.title)
-            } currentValueLabel: {
-                Text(
-                    [presentation.detail, presentation.fractionLabel ?? presentation.progressLabel]
-                        .compactMap { $0 }
-                        .joined(separator: " · ")
-                )
-                .monospacedDigit()
-                .lineLimit(1)
-                .truncationMode(.middle)
-            }
-            .progressViewStyle(.linear)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-            .transition(.move(edge: .top).combined(with: .opacity))
+        ProgressView(value: presentation.progress) {
+            Text(presentation.title)
+        } currentValueLabel: {
+            Text(
+                // The first step's status line can just repeat its title.
+                [presentation.detail, presentation.fractionLabel ?? presentation.progressLabel]
+                    .compactMap { $0 }
+                    .filter {
+                        $0.trimmingCharacters(in: .punctuationCharacters)
+                            .localizedCaseInsensitiveCompare(presentation.title) != .orderedSame
+                    }
+                    .joined(separator: " · ")
+            )
+            .monospacedDigit()
+            .lineLimit(1)
+            .truncationMode(.middle)
         }
+        .progressViewStyle(.linear)
+        .animation(.easeInOut(duration: 0.25), value: presentation.progress)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
     }
 }
