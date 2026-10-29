@@ -547,13 +547,19 @@ try {
     cleanUrlResult.locationReplaceCalls.length === 0 && cleanUrlResult.locationReloadCalls.length === 0
   );
 
+  const unchangedResult = await runTrackingCleanupScenario({
+    href: "https://example.com/landing?utm_source=keep&x=1",
+    cleanUrlResponse: "https://example.com/landing?utm_source=keep&x=1"
+  });
+  check("unchanged filter result preserves tracking parameters", unchangedResult.replaceStateCalls.length === 0);
+
   const fallbackResult = await runTrackingCleanupScenario({
     href: "https://example.com/landing?fbclid=IwAR123456&gclid=789",
     runtimeError: true
   });
   check(
-    "URL tracking fallback cleanup uses history.replaceState",
-    fallbackResult.replaceStateCalls.length === 1 && fallbackResult.replaceStateCalls[0].url === "https://example.com/landing"
+    "URL tracking cleanup fails closed when rules are unavailable",
+    fallbackResult.replaceStateCalls.length === 0
   );
   check(
     "URL tracking fallback cleanup never triggers location.replace or reload",
