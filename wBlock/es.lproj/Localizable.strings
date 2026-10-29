@@ -777,8 +777,6 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Report Issues" = "Informar de problemas";
 "Contact Us" = "Contacto";
 "Version" = "Versión";
-"Developer" = "Desarrollador";
-"GPL-3.0 License" = "Licencia GPL-3.0";
 "Privacy Policy" = "Política de privacidad";
 
 /* Issue 508 UI */
@@ -1053,3 +1051,4 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Excluded Sites" = "Sitios excluidos";
 "Cosmetic filtering applies only on these sites." = "El filtrado cosmético solo se aplica en estos sitios.";
 "Custom URL" = "URL personalizada";
+"Links" = "Enlaces";

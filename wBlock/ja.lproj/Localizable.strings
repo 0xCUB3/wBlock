@@ -775,8 +775,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Report Issues" = "問題を報告";
 "Contact Us" = "お問い合わせ";
 "Version" = "バージョン";
-"Developer" = "開発者";
-"GPL-3.0 License" = "GPL-3.0 ライセンス";
 "Privacy Policy" = "プライバシーポリシー";
 
 /* Issue 508 UI */
@@ -1022,3 +1020,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Excluded Sites" = "除外したサイト";
 "Cosmetic filtering applies only on these sites." = "コスメティックフィルタリングはこれらのサイトでのみ適用されます。";
 "Custom URL" = "カスタムURL";
+"Links" = "リンク";

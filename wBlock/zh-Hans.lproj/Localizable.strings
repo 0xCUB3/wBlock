@@ -777,8 +777,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Report Issues" = "报告问题";
 "Contact Us" = "联系我们";
 "Version" = "版本";
-"Developer" = "开发者";
-"GPL-3.0 License" = "GPL-3.0 许可证";
 "Privacy Policy" = "隐私政策";
 
 /* Issue 508 UI */
@@ -1053,3 +1051,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Excluded Sites" = "排除的网站";
 "Cosmetic filtering applies only on these sites." = "外观过滤仅在这些网站上应用。";
 "Custom URL" = "自定义 URL";
+"Links" = "链接";

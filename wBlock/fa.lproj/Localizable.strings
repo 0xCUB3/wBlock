@@ -777,8 +777,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Report Issues" = "گزارش مشکلات";
 "Contact Us" = "تماس با ما";
 "Version" = "نسخه";
-"Developer" = "توسعه‌دهنده";
-"GPL-3.0 License" = "مجوز GPL-3.0";
 "Privacy Policy" = "سیاست حفظ حریم خصوصی";
 
 /* Issue 508 UI */
@@ -1062,3 +1060,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Excluded Sites" = "سایت‌های مستثنا";
 "Cosmetic filtering applies only on these sites." = "فیلتر کردن ظاهری فقط در این سایت‌ها اعمال می‌شود.";
 "Custom URL" = "نشانی سفارشی";
+"Links" = "پیوندها";

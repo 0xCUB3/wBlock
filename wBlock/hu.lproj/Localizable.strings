@@ -779,8 +779,6 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Report Issues" = "Probléma bejelentése";
 "Contact Us" = "Kapcsolat";
 "Version" = "Verzió";
-"Developer" = "Fejlesztő";
-"GPL-3.0 License" = "GPL-3.0 licenc";
 "Privacy Policy" = "Adatvédelmi irányelvek";
 
 /* Issue 508 UI */
@@ -1053,3 +1051,4 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Excluded Sites" = "Kizárt webhelyek";
 "Cosmetic filtering applies only on these sites." = "A kozmetikai szűrés csak ezeken a webhelyeken érvényes.";
 "Custom URL" = "Egyéni URL";
+"Links" = "Hivatkozások";

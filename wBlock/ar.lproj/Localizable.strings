@@ -779,8 +779,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Report Issues" = "الإبلاغ عن المشكلات";
 "Contact Us" = "اتصل بنا";
 "Version" = "الإصدار";
-"Developer" = "المطور";
-"GPL-3.0 License" = "ترخيص GPL-3.0";
 "Privacy Policy" = "سياسة الخصوصية";
 
 /* Issue 508 UI */
@@ -1053,3 +1051,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Excluded Sites" = "المواقع المستثناة";
 "Cosmetic filtering applies only on these sites." = "تُطبَّق التصفية التجميلية على هذه المواقع فقط.";
 "Custom URL" = "رابط مخصص";
+"Links" = "روابط";

@@ -779,8 +779,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Report Issues" = "문제 신고";
 "Contact Us" = "문의하기";
 "Version" = "버전";
-"Developer" = "개발자";
-"GPL-3.0 License" = "GPL-3.0 라이선스";
 "Privacy Policy" = "개인정보 처리방침";
 
 /* Issue 508 UI */
@@ -1053,3 +1051,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Excluded Sites" = "제외한 사이트";
 "Cosmetic filtering applies only on these sites." = "코스메틱 필터링은 이 사이트에서만 적용됩니다.";
 "Custom URL" = "사용자 지정 URL";
+"Links" = "링크";

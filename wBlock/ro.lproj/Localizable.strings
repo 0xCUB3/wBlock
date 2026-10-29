@@ -777,8 +777,6 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Report Issues" = "Raportează probleme";
 "Contact Us" = "Contact";
 "Version" = "Versiune";
-"Developer" = "Dezvoltator";
-"GPL-3.0 License" = "Licență GPL-3.0";
 "Privacy Policy" = "Politica de confidențialitate";
 
 /* Issue 508 UI */
@@ -1053,3 +1051,4 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Excluded Sites" = "Site-uri excluse";
 "Cosmetic filtering applies only on these sites." = "Filtrarea cosmetică se aplică doar pe aceste site-uri.";
 "Custom URL" = "URL personalizat";
+"Links" = "Linkuri";

@@ -777,8 +777,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Report Issues" = "Report Issues";
 "Contact Us" = "Contact Us";
 "Version" = "Version";
-"Developer" = "Developer";
-"GPL-3.0 License" = "GPL-3.0 License";
 "Privacy Policy" = "Privacy Policy";
 
 /* Issue 508 UI */
@@ -1062,3 +1060,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Excluded Sites" = "Excluded Sites";
 "Cosmetic filtering applies only on these sites." = "Cosmetic filtering applies only on these sites.";
 "Custom URL" = "Custom URL";
+"Links" = "Links";

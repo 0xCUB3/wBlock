@@ -9,9 +9,7 @@ struct SettingsView: View {
     @ObservedObject private var syncManager = CloudSyncManager.shared
     private static let autoUpdateIntervalPresets: [Double] = [1, 2, 4, 6, 12, 24, 48, 72, 168]
     static let reportIssueURL = URL(string: "https://github.com/0xCUB3/wBlock/issues/new/choose")!
-    private static let developerURL = URL(string: "https://github.com/0xCUB3")!
     static let sourceCodeURL = URL(string: "https://github.com/0xCUB3/wBlock")!
-    private static let licenseURL = URL(string: "https://www.gnu.org/licenses/gpl-3.0.html")!
     private static let privacyPolicyURL = URL(string: "https://github.com/0xCUB3/wBlock/blob/main/PRIVACY_POLICY.md")!
     static let faqURL = URL(string: "https://github.com/0xCUB3/wBlock#faq")!
     static let contactURL = URL(string: "https://discord.gg/5kmuEbwsut")!
@@ -764,26 +762,22 @@ struct SettingsView: View {
                         as? String ?? "Unknown"
                 )
             }
-            Link(destination: Self.faqURL) {
-                SettingsRowLabel("FAQ", systemImage: "questionmark.circle", accessory: .external)
-            }
-            Link(destination: Self.reportIssueURL) {
-                SettingsRowLabel("Report Issues", systemImage: "exclamationmark.triangle", accessory: .external)
-            }
-            Link(destination: Self.contactURL) {
-                SettingsRowLabel("Contact Us", systemImage: "bubble.left", accessory: .external)
-            }
-            Link(destination: Self.developerURL) {
-                SettingsRowLabel("Developer", systemImage: "person", accessory: .external)
-            }
-            Link(destination: Self.sourceCodeURL) {
-                SettingsRowLabel("Source Code", systemImage: "chevron.left.forwardslash.chevron.right", accessory: .external)
-            }
-            Link(destination: Self.licenseURL) {
-                SettingsRowLabel("GPL-3.0 License", systemImage: "doc.text", accessory: .external)
-            }
-            Link(destination: Self.privacyPolicyURL) {
-                SettingsRowLabel("Privacy Policy", systemImage: "hand.raised", accessory: .external)
+            DisclosureGroup("Links") {
+                Link(destination: Self.faqURL) {
+                    SettingsRowLabel("FAQ", systemImage: "questionmark.circle", accessory: .external)
+                }
+                Link(destination: Self.reportIssueURL) {
+                    SettingsRowLabel("Report Issues", systemImage: "exclamationmark.triangle", accessory: .external)
+                }
+                Link(destination: Self.contactURL) {
+                    SettingsRowLabel("Contact Us", systemImage: "bubble.left", accessory: .external)
+                }
+                Link(destination: Self.sourceCodeURL) {
+                    SettingsRowLabel("Source Code", systemImage: "chevron.left.forwardslash.chevron.right", accessory: .external)
+                }
+                Link(destination: Self.privacyPolicyURL) {
+                    SettingsRowLabel("Privacy Policy", systemImage: "hand.raised", accessory: .external)
+                }
             }
         } header: {
             sectionHeader(.about)

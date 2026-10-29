@@ -779,8 +779,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Report Issues" = "Αναφορά προβλημάτων";
 "Contact Us" = "Επικοινωνία";
 "Version" = "Έκδοση";
-"Developer" = "Προγραμματιστής";
-"GPL-3.0 License" = "Άδεια GPL-3.0";
 "Privacy Policy" = "Πολιτική απορρήτου";
 
 /* Issue 508 UI */
@@ -1053,3 +1051,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Excluded Sites" = "Εξαιρούμενοι ιστότοποι";
 "Cosmetic filtering applies only on these sites." = "Το αισθητικό φιλτράρισμα εφαρμόζεται μόνο σε αυτούς τους ιστότοπους.";
 "Custom URL" = "Προσαρμοσμένο URL";
+"Links" = "Σύνδεσμοι";

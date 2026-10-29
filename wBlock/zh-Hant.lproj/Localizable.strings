@@ -779,8 +779,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Report Issues" = "回報問題";
 "Contact Us" = "聯絡我們";
 "Version" = "版本";
-"Developer" = "開發者";
-"GPL-3.0 License" = "GPL-3.0 授權條款";
 "Privacy Policy" = "隱私政策";
 
 /* Issue 508 UI */
@@ -1053,3 +1051,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Excluded Sites" = "排除的網站";
 "Cosmetic filtering applies only on these sites." = "外觀過濾僅在這些網站上套用。";
 "Custom URL" = "自訂 URL";
+"Links" = "連結";
