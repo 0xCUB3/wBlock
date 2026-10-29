@@ -825,6 +825,8 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Dark" = "Sombre";
 "Light" = "Clair";
 "%@ → %@ Safari rules" = "%@ → %@ règles Safari";
+"%@ Safari rules" = "%@ règles Safari";
+"Changes Applied" = "Modifications appliquées";
 "Cosmetic Filtering" = "Filtrage cosmétique";
 "Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU." = "Masque les espaces publicitaires et d’autres éléments de page via CSS. Désactivé, seul le blocage réseau reste actif, ce qui utilise moins de règles et moins de processeur.";
 "Replace Titles" = "Remplacer les titres";

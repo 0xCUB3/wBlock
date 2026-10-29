@@ -825,6 +825,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Dark" = "深色";
 "Light" = "浅色";
 "%@ → %@ Safari rules" = "%@ → %@ 条 Safari 规则";
+"%@ Safari rules" = "%@ 条 Safari 规则";
+"Changes Applied" = "已应用更改";
 "Cosmetic Filtering" = "外观过滤";
 "Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU." = "使用 CSS 隐藏广告占位符和其他页面元素。关闭后仅保留网络拦截，规则更少，占用 CPU 也更少。";
 "Replace Titles" = "替换标题";

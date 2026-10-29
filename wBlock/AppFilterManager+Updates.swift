@@ -55,6 +55,7 @@ extension AppFilterManager {
             suppressBlockingOverlay = true
         }
         updateCheckProgress = nil
+        showingNoUpdatesAlert = false
         isLoading = true
         defer {
             isLoading = false

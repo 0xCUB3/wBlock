@@ -502,9 +502,9 @@ struct ContentView: View {
     }
 
     private var topBanners: some ViewModifier {
-        ApplyProgressBar(
-            viewModel: filterManager.applyProgressViewModel,
-            isRunVisible: filterManager.showingApplyProgressSheet
+        ProgressBanners(
+            filterManager: filterManager,
+            applyProgress: filterManager.applyProgressViewModel
         ) {
             if filterManager.isBlockingPaused {
                 pauseBlockingBanner
@@ -1063,15 +1063,6 @@ struct ContentModifiers: ViewModifier {
     // host mid-dismissal crashed UIKit on iOS 16.
     @State private var onboardingSettled = true
 
-    /// Update checks and their no-updates result float in a card over the app on
-    /// every platform: on iOS a short sheet sits against the home bar, iOS 26 glass
-    /// sheets ignore a clear background, and older iPads ignore detents; on the Mac
-    /// the card dismisses itself and closes on a click like iOS (email feedback).
-    private var checkCardVisible: Bool {
-        onboardingSettled && !filterManager.showingApplyProgressSheet
-            && (filterManager.showingNoUpdatesAlert || (filterManager.isLoading && !filterManager.suppressBlockingOverlay))
-    }
-
     private var applyRunVisible: Bool {
         onboardingSettled && filterManager.showingApplyProgressSheet
     }
@@ -1117,18 +1108,6 @@ struct ContentModifiers: ViewModifier {
                     filterManager.showingApplyProgressSheet = false
                 }
             }
-            .overlay {
-                if checkCardVisible {
-                    ZStack {
-                        Color.black.opacity(0.2).ignoresSafeArea()
-                            .onTapGesture { filterManager.showingNoUpdatesAlert = false }
-                        UpdateCheckProgressView(filterManager: filterManager)
-                    }
-                    .accessibilityAddTraits(.isModal)
-                    .transition(.opacity)
-                }
-            }
-            .animation(.easeInOut(duration: 0.2), value: checkCardVisible)
             .onChangeCompat(of: showOnboardingSheet) { _, presented in
                 if presented { onboardingSettled = false }
             }

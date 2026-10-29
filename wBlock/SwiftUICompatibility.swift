@@ -570,7 +570,7 @@ private struct TintDimmingReader: UIViewRepresentable {
 
 /// Toolbar Apply control: applies pending changes or checks for updates.
 /// While busy it shows a spinner, and a tap calls `onBusyTap` instead.
-/// Applying without a check lives in the No Updates Found alert and the
+/// Applying without a check lives in the No Updates Found banner and the
 /// Updates menu rather than a hidden 3-second hold (#999).
 struct ApplyChangesButton<Label: View>: View {
     let isDisabled: Bool
