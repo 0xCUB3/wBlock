@@ -461,7 +461,7 @@
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "Pentru %@ sunt disponibile doar liste menținute de comunitate. Activează-le dacă te simți confortabil.";
 "Only pasted user lists can be edited." = "Numai listele de utilizator lipite pot fi editate.";
 "Open Login Items" = "Deschide Elementele de conectare";
-"Open Safari Settings" = "Deschide setările Safari";
+"Open Safari Extension Settings" = "Deschide setările extensiilor Safari";
 "Other" = "Altă limbă";
 "Overdue catch-up" = "Recuperare întârziată";
 "Paste" = "Lipește";

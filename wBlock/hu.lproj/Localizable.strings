@@ -461,7 +461,7 @@
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "%@ esetén csak közösség által karbantartott listák érhetők el. Engedélyezd őket, ha ez számodra megfelelő.";
 "Only pasted user lists can be edited." = "Csak a beillesztett felhasználói listák szerkeszthetők.";
 "Open Login Items" = "Bejelentkezési elemek megnyitása";
-"Open Safari Settings" = "Safari beállítások megnyitása";
+"Open Safari Extension Settings" = "Safari bővítménybeállítások megnyitása";
 "Other" = "Egyéb";
 "Overdue catch-up" = "Túllépett felzárkózás";
 "Paste" = "Beillesztés";

@@ -628,7 +628,7 @@ struct OnboardingView: View {
                     Button {
                         openSafariExtensionsSettings()
                     } label: {
-                        Label("Open Safari Settings", systemImage: "gear")
+                        Label("Open Safari Extension Settings", systemImage: "gear")
                             .font(.caption)
                     }
                     .buttonStyle(.bordered)

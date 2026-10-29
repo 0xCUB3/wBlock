@@ -461,7 +461,7 @@
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "仅有适用于 %@ 的社区维护列表。若你能接受，请启用它们。";
 "Only pasted user lists can be edited." = "只能编辑粘贴的用户列表。";
 "Open Login Items" = "打开登录项";
-"Open Safari Settings" = "打开 Safari 设置";
+"Open Safari Extension Settings" = "打开 Safari 扩展设置";
 "Other" = "其他";
 "Overdue catch-up" = "逾期补跑";
 "Paste" = "粘贴";

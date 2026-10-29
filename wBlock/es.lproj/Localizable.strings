@@ -461,7 +461,7 @@
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "Solo hay listas mantenidas por la comunidad disponibles para %@. Actívalas si te parece bien.";
 "Only pasted user lists can be edited." = "Solo se pueden editar las listas de usuario pegadas.";
 "Open Login Items" = "Abrir Elementos de inicio de sesión";
-"Open Safari Settings" = "Abrir ajustes de Safari";
+"Open Safari Extension Settings" = "Abrir ajustes de extensiones de Safari";
 "Other" = "Otro";
 "Overdue catch-up" = "Puesta al día atrasada";
 "Paste" = "Pegar";

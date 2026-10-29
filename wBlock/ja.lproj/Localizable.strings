@@ -461,7 +461,7 @@
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "%@ではコミュニティ管理のリストのみ利用できます。問題なければ有効にしてください。";
 "Only pasted user lists can be edited." = "ペーストされたユーザーリストのみ編集できます。";
 "Open Login Items" = "ログイン項目を開く";
-"Open Safari Settings" = "Safariの設定を開く";
+"Open Safari Extension Settings" = "Safari機能拡張の設定を開く";
 "Other" = "その他";
 "Overdue catch-up" = "再実行の期限超過";
 "Paste" = "ペースト";

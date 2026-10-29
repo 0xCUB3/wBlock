@@ -400,7 +400,7 @@ struct SettingsView: View {
         Button {
             SafariExtensionSetupSupport.openScriptsExtensionSettings()
         } label: {
-            SettingsRowLabel("Open Safari Settings", systemImage: "gear", accessory: .app)
+            SettingsRowLabel("Open Safari Extension Settings", systemImage: "gear", accessory: .app)
         }
         #if os(macOS)
         .buttonStyle(.plain)

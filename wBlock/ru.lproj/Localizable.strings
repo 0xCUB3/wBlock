@@ -461,7 +461,7 @@
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "Для %@ доступны только списки, поддерживаемые сообществом. Включайте их, если вам это подходит.";
 "Only pasted user lists can be edited." = "Редактировать можно только вставленные пользовательские списки.";
 "Open Login Items" = "Открыть «Объекты входа»";
-"Open Safari Settings" = "Открыть настройки Safari";
+"Open Safari Extension Settings" = "Открыть настройки расширений Safari";
 "Other" = "Другой";
 "Overdue catch-up" = "Просроченный догоняющий запуск";
 "Paste" = "Вставить";

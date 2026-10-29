@@ -461,7 +461,7 @@
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "%@ için yalnızca topluluk tarafından yönetilen listeler mevcuttur. Dilerseniz bunları etkinleştirebilirsiniz.";
 "Only pasted user lists can be edited." = "Yalnızca yapıştırılan kullanıcı listeleri düzenlenebilir.";
 "Open Login Items" = "Giriş öğelerini aç";
-"Open Safari Settings" = "Safari ayarlarını aç";
+"Open Safari Extension Settings" = "Safari uzantı ayarlarını aç";
 "Other" = "Diğer";
 "Overdue catch-up" = "Gecikmiş görev";
 "Paste" = "Yapıştır";
