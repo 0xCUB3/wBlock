@@ -147,6 +147,9 @@ struct UserScriptManagerView: View {
     let onRefresh: () async -> Void
     /// The Filters tab's Update/Apply button, shared so both tabs match (#953).
     let applyButton: AnyView
+    /// Rows lock while an apply the user started runs, so nothing changes
+    /// under it and is quietly left for the next one.
+    var isApplying = false
 
     @State private var scripts: [UserScriptListItem] = []
     @AppStorage(ListDisplayOrder.scriptsKey) private var scriptDisplayOrder = Data()
@@ -825,6 +828,7 @@ struct UserScriptManagerView: View {
             }
         }
         .id(script.id)
+        .disabled(isApplying)
         #if os(macOS)
         .contextMenu { scriptMenuItems(script) }
         .padding(16)

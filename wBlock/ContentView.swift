@@ -488,7 +488,8 @@ struct ContentView: View {
                     guard !filterManager.isLoading else { return }
                     await filterManager.checkForUpdates(scope: .scripts, presentation: .refresh)
                 },
-                applyButton: AnyView(applyChangesToolbarButton)
+                applyButton: AnyView(applyChangesToolbarButton),
+                isApplying: filterManager.showingApplyProgressSheet
             )
                 .modifier(topBanners)
                 #if os(iOS)
@@ -779,6 +780,8 @@ struct ContentView: View {
                 }
             }
         )
+        // Lists can't change under an apply the user is watching.
+        .disabled(filterManager.showingApplyProgressSheet)
     }
 
     private func filterInfoContent(_ filter: FilterList) -> some View {
