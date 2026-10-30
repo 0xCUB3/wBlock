@@ -150,8 +150,15 @@ struct ProgressBanners<Leading: View>: ViewModifier {
                                     removal: .opacity.animation(.easeIn(duration: 0.1))
                                 ))
                         }
+                        // A status card, not a bar: wide windows don't stretch it edge to edge.
+                        .frame(maxWidth: 440)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 10)
+                        #if os(macOS)
+                        // The system's control background sets the card apart from the gray rows under it.
+                        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .shadow(color: .black.opacity(0.12), radius: 8, y: 2)
+                        #endif
                         .liquidGlassCompat(cornerRadius: 16)
                         .transition(.move(edge: .top).combined(with: .opacity))
                     }
@@ -204,34 +211,25 @@ private struct BannerProgress: View {
     let title: String
     let value: Double?
     let status: String
-    @State private var shown: Double?
-
-    init(title: String, value: Double?, status: String) {
-        self.title = title
-        self.value = value
-        self.status = status
-        _shown = State(initialValue: value)
-    }
 
     var body: some View {
-        // Only the bar eases; text that crossfades reads as two lines on top of each other.
-        ProgressView(value: shown) {
+        // Text that crossfades reads as two lines on top of each other, so a new
+        // title or status swaps at once. Only those changes skip the animation:
+        // the text still slides in with the card instead of landing ahead of it.
+        ProgressView(value: value) {
             Text(title)
-                .transaction { $0.animation = nil }
+                .animation(nil, value: title)
         } currentValueLabel: {
             Text(status)
                 .monospacedDigit()
                 .lineLimit(1)
                 .truncationMode(.middle)
-                .transaction { $0.animation = nil }
+                .animation(nil, value: status)
         }
         .progressViewStyle(.linear)
-        // Ease only forward. A new pass starts back at zero, and easing down while
-        // an earlier ease up still runs adds the two and pushes the fill past the track.
-        .onChangeCompat(of: value) { old, new in
-            let grows = (new ?? 0) > (old ?? 0)
-            withAnimation(grows ? .easeInOut(duration: 0.25) : nil) { shown = new }
-        }
+        // A Mac bar that starts indeterminate keeps sweeping once it gets a value,
+        // so it is rebuilt when it switches between the two.
+        .id(value == nil)
     }
 }
 
