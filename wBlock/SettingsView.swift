@@ -762,22 +762,20 @@ struct SettingsView: View {
                         as? String ?? "Unknown"
                 )
             }
-            DisclosureGroup("Links") {
-                Link(destination: Self.faqURL) {
-                    SettingsRowLabel("FAQ", systemImage: "questionmark.circle", accessory: .external)
-                }
-                Link(destination: Self.reportIssueURL) {
-                    SettingsRowLabel("Report Issues", systemImage: "exclamationmark.triangle", accessory: .external)
-                }
-                Link(destination: Self.contactURL) {
-                    SettingsRowLabel("Contact Us", systemImage: "bubble.left", accessory: .external)
-                }
-                Link(destination: Self.sourceCodeURL) {
-                    SettingsRowLabel("Source Code", systemImage: "chevron.left.forwardslash.chevron.right", accessory: .external)
-                }
-                Link(destination: Self.privacyPolicyURL) {
-                    SettingsRowLabel("Privacy Policy", systemImage: "hand.raised", accessory: .external)
-                }
+            Link(destination: Self.faqURL) {
+                SettingsRowLabel("FAQ", systemImage: "questionmark.circle", accessory: .external)
+            }
+            Link(destination: Self.reportIssueURL) {
+                SettingsRowLabel("Report Issues", systemImage: "exclamationmark.triangle", accessory: .external)
+            }
+            Link(destination: Self.contactURL) {
+                SettingsRowLabel("Contact Us", systemImage: "bubble.left", accessory: .external)
+            }
+            Link(destination: Self.sourceCodeURL) {
+                SettingsRowLabel("Source Code", systemImage: "chevron.left.forwardslash.chevron.right", accessory: .external)
+            }
+            Link(destination: Self.privacyPolicyURL) {
+                SettingsRowLabel("Privacy Policy", systemImage: "hand.raised", accessory: .external)
             }
         } header: {
             sectionHeader(.about)
