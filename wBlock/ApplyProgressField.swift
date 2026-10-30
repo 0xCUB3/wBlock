@@ -113,9 +113,9 @@ private struct ApplyProgressRow: View {
     }
 }
 
-/// Puts running work under the toolbar, below `leading` (#1051): an apply,
-/// an update check, and what either one found when it is done. The content
-/// moves with the banner as it comes, changes, and goes.
+/// Floats running work under the toolbar, below `leading` (#1051): an apply,
+/// an update check, and what either one found when it is done. The card sits
+/// over the list, so the rows stay put as it comes, changes, and goes (#1059).
 struct ProgressBanners<Leading: View>: ViewModifier {
     @ObservedObject var filterManager: AppFilterManager
     @ObservedObject var applyProgress: ApplyChangesViewModel
@@ -136,43 +136,28 @@ struct ProgressBanners<Leading: View>: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .topBarCompat {
-                VStack(spacing: 0) {
-                    leading
+            .topBarCompat { leading }
+            .overlay(alignment: .top) {
+                ZStack {
                     if let banner {
-                        Group {
-                            switch banner {
-                            case .apply:
-                                ApplyProgressBanner(presentation: .make(from: applyProgress.state))
-                            case .check:
-                                UpdateCheckBanner(filterManager: filterManager)
-                            case .applied:
-                                DoneBanner(
-                                    title: String(localized: "Changes Applied"),
-                                    message: String.localizedStringWithFormat(
-                                        String(localized: "%@ Safari rules"),
-                                        filterManager.lastRuleCount.formatted()
-                                    )
-                                ) { showsApplied = false }
-                            case .noUpdates:
-                                DoneBanner(
-                                    title: String(localized: "No Updates Found"),
-                                    message: String(localized: "You're already using the latest filters.")
-                                ) {
-                                    filterManager.showingNoUpdatesAlert = false
-                                } action: {
-                                    Button("Apply Anyway") {
-                                        filterManager.showingNoUpdatesAlert = false
-                                        filterManager.forceApplyChanges()
-                                    }
-                                }
-                            }
+                        // One card stays through a swap; the old content fades
+                        // out before the new one fades in, so they never overlap.
+                        ZStack {
+                            bannerContent(banner)
+                                .id(banner)
+                                .transition(.asymmetric(
+                                    insertion: .opacity.animation(.easeOut(duration: 0.15).delay(0.1)),
+                                    removal: .opacity.animation(.easeIn(duration: 0.1))
+                                ))
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .liquidGlassCompat(cornerRadius: 16)
                         .transition(.move(edge: .top).combined(with: .opacity))
                     }
                 }
+                .padding(.horizontal, 12)
+                .padding(.top, 6)
             }
             .animation(.easeInOut(duration: 0.25), value: banner)
             // Only a run the user watched ends in this banner; one that needs
@@ -181,6 +166,36 @@ struct ProgressBanners<Leading: View>: ViewModifier {
                 showsApplied = !showing && applyProgress.state.mode == .result
                     && !applyProgress.state.resultNeedsAttention && filterManager.failedReloadTargets.isEmpty
             }
+    }
+
+    @ViewBuilder
+    private func bannerContent(_ banner: Banner) -> some View {
+        switch banner {
+        case .apply:
+            ApplyProgressBanner(presentation: .make(from: applyProgress.state))
+        case .check:
+            UpdateCheckBanner(filterManager: filterManager)
+        case .applied:
+            DoneBanner(
+                title: String(localized: "Changes Applied"),
+                message: String.localizedStringWithFormat(
+                    String(localized: "%@ Safari rules"),
+                    filterManager.lastRuleCount.formatted()
+                )
+            ) { showsApplied = false }
+        case .noUpdates:
+            DoneBanner(
+                title: String(localized: "No Updates Found"),
+                message: String(localized: "You're already using the latest filters.")
+            ) {
+                filterManager.showingNoUpdatesAlert = false
+            } action: {
+                Button("Apply Anyway") {
+                    filterManager.showingNoUpdatesAlert = false
+                    filterManager.forceApplyChanges()
+                }
+            }
+        }
     }
 }
 
@@ -191,13 +206,16 @@ private struct BannerProgress: View {
     let status: String
 
     var body: some View {
+        // Only the bar eases; text that crossfades reads as two lines on top of each other.
         ProgressView(value: value) {
             Text(title)
+                .transaction { $0.animation = nil }
         } currentValueLabel: {
             Text(status)
                 .monospacedDigit()
                 .lineLimit(1)
                 .truncationMode(.middle)
+                .transaction { $0.animation = nil }
         }
         .progressViewStyle(.linear)
         .animation(.easeInOut(duration: 0.25), value: value)

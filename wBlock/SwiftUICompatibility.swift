@@ -164,15 +164,20 @@ extension View {
         }
     }
 
-    /// A strip under the top toolbar. iOS 26 and macOS 26 blend it into the
-    /// toolbar's scroll edge effect; older systems get the bar material.
+    /// A strip under the top toolbar. iOS 26 blends it into the toolbar's
+    /// scroll edge effect. Older systems and the Mac, whose lists are AppKit
+    /// scroll views that effect never reaches, get the bar material (#1059).
     @ViewBuilder
     func topBarCompat<Bar: View>(@ViewBuilder _ bar: () -> Bar) -> some View {
-        if #available(iOS 26.0, macOS 26.0, *) {
+        #if os(iOS)
+        if #available(iOS 26.0, *) {
             safeAreaBar(edge: .top, content: bar)
         } else {
             safeAreaInset(edge: .top) { bar().background(.bar) }
         }
+        #else
+        safeAreaInset(edge: .top) { bar().background(.bar) }
+        #endif
     }
 
     func searchableCompat(
