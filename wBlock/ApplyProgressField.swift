@@ -204,10 +204,18 @@ private struct BannerProgress: View {
     let title: String
     let value: Double?
     let status: String
+    @State private var shown: Double?
+
+    init(title: String, value: Double?, status: String) {
+        self.title = title
+        self.value = value
+        self.status = status
+        _shown = State(initialValue: value)
+    }
 
     var body: some View {
         // Only the bar eases; text that crossfades reads as two lines on top of each other.
-        ProgressView(value: value) {
+        ProgressView(value: shown) {
             Text(title)
                 .transaction { $0.animation = nil }
         } currentValueLabel: {
@@ -218,7 +226,12 @@ private struct BannerProgress: View {
                 .transaction { $0.animation = nil }
         }
         .progressViewStyle(.linear)
-        .animation(.easeInOut(duration: 0.25), value: value)
+        // Ease only forward. A new pass starts back at zero, and easing down while
+        // an earlier ease up still runs adds the two and pushes the fill past the track.
+        .onChangeCompat(of: value) { old, new in
+            let grows = (new ?? 0) > (old ?? 0)
+            withAnimation(grows ? .easeInOut(duration: 0.25) : nil) { shown = new }
+        }
     }
 }
 
