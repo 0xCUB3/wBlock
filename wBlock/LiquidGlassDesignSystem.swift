@@ -186,11 +186,11 @@ private struct CompactToolbarSearchField: View {
 
 #if os(macOS)
 /// Toolbar for pages pushed inside the navigation stack (Site Settings,
-/// Element Zapper, Logs): the action buttons retain their native toolbar
-/// grouping; search is supplied separately by `toolbarSearch`.
-/// Native action items are used here because a custom multi-button item
-/// inside a pushed page reports the first button's accessibility name for
-/// every button.
+/// Element Zapper, Logs); search is supplied separately by `toolbarSearch`.
+/// On macOS 26 the actions share one control group, spaced like the list
+/// tabs' Show Enabled Only and Add (#1058). Native controls are used here
+/// because a custom multi-button item inside a pushed page reports the first
+/// button's accessibility name for every button.
 struct MacPushedActionsToolbar<Actions: View>: ViewModifier {
     @ViewBuilder let actions: () -> Actions
 
@@ -199,8 +199,14 @@ struct MacPushedActionsToolbar<Actions: View>: ViewModifier {
     }
 
     func body(content: Content) -> some View {
-        content.toolbar {
-            ToolbarItemGroup(placement: .automatic) { actions() }
+        if #available(macOS 26.0, *) {
+            content.toolbar {
+                ToolbarItem(placement: .automatic) { ControlGroup { actions() } }
+            }
+        } else {
+            content.toolbar {
+                ToolbarItemGroup(placement: .automatic) { actions() }
+            }
         }
     }
 }

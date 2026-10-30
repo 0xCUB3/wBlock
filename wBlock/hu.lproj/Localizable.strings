@@ -814,6 +814,8 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Dark" = "Sötét";
 "Light" = "Világos";
 "%@ → %@ Safari rules" = "%@ → %@ Safari-szabály";
+"%@ Safari rules" = "%@ Safari-szabály";
+"Changes Applied" = "Módosítások alkalmazva";
 "Cosmetic Filtering" = "Kozmetikai szűrés";
 "Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU." = "CSS-sel elrejti a hirdetéshelyeket és más oldalelemeket. Kikapcsolva csak a hálózati blokkolás marad, amely kevesebb szabályt és kevesebb CPU-t használ.";
 "Replace Titles" = "Címek cseréje";
@@ -1060,4 +1062,3 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "RU AdList" = "RU AdList";
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "Egyéni URL";
-"Links" = "Hivatkozások";

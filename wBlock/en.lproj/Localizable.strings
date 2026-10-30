@@ -813,6 +813,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Dark" = "Dark";
 "Light" = "Light";
 "%@ → %@ Safari rules" = "%@ → %@ Safari rules";
+"%@ Safari rules" = "%@ Safari rules";
+"Changes Applied" = "Changes Applied";
 "Cosmetic Filtering" = "Cosmetic Filtering";
 "Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU." = "Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU.";
 "Replace Titles" = "Replace Titles";
@@ -1069,4 +1071,3 @@ To re-enable these filters, disable other large filters and apply changes again.
 "RU AdList" = "RU AdList";
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "Custom URL";
-"Links" = "Links";

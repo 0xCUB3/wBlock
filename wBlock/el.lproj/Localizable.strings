@@ -814,6 +814,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Dark" = "Σκούρο";
 "Light" = "Φωτεινό";
 "%@ → %@ Safari rules" = "%@ → %@ κανόνες Safari";
+"%@ Safari rules" = "%@ κανόνες Safari";
+"Changes Applied" = "Οι αλλαγές εφαρμόστηκαν";
 "Cosmetic Filtering" = "Αισθητικό φιλτράρισμα";
 "Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU." = "Κρύβει θέσεις διαφημίσεων και άλλα στοιχεία σελίδας με CSS. Αν απενεργοποιηθεί, μένει μόνο ο αποκλεισμός δικτύου, που χρησιμοποιεί λιγότερους κανόνες και λιγότερη CPU.";
 "Replace Titles" = "Αντικατάσταση τίτλων";
@@ -1060,4 +1062,3 @@ To re-enable these filters, disable other large filters and apply changes again.
 "RU AdList" = "RU AdList";
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "Προσαρμοσμένο URL";
-"Links" = "Σύνδεσμοι";

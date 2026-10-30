@@ -814,6 +814,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Dark" = "Тёмная";
 "Light" = "Светлая";
 "%@ → %@ Safari rules" = "%@ → %@ правил Safari";
+"%@ Safari rules" = "%@ правил Safari";
+"Changes Applied" = "Изменения применены";
 "Cosmetic Filtering" = "Косметическая фильтрация";
 "Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU." = "Скрывает места под рекламу и другие элементы страницы с помощью CSS. Если выключить, останется только сетевая блокировка, которая использует меньше правил и меньше нагружает процессор.";
 "Replace Titles" = "Заменять заголовки";
@@ -1060,4 +1062,3 @@ To re-enable these filters, disable other large filters and apply changes again.
 "RU AdList" = "RU AdList";
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "Свой URL";
-"Links" = "Ссылки";

@@ -813,6 +813,8 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Dark" = "Koyu";
 "Light" = "Açık";
 "%@ → %@ Safari rules" = "%@ → %@ Safari kuralı";
+"%@ Safari rules" = "%@ Safari kuralı";
+"Changes Applied" = "Değişiklikler uygulandı";
 "Cosmetic Filtering" = "Kozmetik filtreleme";
 "Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU." = "CSS kullanarak reklam alanlarını ve sayfa öğelerini gizler. Kapatıldığında yalnızca ağ engellemesi çalışır; bu da daha az kural ve işlemci kullanımı demektir.";
 "Replace Titles" = "Başlıkları değiştir";
@@ -1069,4 +1071,3 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "RU AdList" = "RU AdList";
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "Özel URL";
-"Links" = "Bağlantılar";

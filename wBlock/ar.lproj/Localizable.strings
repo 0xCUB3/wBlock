@@ -814,6 +814,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Dark" = "داكن";
 "Light" = "فاتح";
 "%@ → %@ Safari rules" = "%@ → %@ قاعدة Safari";
+"%@ Safari rules" = "%@ قاعدة Safari";
+"Changes Applied" = "تم تطبيق التغييرات";
 "Cosmetic Filtering" = "التصفية التجميلية";
 "Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU." = "يخفي مواضع الإعلانات وعناصر الصفحة الأخرى باستخدام CSS. عند إيقافه يبقى حظر الشبكة فقط، وهو يستخدم قواعد أقل ومعالجًا أقل.";
 "Replace Titles" = "استبدال العناوين";
@@ -1060,4 +1062,3 @@ To re-enable these filters, disable other large filters and apply changes again.
 "RU AdList" = "RU AdList";
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "رابط مخصص";
-"Links" = "روابط";

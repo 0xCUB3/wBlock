@@ -814,6 +814,8 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "Dark" = "Scuro";
 "Light" = "Chiaro";
 "%@ → %@ Safari rules" = "%@ → %@ regole Safari";
+"%@ Safari rules" = "%@ regole Safari";
+"Changes Applied" = "Modifiche applicate";
 "Cosmetic Filtering" = "Filtri cosmetici";
 "Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU." = "Nasconde gli spazi pubblicitari e altri elementi della pagina con CSS. Se disattivato, resta solo il blocco di rete, che usa meno regole e meno CPU.";
 "Replace Titles" = "Sostituisci titoli";
@@ -1060,4 +1062,3 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "RU AdList" = "RU AdList";
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "URL personalizzato";
-"Links" = "Link";

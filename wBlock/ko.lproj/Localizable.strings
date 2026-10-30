@@ -814,6 +814,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Dark" = "다크";
 "Light" = "라이트";
 "%@ → %@ Safari rules" = "%@ → Safari 규칙 %@개";
+"%@ Safari rules" = "Safari 규칙 %@개";
+"Changes Applied" = "변경 사항 적용됨";
 "Cosmetic Filtering" = "코스메틱 필터링";
 "Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU." = "광고 자리 표시자와 기타 페이지 요소를 CSS로 숨깁니다. 끄면 네트워크 차단만 남아 규칙 수와 CPU 사용량이 줄어듭니다.";
 "Replace Titles" = "제목 바꾸기";
@@ -1060,4 +1062,3 @@ To re-enable these filters, disable other large filters and apply changes again.
 "RU AdList" = "RU AdList";
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "사용자 지정 URL";
-"Links" = "링크";
