@@ -914,10 +914,22 @@
     addSelectorRule(selector).catch(() => {});
   }
 
+  // Element under the last right click, used by the "Zap Element" context
+  // menu to preselect its target. Cleared as soon as it is consumed.
+  let lastContextMenuTarget = null;
+
+  function preselectContextMenuTarget() {
+    const el = lastContextMenuTarget;
+    lastContextMenuTarget = null;
+    if (!el || !el.isConnected || shouldIgnoreTarget(el)) return;
+    enterRefineMode(el);
+  }
+
   async function activateZapper(options = {}) {
     state.temporary = options.temporary === true;
     if (state.active) {
       syncModeCaption();
+      if (options.fromContextMenu === true) preselectContextMenuTarget();
       return true;
     }
     state.host = safeHostname();
@@ -935,6 +947,7 @@
     if (state.ui.undoButton) state.ui.undoButton.disabled = true;
     syncModeCaption();
     showToast(t('zapper_toast_enabled', undefined, 'Element Zapper enabled.'));
+    if (options.fromContextMenu === true) preselectContextMenuTarget();
 
     // After the popup closes, keyboard focus stays on Safari's chrome.
     // Without explicit focus, keydown events (like Escape) never reach our
@@ -1171,6 +1184,9 @@
       window.addEventListener('pagehide', () => event.removeListener(listener));
       window.addEventListener('pageshow', (e) => { if (e.persisted) event.addListener(listener); });
   };
+  document.addEventListener('contextmenu', (event) => {
+    lastContextMenuTarget = event.target instanceof Element ? event.target : null;
+  }, true);
   listenWhileShown(browser.runtime.onMessage, (message) => {
     if (!message || typeof message !== 'object') return;
 
@@ -1182,7 +1198,10 @@
       });
     }
     if (message.type === 'wblock:zapper:activate') {
-      return activateZapper({ temporary: message.temporary === true }).then((activated) => ({
+      return activateZapper({
+        temporary: message.temporary === true,
+        fromContextMenu: message.fromContextMenu === true,
+      }).then((activated) => ({
         ok: activated !== false,
         handledBy: 'zapper-content'
       }));

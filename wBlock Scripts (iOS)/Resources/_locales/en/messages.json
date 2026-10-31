@@ -1,4 +1,8 @@
 {
+  "context_menu_zap_element": {
+    "message": "Zap Element",
+    "description": "Right-click context menu item that activates the Element Zapper on the clicked element."
+  },
   "extension_name": {
     "message": "wBlock Scripts",
     "description": "The display name for the extension."

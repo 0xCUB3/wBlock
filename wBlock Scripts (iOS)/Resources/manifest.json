@@ -64,6 +64,7 @@
         "unlimitedStorage",
         "scripting",
         "tabs",
+        "contextMenus",
         "declarativeNetRequest",
         "declarativeNetRequestWithHostAccess"
     ],
