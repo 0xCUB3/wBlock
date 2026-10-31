@@ -60,6 +60,7 @@ enum BuiltInFilterCredits {
         "Liste AR": credit("smed79", "https://github.com/easylist/listear"),
         "Macedonian adBlock Filters": credit("DeepSpaceHarbor", "https://github.com/RandomAdversary/Macedonian-adBlock-Filters"),
         "Official Polish filters for AdBlock, uBlock Origin & AdGuard": credit("MajkiIT, krystian3w", "https://github.com/MajkiIT/polish-ads-filter"),
+        "Persian Blocker": credit("MasterKia, waifucon", "https://github.com/PersianBlocker/PersianBlocker"),
         "road-block light": credit("mapx-", "https://github.com/tcptomato/ROad-Block"),
     ]
 }
