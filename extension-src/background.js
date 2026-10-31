@@ -26810,7 +26810,7 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
     if (message && message.action === "wblock:popup:nativeMessage") {
       const allowedActions = new Set([
         "logExtensionDiagnostic", "syncZapperRules", "getZapperRules",
-        "getBlockingPausedState", "getResumeRequestStatus", "resumeBlocking",
+        "getBlockingPausedState", "getResumeRequestStatus", "resumeBlocking", "openApp",
         "getSiteDisabledState", "setSiteDisabledState", "setSiteZapperDisabled",
         "getSiteFilterDisabledState", "setSiteFilterDisabledState", "setUserScriptsSiteDisabled",
         "getPageUserScripts", "setUserScriptSiteDisabledState", "getNoAutoplayState",

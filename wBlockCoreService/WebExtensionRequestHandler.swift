@@ -143,6 +143,9 @@ public enum WebExtensionRequestHandler {
             case "resumeBlocking":
                 handleResumeBlocking(context: context)
                 return
+            case "openApp":
+                handleOpenApp(context: context)
+                return
             case "getResumeRequestStatus":
                 handleGetResumeRequestStatus(context: context)
                 return
@@ -650,6 +653,22 @@ public enum WebExtensionRequestHandler {
             "wakeAttempted": wake.attempted,
             "wakeSucceeded": wake.succeeded
         ])
+        context.completeRequest(returningItems: [response])
+    }
+
+    private static func handleOpenApp(context: NSExtensionContext) {
+        #if os(macOS)
+        let opened = NSWorkspace.shared.open(URL(string: "wblockapp://open")!)
+        let response = createResponse(with: [
+            "ok": opened,
+            "error": opened ? nil : "Could not open wBlock."
+        ])
+        #else
+        let response = createResponse(with: [
+            "ok": false,
+            "error": "Opening wBlock from the popup is unavailable on this platform."
+        ])
+        #endif
         context.completeRequest(returningItems: [response])
     }
 
