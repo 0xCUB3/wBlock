@@ -710,6 +710,13 @@ button:focus-visible {
   color: #ffffff;
 }
 
+.button-row .btn {
+  min-width: 0;
+  padding-left: 6px;
+  padding-right: 6px;
+  overflow-wrap: anywhere;
+}
+
 .footer {
   margin-top: 0;
 }

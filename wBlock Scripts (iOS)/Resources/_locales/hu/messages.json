@@ -19,6 +19,10 @@
     "message": "Aktiválás",
     "description": "Button label to activate element zapper mode."
   },
+  "popup_button_hide_once": {
+    "message": "Elrejtés egyszer",
+    "description": "Button label to hide elements on this page until it reloads, without saving a rule."
+  },
   "popup_button_clear": {
     "message": "Törlés",
     "description": "Button label to clear all zapper rules for the current site."
@@ -115,14 +119,6 @@
     "message": "wBlock Elemeltávolító",
     "description": "Accessible label for the in-page element zapper toolbar."
   },
-  "zapper_status_tap_to_hide": {
-    "message": "Elemeltávolító: koppints egy elemre az elrejtéshez.",
-    "description": "Default status text in the in-page element zapper toolbar."
-  },
-  "zapper_status_click_to_hide": {
-    "message": "Elemeltávolító: kattints egy elemre az elrejtéshez.",
-    "description": "Default status text in the in-page element zapper toolbar on the Mac."
-  },
   "zapper_button_undo": {
     "message": "Visszavonás",
     "description": "Button label to undo last zapper action."
@@ -139,25 +135,17 @@
     "message": "Kész",
     "description": "Button label to finish zapper mode."
   },
-  "zapper_button_select_parent": {
-    "message": "Szülőelem kijelölése",
-    "description": "Tooltip for choosing the parent element in refine mode."
-  },
-  "zapper_button_select_child": {
-    "message": "Gyermekelem kijelölése",
-    "description": "Tooltip for choosing the child element in refine mode."
-  },
-  "zapper_ancestors_aria_label": {
-    "message": "Szülőelemek",
-    "description": "Accessible label for the horizontal ancestor-chip list in zapper refine mode."
-  },
   "zapper_button_hide": {
     "message": "Elrejtés",
     "description": "Button label for confirming hide action in refine mode."
   },
   "zapper_button_cancel": {
     "message": "Mégse",
-    "description": "Button label to cancel element selection and exit refine mode without hiding."
+    "description": "Button label to close the element zapper and undo every hide made in this session."
+  },
+  "zapper_mode_until_reload": {
+    "message": "Újratöltésig",
+    "description": "Caption shown in the element zapper panel when its hides last only until the page reloads."
   },
   "zapper_error_enter_selector": {
     "message": "Adj meg egy CSS-szelektort.",
@@ -191,6 +179,10 @@
     "message": "Elrejtve. Szabály mentve ehhez a webhelyhez.",
     "description": "Toast shown after hiding selected element and saving generated rule."
   },
+  "zapper_toast_hidden_until_reload": {
+    "message": "Újratöltésig elrejtve.",
+    "description": "Toast shown after hiding an element that stays hidden only until the page reloads."
+  },
   "zapper_prompt_enter_selector": {
     "message": "Adj meg egy CSS-szelektort ehhez a webhelyhez",
     "description": "Prompt text shown when user adds a manual selector rule."
@@ -198,14 +190,6 @@
   "zapper_toast_undone": {
     "message": "Visszavonva.",
     "description": "Toast shown after undoing the last zapper action."
-  },
-  "zapper_status_refine": {
-    "message": "$1 — ▲▼ a finomításhoz, koppints a(z) $2 gombra a mentéshez",
-    "description": "Refine-mode status text. Placeholder 1 is element label and placeholder 2 is hide action label."
-  },
-  "zapper_status_refine_click": {
-    "message": "$1 — ▲▼ a finomításhoz, kattints a(z) $2 gombra a mentéshez",
-    "description": "Refine-mode status text on the Mac. Placeholder 1 is element label and placeholder 2 is hide action label."
   },
   "zapper_toast_unable_create_rule": {
     "message": "Ehhez az elemhez nem sikerült szabályt létrehozni.",
@@ -218,10 +202,6 @@
   "zapper_toast_disabled": {
     "message": "Az elemeltávolító kikapcsolva.",
     "description": "Toast shown when zapper mode is disabled."
-  },
-  "zapper_status_off": {
-    "message": "Elemeltávolító: Kikapcsolva",
-    "description": "Status text shown after disabling zapper while keeping toolbar visible."
   },
   "popup_userscripts": {
     "message": "Userscripts",

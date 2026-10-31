@@ -19,6 +19,10 @@
     "message": "تفعيل",
     "description": "Button label to activate element zapper mode."
   },
+  "popup_button_hide_once": {
+    "message": "إخفاء مرة واحدة",
+    "description": "Button label to hide elements on this page until it reloads, without saving a rule."
+  },
   "popup_button_clear": {
     "message": "مسح",
     "description": "Button label to clear all zapper rules for the current site."
@@ -115,14 +119,6 @@
     "message": "أداة إخفاء العناصر في wBlock",
     "description": "Accessible label for the in-page element zapper toolbar."
   },
-  "zapper_status_tap_to_hide": {
-    "message": "أداة إخفاء العناصر: اضغط على عنصر لإخفائه.",
-    "description": "Default status text in the in-page element zapper toolbar."
-  },
-  "zapper_status_click_to_hide": {
-    "message": "أداة إخفاء العناصر: انقر على عنصر لإخفائه.",
-    "description": "Default status text in the in-page element zapper toolbar on the Mac."
-  },
   "zapper_button_undo": {
     "message": "تراجع",
     "description": "Button label to undo last zapper action."
@@ -139,25 +135,17 @@
     "message": "تم",
     "description": "Button label to finish zapper mode."
   },
-  "zapper_button_select_parent": {
-    "message": "تحديد العنصر الأب",
-    "description": "Tooltip for choosing the parent element in refine mode."
-  },
-  "zapper_button_select_child": {
-    "message": "تحديد العنصر الفرعي",
-    "description": "Tooltip for choosing the child element in refine mode."
-  },
-  "zapper_ancestors_aria_label": {
-    "message": "العناصر الأصل",
-    "description": "Accessible label for the horizontal ancestor-chip list in zapper refine mode."
-  },
   "zapper_button_hide": {
     "message": "إخفاء",
     "description": "Button label for confirming hide action in refine mode."
   },
   "zapper_button_cancel": {
     "message": "إلغاء",
-    "description": "Button label to cancel element selection and exit refine mode without hiding."
+    "description": "Button label to close the element zapper and undo every hide made in this session."
+  },
+  "zapper_mode_until_reload": {
+    "message": "حتى إعادة التحميل",
+    "description": "Caption shown in the element zapper panel when its hides last only until the page reloads."
   },
   "zapper_error_enter_selector": {
     "message": "أدخل محدد CSS.",
@@ -191,6 +179,10 @@
     "message": "تم الإخفاء. تم حفظ القاعدة لهذا الموقع.",
     "description": "Toast shown after hiding selected element and saving generated rule."
   },
+  "zapper_toast_hidden_until_reload": {
+    "message": "مخفي حتى إعادة التحميل.",
+    "description": "Toast shown after hiding an element that stays hidden only until the page reloads."
+  },
   "zapper_prompt_enter_selector": {
     "message": "أدخل محدد CSS لهذا الموقع",
     "description": "Prompt text shown when user adds a manual selector rule."
@@ -198,14 +190,6 @@
   "zapper_toast_undone": {
     "message": "تم التراجع.",
     "description": "Toast shown after undoing the last zapper action."
-  },
-  "zapper_status_refine": {
-    "message": "$1 — ▲▼ للضبط، اضغط $2 للحفظ",
-    "description": "Refine-mode status text. Placeholder 1 is element label and placeholder 2 is hide action label."
-  },
-  "zapper_status_refine_click": {
-    "message": "$1 — ▲▼ للضبط، انقر $2 للحفظ",
-    "description": "Refine-mode status text on the Mac. Placeholder 1 is element label and placeholder 2 is hide action label."
   },
   "zapper_toast_unable_create_rule": {
     "message": "تعذر إنشاء قاعدة لهذا العنصر.",
@@ -218,10 +202,6 @@
   "zapper_toast_disabled": {
     "message": "تم تعطيل أداة إخفاء العناصر.",
     "description": "Toast shown when zapper mode is disabled."
-  },
-  "zapper_status_off": {
-    "message": "أداة إخفاء العناصر: متوقفة",
-    "description": "Status text shown after disabling zapper while keeping toolbar visible."
   },
   "popup_userscripts": {
     "message": "Userscripts",
