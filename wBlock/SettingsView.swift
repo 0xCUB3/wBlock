@@ -749,10 +749,6 @@ struct SettingsView: View {
     }
 
 
-    private var pauseBlockingToolbar: some ToolbarContent {
-        ToolbarItem(placement: .primaryAction) { PauseBlockingMenu(filterManager: filterManager) }
-    }
-
     @ViewBuilder
     private var aboutSection: some View {
         Section {
@@ -829,7 +825,6 @@ struct SettingsView: View {
             // can scroll to them in a page that has grown long (#999).
             ScrollViewReader { proxy in
                 settingsList
-                    .toolbar { pauseBlockingToolbar }
                     .onChangeCompat(of: scrollTarget) { _, target in
                         guard let target else { return }
                         withAnimation { proxy.scrollTo(target, anchor: Self.sectionScrollAnchor) }

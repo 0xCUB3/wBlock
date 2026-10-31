@@ -426,6 +426,7 @@ struct ContentView: View {
             showEnabledOnly: $showOnlyEnabledLists,
             searchPrompt: "Search filters"
         ) {
+            PauseBlockingMenu(filterManager: filterManager)
             Button {
                 showingAddFilterSheet = true
             } label: {
