@@ -58,38 +58,46 @@ class FilterListLoader {
         !list.isCustom && adGuardReplacements[list.name] != nil
     }
 
-    /// Retires the built-in AdGuard lists that uBO lists replaced. An unselected
-    /// one is simply removed. A selected one hands over only once every
-    /// replacement `hasContent`, so it keeps protecting (offline, say) until
-    /// then. Its replacements are turned on and, unless the user had already
-    /// turned one on, inherit its settings: automatic updates stay off if any
-    /// predecessor had them off, excluded sites are combined, and site-only
-    /// scoping is kept only when every predecessor used it.
+    /// Moves the AdGuard lists in `pending` (the replaced lists a device had on
+    /// when it upgraded from wBlock 3) to their uBO replacements. Each hands
+    /// over only once every replacement `hasContent`, so it keeps protecting
+    /// (offline, say) until then. Its replacements are turned on and, unless the
+    /// user had already turned one on, inherit its settings: automatic updates
+    /// stay off if any predecessor had them off, excluded sites are combined,
+    /// and site-only scoping is kept only when every predecessor used it. The
+    /// AdGuard list is turned off, not removed, so it can be turned on again.
+    /// `settled` leaves `pending`: lists handed over, and lists the user turned
+    /// off in the meantime.
     static func handingOverReplacedAdGuardLists(
-        _ lists: [FilterList], hasContent: (FilterList) -> Bool
-    ) -> (lists: [FilterList], removed: [FilterList]) {
+        _ lists: [FilterList], pending: Set<UUID>, hasContent: (FilterList) -> Bool
+    ) -> (lists: [FilterList], handedOver: [FilterList], settled: Set<UUID>) {
         let byName = Dictionary(lists.filter { !$0.isCustom }.map { ($0.name, $0) }, uniquingKeysWith: { a, _ in a })
-        let pending = lists.filter(isReplacedAdGuardList)
-        var ready = pending.filter { list in
-            !list.isSelected || (adGuardReplacements[list.name] ?? []).allSatisfy { byName[$0].map(hasContent) == true }
+        let candidates = lists.filter { pending.contains($0.id) && $0.isSelected && isReplacedAdGuardList($0) }
+        var ready = candidates.filter { list in
+            (adGuardReplacements[list.name] ?? []).allSatisfy { byName[$0].map(hasContent) == true }
         }
         while true {
             let readyIDs = Set(ready.map(\.id))
-            let blockedNames = Set(pending.filter { $0.isSelected && !readyIDs.contains($0.id) }
+            let blockedNames = Set(candidates.filter { !readyIDs.contains($0.id) }
                 .flatMap { adGuardReplacements[$0.name] ?? [] })
-            let next = ready.filter { !$0.isSelected || blockedNames.isDisjoint(with: adGuardReplacements[$0.name] ?? []) }
+            let next = ready.filter { blockedNames.isDisjoint(with: adGuardReplacements[$0.name] ?? []) }
             if next.count == ready.count { break }
             ready = next
         }
-        guard !ready.isEmpty else { return (lists, []) }
+        let settled = pending.subtracting(candidates.map(\.id)).union(ready.map(\.id))
+        guard !ready.isEmpty else { return (lists, [], settled) }
         var predecessors: [String: [FilterList]] = [:]
-        for list in ready where list.isSelected {
+        for list in ready {
             for name in adGuardReplacements[list.name] ?? [] { predecessors[name, default: []].append(list) }
         }
         let retired = Set(ready.map(\.id))
-        let kept = lists.filter { !retired.contains($0.id) }.map { list -> FilterList in
-            guard !list.isCustom, let from = predecessors[list.name] else { return list }
+        let updated = lists.map { list -> FilterList in
             var list = list
+            if retired.contains(list.id) {
+                list.isSelected = false
+                return list
+            }
+            guard !list.isCustom, let from = predecessors[list.name] else { return list }
             if !list.isSelected {
                 list.updatesAutomatically = from.allSatisfy(\.updatesAutomatically)
                 list.excludedSites = Array(Set(from.flatMap(\.excludedSites))).sorted()
@@ -99,7 +107,7 @@ class FilterListLoader {
             list.isSelected = true
             return list
         }
-        return (kept, ready)
+        return (updated, ready, settled)
     }
 
     /// Was built into wBlock 5 while any list was on, so upgrades turn it on
@@ -514,6 +522,94 @@ class FilterListLoader {
                 description:
                     "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites."
             ),
+            FilterList(
+                id: UUID(), name: "AdGuard Base Filter",
+                url: URL(
+                    string:
+                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/2_optimized.txt"
+                )!, category: FilterListCategory.ads,
+                description: "EasyList + AdGuard English filter. This filter is necessary for quality ad blocking."),
+            FilterList(
+                    id: UUID(), name: "AdGuard Mobile Filter",
+                    url: URL(
+                        string:
+                            "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/ios/filters/11_optimized.txt"
+                    )!, category: FilterListCategory.ads,
+                    description: "Filter for all known mobile ad networks. Useful for mobile devices."),
+            FilterList(
+                id: UUID(), name: "AdGuard Tracking Protection Filter",
+                url: URL(
+                    string:
+                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/3_optimized.txt"
+                )!, category: FilterListCategory.privacy,
+                description: "The most comprehensive list of various online counters and web analytics tools. Use this filter if you do not want your actions on the Internet to be tracked."),
+            FilterList(
+                id: UUID(), name: "AdGuard URL Tracking Protection Filter",
+                url: URL(
+                    string:
+                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/mac_v3/filters/17_optimized.txt"
+                )!, category: FilterListCategory.privacy,
+                description: "Filter that enhances privacy by removing tracking parameters from URLs.",
+                trustLevel: "high"),
+            FilterList(
+                id: UUID(), name: "AdGuard Cookie Notices",
+                url: URL(
+                    string:
+                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/18_optimized.txt"
+                )!, category: FilterListCategory.annoyances,
+                description: "Blocks cookie notices on web pages."),
+            FilterList(
+                id: UUID(), name: "AdGuard German filter",
+                url: URL(
+                    string:
+                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/6_optimized.txt"
+                )!, category: .foreign,
+                description:
+                    "EasyList Germany + AdGuard German filter. Filter list that specifically removes ads on websites in German language.",
+                languages: ["de"], trustLevel: "full"),
+            FilterList(
+                id: UUID(), name: "AdGuard Italian filter",
+                url: URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/26_optimized.txt")!,
+                category: .foreign, description: "EasyList Italy + AdGuard Italian filter. Filter list that specifically removes ads on websites in the Italian language.",
+                languages: ["it"], trustLevel: "high"),
+            FilterList(
+                id: UUID(), name: "AdGuard Russian filter",
+                url: URL(
+                    string:
+                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/1_optimized.txt"
+                )!, category: .foreign,
+                description: "Filter that enables ad blocking on websites in Russian language.",
+                languages: ["ru"], trustLevel: "full"),
+            FilterList(
+                id: UUID(), name: "AdGuard Popups",
+                url: URL(
+                    string:
+                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/19_optimized.txt"
+                )!, category: FilterListCategory.annoyances,
+                description:
+                    "Blocks all kinds of pop-ups that are not necessary for websites' operation according to our Filter policy."),
+            FilterList(
+                id: UUID(), name: "AdGuard Other Annoyances",
+                url: URL(
+                    string:
+                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/21_optimized.txt"
+                )!, category: FilterListCategory.annoyances,
+                description:
+                    "Blocks irritating elements that do not fall under popular categories of annoyances, such as website promotional offers and restrictions on copying and text selection."),
+            FilterList(
+                id: UUID(), name: "AdGuard Mobile App Banners",
+                url: URL(
+                    string:
+                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/20_optimized.txt"
+                )!, category: FilterListCategory.annoyances,
+                description: "Blocks irritating banners that promote mobile apps of websites."),
+            FilterList(
+                id: UUID(), name: "AdGuard Widgets",
+                url: URL(
+                    string:
+                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/22_optimized.txt"
+                )!, category: FilterListCategory.annoyances,
+                description: "Blocks annoying third-party widgets: online assistants, live support chats, etc."),
             FilterList(
                 id: UUID(), name: "AdGuard Experimental Filter",
                 url: URL(
