@@ -76,7 +76,9 @@ struct Main {
         let ordered = ContentBlockerIncrementalCache.canonicalFilterOrder([left, right])
         try write(ordered[0], "! emptied owner\n")
         let moved = try compileSlots([left, right])
-        if moved.contains(where: \.reusedCachedBase) { fail("changing an owner must invalidate dependent slots") }
+        let mapping = ContentBlockerMappingService.distribute(selectedFilters: [left, right], across: targets)
+        let dependent = targets.indices.filter { !(mapping[targets[$0]] ?? []).isEmpty }
+        if dependent.contains(where: { moved[$0].reusedCachedBase }) { fail("changing an owner must invalidate dependent slots") }
         if moved.reduce(0, { $0 + $1.safariRulesCount }) != baseline { fail("later copy must take ownership when first copy disappears") }
 
         try write(left, content + "@@||site1.example^\n")
