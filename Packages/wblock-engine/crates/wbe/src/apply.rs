@@ -19,6 +19,7 @@ use crate::compile::{compile_rules, parse_list, CompileOptions, CompileOutput, R
 use crate::parse::cosmetic::with_domains;
 use crate::webkit::{SafariVersion, WkAction, WkRule, WkTrigger};
 use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 use std::collections::hash_map::DefaultHasher;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::hash::{Hash, Hasher};
@@ -168,7 +169,7 @@ impl Plan {
     }
 
     /// The rules of `list` that blocker `target` compiles, site scope applied.
-    fn included(&self, target: usize, list: usize) -> Vec<Rule> {
+    fn included(&self, target: usize, list: usize) -> Vec<Cow<'_, Rule>> {
         let types = slot_types(self.targets[target].slot);
         let assignment = self.assigned(target, list);
         let parsed = &self.parsed[list];
@@ -266,7 +267,7 @@ impl Plan {
         self.fingerprint_of(target, extras, &replicated)
     }
 
-    fn fingerprint_of(&self, target: usize, extras: &[Extra], replicated: &[Rule]) -> u64 {
+    fn fingerprint_of(&self, target: usize, extras: &[Extra], replicated: &[Cow<'_, Rule>]) -> u64 {
         let mut h = DefaultHasher::new();
         crate::OUTPUT_VERSION.hash(&mut h);
         format!("{:?}{:?}", self.opts, self.cosmetics).hash(&mut h);
@@ -279,12 +280,14 @@ impl Plan {
                 format!("{:?}", spec.scope).hash(&mut h);
                 assignment.map(|a| a.shard).hash(&mut h);
                 let owned = &self.duplicates[target][list];
-                let sum = owned.iter().fold(0u64, |acc, id| acc.wrapping_add(hash(id)));
+                let sum = owned
+                    .iter()
+                    .fold(0u64, |acc, id| acc.wrapping_add(hash(id)));
                 (owned.len(), sum).hash(&mut h);
             }
         }
         for rule in replicated {
-            format!("{rule:?}").hash(&mut h);
+            format!("{:?}", rule.as_ref()).hash(&mut h);
         }
         for extra in extras {
             (&extra.text, extra.trusted).hash(&mut h);
@@ -328,7 +331,7 @@ impl Plan {
             let assignment = self.assigned(target, list).cloned();
             for p in &self.parsed[list].rules {
                 if matches!(&p.rule, Rule::Network(r) if r.badfilter) {
-                    segment.push(p.rule.clone());
+                    segment.push(Cow::Borrowed(&p.rule));
                 }
                 let keep = assignment.as_ref().is_some_and(|a| {
                     a.shard
@@ -338,12 +341,12 @@ impl Plan {
                     && is_plain_block(&p.rule)
                     && !self.duplicates[target][list].contains(&p.identity)
                 {
-                    segment.push(p.rule.clone());
+                    segment.push(Cow::Borrowed(&p.rule));
                 }
             }
         }
         for rule in replicated {
-            if matches!(&rule, Rule::Network(r) if r.badfilter) {
+            if matches!(rule.as_ref(), Rule::Network(r) if r.badfilter) {
                 segment.push(rule.clone());
             }
             set.push(rule);
@@ -356,7 +359,7 @@ impl Plan {
                 extra.trusted,
                 &mut extra_stats,
             ) {
-                if let Some(rule) = self.cosmetic_scoped(rule) {
+                if let Some(rule) = self.cosmetic_scoped(Cow::Owned(rule)) {
                     set.push(rule);
                 }
             }
@@ -402,30 +405,37 @@ impl Plan {
             .max_by_key(|&l| self.parsed[l].rules.len())
     }
 
-    fn cosmetic_scoped(&self, rule: Rule) -> Option<Rule> {
-        let Rule::Cosmetic(mut r) = rule else {
+    fn cosmetic_scoped<'a>(&self, mut rule: Cow<'a, Rule>) -> Option<Cow<'a, Rule>> {
+        let Rule::Cosmetic(r) = rule.as_ref() else {
             return Some(rule);
         };
         if !self.cosmetics.generic && !r.exception && r.domains.include.is_empty() {
             return None;
         }
         if self.cosmetics.sites.is_empty() {
-            return Some(Rule::Cosmetic(r));
+            return Some(rule);
         }
         let restricted = restrict(&r.domains, &self.cosmetics.sites)?;
+        let Rule::Cosmetic(r) = rule.to_mut() else {
+            unreachable!()
+        };
         narrow(&mut r.domains, &mut r.raw, restricted);
-        Some(Rule::Cosmetic(r))
+        Some(rule)
     }
 
     /// #836: network exceptions of lists this blocker does not compile, when
     /// they can cancel one of its blocks (Safari applies an exception only in
     /// its own blocker). Matching errs toward copying, which is harmless.
-    fn replicated_exceptions(&self, target: usize, included: &[Vec<Rule>]) -> Vec<Rule> {
+    fn replicated_exceptions<'a>(
+        &'a self,
+        target: usize,
+        included: &[Vec<Cow<'a, Rule>>],
+    ) -> Vec<Cow<'a, Rule>> {
         let mut patterns = HashSet::new();
         let mut bare_hosts = HashSet::new();
         for rules in included {
             for rule in rules {
-                if let Rule::Network(r) = rule {
+                if let Rule::Network(r) = rule.as_ref() {
                     if let Some(key) = PatternKey::of(r).filter(|_| !r.exception) {
                         if key.bare {
                             bare_hosts.insert(key.host.clone().unwrap_or_default());
@@ -448,7 +458,7 @@ impl Plan {
                 scoped(&p.rule, &self.lists[list].scope, &mut scoped_rules);
             }
             for rule in scoped_rules {
-                match &rule {
+                match rule.as_ref() {
                     Rule::Cosmetic(r) if r.exception => {
                         if seen.insert(identity(&r.raw)) {
                             if let Some(rule) = self.cosmetic_scoped(rule) {
@@ -776,9 +786,9 @@ fn narrow(domains: &mut DomainList, raw: &mut String, restricted: Restricted) {
 /// Applies a list's site scope to one rule: zero rules when it no longer
 /// applies anywhere, two when a block needs a companion exception for an
 /// excluded subdomain of its scope (#767).
-fn scoped(rule: &Rule, scope: &SiteScope, out: &mut Vec<Rule>) {
+fn scoped<'a>(rule: &'a Rule, scope: &SiteScope, out: &mut Vec<Cow<'a, Rule>>) {
     if scope.is_empty() {
-        out.push(rule.clone());
+        out.push(Cow::Borrowed(rule));
         return;
     }
     match rule {
@@ -801,8 +811,8 @@ fn scoped(rule: &Rule, scope: &SiteScope, out: &mut Vec<Rule>) {
             // An important block would outrank its companion; the user's
             // exclusion wins over `important`.
             rule.important &= companion.is_none();
-            out.push(Rule::Network(rule));
-            out.extend(companion.map(Rule::Network));
+            out.push(Cow::Owned(Rule::Network(rule)));
+            out.extend(companion.map(|r| Cow::Owned(Rule::Network(r))));
         }
         Rule::Cosmetic(r) => {
             let Some(restricted) = restrict(&r.domains, scope) else {
@@ -810,7 +820,7 @@ fn scoped(rule: &Rule, scope: &SiteScope, out: &mut Vec<Rule>) {
             };
             let mut rule = r.clone();
             narrow(&mut rule.domains, &mut rule.raw, restricted);
-            out.push(Rule::Cosmetic(rule));
+            out.push(Cow::Owned(Rule::Cosmetic(rule)));
         }
         Rule::Scriptlet(r) => {
             let Some(restricted) = restrict(&r.domains, scope) else {
@@ -818,7 +828,7 @@ fn scoped(rule: &Rule, scope: &SiteScope, out: &mut Vec<Rule>) {
             };
             let mut rule = r.clone();
             narrow(&mut rule.domains, &mut rule.raw, restricted);
-            out.push(Rule::Scriptlet(rule));
+            out.push(Cow::Owned(Rule::Scriptlet(rule)));
         }
     }
 }
@@ -1071,7 +1081,10 @@ mod tests {
                 json!({}),
             )
         };
-        let (before, after) = (make_reversed("||b.example^"), make_reversed("||b.example^\n||a.example^"));
+        let (before, after) = (
+            make_reversed("||b.example^"),
+            make_reversed("||b.example^\n||a.example^"),
+        );
         assert_ne!(rules(&before, 0), rules(&after, 0));
         assert_ne!(fp(&before, 0), fp(&after, 0));
     }
@@ -1266,10 +1279,21 @@ mod tests {
             json!({}),
         );
         let rules = rules(&plan, 0);
-        let block = rules.iter().position(|r| r["action"]["type"] == "block").unwrap();
+        let block = rules
+            .iter()
+            .position(|r| r["action"]["type"] == "block")
+            .unwrap();
         for r in &rules[block + 1..] {
-            if r["action"]["type"] == "ignore-previous-rules" && r["trigger"]["if-domain"].to_string().contains("example.com") {
-                assert_eq!(r["trigger"]["resource-type"], json!(["document"]), "{rules:?}");
+            if r["action"]["type"] == "ignore-previous-rules"
+                && r["trigger"]["if-domain"]
+                    .to_string()
+                    .contains("example.com")
+            {
+                assert_eq!(
+                    r["trigger"]["resource-type"],
+                    json!(["document"]),
+                    "{rules:?}"
+                );
             }
         }
     }
@@ -1282,8 +1306,12 @@ mod tests {
             json!({}),
         );
         let rules = rules(&plan, 0);
-        let exception = rules.iter().rposition(|r| r["action"]["type"] == "ignore-previous-rules"
-            && r["trigger"]["if-domain"].to_string().contains("shop.example.com"));
+        let exception = rules.iter().rposition(|r| {
+            r["action"]["type"] == "ignore-previous-rules"
+                && r["trigger"]["if-domain"]
+                    .to_string()
+                    .contains("shop.example.com")
+        });
         let block = rules.iter().rposition(|r| r["action"]["type"] == "block");
         assert!(exception > block, "{rules:?}");
     }

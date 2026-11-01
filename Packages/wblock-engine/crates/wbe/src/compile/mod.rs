@@ -12,11 +12,10 @@ mod cosmetic;
 mod network;
 pub mod regex;
 
-use crate::ast::{
-    CosmeticRule, ExceptionScope, NetworkRule, ParsedLine, Rule, ScriptletRule, SourceRef,
-};
+use crate::ast::{ExceptionScope, ParsedLine, Rule, SourceRef};
 use crate::webkit::{SafariVersion, WkRule};
 use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -75,21 +74,15 @@ pub(crate) struct Tiered {
     pub rule: WkRule,
 }
 
-/// Parsed rules, split by kind, ready for `compile_rules`.
+/// Parsed rules ready for `compile_rules`.
 #[derive(Debug, Clone, Default)]
-pub struct RuleSet {
-    pub network: Vec<NetworkRule>,
-    pub cosmetic: Vec<CosmeticRule>,
-    pub scriptlets: Vec<ScriptletRule>,
+pub struct RuleSet<'a> {
+    pub rules: Vec<Cow<'a, Rule>>,
 }
 
-impl RuleSet {
-    pub fn push(&mut self, rule: Rule) {
-        match rule {
-            Rule::Network(r) => self.network.push(r),
-            Rule::Cosmetic(r) => self.cosmetic.push(r),
-            Rule::Scriptlet(r) => self.scriptlets.push(r),
-        }
+impl<'a> RuleSet<'a> {
+    pub fn push(&mut self, rule: impl Into<Cow<'a, Rule>>) {
+        self.rules.push(rule.into());
     }
 }
 
@@ -125,7 +118,7 @@ pub fn compile(inputs: &[ListInput], opts: &CompileOptions) -> CompileOutput {
     let mut set = RuleSet::default();
     for (list, input) in inputs.iter().enumerate() {
         for rule in parse_list(input.text, list as u32, input.trusted, &mut stats) {
-            set.push(rule);
+            set.push(Cow::Owned(rule));
         }
     }
     compile_rules(&set, opts, stats)
@@ -135,10 +128,20 @@ pub fn compile(inputs: &[ListInput], opts: &CompileOptions) -> CompileOutput {
 pub fn compile_rules(set: &RuleSet, opts: &CompileOptions, mut stats: Stats) -> CompileOutput {
     let mut tiered = Vec::new();
     let mut runtime = Vec::new();
-    network::compile(&set.network, opts, &mut tiered, &mut stats);
-    cosmetic::compile(&set.cosmetic, opts, &mut tiered, &mut runtime, &mut stats);
+    let mut network = Vec::new();
+    let mut cosmetic = Vec::new();
+    let mut scriptlets = Vec::new();
+    for rule in &set.rules {
+        match rule.as_ref() {
+            Rule::Network(r) => network.push(r),
+            Rule::Cosmetic(r) => cosmetic.push(r),
+            Rule::Scriptlet(r) => scriptlets.push(r),
+        }
+    }
+    network::compile(&network, opts, &mut tiered, &mut stats);
+    cosmetic::compile(&cosmetic, opts, &mut tiered, &mut runtime, &mut stats);
     runtime.extend(
-        set.network
+        network
             .iter()
             .filter(|r| {
                 r.exception
@@ -148,7 +151,7 @@ pub fn compile_rules(set: &RuleSet, opts: &CompileOptions, mut stats: Stats) -> 
             })
             .map(|r| r.raw.clone()),
     );
-    for s in &set.scriptlets {
+    for s in scriptlets {
         runtime.push(s.raw.clone());
     }
     stats.runtime_rules = runtime.len() as u64;

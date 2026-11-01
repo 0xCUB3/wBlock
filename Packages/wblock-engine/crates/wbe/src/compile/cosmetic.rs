@@ -21,7 +21,7 @@ const ANY_HOST: &str = r"[^\/]+";
 type Key = (String, Option<String>);
 
 pub(super) fn compile(
-    rules: &[CosmeticRule],
+    rules: &[&CosmeticRule],
     opts: &CompileOptions,
     out: &mut Vec<Tiered>,
     runtime: &mut Vec<String>,
@@ -729,7 +729,13 @@ mod tests {
         let mut out = Vec::new();
         let mut runtime = Vec::new();
         let mut stats = Stats::default();
-        compile(&rules, &opts, &mut out, &mut runtime, &mut stats);
+        compile(
+            &rules.iter().collect::<Vec<_>>(),
+            &opts,
+            &mut out,
+            &mut runtime,
+            &mut stats,
+        );
         let webkit: Vec<WkRule> = out.into_iter().map(|t| t.rule).collect();
         (to_json(&webkit), runtime)
     }
@@ -1079,7 +1085,13 @@ mod tests {
         let mut out = Vec::new();
         let mut runtime = Vec::new();
         let mut stats = Stats::default();
-        compile(&rules, &safari(17, 0), &mut out, &mut runtime, &mut stats);
+        compile(
+            &rules.iter().collect::<Vec<_>>(),
+            &safari(17, 0),
+            &mut out,
+            &mut runtime,
+            &mut stats,
+        );
         let tiers: Vec<Tier> = out.iter().map(|t| t.tier).collect();
         assert_eq!(tiers, vec![Tier::GenericHide, Tier::SpecificHide]);
     }
@@ -1091,7 +1103,13 @@ mod tests {
         let mut out = Vec::new();
         let mut runtime = Vec::new();
         let mut stats = Stats::default();
-        compile(&rules, &safari(17, 0), &mut out, &mut runtime, &mut stats);
+        compile(
+            &rules.iter().collect::<Vec<_>>(),
+            &safari(17, 0),
+            &mut out,
+            &mut runtime,
+            &mut stats,
+        );
         assert_eq!(out[0].tier, Tier::GenericHide);
     }
 
@@ -1350,7 +1368,13 @@ mod tests {
         let mut runtime = Vec::new();
         let mut stats = Stats::default();
         let started = Instant::now();
-        compile(&rules, &opts, &mut out, &mut runtime, &mut stats);
+        compile(
+            &rules.iter().collect::<Vec<_>>(),
+            &opts,
+            &mut out,
+            &mut runtime,
+            &mut stats,
+        );
         let elapsed = started.elapsed();
 
         let webkit: Vec<WkRule> = out.into_iter().map(|t| t.rule).collect();

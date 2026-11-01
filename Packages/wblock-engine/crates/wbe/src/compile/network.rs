@@ -29,7 +29,7 @@ const DEFAULT_TYPES: ResourceTypes = ResourceTypes::all().difference(
 );
 
 pub(super) fn compile(
-    rules: &[NetworkRule],
+    rules: &[&NetworkRule],
     opts: &CompileOptions,
     out: &mut Vec<Tiered>,
     stats: &mut Stats,
@@ -37,7 +37,7 @@ pub(super) fn compile(
     let bad: Vec<NetworkRule> = rules
         .iter()
         .filter(|r| r.badfilter)
-        .map(unlabeled)
+        .map(|r| unlabeled(r))
         .collect();
     let bad_bodies: HashSet<&str> = bad.iter().map(|b| b.pattern.body.as_str()).collect();
     let strict = StrictHosts::new(rules);
@@ -311,7 +311,7 @@ struct StrictHosts {
 }
 
 impl StrictHosts {
-    fn new(rules: &[NetworkRule]) -> Self {
+    fn new(rules: &[&NetworkRule]) -> Self {
         let mut hosts = FxHashSet::default();
         let mut parents = FxHashSet::default();
         for r in rules {
@@ -691,7 +691,12 @@ mod tests {
     fn run(rules: &[NetworkRule], v: SafariVersion) -> (Vec<Tiered>, Stats) {
         let mut out = Vec::new();
         let mut stats = Stats::default();
-        compile(rules, &CompileOptions { safari: v }, &mut out, &mut stats);
+        compile(
+            &rules.iter().collect::<Vec<_>>(),
+            &CompileOptions { safari: v },
+            &mut out,
+            &mut stats,
+        );
         (out, stats)
     }
 
