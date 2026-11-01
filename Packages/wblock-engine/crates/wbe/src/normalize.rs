@@ -101,6 +101,7 @@ fn adg_scriptlet(inner: &str) -> Option<String> {
         .iter()
         .find(|(from, _)| *from == token)
         .map_or(token.as_str(), |(_, to)| to);
+    let renamed = renamed.strip_prefix("ubo-").unwrap_or(renamed);
     let mut out = format!("+js({}", scriptlet_name(renamed)?);
     for arg in &args {
         out.push_str(", ");
@@ -300,8 +301,10 @@ mod tests {
             ("example.com#%#//scriptlet('noeval')", "example.com#%#//scriptlet('noeval')"),
             (
                 "example.com#%#//scriptlet('ubo-aopr', 'x')",
-                "example.com#%#//scriptlet('ubo-aopr', 'x')",
+                "example.com##+js(abort-on-property-read, x)",
             ),
+            ("example.com#%#//scriptlet('ubo-acis.js', 'x')", "example.com##+js(abort-current-script, x)"),
+            ("example.com#%#//scriptlet('ubo-nosuch', 'x')", "example.com#%#//scriptlet('ubo-nosuch', 'x')"),
             (
                 "example.com#%#//scriptlet(abort-on-property-read, x)",
                 "example.com#%#//scriptlet(abort-on-property-read, x)",
