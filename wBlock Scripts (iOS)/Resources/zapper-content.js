@@ -489,6 +489,12 @@
       #${UI_ROOT_ID} .wblock-overflow.wblock-open { opacity: 1; transform: scale(1); pointer-events: auto; }
       #${UI_ROOT_ID} .wblock-overflow button { width: 100%; justify-content: flex-start; text-align: left; min-height: 36px; padding: 8px 10px; border-radius: 9px; background: transparent; font-weight: 500; }
       #${UI_ROOT_ID} .wblock-overflow button:active { background: var(--wb-fill); }
+      /* 16px keeps iOS from zooming the page when the field takes focus. */
+      #${UI_ROOT_ID} .wblock-rule-form { display: none; flex-direction: column; gap: 6px; padding: 4px; }
+      #${UI_ROOT_ID} .wblock-overflow.wblock-editing > button { display: none; }
+      #${UI_ROOT_ID} .wblock-overflow.wblock-editing .wblock-rule-form { display: flex; }
+      #${UI_ROOT_ID} .wblock-rule-form input { all: initial; box-sizing: border-box; width: 100%; min-height: 34px; padding: 7px 9px; border-radius: 9px; background: var(--wb-fill); color: var(--wb-text); font: 16px -apple-system, system-ui, sans-serif; cursor: text; -webkit-user-select: text; user-select: text; }
+      #${UI_ROOT_ID} .wblock-rule-form button { justify-content: center; text-align: center; background: var(--wb-fill); font-weight: 600; }
       #${HIGHLIGHT_ID} { position: fixed; pointer-events: none; z-index: 2147483646; border: 2px solid rgb(229,72,77); border-radius: 8px; background: rgba(229,72,77,0.08); transform: translate3d(0,0,0); }
       #${TOAST_ID} { position: absolute; right: 0; bottom: calc(100% + 8px); display: none; pointer-events: none; }
       #${TOAST_ID} .wblock-toast-inner { width: max-content; max-width: 200px; padding: 8px 10px; border-radius: 12px; background: var(--wb-menu); color: var(--wb-text); font-size: 12px; line-height: 1.3; text-align: center; box-shadow: 0 8px 24px var(--wb-shadow); }
@@ -521,27 +527,65 @@
     overflowMenu.className = 'wblock-overflow';
 
     const undoButton = uiButton(t('zapper_button_undo', undefined, 'Undo'), '', () => {
-      overflowMenu.classList.remove('wblock-open');
+      closeOverflow();
       undoLastZap().catch(() => {});
     });
     undoButton.disabled = true;
 
-    const manualButton = uiButton(t('zapper_button_add_custom_rule', undefined, 'Add custom CSS rule…'), '', () => {
-      overflowMenu.classList.remove('wblock-open');
-      addManualRuleFromPrompt().catch(() => {});
+    // The custom rule field lives in the menu. window.prompt could be
+    // suppressed by Safari, which left the item with no response (#1066).
+    const ruleForm = document.createElement('form');
+    ruleForm.className = 'wblock-rule-form';
+    const ruleInput = document.createElement('input');
+    ruleInput.type = 'text';
+    ruleInput.autocapitalize = 'off';
+    ruleInput.autocomplete = 'off';
+    ruleInput.spellcheck = false;
+    ruleInput.placeholder = t('zapper_prompt_enter_selector', undefined, 'Enter CSS selector for this site');
+    const ruleSubmit = document.createElement('button');
+    ruleSubmit.type = 'submit';
+    ruleSubmit.textContent = t('zapper_button_add_rule', undefined, 'Add Rule');
+    ruleForm.append(ruleInput, ruleSubmit);
+    ruleForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      addManualRule(ruleInput.value).then((added) => {
+        if (!added) return;
+        ruleInput.value = '';
+        closeOverflow();
+      }).catch(() => {});
     });
-    overflowMenu.append(undoButton, manualButton);
+    ruleInput.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      event.stopPropagation();
+      closeOverflow();
+    });
+
+    const manualButton = uiButton(t('zapper_button_add_custom_rule', undefined, 'Add custom CSS rule…'), '', () => {
+      overflowMenu.classList.add('wblock-editing');
+      ruleInput.focus();
+    });
+    overflowMenu.append(undoButton, manualButton, ruleForm);
+
+    function closeOverflow() {
+      overflowMenu.classList.remove('wblock-open', 'wblock-editing');
+      ruleInput.blur();
+    }
 
     const footer = document.createElement('div');
     footer.className = 'wblock-footer';
-    const moreButton = uiButton('···', 'wblock-more', () => overflowMenu.classList.toggle('wblock-open'));
+    const moreButton = uiButton('···', 'wblock-more', () => {
+      if (overflowMenu.classList.contains('wblock-open')) closeOverflow();
+      else overflowMenu.classList.add('wblock-open');
+    });
     moreButton.title = t('zapper_button_more', undefined, 'More options');
     footer.append(moreButton, overflowMenu);
 
     const onOverflowOutside = (event) => {
       if (!overflowMenu.classList.contains('wblock-open')) return;
       if (footer.contains(event.target)) return;
-      overflowMenu.classList.remove('wblock-open');
+      closeOverflow();
     };
     document.addEventListener('pointerdown', onOverflowOutside, true);
     state.cleanupFns.push(() => document.removeEventListener('pointerdown', onOverflowOutside, true));
@@ -743,12 +787,12 @@
 
   async function addSelectorRule(selector, options = {}) {
     const normalized = (selector || '').trim();
-    if (!normalized) return;
+    if (!normalized) return false;
     if (state.rules.includes(normalized) || state.tempRules.includes(normalized)) {
       showToast(options.manual
         ? t('zapper_toast_rule_exists', undefined, 'Rule already exists.')
         : t('zapper_toast_already_hidden', undefined, 'Already hidden.'));
-      return;
+      return false;
     }
     const temporary = options.temporary === true;
     state.undoStack.push({ selector: normalized, temporary });
@@ -759,26 +803,24 @@
       await trackPendingSave(saveRulesForHost(state.host, state.rules));
     }
     await applyRulesToPage(state.rules);
-    if (!state.active) return;
+    if (!state.active) return true;
     if (state.ui.undoButton) state.ui.undoButton.disabled = false;
     showToast(temporary
       ? t('zapper_toast_hidden_until_reload', undefined, 'Hidden until reload.')
       : options.manual
         ? t('zapper_toast_rule_saved', undefined, 'Rule saved for this site.')
         : t('zapper_toast_hidden_and_saved', undefined, 'Hidden. Rule saved for this site.'));
+    return true;
   }
 
-  async function addManualRuleFromPrompt() {
-    const rawInput = window.prompt(t('zapper_prompt_enter_selector', undefined, 'Enter CSS selector for this site'));
-    if (rawInput === null) return;
-
+  // Returns true once the rule is saved, so the field clears only then.
+  async function addManualRule(rawInput) {
     const parsed = parseManualRuleInput(rawInput);
     if (parsed.error) {
       showToast(parsed.error);
-      return;
+      return false;
     }
-
-    await addSelectorRule(parsed.selector, { manual: true });
+    return addSelectorRule(parsed.selector, { manual: true });
   }
 
   // Drops the newest hide, or every hide from this session when `all` is set.
@@ -1029,6 +1071,8 @@
     const onKeyDown = (event) => {
       if (!state.active) return;
       if (!event) return;
+      // Typing in the panel's rule field must not pick, hide, or close.
+      if (shouldIgnoreTarget(event.target) && isTextEntryTarget(event.target)) return;
       if (event.key === 'Escape') {
         interceptEvent(event);
         if (state.candidateElement) {
