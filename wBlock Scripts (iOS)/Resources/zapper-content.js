@@ -471,18 +471,18 @@
 
     const uiStyle = ensureStyleElement(UI_STYLE_ID);
     uiStyle.textContent = `
-      #${UI_ROOT_ID} { --wb-panel: rgba(255,255,255,0.55); --wb-fill: rgba(120,120,128,0.14); --wb-menu: rgba(255,255,255,0.8); --wb-line: rgba(0,0,0,0.08); --wb-shadow: rgba(0,0,0,0.18); --wb-highlight: rgba(255,255,255,0.7); position: fixed; top: 50%; right: calc(10px + env(safe-area-inset-right, 0px)); transform: translateY(-50%); z-index: 2147483647; box-sizing: border-box; width: 108px; padding: 8px; border-radius: 22px; display: flex; flex-direction: column; gap: 6px; font-family: -apple-system, system-ui, sans-serif; color: #1d1d1f; color: -apple-system-label; background: var(--wb-panel); backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%); border: 1px solid var(--wb-line); box-shadow: inset 0 1px 0 var(--wb-highlight), 0 10px 30px var(--wb-shadow); cursor: grab; touch-action: none; }
+      #${UI_ROOT_ID} { all: initial; --wb-text: #1d1d1f; --wb-danger: rgb(229,72,77); --wb-danger-fill: rgba(229,72,77,0.16); --wb-panel: rgba(255,255,255,0.55); --wb-fill: rgba(120,120,128,0.14); --wb-menu: rgba(255,255,255,0.8); --wb-line: rgba(0,0,0,0.08); --wb-shadow: rgba(0,0,0,0.18); --wb-highlight: rgba(255,255,255,0.7); position: fixed; top: 50%; right: calc(10px + env(safe-area-inset-right, 0px)); transform: translateY(-50%); z-index: 2147483647; box-sizing: border-box; width: 108px; padding: 8px; border-radius: 22px; display: flex; flex-direction: column; gap: 6px; font-family: -apple-system, system-ui, sans-serif; font-size: 13px; line-height: 1.15; color: var(--wb-text) !important; background: var(--wb-panel); backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%); border: 1px solid var(--wb-line); box-shadow: inset 0 1px 0 var(--wb-highlight), 0 10px 30px var(--wb-shadow); cursor: grab; touch-action: none; }
       @media (prefers-color-scheme: dark) {
-        #${UI_ROOT_ID} { --wb-panel: rgba(36,36,40,0.55); --wb-fill: rgba(120,120,128,0.3); --wb-menu: rgba(44,44,48,0.85); --wb-line: rgba(255,255,255,0.12); --wb-shadow: rgba(0,0,0,0.4); --wb-highlight: rgba(255,255,255,0.14); color: #f5f5f7; color: -apple-system-label; }
+        #${UI_ROOT_ID} { --wb-text: #f5f5f7; --wb-panel: rgba(36,36,40,0.82); --wb-fill: rgba(120,120,128,0.3); --wb-menu: rgba(44,44,48,0.94); --wb-line: rgba(255,255,255,0.12); --wb-shadow: rgba(0,0,0,0.4); --wb-highlight: rgba(255,255,255,0.14); --wb-danger: rgb(255,105,97); --wb-danger-fill: rgba(255,105,97,0.2); }
       }
       #${UI_ROOT_ID}.wblock-dragging { cursor: grabbing; }
       #${UI_ROOT_ID}:focus { outline: none; }
-      #${UI_ROOT_ID} button { appearance: none; display: flex; align-items: center; justify-content: center; box-sizing: border-box; min-width: 0; min-height: 34px; margin: 0; border: 0; border-radius: 12px; padding: 7px 6px; background: var(--wb-fill); color: inherit; font: inherit; font-size: 13px; font-weight: 600; line-height: 1.15; text-align: center; overflow-wrap: anywhere; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+      #${UI_ROOT_ID} button { all: initial; appearance: none; cursor: pointer; display: flex; align-items: center; justify-content: center; box-sizing: border-box; min-width: 0; min-height: 34px; margin: 0; border: 0; border-radius: 12px; padding: 7px 6px; background: var(--wb-fill); color: var(--wb-text) !important; font: inherit; font-size: 13px; font-weight: 600; line-height: 1.15; text-align: center; overflow-wrap: anywhere; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
       #${UI_ROOT_ID} button:active { filter: brightness(0.9); }
       #${UI_ROOT_ID} button:disabled { opacity: 0.4; }
       #${UI_ROOT_ID} .wblock-grip { width: 28px; height: 4px; margin: 0 auto 2px; border-radius: 2px; background: rgba(120,120,128,0.45); }
-      #${UI_ROOT_ID} .wblock-hide { color: rgb(229,72,77); }
-      #${UI_ROOT_ID} .wblock-hide.wblock-ready { background: rgba(229,72,77,0.16); }
+      #${UI_ROOT_ID} .wblock-hide { color: var(--wb-danger) !important; }
+      #${UI_ROOT_ID} .wblock-hide.wblock-ready { background: var(--wb-danger-fill); }
       #${UI_ROOT_ID} .wblock-footer { position: relative; display: flex; justify-content: center; }
       #${UI_ROOT_ID} .wblock-more { min-height: 22px; padding: 0 8px; background: transparent; font-size: 15px; line-height: 1; letter-spacing: 1px; }
       #${UI_ROOT_ID} .wblock-overflow { position: absolute; right: calc(100% + 8px); bottom: 0; min-width: 170px; padding: 4px; border-radius: 14px; background: var(--wb-menu); backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%); box-shadow: 0 8px 24px var(--wb-shadow); opacity: 0; transform: scale(0.97); transition: opacity 0.15s ease, transform 0.15s ease; pointer-events: none; }
@@ -491,7 +491,7 @@
       #${UI_ROOT_ID} .wblock-overflow button:active { background: var(--wb-fill); }
       #${HIGHLIGHT_ID} { position: fixed; pointer-events: none; z-index: 2147483646; border: 2px solid rgb(229,72,77); border-radius: 8px; background: rgba(229,72,77,0.08); transform: translate3d(0,0,0); }
       #${TOAST_ID} { position: absolute; right: 0; bottom: calc(100% + 8px); display: none; pointer-events: none; }
-      #${TOAST_ID} .wblock-toast-inner { width: max-content; max-width: 200px; padding: 8px 10px; border-radius: 12px; background: var(--wb-menu); font-size: 12px; line-height: 1.3; text-align: center; box-shadow: 0 8px 24px var(--wb-shadow); }
+      #${TOAST_ID} .wblock-toast-inner { width: max-content; max-width: 200px; padding: 8px 10px; border-radius: 12px; background: var(--wb-menu); color: var(--wb-text); font-size: 12px; line-height: 1.3; text-align: center; box-shadow: 0 8px 24px var(--wb-shadow); }
     `.trim();
 
     const root = document.createElement('div');
