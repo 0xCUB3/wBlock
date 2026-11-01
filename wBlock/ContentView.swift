@@ -403,7 +403,7 @@ struct ContentView: View {
             #endif
                 // Inside the stack, like Userscripts; iOS ignores toolbar items attached outside it.
                 .modifier(filtersToolbar)
-                .toolbar { pauseBlockingToolbar }
+                .toolbar { PauseBlockingToolbarItem(filterManager: filterManager) }
         }
         #if os(iOS)
             .searchableCompat(
@@ -435,26 +435,6 @@ struct ContentView: View {
             .help("Add Filter")
         } apply: {
             applyChangesToolbarButton
-        }
-    }
-
-    /// Pause everything, or resume, in its own item on the leading edge so it never displaces Add.
-    private var pauseBlockingToolbar: some ToolbarContent {
-        #if os(macOS)
-        let placement = ToolbarItemPlacement.navigation
-        #else
-        let placement = ToolbarItemPlacement.topBarLeading
-        #endif
-        return ToolbarItem(placement: placement) {
-            let isPaused = !filterManager.pausedComponents.isEmpty
-            let title: LocalizedStringKey = isPaused ? "Resume Blocking" : "Pause Blocking"
-            Button {
-                Task { await filterManager.setBlockingPaused(!isPaused) }
-            } label: {
-                Label(title, systemImage: isPaused ? "pause.circle.fill" : "pause.circle")
-            }
-            .help(title)
-            .disabled(filterManager.isReloadBusy)
         }
     }
 

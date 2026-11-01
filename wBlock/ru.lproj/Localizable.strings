@@ -466,7 +466,6 @@
 "Paste" = "Вставить";
 "Paste one or more filter URLs, one per line." = "Вставьте один или несколько URL-адресов фильтров, по одному в строке.";
 "Pause Blocking" = "Приостановить блокировку";
-"Paused Components" = "Приостановленные компоненты";
 "Enabled Userscripts & Userstyles" = "Включённые пользовательские скрипты и стили";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "Пауза блокировки включена, пока выбранный компонент находится на паузе. Возобновление восстанавливает все компоненты.";
 "Pausing blocking..." = "Приостановка блокировки…";

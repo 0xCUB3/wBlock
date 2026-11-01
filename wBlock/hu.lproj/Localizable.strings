@@ -466,7 +466,6 @@
 "Paste" = "Beillesztés";
 "Paste one or more filter URLs, one per line." = "Illesszen be egy vagy több szűrő URL-t, soronként egyet.";
 "Pause Blocking" = "Blokkolás szüneteltetése";
-"Paused Components" = "Szüneteltetett összetevők";
 "Enabled Userscripts & Userstyles" = "Engedélyezett felhasználói szkriptek és stílusok";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "A blokkolás szünetel, amíg legalább egy kiválasztott összetevő szüneteltetve van. A folytatás minden összetevőt visszaállít.";
 "Pausing blocking..." = "Blokkolás szüneteltetése…";

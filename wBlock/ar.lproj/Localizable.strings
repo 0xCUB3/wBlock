@@ -466,7 +466,6 @@
 "Paste" = "لصق";
 "Paste one or more filter URLs, one per line." = "الصق عنوان URL لفلتر واحد أو أكثر، عنوان واحد في كل سطر.";
 "Pause Blocking" = "إيقاف الحظر مؤقتًا";
-"Paused Components" = "المكونات المتوقفة مؤقتًا";
 "Enabled Userscripts & Userstyles" = "سكربتات المستخدم وأنماط المستخدم المفعّلة";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "إيقاف الحظر مؤقتًا مفعّل عند إيقاف أي مكوّن محدد مؤقتًا. الاستئناف يعيد جميع المكونات.";
 "Pausing blocking..." = "جارٍ إيقاف الحظر مؤقتًا…";
