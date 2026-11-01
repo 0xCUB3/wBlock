@@ -1468,6 +1468,8 @@ struct PauseBlockingToolbarItem: ToolbarContent {
         } primaryAction: {
             Task { await filterManager.setBlockingPaused(!isPaused) }
         }
+        // A click pauses or resumes; a long press opens the menu, as on iOS.
+        .menuIndicator(.hidden)
         .help(title)
         .disabled(filterManager.isReloadBusy)
     }
