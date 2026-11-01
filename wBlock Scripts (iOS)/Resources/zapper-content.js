@@ -58,6 +58,7 @@
     undoStack: [],
     redoStack: [],
     lastPickAt: 0,
+    pressPicked: false,
     candidateElement: null,
     traversalPath: [],
     cleanupFns: [],
@@ -1067,6 +1068,7 @@
     state.undoStack = [];
     state.redoStack = [];
     state.lastPickAt = 0;
+    state.pressPicked = false;
     clearSelection();
     state.lastPointerX = -1;
     state.lastPointerY = -1;
@@ -1119,6 +1121,8 @@
       interceptEvent(event);
       focusZapperRoot();
       state.lastPickAt = now;
+      // The click that ends this press must not count as a second tap.
+      if (event.type !== 'click') state.pressPicked = true;
       const current = state.candidateElement;
       if (current && current.contains(el)) {
         navigateParent();
@@ -1135,8 +1139,12 @@
       if (shouldIgnoreTarget(event && event.target)) return;
       interceptEvent(event);
 
-      const now = Date.now();
-      if (now - state.lastPickAt < 350) return;
+      // A slow tap's click lands well after its press; a timer let it through
+      // as a second tap, which climbed one parent per slow tap.
+      if (state.pressPicked) {
+        state.pressPicked = false;
+        return;
+      }
       pickFromEvent(event);
     };
 
