@@ -867,6 +867,12 @@
     }
   }
 
+  function isTextEntryTarget(target) {
+    if (!(target instanceof Element)) return false;
+    if (target.isContentEditable) return true;
+    return target.matches('textarea, select, input:not([type=button]):not([type=checkbox]):not([type=radio]):not([type=submit]):not([type=reset]):not([type=range]):not([type=color]):not([type=file]):not([type=image])');
+  }
+
   function isZapperBoundary(el) {
     return !el || el === document.body || el === document.documentElement;
   }
@@ -1032,14 +1038,12 @@
         }
         return;
       }
-      if (event.key === 'ArrowUp') {
+      // ArrowUp selects the parent, ArrowDown returns to the child picked last.
+      // Arrows typed into page fields keep their normal caret movement.
+      if ((event.key === 'ArrowUp' || event.key === 'ArrowDown') && !isTextEntryTarget(event.target)) {
         interceptEvent(event);
-        navigateParent();
-        return;
-      }
-      if (event.key === 'ArrowDown') {
-        interceptEvent(event);
-        navigateChild();
+        if (event.key === 'ArrowUp') navigateParent();
+        else navigateChild();
         return;
       }
       if (event.key === 'Enter' && state.candidateElement) {
