@@ -161,20 +161,20 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   margin: 0;
   padding: 0;
   border: 0;
-  border-radius: 8px;
+  border-radius: 9px;
   background: transparent;
   color: var(--accent);
   cursor: pointer;
 }
 
 .icon-button svg {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
 }
 
 .icon-button:active {
