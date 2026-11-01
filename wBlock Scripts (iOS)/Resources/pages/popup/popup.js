@@ -649,13 +649,6 @@ function zapperStorageKey(host) {
     return `${ZAPPER_STORAGE_PREFIX}${host}`;
 }
 
-function setZapperActivateDisabled(disabled) {
-    for (const id of ['zapper-activate', 'zapper-hide-once']) {
-        const button = document.getElementById(id);
-        if (button) button.disabled = disabled;
-    }
-}
-
 async function updateZapperCount(host) {
     const countEl = document.getElementById('zapper-count');
     const clearBtn = document.getElementById('zapper-clear');
@@ -1475,7 +1468,6 @@ function setupListeners() {
     const disableToggle = document.getElementById('enable-toggle');
     const zapperEnabledToggle = document.getElementById('zapper-enabled-toggle');
     const zapperActivate = document.getElementById('zapper-activate');
-    const zapperHideOnce = document.getElementById('zapper-hide-once');
     const zapperClear = document.getElementById('zapper-clear');
     const userscriptCommands = document.getElementById('userscript-commands');
     const userscriptsList = document.getElementById('userscripts-list');
@@ -1651,7 +1643,9 @@ function setupListeners() {
                 const response = await setSiteZapperDisabled(host, !nextEnabled);
                 const disabled = Boolean(response && response.disabled);
                 zapperEnabledToggle.checked = !disabled;
-                setZapperActivateDisabled((disableToggle ? !disableToggle.checked : false) || disabled);
+                if (zapperActivate) {
+                    zapperActivate.disabled = (disableToggle ? !disableToggle.checked : false) || disabled;
+                }
                 await notifyZapperRulesChanged(tab.id);
                 await reloadActiveTab(tab.id);
             } catch (error) {
@@ -1705,23 +1699,19 @@ function setupListeners() {
         });
     }
 
-    const activateZapperFromPopup = async (temporary) => {
-        try {
-            setError('');
-            await sendTabMessageWithRetry(tab.id, { type: 'wblock:zapper:activate', temporary }, {
-                validateResponse: isZapperCommandResponse,
-            });
-            window.close();
-        } catch (error) {
-            console.error('[wBlock] Failed to activate zapper:', error);
-            setError(t('popup_error_zapper_unavailable', undefined, 'Element Zapper is unavailable on this page.'));
-        }
-    };
     if (zapperActivate) {
-        zapperActivate.addEventListener('click', () => activateZapperFromPopup(false));
-    }
-    if (zapperHideOnce) {
-        zapperHideOnce.addEventListener('click', () => activateZapperFromPopup(true));
+        zapperActivate.addEventListener('click', async () => {
+            try {
+                setError('');
+                await sendTabMessageWithRetry(tab.id, { type: 'wblock:zapper:activate' }, {
+                    validateResponse: isZapperCommandResponse,
+                });
+                window.close();
+            } catch (error) {
+                console.error('[wBlock] Failed to activate zapper:', error);
+                setError(t('popup_error_zapper_unavailable', undefined, 'Element Zapper is unavailable on this page.'));
+            }
+        });
     }
 
     if (userscriptsList) {
@@ -1858,6 +1848,7 @@ async function refreshUi() {
     const hostEl = document.getElementById('site-host');
     const disableToggle = document.getElementById('enable-toggle');
     const zapperEnabledToggle = document.getElementById('zapper-enabled-toggle');
+    const zapperActivate = document.getElementById('zapper-activate');
     const rulesToggle = document.getElementById('zapper-rules-toggle');
     const userscriptsSection = document.getElementById('userscripts-section');
     const pausedPrompt = document.getElementById('paused-prompt');
@@ -1887,7 +1878,7 @@ async function refreshUi() {
         if (zapperEnabledToggle) zapperEnabledToggle.disabled = true;
         if (pausedPrompt) pausedPrompt.hidden = true;
         if (resumeButton) resumeButton.hidden = true;
-        setZapperActivateDisabled(true);
+        if (zapperActivate) zapperActivate.disabled = true;
         if (rulesToggle) rulesToggle.disabled = true;
         currentPageUserScripts = [];
         userscriptsExpanded = false;
@@ -1938,7 +1929,7 @@ async function refreshUi() {
         setError(`${t('popup_error_load_popup', undefined, 'Failed to load popup.')} (${pauseState.error})`);
         if (disableToggle) disableToggle.disabled = true;
         if (zapperEnabledToggle) zapperEnabledToggle.disabled = true;
-        setZapperActivateDisabled(true);
+        if (zapperActivate) zapperActivate.disabled = true;
         if (resumeButton) resumeButton.disabled = true;
         if (pausedPrompt) pausedPrompt.hidden = true;
         if (resumeButton) resumeButton.hidden = true;
@@ -2011,7 +2002,9 @@ async function refreshUi() {
         }
     }
 
-    setZapperActivateDisabled(siteWhitelisted || zapperPaused || zapperRulesDisabled);
+    if (zapperActivate) {
+        zapperActivate.disabled = siteWhitelisted || zapperPaused || zapperRulesDisabled;
+    }
     if (rulesToggle) {
         rulesToggle.disabled = zapperPaused;
     }
