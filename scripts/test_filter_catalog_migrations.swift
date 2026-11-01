@@ -14,6 +14,16 @@ private final class TestLoader: FilterListLoader {
         try fm.createDirectory(at: container, withIntermediateDirectories: true)
         defer { try? fm.removeItem(at: container) }
         let loader = TestLoader(container: container)
+        for (url, trusted) in [
+            ("https://filters.adtidy.org/extension/chromium/filters/2.txt", true),
+            ("https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/17_optimized.txt", true),
+            ("https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/general.txt", true),
+            ("https://filters.adtidy.org/extension/chromium/filters/101.txt", false),
+            ("https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/118_optimized.txt", false),
+        ] {
+            let list = FilterList(name: "test", url: URL(string: url)!, category: .ads)
+            precondition(list.isTrustedSource == trusted, "incorrect trust for \(url)")
+        }
         let defaults = loader.getDefaultFilterLists()
         let replacements = [
             ("Fanboy's Anti-AI Suggestions", "https://raw.githubusercontent.com/easylist/easylist/refs/heads/master/fanboy-addon/fanboy_ai_suggestions.txt", "Stevo's AI Blocklist"),

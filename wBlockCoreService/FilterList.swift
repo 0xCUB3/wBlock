@@ -228,14 +228,32 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
         url.scheme?.lowercased() == "wblock" && url.host?.lowercased() == "userlist"
     }
 
-    /// Whether this list may use uBO's `trusted-*` scriptlets. uBO trusts its
-    /// own lists and the user's own rules; so does wBlock.
+    /// Whether this list may use trusted scriptlets.
     public var isTrustedSource: Bool {
         if isInlineUserList { return true }
         let host = url.host?.lowercased() ?? "", path = url.path
+        let components = path.split(separator: "/").map(String.init)
+        if let filename = components.last {
+            let suffix: String
+            if host == "filters.adtidy.org", components.count == 4,
+               components[0] == "extension", components[2] == "filters" {
+                suffix = ".txt"
+            } else if host == "raw.githubusercontent.com", components.count >= 7,
+                      Array(components.prefix(4)) == ["AdguardTeam", "FiltersRegistry", "master", "platforms"],
+                      components[components.count - 2] == "filters" {
+                suffix = "_optimized.txt"
+            } else {
+                suffix = ""
+            }
+            if !suffix.isEmpty, filename.hasSuffix(suffix),
+               let id = Int(filename.dropLast(suffix.count)), (1...27).contains(id) || id == 224 {
+                return true
+            }
+        }
         return host == "ublockorigin.github.io" || host == "ublockorigin.pages.dev"
             || (host == "raw.githubusercontent.com" && path.hasPrefix("/uBlockOrigin/"))
             || (host == "cdn.jsdelivr.net" && path.hasPrefix("/gh/uBlockOrigin/"))
+            || (host == "raw.githubusercontent.com" && path.hasPrefix("/AdguardTeam/AdguardFilters/"))
     }
 
     /// Whether this list is fetched over HTTP(S).
