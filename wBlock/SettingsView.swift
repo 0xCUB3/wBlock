@@ -1425,7 +1425,7 @@ struct PauseBlockingBanner: View {
                         .controlSize(.small)
                 } else {
                     Text("Resume")
-                        .font(.subheadline.weight(.semibold))
+                        .font(.subheadline)
                 }
             }
             .buttonStyle(.borderedProminent)

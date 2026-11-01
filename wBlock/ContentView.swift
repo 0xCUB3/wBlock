@@ -86,6 +86,11 @@ struct ContentView: View {
         filterManager.lastRuleCount
     }
 
+    /// Paused filters load empty blockers, so neither count means anything.
+    private var filtersPaused: Bool {
+        filterManager.pausedComponents.contains(.filters)
+    }
+
     /// Whether filters have been applied at least once
     private var hasAppliedFilters: Bool {
         filterManager.lastRuleCount > 0
@@ -525,16 +530,18 @@ struct ContentView: View {
                         #if os(iOS)
                         return "Safari Rules"
                         #else
-                        return (enabledListsCount == 0 || !hasAppliedFilters) ? "Source Rules" : "Safari Rules"
+                        return (enabledListsCount == 0 || !hasAppliedFilters) && !filtersPaused ? "Source Rules" : "Safari Rules"
                         #endif
                     }(),
-                    value: enabledListsCount == 0
+                    value: filtersPaused
+                        ? String(localized: "N/A")
+                        : enabledListsCount == 0
                         ? "0"
                         : (hasAppliedFilters
                             ? appliedSafariRulesCount.formatted()
                             : (sourceRulesCount > 0 ? "~\(sourceRulesCount.formatted())" : "0")),
                     icon: "shield.lefthalf.filled",
-                    valueColor: enabledListsCount == 0 ? .secondary : (hasAppliedFilters ? .primary : .secondary),
+                    valueColor: enabledListsCount == 0 || filtersPaused || !hasAppliedFilters ? .secondary : .primary,
                     showsDisclosure: true
                 )
                 .overlay(alignment: .topTrailing) {

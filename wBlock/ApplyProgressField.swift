@@ -120,7 +120,6 @@ struct ProgressBanners<Leading: View>: ViewModifier {
     @ObservedObject var filterManager: AppFilterManager
     @ObservedObject var applyProgress: ApplyChangesViewModel
     @ViewBuilder let leading: Leading
-    @State private var showsApplied = false
 
     private enum Banner { case apply, check, applied, noUpdates }
 
@@ -132,7 +131,7 @@ struct ProgressBanners<Leading: View>: ViewModifier {
         if filterManager.isLoading && !filterManager.suppressBlockingOverlay { return .check }
         // Paused filters load empty blockers; "0 Safari rules" read as a failure,
         // and the pause banner already says what happened.
-        if showsApplied && !filterManager.pausedComponents.contains(.filters) { return .applied }
+        if filterManager.showingAppliedBanner && !filterManager.pausedComponents.contains(.filters) { return .applied }
         return filterManager.showingNoUpdatesAlert ? .noUpdates : nil
     }
 
@@ -171,12 +170,6 @@ struct ProgressBanners<Leading: View>: ViewModifier {
             }
             .topBarCompat { leading }
             .animation(.easeInOut(duration: 0.25), value: banner)
-            // Only a run the user watched ends in this banner; one that needs
-            // attention stays in the sheet, and background runs never had it.
-            .onChangeCompat(of: filterManager.showingApplyProgressSheet) { _, showing in
-                showsApplied = !showing && applyProgress.state.mode == .result
-                    && !applyProgress.state.resultNeedsAttention && filterManager.failedReloadTargets.isEmpty
-            }
     }
 
     @ViewBuilder
@@ -193,7 +186,7 @@ struct ProgressBanners<Leading: View>: ViewModifier {
                     String(localized: "%@ Safari rules"),
                     filterManager.lastRuleCount.formatted()
                 )
-            ) { showsApplied = false }
+            ) { filterManager.showingAppliedBanner = false }
         case .noUpdates:
             DoneBanner(
                 title: String(localized: "No Updates Found"),
