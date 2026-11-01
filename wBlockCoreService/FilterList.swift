@@ -228,7 +228,10 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
         url.scheme?.lowercased() == "wblock" && url.host?.lowercased() == "userlist"
     }
 
-    /// Whether this list may use trusted scriptlets.
+    /// Whether this list may use trusted scriptlets. uBO trusts its own lists
+    /// and the user's rules; AdGuard trusts its own filters, which its
+    /// registry (filters.json) marks `"trustLevel": "full"`: IDs 1-27 (12 and
+    /// 24 are unused) and 224. Third-party lists it redistributes stay untrusted.
     public var isTrustedSource: Bool {
         if isInlineUserList { return true }
         let host = url.host?.lowercased() ?? "", path = url.path
