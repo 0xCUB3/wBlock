@@ -140,7 +140,7 @@
     "description": "Tooltip for choosing the child element in refine mode."
   },
   "zapper_button_add_custom_rule": {
-    "message": "Add custom CSS rule…",
+    "message": "Add Custom CSS Rule…",
     "description": "Menu item label for adding a manual CSS selector rule."
   },
   "zapper_button_done": {

@@ -527,13 +527,14 @@
       #${UI_ROOT_ID} .wblock-footer { position: relative; display: flex; align-items: center; justify-content: space-between; }
       #${UI_ROOT_ID} .wblock-step { flex: 0 0 30px; width: 30px; min-height: 28px; padding: 0; background: transparent; }
       #${UI_ROOT_ID} .wblock-step svg { display: block; width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
-      #${UI_ROOT_ID} .wblock-overflow { position: absolute; right: calc(100% + 8px); bottom: 0; min-width: 170px; padding: 4px; border-radius: 14px; background: var(--wb-menu); border: 1px solid var(--wb-line); box-shadow: 0 8px 24px var(--wb-shadow); opacity: 0; transform: scale(0.97); transition: opacity 0.15s ease, transform 0.15s ease; pointer-events: none; }
+      #${UI_ROOT_ID} .wblock-overflow { display: flex; flex-direction: column; gap: 4px; position: absolute; right: calc(100% + 8px); bottom: 0; min-width: 170px; padding: 4px; border-radius: 14px; background: var(--wb-menu); border: 1px solid var(--wb-line); box-shadow: 0 8px 24px var(--wb-shadow); opacity: 0; transform: scale(0.97); transition: opacity 0.15s ease, transform 0.15s ease; pointer-events: none; }
       #${UI_ROOT_ID} .wblock-overflow.wblock-open { opacity: 1; transform: scale(1); pointer-events: auto; }
-      #${UI_ROOT_ID} .wblock-overflow button { width: 100%; justify-content: flex-start; text-align: left; min-height: 36px; padding: 8px 10px; border-radius: 9px; background: transparent; font-weight: 500; }
-      #${UI_ROOT_ID} .wblock-overflow button:active { background: var(--wb-fill); }
+      #${UI_ROOT_ID} .wblock-overflow button { width: 100%; justify-content: flex-start; text-align: left; min-height: 36px; padding: 8px 10px; border-radius: 9px; background: var(--wb-fill); border: 1px solid var(--wb-line); font-weight: 500; }
+      #${UI_ROOT_ID} .wblock-history { display: flex; gap: 4px; }
+      #${UI_ROOT_ID} .wblock-history button { flex: 1 1 0; justify-content: center; text-align: center; }
       /* 16px keeps iOS from zooming the page when the field takes focus. */
       #${UI_ROOT_ID} .wblock-rule-form { display: none; flex-direction: column; gap: 6px; padding: 4px; }
-      #${UI_ROOT_ID} .wblock-overflow.wblock-editing > button { display: none; }
+      #${UI_ROOT_ID} .wblock-overflow.wblock-editing > :not(.wblock-rule-form) { display: none; }
       #${UI_ROOT_ID} .wblock-overflow.wblock-editing .wblock-rule-form { display: flex; }
       #${UI_ROOT_ID} .wblock-rule-form input { all: initial; box-sizing: border-box; width: 100%; min-height: 34px; padding: 7px 9px; border-radius: 9px; background: var(--wb-fill); color: var(--wb-text); font: 16px -apple-system, system-ui, sans-serif; cursor: text; -webkit-user-select: text; user-select: text; }
       #${UI_ROOT_ID} .wblock-rule-form button { justify-content: center; text-align: center; background: var(--wb-fill); font-weight: 600; }
@@ -609,11 +610,15 @@
       closeOverflow();
     });
 
-    const manualButton = uiButton(t('zapper_button_add_custom_rule', undefined, 'Add custom CSS rule…'), '', () => {
+    const manualButton = uiButton(t('zapper_button_add_custom_rule', undefined, 'Add Custom CSS Rule…'), '', () => {
       overflowMenu.classList.add('wblock-editing');
       ruleInput.focus();
     });
-    overflowMenu.append(undoButton, redoButton, manualButton, ruleForm);
+    // Undo and Redo share a row; the menu has the width for both.
+    const historyRow = document.createElement('div');
+    historyRow.className = 'wblock-history';
+    historyRow.append(undoButton, redoButton);
+    overflowMenu.append(historyRow, manualButton, ruleForm);
 
     function closeOverflow() {
       overflowMenu.classList.remove('wblock-open', 'wblock-editing');
