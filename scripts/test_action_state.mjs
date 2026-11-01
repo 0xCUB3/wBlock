@@ -33,12 +33,12 @@ for (const file of ['extension-src/background.js', 'wBlock Scripts (iOS)/Resourc
     runtime: {
       onMessage: event(), onInstalled: event(), onStartup: event(),
       sendNativeMessage: async (_app, message) => {
-        if (nativeDelayMs && (message.action === 'getBlockingPausedState' || message.action === 'getSiteDisabledState')) {
+        if (nativeDelayMs && (message.action === 'getBlockingPausedState' || message.action === 'getBlockingState')) {
           await new Promise(resolve => setTimeout(resolve, nativeDelayMs));
         }
-        if (message.action === 'getBlockingPausedState' || message.action === 'getSiteDisabledState') actionLookups++;
+        if (message.action === 'getBlockingPausedState' || message.action === 'getBlockingState') actionLookups++;
         if (message.action === 'getBlockingPausedState') return { paused };
-        if (message.action === 'getSiteDisabledState') return { disabled: disabledHosts.has(message.host) };
+        if (message.action === 'getBlockingState') return { disabled: disabledHosts.has(message.host), paused: false };
         if (message.action === 'getRemoveParamDNRRules') return { ok: true, version: 'test', rules: [], count: 0 };
         return { ok: true, payload: { css: [], extendedCss: [], js: [], scriptlets: [], engineTimestamp: 1 } };
       }

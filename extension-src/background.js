@@ -27610,13 +27610,16 @@ function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = 
       return false;
     }
   };
+  // Content Filtering off for the site slashes the W. getBlockingState reads
+  // the filter-only list plus the master whitelist, the same state the popup
+  // switch shows; getSiteDisabledState only reads the master list.
   const getSiteDisabledForAction = async host => {
     const normalizedHost = normalizeSiteDisabledHost(host);
     if (!normalizedHost) {
       return false;
     }
     try {
-      const response = await requestSiteDisabledState(normalizedHost);
+      const response = await requestBlockingState(normalizedHost);
       return Boolean(response && response.disabled);
     } catch (error) {
       console.warn("[wBlock] Failed to resolve action disabled state:", error);
