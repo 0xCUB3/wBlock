@@ -493,6 +493,7 @@ struct ContentView: View {
                 isApplying: filterManager.showingApplyProgressSheet
             )
                 .modifier(topBanners)
+                .toolbar { PauseBlockingToolbarItem(filterManager: filterManager) }
                 #if os(iOS)
                     .navigationBarTitleDisplayMode(.inline)
                 #endif
