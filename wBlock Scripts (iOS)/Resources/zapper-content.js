@@ -11,6 +11,11 @@
     return;
   }
 
+  // One copy per document. A second copy would build its own panel and its
+  // own click interceptor, which swallows clicks meant for the first panel.
+  if (window.__wblockZapperLoaded) return;
+  window.__wblockZapperLoaded = true;
+
   const STORAGE_PREFIX = 'wblock.zapperRules.v1:';
   const META_PREFIX = 'wblock.zapperMeta.v1:';
   const STYLE_ID = 'wblock-zapper-style';
@@ -565,60 +570,69 @@
     state.ui.modeCaption = modeCaption;
 
     // --- Vertical drag-to-move logic ---
+    // A press on the panel body only arms a drag. The panel moves once the
+    // pointer has travelled DRAG_THRESHOLD_PX, so taps and small jitters on
+    // the panel never move it, and buttons never arm a drag at all.
+    const DRAG_THRESHOLD_PX = 6;
     let offsetY = 0;
+    let pressY = null;
     let dragStartY = 0;
     let dragStartOffset = 0;
     let isDragging = false;
 
-    function startDrag(clientY) {
-      isDragging = true;
-      dragStartY = clientY;
-      dragStartOffset = offsetY;
-      root.classList.add('wblock-dragging');
-    }
-
     function moveDrag(clientY) {
-      if (!isDragging) return;
+      if (pressY === null) return false;
+      if (!isDragging) {
+        if (Math.abs(clientY - pressY) < DRAG_THRESHOLD_PX) return false;
+        isDragging = true;
+        dragStartY = pressY;
+        dragStartOffset = offsetY;
+        root.classList.add('wblock-dragging');
+      }
       // Keep room above the panel for the toast, which sits there.
       const room = window.innerHeight / 2 - root.offsetHeight / 2;
       offsetY = Math.max(-(room - 56), Math.min(room - 4, dragStartOffset + clientY - dragStartY));
       root.style.transform = `translateY(calc(-50% + ${offsetY}px))`;
+      return true;
     }
 
     function endDrag() {
+      pressY = null;
       isDragging = false;
       root.classList.remove('wblock-dragging');
     }
 
     const onPanelPointerDown = (e) => {
       if (e.target.closest('button, .wblock-overflow')) return;
-      e.preventDefault();
-      startDrag(e.clientY);
+      pressY = e.clientY;
     };
     const onPanelTouchStart = (e) => {
       if (e.target.closest('button, .wblock-overflow')) return;
       if (e.touches.length !== 1) return;
-      startDrag(e.touches[0].clientY);
+      pressY = e.touches[0].clientY;
     };
-    const onDocPointerMove = (e) => { if (isDragging) { e.preventDefault(); moveDrag(e.clientY); } };
-    const onDocTouchMove = (e) => { if (isDragging && e.touches[0]) { e.preventDefault(); moveDrag(e.touches[0].clientY); } };
-    const onDocPointerUp = () => endDrag();
-    const onDocTouchEnd = () => endDrag();
+    const onDocPointerMove = (e) => { if (moveDrag(e.clientY)) e.preventDefault(); };
+    const onDocTouchMove = (e) => { if (e.touches[0] && moveDrag(e.touches[0].clientY)) e.preventDefault(); };
+    const onDocPointerEnd = () => endDrag();
 
     root.addEventListener('pointerdown', onPanelPointerDown);
-    root.addEventListener('touchstart', onPanelTouchStart, { passive: false });
+    root.addEventListener('touchstart', onPanelTouchStart, { passive: true });
     document.addEventListener('pointermove', onDocPointerMove, { passive: false });
     document.addEventListener('touchmove', onDocTouchMove, { passive: false });
-    document.addEventListener('pointerup', onDocPointerUp);
-    document.addEventListener('touchend', onDocTouchEnd);
+    document.addEventListener('pointerup', onDocPointerEnd);
+    document.addEventListener('pointercancel', onDocPointerEnd);
+    document.addEventListener('touchend', onDocPointerEnd);
+    document.addEventListener('touchcancel', onDocPointerEnd);
 
     state.cleanupFns.push(
       () => root.removeEventListener('pointerdown', onPanelPointerDown),
-      () => root.removeEventListener('touchstart', onPanelTouchStart, { passive: false }),
+      () => root.removeEventListener('touchstart', onPanelTouchStart),
       () => document.removeEventListener('pointermove', onDocPointerMove, { passive: false }),
       () => document.removeEventListener('touchmove', onDocTouchMove, { passive: false }),
-      () => document.removeEventListener('pointerup', onDocPointerUp),
-      () => document.removeEventListener('touchend', onDocTouchEnd),
+      () => document.removeEventListener('pointerup', onDocPointerEnd),
+      () => document.removeEventListener('pointercancel', onDocPointerEnd),
+      () => document.removeEventListener('touchend', onDocPointerEnd),
+      () => document.removeEventListener('touchcancel', onDocPointerEnd),
     );
 
     (document.documentElement || document).appendChild(highlight);
@@ -971,7 +985,7 @@
     const onMove = (event) => {
       if (!state.active) return;
       if (state.candidateElement) return;
-      if (state.ui.root && event && event.target && state.ui.root.contains(event.target)) return;
+      if (shouldIgnoreTarget(event && event.target)) return;
       const point = getPointFromEvent(event);
       if (point) {
         state.lastPointerX = point.x;
@@ -985,7 +999,7 @@
     const pickFromEvent = (event) => {
       if (!state.active) return;
       if (state.isScrolling) return;
-      if (state.ui.root && event && event.target && state.ui.root.contains(event.target)) return;
+      if (shouldIgnoreTarget(event && event.target)) return;
       const now = Date.now();
       if (now - state.lastPickAt < 120) return;
       const el = elementFromEvent(event);
@@ -1006,7 +1020,7 @@
     // alone does not always cancel the subsequent click.
     const onClick = (event) => {
       if (!state.active) return;
-      if (state.ui.root && event && event.target && state.ui.root.contains(event.target)) return;
+      if (shouldIgnoreTarget(event && event.target)) return;
       interceptEvent(event);
 
       const now = Date.now();
@@ -1198,6 +1212,9 @@
       });
     }
     if (message.type === 'wblock:zapper:activate') {
+      // Activation may reach every frame of the tab. Only the top frame builds
+      // the panel; a context-menu activation targets the frame that was clicked.
+      if (message.fromContextMenu !== true && window.top !== window) return;
       return activateZapper({
         temporary: message.temporary === true,
         fromContextMenu: message.fromContextMenu === true,
