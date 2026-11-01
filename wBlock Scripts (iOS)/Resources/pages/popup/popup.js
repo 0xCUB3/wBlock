@@ -491,15 +491,15 @@ async function openWBlockApp(host) {
 }
 
 // macOS navigating a tab to a custom scheme shows a prompt, so the containing app
-// is launched by the native handler there.
+// is launched by the native handler there. iPadOS can also report 'mac', and the
+// native handler declines on iOS, so any failure falls back to the wblockapp URL.
 async function openAppFromHeader() {
     if (await isMacPlatform()) {
-        const response = await sendNativeMessageWithTimeout({ action: 'openApp' });
-        if (!response || response.ok !== true) {
-            throw new Error((response && response.error) || 'Open app request failed');
+        const response = await sendNativeMessageWithTimeout({ action: 'openApp' }).catch(() => null);
+        if (response && response.ok === true) {
+            window.close();
+            return;
         }
-        window.close();
-        return;
     }
     await openWBlockApp('open');
 }
