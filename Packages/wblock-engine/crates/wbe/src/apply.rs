@@ -141,12 +141,16 @@ pub struct Plan {
 }
 
 impl Plan {
-    pub fn new(request: PlanRequest) -> Plan {
+    pub fn new(mut request: PlanRequest) -> Plan {
         let opts = CompileOptions {
             safari: SafariVersion::new(request.safari.0, request.safari.1),
         };
         let parsed = parallel(&request.lists, |index, list| parse(list, index as u32));
         let text_hashes = parallel(&request.lists, |_, list| hash(&list.text));
+        // Compilation only needs the parsed rules and the text hashes from here on.
+        for list in &mut request.lists {
+            list.text = String::new();
+        }
         let mut plan = Plan {
             opts,
             lists: request.lists,
