@@ -1824,6 +1824,14 @@ function setupListeners() {
     }
 }
 
+// While the app finishes a resume, look again so the zapper and switches
+// unlock once it commits.
+let resumeRecheckTimer = null;
+function scheduleResumeRecheck(resuming) {
+    clearTimeout(resumeRecheckTimer);
+    resumeRecheckTimer = resuming ? setTimeout(() => { refreshUi().catch(() => {}); }, 2000) : null;
+}
+
 async function refreshUi() {
     const generationAtStart = siteToggleGeneration;
     if (!siteToggleInFlight) {
@@ -1938,7 +1946,11 @@ async function refreshUi() {
     }
 
     const blockingPaused = pauseState.paused;
+    // The app keeps everything paused until a resume's reload commits. Saying
+    // Paused then contradicts the app, which already shows blocking on.
+    const resuming = blockingPaused && pauseState.resuming === true;
     const resumeAvailable = pauseState.resumeAvailable;
+    scheduleResumeRecheck(resuming);
     const filtersPaused = pauseState.filtersPaused;
     const userScriptsPaused = pauseState.userScriptsPaused;
     const zapperPaused = pauseState.elementZapperPaused;
@@ -1958,8 +1970,8 @@ async function refreshUi() {
             disableToggle.disabled = filtersPaused || siteWhitelisted;
         }
     }
-    if (pausedPrompt) pausedPrompt.hidden = !blockingPaused;
-    if (resumeButton) resumeButton.hidden = !(blockingPaused && resumeAvailable);
+    if (pausedPrompt) pausedPrompt.hidden = !blockingPaused || resuming;
+    if (resumeButton) resumeButton.hidden = !(blockingPaused && resumeAvailable) || resuming;
     if (pausedPromptTitle) {
         pausedPromptTitle.textContent = partiallyPaused
             ? t('popup_paused_partial_prompt_title', undefined, 'Some blocking components are paused')
@@ -1986,7 +1998,9 @@ async function refreshUi() {
     updateNoAutoplayControls(noAutoplayState, { host, siteDisabled: siteWhitelisted });
     const shouldCommitSiteStatus = !skipSiteToggleCommit || blockingPaused;
     if (shouldCommitSiteStatus) {
-        if (siteDisabledUnknown && !blockingPaused) {
+        if (resuming) {
+            setStatus(t('popup_status_resuming', undefined, 'Resuming…'), 'neutral');
+        } else if (siteDisabledUnknown && !blockingPaused) {
             setStatus(t('popup_status_unavailable', undefined, 'Unavailable'), 'neutral');
         } else {
             setStatus(

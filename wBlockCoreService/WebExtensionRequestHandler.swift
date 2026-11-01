@@ -624,6 +624,9 @@ public enum WebExtensionRequestHandler {
             "filtersPaused": components.contains(.filters),
             "userScriptsPaused": components.contains(.userScripts),
             "elementZapperPaused": components.contains(.elementZapper),
+            // A resume keeps every component paused until its reload commits, which
+            // can take a minute; the popup says Resuming instead of Paused then.
+            "resuming": !components.isEmpty && BlockingPauseStore.resumeStatus().status == .applying,
             "resumeAvailable": resumeAvailable
         ])
         context.completeRequest(returningItems: [response])

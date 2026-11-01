@@ -1305,7 +1305,19 @@ extension AppFilterManager {
                 }
             }
         }
-        return started && lastApplySucceeded && !BlockingPauseStore.isPaused()
+        let resumed = started && lastApplySucceeded && !BlockingPauseStore.isPaused()
+        // An in-app resume must also end the shared status; left at applying, the
+        // Safari popup would keep reading "Resuming" after a failure.
+        if started {
+            if resumed {
+                BlockingPauseStore.setResumeSucceeded()
+            } else {
+                BlockingPauseStore.setResumeFailed(
+                    statusDescription.isEmpty ? "Failed to resume blocking." : statusDescription
+                )
+            }
+        }
+        return resumed
     }
 
     func prepareApplyRunState() {
