@@ -20,7 +20,7 @@ pub struct SourceRef {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum Rule {
-    Network(NetworkRule),
+    Network(Box<NetworkRule>),
     Cosmetic(CosmeticRule),
     Scriptlet(ScriptletRule),
 }

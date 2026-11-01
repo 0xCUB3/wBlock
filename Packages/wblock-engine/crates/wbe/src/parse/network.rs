@@ -232,7 +232,7 @@ struct LineFlags {
 
 pub(super) fn parse(line: &str, source: SourceRef) -> ParsedLine {
     match parse_rule(line, source) {
-        Ok(rule) => ParsedLine::Rule(Rule::Network(rule)),
+        Ok(rule) => ParsedLine::Rule(Rule::Network(Box::new(rule))),
         Err(other) => other,
     }
 }

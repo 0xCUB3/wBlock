@@ -133,7 +133,7 @@ pub fn compile_rules(set: &RuleSet, opts: &CompileOptions, mut stats: Stats) -> 
     let mut scriptlets = Vec::new();
     for rule in &set.rules {
         match rule.as_ref() {
-            Rule::Network(r) => network.push(r),
+            Rule::Network(r) => network.push(r.as_ref()),
             Rule::Cosmetic(r) => cosmetic.push(r),
             Rule::Scriptlet(r) => scriptlets.push(r),
         }

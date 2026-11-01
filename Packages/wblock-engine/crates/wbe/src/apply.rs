@@ -806,13 +806,13 @@ fn scoped<'a>(rule: &'a Rule, scope: &SiteScope, out: &mut Vec<Cow<'a, Rule>>) {
                         include: restricted.uncovered,
                         exclude: Vec::new(),
                     },
-                    ..r.clone()
+                    ..r.as_ref().clone()
                 });
             // An important block would outrank its companion; the user's
             // exclusion wins over `important`.
             rule.important &= companion.is_none();
             out.push(Cow::Owned(Rule::Network(rule)));
-            out.extend(companion.map(|r| Cow::Owned(Rule::Network(r))));
+            out.extend(companion.map(|r| Cow::Owned(Rule::Network(Box::new(r)))));
         }
         Rule::Cosmetic(r) => {
             let Some(restricted) = restrict(&r.domains, scope) else {
