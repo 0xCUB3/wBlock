@@ -57,6 +57,7 @@
     inheritedRules: [],
     tempRules: [],
     undoStack: [],
+    redoStack: [],
     lastPickAt: 0,
     candidateElement: null,
     traversalPath: [],
@@ -66,6 +67,7 @@
       highlight: null,
       toast: null,
       undoButton: null,
+      redoButton: null,
       addRuleButton: null,
       hideOnceButton: null,
     },
@@ -531,6 +533,11 @@
       undoLastZap().catch(() => {});
     });
     undoButton.disabled = true;
+    const redoButton = uiButton(t('zapper_button_redo', undefined, 'Redo'), '', () => {
+      closeOverflow();
+      redoLastZap().catch(() => {});
+    });
+    redoButton.disabled = true;
 
     // The custom rule field lives in the menu. window.prompt could be
     // suppressed by Safari, which left the item with no response (#1066).
@@ -566,7 +573,7 @@
       overflowMenu.classList.add('wblock-editing');
       ruleInput.focus();
     });
-    overflowMenu.append(undoButton, manualButton, ruleForm);
+    overflowMenu.append(undoButton, redoButton, manualButton, ruleForm);
 
     function closeOverflow() {
       overflowMenu.classList.remove('wblock-open', 'wblock-editing');
@@ -606,6 +613,7 @@
     state.ui.highlight = highlight;
     state.ui.toast = toast;
     state.ui.undoButton = undoButton;
+    state.ui.redoButton = redoButton;
     state.ui.addRuleButton = addRuleButton;
     state.ui.hideOnceButton = hideOnceButton;
 
@@ -796,6 +804,8 @@
     }
     const temporary = options.temporary === true;
     state.undoStack.push({ selector: normalized, temporary });
+    // A new hide forks history; a redo replays it.
+    if (!options.redo) state.redoStack = [];
     if (temporary) {
       state.tempRules = state.tempRules.concat([normalized]).slice(0, MAX_RULES_PER_SITE);
     } else {
@@ -804,7 +814,7 @@
     }
     await applyRulesToPage(state.rules);
     if (!state.active) return true;
-    if (state.ui.undoButton) state.ui.undoButton.disabled = false;
+    syncHistoryButtons();
     showToast(temporary
       ? t('zapper_toast_hidden_until_reload', undefined, 'Hidden until reload.')
       : options.manual
@@ -828,7 +838,7 @@
   // hides only leave the in-memory list.
   async function revertZaps(all = false) {
     const entries = all ? state.undoStack.splice(0) : state.undoStack.splice(-1);
-    if (entries.length === 0) return false;
+    if (entries.length === 0) return entries;
     const temporary = new Set(entries.filter((e) => e.temporary).map((e) => e.selector));
     const permanent = new Set(entries.filter((e) => !e.temporary).map((e) => e.selector));
     state.tempRules = state.tempRules.filter((r) => !temporary.has(r));
@@ -837,14 +847,28 @@
       await trackPendingSave(saveRulesForHost(state.host, state.rules));
     }
     await applyRulesToPage(state.rules);
-    return true;
+    return entries;
+  }
+
+  function syncHistoryButtons() {
+    if (state.ui.undoButton) state.ui.undoButton.disabled = state.undoStack.length === 0;
+    if (state.ui.redoButton) state.ui.redoButton.disabled = state.redoStack.length === 0;
   }
 
   async function undoLastZap() {
-    if (!(await revertZaps())) return;
+    const entries = await revertZaps();
+    if (entries.length === 0) return;
+    state.redoStack.push(...entries);
     if (!state.active) return;
-    if (state.ui.undoButton) state.ui.undoButton.disabled = state.undoStack.length === 0;
+    syncHistoryButtons();
     showToast(t('zapper_toast_undone', undefined, 'Undone.'));
+  }
+
+  async function redoLastZap() {
+    const entry = state.redoStack.pop();
+    if (!entry) return;
+    await addSelectorRule(entry.selector, { temporary: entry.temporary, redo: true });
+    syncHistoryButtons();
   }
 
   // Cancel closes the panel and reverts every hide made in this session.
@@ -994,12 +1018,13 @@
     ensureUi();
     state.active = true;
     state.undoStack = [];
+    state.redoStack = [];
     state.lastPickAt = 0;
     clearSelection();
     state.lastPointerX = -1;
     state.lastPointerY = -1;
     state.isScrolling = false;
-    if (state.ui.undoButton) state.ui.undoButton.disabled = true;
+    syncHistoryButtons();
     showToast(t('zapper_toast_enabled', undefined, 'Element Zapper enabled.'));
     if (options.fromContextMenu === true) preselectContextMenuTarget();
 
@@ -1097,7 +1122,7 @@
       }
       if ((event.ctrlKey || event.metaKey) && (event.key === 'z' || event.key === 'Z')) {
         interceptEvent(event);
-        undoLastZap().catch(() => {});
+        (event.shiftKey ? redoLastZap() : undoLastZap()).catch(() => {});
       }
     };
 

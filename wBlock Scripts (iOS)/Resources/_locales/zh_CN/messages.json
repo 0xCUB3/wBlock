@@ -123,6 +123,10 @@
     "message": "撤销",
     "description": "Button label to undo last zapper action."
   },
+  "zapper_button_redo": {
+    "message": "重做",
+    "description": "Button label to redo the last zapper action that was undone."
+  },
   "zapper_button_more": {
     "message": "更多选项",
     "description": "Tooltip label for the overflow menu button in zapper toolbar."

@@ -123,6 +123,10 @@
     "message": "元に戻す",
     "description": "Button label to undo last zapper action."
   },
+  "zapper_button_redo": {
+    "message": "やり直す",
+    "description": "Button label to redo the last zapper action that was undone."
+  },
   "zapper_button_more": {
     "message": "その他のオプション",
     "description": "Tooltip label for the overflow menu button in zapper toolbar."
