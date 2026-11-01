@@ -529,53 +529,9 @@ struct ContentView: View {
             applyProgress: filterManager.applyProgressViewModel
         ) {
             if filterManager.isBlockingPaused {
-                pauseBlockingBanner
+                PauseBlockingBanner(filterManager: filterManager)
             }
         }
-    }
-
-    @ViewBuilder
-    private var pauseBlockingBanner: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "pause.circle.fill")
-                .font(.title3)
-                .foregroundStyle(.orange)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Pause Blocking")
-                    .font(.subheadline.weight(.semibold))
-                Text("Pause Blocking is on while any selected component is paused. Resume restores all components.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Spacer(minLength: 8)
-
-            Button {
-                Task { await filterManager.setBlockingPaused(false) }
-            } label: {
-                if filterManager.isLoading {
-                    ProgressView()
-                        .controlSize(.small)
-                } else {
-                    Text("Resume")
-                        .font(.subheadline.weight(.semibold))
-                }
-            }
-            .buttonStyle(.borderedProminent)
-            .tint(.orange)
-            .controlSize(.small)
-            .disabled(filterManager.isLoading)
-            .accessibilityLabel("Resume Blocking")
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.bar)
-        .overlay(alignment: .bottom) {
-            Divider()
-        }
-        .accessibilityElement(children: .contain)
     }
 
     private var statsCardsView: some View {
