@@ -1785,9 +1785,16 @@ public enum WebExtensionRequestHandler {
             // mtime/version check still reloads cross-process changes when needed.
             _ = await ProtobufDataManager.shared.refreshFromDiskIfModified()
             let rules = ProtobufDataManager.shared.getZapperRules(forHost: hostname)
-            let disabled = BlockingPauseStore.isPaused(.elementZapper)
-                || ProtobufDataManager.shared.isZapperDisabled(forHost: hostname)
-            let response = createResponse(with: ["ok": true, "rules": rules, "inheritedRules": ProtobufDataManager.shared.getInheritedZapperRules(forHost: hostname), "disabled": disabled])
+            // The site switch and the global pause stay separate. Folding the pause
+            // into `disabled` made the popup and page cache read the site as off
+            // after a resume committed between two native reads.
+            let response = createResponse(with: [
+                "ok": true,
+                "rules": rules,
+                "inheritedRules": ProtobufDataManager.shared.getInheritedZapperRules(forHost: hostname),
+                "disabled": ProtobufDataManager.shared.isZapperDisabled(forHost: hostname),
+                "paused": BlockingPauseStore.isPaused(.elementZapper)
+            ])
             context.completeRequest(returningItems: [response])
         }
     }

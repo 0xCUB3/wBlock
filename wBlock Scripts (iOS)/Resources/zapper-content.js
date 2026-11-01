@@ -74,6 +74,8 @@
       hideOnceButton: null,
     },
     rulesDisabled: false,
+    // The global Element Zapper pause, kept apart from this site's switch.
+    zapperPaused: false,
   };
 
   let ruleSyncIntervalId = null;
@@ -188,7 +190,7 @@
   }
 
   async function shouldSuppressZapperRules(host) {
-    if (state.rulesDisabled === true) return true;
+    if (state.rulesDisabled === true || state.zapperPaused === true) return true;
     const siteDisabled = await getSiteDisabledState(host);
     // Unknown must not reactivate rules on a site that may be globally disabled.
     return siteDisabled !== false;
@@ -232,6 +234,16 @@
     }
   }
 
+  // Until native answers on a fresh page, the last known pause keeps rules off.
+  const PAUSED_CACHE_KEY = 'wblock.zapperPaused.v1';
+  async function loadCachedZapperPaused() {
+    try {
+      return (await browser.storage.local.get(PAUSED_CACHE_KEY))[PAUSED_CACHE_KEY] === true;
+    } catch {
+      return false;
+    }
+  }
+
   async function loadCachedRulesDisabled(host) {
     if (!host) return false;
     return (await getSyncMeta(host)).disabled === true;
@@ -255,7 +267,8 @@
     return {
       rules: normalizeRules(response.rules),
       inheritedRules: normalizeRules(response.inheritedRules),
-      disabled: response.disabled === true
+      disabled: response.disabled === true,
+      paused: response.paused === true
     };
   }
 
@@ -330,11 +343,12 @@
         const rules = Array.isArray(reconciled) ? reconciled : localRules;
         const disabled = nativeState.disabled || await migrateLegacyZapperRulesDisabled(host, rules);
         await setSyncMeta(host, { disabled });
-        return { rules, disabled, inheritedRules: nativeState.inheritedRules };
+        return { rules, disabled, paused: nativeState.paused, inheritedRules: nativeState.inheritedRules };
       }
       const disabled = nativeState.disabled || await migrateLegacyZapperRulesDisabled(host, nativeState.rules.length === 0 ? localRules : null);
       await cacheZapperState(host, nativeState.rules, disabled);
-      return { rules: nativeState.rules, disabled, inheritedRules: nativeState.inheritedRules };
+      await browser.storage.local.set({ [PAUSED_CACHE_KEY]: nativeState.paused });
+      return { rules: nativeState.rules, disabled, paused: nativeState.paused, inheritedRules: nativeState.inheritedRules };
     } catch {
       return null;
     }
@@ -1241,6 +1255,7 @@
     state.host = safeHostname();
     state.rules = await loadRulesForHost(state.host);
     state.rulesDisabled = await loadCachedRulesDisabled(state.host);
+    state.zapperPaused = await loadCachedZapperPaused();
     if (await migrateLegacyZapperRulesDisabled(state.host, state.rules)) {
       state.rulesDisabled = true;
       await setSyncMeta(state.host, { disabled: true });
@@ -1251,6 +1266,7 @@
     if (nativeState && Array.isArray(nativeState.rules)) {
       state.inheritedRules = nativeState.inheritedRules;
       state.rulesDisabled = nativeState.disabled === true;
+      state.zapperPaused = nativeState.paused === true;
       if (rulesSignature(nativeState.rules) !== rulesSignature(state.rules)) {
         state.rules = nativeState.rules;
       }
