@@ -28,11 +28,11 @@
     "description": "Button label to clear all zapper rules for the current site."
   },
   "popup_hint_tap_to_hide": {
-    "message": "Touchez un élément de la page pour le masquer. Utilisez « Ajouter une règle » dans le zappeur pour les sélecteurs manuels.",
+    "message": "Touchez un élément de la page, puis choisissez « Ajouter une règle » pour le garder masqué ou « Masquer une fois » pour le masquer jusqu'au rechargement.",
     "description": "Help text shown in the popup for how to use the element zapper."
   },
   "popup_hint_click_to_hide": {
-    "message": "Cliquez sur un élément de la page pour le masquer. Utilisez « Ajouter une règle » dans le zappeur pour les sélecteurs manuels.",
+    "message": "Cliquez sur un élément de la page, puis choisissez « Ajouter une règle » pour le garder masqué ou « Masquer une fois » pour le masquer jusqu'au rechargement.",
     "description": "Help text shown in the popup on the Mac for how to use the element zapper."
   },
   "popup_rules": {

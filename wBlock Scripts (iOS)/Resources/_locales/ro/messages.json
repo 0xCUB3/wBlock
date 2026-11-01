@@ -28,11 +28,11 @@
     "description": "Button label to clear all zapper rules for the current site."
   },
   "popup_hint_tap_to_hide": {
-    "message": "Atinge un element din pagină pentru a-l ascunde. Folosește „Adaugă regulă” în eliminator pentru selectori manuali.",
+    "message": "Atinge un element din pagină, apoi alege „Adaugă regulă” ca să rămână ascuns sau „Ascunde o dată” ca să fie ascuns până la reîncărcare.",
     "description": "Help text shown in the popup for how to use the element zapper."
   },
   "popup_hint_click_to_hide": {
-    "message": "Fă clic pe un element din pagină pentru a-l ascunde. Folosește „Adaugă regulă” în eliminator pentru selectori manuali.",
+    "message": "Fă clic pe un element din pagină, apoi alege „Adaugă regulă” ca să rămână ascuns sau „Ascunde o dată” ca să fie ascuns până la reîncărcare.",
     "description": "Help text shown in the popup on the Mac for how to use the element zapper."
   },
   "popup_rules": {

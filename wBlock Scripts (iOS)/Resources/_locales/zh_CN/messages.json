@@ -28,11 +28,11 @@
     "description": "Button label to clear all zapper rules for the current site."
   },
   "popup_hint_tap_to_hide": {
-    "message": "点按页面上的元素即可隐藏。若需手动选择器，请在清除器中使用“添加规则”。",
+    "message": "点按页面上的元素，然后选择“添加规则”永久隐藏，或选择“仅隐藏一次”在重新加载前隐藏。",
     "description": "Help text shown in the popup for how to use the element zapper."
   },
   "popup_hint_click_to_hide": {
-    "message": "点击页面上的元素即可隐藏。若需手动选择器，请在清除器中使用“添加规则”。",
+    "message": "点击页面上的元素，然后选择“添加规则”永久隐藏，或选择“仅隐藏一次”在重新加载前隐藏。",
     "description": "Help text shown in the popup on the Mac for how to use the element zapper."
   },
   "popup_rules": {

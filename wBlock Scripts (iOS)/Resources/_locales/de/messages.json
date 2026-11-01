@@ -28,11 +28,11 @@
     "description": "Button label to clear all zapper rules for the current site."
   },
   "popup_hint_tap_to_hide": {
-    "message": "Tippe auf ein Element auf der Seite, um es auszublenden. Verwende im Zapper „Regel hinzufügen“ für manuelle Selektoren.",
+    "message": "Tippe auf ein Element auf der Seite und wähle dann „Regel hinzufügen“, um es dauerhaft auszublenden, oder „Einmal ausblenden“, um es bis zum Neuladen auszublenden.",
     "description": "Help text shown in the popup for how to use the element zapper."
   },
   "popup_hint_click_to_hide": {
-    "message": "Klicke auf ein Element auf der Seite, um es auszublenden. Verwende im Zapper „Regel hinzufügen“ für manuelle Selektoren.",
+    "message": "Klicke auf ein Element auf der Seite und wähle dann „Regel hinzufügen“, um es dauerhaft auszublenden, oder „Einmal ausblenden“, um es bis zum Neuladen auszublenden.",
     "description": "Help text shown in the popup on the Mac for how to use the element zapper."
   },
   "popup_rules": {

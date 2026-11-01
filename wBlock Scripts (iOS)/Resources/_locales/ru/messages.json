@@ -28,11 +28,11 @@
     "description": "Button label to clear all zapper rules for the current site."
   },
   "popup_hint_tap_to_hide": {
-    "message": "Нажмите на элемент на странице, чтобы скрыть его. Используйте «Добавить правило» в скрытии элементов для ручных селекторов.",
+    "message": "Нажмите на элемент на странице, затем выберите «Добавить правило», чтобы скрывать его постоянно, или «Скрыть один раз», чтобы скрыть до перезагрузки.",
     "description": "Help text shown in the popup for how to use the element zapper."
   },
   "popup_hint_click_to_hide": {
-    "message": "Нажмите на элемент на странице, чтобы скрыть его. Используйте «Добавить правило» в скрытии элементов для ручных селекторов.",
+    "message": "Нажмите на элемент на странице, затем выберите «Добавить правило», чтобы скрывать его постоянно, или «Скрыть один раз», чтобы скрыть до перезагрузки.",
     "description": "Help text shown in the popup on the Mac for how to use the element zapper."
   },
   "popup_rules": {

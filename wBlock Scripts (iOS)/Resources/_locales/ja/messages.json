@@ -28,11 +28,11 @@
     "description": "Button label to clear all zapper rules for the current site."
   },
   "popup_hint_tap_to_hide": {
-    "message": "ページ上の要素をタップすると非表示にできます。手動セレクタは要素ブロックの「ルール追加」を使用してください。",
+    "message": "ページ上の要素をタップし、「ルール追加」で非表示を維持するか、「一度だけ非表示」で再読み込みまで非表示にします。",
     "description": "Help text shown in the popup for how to use the element zapper."
   },
   "popup_hint_click_to_hide": {
-    "message": "ページ上の要素をクリックすると非表示にできます。手動セレクタは要素ブロックの「ルール追加」を使用してください。",
+    "message": "ページ上の要素をクリックし、「ルール追加」で非表示を維持するか、「一度だけ非表示」で再読み込みまで非表示にします。",
     "description": "Help text shown in the popup on the Mac for how to use the element zapper."
   },
   "popup_rules": {

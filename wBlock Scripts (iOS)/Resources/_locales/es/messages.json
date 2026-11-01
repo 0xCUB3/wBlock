@@ -28,11 +28,11 @@
     "description": "Button label to clear all zapper rules for the current site."
   },
   "popup_hint_tap_to_hide": {
-    "message": "Toca un elemento de la página para ocultarlo. Usa «Agregar regla» en el ocultador para selectores manuales.",
+    "message": "Toca un elemento de la página y luego elige «Agregar regla» para mantenerlo oculto o «Ocultar una vez» para ocultarlo hasta que recargues.",
     "description": "Help text shown in the popup for how to use the element zapper."
   },
   "popup_hint_click_to_hide": {
-    "message": "Haz clic en un elemento de la página para ocultarlo. Usa «Agregar regla» en el ocultador para selectores manuales.",
+    "message": "Haz clic en un elemento de la página y luego elige «Agregar regla» para mantenerlo oculto o «Ocultar una vez» para ocultarlo hasta que recargues.",
     "description": "Help text shown in the popup on the Mac for how to use the element zapper."
   },
   "popup_rules": {

@@ -28,11 +28,11 @@
     "description": "Button label to clear all zapper rules for the current site."
   },
   "popup_hint_tap_to_hide": {
-    "message": "페이지의 요소를 탭하면 숨길 수 있습니다. 수동 선택자는 요소 제거기에서 \"규칙 추가\"를 사용하세요.",
+    "message": "페이지의 요소를 탭한 다음 \"규칙 추가\"를 선택하면 계속 숨겨지고, \"한 번만 숨기기\"를 선택하면 새로 고침할 때까지 숨겨집니다.",
     "description": "Help text shown in the popup for how to use the element zapper."
   },
   "popup_hint_click_to_hide": {
-    "message": "페이지의 요소를 클릭하면 숨길 수 있습니다. 수동 선택자는 요소 제거기에서 \"규칙 추가\"를 사용하세요.",
+    "message": "페이지의 요소를 클릭한 다음 \"규칙 추가\"를 선택하면 계속 숨겨지고, \"한 번만 숨기기\"를 선택하면 새로 고침할 때까지 숨겨집니다.",
     "description": "Help text shown in the popup on the Mac for how to use the element zapper."
   },
   "popup_rules": {

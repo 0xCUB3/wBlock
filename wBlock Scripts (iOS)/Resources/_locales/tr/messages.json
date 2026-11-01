@@ -28,11 +28,11 @@
     "description": "Button label to clear all zapper rules for the current site."
   },
   "popup_hint_tap_to_hide": {
-    "message": "Gizlemek için sayfadaki bir öğeye dokun. Elle seçici eklemek için zaplayıcıda \"Kural Ekle\"yi kullan.",
+    "message": "Sayfadaki bir öğeye dokun, ardından kalıcı olarak gizlemek için \"Kural Ekle\"yi, yeniden yükleyene kadar gizlemek için \"Bir kez gizle\"yi seç.",
     "description": "Help text shown in the popup for how to use the element zapper."
   },
   "popup_hint_click_to_hide": {
-    "message": "Gizlemek için sayfadaki bir öğeye tıkla. Elle seçici eklemek için zaplayıcıda \"Kural Ekle\"yi kullan.",
+    "message": "Sayfadaki bir öğeye tıkla, ardından kalıcı olarak gizlemek için \"Kural Ekle\"yi, yeniden yükleyene kadar gizlemek için \"Bir kez gizle\"yi seç.",
     "description": "Help text shown in the popup on the Mac for how to use the element zapper."
   },
   "popup_rules": {

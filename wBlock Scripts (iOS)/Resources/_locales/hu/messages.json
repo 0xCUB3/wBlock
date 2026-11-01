@@ -28,11 +28,11 @@
     "description": "Button label to clear all zapper rules for the current site."
   },
   "popup_hint_tap_to_hide": {
-    "message": "Koppints az oldalon egy elemre az elrejtéséhez. A kézi szelektorokhoz használd a „Szabály hozzáadása” opciót az elemeltávolítóban.",
+    "message": "Koppints az oldalon egy elemre, majd válaszd a „Szabály hozzáadása” opciót, ha véglegesen el szeretnéd rejteni, vagy az „Elrejtés egyszer” opciót, ha csak az oldal újratöltéséig.",
     "description": "Help text shown in the popup for how to use the element zapper."
   },
   "popup_hint_click_to_hide": {
-    "message": "Kattints az oldalon egy elemre az elrejtéséhez. A kézi szelektorokhoz használd a „Szabály hozzáadása” opciót az elemeltávolítóban.",
+    "message": "Kattints az oldalon egy elemre, majd válaszd a „Szabály hozzáadása” opciót, ha véglegesen el szeretnéd rejteni, vagy az „Elrejtés egyszer” opciót, ha csak az oldal újratöltéséig.",
     "description": "Help text shown in the popup on the Mac for how to use the element zapper."
   },
   "popup_rules": {
