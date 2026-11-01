@@ -135,8 +135,9 @@ struct ProgressBanners<Leading: View>: ViewModifier {
     }
 
     func body(content: Content) -> some View {
+        // The card overlays the content under the leading bar, so it never
+        // covers the pause banner.
         content
-            .topBarCompat { leading }
             .overlay(alignment: .top) {
                 ZStack {
                     if let banner {
@@ -166,6 +167,7 @@ struct ProgressBanners<Leading: View>: ViewModifier {
                 .padding(.horizontal, 12)
                 .padding(.top, 6)
             }
+            .topBarCompat { leading }
             .animation(.easeInOut(duration: 0.25), value: banner)
             // Only a run the user watched ends in this banner; one that needs
             // attention stays in the sheet, and background runs never had it.
