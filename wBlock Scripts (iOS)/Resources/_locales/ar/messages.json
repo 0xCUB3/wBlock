@@ -131,6 +131,14 @@
     "message": "خيارات إضافية",
     "description": "Tooltip label for the overflow menu button in zapper toolbar."
   },
+  "zapper_button_select_parent": {
+    "message": "تحديد العنصر الأب",
+    "description": "Tooltip for choosing the parent element in refine mode."
+  },
+  "zapper_button_select_child": {
+    "message": "تحديد العنصر الفرعي",
+    "description": "Tooltip for choosing the child element in refine mode."
+  },
   "zapper_button_add_custom_rule": {
     "message": "إضافة قاعدة CSS مخصصة…",
     "description": "Menu item label for adding a manual CSS selector rule."

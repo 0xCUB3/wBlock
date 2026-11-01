@@ -69,6 +69,8 @@
       undoButton: null,
       redoButton: null,
       addRuleButton: null,
+      parentButton: null,
+      childButton: null,
       hideOnceButton: null,
     },
     rulesDisabled: false,
@@ -468,6 +470,21 @@
     return button;
   }
 
+  // Footer icons share one size and baseline; text glyphs like ··· sat low.
+  function iconButton(pathData, label, onActivate) {
+    const button = uiButton('', 'wblock-step', onActivate);
+    button.title = label;
+    button.setAttribute('aria-label', label);
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 16 16');
+    svg.setAttribute('aria-hidden', 'true');
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    line.setAttribute('d', pathData);
+    svg.append(line);
+    button.append(svg);
+    return button;
+  }
+
   function ensureUi() {
     if (state.ui.root) return;
 
@@ -485,8 +502,9 @@
       #${UI_ROOT_ID} .wblock-grip { width: 28px; height: 4px; margin: 0 auto 2px; border-radius: 2px; background: rgba(120,120,128,0.45); }
       #${UI_ROOT_ID} .wblock-hide { color: var(--wb-danger) !important; }
       #${UI_ROOT_ID} .wblock-hide.wblock-ready { background: var(--wb-danger-fill); }
-      #${UI_ROOT_ID} .wblock-footer { position: relative; display: flex; justify-content: center; }
-      #${UI_ROOT_ID} .wblock-more { min-height: 22px; padding: 0 8px; background: transparent; font-size: 15px; line-height: 1; letter-spacing: 1px; }
+      #${UI_ROOT_ID} .wblock-footer { position: relative; display: flex; align-items: center; justify-content: space-between; }
+      #${UI_ROOT_ID} .wblock-step { flex: 0 0 30px; width: 30px; min-height: 28px; padding: 0; background: transparent; }
+      #${UI_ROOT_ID} .wblock-step svg { display: block; width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
       #${UI_ROOT_ID} .wblock-overflow { position: absolute; right: calc(100% + 8px); bottom: 0; min-width: 170px; padding: 4px; border-radius: 14px; background: var(--wb-menu); border: 1px solid var(--wb-line); box-shadow: 0 8px 24px var(--wb-shadow); opacity: 0; transform: scale(0.97); transition: opacity 0.15s ease, transform 0.15s ease; pointer-events: none; }
       #${UI_ROOT_ID} .wblock-overflow.wblock-open { opacity: 1; transform: scale(1); pointer-events: auto; }
       #${UI_ROOT_ID} .wblock-overflow button { width: 100%; justify-content: flex-start; text-align: left; min-height: 36px; padding: 8px 10px; border-radius: 9px; background: transparent; font-weight: 500; }
@@ -582,12 +600,17 @@
 
     const footer = document.createElement('div');
     footer.className = 'wblock-footer';
-    const moreButton = uiButton('···', 'wblock-more', () => {
+    const moreButton = iconButton('M3 8h.01 M8 8h.01 M13 8h.01', t('zapper_button_more', undefined, 'More options'), () => {
       if (overflowMenu.classList.contains('wblock-open')) closeOverflow();
       else overflowMenu.classList.add('wblock-open');
     });
-    moreButton.title = t('zapper_button_more', undefined, 'More options');
-    footer.append(moreButton, overflowMenu);
+    // Parent and child flank ··· so touch screens can step the selection
+    // without growing the panel; the arrow keys do the same on a Mac.
+    const parentButton = iconButton('M3 10 L8 5 L13 10', t('zapper_button_select_parent', undefined, 'Select parent element'), () => navigateParent());
+    const childButton = iconButton('M3 6 L8 11 L13 6', t('zapper_button_select_child', undefined, 'Select child element'), () => navigateChild());
+    parentButton.disabled = true;
+    childButton.disabled = true;
+    footer.append(parentButton, moreButton, childButton, overflowMenu);
 
     const onOverflowOutside = (event) => {
       if (!overflowMenu.classList.contains('wblock-open')) return;
@@ -615,6 +638,8 @@
     state.ui.undoButton = undoButton;
     state.ui.redoButton = redoButton;
     state.ui.addRuleButton = addRuleButton;
+    state.ui.parentButton = parentButton;
+    state.ui.childButton = childButton;
     state.ui.hideOnceButton = hideOnceButton;
 
     // --- Vertical drag-to-move logic ---
@@ -950,6 +975,8 @@
       button.disabled = !ready;
       button.classList.toggle('wblock-ready', ready);
     }
+    if (state.ui.parentButton) state.ui.parentButton.disabled = !ready || isZapperBoundary(state.candidateElement.parentElement);
+    if (state.ui.childButton) state.ui.childButton.disabled = state.traversalPath.length === 0;
   }
 
   function enterRefineMode(element) {
@@ -974,12 +1001,14 @@
     state.traversalPath.push(candidate);
     state.candidateElement = parent;
     setHighlightForElement(parent);
+    syncPanelState();
   }
 
   function navigateChild() {
     if (state.traversalPath.length === 0) return;
     state.candidateElement = state.traversalPath.pop();
     setHighlightForElement(state.candidateElement);
+    syncPanelState();
   }
 
   // Add Rule saves a permanent rule; Hide Once (temporary) lasts until reload.

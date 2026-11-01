@@ -131,6 +131,14 @@
     "message": "추가 옵션",
     "description": "Tooltip label for the overflow menu button in zapper toolbar."
   },
+  "zapper_button_select_parent": {
+    "message": "상위 요소 선택",
+    "description": "Tooltip for choosing the parent element in refine mode."
+  },
+  "zapper_button_select_child": {
+    "message": "하위 요소 선택",
+    "description": "Tooltip for choosing the child element in refine mode."
+  },
   "zapper_button_add_custom_rule": {
     "message": "사용자 지정 CSS 규칙 추가…",
     "description": "Menu item label for adding a manual CSS selector rule."

@@ -131,6 +131,14 @@
     "message": "Περισσότερες επιλογές",
     "description": "Tooltip label for the overflow menu button in zapper toolbar."
   },
+  "zapper_button_select_parent": {
+    "message": "Επιλογή γονικού στοιχείου",
+    "description": "Tooltip for choosing the parent element in refine mode."
+  },
+  "zapper_button_select_child": {
+    "message": "Επιλογή παιδικού στοιχείου",
+    "description": "Tooltip for choosing the child element in refine mode."
+  },
   "zapper_button_add_custom_rule": {
     "message": "Προσθήκη προσαρμοσμένου κανόνα CSS…",
     "description": "Menu item label for adding a manual CSS selector rule."

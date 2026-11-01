@@ -131,6 +131,14 @@
     "message": "Больше опций",
     "description": "Tooltip label for the overflow menu button in zapper toolbar."
   },
+  "zapper_button_select_parent": {
+    "message": "Выбрать родительский элемент",
+    "description": "Tooltip for choosing the parent element in refine mode."
+  },
+  "zapper_button_select_child": {
+    "message": "Выбрать дочерний элемент",
+    "description": "Tooltip for choosing the child element in refine mode."
+  },
   "zapper_button_add_custom_rule": {
     "message": "Добавить пользовательское правило CSS…",
     "description": "Menu item label for adding a manual CSS selector rule."
