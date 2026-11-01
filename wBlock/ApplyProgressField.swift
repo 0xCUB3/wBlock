@@ -130,7 +130,9 @@ struct ProgressBanners<Leading: View>: ViewModifier {
             return applyProgress.state.mode == .progress ? .apply : nil
         }
         if filterManager.isLoading && !filterManager.suppressBlockingOverlay { return .check }
-        if showsApplied { return .applied }
+        // Paused filters load empty blockers; "0 Safari rules" read as a failure,
+        // and the pause banner already says what happened.
+        if showsApplied && !filterManager.pausedComponents.contains(.filters) { return .applied }
         return filterManager.showingNoUpdatesAlert ? .noUpdates : nil
     }
 
