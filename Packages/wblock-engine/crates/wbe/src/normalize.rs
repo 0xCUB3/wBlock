@@ -96,7 +96,21 @@ fn is_remove_true(style: &str) -> bool {
 /// AdGuard `'name', 'arg', ...` as uBO's `+js()`. Every argument must be
 /// quoted, and the name must resolve to a uBO scriptlet.
 fn adg_scriptlet(inner: &str) -> Option<String> {
-    let (token, args) = split_args(inner, true)?;
+    let (token, mut args) = split_args(inner, true)?;
+    if matches!(token.as_str(), "json-prune-fetch-response" | "json-prune-xhr-response") && args.len() > 2 {
+        // AdGuard passes the URL and stack filters by position; uBO names them.
+        // AdGuard's further syntax-mode argument has no uBO equivalent.
+        if args.len() > 4 {
+            return None;
+        }
+        let positional = args.split_off(2);
+        for (key, value) in ["propsToMatch", "stackToMatch"].into_iter().zip(positional) {
+            if !value.is_empty() {
+                args.push(key.to_string());
+                args.push(value);
+            }
+        }
+    }
     let renamed = ADG_RENAMES
         .iter()
         .find(|(from, _)| *from == token)
@@ -299,6 +313,14 @@ mod tests {
             ),
             ("example.com#%#//scriptlet('nosuch', 'x')", "example.com#%#//scriptlet('nosuch', 'x')"),
             ("example.com#%#//scriptlet('noeval')", "example.com#%#//scriptlet('noeval')"),
+            (
+                "youtube.com#%#//scriptlet('json-prune-fetch-response', 'a b', '', 'player?')",
+                "youtube.com##+js(json-prune-fetch-response, a b, '', propsToMatch, player?)",
+            ),
+            (
+                "youtube.com#%#//scriptlet('json-prune-xhr-response', 'a', '', '', 'stack')",
+                "youtube.com##+js(json-prune-xhr-response, a, '', stackToMatch, stack)",
+            ),
             (
                 "example.com#%#//scriptlet('ubo-aopr', 'x')",
                 "example.com##+js(abort-on-property-read, x)",
