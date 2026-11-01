@@ -138,8 +138,19 @@ pub fn compile_rules(set: &RuleSet, opts: &CompileOptions, mut stats: Stats) -> 
             Rule::Scriptlet(r) => scriptlets.push(r),
         }
     }
-    network::compile(&network, opts, &mut tiered, &mut stats);
-    cosmetic::compile(&cosmetic, opts, &mut tiered, &mut runtime, &mut stats);
+    let (mut network_tiered, network_stats) = std::thread::scope(|scope| {
+        let worker = scope.spawn(|| {
+            let mut tiered = Vec::new();
+            let mut stats = Stats::default();
+            network::compile(&network, opts, &mut tiered, &mut stats);
+            (tiered, stats)
+        });
+        cosmetic::compile(&cosmetic, opts, &mut tiered, &mut runtime, &mut stats);
+        worker.join().expect("network compiler thread")
+    });
+    stats.merge(&network_stats);
+    network_tiered.append(&mut tiered);
+    let mut tiered = network_tiered;
     runtime.extend(
         network
             .iter()
