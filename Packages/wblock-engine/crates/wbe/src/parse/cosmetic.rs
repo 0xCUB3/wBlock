@@ -328,9 +328,6 @@ fn scriptlet(
     if name.is_empty() && (!exception || !args.is_empty()) {
         return invalid("scriptlet without a name");
     }
-    if is_youtube_reload_workaround(name, &args) {
-        return unsupported("YouTube reload workaround that misfires in Safari");
-    }
     ParsedLine::Rule(Rule::Scriptlet(ScriptletRule {
         source,
         raw: raw.to_string(),
@@ -339,19 +336,6 @@ fn scriptlet(
         name: name.to_string(),
         args,
     }))
-}
-
-/// uBO's YouTube workaround for server-side ad insertion: it reloads the video
-/// with a disguised user agent when it thinks an ad was stitched in, and the
-/// inbound-object edits tag requests with that user agent or strip it again.
-/// In Safari the reload fires on plain loads too, so every video restarts two
-/// or three times, and the edits alone hold playback back about 3.5 s.
-fn is_youtube_reload_workaround(name: &str, args: &[String]) -> bool {
-    match name {
-        "trusted-replace-node-text" => args.iter().any(|a| a.contains("loadVideoById")),
-        "trusted-edit-inbound-object" => args.iter().any(|a| a.contains("client.userAgent")),
-        _ => false,
-    }
 }
 
 /// uBO's `ArglistParser`, reading one argument from `s` at `beg`. Arguments
@@ -864,29 +848,6 @@ mod tests {
             bad.len(),
             bad.join("\n")
         );
-    }
-
-    #[test]
-    fn youtube_reload_workaround_is_dropped() {
-        let dropped = "unsupported: YouTube reload workaround that misfires in Safari";
-        check(&[
-            (
-                r#"www.youtube.com##+js(rpnt, script, /(\(function serverContract\(\)|^if \(window\.ytcsi)/, (()=>{i.loadVideoById(a,u)})();$1, sedCount, 1)"#,
-                dropped,
-            ),
-            (
-                r#"www.youtube.com##+js(trusted-edit-inbound-object, JSON.stringify, 0, [?.attestationRequest][?.context.client.userAgent*="yahi"]+={"params":"YAHI"})"#,
-                dropped,
-            ),
-            (
-                r#"www.youtube.com##+js(trusted-edit-inbound-object, JSON.stringify, 0, [?.createCommentParams].context.client.userAgent=repl({"regex":"/; (adunit|channel)\b/","replacement":""}))"#,
-                dropped,
-            ),
-            (
-                "www.youtube.com##+js(rpnt, script, /ads/, x)",
-                "[h:www.youtube.com] js trusted-replace-node-text[script | /ads/ | x]",
-            ),
-        ]);
     }
 
     #[test]
