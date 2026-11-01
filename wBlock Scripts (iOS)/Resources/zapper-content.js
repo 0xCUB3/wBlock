@@ -19,7 +19,6 @@
   const STORAGE_PREFIX = 'wblock.zapperRules.v1:';
   const META_PREFIX = 'wblock.zapperMeta.v1:';
   const STYLE_ID = 'wblock-zapper-style';
-  const UI_STYLE_ID = 'wblock-zapper-ui-style';
   const UI_ROOT_ID = 'wblock-zapper-root';
   const HIGHLIGHT_ID = 'wblock-zapper-highlight';
   const TOAST_ID = 'wblock-zapper-toast';
@@ -64,6 +63,8 @@
     cleanupFns: [],
     ui: {
       root: null,
+      host: null,
+      shadow: null,
       highlight: null,
       toast: null,
       undoButton: null,
@@ -466,7 +467,7 @@
 
   function shouldIgnoreTarget(target) {
     if (!(target instanceof Element)) return false;
-    if (target.id === STYLE_ID || target.id === UI_STYLE_ID) return true;
+    if (target.id === STYLE_ID) return true;
     return Boolean(target.closest && target.closest(`#${UI_ROOT_ID}`));
   }
 
@@ -502,11 +503,15 @@
   function ensureUi() {
     if (state.ui.root) return;
 
-    const uiStyle = ensureStyleElement(UI_STYLE_ID);
+    // The panel renders in a closed shadow root, so page CSS and extensions
+    // that restyle pages (Dark Reader drew a white border on it) can't reach it.
+    const host = document.createElement('div');
+    host.id = UI_ROOT_ID;
+    host.style.cssText = 'all: initial !important; position: fixed !important; top: 0 !important; left: 0 !important; width: 0 !important; height: 0 !important; z-index: 2147483647 !important;';
+    const shadow = host.attachShadow({ mode: 'closed' });
+    const uiStyle = document.createElement('style');
     uiStyle.textContent = `
       #${UI_ROOT_ID} { all: initial; --wb-text: #1d1d1f; --wb-danger: rgb(229,72,77); --wb-danger-fill: rgba(229,72,77,0.16); --wb-panel: rgba(255,255,255,0.55); --wb-fill: rgba(120,120,128,0.14); --wb-menu: rgb(246,246,248); --wb-line: rgba(0,0,0,0.08); --wb-shadow: rgba(0,0,0,0.18); --wb-highlight: rgba(255,255,255,0.7); position: fixed; top: 50%; right: calc(10px + env(safe-area-inset-right, 0px)); transform: translateY(-50%); z-index: 2147483647; box-sizing: border-box; width: 108px; padding: 8px; border-radius: 22px; display: flex; flex-direction: column; gap: 6px; font-family: -apple-system, system-ui, sans-serif; font-size: 13px; line-height: 1.15; color: var(--wb-text) !important; background: var(--wb-panel); backdrop-filter: blur(24px) saturate(180%); -webkit-backdrop-filter: blur(24px) saturate(180%); border: 1px solid var(--wb-line); box-shadow: inset 0 1px 0 var(--wb-highlight), 0 10px 30px var(--wb-shadow); cursor: grab; touch-action: none; }
-      /* The panel takes focus for keyboard shortcuts; no site or UA focus ring on it. */
-      #${UI_ROOT_ID}:focus, #${UI_ROOT_ID}:focus-visible { outline: none !important; box-shadow: inset 0 1px 0 var(--wb-highlight), 0 10px 30px var(--wb-shadow) !important; }
       @media (prefers-color-scheme: dark) {
         #${UI_ROOT_ID} { --wb-text: #f5f5f7; --wb-panel: rgba(36,36,40,0.82); --wb-fill: rgba(120,120,128,0.3); --wb-menu: rgb(44,44,48); --wb-line: rgba(255,255,255,0.12); --wb-shadow: rgba(0,0,0,0.4); --wb-highlight: rgba(255,255,255,0.14); --wb-danger: rgb(255,105,97); --wb-danger-fill: rgba(255,105,97,0.2); }
       }
@@ -630,11 +635,17 @@
 
     const onOverflowOutside = (event) => {
       if (!overflowMenu.classList.contains('wblock-open')) return;
-      if (footer.contains(event.target)) return;
+      if (event.target === host || footer.contains(event.target)) return;
       closeOverflow();
     };
+    // Page taps reach document with the host as target; panel taps are
+    // checked inside the shadow root, where the real target is visible.
     document.addEventListener('pointerdown', onOverflowOutside, true);
-    state.cleanupFns.push(() => document.removeEventListener('pointerdown', onOverflowOutside, true));
+    shadow.addEventListener('pointerdown', onOverflowOutside, true);
+    state.cleanupFns.push(
+      () => document.removeEventListener('pointerdown', onOverflowOutside, true),
+      () => shadow.removeEventListener('pointerdown', onOverflowOutside, true),
+    );
 
     const highlight = document.createElement('div');
     highlight.id = HIGHLIGHT_ID;
@@ -649,6 +660,8 @@
     root.append(grip, addRuleButton, hideOnceButton, doneButton, cancelButton, footer, toast);
 
     state.ui.root = root;
+    state.ui.host = host;
+    state.ui.shadow = shadow;
     state.ui.highlight = highlight;
     state.ui.toast = toast;
     state.ui.undoButton = undoButton;
@@ -724,8 +737,8 @@
       () => document.removeEventListener('touchcancel', onDocPointerEnd),
     );
 
-    (document.documentElement || document).appendChild(highlight);
-    (document.documentElement || document).appendChild(root);
+    shadow.append(uiStyle, highlight, root);
+    (document.documentElement || document).appendChild(host);
   }
 
   function showToast(message) {
@@ -924,32 +937,11 @@
 
   function teardownUi() {
     clearTimeout(showToast._timer);
-
-    const root = state.ui.root;
-    const highlight = state.ui.highlight;
-    const toast = state.ui.toast;
-
+    // The host carries the shadow root with the panel, highlight, and toast.
     try {
-      if (root && root.parentNode) root.parentNode.removeChild(root);
-      if (highlight && highlight.parentNode) highlight.parentNode.removeChild(highlight);
-      if (toast && toast.parentNode) toast.parentNode.removeChild(toast);
-    } catch {}
-
-    try {
-      const uiStyle = document.getElementById(UI_STYLE_ID);
-      if (uiStyle && uiStyle.parentNode) uiStyle.parentNode.removeChild(uiStyle);
-    } catch {}
-
-    // Fallback: remove any lingering nodes by ID (in case state references changed).
-    try {
-      const rootEl = document.getElementById(UI_ROOT_ID);
-      if (rootEl) rootEl.remove();
-      const highlightEl = document.getElementById(HIGHLIGHT_ID);
-      if (highlightEl) highlightEl.remove();
-      const toastEl = document.getElementById(TOAST_ID);
-      if (toastEl) toastEl.remove();
-      const uiStyleEl = document.getElementById(UI_STYLE_ID);
-      if (uiStyleEl) uiStyleEl.remove();
+      if (state.ui.host) state.ui.host.remove();
+      const hostEl = document.getElementById(UI_ROOT_ID);
+      if (hostEl) hostEl.remove();
     } catch {}
 
     for (const key of Object.keys(state.ui)) state.ui[key] = null;
@@ -972,6 +964,16 @@
     if (typeof event.stopImmediatePropagation === 'function') {
       event.stopImmediatePropagation();
     }
+  }
+
+  // Events from the closed shadow root reach document with the host as
+  // target; the focused field inside is the real one.
+  function realEventTarget(event) {
+    const target = event && event.target;
+    if (target && target === state.ui.host && state.ui.shadow) {
+      return state.ui.shadow.activeElement || target;
+    }
+    return target;
   }
 
   function isTextEntryTarget(target) {
@@ -1142,7 +1144,8 @@
       if (!state.active) return;
       if (!event) return;
       // Typing in the panel's rule field must not pick, hide, or close.
-      if (shouldIgnoreTarget(event.target) && isTextEntryTarget(event.target)) return;
+      const keyTarget = realEventTarget(event);
+      if (shouldIgnoreTarget(event.target) && isTextEntryTarget(keyTarget)) return;
       if (event.key === 'Escape') {
         interceptEvent(event);
         if (state.candidateElement) {
@@ -1154,7 +1157,7 @@
       }
       // ArrowUp selects the parent, ArrowDown returns to the child picked last.
       // Arrows typed into page fields keep their normal caret movement.
-      if ((event.key === 'ArrowUp' || event.key === 'ArrowDown') && !isTextEntryTarget(event.target)) {
+      if ((event.key === 'ArrowUp' || event.key === 'ArrowDown') && !isTextEntryTarget(keyTarget)) {
         interceptEvent(event);
         if (event.key === 'ArrowUp') navigateParent();
         else navigateChild();
