@@ -80,6 +80,9 @@ class AppFilterManager: ObservableObject {
     /// An auto-update run in this process (launch or foreground catch-up). It
     /// applies on its own, so the toolbar spins and the sheet mirrors its stages.
     @Published private(set) var isAutoUpdateRunning = false
+    /// Any check, apply, or auto-update reload. Pausing or resuming then would
+    /// start a second full reload, so the pause controls wait for it.
+    var isReloadBusy: Bool { isLoading || isApplyInFlight || isAutoUpdateRunning }
     /// False when the run started while the sheet showed something else.
     private var autoUpdateOwnsProgressSheet = false
     /// Set only after the current apply has reached a successful terminal state.

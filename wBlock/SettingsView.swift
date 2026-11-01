@@ -1397,7 +1397,7 @@ struct PauseBlockingControls: View {
             }
             .disabled(filterManager.pausedComponents == .all)
         }
-        .disabled(filterManager.isLoading || filterManager.isApplyInFlight)
+        .disabled(filterManager.isReloadBusy)
     }
 }
 
@@ -1435,7 +1435,7 @@ struct PauseBlockingBanner: View {
             .buttonStyle(.borderedProminent)
             .tint(.orange)
             .controlSize(.small)
-            .disabled(filterManager.isLoading)
+            .disabled(filterManager.isReloadBusy)
             .accessibilityLabel("Resume Blocking")
         }
         .padding(.horizontal, 12)

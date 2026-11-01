@@ -454,7 +454,7 @@ struct ContentView: View {
                 Label(title, systemImage: isPaused ? "pause.circle.fill" : "pause.circle")
             }
             .help(title)
-            .disabled(filterManager.isLoading || filterManager.isApplyInFlight)
+            .disabled(filterManager.isReloadBusy)
         }
     }
 

@@ -1148,6 +1148,9 @@ extension AppFilterManager {
     func setPausedComponents(_ components: BlockingPauseComponents) async -> Bool {
         let normalized = components.intersection(.all)
         await ConcurrentLogManager.shared.operation("pause-request", fields: ["components": String(normalized.rawValue)])
+        // An auto-update reload doesn't hold the apply lock; pausing on top of it
+        // would race its rule writes and queue a second full reload.
+        guard !isAutoUpdateRunning else { return false }
         if normalized.isEmpty {
             let result = await resumeBlocking()
             await ConcurrentLogManager.shared.operation("resume-result", fields: ["result": result ? "succeeded" : "failed"], level: result ? .info : .error)
