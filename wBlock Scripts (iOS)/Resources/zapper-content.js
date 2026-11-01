@@ -52,7 +52,6 @@
 
   const state = {
     active: false,
-    temporary: false,
     host: '',
     rules: [],
     inheritedRules: [],
@@ -67,8 +66,8 @@
       highlight: null,
       toast: null,
       undoButton: null,
-      hideButton: null,
-      modeCaption: null,
+      addRuleButton: null,
+      hideOnceButton: null,
     },
     rulesDisabled: false,
   };
@@ -482,7 +481,6 @@
       #${UI_ROOT_ID} button:active { filter: brightness(0.9); }
       #${UI_ROOT_ID} button:disabled { opacity: 0.4; }
       #${UI_ROOT_ID} .wblock-grip { width: 28px; height: 4px; margin: 0 auto 2px; border-radius: 2px; background: rgba(120,120,128,0.45); }
-      #${UI_ROOT_ID} .wblock-mode { font-size: 11px; font-weight: 600; text-align: center; opacity: 0.6; }
       #${UI_ROOT_ID} .wblock-hide { color: rgb(229,72,77); }
       #${UI_ROOT_ID} .wblock-hide.wblock-ready { background: rgba(229,72,77,0.16); }
       #${UI_ROOT_ID} .wblock-footer { position: relative; display: flex; justify-content: center; }
@@ -505,13 +503,11 @@
     const grip = document.createElement('div');
     grip.className = 'wblock-grip';
 
-    const modeCaption = document.createElement('div');
-    modeCaption.className = 'wblock-mode';
-    modeCaption.hidden = true;
-    modeCaption.textContent = t('zapper_mode_until_reload', undefined, 'Until Reload');
+    const addRuleButton = uiButton(t('zapper_button_add_rule', undefined, 'Add Rule'), 'wblock-hide', () => confirmHide());
+    addRuleButton.disabled = true;
 
-    const hideButton = uiButton(`✓ ${t('zapper_button_hide', undefined, 'Hide')}`, 'wblock-hide', () => confirmHide());
-    hideButton.disabled = true;
+    const hideOnceButton = uiButton(t('zapper_button_hide_once', undefined, 'Hide Once'), 'wblock-hide', () => confirmHide({ temporary: true }));
+    hideOnceButton.disabled = true;
 
     const doneButton = uiButton(t('zapper_button_done', undefined, 'Done'), '', () => {
       doneButton.disabled = true;
@@ -560,14 +556,14 @@
     toastInner.className = 'wblock-toast-inner';
     toast.appendChild(toastInner);
 
-    root.append(grip, modeCaption, hideButton, doneButton, cancelButton, footer, toast);
+    root.append(grip, addRuleButton, hideOnceButton, doneButton, cancelButton, footer, toast);
 
     state.ui.root = root;
     state.ui.highlight = highlight;
     state.ui.toast = toast;
     state.ui.undoButton = undoButton;
-    state.ui.hideButton = hideButton;
-    state.ui.modeCaption = modeCaption;
+    state.ui.addRuleButton = addRuleButton;
+    state.ui.hideOnceButton = hideOnceButton;
 
     // --- Vertical drag-to-move logic ---
     // A press on the panel body only arms a drag. The panel moves once the
@@ -754,8 +750,9 @@
         : t('zapper_toast_already_hidden', undefined, 'Already hidden.'));
       return;
     }
-    state.undoStack.push({ selector: normalized, temporary: state.temporary });
-    if (state.temporary) {
+    const temporary = options.temporary === true;
+    state.undoStack.push({ selector: normalized, temporary });
+    if (temporary) {
       state.tempRules = state.tempRules.concat([normalized]).slice(0, MAX_RULES_PER_SITE);
     } else {
       state.rules = state.rules.concat([normalized]).slice(0, MAX_RULES_PER_SITE);
@@ -764,7 +761,7 @@
     await applyRulesToPage(state.rules);
     if (!state.active) return;
     if (state.ui.undoButton) state.ui.undoButton.disabled = false;
-    showToast(state.temporary
+    showToast(temporary
       ? t('zapper_toast_hidden_until_reload', undefined, 'Hidden until reload.')
       : options.manual
         ? t('zapper_toast_rule_saved', undefined, 'Rule saved for this site.')
@@ -875,15 +872,12 @@
   }
 
   function syncPanelState() {
-    const hide = state.ui.hideButton;
-    if (!hide) return;
     const ready = Boolean(state.candidateElement);
-    hide.disabled = !ready;
-    hide.classList.toggle('wblock-ready', ready);
-  }
-
-  function syncModeCaption() {
-    if (state.ui.modeCaption) state.ui.modeCaption.hidden = !state.temporary;
+    for (const button of [state.ui.addRuleButton, state.ui.hideOnceButton]) {
+      if (!button) continue;
+      button.disabled = !ready;
+      button.classList.toggle('wblock-ready', ready);
+    }
   }
 
   function enterRefineMode(element) {
@@ -916,7 +910,8 @@
     setHighlightForElement(state.candidateElement);
   }
 
-  function confirmHide() {
+  // Add Rule saves a permanent rule; Hide Once (temporary) lasts until reload.
+  function confirmHide(options = {}) {
     const el = state.candidateElement;
     if (!el) return;
     const selector = selectorForElement(el);
@@ -925,7 +920,7 @@
       showToast(t('zapper_toast_unable_create_rule', undefined, 'Unable to create a rule for that element.'));
       return;
     }
-    addSelectorRule(selector).catch(() => {});
+    addSelectorRule(selector, { temporary: options.temporary === true }).catch(() => {});
   }
 
   // Element under the last right click, used by the "Zap Element" context
@@ -940,9 +935,7 @@
   }
 
   async function activateZapper(options = {}) {
-    state.temporary = options.temporary === true;
     if (state.active) {
-      syncModeCaption();
       if (options.fromContextMenu === true) preselectContextMenuTarget();
       return true;
     }
@@ -959,7 +952,6 @@
     state.lastPointerY = -1;
     state.isScrolling = false;
     if (state.ui.undoButton) state.ui.undoButton.disabled = true;
-    syncModeCaption();
     showToast(t('zapper_toast_enabled', undefined, 'Element Zapper enabled.'));
     if (options.fromContextMenu === true) preselectContextMenuTarget();
 
@@ -1216,7 +1208,6 @@
       // the panel; a context-menu activation targets the frame that was clicked.
       if (message.fromContextMenu !== true && window.top !== window) return;
       return activateZapper({
-        temporary: message.temporary === true,
         fromContextMenu: message.fromContextMenu === true,
       }).then((activated) => ({
         ok: activated !== false,

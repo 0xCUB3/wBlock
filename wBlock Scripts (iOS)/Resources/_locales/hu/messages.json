@@ -23,10 +23,6 @@
     "message": "Aktiválás",
     "description": "Button label to activate element zapper mode."
   },
-  "popup_button_hide_once": {
-    "message": "Elrejtés egyszer",
-    "description": "Button label to hide elements on this page until it reloads, without saving a rule."
-  },
   "popup_button_clear": {
     "message": "Törlés",
     "description": "Button label to clear all zapper rules for the current site."
@@ -139,17 +135,17 @@
     "message": "Kész",
     "description": "Button label to finish zapper mode."
   },
-  "zapper_button_hide": {
-    "message": "Elrejtés",
-    "description": "Button label for confirming hide action in refine mode."
+  "zapper_button_add_rule": {
+    "message": "Szabály hozzáadása",
+    "description": "Button label that hides the selected element and saves a permanent rule."
+  },
+  "zapper_button_hide_once": {
+    "message": "Elrejtés egyszer",
+    "description": "Button label to hide the selected element until the page reloads, without saving a rule."
   },
   "zapper_button_cancel": {
     "message": "Mégse",
     "description": "Button label to close the element zapper and undo every hide made in this session."
-  },
-  "zapper_mode_until_reload": {
-    "message": "Újratöltésig",
-    "description": "Caption shown in the element zapper panel when its hides last only until the page reloads."
   },
   "zapper_error_enter_selector": {
     "message": "Adj meg egy CSS-szelektort.",
