@@ -1,4 +1,8 @@
 {
+  "context_menu_zap_element": {
+    "message": "Öğeyi zapla",
+    "description": "Right-click context menu item that activates the Element Zapper on the clicked element."
+  },
   "extension_name": {
     "message": "wBlock Scripts",
     "description": "The display name for the extension."
@@ -24,11 +28,11 @@
     "description": "Button label to clear all zapper rules for the current site."
   },
   "popup_hint_tap_to_hide": {
-    "message": "Gizlemek için sayfadaki bir öğeye dokun. Elle seçici eklemek için zaplayıcıda \"Kural Ekle\"yi kullan.",
+    "message": "Sayfadaki bir öğeye dokun, ardından kalıcı olarak gizlemek için \"Kural Ekle\"yi, yeniden yükleyene kadar gizlemek için \"Bir kez gizle\"yi seç.",
     "description": "Help text shown in the popup for how to use the element zapper."
   },
   "popup_hint_click_to_hide": {
-    "message": "Gizlemek için sayfadaki bir öğeye tıkla. Elle seçici eklemek için zaplayıcıda \"Kural Ekle\"yi kullan.",
+    "message": "Sayfadaki bir öğeye tıkla, ardından kalıcı olarak gizlemek için \"Kural Ekle\"yi, yeniden yükleyene kadar gizlemek için \"Bir kez gizle\"yi seç.",
     "description": "Help text shown in the popup on the Mac for how to use the element zapper."
   },
   "popup_rules": {
@@ -115,14 +119,6 @@
     "message": "wBlock Öğe Zaplayıcı",
     "description": "Accessible label for the in-page element zapper toolbar."
   },
-  "zapper_status_tap_to_hide": {
-    "message": "Öğe Zaplayıcı: Gizlemek için bir öğeye dokun.",
-    "description": "Default status text in the in-page element zapper toolbar."
-  },
-  "zapper_status_click_to_hide": {
-    "message": "Öğe Zaplayıcı: Gizlemek için bir öğeye tıkla.",
-    "description": "Default status text in the in-page element zapper toolbar on the Mac."
-  },
   "zapper_button_undo": {
     "message": "Geri Al",
     "description": "Button label to undo last zapper action."
@@ -139,25 +135,17 @@
     "message": "Bitti",
     "description": "Button label to finish zapper mode."
   },
-  "zapper_button_select_parent": {
-    "message": "Üst öğeyi seç",
-    "description": "Tooltip for choosing the parent element in refine mode."
+  "zapper_button_add_rule": {
+    "message": "Kural Ekle",
+    "description": "Button label that hides the selected element and saves a permanent rule."
   },
-  "zapper_button_select_child": {
-    "message": "Alt öğeyi seç",
-    "description": "Tooltip for choosing the child element in refine mode."
-  },
-  "zapper_ancestors_aria_label": {
-    "message": "Üst öğeler",
-    "description": "Accessible label for the horizontal ancestor-chip list in zapper refine mode."
-  },
-  "zapper_button_hide": {
-    "message": "Gizle",
-    "description": "Button label for confirming hide action in refine mode."
+  "zapper_button_hide_once": {
+    "message": "Bir kez gizle",
+    "description": "Button label to hide the selected element until the page reloads, without saving a rule."
   },
   "zapper_button_cancel": {
     "message": "İptal",
-    "description": "Button label to cancel element selection and exit refine mode without hiding."
+    "description": "Button label to close the element zapper and undo every hide made in this session."
   },
   "zapper_error_enter_selector": {
     "message": "Bir CSS seçicisi gir.",
@@ -191,6 +179,10 @@
     "message": "Gizlendi. Kural bu site için kaydedildi.",
     "description": "Toast shown after hiding selected element and saving generated rule."
   },
+  "zapper_toast_hidden_until_reload": {
+    "message": "Yenilemeye kadar gizlendi.",
+    "description": "Toast shown after hiding an element that stays hidden only until the page reloads."
+  },
   "zapper_prompt_enter_selector": {
     "message": "Bu site için CSS seçicisi gir",
     "description": "Prompt text shown when user adds a manual selector rule."
@@ -198,14 +190,6 @@
   "zapper_toast_undone": {
     "message": "Geri alındı.",
     "description": "Toast shown after undoing the last zapper action."
-  },
-  "zapper_status_refine": {
-    "message": "$1 — ▲▼ ile ayarla, kaydetmek için $2 öğesine dokun",
-    "description": "Refine-mode status text. Placeholder 1 is element label and placeholder 2 is hide action label."
-  },
-  "zapper_status_refine_click": {
-    "message": "$1 — ▲▼ ile ayarla, kaydetmek için $2 öğesine tıkla",
-    "description": "Refine-mode status text on the Mac. Placeholder 1 is element label and placeholder 2 is hide action label."
   },
   "zapper_toast_unable_create_rule": {
     "message": "Bu öğe için kural oluşturulamadı.",
@@ -218,10 +202,6 @@
   "zapper_toast_disabled": {
     "message": "Öğe Zaplayıcı devre dışı bırakıldı.",
     "description": "Toast shown when zapper mode is disabled."
-  },
-  "zapper_status_off": {
-    "message": "Öğe Zaplayıcı: Kapalı",
-    "description": "Status text shown after disabling zapper while keeping toolbar visible."
   },
   "popup_userscripts": {
     "message": "Userscripts",

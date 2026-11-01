@@ -477,10 +477,10 @@ async function startFilterUpdate() {
     }
 }
 
-// Hands the app URL to the page's tab. Navigating the popup itself works on
+// Hands a wblockapp:// URL to the page's tab. Navigating the popup itself works on
 // iPhone, but an iPad popover opens it as an empty new tab instead.
-async function openAppToUpdateFilters() {
-    const url = 'wblockapp://update-filters';
+async function openWBlockApp(host) {
+    const url = `wblockapp://${host}`;
     const tab = await getActiveTab();
     if (!hasTabId(tab)) {
         window.location.href = url;
@@ -488,6 +488,20 @@ async function openAppToUpdateFilters() {
     }
     await browser.tabs.update(tab.id, { url });
     window.close();
+}
+
+// macOS navigating a tab to a custom scheme shows a prompt, so the containing app
+// is launched by the native handler there. iPadOS can also report 'mac', and the
+// native handler declines on iOS, so any failure falls back to the wblockapp URL.
+async function openAppFromHeader() {
+    if (await isMacPlatform()) {
+        const response = await sendNativeMessageWithTimeout({ action: 'openApp' }).catch(() => null);
+        if (response && response.ok === true) {
+            window.close();
+            return;
+        }
+    }
+    await openWBlockApp('open');
 }
 
 function hasTabId(tab) {
@@ -1464,13 +1478,25 @@ function setupListeners() {
     if (updateFiltersButton) {
         updateFiltersButton.addEventListener('click', () => {
             if (updateFiltersButton.dataset.openInApp === 'true') {
-                openAppToUpdateFilters().catch((error) => {
+                openWBlockApp('update-filters').catch((error) => {
                     console.error('[wBlock] Could not open wBlock:', error);
                 });
                 return;
             }
             startFilterUpdate().catch((error) => {
                 console.error('[wBlock] Filter update action failed:', error);
+            });
+        });
+    }
+
+    const openAppButton = document.getElementById('open-app');
+    if (openAppButton) {
+        const openAppLabel = t('popup_button_open_short', undefined, 'Open wBlock');
+        openAppButton.title = openAppLabel;
+        openAppButton.setAttribute('aria-label', openAppLabel);
+        openAppButton.addEventListener('click', () => {
+            openAppFromHeader().catch((error) => {
+                console.error('[wBlock] Could not open wBlock:', error);
             });
         });
     }

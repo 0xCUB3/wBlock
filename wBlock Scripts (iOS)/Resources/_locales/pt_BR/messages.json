@@ -1,4 +1,8 @@
 {
+  "context_menu_zap_element": {
+    "message": "Ocultar elemento",
+    "description": "Right-click context menu item that activates the Element Zapper on the clicked element."
+  },
   "extension_name": {
     "message": "wBlock Scripts",
     "description": "The display name for the extension."
@@ -24,11 +28,11 @@
     "description": "Button label to clear all zapper rules for the current site."
   },
   "popup_hint_tap_to_hide": {
-    "message": "Toque em um elemento da página para ocultá-lo. Use \"Adicionar regra\" no ocultador para seletores manuais.",
+    "message": "Toque em um elemento da página e escolha \"Adicionar regra\" para mantê-lo oculto ou \"Ocultar uma vez\" para ocultá-lo até recarregar.",
     "description": "Help text shown in the popup for how to use the element zapper."
   },
   "popup_hint_click_to_hide": {
-    "message": "Clique em um elemento da página para ocultá-lo. Use \"Adicionar regra\" no ocultador para seletores manuais.",
+    "message": "Clique em um elemento da página e escolha \"Adicionar regra\" para mantê-lo oculto ou \"Ocultar uma vez\" para ocultá-lo até recarregar.",
     "description": "Help text shown in the popup on the Mac for how to use the element zapper."
   },
   "popup_rules": {
@@ -115,14 +119,6 @@
     "message": "Ocultador de elementos do wBlock",
     "description": "Accessible label for the in-page element zapper toolbar."
   },
-  "zapper_status_tap_to_hide": {
-    "message": "Ocultador de elementos: toque em um elemento para ocultá-lo.",
-    "description": "Default status text in the in-page element zapper toolbar."
-  },
-  "zapper_status_click_to_hide": {
-    "message": "Ocultador de elementos: clique em um elemento para ocultá-lo.",
-    "description": "Default status text in the in-page element zapper toolbar on the Mac."
-  },
   "zapper_button_undo": {
     "message": "Desfazer",
     "description": "Button label to undo last zapper action."
@@ -139,25 +135,17 @@
     "message": "Concluído",
     "description": "Button label to finish zapper mode."
   },
-  "zapper_button_select_parent": {
-    "message": "Selecionar elemento pai",
-    "description": "Tooltip for choosing the parent element in refine mode."
+  "zapper_button_add_rule": {
+    "message": "Adicionar regra",
+    "description": "Button label that hides the selected element and saves a permanent rule."
   },
-  "zapper_button_select_child": {
-    "message": "Selecionar elemento filho",
-    "description": "Tooltip for choosing the child element in refine mode."
-  },
-  "zapper_ancestors_aria_label": {
-    "message": "Ancestrais da página",
-    "description": "Accessible label for the horizontal ancestor-chip list in zapper refine mode."
-  },
-  "zapper_button_hide": {
-    "message": "Ocultar",
-    "description": "Button label for confirming hide action in refine mode."
+  "zapper_button_hide_once": {
+    "message": "Ocultar uma vez",
+    "description": "Button label to hide the selected element until the page reloads, without saving a rule."
   },
   "zapper_button_cancel": {
     "message": "Cancelar",
-    "description": "Button label to cancel element selection and exit refine mode without hiding."
+    "description": "Button label to close the element zapper and undo every hide made in this session."
   },
   "zapper_error_enter_selector": {
     "message": "Digite um seletor CSS.",
@@ -191,6 +179,10 @@
     "message": "Ocultado. Regra salva para este site.",
     "description": "Toast shown after hiding selected element and saving generated rule."
   },
+  "zapper_toast_hidden_until_reload": {
+    "message": "Oculto até recarregar.",
+    "description": "Toast shown after hiding an element that stays hidden only until the page reloads."
+  },
   "zapper_prompt_enter_selector": {
     "message": "Digite um seletor CSS para este site",
     "description": "Prompt text shown when user adds a manual selector rule."
@@ -198,14 +190,6 @@
   "zapper_toast_undone": {
     "message": "Desfeito.",
     "description": "Toast shown after undoing the last zapper action."
-  },
-  "zapper_status_refine": {
-    "message": "$1 — ▲▼ para ajustar, toque em $2 para salvar",
-    "description": "Refine-mode status text. Placeholder 1 is element label and placeholder 2 is hide action label."
-  },
-  "zapper_status_refine_click": {
-    "message": "$1 — ▲▼ para ajustar, clique em $2 para salvar",
-    "description": "Refine-mode status text on the Mac. Placeholder 1 is element label and placeholder 2 is hide action label."
   },
   "zapper_toast_unable_create_rule": {
     "message": "Não foi possível criar uma regra para esse elemento.",
@@ -218,10 +202,6 @@
   "zapper_toast_disabled": {
     "message": "Ocultador de elementos desativado.",
     "description": "Toast shown when zapper mode is disabled."
-  },
-  "zapper_status_off": {
-    "message": "Ocultador de elementos: Desativado",
-    "description": "Status text shown after disabling zapper while keeping toolbar visible."
   },
   "popup_userscripts": {
     "message": "Userscripts",

@@ -403,6 +403,7 @@ struct ContentView: View {
             #endif
                 // Inside the stack, like Userscripts; iOS ignores toolbar items attached outside it.
                 .modifier(filtersToolbar)
+                .toolbar { pauseBlockingToolbar }
         }
         #if os(iOS)
             .searchableCompat(
@@ -434,6 +435,26 @@ struct ContentView: View {
             .help("Add Filter")
         } apply: {
             applyChangesToolbarButton
+        }
+    }
+
+    /// Pause everything, or resume, in its own item on the leading edge so it never displaces Add.
+    private var pauseBlockingToolbar: some ToolbarContent {
+        #if os(macOS)
+        let placement = ToolbarItemPlacement.navigation
+        #else
+        let placement = ToolbarItemPlacement.topBarLeading
+        #endif
+        return ToolbarItem(placement: placement) {
+            let isPaused = !filterManager.pausedComponents.isEmpty
+            let title: LocalizedStringKey = isPaused ? "Resume Blocking" : "Pause Blocking"
+            Button {
+                Task { await filterManager.setBlockingPaused(!isPaused) }
+            } label: {
+                Label(title, systemImage: isPaused ? "pause.circle.fill" : "pause.circle")
+            }
+            .help(title)
+            .disabled(filterManager.isLoading || filterManager.isApplyInFlight)
         }
     }
 
@@ -508,53 +529,9 @@ struct ContentView: View {
             applyProgress: filterManager.applyProgressViewModel
         ) {
             if filterManager.isBlockingPaused {
-                pauseBlockingBanner
+                PauseBlockingBanner(filterManager: filterManager)
             }
         }
-    }
-
-    @ViewBuilder
-    private var pauseBlockingBanner: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "pause.circle.fill")
-                .font(.title3)
-                .foregroundStyle(.orange)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Pause Blocking")
-                    .font(.subheadline.weight(.semibold))
-                Text("Pause Blocking is on while any selected component is paused. Resume restores all components.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Spacer(minLength: 8)
-
-            Button {
-                Task { await filterManager.setBlockingPaused(false) }
-            } label: {
-                if filterManager.isLoading {
-                    ProgressView()
-                        .controlSize(.small)
-                } else {
-                    Text("Resume")
-                        .font(.subheadline.weight(.semibold))
-                }
-            }
-            .buttonStyle(.borderedProminent)
-            .tint(.orange)
-            .controlSize(.small)
-            .disabled(filterManager.isLoading)
-            .accessibilityLabel("Resume Blocking")
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.bar)
-        .overlay(alignment: .bottom) {
-            Divider()
-        }
-        .accessibilityElement(children: .contain)
     }
 
     private var statsCardsView: some View {

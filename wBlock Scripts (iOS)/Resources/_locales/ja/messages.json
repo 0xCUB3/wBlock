@@ -1,4 +1,8 @@
 {
+  "context_menu_zap_element": {
+    "message": "要素をZap",
+    "description": "Right-click context menu item that activates the Element Zapper on the clicked element."
+  },
   "extension_name": {
     "message": "wBlock Scripts",
     "description": "The display name for the extension."
@@ -24,11 +28,11 @@
     "description": "Button label to clear all zapper rules for the current site."
   },
   "popup_hint_tap_to_hide": {
-    "message": "ページ上の要素をタップすると非表示にできます。手動セレクタは要素ブロックの「ルール追加」を使用してください。",
+    "message": "ページ上の要素をタップし、「ルール追加」で非表示を維持するか、「一度だけ非表示」で再読み込みまで非表示にします。",
     "description": "Help text shown in the popup for how to use the element zapper."
   },
   "popup_hint_click_to_hide": {
-    "message": "ページ上の要素をクリックすると非表示にできます。手動セレクタは要素ブロックの「ルール追加」を使用してください。",
+    "message": "ページ上の要素をクリックし、「ルール追加」で非表示を維持するか、「一度だけ非表示」で再読み込みまで非表示にします。",
     "description": "Help text shown in the popup on the Mac for how to use the element zapper."
   },
   "popup_rules": {
@@ -115,14 +119,6 @@
     "message": "wBlock 要素ブロック",
     "description": "Accessible label for the in-page element zapper toolbar."
   },
-  "zapper_status_tap_to_hide": {
-    "message": "要素ブロック: 要素をタップして非表示にします。",
-    "description": "Default status text in the in-page element zapper toolbar."
-  },
-  "zapper_status_click_to_hide": {
-    "message": "要素ブロック: 要素をクリックして非表示にします。",
-    "description": "Default status text in the in-page element zapper toolbar on the Mac."
-  },
   "zapper_button_undo": {
     "message": "元に戻す",
     "description": "Button label to undo last zapper action."
@@ -139,25 +135,17 @@
     "message": "完了",
     "description": "Button label to finish zapper mode."
   },
-  "zapper_button_select_parent": {
-    "message": "親要素を選択",
-    "description": "Tooltip for choosing the parent element in refine mode."
+  "zapper_button_add_rule": {
+    "message": "ルール追加",
+    "description": "Button label that hides the selected element and saves a permanent rule."
   },
-  "zapper_button_select_child": {
-    "message": "子要素を選択",
-    "description": "Tooltip for choosing the child element in refine mode."
-  },
-  "zapper_ancestors_aria_label": {
-    "message": "上位要素",
-    "description": "Accessible label for the horizontal ancestor-chip list in zapper refine mode."
-  },
-  "zapper_button_hide": {
-    "message": "非表示",
-    "description": "Button label for confirming hide action in refine mode."
+  "zapper_button_hide_once": {
+    "message": "一度だけ非表示",
+    "description": "Button label to hide the selected element until the page reloads, without saving a rule."
   },
   "zapper_button_cancel": {
     "message": "キャンセル",
-    "description": "Button label to cancel element selection and exit refine mode without hiding."
+    "description": "Button label to close the element zapper and undo every hide made in this session."
   },
   "zapper_error_enter_selector": {
     "message": "CSS セレクタを入力してください。",
@@ -191,6 +179,10 @@
     "message": "非表示にしました。このサイトのルールを保存しました。",
     "description": "Toast shown after hiding selected element and saving generated rule."
   },
+  "zapper_toast_hidden_until_reload": {
+    "message": "再読み込みまで非表示にしました。",
+    "description": "Toast shown after hiding an element that stays hidden only until the page reloads."
+  },
   "zapper_prompt_enter_selector": {
     "message": "このサイトの CSS セレクタを入力",
     "description": "Prompt text shown when user adds a manual selector rule."
@@ -198,14 +190,6 @@
   "zapper_toast_undone": {
     "message": "元に戻しました。",
     "description": "Toast shown after undoing the last zapper action."
-  },
-  "zapper_status_refine": {
-    "message": "$1 — ▲▼で調整し、$2 をタップして保存",
-    "description": "Refine-mode status text. Placeholder 1 is element label and placeholder 2 is hide action label."
-  },
-  "zapper_status_refine_click": {
-    "message": "$1 — ▲▼で調整し、$2 をクリックして保存",
-    "description": "Refine-mode status text on the Mac. Placeholder 1 is element label and placeholder 2 is hide action label."
   },
   "zapper_toast_unable_create_rule": {
     "message": "その要素のルールを作成できませんでした。",
@@ -218,10 +202,6 @@
   "zapper_toast_disabled": {
     "message": "要素ブロックを無効化しました。",
     "description": "Toast shown when zapper mode is disabled."
-  },
-  "zapper_status_off": {
-    "message": "要素ブロック: オフ",
-    "description": "Status text shown after disabling zapper while keeping toolbar visible."
   },
   "popup_userscripts": {
     "message": "ユーザースクリプト",

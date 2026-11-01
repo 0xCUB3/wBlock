@@ -75,7 +75,8 @@ class AppFilterManager: ObservableObject {
     private var validatorClearIDs: [String] = []
 
     /// Ensures only one apply/update pipeline runs at a time across entry points.
-    var isApplyInFlight = false
+    /// Published so views that disable themselves while an apply runs refresh when it ends.
+    @Published var isApplyInFlight = false
     /// An auto-update run in this process (launch or foreground catch-up). It
     /// applies on its own, so the toolbar spins and the sheet mirrors its stages.
     @Published private(set) var isAutoUpdateRunning = false

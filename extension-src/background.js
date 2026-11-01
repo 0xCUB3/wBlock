@@ -810,7 +810,7 @@
     if (message && message.action === "wblock:popup:nativeMessage") {
       const allowedActions = new Set([
         "logExtensionDiagnostic", "syncZapperRules", "getZapperRules",
-        "getBlockingPausedState", "getResumeRequestStatus", "resumeBlocking",
+        "getBlockingPausedState", "getResumeRequestStatus", "resumeBlocking", "openApp",
         "getSiteDisabledState", "setSiteDisabledState", "setSiteZapperDisabled",
         "getSiteFilterDisabledState", "setSiteFilterDisabledState", "setUserScriptsSiteDisabled",
         "getPageUserScripts", "setUserScriptSiteDisabledState", "getNoAutoplayState",
@@ -1617,13 +1617,16 @@
       return false;
     }
   };
+  // Content Filtering off for the site slashes the W. getBlockingState reads
+  // the filter-only list plus the master whitelist, the same state the popup
+  // switch shows; getSiteDisabledState only reads the master list.
   const getSiteDisabledForAction = async host => {
     const normalizedHost = normalizeSiteDisabledHost(host);
     if (!normalizedHost) {
       return false;
     }
     try {
-      const response = await requestSiteDisabledState(normalizedHost);
+      const response = await requestBlockingState(normalizedHost);
       return Boolean(response && response.disabled);
     } catch (error) {
       console.warn("[wBlock] Failed to resolve action disabled state:", error);
@@ -2296,6 +2299,28 @@
     browser.runtime.onStartup.addListener(() => {
       clearDocumentStartSessionCache();
       scheduleInstallRemoveParamDNRRules(true);
+    });
+  }
+  // Right-click "Zap Element". Safari exposes contextMenus on macOS only, so
+  // the guard leaves iOS without a menu and without errors.
+  const zapContextMenus = browser.contextMenus ?? browser.menus;
+  if (zapContextMenus) {
+    const ZAP_MENU_ID = "wblock-zap-element";
+    // Rebuilt on every background start, since the background is non-persistent.
+    Promise.resolve(zapContextMenus.removeAll()).then(() => zapContextMenus.create({
+      id: ZAP_MENU_ID,
+      title: browser.i18n.getMessage("context_menu_zap_element") || "Zap Element",
+      contexts: ["page", "selection", "link", "image", "video", "audio", "frame"],
+      documentUrlPatterns: ["http://*/*", "https://*/*"],
+    })).catch((error) => console.warn("[wBlock] Zap Element menu setup failed:", error));
+    zapContextMenus.onClicked.addListener((info, tab) => {
+      if (info.menuItemId !== ZAP_MENU_ID || !tab || typeof tab.id !== "number") return;
+      const frameId = typeof info.frameId === "number" ? info.frameId : 0;
+      browser.tabs.sendMessage(tab.id, {
+        type: "wblock:zapper:activate",
+        temporary: false,
+        fromContextMenu: true,
+      }, { frameId }).catch(() => {});
     });
   }
   /**

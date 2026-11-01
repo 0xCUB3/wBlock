@@ -1,4 +1,8 @@
 {
+  "context_menu_zap_element": {
+    "message": "요소 제거",
+    "description": "Right-click context menu item that activates the Element Zapper on the clicked element."
+  },
   "extension_name": {
     "message": "wBlock Scripts",
     "description": "The display name for the extension."
@@ -24,11 +28,11 @@
     "description": "Button label to clear all zapper rules for the current site."
   },
   "popup_hint_tap_to_hide": {
-    "message": "페이지의 요소를 탭하면 숨길 수 있습니다. 수동 선택자는 요소 제거기에서 \"규칙 추가\"를 사용하세요.",
+    "message": "페이지의 요소를 탭한 다음 \"규칙 추가\"를 선택하면 계속 숨겨지고, \"한 번만 숨기기\"를 선택하면 새로 고침할 때까지 숨겨집니다.",
     "description": "Help text shown in the popup for how to use the element zapper."
   },
   "popup_hint_click_to_hide": {
-    "message": "페이지의 요소를 클릭하면 숨길 수 있습니다. 수동 선택자는 요소 제거기에서 \"규칙 추가\"를 사용하세요.",
+    "message": "페이지의 요소를 클릭한 다음 \"규칙 추가\"를 선택하면 계속 숨겨지고, \"한 번만 숨기기\"를 선택하면 새로 고침할 때까지 숨겨집니다.",
     "description": "Help text shown in the popup on the Mac for how to use the element zapper."
   },
   "popup_rules": {
@@ -115,14 +119,6 @@
     "message": "wBlock 요소 제거기",
     "description": "Accessible label for the in-page element zapper toolbar."
   },
-  "zapper_status_tap_to_hide": {
-    "message": "요소 제거기: 요소를 탭해 숨기세요.",
-    "description": "Default status text in the in-page element zapper toolbar."
-  },
-  "zapper_status_click_to_hide": {
-    "message": "요소 제거기: 요소를 클릭해 숨기세요.",
-    "description": "Default status text in the in-page element zapper toolbar on the Mac."
-  },
   "zapper_button_undo": {
     "message": "실행 취소",
     "description": "Button label to undo last zapper action."
@@ -139,25 +135,17 @@
     "message": "완료",
     "description": "Button label to finish zapper mode."
   },
-  "zapper_button_select_parent": {
-    "message": "상위 요소 선택",
-    "description": "Tooltip for choosing the parent element in refine mode."
+  "zapper_button_add_rule": {
+    "message": "규칙 추가",
+    "description": "Button label that hides the selected element and saves a permanent rule."
   },
-  "zapper_button_select_child": {
-    "message": "하위 요소 선택",
-    "description": "Tooltip for choosing the child element in refine mode."
-  },
-  "zapper_ancestors_aria_label": {
-    "message": "상위 요소",
-    "description": "Accessible label for the horizontal ancestor-chip list in zapper refine mode."
-  },
-  "zapper_button_hide": {
-    "message": "숨기기",
-    "description": "Button label for confirming hide action in refine mode."
+  "zapper_button_hide_once": {
+    "message": "한 번만 숨기기",
+    "description": "Button label to hide the selected element until the page reloads, without saving a rule."
   },
   "zapper_button_cancel": {
     "message": "취소",
-    "description": "Button label to cancel element selection and exit refine mode without hiding."
+    "description": "Button label to close the element zapper and undo every hide made in this session."
   },
   "zapper_error_enter_selector": {
     "message": "CSS 선택자를 입력하세요.",
@@ -191,6 +179,10 @@
     "message": "숨김 처리됨. 이 사이트에 대한 규칙이 저장되었습니다.",
     "description": "Toast shown after hiding selected element and saving generated rule."
   },
+  "zapper_toast_hidden_until_reload": {
+    "message": "새로고침 전까지 숨겨졌습니다.",
+    "description": "Toast shown after hiding an element that stays hidden only until the page reloads."
+  },
   "zapper_prompt_enter_selector": {
     "message": "이 사이트의 CSS 선택자를 입력하세요",
     "description": "Prompt text shown when user adds a manual selector rule."
@@ -198,14 +190,6 @@
   "zapper_toast_undone": {
     "message": "되돌렸습니다.",
     "description": "Toast shown after undoing the last zapper action."
-  },
-  "zapper_status_refine": {
-    "message": "$1 — ▲▼로 조정하고, 저장하려면 $2 탭",
-    "description": "Refine-mode status text. Placeholder 1 is element label and placeholder 2 is hide action label."
-  },
-  "zapper_status_refine_click": {
-    "message": "$1 — ▲▼로 조정하고, 저장하려면 $2 클릭",
-    "description": "Refine-mode status text on the Mac. Placeholder 1 is element label and placeholder 2 is hide action label."
   },
   "zapper_toast_unable_create_rule": {
     "message": "해당 요소에 대한 규칙을 만들 수 없습니다.",
@@ -218,10 +202,6 @@
   "zapper_toast_disabled": {
     "message": "요소 제거기가 비활성화되었습니다.",
     "description": "Toast shown when zapper mode is disabled."
-  },
-  "zapper_status_off": {
-    "message": "요소 제거기: 꺼짐",
-    "description": "Status text shown after disabling zapper while keeping toolbar visible."
   },
   "popup_userscripts": {
     "message": "Userscripts",
