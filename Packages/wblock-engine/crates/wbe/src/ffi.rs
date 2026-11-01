@@ -72,11 +72,37 @@ pub unsafe extern "C" fn wbe_plan_compile_target(
             serde_json::to_value(&compiled.output.stats).map_err(|error| error.to_string())?;
         stats["admitted"] =
             serde_json::to_value(compiled.admitted).map_err(|error| error.to_string())?;
+        // A string: JSON readers may round integers above 2^53.
+        stats["fingerprint"] = compiled.fingerprint.to_string().into();
         Ok(Box::into_raw(Box::new(WbeCompileResult {
             webkit: to_c(to_json(&compiled.output.webkit))?,
             runtime: to_c(compiled.output.runtime.join("\n"))?,
             stats: to_c(stats.to_string())?,
         })))
+    })
+}
+
+/// Writes `Plan::fingerprint` for `target` to `out`; false on error.
+///
+/// # Safety
+/// `plan` must be a live pointer from `wbe_plan_new`, `extras_json` a valid
+/// C string, and `out` a valid pointer.
+#[no_mangle]
+pub unsafe extern "C" fn wbe_plan_target_fingerprint(
+    plan: *const WbePlan,
+    target: usize,
+    extras_json: *const c_char,
+    out: *mut u64,
+) -> bool {
+    guard(false, || {
+        let plan = plan.as_ref().ok_or("plan is NULL")?;
+        if target >= plan.0.target_count() {
+            return Err("target index out of bounds".into());
+        }
+        let extras: Vec<Extra> = serde_json::from_str(cstr(extras_json, "extras_json")?)
+            .map_err(|error| error.to_string())?;
+        *out.as_mut().ok_or("out is NULL")? = plan.0.fingerprint(target, &extras);
+        Ok(true)
     })
 }
 

@@ -42,6 +42,10 @@ WbePlan *wbe_plan_new(const char *request_json);
  * stats JSON additionally contains admitted counts keyed by list ID. */
 WbeCompileResult *wbe_plan_compile_target(const WbePlan *plan, size_t target,
                                           const char *extras_json);
+/* Changes whenever wbe_plan_compile_target's result for these arguments
+ * could; false on error (see wbe_last_error). */
+bool wbe_plan_target_fingerprint(const WbePlan *plan, size_t target,
+                                 const char *extras_json, uint64_t *out);
 void wbe_plan_free(WbePlan *plan);
 
 /* Safari content-blocker JSON array. */

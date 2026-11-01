@@ -105,6 +105,9 @@ pub struct TargetOutput {
     pub output: CompileOutput,
     /// List id -> rules this blocker admitted from it (first copies only).
     pub admitted: BTreeMap<String, u64>,
+    /// `Plan::fingerprint` of these arguments.
+    #[serde(skip)]
+    pub fingerprint: u64,
 }
 
 struct Parsed {
@@ -132,6 +135,8 @@ pub struct Plan {
     cosmetics: CosmeticScope,
     /// List index -> rule identities a blocker other than this one owns (#681).
     duplicates: Vec<Vec<HashSet<u64>>>,
+    /// Hash of each list's text, for `fingerprint`.
+    text_hashes: Vec<u64>,
 }
 
 impl Plan {
@@ -140,6 +145,7 @@ impl Plan {
             safari: SafariVersion::new(request.safari.0, request.safari.1),
         };
         let parsed = parallel(&request.lists, |index, list| parse(list, index as u32));
+        let text_hashes = parallel(&request.lists, |_, list| hash(&list.text));
         let mut plan = Plan {
             opts,
             lists: request.lists,
@@ -147,6 +153,7 @@ impl Plan {
             targets: request.targets,
             cosmetics: request.cosmetics,
             duplicates: Vec::new(),
+            text_hashes,
         };
         plan.duplicates = plan.duplicate_rules();
         plan
@@ -246,6 +253,45 @@ impl Plan {
     }
 
     /// One blocker's output, with its admitted counts.
+    /// Changes whenever `compile_target(target, extras)` could: its own lists'
+    /// text, scope and shards, the #681 rules other blockers own, the #836
+    /// exceptions copied in, and the shared options. A list feeding only other
+    /// blockers changes it only through those copies, so callers can reuse a
+    /// blocker's last output when it is unchanged.
+    pub fn fingerprint(&self, target: usize, extras: &[Extra]) -> u64 {
+        let included: Vec<_> = (0..self.lists.len())
+            .map(|list| self.included(target, list))
+            .collect();
+        let replicated = self.replicated_exceptions(target, &included);
+        self.fingerprint_of(target, extras, &replicated)
+    }
+
+    fn fingerprint_of(&self, target: usize, extras: &[Extra], replicated: &[Rule]) -> u64 {
+        let mut h = DefaultHasher::new();
+        crate::OUTPUT_VERSION.hash(&mut h);
+        format!("{:?}{:?}", self.opts, self.cosmetics).hash(&mut h);
+        self.targets[target].slot.hash(&mut h);
+        self.segment_list(target).hash(&mut h);
+        for (list, spec) in self.lists.iter().enumerate() {
+            let assignment = self.assigned(target, list);
+            if assignment.is_some() || self.parsed[list].has_affinity {
+                (list, self.text_hashes[list], spec.trusted, &spec.id).hash(&mut h);
+                format!("{:?}", spec.scope).hash(&mut h);
+                assignment.map(|a| a.shard).hash(&mut h);
+                let owned = &self.duplicates[target][list];
+                let sum = owned.iter().fold(0u64, |acc, id| acc.wrapping_add(hash(id)));
+                (owned.len(), sum).hash(&mut h);
+            }
+        }
+        for rule in replicated {
+            format!("{rule:?}").hash(&mut h);
+        }
+        for extra in extras {
+            (&extra.text, extra.trusted).hash(&mut h);
+        }
+        h.finish()
+    }
+
     pub fn compile_target(&self, target: usize, extras: &[Extra]) -> TargetOutput {
         let segment_list = self.segment_list(target);
         let mut set = RuleSet::default();
@@ -257,6 +303,7 @@ impl Plan {
             .map(|list| self.included(target, list))
             .collect();
         let replicated = self.replicated_exceptions(target, &included);
+        let fingerprint = self.fingerprint_of(target, extras, &replicated);
         for (list, rules) in included.into_iter().enumerate() {
             if rules.is_empty() {
                 continue;
@@ -329,7 +376,11 @@ impl Plan {
             output.webkit = front;
             output.stats.native_rules = output.webkit.len() as u64;
         }
-        TargetOutput { output, admitted }
+        TargetOutput {
+            output,
+            admitted,
+            fingerprint,
+        }
     }
 
     /// #925: the largest list of this blocker with excluded sites (and no
@@ -987,6 +1038,42 @@ mod tests {
         assert!(!rules(&plan, 0)
             .iter()
             .any(|r| r["action"]["type"] == "block"));
+    }
+
+    #[test]
+    fn fingerprint_follows_only_what_a_blocker_compiles() {
+        let make = |a: &str, b: &str| {
+            plan(
+                json!([{"id":"a", "text":a}, {"id":"b", "text":b}]),
+                json!([{"slot":1,"lists":[{"list":0}]}, {"slot":2,"lists":[{"list":1}]}]),
+                json!({}),
+            )
+        };
+        let base = make("||a.example^", "||b.example^");
+        let fp = |p: &Plan, t| {
+            let fingerprint = p.fingerprint(t, &[]);
+            assert_eq!(fingerprint, p.compile_target(t, &[]).fingerprint);
+            fingerprint
+        };
+        // Another blocker's list changing leaves this one alone...
+        let other = make("||a.example^", "||b.example^\n||c.example^");
+        assert_eq!(fp(&base, 0), fp(&other, 0));
+        assert_ne!(fp(&base, 1), fp(&other, 1));
+        // ...unless it brings an exception this blocker copies (#836).
+        let exception = make("||a.example^", "||b.example^\n@@||a.example/ok^");
+        assert_ne!(fp(&base, 0), fp(&exception, 0));
+        // ...or takes over a rule this blocker compiled (#681): the first
+        // list in compile order owns a rule both have.
+        let make_reversed = |first: &str| {
+            plan(
+                json!([{"id":"b", "text":first}, {"id":"a", "text":"||a.example^\n||x.example^"}]),
+                json!([{"slot":1,"lists":[{"list":1}]}, {"slot":2,"lists":[{"list":0}]}]),
+                json!({}),
+            )
+        };
+        let (before, after) = (make_reversed("||b.example^"), make_reversed("||b.example^\n||a.example^"));
+        assert_ne!(rules(&before, 0), rules(&after, 0));
+        assert_ne!(fp(&before, 0), fp(&after, 0));
     }
 
     #[test]

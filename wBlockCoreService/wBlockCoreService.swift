@@ -1416,13 +1416,14 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             containerURL: containerURL
         )
 
-        if let currentSignature,
-           currentSignature == storedSignature,
-           ContentBlockerIncrementalCache.hasCoherentBaseRulesCache(
-                targetRulesFilename: rulesFilename,
-                groupIdentifier: groupIdentifier,
-                containerURL: containerURL
-           ) {
+        let hasCachedBase = ContentBlockerIncrementalCache.hasCoherentBaseRulesCache(
+            targetRulesFilename: rulesFilename,
+            groupIdentifier: groupIdentifier,
+            containerURL: containerURL
+        )
+        // Reuses the blocker's last base output, with disabled sites applied
+        // again; `provenanceSignature` is the signature its counts were saved under.
+        func reuseCachedBase(provenanceSignature: String) throws -> ContentBlockerTargetOutcome {
             let fastUpdate = try ContentBlockerService.fastUpdateDisabledSitesWithOutputChange(
                 groupIdentifier: groupIdentifier,
                 targetRulesFilename: rulesFilename,
@@ -1446,11 +1447,14 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                 outputChanged: fastUpdate.outputChanged,
                 admittedSourceRuleCountsByFilterID: loadTargetSourceRuleProvenance(
                     targetRulesFilename: rulesFilename,
-                    inputSignature: currentSignature,
+                    inputSignature: provenanceSignature,
                     groupIdentifier: groupIdentifier,
                     containerURL: containerURL
                 )
             )
+        }
+        if let currentSignature, currentSignature == storedSignature, hasCachedBase {
+            return try reuseCachedBase(provenanceSignature: currentSignature)
         }
 
         guard let containerURL = containerURL ?? FileManager.default.containerURL(
@@ -1505,6 +1509,22 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             ["text": RemoveParamDNRRuleGenerator.savedRedirectCarveOuts(containerURL: containerURL), "trusted": false]
         ]
         let extrasJSON = String(decoding: try JSONSerialization.data(withJSONObject: extras), as: UTF8.self)
+        // Another blocker's list changed but nothing this blocker compiles did:
+        // keep its output instead of compiling it again.
+        let fingerprintIdentity = "|\(SafariVersionDetection.compilerIdentity)"
+        let fingerprintFilename = "\(ContentBlockerIncrementalCache.baseRulesFilename(for: rulesFilename)).plan-fingerprint"
+        if let currentSignature, let storedSignature, hasCachedBase,
+           let storedFingerprint = try? String(contentsOf: containerURL.appendingPathComponent(fingerprintFilename), encoding: .utf8),
+           storedFingerprint == "\(try plan.fingerprint(targetIndex, extras: extrasJSON))\(fingerprintIdentity)" {
+            let outcome = try reuseCachedBase(provenanceSignature: storedSignature)
+            if outcome.truncatedRuleCount == 0 {
+                ContentBlockerIncrementalCache.saveInputSignature(currentSignature, targetRulesFilename: rulesFilename,
+                    groupIdentifier: groupIdentifier, containerURL: containerURL)
+                saveTargetSourceRuleProvenance(outcome.admittedSourceRuleCountsByFilterID, targetRulesFilename: rulesFilename,
+                    inputSignature: currentSignature, groupIdentifier: groupIdentifier, containerURL: containerURL)
+            }
+            return outcome
+        }
         let compiled = try plan.compileTarget(targetIndex, extras: extrasJSON)
         if Task.isCancelled || isCancelled?() == true { throw CancellationError() }
         let baseJSON = compiled.stats.nativeRules == 0 ? inertContentBlockerRulesJSON : compiled.safariRulesJSON
@@ -1523,6 +1543,8 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
                           advancedRulesText: advanced, outputChanged: finalized.outputChanged,
                           admittedSourceRuleCountsByFilterID: admitted)
         if finalized.truncatedRuleCount == 0 {
+            // The fingerprint names the base it was saved with, so it goes last.
+            try? FileManager.default.removeItem(at: containerURL.appendingPathComponent(fingerprintFilename))
             _ = try saveContentBlockerIfChanged(jsonRules: baseJSON, groupIdentifier: groupIdentifier,
                 targetRulesFilename: baseFilename, containerURL: containerURL, knownRuleCount: baseCount)
             try saveBlockerListFile(contents: String(baseCount), groupIdentifier: groupIdentifier, filename: "\(baseFilename).count", containerURL: containerURL)
@@ -1530,6 +1552,10 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
             try saveBlockerListFile(contents: SafariVersionDetection.compilerIdentity, groupIdentifier: groupIdentifier, filename: ContentBlockerIncrementalCache.baseCompilerFilename(for: rulesFilename), containerURL: containerURL)
             let digest = SHA256.hash(data: Data((requestJSON + extrasJSON + fingerprints).utf8)).map { String(format: "%02x", $0) }.joined()
             try saveBlockerListFile(contents: digest, groupIdentifier: groupIdentifier, filename: "\(baseFilename).sha256", containerURL: containerURL)
+            if let fingerprint = compiled.stats.fingerprint {
+                try saveBlockerListFile(contents: fingerprint + fingerprintIdentity, groupIdentifier: groupIdentifier,
+                    filename: fingerprintFilename, containerURL: containerURL)
+            }
         }
 
         if let currentSignature, conversion.truncatedRuleCount == 0 {

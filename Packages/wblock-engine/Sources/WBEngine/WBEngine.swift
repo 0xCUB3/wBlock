@@ -28,9 +28,11 @@ public enum WBEngine {
         public let runtimeRules: Int
         public let dropped: [String: Int]
         public let admitted: [String: Int]?
+        /// `Plan.fingerprint` of the arguments that produced these stats.
+        public let fingerprint: String?
 
         enum CodingKeys: String, CodingKey {
-            case lines, rules, dropped, admitted
+            case lines, rules, dropped, admitted, fingerprint
             case nativeRules = "native_rules"
             case runtimeRules = "runtime_rules"
         }
@@ -45,6 +47,15 @@ public enum WBEngine {
         }
 
         deinit { wbe_plan_free(handle) }
+
+        /// Changes whenever `compileTarget(target, extras:)` could.
+        public func fingerprint(_ target: Int, extras: String) throws -> UInt64 {
+            var value: UInt64 = 0
+            guard target >= 0, wbe_plan_target_fingerprint(handle, target, extras, &value) else {
+                throw target < 0 ? EngineError(errorDescription: "target index out of bounds") : EngineError.last()
+            }
+            return value
+        }
 
         public func compileTarget(_ target: Int, extras: String) throws -> Compiled {
             guard target >= 0 else {
