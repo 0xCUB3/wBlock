@@ -594,16 +594,24 @@ fn dedupe_and_merge(out: &mut Vec<Tiered>, start: usize) {
         if t.rule.trigger.if_domain.is_some() {
             let mut base = t.rule.clone();
             base.trigger.if_domain = None;
-            if let Some(&i) = merged.get(&(t.tier, base.clone())) {
-                let list = kept[i].rule.trigger.if_domain.get_or_insert_with(Vec::new);
-                for d in t.rule.trigger.if_domain.unwrap_or_default() {
-                    if !list.contains(&d) {
-                        list.push(d);
+            match merged.entry((t.tier, base)) {
+                std::collections::hash_map::Entry::Occupied(entry) => {
+                    let list = kept[*entry.get()]
+                        .rule
+                        .trigger
+                        .if_domain
+                        .get_or_insert_with(Vec::new);
+                    for d in t.rule.trigger.if_domain.unwrap_or_default() {
+                        if !list.contains(&d) {
+                            list.push(d);
+                        }
                     }
+                    continue;
                 }
-                continue;
+                std::collections::hash_map::Entry::Vacant(entry) => {
+                    entry.insert(kept.len());
+                }
             }
-            merged.insert((t.tier, base), kept.len());
         }
         kept.push(t);
     }
