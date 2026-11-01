@@ -255,7 +255,8 @@ public enum RemoveParamDNRRuleGenerator {
 
         let extracted = extractedDNRSourceRules(
             for: filters,
-            containerURL: containerURL
+            containerURL: containerURL,
+            includeBlockedCount: blockedCount
         )
 
         let generated = generateRules(
@@ -317,7 +318,8 @@ public enum RemoveParamDNRRuleGenerator {
 
     static func extractedDNRSourceRules(
         for filters: [FilterList],
-        containerURL: URL
+        containerURL: URL,
+        includeBlockedCount: Bool
     ) -> (removeParam: String, redirectSources: [String], blockedCount: String) {
         try? FileManager.default.removeItem(
             at: containerURL.appendingPathComponent(legacyExtractionCacheFilename)
@@ -345,7 +347,7 @@ public enum RemoveParamDNRRuleGenerator {
 
             let entry: ExtractionEntry
             if let cached = cache[key], cached.fingerprint == fingerprint,
-               cached.blockedCountFormat == blockedCountExtractionFormat {
+               (!includeBlockedCount || cached.blockedCountFormat == blockedCountExtractionFormat) {
                 entry = cached
             } else {
                 guard let contents = try? String(contentsOf: sourceURL, encoding: .utf8) else { continue }
@@ -353,14 +355,14 @@ public enum RemoveParamDNRRuleGenerator {
                     fingerprint: fingerprint,
                     lines: extractRemoveParamLines(from: contents),
                     redirectLines: extractRedirectLines(from: contents),
-                    blockedCountLines: extractBlockedCountLines(from: contents),
-                    blockedCountFormat: blockedCountExtractionFormat
+                    blockedCountLines: includeBlockedCount ? extractBlockedCountLines(from: contents) : nil,
+                    blockedCountFormat: includeBlockedCount ? blockedCountExtractionFormat : nil
                 )
                 cacheChanged = true
             }
             updated[key] = entry
             combined.append(entry.lines)
-            blockedCount.append(entry.blockedCountLines ?? "")
+            if includeBlockedCount { blockedCount.append(entry.blockedCountLines ?? "") }
             if !entry.redirectLines.isEmpty { redirectSources.append(entry.redirectLines) }
         }
 
