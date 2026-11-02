@@ -1479,6 +1479,7 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         }
         let safari = SafariVersionDetection.current
         let request: [String: Any] = ["safari": [safari.major, safari.minor], "lists": lists, "targets": targets,
+            "retain": CompilationScope.keepsParsedLists,
             "cosmetics": ["exclude": cosmeticSites.excludedSites,
                           "only": cosmeticSites.onlySelectedSites ? (cosmeticSites.selectedSites ?? []) as Any : NSNull(),
                           "generic": cosmeticSites.includesGeneric]]
@@ -1498,23 +1499,31 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
             ["text": RemoveParamDNRRuleGenerator.savedRedirectCarveOuts(containerURL: containerURL), "trusted": false]
         ]
         let extrasJSON = String(decoding: try JSONSerialization.data(withJSONObject: extras), as: UTF8.self)
-        // Another blocker's list changed but nothing this blocker compiles did:
-        // keep its output instead of compiling it again.
         let fingerprintIdentity = "|\(SafariVersionDetection.compilerIdentity)"
         let fingerprintFilename = "\(ContentBlockerIncrementalCache.baseRulesFilename(for: rulesFilename)).plan-fingerprint"
-        if let currentSignature, let storedSignature, hasCachedBase,
-           let storedFingerprint = try? String(contentsOf: containerURL.appendingPathComponent(fingerprintFilename), encoding: .utf8),
-           storedFingerprint == "\(try plan.fingerprint(targetIndex, extras: extrasJSON))\(fingerprintIdentity)" {
-            let outcome = try reuseCachedBase(provenanceSignature: storedSignature)
+        // Another blocker's list changed but nothing this blocker compiles did:
+        // the saved output is still current, which the engine tells from the
+        // fingerprint saved with it.
+        let reuse = currentSignature.flatMap { current in
+            storedSignature.flatMap { stored in hasCachedBase ? (current: current, stored: stored) : nil }
+        }
+        let knownFingerprint = reuse.flatMap { _ in
+            (try? String(contentsOf: containerURL.appendingPathComponent(fingerprintFilename), encoding: .utf8))
+                .flatMap { saved -> UInt64? in
+                    saved.hasSuffix(fingerprintIdentity) ? UInt64(saved.dropLast(fingerprintIdentity.count)) : nil
+                }
+        }
+        guard let compiled = try plan.compileTarget(targetIndex, extras: extrasJSON, knownFingerprint: knownFingerprint) else {
+            guard let reuse else { preconditionFailure("the engine matches a fingerprint only when one was known") }
+            let outcome = try reuseCachedBase(provenanceSignature: reuse.stored)
             if outcome.truncatedRuleCount == 0 {
-                ContentBlockerIncrementalCache.saveInputSignature(currentSignature, targetRulesFilename: rulesFilename,
+                ContentBlockerIncrementalCache.saveInputSignature(reuse.current, targetRulesFilename: rulesFilename,
                     groupIdentifier: groupIdentifier, containerURL: containerURL)
                 saveTargetSourceRuleProvenance(outcome.admittedSourceRuleCountsByFilterID, targetRulesFilename: rulesFilename,
-                    inputSignature: currentSignature, groupIdentifier: groupIdentifier, containerURL: containerURL)
+                    inputSignature: reuse.current, groupIdentifier: groupIdentifier, containerURL: containerURL)
             }
             return outcome
         }
-        let compiled = try plan.compileTarget(targetIndex, extras: extrasJSON)
         if Task.isCancelled || isCancelled?() == true { throw CancellationError() }
         let baseJSON = compiled.stats.nativeRules == 0 ? Data(inertContentBlockerRulesJSON.utf8) : compiled.safariRulesJSON
         let baseCount = compiled.stats.nativeRules == 0 ? inertContentBlockerRuleCount : compiled.stats.nativeRules

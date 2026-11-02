@@ -53,23 +53,20 @@ public enum WBEngine {
 
         deinit { wbe_plan_free(handle) }
 
-        /// Changes whenever `compileTarget(target, extras:)` could.
-        public func fingerprint(_ target: Int, extras: String) throws -> UInt64 {
-            var value: UInt64 = 0
-            guard target >= 0, wbe_plan_target_fingerprint(handle, target, extras, &value) else {
-                throw target < 0 ? EngineError(errorDescription: "target index out of bounds") : EngineError.last()
-            }
-            return value
-        }
-
-        public func compileTarget(_ target: Int, extras: String) throws -> Compiled {
+        /// Compiles the blocker unless `knownFingerprint` is the fingerprint its
+        /// output has now (`compiled.stats.fingerprint`); then nil, and nothing
+        /// was compiled.
+        public func compileTarget(_ target: Int, extras: String, knownFingerprint: UInt64?) throws -> Compiled? {
             guard target >= 0 else {
                 throw EngineError(errorDescription: "target index out of bounds")
             }
-            guard let result = wbe_plan_compile_target(handle, target, extras) else {
+            guard let result = wbe_plan_compile_target(
+                handle, target, extras, knownFingerprint != nil, knownFingerprint ?? 0
+            ) else {
                 throw EngineError.last()
             }
             defer { wbe_compile_free(result) }
+            if wbe_compile_unchanged(result) { return nil }
             let statsJSON = String(cString: wbe_compile_stats_json(result))
             let webkit = wbe_compile_webkit_json(result)!
             return Compiled(

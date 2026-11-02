@@ -16,6 +16,8 @@ pub struct WbeCompileResult {
     webkit: CString,
     runtime: CString,
     stats: CString,
+    /// The blocker's fingerprint was the known one, so nothing was compiled.
+    unchanged: bool,
 }
 
 pub struct WbePlan(Plan);
@@ -53,11 +55,20 @@ pub unsafe extern "C" fn wbe_plan_new(request_json: *const c_char) -> *mut WbePl
     })
 }
 
+/// Compiles blocker `target` unless `has_known_fingerprint` and its fingerprint
+/// is `known_fingerprint`, which leaves nothing to compile (see
+/// `wbe_compile_unchanged`).
+///
+/// # Safety
+/// `plan` must be a live pointer from `wbe_plan_new` and `extras_json` a valid
+/// C string.
 #[no_mangle]
 pub unsafe extern "C" fn wbe_plan_compile_target(
     plan: *const WbePlan,
     target: usize,
     extras_json: *const c_char,
+    has_known_fingerprint: bool,
+    known_fingerprint: u64,
 ) -> *mut WbeCompileResult {
     guard(ptr::null_mut(), || {
         let plan = plan.as_ref().ok_or("plan is NULL")?;
@@ -66,7 +77,15 @@ pub unsafe extern "C" fn wbe_plan_compile_target(
         }
         let extras: Vec<Extra> = serde_json::from_str(cstr(extras_json, "extras_json")?)
             .map_err(|error| error.to_string())?;
-        let compiled = plan.0.compile_target(target, &extras);
+        let known = has_known_fingerprint.then_some(known_fingerprint);
+        let Some(compiled) = plan.0.compile_unless(target, &extras, known) else {
+            return Ok(Box::into_raw(Box::new(WbeCompileResult {
+                webkit: CString::default(),
+                runtime: CString::default(),
+                stats: CString::default(),
+                unchanged: true,
+            })));
+        };
         let mut stats =
             serde_json::to_value(&compiled.output.stats).map_err(|error| error.to_string())?;
         stats["admitted"] =
@@ -77,32 +96,19 @@ pub unsafe extern "C" fn wbe_plan_compile_target(
             webkit: to_c(compiled.output.webkit.into_string())?,
             runtime: to_c(compiled.output.runtime.join("\n"))?,
             stats: to_c(stats.to_string())?,
+            unchanged: false,
         })))
     })
 }
 
-/// Writes `Plan::fingerprint` for `target` to `out`; false on error.
+/// True when `wbe_plan_compile_target` found the known fingerprint: the result
+/// has no output, and its accessors return empty strings.
 ///
 /// # Safety
-/// `plan` must be a live pointer from `wbe_plan_new`, `extras_json` a valid
-/// C string, and `out` a valid pointer.
+/// `result` must be NULL or a live pointer from `wbe_plan_compile_target`.
 #[no_mangle]
-pub unsafe extern "C" fn wbe_plan_target_fingerprint(
-    plan: *const WbePlan,
-    target: usize,
-    extras_json: *const c_char,
-    out: *mut u64,
-) -> bool {
-    guard(false, || {
-        let plan = plan.as_ref().ok_or("plan is NULL")?;
-        if target >= plan.0.target_count() {
-            return Err("target index out of bounds".into());
-        }
-        let extras: Vec<Extra> = serde_json::from_str(cstr(extras_json, "extras_json")?)
-            .map_err(|error| error.to_string())?;
-        *out.as_mut().ok_or("out is NULL")? = plan.0.fingerprint(target, &extras);
-        Ok(true)
-    })
+pub unsafe extern "C" fn wbe_compile_unchanged(result: *const WbeCompileResult) -> bool {
+    result.as_ref().is_some_and(|r| r.unchanged)
 }
 
 /// Drops the parsed lists kept between plans. Plans still in use keep theirs,
@@ -415,17 +421,22 @@ mod tests {
             );
             let plan = wbe_plan_new(request.as_ptr());
             assert!(!plan.is_null(), "{}", last_error());
-            let result = wbe_plan_compile_target(plan, 0, c("[]").as_ptr());
+            let result = wbe_plan_compile_target(plan, 0, c("[]").as_ptr(), false, 0);
             assert!(!result.is_null(), "{}", last_error());
+            assert!(!wbe_compile_unchanged(result));
             let stats = CStr::from_ptr(wbe_compile_stats_json(result))
                 .to_str()
                 .unwrap();
-            assert_eq!(
-                serde_json::from_str::<serde_json::Value>(stats).unwrap()["admitted"]["list"],
-                1
-            );
+            let stats: serde_json::Value = serde_json::from_str(stats).unwrap();
+            assert_eq!(stats["admitted"]["list"], 1);
+            // The fingerprint the output was compiled with leaves nothing to compile.
+            let fingerprint: u64 = stats["fingerprint"].as_str().unwrap().parse().unwrap();
             wbe_compile_free(result);
-            assert!(wbe_plan_compile_target(plan, 1, c("[]").as_ptr()).is_null());
+            let result = wbe_plan_compile_target(plan, 0, c("[]").as_ptr(), true, fingerprint);
+            assert!(!result.is_null(), "{}", last_error());
+            assert!(wbe_compile_unchanged(result));
+            wbe_compile_free(result);
+            assert!(wbe_plan_compile_target(plan, 1, c("[]").as_ptr(), false, 0).is_null());
             assert!(last_error().contains("target index out of bounds"));
             wbe_plan_free(plan);
         }
@@ -443,7 +454,7 @@ mod tests {
             std::thread::scope(|scope| {
                 for target in 0..2 {
                     scope.spawn(move || {
-                        let result = wbe_plan_compile_target(shared, target, c("[]").as_ptr());
+                        let result = wbe_plan_compile_target(shared, target, c("[]").as_ptr(), false, 0);
                         assert!(!result.is_null(), "{}", last_error());
                         let stats = CStr::from_ptr(wbe_compile_stats_json(result))
                             .to_str()

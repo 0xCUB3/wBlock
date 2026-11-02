@@ -24,6 +24,7 @@ use crate::webkit::{SafariVersion, WebkitJson, WkAction, WkRule, WkTrigger};
 use serde::{Deserialize, Serialize};
 use std::collections::hash_map::DefaultHasher;
 use rustc_hash::{FxHashMap, FxHashSet};
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::ops::Range;
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
@@ -94,6 +95,11 @@ pub struct PlanRequest {
     pub targets: Vec<TargetSpec>,
     #[serde(default)]
     pub cosmetics: CosmeticScope,
+    /// Keep each list's patterns in the cache for later plans, so a plan
+    /// fingerprints its blockers without parsing their rules again. It costs
+    /// memory for as long as the cache holds the list, so a phone leaves it off.
+    #[serde(default)]
+    pub retain: bool,
 }
 
 /// Extra text one blocker compiles after its lists (zapper rules, wBlock's
@@ -130,6 +136,8 @@ struct Parsed {
     identity: u64,
     /// Exceptions and `$badfilter` stay in every shard and drive #681.
     shared: bool,
+    /// An exception rule, which `shared` also covers with `$badfilter`.
+    exception: bool,
     /// A network rule, so the network pass can skip the other kinds unparsed.
     network: bool,
     /// `is_plain_block`, which the segment of #925 compiles unscoped.
@@ -142,15 +150,33 @@ struct Parsed {
 struct ParsedList {
     /// The records in line order, in the chunks they were parsed in.
     chunks: Vec<Vec<Parsed>>,
+    /// The patterns of the records, per chunk, when the list keeps them.
+    patterns: Option<Vec<PatternChunk>>,
     has_affinity: bool,
     /// A `!#` directive anywhere keeps the list out of #681 dedupe, as before.
     has_directive: bool,
     stats: Stats,
 }
 
+/// The patterns of one chunk's records: `text` holds them back to back, and
+/// `spans` gives each record's (start, length) in it, length 0 for none.
+#[derive(Default)]
+struct PatternChunk {
+    text: String,
+    spans: Vec<(u32, u32)>,
+}
+
 impl ParsedList {
     fn records(&self) -> impl Iterator<Item = &Parsed> + '_ {
         self.chunks.iter().flatten()
+    }
+
+    /// Record `i` of `chunk`'s pattern, when the list keeps patterns: `Some(None)`
+    /// for a record with none.
+    fn stored_pattern(&self, chunk: usize, i: usize) -> Option<Option<&str>> {
+        let kept = self.patterns.as_ref()?.get(chunk)?;
+        let (start, len) = kept.spans[i];
+        Some((len > 0).then(|| &kept.text[start as usize..(start + len) as usize]))
     }
 
     fn count(&self) -> usize {
@@ -168,16 +194,18 @@ struct ParseKey {
     trusted: bool,
     scope: u64,
     version: u32,
+    retain: bool,
 }
 
 impl ParseKey {
-    fn of(list: &ListSpec, text: u64) -> ParseKey {
+    fn of(list: &ListSpec, text: u64, retain: bool) -> ParseKey {
         ParseKey {
             text,
             len: list.text.len(),
             trusted: list.trusted,
             scope: hash(&(&list.scope.exclude, &list.scope.only)),
             version: crate::OUTPUT_VERSION,
+            retain,
         }
     }
 }
@@ -200,7 +228,7 @@ impl ParseCache {
         if let Some((_, hit)) = self.entries().iter().find(|(k, _)| *k == key) {
             return hit.clone();
         }
-        let parsed = Arc::new(parse(list));
+        let parsed = Arc::new(parse(list, key.retain));
         let mut entries = self.entries();
         if !entries.iter().any(|(k, _)| *k == key) {
             entries.push((key, parsed.clone()));
@@ -251,8 +279,6 @@ struct ListScan {
     /// Whether the blocker takes any rule of the list. A list it takes none
     /// from adds no stats and no admission counts.
     takes: bool,
-    /// #836 keys of the kept network rules, exceptions excluded.
-    keys: Vec<PatternKey>,
     /// Admission identities of the kept rules, in order.
     admitted: Vec<u64>,
     /// The whole-set facts of the kept network rules.
@@ -265,7 +291,6 @@ impl ListScan {
     /// Adds `part`, the scan of a later range of the same list.
     fn absorb(&mut self, part: ListScan) {
         self.takes |= part.takes;
-        self.keys.extend(part.keys);
         self.admitted.extend(part.admitted);
         self.ctx.merge(part.ctx);
         self.others.cosmetic.extend(part.others.cosmetic);
@@ -300,7 +325,7 @@ impl Plan {
             .lists
             .iter()
             .zip(&text_hashes)
-            .map(|(list, &text)| ParseKey::of(list, text))
+            .map(|(list, &text)| ParseKey::of(list, text, request.retain))
             .collect();
         let parsed = parallel_indices(request.lists.len(), |i| cache.parsed(keys[i], &request.lists[i]));
         cache.keep(&keys);
@@ -372,11 +397,6 @@ impl Plan {
                     continue;
                 };
                 out.admitted.push(identity(raw(&rule)));
-                if let Rule::Network(r) = &rule {
-                    if let Some(key) = PatternKey::of(r).filter(|_| !r.exception) {
-                        out.keys.push(key);
-                    }
-                }
                 // Segment blocks compile unscoped; the ignore rules scope them.
                 if Some(list) == segment && is_plain_block(&rule) {
                     continue;
@@ -508,9 +528,51 @@ impl Plan {
     /// blockers changes it only through those copies, so callers can reuse a
     /// blocker's last output when it is unchanged.
     pub fn fingerprint(&self, target: usize, extras: &[Extra]) -> u64 {
-        let scans = self.scans(target, None);
-        let replicated = self.replicated(target, &scans);
-        self.fingerprint_of(target, extras, &replicated)
+        self.fingerprinted(target, extras).0
+    }
+
+    /// The fingerprint of `target`'s output, and the rules that other blockers'
+    /// exceptions copy into it, which the output is compiled from.
+    fn fingerprinted(&self, target: usize, extras: &[Extra]) -> (u64, Vec<Rule>) {
+        let own = self.own_patterns(target);
+        let replicated = self.replicated(target, own.iter().map(|pattern| pattern.as_ref()));
+        (self.fingerprint_of(target, extras, &replicated), replicated)
+    }
+
+    /// The patterns `scan` keeps for `target`, from the patterns a list keeps
+    /// when it has them and otherwise from its rules.
+    fn own_patterns(&self, target: usize) -> Vec<Cow<'_, str>> {
+        let units = self.record_units();
+        parallel_indices(units.len(), |u| {
+            let Unit { list, chunk, range } = &units[u];
+            let (list, chunk) = (*list, *chunk);
+            let parsed = &self.parsed[list];
+            let mut out = Vec::new();
+            for i in range.clone() {
+                let p = &parsed.chunks[chunk][i];
+                if !p.network || p.exception || !self.keeps(target, list, p) {
+                    continue;
+                }
+                match parsed.stored_pattern(chunk, i) {
+                    Some(pattern) => out.extend(pattern.map(Cow::Borrowed)),
+                    None => {
+                        let mut rules = Vec::new();
+                        scoped(self.rule(list, p), &self.lists[list].scope, &mut rules);
+                        for rule in &rules {
+                            if let Rule::Network(r) = rule {
+                                if !r.exception {
+                                    out.extend(pattern_of(r).map(Cow::Owned));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            out
+        })
+        .into_iter()
+        .flatten()
+        .collect()
     }
 
     fn fingerprint_of(&self, target: usize, extras: &[Extra], replicated: &[Rule]) -> u64 {
@@ -546,10 +608,19 @@ impl Plan {
     }
 
     pub fn compile_target(&self, target: usize, extras: &[Extra]) -> TargetOutput {
+        self.compile_unless(target, extras, None)
+            .expect("nothing known, so the blocker compiles")
+    }
+
+    /// `compile_target`, except that when `known` is this blocker's fingerprint
+    /// for these arguments, nothing is compiled and the result is None.
+    pub fn compile_unless(&self, target: usize, extras: &[Extra], known: Option<u64>) -> Option<TargetOutput> {
+        let (fingerprint, replicated) = self.fingerprinted(target, extras);
+        if known == Some(fingerprint) {
+            return None;
+        }
         let segment_list = self.segment_list(target);
         let scans = self.scans(target, segment_list);
-        let replicated = self.replicated(target, &scans);
-        let fingerprint = self.fingerprint_of(target, extras, &replicated);
 
         let mut stats = Stats::default();
         let mut admitted = BTreeMap::new();
@@ -651,11 +722,11 @@ impl Plan {
             output.webkit = WebkitJson::join([&front, &WebkitJson::from_rules(&ignores), &output.webkit]);
             output.stats.native_rules = output.webkit.rules() as u64;
         }
-        TargetOutput {
+        Some(TargetOutput {
             output,
             admitted,
             fingerprint,
-        }
+        })
     }
 
     /// #925: the largest list of this blocker with excluded sites (and no
@@ -694,15 +765,14 @@ impl Plan {
 
     /// #836: network exceptions of lists this blocker does not compile, when
     /// they can cancel one of its blocks (Safari applies an exception only in
-    /// its own blocker). Matching errs toward copying, which is harmless.
-    fn replicated(&self, target: usize, scans: &[ListScan]) -> Vec<Rule> {
+    /// its own blocker). `own` holds the patterns of the blocker's network
+    /// rules (`own_patterns`). Matching errs toward copying, which is harmless.
+    fn replicated<'a>(&self, target: usize, own: impl Iterator<Item = &'a str>) -> Vec<Rule> {
         let mut patterns = FxHashSet::default();
         let mut bare_hosts = FxHashSet::default();
-        for key in scans.iter().flat_map(|scan| &scan.keys) {
-            if key.bare {
-                bare_hosts.insert(key.host.as_deref().unwrap_or_default());
-            }
-            patterns.insert(key.pattern.as_str());
+        for pattern in own {
+            bare_hosts.extend(bare_host(pattern));
+            patterns.insert(pattern);
         }
         let mut sorted: Vec<&str> = patterns.iter().copied().collect();
         sorted.sort_unstable();
@@ -715,9 +785,24 @@ impl Plan {
         // `seen` check that makes each rule count once runs after, in order.
         let candidates = parallel_indices(units.len(), |u| {
             let Unit { list, chunk, range } = &units[u];
-            let list = *list;
+            let (list, chunk) = (*list, *chunk);
+            let parsed = &self.parsed[list];
             let mut found: Vec<(u64, Rule)> = Vec::new();
-            for p in self.parsed[list].chunks[*chunk][range.clone()].iter().filter(|p| p.shared) {
+            for i in range.clone() {
+                let p = &parsed.chunks[chunk][i];
+                if !p.shared {
+                    continue;
+                }
+                if let Some(stored) = parsed.stored_pattern(chunk, i).filter(|_| p.network) {
+                    // The list keeps patterns, so only a matching rule is parsed.
+                    let matches = stored.is_none_or(|pattern| {
+                        pattern_host(pattern).is_none() || cancels(pattern, &patterns, &bare_hosts, &sorted)
+                    });
+                    if matches {
+                        found.push((p.identity, self.rule(list, p)));
+                    }
+                    continue;
+                }
                 let mut scoped_rules = Vec::new();
                 scoped(self.rule(list, p), &self.lists[list].scope, &mut scoped_rules);
                 for rule in scoped_rules {
@@ -726,8 +811,9 @@ impl Plan {
                             found.push((identity(&r.raw), rule));
                         }
                         Rule::Network(r) if r.exception || r.badfilter => {
-                            let matches = PatternKey::of(r).is_none_or(|key| {
-                                key.host.is_none() || key.cancels(&patterns, &bare_hosts, &sorted)
+                            let matches = pattern_of(r).is_none_or(|pattern| {
+                                pattern_host(&pattern).is_none()
+                                    || cancels(&pattern, &patterns, &bare_hosts, &sorted)
                             });
                             if matches {
                                 found.push((identity(&r.raw), rule));
@@ -765,27 +851,33 @@ const PARSE_CHUNK: usize = 1 << 20;
 
 /// The records of `list`. Each rule is parsed again from its line when a
 /// blocker needs it (`Plan::rule`), with the list's index, so the index is not
-/// needed here.
-fn parse(list: &ListSpec) -> ParsedList {
-    parse_chunked(list, PARSE_CHUNK)
+/// needed here. `retain` keeps the patterns too (see `PlanRequest::retain`).
+fn parse(list: &ListSpec, retain: bool) -> ParsedList {
+    parse_chunked(list, PARSE_CHUNK, retain)
 }
 
 /// `parse` with chunks of about `chunk_bytes`, parsed in parallel. The records,
-/// line numbers, and stats are the same whatever the chunk size.
-fn parse_chunked(list: &ListSpec, chunk_bytes: usize) -> ParsedList {
+/// line numbers, stats, and patterns are the same whatever the chunk size.
+fn parse_chunked(list: &ListSpec, chunk_bytes: usize, retain: bool) -> ParsedList {
     let text = list.text.as_str();
+    // A site scope changes the rules a list's patterns come from, so only
+    // unscoped lists keep them.
+    let patterns = retain && list.scope.is_empty();
     let spans = if text.contains(AFFINITY) {
         vec![(0..text.len(), 0)]
     } else {
         line_spans(text, chunk_bytes)
     };
     let parts = if spans.len() == 1 {
-        vec![parse_lines(list, spans[0].0.clone(), spans[0].1)]
+        vec![parse_lines(list, spans[0].0.clone(), spans[0].1, patterns)]
     } else {
-        parallel_indices(spans.len(), |i| parse_lines(list, spans[i].0.clone(), spans[i].1))
+        parallel_indices(spans.len(), |i| {
+            parse_lines(list, spans[i].0.clone(), spans[i].1, patterns)
+        })
     };
     let mut merged = ParsedList {
         chunks: Vec::with_capacity(parts.len()),
+        patterns: patterns.then(Vec::new),
         has_affinity: false,
         has_directive: false,
         stats: Stats::default(),
@@ -795,6 +887,9 @@ fn parse_chunked(list: &ListSpec, chunk_bytes: usize) -> ParsedList {
         merged.has_directive |= part.has_directive;
         merged.stats.merge(&part.stats);
         merged.chunks.extend(part.chunks);
+        if let (Some(all), Some(kept)) = (&mut merged.patterns, part.patterns) {
+            all.extend(kept);
+        }
     }
     merged
 }
@@ -822,12 +917,13 @@ fn line_spans(text: &str, chunk_bytes: usize) -> Vec<(Range<usize>, u32)> {
 }
 
 /// The records of the lines of `list.text` in `span`, whose first line is
-/// number `lines_before + 1`.
-fn parse_lines(list: &ListSpec, span: Range<usize>, lines_before: u32) -> ParsedList {
+/// number `lines_before + 1`. With `patterns`, also their patterns.
+fn parse_lines(list: &ListSpec, span: Range<usize>, lines_before: u32, patterns: bool) -> ParsedList {
     let text = &list.text[span];
     let mut stats = Stats::default();
     // Sized up front: growing it would leave the old buffers behind.
     let mut rules = Vec::with_capacity(text.lines().count());
+    let mut kept = patterns.then(PatternChunk::default);
     let mut affinity: Option<u8> = None;
     let mut has_affinity = false;
     let mut has_directive = false;
@@ -855,16 +951,37 @@ fn parse_lines(list: &ListSpec, span: Range<usize>, lines_before: u32) -> Parsed
                 index: position as u32,
                 identity: identity_in_scope(raw(rule), &list.scope),
                 shared: is_shared(rule),
+                exception: matches!(rule, Rule::Network(r) if r.exception),
                 network: matches!(rule, Rule::Network(_)),
                 plain: is_plain_block(rule),
                 badfilter: matches!(rule, Rule::Network(r) if r.badfilter),
                 affinity,
             });
+            if let Some(kept) = kept.as_mut() {
+                let pattern = match rule {
+                    Rule::Network(r) => pattern_of(r),
+                    _ => None,
+                };
+                let start = kept.text.len() as u32;
+                let len = pattern.as_deref().map_or(0, str::len) as u32;
+                if let Some(pattern) = pattern {
+                    kept.text.push_str(&pattern);
+                }
+                kept.spans.push((start, len));
+            }
         }
         stats.merge(&line_stats);
     }
+    // Capacity past the records and patterns would stay in the cache.
+    rules.shrink_to_fit();
+    let patterns = kept.map(|mut kept| {
+        kept.text.shrink_to_fit();
+        kept.spans.shrink_to_fit();
+        vec![kept]
+    });
     ParsedList {
         chunks: vec![rules],
+        patterns,
         has_affinity,
         has_directive,
         stats,
@@ -1215,86 +1332,77 @@ fn regex_escape(s: &str) -> String {
 }
 
 /// A network rule's pattern as #836 compares it (identity form: lowercase
-/// unless a regex), and the host of a `||host` pattern without wildcards.
-struct PatternKey {
-    pattern: String,
-    host: Option<String>,
-    /// `||host^`, `||host`, `||host^|` or `||host/`: the whole host.
-    bare: bool,
+/// unless a regex). None for a rule with no pattern to compare.
+fn pattern_of(rule: &NetworkRule) -> Option<String> {
+    if matches!(rule.action, NetworkAction::RemoveParam(_))
+        || matches!(&rule.action, NetworkAction::Other { option, .. } if option == "uritransform")
+    {
+        return None;
+    }
+    let raw = rule.raw.trim();
+    let body = raw.strip_prefix("@@").unwrap_or(raw);
+    let pattern = if body.starts_with('/') {
+        let close = body[1..].char_indices().scan(false, |escaped, (i, c)| {
+            let hit = !*escaped && c == '/';
+            *escaped = !*escaped && c == '\\';
+            Some((i, hit))
+        });
+        let end = close.filter(|(_, hit)| *hit).map(|(i, _)| i + 2).next();
+        end.map_or(body, |e| &body[..e]).to_string()
+    } else {
+        body[..body.find('$').unwrap_or(body.len())].to_ascii_lowercase()
+    };
+    (!pattern.is_empty()).then_some(pattern)
 }
 
-impl PatternKey {
-    fn of(rule: &NetworkRule) -> Option<PatternKey> {
-        if matches!(rule.action, NetworkAction::RemoveParam(_))
-            || matches!(&rule.action, NetworkAction::Other { option, .. } if option == "uritransform")
-        {
-            return None;
-        }
-        let raw = rule.raw.trim();
-        let body = raw.strip_prefix("@@").unwrap_or(raw);
-        let pattern = if body.starts_with('/') {
-            let close = body[1..].char_indices().scan(false, |escaped, (i, c)| {
-                let hit = !*escaped && c == '/';
-                *escaped = !*escaped && c == '\\';
-                Some((i, hit))
-            });
-            let end = close.filter(|(_, hit)| *hit).map(|(i, _)| i + 2).next();
-            end.map_or(body, |e| &body[..e]).to_string()
-        } else {
-            body[..body.find('$').unwrap_or(body.len())].to_ascii_lowercase()
-        };
-        if pattern.is_empty() {
-            return None;
-        }
-        let host = pattern
-            .strip_prefix("||")
-            .filter(|_| !pattern.contains('*'))
-            .map(|rest| {
-                let end = rest.find(['^', '/', '$', '|', '?']).unwrap_or(rest.len());
-                rest[..end].to_string()
-            });
-        let host = host.filter(|h| h.contains('.'));
-        let bare = host
-            .as_ref()
-            .is_some_and(|h| matches!(&pattern[2 + h.len()..], "" | "^" | "^|" | "/"));
-        Some(PatternKey {
-            pattern,
-            host,
-            bare,
-        })
-    }
+/// The host of a `||host` pattern without wildcards, when the host has a dot.
+fn pattern_host(pattern: &str) -> Option<&str> {
+    pattern
+        .strip_prefix("||")
+        .filter(|_| !pattern.contains('*'))
+        .map(|rest| &rest[..rest.find(['^', '/', '$', '|', '?']).unwrap_or(rest.len())])
+        .filter(|host| host.contains('.'))
+}
 
-    fn cancels(
-        &self,
-        patterns: &FxHashSet<&str>,
-        bare_hosts: &FxHashSet<&str>,
-        sorted: &[&str],
-    ) -> bool {
-        if patterns.contains(self.pattern.as_str()) {
-            return true;
-        }
-        let Some(host) = &self.host else { return false };
-        // A whole-host block on this host or a parent domain covers the URL:
-        // each suffix of two or more labels.
-        let mut suffix = host.as_str();
-        while let Some((_, parent)) = suffix.split_once('.') {
-            if bare_hosts.contains(suffix) {
-                return true;
-            }
-            suffix = parent;
-        }
-        let key = self.pattern.trim_end_matches(['^', '|']);
-        if key.len() < 4 {
-            return false;
-        }
-        // A block whose pattern is a prefix of the exception matches the same URLs.
-        if (4..=key.len()).any(|end| key.is_char_boundary(end) && patterns.contains(&key[..end])) {
-            return true;
-        }
-        // An exception whose pattern is a prefix of a block is broader than it.
-        let at = sorted.partition_point(|p| *p < key);
-        sorted.get(at).is_some_and(|p| p.starts_with(key))
+/// The host of a whole-host pattern: `||host^`, `||host`, `||host^|` or `||host/`.
+fn bare_host(pattern: &str) -> Option<&str> {
+    let host = pattern_host(pattern)?;
+    matches!(&pattern[2 + host.len()..], "" | "^" | "^|" | "/").then_some(host)
+}
+
+/// Whether a block with `pattern` is cancelled by an exception with one of
+/// `patterns`, which are sorted in `sorted`. `bare_hosts` are the hosts of
+/// the whole-host patterns among them.
+fn cancels(
+    pattern: &str,
+    patterns: &FxHashSet<&str>,
+    bare_hosts: &FxHashSet<&str>,
+    sorted: &[&str],
+) -> bool {
+    if patterns.contains(pattern) {
+        return true;
     }
+    let Some(host) = pattern_host(pattern) else { return false };
+    // A whole-host block on this host or a parent domain covers the URL:
+    // each suffix of two or more labels.
+    let mut suffix = host;
+    while let Some((_, parent)) = suffix.split_once('.') {
+        if bare_hosts.contains(suffix) {
+            return true;
+        }
+        suffix = parent;
+    }
+    let key = pattern.trim_end_matches(['^', '|']);
+    if key.len() < 4 {
+        return false;
+    }
+    // A block whose pattern is a prefix of the exception matches the same URLs.
+    if (4..=key.len()).any(|end| key.is_char_boundary(end) && patterns.contains(&key[..end])) {
+        return true;
+    }
+    // An exception whose pattern is a prefix of a block is broader than it.
+    let at = sorted.partition_point(|p| *p < key);
+    sorted.get(at).is_some_and(|p| p.starts_with(key))
 }
 
 impl Stats {
@@ -1353,6 +1461,28 @@ mod tests {
         .unwrap()
     }
 
+    /// Retained patterns must fingerprint and compile exactly as parsed rules
+    /// do: exceptions, bare hosts, and scoped lists all take the parse path
+    /// or the stored patterns with the same result.
+    #[test]
+    fn retained_patterns_match_parsed_rules() {
+        let left = "||ads.example.com^\n@@||ads.example.com/ok^\n||tracker.net/x\n||bare.org^\n$badfilter,domain=other.com\n";
+        let right = "@@||tracker.net^\n||tracker.net/x^$third-party\nexample.com##.x\n@@||bare.org^\n||ads.example.com^$image\n";
+        let lists = |retain: bool, scope: Value| {
+            let mut request = two_list_request(left, right, scope);
+            request.retain = retain;
+            request
+        };
+        for scope in [json!({}), json!({"exclude": ["shop.*"]})] {
+            let parsed = Plan::with_cache(lists(false, scope.clone()), &ParseCache::default());
+            let kept = Plan::with_cache(lists(true, scope.clone()), &ParseCache::default());
+            for target in 0..parsed.target_count() {
+                assert_eq!(parsed.fingerprint(target, &[]), kept.fingerprint(target, &[]));
+                assert_eq!(rules(&parsed, target), rules(&kept, target));
+            }
+        }
+    }
+
     #[test]
     fn parse_cache_reparses_only_changed_lists() {
         let cache = ParseCache::default();
@@ -1398,11 +1528,18 @@ mod tests {
                 .map(|p| (p.offset, p.line, p.index, p.identity, p.shared, p.network))
                 .collect()
         };
-        let whole = parse_chunked(&list, usize::MAX);
+        let patterns = |parsed: &ParsedList| -> Vec<Option<String>> {
+            (0..parsed.chunks.len())
+                .flat_map(|c| (0..parsed.chunks[c].len()).map(move |i| (c, i)))
+                .map(|(c, i)| parsed.stored_pattern(c, i).flatten().map(str::to_owned))
+                .collect()
+        };
+        let whole = parse_chunked(&list, usize::MAX, true);
         for chunk in [1, 64, 1000] {
-            let chunked = parse_chunked(&list, chunk);
+            let chunked = parse_chunked(&list, chunk, true);
             assert!(chunked.chunks.len() > 1, "chunk {chunk} gives one chunk");
             assert_eq!(records(&chunked), records(&whole), "chunk {chunk}");
+            assert_eq!(patterns(&chunked), patterns(&whole), "chunk {chunk}");
             assert_eq!(chunked.stats.lines, whole.stats.lines);
             assert_eq!(chunked.stats.rules, whole.stats.rules);
         }
@@ -1661,8 +1798,8 @@ mod tests {
         );
         let output = crate::webkit::to_json(&plan.compile_target(0, &[]).output.webkit);
         assert!(output.contains("deep"), "{output}");
-        let scans = plan.scans(0, None);
-        assert_eq!(plan.replicated(0, &scans).len(), 2);
+        let own = plan.own_patterns(0);
+        assert_eq!(plan.replicated(0, own.iter().map(|p| p.as_ref())).len(), 2);
         assert!(!output.contains("other\\\\.test"), "{output}");
     }
 
@@ -1915,11 +2052,14 @@ mod tests {
             },
             generic: true,
         };
+        // WBE_RETAIN=0 runs the phone path, which keeps no patterns.
+        let retain = std::env::var("WBE_RETAIN").map_or(true, |v| v != "0");
         Plan::new(PlanRequest {
             safari: (18, 0),
             lists,
             targets,
             cosmetics,
+            retain,
         })
     }
 

@@ -40,12 +40,13 @@ uint32_t wbe_output_version(void);
 WbePlan *wbe_plan_new(const char *request_json);
 /* extras_json is an array of {"text":..., "trusted":...}. The result's
  * stats JSON additionally contains admitted counts keyed by list ID. */
+/* Compiles blocker `target` unless has_known_fingerprint and its fingerprint is
+ * known_fingerprint; then wbe_compile_unchanged is true and nothing was compiled. */
 WbeCompileResult *wbe_plan_compile_target(const WbePlan *plan, size_t target,
-                                          const char *extras_json);
-/* Changes whenever wbe_plan_compile_target's result for these arguments
- * could; false on error (see wbe_last_error). */
-bool wbe_plan_target_fingerprint(const WbePlan *plan, size_t target,
-                                 const char *extras_json, uint64_t *out);
+                                          const char *extras_json,
+                                          bool has_known_fingerprint,
+                                          uint64_t known_fingerprint);
+bool wbe_compile_unchanged(const WbeCompileResult *result);
 void wbe_plan_free(WbePlan *plan);
 /* Drops the parsed lists kept between plans; plans in use keep theirs. */
 void wbe_clear_parse_cache(void);
