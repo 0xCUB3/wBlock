@@ -1190,12 +1190,12 @@ if (window.wBlockUserscriptInjectorHasRun) {
             });
 
             // Hydrate payloads and dispatch native execution validation for every
-            // document-start script up front. The ordered loop below still executes
+            // script up front. The ordered loop below still executes
             // scripts one at a time, but their native round-trips overlap instead of
             // serializing, so a queued script no longer loses the race against the
             // page's own code just because other scripts are enabled (issue #537).
             orderedScripts
-                .filter(script => script && script.runAt === 'document-start' && script.id)
+                .filter(script => script && script.id)
                 .forEach(script => {
                     this.ensureScriptPayload(script)
                         .then(fullScript => this.prefetchScriptValidation(fullScript))
@@ -1240,13 +1240,30 @@ if (window.wBlockUserscriptInjectorHasRun) {
         }
 
         requestScriptValidation(script) {
-            return this.sendNativeRequest('validateUserScriptExecution', {
+            if (!this.pendingValidations) {
+                this.pendingValidations = [];
+                queueMicrotask(async () => {
+                    const pending = this.pendingValidations;
+                    this.pendingValidations = null;
+                    for (let offset = 0; offset < pending.length; offset += 256) {
+                        const batch = pending.slice(offset, offset + 256);
+                        try {
+                            const reply = await this.sendNativeRequest('validateUserScriptExecutions', {
+                                scripts: batch.map(entry => entry.request)
+                            });
+                            batch.forEach((entry, index) => entry.resolve(reply?.results?.[index] || { ok: false }));
+                        } catch (error) {
+                            batch.forEach(entry => entry.reject(error));
+                        }
+                    }
+                });
+            }
+            return new Promise((resolve, reject) => this.pendingValidations.push({ resolve, reject, request: {
                 scriptId: script.id,
-                url: window.location.href,
                 payloadRevision: script.payloadRevision,
                 ...(typeof script.contentDigest === 'string' && script.contentDigest.length > 0
                     ? { contentDigest: script.contentDigest } : {})
-            });
+            }}));
         }
 
         prefetchScriptValidation(script) {

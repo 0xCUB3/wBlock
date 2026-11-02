@@ -890,7 +890,7 @@
       }
     }
     const frameActions = new Set([
-      "getUserScripts", "validateUserScriptExecution", "getUserScriptContentChunk",
+      "getUserScripts", "validateUserScriptExecutions", "getUserScriptContentChunk",
       "getUserScriptResourceChunk", "setUserScriptStorageValue", "deleteUserScriptStorageValue"
     ]);
     if (message && frameActions.has(message.action)) {
@@ -1297,16 +1297,17 @@
       await runScriptlets({ tabId, frameIds: [sender.frameId ?? 0] }, message.scriptlets);
       return { injected: true };
     }
-    if (message && message.action === "validateUserScriptExecution") {
+    if (message && message.action === "validateUserScriptExecutions") {
       try {
         return await sendPriorityNativeMessage({
           action: message.action,
           requestId: "userscript-validate-" + Date.now(),
           isTopFrame: message.isTopFrame,
-          scriptId: message.scriptId,
           url: message.url,
-          payloadRevision: message.payloadRevision,
-          ...(typeof message.contentDigest === "string" ? { contentDigest: message.contentDigest } : {})
+          scripts: Array.isArray(message.scripts) ? message.scripts.slice(0, 256).map(script => ({
+            scriptId: script.scriptId, payloadRevision: script.payloadRevision,
+            ...(Object.hasOwn(script, "contentDigest") ? { contentDigest: script.contentDigest } : {})
+          })) : []
         });
       } catch (error) {
         return { ok: false, error: String(error && error.message ? error.message : error) };

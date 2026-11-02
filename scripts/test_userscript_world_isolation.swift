@@ -22,6 +22,7 @@ import WebKit
         window.browser = {runtime:{onMessage:{addListener:function(){}},sendMessage:async function(message){
           window.webkit.messageHandlers.probe.postMessage(message);
           if(message.action === 'getUserScripts') return {userScripts:[\(json)]};
+          if(message.action === 'validateUserScriptExecutions') return {results:message.scripts.map(() => ({ok:true}))};
           if(message.action === 'gmXmlhttpRequest') return {status:200,responseText:'private-response'};
           return {ok:true};
         }}};

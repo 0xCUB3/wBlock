@@ -669,52 +669,22 @@ public enum UserScriptMetadataParser {
         let normalizedDirective = directive.hasPrefix("@") ? directive : "@\(directive)"
         var inMetadata = false
 
-        for line in userScriptContent.split(whereSeparator: \.isNewline) {
+        var result: String?
+        // Stop at the header boundary without splitting the executable body.
+        userScriptContent.enumerateLines { line, stop in
             let trimmed = line.trimmingCharacters(in: .whitespaces)
-
-            if trimmed == "// ==UserScript==" {
-                inMetadata = true
-                continue
-            }
-            if trimmed == "// ==/UserScript==" { break }
-            if !inMetadata { continue }
-
+            if trimmed == "// ==UserScript==" { inMetadata = true; return }
+            if trimmed == "// ==/UserScript==" { stop = true; return }
+            guard inMetadata else { return }
             let parts = trimmed.split(separator: " ", maxSplits: 2, omittingEmptySubsequences: true)
-            guard parts.count >= 2, parts[0] == "//", parts[1] == normalizedDirective else { continue }
+            guard parts.count >= 2, parts[0] == "//", parts[1] == normalizedDirective else { return }
             if parts.count >= 3 {
                 let value = String(parts[2]).trimmingCharacters(in: .whitespacesAndNewlines)
-                return value.isEmpty ? nil : value
+                result = value.isEmpty ? nil : value
             }
-            return nil
+            stop = true
         }
-
-        return nil
-    }
-
-    public static func extractResourceNames(from userScriptContent: String) -> [String] {
-        var names: [String] = []
-        var inMetadata = false
-
-        for line in userScriptContent.split(whereSeparator: \.isNewline) {
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-
-            if trimmed == "// ==UserScript==" {
-                inMetadata = true
-                continue
-            }
-            if trimmed == "// ==/UserScript==" { break }
-            if !inMetadata { continue }
-
-            if trimmed.hasPrefix("// @resource") {
-                let parts = trimmed.split(separator: " ", omittingEmptySubsequences: true)
-                if parts.count >= 3 {
-                    let name = String(parts[2]).trimmingCharacters(in: .whitespacesAndNewlines)
-                    if !name.isEmpty { names.append(name) }
-                }
-            }
-        }
-
-        return Array(Set(names)).sorted()
+        return result
     }
 }
 

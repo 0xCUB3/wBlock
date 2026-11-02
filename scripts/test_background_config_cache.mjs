@@ -151,19 +151,23 @@ const topFrameSender = url => ({ url, frameId: 0, tab: { id: 7, url } });
 
 // The browser's sender metadata, never content-supplied fields, binds native relays.
 {
-  const actions = ['getUserScripts', 'validateUserScriptExecution', 'getUserScriptContentChunk',
+  const actions = ['getUserScripts', 'validateUserScriptExecutions', 'getUserScriptContentChunk',
     'getUserScriptResourceChunk', 'setUserScriptStorageValue', 'deleteUserScriptStorageValue'];
   for (const action of actions) {
     const state = loadBackground({nativeHandler: async () => ({ok:true, userScripts:[]})});
     const actualURL = 'https://actual.example/frame';
     await state.onMessage({action, scriptId:'selected', url:'https://forged.example/',
       pageURL:'https://forged.example/', isTopFrame:true, key:'key', rawValue:'true',
-      chunkIndex:0, chunkSize:100, payloadRevision:0, resourceName:'resource'},
+      chunkIndex:0, chunkSize:100, payloadRevision:0, resourceName:'resource',
+      scripts:[{scriptId:'selected', payloadRevision:9, contentDigest:'abc', url:'https://forged.example/', isTopFrame:true}]},
       {url:actualURL, frameId:3, tab:{id:7, url:'https://top.example/'}});
     const forwarded = state.nativeMessages.find(message => message.action === action);
     assert.ok(forwarded, `${action} reaches native with a verified frame`);
     assert.equal(forwarded.pageURL ?? forwarded.url, actualURL, `${action} ignores forged site`);
     assert.equal(forwarded.isTopFrame, false, `${action} ignores forged top-frame status`);
+    if (action === 'validateUserScriptExecutions') {
+      assert.deepEqual(forwarded.scripts, [{scriptId:'selected', payloadRevision:9, contentDigest:'abc'}]);
+    }
     for (const sender of [{}, {url:actualURL,tab:{id:7}}, {url:actualURL,frameId:-1,tab:{id:7}},
       {url:'data:text/html,forged',frameId:0,tab:{id:7}}]) {
       const before = state.nativeMessages.filter(message => message.action === action).length;

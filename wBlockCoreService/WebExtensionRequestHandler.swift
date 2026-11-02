@@ -117,7 +117,7 @@ public enum WebExtensionRequestHandler {
             case "getUserScriptRequestPolicy":
                 handleUserScriptRequestPolicy(message: message!, context: context)
                 return
-            case "validateUserScriptExecution":
+            case "validateUserScriptExecutions":
                 handleValidateUserScriptExecution(message: message!, context: context)
                 return
             case "setUserScriptStorageValue":
@@ -1251,7 +1251,7 @@ public enum WebExtensionRequestHandler {
     private static func userScriptDescriptor(_ script: UserScript) -> [String: Any] {
         let resourceNames = !script.resourceContents.isEmpty
             ? Array(script.resourceContents.keys).sorted()
-            : UserScriptMetadataParser.extractResourceNames(from: script.content)
+            : Array(Set(script.resource.map(\.name))).sorted()
         let hasUnsafeWindowGrant = script.grant.contains {
             $0.caseInsensitiveCompare("unsafeWindow") == .orderedSame
         }
@@ -1850,58 +1850,42 @@ public enum WebExtensionRequestHandler {
         message: [String: Any?],
         context: NSExtensionContext
     ) {
-        let requestedContentDigest = message["contentDigest"] as? String
-        let hasContentDigest = message.keys.contains("contentDigest")
-        guard let scriptIDString = message["scriptId"] as? String,
-              let scriptID = UUID(uuidString: scriptIDString),
-              let pageURL = message["url"] as? String,
-              let requestedRevision = message["payloadRevision"] as? Int,
-              requestedRevision >= 0,
-              !hasContentDigest || requestedContentDigest?.isEmpty == false
-        else {
-            context.completeRequest(returningItems: [createResponse(with: [
-                "ok": false, "error": "Missing execution validation payload"
-            ])])
+        guard let requests = message["scripts"] as? [[String: Any]],
+              !requests.isEmpty, requests.count <= 256 else {
+            context.completeRequest(returningItems: [createResponse(with: ["ok": false])])
             return
         }
-
         Task { @MainActor in
-            guard !BlockingPauseStore.isPaused(.userScripts) else {
-                context.completeRequest(returningItems: [createResponse(with: ["ok": false])])
-                return
-            }
             let manager = UserScriptManager.shared
             await manager.refreshFromDiskForExecution()
-            guard UInt64(requestedRevision) == manager.payloadMutationRevision,
-                  let script = manager.userScript(withId: scriptID),
-                  scriptAllowsFrame(script, message: message, manager: manager),
-                  script.id.uuidString == scriptID.uuidString
-            else {
-                context.completeRequest(returningItems: [createResponse(with: [
-                    "ok": false, "error": "userscript-state-changed",
-                    "payloadRevision": manager.payloadMutationRevision
-                ])])
-                return
-            }
-            if hasContentDigest {
-                let expectedContent: String? = script.isUserStyle
-                    ? UserStyleSupport.effectiveCSS(forContent: script.content, compiledBody: script.compiledStyleBody, url: pageURL)
-                    : runtimeConfiguredExecutableContent(for: script)
-                guard let expectedContent,
-                      let requestedContentDigest,
-                      requestedContentDigest.range(of: "^[0-9a-f]{64}$", options: .regularExpression) != nil,
-                      requestedContentDigest == UserStylePreprocessorService.digest(expectedContent)
-                else {
-                    context.completeRequest(returningItems: [createResponse(with: [
-                        "ok": false, "error": "userscript-integrity-mismatch",
-                        "payloadRevision": manager.payloadMutationRevision
-                    ])])
-                    return
+            // One authoritative snapshot authorizes the batch. No suspension occurs
+            // between the revision, frame and digest checks for its members.
+            let results = requests.map { request -> [String: Any] in
+                guard !BlockingPauseStore.isPaused(.userScripts),
+                      let scriptIDString = request["scriptId"] as? String,
+                      let scriptID = UUID(uuidString: scriptIDString),
+                      let pageURL = message["url"] as? String,
+                      let revision = request["payloadRevision"] as? Int, revision >= 0,
+                      UInt64(revision) == manager.payloadMutationRevision,
+                      let script = manager.userScript(withId: scriptID),
+                      scriptAllowsFrame(script, message: message, manager: manager) else {
+                    return ["ok": false, "error": "userscript-state-changed",
+                            "payloadRevision": manager.payloadMutationRevision]
                 }
+                if request.keys.contains("contentDigest") {
+                    let expected = script.isUserStyle
+                        ? UserStyleSupport.effectiveCSS(forContent: script.content, compiledBody: script.compiledStyleBody, url: pageURL)
+                        : runtimeConfiguredExecutableContent(for: script)
+                    guard let expected, let digest = request["contentDigest"] as? String,
+                          digest.range(of: "^[0-9a-f]{64}$", options: .regularExpression) != nil,
+                          digest == UserStylePreprocessorService.digest(expected) else {
+                        return ["ok": false, "error": "userscript-integrity-mismatch",
+                                "payloadRevision": manager.payloadMutationRevision]
+                    }
+                }
+                return ["ok": true, "payloadRevision": manager.payloadMutationRevision]
             }
-            context.completeRequest(returningItems: [createResponse(with: [
-                "ok": true, "payloadRevision": manager.payloadMutationRevision
-            ])])
+            context.completeRequest(returningItems: [createResponse(with: ["results": results])])
         }
     }
 
