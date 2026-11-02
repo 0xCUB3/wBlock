@@ -51,12 +51,9 @@ struct ListActionsToolbar<Primary: View, Apply: View, Leading: View>: ViewModifi
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var contentWidth: CGFloat = 0
 
-    /// Swaps the buttons and the search field at once. Animating the swap made
-    /// iOS morph the old and new glass shapes through a blur.
+    /// Opening keeps the system's pace; closing runs at half of it.
     private func setSearching(_ searching: Bool) {
-        var transaction = Transaction()
-        transaction.disablesAnimations = true
-        withTransaction(transaction) { focusRequest = searching }
+        withAnimation(.smooth(duration: searching ? 0.5 : 0.25)) { focusRequest = searching }
     }
     #else
     @State private var isSearchOpen = false
@@ -119,8 +116,7 @@ struct ListActionsToolbar<Primary: View, Apply: View, Leading: View>: ViewModifi
                         ToolbarItem(placement: .topBarTrailing) {
                             Button {
                                 // The keyboard goes first, and at once: a swap made
-                                // while it animates away is swept into that
-                                // animation, and its slide made Close drag.
+                                // while it animates away rides its slower curve.
                                 UIView.performWithoutAnimation {
                                     UIApplication.shared.sendAction(
                                         #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
