@@ -1052,5 +1052,73 @@ for (const [grants, expected] of [[['GM.setValue', 'GM_getValue'], 'undefined'],
   check(`content-context unsafeWindow follows its grant: ${grants.join(',')}`, probe.__uwType === expected && probe.__uwOnGM === (expected === 'object') && !('unsafeWindow' in probe));
 }
 
+// Empty frames stay subscribed to changes without installing script machinery.
+{
+  let scripts = [];
+  const probe = buildContentScriptSandbox(null, [], 'https://example.com/empty', [], true,
+    async message => message.action === 'getUserScripts' ? { userScripts: scripts } : { ok: true });
+  probe.document.readyState = 'loading';
+  probe.document.body = null;
+  let observers = 0;
+  probe.MutationObserver = class { observe() { observers++; } disconnect() {} };
+  const listeners = windowMessageListeners.length;
+  vm.createContext(probe);
+  vm.runInContext(source, probe);
+  await tick();
+  check('empty configuration installs no readiness observer or GM bridge',
+    observers === 0 && !probe.__wBlockMenuCommandBridge && windowMessageListeners.length === listeners);
+  await probe.__onMessage({ type: 'wblock:clearDocumentStartSessionCache' });
+  await tick();
+  check('an empty frame can invalidate before its bridges exist',
+    probe.__sentMessages.filter(message => message.action === 'getUserScripts').length === 2);
+  probe.document.readyState = 'complete';
+  probe.document.body = makeElement('body');
+  scripts = [{ ...fakeScript, id: 'later-script', content: 'window.__laterScript = true;' }];
+  await probe.__onMessage({ type: 'wblock:clearDocumentStartSessionCache' });
+  await tick();
+  check('a newly enabled script installs its bridges once',
+    !!probe.__wBlockMenuCommandBridge && windowMessageListeners.length === listeners + 1);
+  await probe.__onMessage({ type: 'wblock:clearDocumentStartSessionCache' });
+  await tick();
+  check('further invalidation does not duplicate bridges', windowMessageListeners.length === listeners + 1);
+}
+
+// Readiness machinery is only needed by scripts waiting for a document phase.
+for (const runAt of ['document-start', 'document-body']) {
+  const probe = buildContentScriptSandbox(null, [{ ...fakeScript, runAt, injectInto: 'content',
+    content: 'window.__phaseRuns = (window.__phaseRuns || 0) + 1;' }]);
+  probe.document.readyState = 'loading';
+  probe.document.body = null;
+  const observers = [];
+  probe.MutationObserver = class {
+    constructor(callback) { this.callback = callback; }
+    observe() { observers.push(this); }
+    disconnect() { this.disconnected = true; }
+  };
+  vm.createContext(probe); vm.runInContext(source, probe); await tick();
+  check(`${runAt} only observes when waiting for body`, observers.length === (runAt === 'document-body' ? 1 : 0));
+  check(`${runAt} respects the document phase`, (probe.__phaseRuns || 0) === (runAt === 'document-start' ? 1 : 0));
+  probe.document.body = makeElement('body');
+  for (const observer of observers) observer.callback();
+  await tick();
+  check(`${runAt} executes once when ready`, probe.__phaseRuns === 1 && observers.every(observer => observer.disconnected));
+}
+
+// Native replies can arrive after DOMContentLoaded but before the load event.
+{
+  const probe = buildContentScriptSandbox(null, [{ ...fakeScript, runAt: 'document-idle', injectInto: 'content',
+    content: 'window.__idleRuns = (window.__idleRuns || 0) + 1;' }]);
+  probe.document.readyState = 'interactive';
+  const loads = [];
+  const add = probe.addEventListener;
+  probe.addEventListener = (type, callback) => { if (type === 'load') loads.push(callback); add(type, callback); };
+  vm.createContext(probe); vm.runInContext(source, probe); await tick();
+  check('document-idle waits when its reply arrives after DOMContentLoaded', !probe.__idleRuns);
+  probe.document.readyState = 'complete';
+  for (const callback of loads) callback();
+  await tick();
+  check('document-idle still executes on load after a late reply', probe.__idleRuns === 1);
+}
+
 console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);
 process.exit(failures === 0 ? 0 : 1);

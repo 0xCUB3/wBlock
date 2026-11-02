@@ -25,12 +25,13 @@ const HOST = "example.com";
 const STYLE_ID = "wblock-zapper-style";
 const LEGACY_KEY = `wblock.zapperRulesDisabled.v1:${HOST}`;
 
-function makeSandbox({ nativeRules, nativeDisabled, localStorageSeed = {}, isTopFrame = true, getRulesDelayMs = 0, siteStateDelayMs = 0, broadcastReload = null }) {
+function makeSandbox({ nativeRules, nativeDisabled, inheritedRules = [], localStorageSeed = {}, isTopFrame = true, getRulesDelayMs = 0, siteStateDelayMs = 0, broadcastReload = null }) {
   const native = {
     rules: [...nativeRules],
     disabled: nativeDisabled,
     setDisabledCalls: [],
     getRulesCalls: 0,
+    siteStateCalls: 0,
   };
   const storage = new Map(Object.entries(localStorageSeed));
   const elementsById = new Map();
@@ -68,7 +69,7 @@ function makeSandbox({ nativeRules, nativeDisabled, localStorageSeed = {}, isTop
             disabled: native.disabled
           }), getRulesDelayMs));
         }
-        return { ok: true, rules: [...native.rules], disabled: native.disabled };
+        return { ok: true, rules: [...native.rules], inheritedRules, disabled: native.disabled };
       case "setSiteZapperDisabled":
         native.disabled = Boolean(message.disabled);
         native.setDisabledCalls.push({ hostname: message.hostname, disabled: native.disabled });
@@ -120,6 +121,7 @@ function makeSandbox({ nativeRules, nativeDisabled, localStorageSeed = {}, isTop
           return handleNativeAction({ ...message, action: "setSiteZapperDisabled" });
         }
         if (message.action === "wblock:getSiteDisabledState") {
+          native.siteStateCalls += 1;
           if (siteStateDelayMs) await new Promise(resolve => setTimeout(resolve, siteStateDelayMs));
           return { ok: true, ...handleNativeAction({ ...message, action: "getSiteDisabledState" }) };
         }
@@ -229,6 +231,25 @@ function loadScript(sandbox) {
   loadScript(env.sandbox);
   await new Promise((r) => setTimeout(r, 20));
   check("subframes do not start periodic rule polling", env.intervalDelays.length === 0);
+  check("empty zapper rules create no styles", env.styleText() === null);
+  check("empty zapper rules need no site-state messages", env.native.siteStateCalls === 0);
+  env.native.rules = ['.later'];
+  await env.sendRuntimeMessage({ type: 'wblock:zapper:reloadRules' });
+  check("an initially empty frame applies newly added rules", env.styleText().includes('.later'));
+  env.native.rules = [];
+  await env.sendRuntimeMessage({ type: 'wblock:zapper:reloadRules' });
+  check("removing all rules clears existing CSS", env.styleText() === '');
+  const stateCalls = env.native.siteStateCalls;
+  await env.sendRuntimeMessage({ type: 'wblock:zapper:reloadRules' });
+  check("clearing empty rules needs no site-state message", env.native.siteStateCalls === stateCalls);
+}
+
+// An empty local configuration must still apply a parent domain's rules.
+{
+  const env = makeSandbox({ nativeRules: [], inheritedRules: ['.parent-ad'], nativeDisabled: false, isTopFrame: false });
+  loadScript(env.sandbox);
+  check("empty local rules still apply inherited rules", await waitFor(() => env.styleText()?.includes('.parent-ad')));
+  check("inherited rules still check site state", env.native.siteStateCalls > 0);
 }
 
 // The top-frame safety tick asks the background to broadcast a reload, so an

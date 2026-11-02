@@ -366,10 +366,19 @@
   }
 
   async function applyRulesToPage(rules) {
+    const selectors = normalizeRules([...rules, ...state.inheritedRules]);
+    if (selectors.length === 0 && state.tempRules.length === 0) {
+      // Clearing needs no permission lookup, and empty frames need no styles.
+      for (const id of [STYLE_ID, TEMP_STYLE_ID]) {
+        const style = document.getElementById(id);
+        if (style && style.textContent) style.textContent = '';
+      }
+      return;
+    }
     const style = ensureStyleElement(STYLE_ID);
     const tempStyle = ensureStyleElement(TEMP_STYLE_ID);
     const suppressed = await shouldSuppressZapperRules(state.host || safeHostname());
-    style.textContent = suppressed ? '' : buildHideCss(normalizeRules([...rules, ...state.inheritedRules]));
+    style.textContent = suppressed ? '' : buildHideCss(selectors);
     tempStyle.textContent = suppressed ? '' : buildHideCss(state.tempRules);
   }
 

@@ -226,21 +226,11 @@ if (window.wBlockUserscriptInjectorHasRun) {
 
         init() {
             wBlockLog('[wBlock] UserScriptEngine init.');
-            this.setupDocumentEventListeners();
             // Listen for response from native app before making any requests.
             // On Safari App Extensions, responses can arrive very quickly and be missed
             // if the listener isn't attached yet.
             this.setupMessageListener();
             if (!this.extensionContextAvailable) return;
-
-            // Bridge GM menu command registration/invocation between userscripts
-            // and the extension popup.
-            this.setupMenuCommandBridge();
-
-            // Bridge page-context GM storage writes through the extension/native layer.
-            this.setupStorageBridge();
-
-            // Privileged GM calls never arrive over page events.
 
             // Validate cached permissions before executing, with no native bridge privileges.
             const warmStartValidationDispatch = this.loadWarmStartScripts();
@@ -261,7 +251,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
             this.pendingScripts = [];
             this.tubeCleanerSettingsScript = null;
             this.popupBlockerScript = null;
-            this.pendingPageWrites.clear();
+            this.pendingPageWrites?.clear();
             this.scriptPayloadPromises.clear();
             this.warmStartValidationPromises.clear();
             this.injectingScripts.clear();
@@ -762,9 +752,11 @@ if (window.wBlockUserscriptInjectorHasRun) {
         }
 
         setupDocumentEventListeners() {
+            if (this.documentEventsReady) return;
+            this.documentEventsReady = true;
             // Listen for document ready states to inject pending scripts
-            if (document.readyState === 'loading') {
-                wBlockLog('[wBlock] Document is loading, setting up event listeners for ready states.');
+            if (document.readyState !== 'complete') {
+                wBlockLog('[wBlock] Waiting for document readiness.');
                 
                 document.addEventListener('DOMContentLoaded', () => {
                     wBlockLog('[wBlock] DOMContentLoaded event fired, retrying pending scripts.');
@@ -1182,6 +1174,13 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 wBlockLog('[wBlock] No userscripts to inject.');
                 return;
             }
+            // Empty frames only listen for configuration changes. Install the
+            // GM bridges when a script needs them.
+            if (!this.scriptRuntimeReady) {
+                this.scriptRuntimeReady = true;
+                this.setupMenuCommandBridge();
+                this.setupStorageBridge();
+            }
             const runAtPriority = { 'document-start': 0, 'document-body': 1, 'document-end': 2, 'document-idle': 3 };
             const orderedScripts = [...userScripts].sort((left, right) => {
                 const leftPriority = runAtPriority[left && left.runAt] ?? 2;
@@ -1344,6 +1343,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 if (!this.pendingScripts.some(s => s.name === script.name)) {
                     wBlockLog(`[wBlock] Adding ${script.name} to pending scripts list.`);
                     this.pendingScripts.push(script);
+                    this.setupDocumentEventListeners();
                 }
                 return;
             }

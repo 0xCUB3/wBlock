@@ -52,7 +52,9 @@ for (const resource of resources) {
   const fn = /^\s*function\s+([A-Za-z_$][\w$]*)\s*\(/.exec(source(resource));
   if (!fn) continue;
   const name = resource.name.slice(0, -'.js'.length);
-  const body = withDependencies(resource.name).join('\n');
+  const incremental = resource.name === 'remove-class.js' || resource.name === 'remove-attr.js';
+  const body = withDependencies(resource.name).join('\n')
+    + (incremental ? '\n' + readFileSync(path.join(here, 'dom-token-removal.js'), 'utf8') : '');
   const file = `(function () {
 const queue = globalThis.__wbeScriptletCalls;
 const calls = queue && queue[${JSON.stringify(name)}];
@@ -60,7 +62,7 @@ if (!calls) return;
 delete queue[${JSON.stringify(name)}];
 ${body}
 for (const args of calls) {
-try { ${fn[1]}(...args); } catch (_) {}
+try { ${incremental ? `if (removeDOMTokens(${JSON.stringify(name)}, ...args)) continue; ` : ''}${fn[1]}(...args); } catch (_) {}
 }
 })();
 `;
