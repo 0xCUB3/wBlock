@@ -135,17 +135,30 @@ struct ProgressBanners<Leading: View>: ViewModifier {
         return filterManager.showingNoUpdatesAlert ? .noUpdates : nil
     }
 
+    private var dismissDoneBanner: (() -> Void)? {
+        switch banner {
+        case .applied: return { filterManager.showingAppliedBanner = false }
+        case .noUpdates: return { filterManager.showingNoUpdatesAlert = false }
+        default: return nil
+        }
+    }
+
     func body(content: Content) -> some View {
+        let dismiss = dismissDoneBanner
         // The card overlays the content under the leading bar, so it never
         // covers the pause banner.
         content
+            .simultaneousGesture(
+                TapGesture().onEnded { dismiss?() },
+                including: dismiss == nil ? .subviews : .all
+            )
             .overlay(alignment: .top) {
                 ZStack {
                     if let banner {
                         // One card stays through a swap; the old content fades
                         // out before the new one fades in, so they never overlap.
                         ZStack {
-                            bannerContent(banner)
+                            bannerContent(banner, dismiss: dismiss ?? {})
                                 .id(banner)
                                 .transition(.asymmetric(
                                     insertion: .opacity.animation(.easeOut(duration: 0.15).delay(0.1)),
@@ -162,6 +175,9 @@ struct ProgressBanners<Leading: View>: ViewModifier {
                         .shadow(color: .black.opacity(0.12), radius: 8, y: 2)
                         #endif
                         .liquidGlassCompat(cornerRadius: 16)
+                        .contentShape(RoundedRectangle(cornerRadius: 16))
+                        // Keep taps on the card from reaching the content underneath.
+                        .onTapGesture {}
                         .transition(.move(edge: .top).combined(with: .opacity))
                     }
                 }
@@ -173,7 +189,7 @@ struct ProgressBanners<Leading: View>: ViewModifier {
     }
 
     @ViewBuilder
-    private func bannerContent(_ banner: Banner) -> some View {
+    private func bannerContent(_ banner: Banner, dismiss: @escaping () -> Void) -> some View {
         switch banner {
         case .apply:
             ApplyProgressBanner(presentation: .make(from: applyProgress.state))
@@ -185,17 +201,17 @@ struct ProgressBanners<Leading: View>: ViewModifier {
                 message: String.localizedStringWithFormat(
                     String(localized: "%@ Safari rules"),
                     filterManager.lastRuleCount.formatted()
-                )
-            ) { filterManager.showingAppliedBanner = false }
+                ),
+                dismiss: dismiss
+            )
         case .noUpdates:
             DoneBanner(
                 title: String(localized: "No Updates Found"),
-                message: String(localized: "You're already using the latest filters.")
+                message: String(localized: "You're already using the latest filters."),
+                dismiss: dismiss
             ) {
-                filterManager.showingNoUpdatesAlert = false
-            } action: {
                 Button("Apply Anyway") {
-                    filterManager.showingNoUpdatesAlert = false
+                    dismiss()
                     filterManager.forceApplyChanges()
                 }
             }
