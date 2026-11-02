@@ -1080,7 +1080,7 @@ extension AppFilterManager {
 
                 for targetInfo in platformTargets {
                     let saveResult = try ContentBlockerService.saveContentBlockerIfChanged(
-                        jsonRules: ContentBlockerService.inertContentBlockerRulesJSON,
+                        jsonRules: Data(ContentBlockerService.inertContentBlockerRulesJSON.utf8),
                         groupIdentifier: groupIdentifier,
                         targetRulesFilename: targetInfo.rulesFilename
                     )
