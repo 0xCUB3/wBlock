@@ -415,8 +415,7 @@ extension RemoveParamDNRRuleGenerator {
 
     /// Writes the carve-outs the next content-blocker conversion appends, or
     /// an empty file when they are not safe. Returns the number written.
-    static func saveRedirectCarveOuts(for rules: [DeclarativeRule], containerURL: URL) -> Int {
-        let lines = rules.compactMap(carveOutLine)
+    static func saveRedirectCarveOutLines(_ lines: [String], containerURL: URL) -> Int {
         let allowed = carveOutsAllowed(
             status: loadRedirectStatus(containerURL: containerURL), redirectCount: lines.count
         )

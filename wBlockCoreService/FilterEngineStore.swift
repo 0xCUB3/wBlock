@@ -28,8 +28,8 @@ enum FilterEngineStore {
 
     /// Builds and publishes the engine for `runtimeRules`. Unchanged rules are
     /// not rebuilt; a publish that a newer one overtook is abandoned.
-    static func publish(runtimeRules: String, groupIdentifier: String) throws {
-        guard let containerURL = FileManager.default.containerURL(
+    static func publish(runtimeRules: String, groupIdentifier: String, containerURL explicitContainerURL: URL? = nil) throws {
+        guard let containerURL = explicitContainerURL ?? FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: groupIdentifier
         ) else { throw PublishError.containerNotFound }
         let directory = containerURL.appendingPathComponent(directoryName, isDirectory: true)

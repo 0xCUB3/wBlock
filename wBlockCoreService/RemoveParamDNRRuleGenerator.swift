@@ -60,7 +60,16 @@ public enum RemoveParamDNRRuleGenerator {
         "other": ["other"]
     ]
 
-    public struct Summary: Equatable {
+    public struct Summary: Equatable, Codable {
+        func withRedirectCarveOuts(_ count: Int) -> Summary {
+            Summary(
+                generatedRules: generatedRules, removeParamRules: removeParamRules,
+                exceptionRules: exceptionRules, skippedRules: skippedRules,
+                truncatedRules: truncatedRules, disabledSiteAllowRules: disabledSiteAllowRules,
+                resourceRedirectRules: resourceRedirectRules, redirectCarveOuts: count, version: version
+            )
+        }
+
         public let generatedRules: Int
         public let removeParamRules: Int
         public let exceptionRules: Int
@@ -245,12 +254,24 @@ public enum RemoveParamDNRRuleGenerator {
         for filters: [FilterList],
         disabledSites: [String],
         blockedCount: Bool,
-        groupIdentifier: String
+        groupIdentifier: String,
+        containerURL explicitContainerURL: URL? = nil
     ) throws -> Summary {
-        guard let containerURL = FileManager.default.containerURL(
+        guard let containerURL = explicitContainerURL ?? FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: groupIdentifier
         ) else {
             throw CocoaError(.fileNoSuchFile)
+        }
+
+        let inputKey = generationInputKey(
+            for: filters, disabledSites: disabledSites, blockedCount: blockedCount, containerURL: containerURL
+        )
+        if let saved = savedGeneration(containerURL: containerURL), saved.inputKey == inputKey,
+           rulesFilesExist(containerURL: containerURL) {
+            // The rules are unchanged. Carve-outs also depend on the redirect status
+            // file, which changes without any input here, so they are rechecked.
+            let carveOuts = saveRedirectCarveOutLines(saved.carveOutLines, containerURL: containerURL)
+            return saved.summary.withRedirectCarveOuts(carveOuts)
         }
 
         let extracted = extractedDNRSourceRules(
@@ -264,12 +285,13 @@ public enum RemoveParamDNRRuleGenerator {
             redirectSources: extracted.redirectSources,
             disabledSites: disabledSites
         )
-        try saveRules(generated.rules, groupIdentifier: groupIdentifier)
+        try saveRules(generated.rules, containerURL: containerURL)
         let blockedCountRules = blockedCount
             ? generateBlockedCountRules(from: extracted.blockedCount, disabledSites: disabledSites)
             : []
         try saveBlockedCountRules(blockedCountRules, containerURL: containerURL)
-        let carveOuts = saveRedirectCarveOuts(for: generated.rules, containerURL: containerURL)
+        let carveOutLines = generated.rules.compactMap(carveOutLine)
+        let carveOuts = saveRedirectCarveOutLines(carveOutLines, containerURL: containerURL)
         let summary = Summary(
             generatedRules: generated.summary.generatedRules,
             removeParamRules: generated.summary.removeParamRules,
@@ -281,6 +303,10 @@ public enum RemoveParamDNRRuleGenerator {
             redirectCarveOuts: carveOuts,
             version: generated.summary.version
         )
+        // Written last: a generation that stopped midway has no state to match.
+        saveGeneration(SavedGeneration(
+            schema: generationSchema, inputKey: inputKey, summary: summary, carveOutLines: carveOutLines
+        ), containerURL: containerURL)
         os_log(
             .info,
             "Saved %d DNR rules (%d source removeparam, %d exceptions, %d skipped, %d truncated, %d disabled-site allow rules, %d resource redirects, %d native carve-outs, %d blocked-count rules)",
@@ -295,6 +321,65 @@ public enum RemoveParamDNRRuleGenerator {
             blockedCountRules.count
         )
         return summary
+    }
+
+    // MARK: - Generation state
+
+    /// What the saved rules were generated from. A match skips extraction,
+    /// generation, and the rule writes; the carve-out check still runs.
+    private struct SavedGeneration: Codable {
+        let schema: Int
+        let inputKey: String
+        let summary: Summary
+        let carveOutLines: [String]
+    }
+
+    /// Bump when the generator's output changes for the same inputs.
+    private static let generationSchema = 1
+    private static let generationStateFilename = "dnr-generation-state.json"
+
+    private final class BuildMarker {}
+
+    /// Source files count by name, size, and modification time, as in the extraction cache.
+    private static func generationInputKey(
+        for filters: [FilterList],
+        disabledSites: [String],
+        blockedCount: Bool,
+        containerURL: URL
+    ) -> String {
+        let bundle = Bundle(for: BuildMarker.self)
+        var canonical = "schema=\(generationSchema)\nbuild=\(bundle.infoDictionary?["CFBundleShortVersionString"] ?? "")"
+        canonical += "|\(bundle.infoDictionary?["CFBundleVersion"] ?? "")\n"
+        canonical += "blocked=\(blockedCount ? blockedCountExtractionFormat : 0)\n"
+        canonical += "disabled=\(disabledSites.joined(separator: "\n"))\n"
+        for filter in filters {
+            guard let sourceURL = ContentBlockerIncrementalCache.existingLocalFileURL(
+                for: filter,
+                containerURL: containerURL
+            ) else { continue }
+            canonical += "\(sourceURL.lastPathComponent)|\(fileFingerprint(at: sourceURL) ?? "missing")\n"
+        }
+        canonical += "redirect=\(RedirectFeed.sources(for: filters).joined(separator: "\n"))"
+        return sha256Hex(data: Data(canonical.utf8))
+    }
+
+    private static func savedGeneration(containerURL: URL) -> SavedGeneration? {
+        guard let data = try? Data(contentsOf: containerURL.appendingPathComponent(generationStateFilename)),
+              let saved = try? JSONDecoder().decode(SavedGeneration.self, from: data),
+              saved.schema == generationSchema
+        else { return nil }
+        return saved
+    }
+
+    private static func saveGeneration(_ saved: SavedGeneration, containerURL: URL) {
+        guard let data = try? JSONEncoder().encode(saved) else { return }
+        try? FilterArtifactStorage.write(data, to: containerURL.appendingPathComponent(generationStateFilename))
+    }
+
+    private static func rulesFilesExist(containerURL: URL) -> Bool {
+        [rulesFilename, blockedCountRulesFilename].allSatisfy {
+            FileManager.default.fileExists(atPath: containerURL.appendingPathComponent($0).path)
+        }
     }
 
     // MARK: - Extraction cache
@@ -394,14 +479,20 @@ public enum RemoveParamDNRRuleGenerator {
     }
 
     public static func clearSavedRules(groupIdentifier: String) throws -> Summary {
-        let rules: [DeclarativeRule] = []
-        try saveRules(rules, groupIdentifier: groupIdentifier)
-        if let containerURL = FileManager.default.containerURL(
+        guard let containerURL = FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: groupIdentifier
-        ) {
-            _ = saveRedirectCarveOuts(for: rules, containerURL: containerURL)
-            try saveBlockedCountRules([], containerURL: containerURL)
+        ) else {
+            throw CocoaError(.fileNoSuchFile)
         }
+        return try clearSavedRules(containerURL: containerURL)
+    }
+
+    static func clearSavedRules(containerURL: URL) throws -> Summary {
+        let rules: [DeclarativeRule] = []
+        try saveRules(rules, containerURL: containerURL)
+        _ = saveRedirectCarveOutLines([], containerURL: containerURL)
+        try saveBlockedCountRules([], containerURL: containerURL)
+        try? FileManager.default.removeItem(at: containerURL.appendingPathComponent(generationStateFilename))
         return Summary(
             generatedRules: 0,
             removeParamRules: 0,
@@ -465,13 +556,7 @@ public enum RemoveParamDNRRuleGenerator {
         ]
     }
 
-    private static func saveRules(_ rules: [DeclarativeRule], groupIdentifier: String) throws {
-        guard let containerURL = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: groupIdentifier
-        ) else {
-            throw CocoaError(.fileNoSuchFile)
-        }
-
+    private static func saveRules(_ rules: [DeclarativeRule], containerURL: URL) throws {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
         let data = try encoder.encode(rules)
