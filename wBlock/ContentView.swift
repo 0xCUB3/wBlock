@@ -408,7 +408,6 @@ struct ContentView: View {
             #endif
                 // Inside the stack, like Userscripts; iOS ignores toolbar items attached outside it.
                 .modifier(filtersToolbar)
-                .toolbar { PauseBlockingToolbarItem(filterManager: filterManager) }
         }
         #if os(iOS)
             .searchableCompat(
@@ -440,6 +439,8 @@ struct ContentView: View {
             .help("Add Filter")
         } apply: {
             applyChangesToolbarButton
+        } leading: {
+            PauseBlockingButton(filterManager: filterManager)
         }
     }
 
@@ -495,10 +496,10 @@ struct ContentView: View {
                     await filterManager.checkForUpdates(scope: .scripts, presentation: .refresh)
                 },
                 applyButton: AnyView(applyChangesToolbarButton),
+                pauseButton: AnyView(PauseBlockingButton(filterManager: filterManager)),
                 isApplying: filterManager.showingApplyProgressSheet
             )
                 .modifier(topBanners)
-                .toolbar { PauseBlockingToolbarItem(filterManager: filterManager) }
                 #if os(iOS)
                     .navigationBarTitleDisplayMode(.inline)
                 #endif

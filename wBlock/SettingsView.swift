@@ -1452,13 +1452,17 @@ struct PauseBlockingToolbarItem: ToolbarContent {
 
     var body: some ToolbarContent {
         #if os(macOS)
-        ToolbarItem(placement: .navigation) { button }
+        ToolbarItem(placement: .navigation) { PauseBlockingButton(filterManager: filterManager) }
         #else
-        ToolbarItem(placement: .topBarLeading) { button }
+        ToolbarItem(placement: .topBarLeading) { PauseBlockingButton(filterManager: filterManager) }
         #endif
     }
+}
 
-    private var button: some View {
+struct PauseBlockingButton: View {
+    @ObservedObject var filterManager: AppFilterManager
+
+    var body: some View {
         let isPaused = !filterManager.pausedComponents.isEmpty
         let title: LocalizedStringKey = isPaused ? "Resume Blocking" : "Pause Blocking"
         return Menu {

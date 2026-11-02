@@ -37,13 +37,16 @@ extension View {
 /// Show Enabled and Add as system toolbar items with the system's own sizing.
 /// On iOS and iPadOS, Update/Apply sits alone at the leading edge. That is a
 /// settled decision: do not regroup it with the trailing actions again.
-struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
+struct ListActionsToolbar<Primary: View, Apply: View, Leading: View>: ViewModifier {
     @Binding var searchText: String
     @Binding var focusRequest: Bool
     @Binding var showEnabledOnly: Bool
     let searchPrompt: LocalizedStringKey
     @ViewBuilder let primary: () -> Primary
     @ViewBuilder let apply: () -> Apply
+    /// Pause Blocking. It lives here so iPhone search can clear it with the
+    /// rest of the bar; a separate leading item left the field no room.
+    @ViewBuilder let leading: () -> Leading
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var contentWidth: CGFloat = 0
@@ -67,6 +70,7 @@ struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
         // spacing between them (#999).
         if #available(macOS 26.0, *) {
             content.toolbar {
+                ToolbarItem(placement: .navigation) { leading() }
                 ToolbarItem(placement: .navigation) { apply() }
                     .toolbarVisibilityPriorityCompat(.high)
                 ToolbarItem(placement: .primaryAction) {
@@ -86,6 +90,7 @@ struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
             .toolbarBackground(.visible, for: .windowToolbar)
         } else {
             content.toolbar {
+                ToolbarItem(placement: .navigation) { leading() }
                 ToolbarItem(placement: .navigation) { apply() }
                 ToolbarItem(placement: .primaryAction) {
                     ToolbarSearchField(text: $searchText, isExpanded: $focusRequest, prompt: searchPrompt)
@@ -112,6 +117,7 @@ struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
                             }
                         }
                     } else {
+                        ToolbarItem(placement: .topBarLeading) { leading() }
                         ToolbarItem(placement: .topBarLeading) { apply() }
                             .toolbarVisibilityPriorityCompat(.high)
                         // Search, Show Enabled Only, Add: the Mac order (#999).
@@ -133,6 +139,7 @@ struct ListActionsToolbar<Primary: View, Apply: View>: ViewModifier {
             // No `if` here: ToolbarContentBuilder can't branch before iOS 16 and
             // crashes on iOS 15.
             content.toolbar {
+                ToolbarItem(placement: .navigationBarLeading) { leading() }
                 ToolbarItem(placement: .navigationBarLeading) { apply() }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     if horizontalSizeClass != .regular {

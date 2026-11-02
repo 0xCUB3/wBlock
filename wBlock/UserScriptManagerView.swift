@@ -147,6 +147,7 @@ struct UserScriptManagerView: View {
     let onRefresh: () async -> Void
     /// The Filters tab's Update/Apply button, shared so both tabs match (#953).
     let applyButton: AnyView
+    let pauseButton: AnyView
     /// Rows lock while an apply the user started runs, so nothing changes
     /// under it and is quietly left for the next one.
     var isApplying = false
@@ -444,6 +445,8 @@ struct UserScriptManagerView: View {
             addMenu
         } apply: {
             applyButton
+        } leading: {
+            pauseButton
         }
     }
 
