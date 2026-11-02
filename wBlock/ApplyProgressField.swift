@@ -312,7 +312,11 @@ private struct DoneBanner<Action: View>: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .contain)
         .task {
-            try? await Task.sleep(nanoseconds: 4_000_000_000)
+            do {
+                try await Task.sleep(nanoseconds: 4_000_000_000)
+            } catch {
+                return
+            }
             dismiss()
         }
     }
