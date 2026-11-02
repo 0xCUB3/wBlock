@@ -102,69 +102,16 @@
     } catch (_) {}
     return false;
   };
-  // The main interstitial is served from the visited host, so its URL does not
-  // identify it. Its orchestration <script src="/cdn-cgi/challenge-platform/...">
-  // and challenge markers appear during parsing, so watch for them before
-  // applying configuration or rewriting the URL.
-  const startCloudflareChallengeWatch = () => {
-    if (cloudflareChallengeContext) return;
-    if (cloudflareChallengeTitle(document.title)) {
+  // Check markup only before applying a local payload or rewriting the URL.
+  // Neither action needs an observer watching every parsing mutation.
+  const isCloudflareChallenge = (checkMarkup = false) => {
+    if (!cloudflareChallengeContext && (isCloudflareChallengeFrameNow()
+      || cloudflareChallengeTitle(document.title)
+      || (checkMarkup && document.querySelector('script[src^="/cdn-cgi/challenge-platform"],script[src*="challenges.cloudflare.com"],#challenge-form,#challenge-stage,#challenge-runner')))) {
       markCloudflareChallenge();
-      return;
     }
-    const root = typeof document !== "undefined" ? document.documentElement : null;
-    if (!root || typeof MutationObserver === "undefined") {
-      return;
-    }
-    // The interstitial is a real http(s) document; blank and srcdoc frames
-    // never carry it.
-    if (!/^https?:$/i.test((window.location && window.location.protocol) || "")) return;
-    const challengeSelector = 'script[src^="/cdn-cgi/challenge-platform"],script[src*="challenges.cloudflare.com"],#challenge-form,#challenge-stage,#challenge-runner';
-    // Inspect only what was added. Re-querying the whole document on every
-    // mutation made DOM-heavy pages pay five full searches per change.
-    const isChallengeNode = node => node.nodeType === 1
-      && (node.matches(challengeSelector) || !!node.querySelector(challengeSelector)
-        || (node.tagName === "TITLE" && cloudflareChallengeTitle(document.title)));
-    try {
-      const observer = new MutationObserver(mutations => {
-        if (cloudflareChallengeContext) {
-          observer.disconnect();
-          return;
-        }
-        for (const mutation of mutations) {
-          const titleText = mutation.target.nodeName === "TITLE";
-          for (const node of mutation.addedNodes) {
-            if ((titleText && cloudflareChallengeTitle(document.title)) || isChallengeNode(node)) {
-              stop();
-              markCloudflareChallenge();
-              return;
-            }
-          }
-        }
-      });
-      const stop = () => {
-        observer.disconnect();
-        document.removeEventListener("DOMContentLoaded", finish);
-      };
-      // The markers arrive while the document parses, so one last full check
-      // at DOMContentLoaded ends the watch, even after the observer timed out.
-      const finish = () => {
-        stop();
-        if (!cloudflareChallengeContext
-          && (document.querySelector(challengeSelector) || cloudflareChallengeTitle(document.title))) {
-          markCloudflareChallenge();
-        }
-      };
-      observer.observe(root, { childList: true, subtree: true });
-      document.addEventListener("DOMContentLoaded", finish);
-      setTimeout(() => observer.disconnect(), 5000);
-    } catch (_) {}
+    return cloudflareChallengeContext;
   };
-  if (isCloudflareChallengeFrameNow()) {
-    markCloudflareChallenge();
-  } else {
-    startCloudflareChallengeWatch();
-  }
   /**
    * Applies a payload in this frame when the background page could not, which
    * is the case for blank frames. Filters come from procedural.js, which is
@@ -226,7 +173,7 @@
       || response.disabled || response.paused);
   };
   const main = async () => {
-    if (cloudflareChallengeContext) return;
+    if (isCloudflareChallenge()) return;
     const message = {
       type: MessageType.InitContentScript,
       // Keep top-frame cached scriptlets independent of userscript hydration.
@@ -243,7 +190,7 @@
         }));
         if (!(response && response.state === "error")
           || attempt >= INIT_RETRY_DELAYS_MS.length
-          || cloudflareChallengeContext) {
+          || isCloudflareChallenge()) {
           return response;
         }
         await new Promise(resolve => setTimeout(resolve, INIT_RETRY_DELAYS_MS[attempt]));
@@ -259,12 +206,10 @@
     initializationStatePromise = configPromise.then(stateFromInitResponse);
     const response = await configPromise;
     if (await initializationStatePromise) return;
-    // Its markup can arrive while the native response is pending.
-    if (cloudflareChallengeContext) return;
     // If the background page returned payload with configuration, it means
     // that it cannot apply it on its own and commands the content script
     // to do that.
-    if (response !== null && response !== void 0 && response.payload) {
+    if (response?.payload && !isCloudflareChallenge(true)) {
       applyConfiguration(response.payload);
     }
   };
@@ -286,9 +231,9 @@
       // Never rewrite Cloudflare challenge pages: stripping the challenge token
       // or redirecting mid-verification makes the interstitial reload in a loop
       // (issue #476).
-      if (cloudflareChallengeContext) return;
-      if (await (initializationStatePromise || Promise.resolve(false))) return;
       if (window.top !== window) return;
+      if (await (initializationStatePromise || Promise.resolve(false))) return;
+      if (isCloudflareChallenge()) return;
       if (!/^https?:/i.test(window.location.href)) return;
       if (typeof browser === "undefined" || !browser.runtime || !browser.runtime.sendMessage) return;
       const response = await browser.runtime.sendMessage({
@@ -297,7 +242,7 @@
       });
       const cleanUrl = response && typeof response.cleanUrl === "string" ? response.cleanUrl : "";
       if (cleanUrl && cleanUrl !== window.location.href) {
-        if (cloudflareChallengeContext) return;
+        if (isCloudflareChallenge(true)) return;
         console.info("[wBlock] Removing tracking parameters:", window.location.href, "→", cleanUrl);
         if (typeof history !== "undefined" && typeof history.replaceState === "function") {
           history.replaceState(history.state, "", cleanUrl);

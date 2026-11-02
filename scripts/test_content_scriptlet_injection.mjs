@@ -57,6 +57,7 @@ const documentStub = {
   addEventListener() {},
   removeEventListener() {},
   getElementsByTagName: () => [],
+  querySelector: () => null,
   querySelectorAll: () => [],
 };
 
@@ -207,6 +208,7 @@ try {
     addEventListener() {},
     removeEventListener() {},
     getElementsByTagName: () => [],
+    querySelector: () => null,
     querySelectorAll: () => [],
   };
   const raceLocation = { href: "https://youtube.com/", hostname: "youtube.com" };
@@ -352,7 +354,7 @@ const runLifecycleScenario = async ({ href, readyState, topLevel = true, title =
     head: null
   };
   const windowScenario = {
-    location: { href, hostname: url.hostname, pathname: url.pathname },
+    location: { href, hostname: url.hostname, pathname: url.pathname, protocol: url.protocol },
     frameElement: topLevel ? null : {},
     addEventListener: name => windowListeners.push(name),
     removeEventListener() {},
@@ -436,7 +438,7 @@ try {
 // --- Tracking URL cleanup non-reload verification ---
 // Removing tracking parameters in-place must use history.replaceState and must
 // never invoke location.replace / location.reload to avoid infinite reload loops.
-const runTrackingCleanupScenario = async ({ href, cleanUrlResponse, runtimeError = false }) => {
+const runTrackingCleanupScenario = async ({ href, cleanUrlResponse, runtimeError = false, challengeDuringCleanup = false }) => {
   let replaceStateCalls = [];
   let locationReplaceCalls = [];
   let locationReloadCalls = [];
@@ -446,6 +448,7 @@ const runTrackingCleanupScenario = async ({ href, cleanUrlResponse, runtimeError
     hostname: url.hostname,
     pathname: url.pathname,
     search: url.search,
+    protocol: url.protocol,
     replace: target => { locationReplaceCalls.push(target); },
     reload: () => { locationReloadCalls.push(true); }
   };
@@ -520,6 +523,7 @@ const runTrackingCleanupScenario = async ({ href, cleanUrlResponse, runtimeError
             if (runtimeError) {
               return Promise.reject(new Error("runtime disconnected"));
             }
+            if (challengeDuringCleanup) documentScenario.querySelector = () => ({});
             return Promise.resolve({ ok: true, cleanUrl: cleanUrlResponse });
           }
           return Promise.resolve({});
@@ -552,6 +556,13 @@ try {
     "URL tracking cleanup never triggers location.replace or reload",
     cleanUrlResult.locationReplaceCalls.length === 0 && cleanUrlResult.locationReloadCalls.length === 0
   );
+
+  const challengeResult = await runTrackingCleanupScenario({
+    href: "https://example.com/page?token=keep",
+    cleanUrlResponse: "https://example.com/page",
+    challengeDuringCleanup: true
+  });
+  check("challenge markup arriving during cleanup prevents URL rewriting", challengeResult.replaceStateCalls.length === 0);
 
   const unchangedResult = await runTrackingCleanupScenario({
     href: "https://example.com/landing?utm_source=keep&x=1",
