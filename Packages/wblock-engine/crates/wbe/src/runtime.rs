@@ -9,8 +9,10 @@
 use crate::ast::{DomainList, DomainMatcher, ExceptionScope, ParsedLine, Rule};
 use adblock::lists::{FilterSet, ParseOptions, RuleTypes};
 use adblock::resources::PermissionMask;
-use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
+use serde::de::DeserializeOwned;
+use serde::Serialize;
+use std::cmp::Ordering;
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 pub struct Engine {
     cosmetic: adblock::Engine,
@@ -32,26 +34,32 @@ pub struct PagePayload {
     pub generichide: bool,
 }
 
-/// Scriptlet rules keyed by the hostname or entity (`name.*`) they are
-/// scoped to; `""` holds generic ones (cosmetic-filtering.js semantics).
-#[derive(Debug, Default, Serialize, Deserialize)]
+/// Scriptlet calls and the rules that select them, read in place. Loading an
+/// engine copies these tables but decodes nothing; a lookup decodes only the
+/// entries for its host.
 struct Scriptlets {
-    calls: Vec<Vec<String>>,
-    rules: HashMap<String, Vec<(u32, Vec<DomainMatcher>)>>,
-    /// Exceptions: a call index, or `None` for `#@#+js()` (all scriptlets).
-    exceptions: HashMap<String, Vec<Option<u32>>>,
+    /// Entry `i` is call `i`; keys are empty.
+    calls: Table,
+    /// Keyed by hostname or entity (`name.*`); `""` holds generic ones
+    /// (cosmetic-filtering.js semantics). Values: `(call id, exclude)`.
+    rules: Table,
+    /// Keyed like `rules`. Values: call ids, or `null` for `#@#+js()`.
+    exceptions: Table,
 }
 
-impl Scriptlets {
-    fn add(
-        &mut self,
-        index: &mut HashMap<Vec<String>, u32>,
-        exception: bool,
-        domains: DomainList,
-        call: Vec<String>,
-    ) {
+/// Scriptlet rules as `Engine::build` collects them.
+#[derive(Default)]
+struct ScriptletRules {
+    calls: Vec<Vec<String>>,
+    index: HashMap<Vec<String>, u32>,
+    rules: BTreeMap<String, Vec<(u32, Vec<DomainMatcher>)>>,
+    exceptions: BTreeMap<String, Vec<Option<u32>>>,
+}
+
+impl ScriptletRules {
+    fn add(&mut self, exception: bool, domains: DomainList, call: Vec<String>) {
         let id = (!call[0].is_empty()).then(|| {
-            *index.entry(call.clone()).or_insert_with(|| {
+            *self.index.entry(call.clone()).or_insert_with(|| {
                 self.calls.push(call);
                 self.calls.len() as u32 - 1
             })
@@ -80,36 +88,142 @@ impl Scriptlets {
         }
     }
 
+    fn finish(self) -> Scriptlets {
+        Scriptlets {
+            calls: Table::encode(self.calls.iter().map(|call| ("", call))),
+            rules: Table::encode(self.rules.iter().map(|(k, v)| (k.as_str(), v))),
+            exceptions: Table::encode(self.exceptions.iter().map(|(k, v)| (k.as_str(), v))),
+        }
+    }
+}
+
+/// Read-only map from byte keys to JSON values, in sorted key order.
+/// Layout, u32 LE: `n`, `n + 1` key ends, `n + 1` value ends, key bytes,
+/// value bytes. Lookups binary-search the keys in place.
+struct Table(Vec<u8>);
+
+impl Table {
+    fn encode<'a, V: Serialize + 'a>(entries: impl Iterator<Item = (&'a str, &'a V)>) -> Self {
+        let (mut key_ends, mut value_ends) = (vec![0u32], vec![0u32]);
+        let (mut keys, mut values) = (Vec::new(), Vec::new());
+        for (key, value) in entries {
+            keys.extend_from_slice(key.as_bytes());
+            values.extend(serde_json::to_vec(value).expect("scriptlet entry serializes"));
+            key_ends.push(keys.len() as u32);
+            value_ends.push(values.len() as u32);
+        }
+        let mut bytes = (key_ends.len() as u32 - 1).to_le_bytes().to_vec();
+        for end in key_ends.iter().chain(&value_ends) {
+            bytes.extend(end.to_le_bytes());
+        }
+        bytes.extend(keys);
+        bytes.extend(values);
+        Self(bytes)
+    }
+
+    fn parse(bytes: &[u8]) -> Result<Self, String> {
+        let malformed = || "engine: malformed scriptlets".to_string();
+        let word = |at: usize| {
+            bytes
+                .get(at..at + 4)
+                .map(|w| u32::from_le_bytes(w.try_into().unwrap()) as usize)
+        };
+        let n = word(0).ok_or_else(malformed)?;
+        let header = 4 + 8 * (n + 1);
+        if bytes.len() < header {
+            return Err(malformed());
+        }
+        let key_end = |i: usize| word(4 + 4 * i).expect("header checked");
+        let value_end = |i: usize| word(4 + 4 * (n + 1) + 4 * i).expect("header checked");
+        let ordered = (0..=n)
+            .all(|i| i == 0 || (key_end(i - 1) <= key_end(i) && value_end(i - 1) <= value_end(i)));
+        if !ordered || key_end(0) != 0 || value_end(0) != 0 {
+            return Err(malformed());
+        }
+        if header + key_end(n) + value_end(n) != bytes.len() {
+            return Err(malformed());
+        }
+        Ok(Self(bytes.to_vec()))
+    }
+
+    fn len(&self) -> usize {
+        u32::from_le_bytes(self.0[..4].try_into().unwrap()) as usize
+    }
+
+    fn word(&self, at: usize) -> usize {
+        u32::from_le_bytes(self.0[at..at + 4].try_into().unwrap()) as usize
+    }
+
+    fn keys_at(&self) -> usize {
+        4 + 8 * (self.len() + 1)
+    }
+
+    fn key(&self, i: usize) -> &[u8] {
+        let base = self.keys_at();
+        &self.0[base + self.word(4 + 4 * i)..base + self.word(4 + 4 * (i + 1))]
+    }
+
+    fn value(&self, i: usize) -> &[u8] {
+        let n = self.len();
+        let base = self.keys_at() + self.word(4 + 4 * n);
+        let ends = 4 + 4 * (n + 1);
+        &self.0[base + self.word(ends + 4 * i)..base + self.word(ends + 4 * (i + 1))]
+    }
+
+    /// The value at `i`, or the default when it does not decode.
+    fn decode_at<T: DeserializeOwned + Default>(&self, i: usize) -> T {
+        serde_json::from_slice(self.value(i)).unwrap_or_default()
+    }
+
+    /// The value for `key`, or the default when there is none.
+    fn get<T: DeserializeOwned + Default>(&self, key: &str) -> T {
+        let (mut lo, mut hi) = (0, self.len());
+        while lo < hi {
+            let mid = (lo + hi) / 2;
+            match self.key(mid).cmp(key.as_bytes()) {
+                Ordering::Less => lo = mid + 1,
+                Ordering::Greater => hi = mid,
+                Ordering::Equal => return self.decode_at(mid),
+            }
+        }
+        T::default()
+    }
+}
+
+impl Scriptlets {
+    fn call(&self, id: u32) -> Vec<String> {
+        self.calls.decode_at(id as usize)
+    }
+
     fn lookup(&self, host: &str) -> Vec<Vec<String>> {
         let keys = host_keys(host);
         let mut excepted = HashSet::new();
         for k in &keys {
-            for e in self.exceptions.get(k).into_iter().flatten() {
+            for e in self.exceptions.get::<Vec<Option<u32>>>(k) {
                 match e {
                     None => return Vec::new(),
-                    Some(id) => excepted.insert(*id),
-                };
+                    Some(id) => {
+                        excepted.insert(id);
+                    }
+                }
             }
         }
-        let mut ids: Vec<u32> = keys
-            .iter()
-            .flat_map(|k| self.rules.get(k).into_iter().flatten())
-            .filter(|(id, exclude)| {
-                !excepted.contains(id) && !exclude.iter().any(|m| scope_matches(m, host))
-            })
-            .map(|(id, _)| *id)
-            .collect();
+        let mut ids: Vec<u32> = Vec::new();
+        for k in &keys {
+            for (id, exclude) in self.rules.get::<Vec<(u32, Vec<DomainMatcher>)>>(k) {
+                if !excepted.contains(&id) && !exclude.iter().any(|m| scope_matches(m, host)) {
+                    ids.push(id);
+                }
+            }
+        }
         ids.sort_unstable();
         ids.dedup();
-        let mut calls: Vec<Vec<String>> = ids
-            .into_iter()
-            .map(|id| self.calls[id as usize].clone())
-            .collect();
+        let mut calls: Vec<Vec<String>> = ids.into_iter().map(|id| self.call(id)).collect();
         // Pair matched response rules with Safari's player requests and watch mode.
         const REQUEST: &str = "trusted-youtube-player-request";
         let request_excepted = excepted
             .iter()
-            .any(|id| self.calls[*id as usize].as_slice() == [REQUEST]);
+            .any(|id| self.call(*id).as_slice() == [REQUEST]);
         if matches!(host, "youtube.com" | "www.youtube.com")
             && !request_excepted
             && calls.iter().any(|call| {
@@ -130,9 +244,7 @@ impl Scriptlets {
                 "ytcfg.data_.EXPERIMENT_FLAGS.web_streaming_watch".to_string(),
                 "false".to_string(),
             ];
-            if !calls.contains(&watch)
-                && !excepted.iter().any(|id| self.calls[*id as usize] == watch)
-            {
+            if !calls.contains(&watch) && !excepted.iter().any(|id| self.call(*id) == watch) {
                 calls.push(watch);
             }
         }
@@ -200,8 +312,7 @@ fn host_of(url: &str) -> &str {
 impl Engine {
     /// `lines` are uBO-syntax cosmetic, procedural, and scriptlet rules.
     pub fn build(lines: &[String]) -> Self {
-        let mut scriptlets = Scriptlets::default();
-        let mut index = HashMap::new();
+        let mut scriptlets = ScriptletRules::default();
         let mut cosmetic = Vec::new();
         let mut elemhide = Vec::new();
         let mut document = Vec::new();
@@ -209,7 +320,7 @@ impl Engine {
             match crate::parse_line(line, Default::default()) {
                 ParsedLine::Rule(Rule::Scriptlet(r)) => {
                     let call = std::iter::once(r.name).chain(r.args).collect();
-                    scriptlets.add(&mut index, r.exception, r.domains, call);
+                    scriptlets.add(r.exception, r.domains, call);
                 }
                 ParsedLine::Rule(Rule::Network(r)) if r.exception && !r.scope.is_empty() => {
                     if r.scope.contains(ExceptionScope::GHIDE) {
@@ -265,52 +376,37 @@ impl Engine {
             cosmetic: adblock::Engine::new_with_filter_set(set),
             elemhide: exception_engine(&elemhide),
             document: exception_engine(&document),
-            scriptlets,
+            scriptlets: scriptlets.finish(),
         }
     }
 
-    /// Three length-prefixed adblock engines followed by scriptlets JSON.
+    /// Three length-prefixed adblock engines, then the scriptlet tables, each
+    /// length-prefixed.
     pub fn serialize(&self) -> Vec<u8> {
-        let cosmetic = self.cosmetic.serialize();
-        let mut out = (cosmetic.len() as u32).to_le_bytes().to_vec();
-        out.extend(cosmetic);
-        for engine in [&self.elemhide, &self.document] {
-            let bytes = engine.serialize();
-            out.extend((bytes.len() as u32).to_le_bytes());
-            out.extend(bytes);
+        let mut out = Vec::new();
+        for engine in [&self.cosmetic, &self.elemhide, &self.document] {
+            put(&mut out, &engine.serialize());
         }
-        out.extend(serde_json::to_vec(&self.scriptlets).expect("scriptlets serialize"));
+        for table in [
+            &self.scriptlets.calls,
+            &self.scriptlets.rules,
+            &self.scriptlets.exceptions,
+        ] {
+            put(&mut out, &table.0);
+        }
         out
     }
 
     pub fn deserialize(bytes: &[u8]) -> Result<Self, String> {
-        let (len, rest) = bytes.split_first_chunk::<4>().ok_or("engine: truncated")?;
-        let len = u32::from_le_bytes(*len) as usize;
-        if rest.len() < len {
-            return Err("engine: truncated".into());
-        }
-        let (cosmetic_bytes, mut rest) = rest.split_at(len);
-        let mut cosmetic = adblock::Engine::new_with_filter_set(FilterSet::new(false));
-        cosmetic
-            .deserialize(cosmetic_bytes)
-            .map_err(|e| format!("engine: {e}"))?;
-        let mut read_engine = || -> Result<adblock::Engine, String> {
-            let (len, remaining) = rest.split_first_chunk::<4>().ok_or("engine: truncated")?;
-            let len = u32::from_le_bytes(*len) as usize;
-            if remaining.len() < len {
-                return Err("engine: truncated".into());
-            }
-            let (bytes, remaining) = remaining.split_at(len);
-            rest = remaining;
-            let mut engine = adblock::Engine::new_with_filter_set(FilterSet::new(false));
-            engine
-                .deserialize(bytes)
-                .map_err(|e| format!("engine: {e}"))?;
-            Ok(engine)
+        let mut rest = bytes;
+        let cosmetic = read_engine(take(&mut rest)?)?;
+        let elemhide = read_engine(take(&mut rest)?)?;
+        let document = read_engine(take(&mut rest)?)?;
+        let scriptlets = Scriptlets {
+            calls: Table::parse(take(&mut rest)?)?,
+            rules: Table::parse(take(&mut rest)?)?,
+            exceptions: Table::parse(take(&mut rest)?)?,
         };
-        let elemhide = read_engine()?;
-        let document = read_engine()?;
-        let scriptlets = serde_json::from_slice(rest).map_err(|e| format!("engine: {e}"))?;
         Ok(Self {
             cosmetic,
             elemhide,
@@ -342,6 +438,30 @@ impl Engine {
             generichide: elemhide || r.generichide,
         }
     }
+}
+
+fn put(out: &mut Vec<u8>, section: &[u8]) {
+    out.extend((section.len() as u32).to_le_bytes());
+    out.extend(section);
+}
+
+/// The next length-prefixed section of `rest`.
+fn take<'a>(rest: &mut &'a [u8]) -> Result<&'a [u8], String> {
+    let len = rest
+        .get(..4)
+        .map(|w| u32::from_le_bytes(w.try_into().unwrap()) as usize)
+        .ok_or("engine: truncated")?;
+    let section = rest.get(4..4 + len).ok_or("engine: truncated")?;
+    *rest = &rest[4 + len..];
+    Ok(section)
+}
+
+fn read_engine(section: &[u8]) -> Result<adblock::Engine, String> {
+    let mut engine = adblock::Engine::new_with_filter_set(FilterSet::new(false));
+    engine
+        .deserialize(section)
+        .map_err(|e| format!("engine: {e}"))?;
+    Ok(engine)
 }
 
 fn exception_engine(lines: &[String]) -> adblock::Engine {
@@ -597,6 +717,27 @@ example.com##+js(set-constant, adsEnabled, false)
             calls(&[other, "sub.example.com#@#+js()"], "https://example.com/").len(),
             1
         );
+    }
+
+    #[test]
+    fn scriptlet_tables_find_each_host_and_reject_truncation() {
+        let rules: Vec<String> = (0..60)
+            .map(|i| format!("site{i}.example##+js(set-constant, a{i}, 1)"))
+            .collect();
+        let bytes = Engine::build(&rules).serialize();
+        let engine = Engine::deserialize(&bytes).unwrap();
+        for i in 0..60 {
+            let name = format!("a{i}");
+            let page = engine.lookup(&format!("https://www.site{i}.example/"));
+            assert_eq!(page.scriptlets, vec![call(&["set-constant", &name, "1"])]);
+        }
+        assert!(engine
+            .lookup("https://site60.example/")
+            .scriptlets
+            .is_empty());
+        let empty = Engine::deserialize(&Engine::build(&[]).serialize()).unwrap();
+        assert!(empty.lookup("https://site1.example/").scriptlets.is_empty());
+        assert!(Engine::deserialize(&bytes[..bytes.len() - 1]).is_err());
     }
 
     #[test]
