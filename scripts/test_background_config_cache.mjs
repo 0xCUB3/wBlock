@@ -177,6 +177,41 @@ const topFrameSender = url => ({ url, frameId: 0, tab: { id: 7, url } });
 
 const frameSender = (url, topUrl, frameId = 1) => ({ url, frameId, tab: { id: 7, url: topUrl } });
 
+// Startup combines matching for the authenticated frame with its configuration.
+{
+  const state = loadBackground({ nativeHandler: async message => ({
+    payload: makeConfig([], 1, [], [], { disabled:false, paused:false }),
+    userScripts: [{id:'matched', content:message.payload?.url}],
+  }) });
+  await sleep(20);
+  const before = state.nativeMessages.length;
+  const url = 'https://frame.example/matched';
+  const result = await state.onMessage({type:'InitContentScript', includeUserScripts:true,
+    url:'https://forged.example/', isTopFrame:true}, frameSender(url, 'https://top.example/'));
+  check('combined startup returns scripts matched to the frame URL', result.userScripts?.[0]?.content === url);
+  const calls = state.nativeMessages.slice(before).filter(m => m.type === 'InitContentScript');
+  check('combined startup uses one native request with verified frame authority',
+    calls.length === 1 && calls[0].url === url && calls[0].isTopFrame === false);
+}
+
+// Empty startup reuse is URL-specific and ends on native settings invalidation.
+{
+  let reads = 0;
+  const state = loadBackground({nativeHandler: async message => {
+    if (message.includeUserScripts) reads++;
+    return {payload:makeConfig([], 1, [], [], {disabled:false,paused:false}), userScripts:[]};
+  }});
+  await sleep(20);
+  const init = url => state.onMessage({type:'InitContentScript',includeUserScripts:true}, frameSender(url,'https://top.example/'));
+  await init('https://frame.example/one'); await init('https://frame.example/one');
+  check('empty startup shares one native reply for the same frame URL', reads === 1);
+  await init('https://frame.example/two');
+  check('startup never reuses another path matching result', reads === 2);
+  state.nativePortMessage({action:'wblock:userscriptsChanged'});
+  await init('https://frame.example/one');
+  check('native settings invalidation expires empty startup replies', reads === 3);
+}
+
 // Scenario A: persisted cache serves a top-frame config instantly while the
 // native host hangs (cold start after Safari relaunch).
 {
@@ -643,30 +678,6 @@ for (const [label, inertState, activeCSS] of [
   await sleep(1100);
   check("native configuration failure does not persist a cache entry",
     !state.storage[CACHE_KEY] || !state.storage[CACHE_KEY].entries.some(([key]) => key === `${pageUrl}#`));
-}
-
-// Body reuse must remain bound to the native revision and current descriptor.
-{
-  let revision = 1;
-  const state = loadBackground({ nativeHandler: async message => {
-    if (message.action !== 'getUserScripts') return { payload: makeConfig([], 1) };
-    const cached = message.cachedPayloads?.script;
-    return { userScripts: [{ id: 'script', payloadRevision: revision, payloadCacheToken: `session-${revision}`, name: 'current',
-      ...(cached === `session-${revision}` ? { contentCached: true } : { content: `body-${revision}`, resources: { text: 'resource' } }) }] };
-  } });
-  await sleep(20); // Let startup configuration invalidation finish.
-  const request = {action:'getUserScripts', includeContent:true};
-  const first = await state.onMessage(request, topFrameSender('https://body.example/one'));
-  const second = await state.onMessage(request, topFrameSender('https://body.example/two'));
-  check('native payload reuse preserves the script body and resources', second.userScripts[0].content === first.userScripts[0].content && second.userScripts[0].resources.text === 'resource');
-  const reads = state.nativeMessages.filter(m => m.action === 'getUserScripts');
-  check('next frame advertises the cached native body revision', reads[1].cachedPayloads?.script === 'session-1');
-  revision = 2;
-  const updated = await state.onMessage(request, topFrameSender('https://body.example/three'));
-  check('new native revision replaces cached body', updated.userScripts[0].content === 'body-2');
-  state.nativePortMessage({action:'wblock:userscriptsChanged'});
-  await state.onMessage(request, topFrameSender('https://body.example/four'));
-  check('native invalidation discards cached bodies', !state.nativeMessages.filter(m => m.action === 'getUserScripts').at(-1).cachedPayloads?.script);
 }
 
 // Cache hints must not fragment negative matching results between frames.

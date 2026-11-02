@@ -335,6 +335,15 @@ function loadScript(sandbox) {
   check("slow site-state lookup still applies enabled zapper rules", await waitFor(() => (env.styleText() ?? "").includes(".slow-ad"), 3000));
 }
 
+// Startup state is shared, but later reloads still ask for current native rules.
+{
+  const env = makeSandbox({nativeRules:['.later-ad'], nativeDisabled:false});
+  env.sandbox.__wblockZapperInitialization = Promise.resolve({ok:true,rules:['.startup-ad'],inheritedRules:[],disabled:false});
+  loadScript(env.sandbox);
+  check('zapper consumes combined frame startup', await waitFor(() => (env.styleText() ?? '').includes('.startup-ad')));
+  check('combined startup avoids a separate zapper request', env.native.getRulesCalls === 0);
+}
+
 if (failures > 0) {
   console.error(`\n${failures} zapper site-disable check(s) failed`);
   process.exit(1);

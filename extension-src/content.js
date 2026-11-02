@@ -228,7 +228,9 @@
   const main = async () => {
     if (cloudflareChallengeContext) return;
     const message = {
-      type: MessageType.InitContentScript
+      type: MessageType.InitContentScript,
+      // Keep top-frame cached scriptlets independent of userscript hydration.
+      includeUserScripts: window.top !== window && /^https?:$/.test(location.protocol)
     };
     // A failed lookup (native timeout, background waking up) is not a
     // disabled site; retry it so the document still gets its rules.
@@ -248,6 +250,12 @@
       }
     };
     const configPromise = requestInitialization();
+    // The isolated-world injector consumes this once; retries and invalidation
+    // request fresh userscripts independently of content-filter initialization.
+    if (message.includeUserScripts) {
+      globalThis.__wblockFrameInitialization = configPromise;
+      globalThis.__wblockZapperInitialization = configPromise.then(response => response?.zapper);
+    }
     initializationStatePromise = configPromise.then(stateFromInitResponse);
     const response = await configPromise;
     if (await initializationStatePromise) return;

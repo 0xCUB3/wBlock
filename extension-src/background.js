@@ -285,8 +285,6 @@
   const CONFIG_REVALIDATE_INTERVAL_MS = 5000;
   const configValidatedAt = new Map();
   const recentNativeReads = new Map();
-  const userScriptBodies = new Map();
-  let userScriptBodyBytes = 0;
   const isConfigFresh = key => Date.now() - (configValidatedAt.get(key) || 0) < CONFIG_REVALIDATE_INTERVAL_MS;
   // A lookup that was in flight when state changed must not start a window.
   let nativeStateEpoch = 0;
@@ -294,8 +292,6 @@
     nativeStateEpoch += 1;
     configValidatedAt.clear();
     recentNativeReads.clear();
-    userScriptBodies.clear();
-    userScriptBodyBytes = 0;
   };
   // Mutations end the window when sent and again when done, so reads that
   // overlapped them are not shared either.
@@ -392,15 +388,7 @@
    * @returns The cache key.
    */
   const cacheKey = (url, topUrl) => `${url}#${topUrl ?? ''}`;
-  /**
-   * Makes a native messaging request to obtain rules for the given message.
-   * Also handles cache invalidation if the engine timestamp has changed.
-   *
-   * @param request - Original request from the content script.
-   * @param url - Page URL for which the rules are requested.
-   * @param topUrl - Top-level page URL (to distinguish between frames)
-   * @returns The response message from the native host.
-   */
+  // Native lookup also refreshes the bounded configuration cache.
   const requestConfiguration = async (request, url, topUrl) => {
     const generation = configurationGeneration;
     const epoch = nativeStateEpoch;
@@ -411,8 +399,16 @@
     };
     // Page rules must not wait behind maintenance downloads. Same-page
     // requests are still coalesced by requestConfigurationCoalesced.
-    const response = await sendPriorityNativeMessage(request);
+    const response = await (request.includeUserScripts
+      ? readNativeRecently(request, sendPriorityNativeMessage,
+          reply => Array.isArray(reply.userScripts) && reply.userScripts.length === 0 && !reply.userScriptsError)
+      : sendPriorityNativeMessage(request));
     const message = response;
+    if (request.includeUserScripts && message) {
+      request.userScripts = message.userScripts;
+      request.userScriptsError = message.userScriptsError;
+      request.zapper = message.zapper;
+    }
     if (message && message.state === "error") {
       throw new Error(message.error || "Native configuration unavailable");
     }
@@ -467,16 +463,12 @@
     pendingConfigurationRequests.set(key, requestPromise);
     return requestPromise;
   };
-  /**
-   * Tries to get rules from the cache. If not found, requests them from the
-   * native host.
-   *
-   * @param message - The original message from the content script.
-   * @param url - Page URL for which the rules are requested.
-   * @param topUrl - Top-level page URL (to distinguish between frames)
-   * @returns The response message from the native host.
-   */
   const getConfiguration = async (message, url, topUrl) => {
+    // An authoritative userscript reply is needed even when rules are cached.
+    // Carry both in one native request; cache only the configuration.
+    if (message.includeUserScripts) {
+      return { configuration: await requestConfiguration(message, url, topUrl), fromCache: false };
+    }
     await configCacheHydration;
     const key = cacheKey(url, topUrl);
     if (cache.has(key) && isConfigFresh(key)) {
@@ -1083,8 +1075,6 @@
       }
     }
     if (message && message.action === "getUserScripts") {
-      // Snapshot entries so another frame's eviction cannot lose an in-flight body.
-      const bodies = new Map(userScriptBodies);
       const epoch = nativeStateEpoch;
       const userScriptRequest = {
         action: "getUserScripts",
@@ -1097,10 +1087,7 @@
       try {
         // Only "no scripts here" is shared: script payloads carry revisions and
         // GM storage that must stay current.
-        const response = await readNativeRecently(userScriptRequest, request => sendPriorityNativeMessage({
-          ...request,
-          cachedPayloads: Object.fromEntries([...bodies].map(([id, entry]) => [id, entry.token]))
-        }), answer => Array.isArray(answer.userScripts) && answer.userScripts.length === 0);
+        const response = await readNativeRecently(userScriptRequest, sendPriorityNativeMessage, answer => Array.isArray(answer.userScripts) && answer.userScripts.length === 0);
         // Native matching is authoritative. Only reuse its negative subframe
         // result for this URL, within the existing invalidated freshness window.
         if (epoch === nativeStateEpoch && !response?.error && response?.emptySubframes === true) {
@@ -1111,31 +1098,7 @@
         if (response && response.error) {
           return { userScripts: scripts, error: response.error };
         }
-        const hydrated = scripts.map(script => {
-          if (script.contentCached) {
-            const body = bodies.get(script.id);
-            if (!body || body.token !== script.payloadCacheToken) throw new Error("Missing cached userscript body");
-            return { ...script, ...body.payload };
-          }
-          if (epoch === nativeStateEpoch && typeof script.payloadCacheToken === 'string'
-              && typeof script.content === 'string') {
-            const payload = { content: script.content, resources: script.resources };
-            const bytes = 2 * (script.content.length + JSON.stringify(script.resources || {}).length);
-            userScriptBodyBytes -= userScriptBodies.get(script.id)?.bytes || 0;
-            userScriptBodies.delete(script.id);
-            if (bytes <= 16 * 1024 * 1024) {
-              userScriptBodies.set(script.id, { token: script.payloadCacheToken, payload, bytes });
-              userScriptBodyBytes += bytes;
-            }
-            while (userScriptBodyBytes > 16 * 1024 * 1024) {
-              const id = userScriptBodies.keys().next().value;
-              userScriptBodyBytes -= userScriptBodies.get(id).bytes;
-              userScriptBodies.delete(id);
-            }
-          }
-          return script;
-        });
-        return { userScripts: hydrated };
+        return { userScripts: scripts };
       } catch (error) {
         const errorMessage = String(error && error.message ? error.message : error);
         console.error(`[wBlock] Failed to get userscripts: ${errorMessage}`, error);
@@ -1378,6 +1341,12 @@
     }
     const tabId = ((_sender$tab = sender.tab) === null || _sender$tab === void 0 ? void 0 : _sender$tab.id) ?? 0;
     const frameId = sender.frameId ?? 0;
+    // Only browser-supplied frame identity can authorize startup userscripts.
+    message = { type: MessageType.InitContentScript,
+      includeUserScripts: request.includeUserScripts === true && Number.isSafeInteger(sender.frameId)
+        && sender.frameId >= 0 && /^https?:\/\//.test(sender.url || ''),
+      url: sender.url, isTopFrame: sender.frameId === 0,
+      includeContent: true, maxInlineContentBytes: 512 * 1024 };
     let blankFrame = false;
     let url = sender.url || '';
     const topUrl = frameId === 0 ? undefined : (_sender$tab2 = sender.tab) === null || _sender$tab2 === void 0 ? void 0 : _sender$tab2.url;
@@ -1442,6 +1411,7 @@
     // it is replaced with the result of the priority state lookup above.
     const response = {
       type: MessageType.InitContentScript,
+      ...(message.includeUserScripts ? { userScripts: message.userScripts, userScriptsError: message.userScriptsError, zapper: message.zapper } : {}),
       ...(fromCache
         ? cachedBlockingState
         : typeof configuration.disabled === "boolean"

@@ -284,7 +284,9 @@
   async function fetchRulesFromNative(host) {
     if (!host) return null;
     try {
-      const response = await withTimeout(browser.runtime.sendMessage({
+      const initialization = globalThis.__wblockZapperInitialization;
+      delete globalThis.__wblockZapperInitialization;
+      const response = await initialization || await withTimeout(browser.runtime.sendMessage({
         action: 'wblock:zapper:getRules',
         hostname: host
       }), NATIVE_MESSAGE_TIMEOUT_MS, 'Zapper fetch timed out.');

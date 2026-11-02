@@ -1157,5 +1157,19 @@ for (const kind of ['script', 'style']) {
   check('document-idle executes once at idle time', probe.__idleRuns === 1);
 }
 
+// A startup reply is consumed once; invalidation still performs fresh matching.
+{
+  const probe = buildContentScriptSandbox(null, []);
+  probe.__wblockFrameInitialization = Promise.resolve({userScripts:[fakeScript]});
+  vm.createContext(probe); vm.runInContext(source.replace("new UserScriptEngine();", "globalThis.__engine = new UserScriptEngine();"), probe);
+  await tick(); await tick();
+  check('combined startup avoids a separate userscript lookup', !probe.__sentMessages.some(m => m.action === 'getUserScripts'));
+  check('combined startup retains native execution validation', probe.__sentMessages.some(m => m.action === 'validateUserScriptExecution'));
+  check('combined startup is consumed only once', !probe.__wblockFrameInitialization);
+  vm.runInContext("__engine.invalidateDocumentStartSessionCache()", probe);
+  await tick();
+  check('invalidation requests fresh userscripts after combined startup', probe.__sentMessages.some(m => m.action === 'getUserScripts'));
+}
+
 console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);
 process.exit(failures === 0 ? 0 : 1);

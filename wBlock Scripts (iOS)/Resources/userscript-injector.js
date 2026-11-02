@@ -606,6 +606,13 @@ if (window.wBlockUserscriptInjectorHasRun) {
         }
 
         async sendNativeRequest(action, payload = {}) {
+            if (action === 'getUserScripts' && globalThis.__wblockFrameInitialization) {
+                const initialization = globalThis.__wblockFrameInitialization;
+                delete globalThis.__wblockFrameInitialization;
+                const response = await initialization;
+                return { userScripts: response?.userScripts || [],
+                    error: response?.userScriptsError || response?.error };
+            }
             const requestId = payload.requestId || this.generateRequestId(action);
             const messagePayload = { ...payload, requestId };
 
