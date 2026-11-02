@@ -14,8 +14,11 @@ enum FilterEngineStore {
     /// The engine AdGuard's FilterEngine kept here before wBlock 4.
     private static let legacyDirectoryName = ".webext"
     private static let lockTimeout: TimeInterval = 10
+    /// The snapshot file starts with the 64-character fingerprint and the publish
+    /// time as 8 little-endian bytes; the engine follows.
+    private static let headerLength = 72
 
-    private struct Snapshot: Codable {
+    private struct Snapshot {
         let fingerprint: String
         let timestamp: Int64
         let engine: Data
@@ -62,10 +65,10 @@ enum FilterEngineStore {
             let latest = try? String(contentsOf: directory.appendingPathComponent(latestRequestFileName), encoding: .utf8)
             guard latest == request else { return false }
             let timestamp = max(Int64(Date().timeIntervalSince1970 * 1000), (readSnapshot(in: directory)?.timestamp ?? 0) + 1)
-            let snapshot = Snapshot(fingerprint: fingerprint, timestamp: timestamp, engine: engine)
-            let encoder = PropertyListEncoder()
-            encoder.outputFormat = .binary
-            try encoder.encode(snapshot).write(to: directory.appendingPathComponent(engineFileName), options: .atomic)
+            var file = Data(fingerprint.utf8)
+            withUnsafeBytes(of: timestamp.littleEndian) { file.append(contentsOf: $0) }
+            file.append(engine)
+            try file.write(to: directory.appendingPathComponent(engineFileName), options: .atomic)
             return true
         }
         os_log(.info, published ? "Published filter engine: %d bytes" : "Abandoned filter engine (%d bytes) for a newer publish", engine.count)
@@ -109,9 +112,17 @@ enum FilterEngineStore {
     /// The engine the extension process last loaded. Guarded by WebExtensionGate.
     nonisolated(unsafe) private static var cached: (fileNumber: Int, timestamp: Int64, engine: WBEngine.Engine)?
 
+    /// Maps the file, so a header read touches one page and the engine is handed
+    /// on without a copy. Publishes replace the file by rename, so a mapping
+    /// stays valid while it is in use.
     private static func readSnapshot(in directory: URL) -> Snapshot? {
-        (try? Data(contentsOf: directory.appendingPathComponent(engineFileName)))
-            .flatMap { try? PropertyListDecoder().decode(Snapshot.self, from: $0) }
+        guard let data = try? Data(contentsOf: directory.appendingPathComponent(engineFileName), options: .alwaysMapped),
+              data.count > headerLength,
+              let fingerprint = String(data: data.prefix(64), encoding: .utf8),
+              fingerprint.allSatisfy(\.isHexDigit)
+        else { return nil }
+        let timestamp = data.dropFirst(64).prefix(8).withUnsafeBytes { $0.loadUnaligned(as: Int64.self) }
+        return Snapshot(fingerprint: fingerprint, timestamp: Int64(littleEndian: timestamp), engine: data.dropFirst(headerLength))
     }
 
     private static func withLock<T>(in directory: URL, _ body: () throws -> T) throws -> T {
