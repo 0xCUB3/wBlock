@@ -416,36 +416,45 @@ public enum RemoveParamDNRRuleGenerator {
             cache = decoded
         }
 
-        var combined = ""
-        var blockedCount = ""
-        var redirectSources = RedirectFeed.sources(for: filters)
-        var updated: [String: ExtractionEntry] = [:]
-        var cacheChanged = false
-
-        for filter in filters {
+        // Lists whose cached entry is stale are scanned together; the cache, the
+        // result order, and the combined text stay in filter order.
+        let sources: [(key: String, url: URL, fingerprint: String, cached: ExtractionEntry?)] = filters.compactMap { filter in
             guard let sourceURL = ContentBlockerIncrementalCache.existingLocalFileURL(
                 for: filter,
                 containerURL: containerURL
-            ) else { continue }
+            ) else { return nil }
             let key = sourceURL.lastPathComponent
             let fingerprint = fileFingerprint(at: sourceURL) ?? "missing"
-
-            let entry: ExtractionEntry
-            if let cached = cache[key], cached.fingerprint == fingerprint,
-               (!includeBlockedCount || cached.blockedCountFormat == blockedCountExtractionFormat) {
-                entry = cached
-            } else {
-                guard let contents = try? String(contentsOf: sourceURL, encoding: .utf8) else { continue }
-                entry = ExtractionEntry(
-                    fingerprint: fingerprint,
+            let cached = cache[key].flatMap { entry in
+                entry.fingerprint == fingerprint
+                    && (!includeBlockedCount || entry.blockedCountFormat == blockedCountExtractionFormat)
+                    ? entry : nil
+            }
+            return (key, sourceURL, fingerprint, cached)
+        }
+        var scanned = [ExtractionEntry?](repeating: nil, count: sources.count)
+        scanned.withUnsafeMutableBufferPointer { results in
+            forEachSourceIndex(sources.indices.filter { sources[$0].cached == nil }) { index in
+                guard let contents = try? String(contentsOf: sources[index].url, encoding: .utf8) else { return }
+                results[index] = ExtractionEntry(
+                    fingerprint: sources[index].fingerprint,
                     lines: extractRemoveParamLines(from: contents),
                     redirectLines: extractRedirectLines(from: contents),
                     blockedCountLines: includeBlockedCount ? extractBlockedCountLines(from: contents) : nil,
                     blockedCountFormat: includeBlockedCount ? blockedCountExtractionFormat : nil
                 )
-                cacheChanged = true
             }
-            updated[key] = entry
+        }
+
+        var combined = ""
+        var blockedCount = ""
+        var redirectSources = RedirectFeed.sources(for: filters)
+        var updated: [String: ExtractionEntry] = [:]
+        var cacheChanged = false
+        for (index, source) in sources.enumerated() {
+            guard let entry = source.cached ?? scanned[index] else { continue }
+            if source.cached == nil { cacheChanged = true }
+            updated[source.key] = entry
             combined.append(entry.lines)
             if includeBlockedCount { blockedCount.append(entry.blockedCountLines ?? "") }
             if !entry.redirectLines.isEmpty { redirectSources.append(entry.redirectLines) }
@@ -457,6 +466,16 @@ public enum RemoveParamDNRRuleGenerator {
             }
         }
         return (combined, redirectSources, blockedCount)
+    }
+
+    /// Scans lists in parallel on macOS. Phones scan one at a time, since each
+    /// scan holds a whole list's text.
+    private static func forEachSourceIndex(_ indices: [Int], _ body: (Int) -> Void) {
+        #if os(macOS)
+        DispatchQueue.concurrentPerform(iterations: indices.count) { body(indices[$0]) }
+        #else
+        indices.forEach(body)
+        #endif
     }
 
     static func extractRemoveParamLines(from contents: String) -> String {
