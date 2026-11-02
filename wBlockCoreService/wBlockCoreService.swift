@@ -115,7 +115,8 @@ private struct StoredTargetSourceRuleProvenance: Codable {
     /// so cached base JSON gets invalidated.
     // 8: defuse Urban Dictionary's AdShield fallback without triggering its sentinel redirect.
     // 9: remove the Valnet sites' anti-adblock dialog (#895).
-    public static let embeddedCompatibilityRulesVersion = "9"
+    // 10: restart YouTube videos that the server backs off for blocking ads.
+    public static let embeddedCompatibilityRulesVersion = "10"
     /// The engine and Safari level outputs are compiled for; see SafariVersionDetection.
     public static var compilerIdentity: String { SafariVersionDetection.compilerIdentity }
     private static let contentBlockerOutputLockTimeout: TimeInterval = 10
@@ -337,25 +338,12 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
 m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,youtube-nocookie.com#%#//scriptlet('set-constant', 'playerResponse.playerAds', 'undefined')
 m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,youtube-nocookie.com#%#//scriptlet('set-constant', 'playerResponse.adPlacements', 'undefined')
 m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,youtube-nocookie.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefined')
+www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
 """
 
     private static func compatibilityRulesFingerprintHex() -> String {
         let payload = "\(embeddedCompatibilityRulesVersion)\n\(embeddedCompatibilityRules)"
         let digest = SHA256.hash(data: Data(payload.utf8))
-        return digest.map { String(format: "%02x", $0) }.joined()
-    }
-
-    /// Derives an effective conversion hash from the caller-provided rules hash
-    /// plus built-in compatibility-rules fingerprint so cache keys are invalidated
-    /// when embedded compatibility rules change.
-    private static func effectiveRulesHashHex(
-        baseRulesHashHex: String,
-        cosmeticSites: CosmeticFilteringPreference.Sites = .all
-    ) -> String {
-        let fingerprint = compatibilityRulesFingerprintHex() + "|identity-v6|" + SafariVersionDetection.compilerIdentity
-        let material = cosmeticSites.cacheMarker.map { "\(baseRulesHashHex)|\(fingerprint)|cosmetic=\($0)" }
-            ?? "\(baseRulesHashHex)|\(fingerprint)"
-        let digest = SHA256.hash(data: Data(material.utf8))
         return digest.map { String(format: "%02x", $0) }.joined()
     }
 
@@ -1400,7 +1388,9 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
         }
         let signatureContainer = containerURL ?? FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier)
         let carveOuts = signatureContainer.map { RemoveParamDNRRuleGenerator.savedRedirectCarveOuts(containerURL: $0) } ?? ""
-        let signatureExtras = (extraRulesText ?? "") + "\n" + carveOuts + "\n" + allTargets.map { "\($0.bundleIdentifier):\($0.slot)" }.joined(separator: "|")
+        // Built-in compatibility rules are compiled into every blocker too.
+        let signatureExtras = compatibilityRulesFingerprintHex() + "\n" + (extraRulesText ?? "") + "\n" + carveOuts + "\n"
+            + allTargets.map { "\($0.bundleIdentifier):\($0.slot)" }.joined(separator: "|")
         let currentSignature = ContentBlockerIncrementalCache.computeInputSignature(
             filters: filters,
             affinityContributors: affinityContributors,

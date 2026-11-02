@@ -322,6 +322,10 @@ mod tests {
                 "youtube.com##+js(json-prune-xhr-response, a, '', stackToMatch, stack)",
             ),
             (
+                "www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')",
+                "www.youtube.com##+js(trusted-youtube-backoff-recovery)",
+            ),
+            (
                 "example.com#%#//scriptlet('ubo-aopr', 'x')",
                 "example.com##+js(abort-on-property-read, x)",
             ),

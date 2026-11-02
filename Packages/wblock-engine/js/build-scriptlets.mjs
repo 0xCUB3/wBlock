@@ -21,6 +21,10 @@ resources.push({
   name: 'trusted-youtube-player-request.js',
   content: readFileSync(path.join(here, 'youtube-player-request.js'), 'utf8'),
 });
+resources.push({
+  name: 'trusted-youtube-backoff-recovery.js',
+  content: readFileSync(path.join(here, 'youtube-backoff-recovery.js'), 'utf8'),
+});
 const byName = new Map(resources.map(r => [r.name, r]));
 // Keep literal response replacements streaming; full-body predicates still use uBO's path.
 const responseHook = byName.get('replace-fetch-response.fn');
