@@ -1049,3 +1049,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Excluded Sites" = "제외한 사이트";
 "Cosmetic filtering applies only on these sites." = "코스메틱 필터링은 이 사이트에서만 적용됩니다.";
 "Custom URL" = "사용자 지정 URL";
+
+"Content blocker JSON exceeds the %@ MB size limit on iOS. Disable some filter lists and try again." = "콘텐츠 차단기 JSON이 iOS의 크기 제한인 %@ MB를 초과합니다. 일부 필터 목록을 비활성화한 후 다시 시도하세요.";

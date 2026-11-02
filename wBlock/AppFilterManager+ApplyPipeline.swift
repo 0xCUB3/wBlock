@@ -739,12 +739,19 @@ extension AppFilterManager {
         if let failedTarget = platformTargets.first(where: {
             conversionCompletions[$0]?.failureDescription != nil
         }), let failureDescription = conversionCompletions[failedTarget]?.failureDescription {
+            let sizeLimitError = conversionCompletions[failedTarget]?.sizeLimitError
             await failApplyRun(
                 logMessage: LocalizedStrings.text("Failed to convert rules for blocker"),
                 metadata: [
                     "blocker": failedTarget.displayName,
                     "error": failureDescription,
-                ]
+                ],
+                statusMessage: sizeLimitError.map {
+                    LocalizedStrings.format(
+                        "Content blocker JSON exceeds the %@ MB size limit on iOS. Disable some filter lists and try again.",
+                        String($0.limit / 1_000_000)
+                    )
+                }
             )
             return
         }

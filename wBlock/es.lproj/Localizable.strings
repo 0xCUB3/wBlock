@@ -1049,3 +1049,5 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Excluded Sites" = "Sitios excluidos";
 "Cosmetic filtering applies only on these sites." = "El filtrado cosmético solo se aplica en estos sitios.";
 "Custom URL" = "URL personalizada";
+
+"Content blocker JSON exceeds the %@ MB size limit on iOS. Disable some filter lists and try again." = "El JSON del bloqueador de contenido supera el límite de tamaño de %@ MB en iOS. Desactiva algunas listas de filtros e inténtalo de nuevo.";

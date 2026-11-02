@@ -1049,3 +1049,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Excluded Sites" = "المواقع المستثناة";
 "Cosmetic filtering applies only on these sites." = "تُطبَّق التصفية التجميلية على هذه المواقع فقط.";
 "Custom URL" = "رابط مخصص";
+
+"Content blocker JSON exceeds the %@ MB size limit on iOS. Disable some filter lists and try again." = "يتجاوز ملف JSON لحظر المحتوى حد الحجم البالغ %@ ميغابايت على iOS. عطّل بعض قوائم الفلاتر وحاول مرة أخرى.";

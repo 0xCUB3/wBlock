@@ -134,6 +134,28 @@ private struct SourceRuleAdmissionCounter {
     /// Safari's documented per-extension content blocker rule limit.
     public static let safariContentBlockerRuleLimit = 150_000
 
+    /// AdGuard for iOS uses these loader-memory budgets (SafariConverterLib #56).
+    /// This is a byte budget, not Safari's documented rule-count limit.
+    public static let safariContentBlockerJSONSizeLimit: Int = {
+        #if os(iOS)
+        if #available(iOS 17.0, *) {
+            if #unavailable(iOS 17.2) { return 10_000_000 }
+        }
+        #endif
+        return 19_000_000
+    }()
+
+    public struct ContentBlockerSizeLimitError: Error, Sendable {
+        public let byteCount: Int
+        public let limit: Int
+    }
+
+    static func validateContentBlockerSize(_ byteCount: Int) throws {
+        guard byteCount <= safariContentBlockerJSONSizeLimit else {
+            throw ContentBlockerSizeLimitError(byteCount: byteCount, limit: safariContentBlockerJSONSizeLimit)
+        }
+    }
+
     /// Version marker for built-in compatibility rules that are appended to
     /// every conversion. Bump this when changing `embeddedCompatibilityRules`
     /// so cached base JSON gets invalidated.
@@ -1297,6 +1319,9 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
     ) throws -> ContentBlockerSaveResult {
         os_log(.info, "Saving pre-formatted JSON content blocker rules to %@", targetRulesFilename)
         let data = Data(jsonRules.utf8)
+        #if os(iOS)
+        try validateContentBlockerSize(data.count)
+        #endif
         guard let ruleCount = ContentBlockerRuleArray.count(data) else {
             throw CocoaError(.fileReadCorruptFile)
         }
@@ -2922,7 +2947,7 @@ extension ContentBlockerService {
                 rules: lines,
                 safariVersion: .autodetect(),
                 advancedBlocking: true,
-                maxJsonSizeBytes: nil,
+                maxJsonSizeBytes: nil, // Reject oversized final JSON before saving; this option drops rules.
                 progress: progress
             )
         }

@@ -1058,3 +1058,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Excluded Sites" = "سایت‌های مستثنا";
 "Cosmetic filtering applies only on these sites." = "فیلتر کردن ظاهری فقط در این سایت‌ها اعمال می‌شود.";
 "Custom URL" = "نشانی سفارشی";
+
+"Content blocker JSON exceeds the %@ MB size limit on iOS. Disable some filter lists and try again." = "فایل JSON مسدودکنندهٔ محتوا از محدودیت حجم %@ مگابایت در iOS بیشتر است. برخی فهرست‌های فیلتر را غیرفعال کنید و دوباره تلاش کنید.";

@@ -77,6 +77,8 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
     public var description: String = ""
     public var version: String = ""
     public var sourceRuleCount: Int?
+    /// Downloaded UTF-8 bytes, refreshed for compilation rather than persisted.
+    public var sourceSizeBytes: Int?
     public var rawSourceRuleCount: Int?  // Pre-expansion count (NOT persisted; in-memory only)
     public var lastUpdated: Date?
     public var languages: [String] = []

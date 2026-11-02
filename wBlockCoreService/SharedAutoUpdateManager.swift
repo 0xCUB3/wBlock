@@ -1471,6 +1471,7 @@ public actor SharedAutoUpdateManager {
     }
 
     private func hydrateMissingSourceRuleCountsIfNeeded(_ filters: [FilterList]) async -> [FilterList] {
+        let filters = ContentBlockerMappingService.refreshingCompilationMetadata(snapshot: filters, latest: filters)
         guard filters.contains(where: { $0.isSelected && $0.sourceRuleCount == nil }) else {
             return filters
         }
@@ -1591,6 +1592,7 @@ public actor SharedAutoUpdateManager {
         var updated = filter
         if let data = localDataForComparison(filter: filter, containerURL: containerURL) {
             updated.sourceRuleCount = countRulesInData(data: data)
+            updated.sourceSizeBytes = data.count
         }
         if let version = pending.version, !version.isEmpty {
             updated.version = version
@@ -2076,6 +2078,7 @@ public actor SharedAutoUpdateManager {
         public let target: ContentBlockerTargetInfo
         public let outcome: ContentBlockerService.ContentBlockerTargetOutcome?
         public let failureDescription: String?
+        public let sizeLimitError: ContentBlockerService.ContentBlockerSizeLimitError?
         public let budgetExpired: Int?
         public let durationMs: Int
     }
@@ -2094,11 +2097,12 @@ public actor SharedAutoUpdateManager {
             func result(
                 outcome: ContentBlockerService.ContentBlockerTargetOutcome? = nil,
                 failureDescription: String? = nil,
+                sizeLimitError: ContentBlockerService.ContentBlockerSizeLimitError? = nil,
                 budgetExpired: Int? = nil
             ) -> TargetCompilationResult {
                 TargetCompilationResult(
                     target: request.target, outcome: outcome,
-                    failureDescription: failureDescription, budgetExpired: budgetExpired,
+                    failureDescription: failureDescription, sizeLimitError: sizeLimitError, budgetExpired: budgetExpired,
                     durationMs: Int(Date().timeIntervalSince(started) * 1000)
                 )
             }
@@ -2125,7 +2129,10 @@ public actor SharedAutoUpdateManager {
             } catch is CancellationError {
                 return result()
             } catch {
-                return result(failureDescription: LogErrorDescriber.describe(error))
+                return result(
+                    failureDescription: LogErrorDescriber.describe(error),
+                    sizeLimitError: error as? ContentBlockerService.ContentBlockerSizeLimitError
+                )
             }
         }, onResult: { result in
             results.append(result)

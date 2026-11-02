@@ -76,6 +76,7 @@ public enum FilterDownloadProcessor {
             to: filter
         )
         updatedFilter.sourceRuleCount = FilterList.countRules(in: finalContent)
+        updatedFilter.sourceSizeBytes = finalData.count
         updatedFilter.rawSourceRuleCount = rawCount
         updatedFilter.lastUpdated = Date()
         updatedFilter.etag = etag

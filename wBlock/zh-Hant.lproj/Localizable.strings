@@ -1049,3 +1049,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Excluded Sites" = "排除的網站";
 "Cosmetic filtering applies only on these sites." = "外觀過濾僅在這些網站上套用。";
 "Custom URL" = "自訂 URL";
+
+"Content blocker JSON exceeds the %@ MB size limit on iOS. Disable some filter lists and try again." = "內容阻擋器 JSON 超過了 iOS 上 %@ MB 的大小限制。請停用部分過濾列表後重試。";
