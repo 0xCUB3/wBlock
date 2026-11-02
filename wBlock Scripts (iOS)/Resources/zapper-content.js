@@ -532,11 +532,12 @@
       #${UI_ROOT_ID} .wblock-overflow button { width: 100%; justify-content: flex-start; text-align: left; min-height: 36px; padding: 8px 10px; border-radius: 9px; background: var(--wb-fill); border: 1px solid var(--wb-line); font-weight: 500; }
       #${UI_ROOT_ID} .wblock-history { display: flex; gap: 4px; }
       #${UI_ROOT_ID} .wblock-history button { flex: 1 1 0; justify-content: center; text-align: center; }
-      /* 16px keeps iOS from zooming the page when the field takes focus. */
       #${UI_ROOT_ID} .wblock-rule-form { display: none; flex-direction: column; gap: 6px; padding: 4px; }
       #${UI_ROOT_ID} .wblock-overflow.wblock-editing > :not(.wblock-rule-form) { display: none; }
       #${UI_ROOT_ID} .wblock-overflow.wblock-editing .wblock-rule-form { display: flex; }
-      #${UI_ROOT_ID} .wblock-rule-form input { all: initial; box-sizing: border-box; width: 100%; min-height: 34px; padding: 7px 9px; border-radius: 9px; background: var(--wb-fill); color: var(--wb-text); font: 16px -apple-system, system-ui, sans-serif; cursor: text; -webkit-user-select: text; user-select: text; }
+      /* iOS zooms the page into a focused field under 16px, so the field is
+         16px drawn at 13px to match the panel. */
+      #${UI_ROOT_ID} .wblock-rule-form input { all: initial; box-sizing: border-box; width: calc(100% / 0.8125); height: calc(34px / 0.8125); margin: 0 calc(-100% * 0.1875 / 0.8125) calc(34px - 34px / 0.8125) 0; padding: 0 11px; border-radius: 11px; background: var(--wb-fill); color: var(--wb-text); font: 16px -apple-system, system-ui, sans-serif; transform: scale(0.8125); transform-origin: 0 0; cursor: text; -webkit-user-select: text; user-select: text; }
       #${UI_ROOT_ID} .wblock-rule-form button { justify-content: center; text-align: center; background: var(--wb-fill); font-weight: 600; }
       #${HIGHLIGHT_ID} { position: fixed; pointer-events: none; z-index: 2147483646; border: 2px solid rgb(229,72,77); border-radius: 8px; background: rgba(229,72,77,0.08); transform: translate3d(0,0,0); }
       #${TOAST_ID} { position: absolute; right: 0; bottom: calc(100% + 8px); display: none; pointer-events: none; }
