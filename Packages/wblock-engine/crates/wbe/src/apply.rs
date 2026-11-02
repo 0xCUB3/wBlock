@@ -1449,10 +1449,12 @@ mod tests {
         );
     }
 
-    #[test]
-    #[ignore]
-    fn benchmark_real_lists() {
-        let mut paths: Vec<_> = std::fs::read_dir("/tmp/wbprof/container")
+    /// The real lists in `WBE_BENCH_LISTS` (default /tmp/wbprof/container),
+    /// spread over five blockers as lists % 5. `scoped` adds site scopes and
+    /// a cosmetic scope so the scope paths are covered too.
+    fn real_lists_plan(scoped: bool) -> Plan {
+        let dir = std::env::var("WBE_BENCH_LISTS").unwrap_or("/tmp/wbprof/container".into());
+        let mut paths: Vec<_> = std::fs::read_dir(&dir)
             .unwrap()
             .map(|entry| entry.unwrap().path())
             .filter(|path| {
@@ -1464,11 +1466,34 @@ mod tests {
             })
             .collect();
         paths.sort();
-        let lists: Vec<Value> = paths.iter().map(|path| json!({"id":path.file_name().unwrap().to_string_lossy(),"text":std::fs::read_to_string(path).unwrap()})).collect();
+        let lists: Vec<Value> = paths
+            .iter()
+            .enumerate()
+            .map(|(index, path)| {
+                let mut list = json!({"id": path.file_name().unwrap().to_string_lossy(), "text": std::fs::read_to_string(path).unwrap()});
+                if scoped && index % 3 == 0 {
+                    list["scope"] = json!({"exclude": ["example.com", "shop.*"]});
+                } else if scoped && index % 5 == 4 {
+                    list["scope"] = json!({"only": ["news.example.com", "example.*"]});
+                }
+                list
+            })
+            .collect();
         let targets: Vec<Value> = (0..5).map(|slot| json!({"slot":slot + 1,"lists":(0..lists.len()).filter(|index| index % 5 == slot).map(|index| json!({"list":index})).collect::<Vec<_>>() })).collect();
+        let cosmetics = if scoped {
+            json!({"exclude": ["news.example.com"]})
+        } else {
+            json!({})
+        };
+        plan(json!(lists), json!(targets), cosmetics)
+    }
+
+    #[test]
+    #[ignore]
+    fn benchmark_real_lists() {
         let start = std::time::Instant::now();
-        let plan = plan(json!(lists), json!(targets), json!({}));
-        println!("Plan::new {:?}, lists {}", start.elapsed(), paths.len());
+        let plan = real_lists_plan(false);
+        println!("Plan::new {:?}", start.elapsed());
         for target in 0..5 {
             let start = std::time::Instant::now();
             let output = plan.compile_target(target, &[]);
@@ -1477,6 +1502,47 @@ mod tests {
                 start.elapsed(),
                 output.output.webkit.len()
             );
+        }
+    }
+
+    /// Writes every output of every blocker for the real lists, so a
+    /// refactor can be diffed byte for byte. Folder: `WBE_DUMP_DIR`.
+    #[test]
+    #[ignore]
+    fn dump_real_list_outputs() {
+        let dir = std::path::PathBuf::from(
+            std::env::var("WBE_DUMP_DIR").unwrap_or("/tmp/wbe-mem-baseline".into()),
+        );
+        std::fs::create_dir_all(&dir).unwrap();
+        let extra = Extra {
+            text: "example.com##.wbe-extra\n||extra-check.example^\n@@||extra-check.example/ok^$image\nexample.com##+js(set, wbe, 1)\n".into(),
+            trusted: false,
+        };
+        let cases = [
+            ("plain", false, Vec::new()),
+            ("plain-extra", false, vec![extra]),
+            ("scoped", true, Vec::new()),
+        ];
+        for (name, scoped, extras) in cases {
+            let plan = real_lists_plan(scoped);
+            let mut fingerprints = String::new();
+            for target in 0..plan.target_count() {
+                let output = plan.compile_target(target, &extras);
+                assert_eq!(output.fingerprint, plan.fingerprint(target, &extras));
+                fingerprints += &format!("t{target} {}\n", output.fingerprint);
+                let base = dir.join(format!("{name}-t{target}"));
+                let write = |suffix: &str, text: String| {
+                    std::fs::write(format!("{}.{suffix}", base.display()), text).unwrap()
+                };
+                write("webkit.json", crate::webkit::to_json(&output.output.webkit));
+                write(
+                    "runtime.json",
+                    serde_json::to_string(&output.output.runtime).unwrap(),
+                );
+                write("admitted.json", serde_json::to_string(&output.admitted).unwrap());
+                write("stats.json", serde_json::to_string(&output.output.stats).unwrap());
+            }
+            std::fs::write(dir.join(format!("{name}-fingerprints.txt")), fingerprints).unwrap();
         }
     }
 }
