@@ -140,11 +140,22 @@ struct Parsed {
 }
 
 struct ParsedList {
-    rules: Vec<Parsed>,
+    /// The records in line order, in the chunks they were parsed in.
+    chunks: Vec<Vec<Parsed>>,
     has_affinity: bool,
     /// A `!#` directive anywhere keeps the list out of #681 dedupe, as before.
     has_directive: bool,
     stats: Stats,
+}
+
+impl ParsedList {
+    fn records(&self) -> impl Iterator<Item = &Parsed> + '_ {
+        self.chunks.iter().flatten()
+    }
+
+    fn count(&self) -> usize {
+        self.chunks.iter().map(Vec::len).sum()
+    }
 }
 
 /// What `parse` reads from a list, so a list's records can be reused by any
@@ -215,6 +226,13 @@ pub fn clear_parse_cache() {
 /// Records per network unit: the granularity at which rules are parsed and
 /// compiled, so a unit's rules are the only ones held at once.
 const UNIT_RECORDS: usize = 2048;
+
+/// A run of records of one chunk of one list.
+struct Unit {
+    list: usize,
+    chunk: usize,
+    range: Range<usize>,
+}
 
 /// A `fmt::Write` that hashes the text it is given.
 struct HashText<'a>(&'a mut DefaultHasher);
@@ -338,16 +356,11 @@ impl Plan {
     /// keeps what the compile needs from them and drops the rules themselves.
     /// `segment` is the blocker's #925 segment list, whose plain blocks stay
     /// out of the set.
-    fn scan(
-        &self,
-        target: usize,
-        list: usize,
-        range: Range<usize>,
-        segment: Option<usize>,
-    ) -> ListScan {
+    fn scan(&self, target: usize, unit: &Unit, segment: Option<usize>) -> ListScan {
+        let list = unit.list;
         let scope = &self.lists[list].scope;
         let mut out = ListScan::default();
-        for p in &self.parsed[list].rules[range] {
+        for p in &self.parsed[list].chunks[unit.chunk][unit.range.clone()] {
             if !self.keeps(target, list, p) {
                 continue;
             }
@@ -379,25 +392,24 @@ impl Plan {
     }
 
     /// The record ranges every blocker's passes work on, in list order.
-    fn record_units(&self) -> Vec<(usize, Range<usize>)> {
-        self.parsed
-            .iter()
-            .enumerate()
-            .flat_map(|(list, parsed)| {
-                let records = parsed.rules.len();
-                (0..records)
-                    .step_by(UNIT_RECORDS)
-                    .map(move |start| (list, start..(start + UNIT_RECORDS).min(records)))
-            })
-            .collect()
+    fn record_units(&self) -> Vec<Unit> {
+        let mut units = Vec::new();
+        for (list, parsed) in self.parsed.iter().enumerate() {
+            for (chunk, records) in parsed.chunks.iter().enumerate() {
+                for start in (0..records.len()).step_by(UNIT_RECORDS) {
+                    let range = start..(start + UNIT_RECORDS).min(records.len());
+                    units.push(Unit { list, chunk, range });
+                }
+            }
+        }
+        units
     }
 
     /// `scan` for every list, the record ranges in parallel and merged per list.
     fn scans(&self, target: usize, segment: Option<usize>) -> Vec<ListScan> {
         let units = self.record_units();
         let parts = parallel_indices(units.len(), |u| {
-            let (list, range) = &units[u];
-            (*list, self.scan(target, *list, range.clone(), segment))
+            (units[u].list, self.scan(target, &units[u], segment))
         });
         let mut lists: Vec<ListScan> = (0..self.lists.len()).map(|_| ListScan::default()).collect();
         for (list, part) in parts {
@@ -408,16 +420,11 @@ impl Plan {
 
     /// The network rules `scan` adds to the blocker's set from records `range`
     /// of `list`, in order. Parsed again, so a unit can be compiled on its own.
-    fn network_unit(
-        &self,
-        target: usize,
-        list: usize,
-        range: Range<usize>,
-        segment: Option<usize>,
-    ) -> Vec<NetworkRule> {
+    fn network_unit(&self, target: usize, unit: &Unit, segment: Option<usize>) -> Vec<NetworkRule> {
+        let list = unit.list;
         let scope = &self.lists[list].scope;
         let mut out = Vec::new();
-        for p in self.parsed[list].rules[range].iter().filter(|p| p.network) {
+        for p in self.parsed[list].chunks[unit.chunk][unit.range.clone()].iter().filter(|p| p.network) {
             if !self.keeps(target, list, p) {
                 continue;
             }
@@ -447,7 +454,7 @@ impl Plan {
                     let parsed = &self.parsed[list];
                     let types = slot_types(self.targets[t].slot);
                     let assigned = self.assigned(t, list).is_some();
-                    for p in parsed.rules.iter().filter(|p| p.shared) {
+                    for p in parsed.records().filter(|p| p.shared) {
                         let included = match (parsed.has_affinity, p.affinity) {
                             (true, Some(mask)) => mask & types != 0,
                             _ => assigned,
@@ -472,7 +479,7 @@ impl Plan {
                 let Some(assignment) = target.lists.iter().find(|l| l.list == list) else {
                     continue;
                 };
-                for p in parsed.rules.iter().filter(|p| !p.shared) {
+                for p in parsed.records().filter(|p| !p.shared) {
                     if let Some((i, n)) = assignment.shard {
                         if p.identity % n as u64 != i as u64 {
                             continue;
@@ -607,9 +614,7 @@ impl Plan {
             &ctx,
             units.len() + 1,
             |unit| match units.get(unit) {
-                Some((list, range)) => {
-                    self.network_unit(target, *list, range.clone(), segment_list)
-                }
+                Some(unit) => self.network_unit(target, unit, segment_list),
                 None => tail.lock().expect("tail lock").take().expect("tail unit once"),
             },
             others,
@@ -619,7 +624,7 @@ impl Plan {
         if let Some(list) = segment_list {
             let mut segment = RuleSet::default();
             let assignment = self.assigned(target, list).cloned();
-            for p in &self.parsed[list].rules {
+            for p in self.parsed[list].records() {
                 // A badfilter is segment-wide, whatever its shard.
                 if p.badfilter {
                     segment.push(self.rule(list, p));
@@ -669,7 +674,7 @@ impl Plan {
                     && !self.parsed[l].has_affinity
                     && self.duplicates[target][l].is_empty()
             })
-            .max_by_key(|&l| self.parsed[l].rules.len())
+            .max_by_key(|&l| self.parsed[l].count())
     }
 
     fn cosmetic_scoped(&self, mut rule: Rule) -> Option<Rule> {
@@ -701,18 +706,18 @@ impl Plan {
         }
         let mut sorted: Vec<&str> = patterns.iter().copied().collect();
         sorted.sort_unstable();
-        let units: Vec<(usize, Range<usize>)> = self
+        let units: Vec<Unit> = self
             .record_units()
             .into_iter()
-            .filter(|(list, _)| self.assigned(target, *list).is_none())
+            .filter(|unit| self.assigned(target, unit.list).is_none())
             .collect();
         // Candidates pass the cancel check per record range, in parallel; the
         // `seen` check that makes each rule count once runs after, in order.
         let candidates = parallel_indices(units.len(), |u| {
-            let (list, range) = &units[u];
+            let Unit { list, chunk, range } = &units[u];
             let list = *list;
             let mut found: Vec<(u64, Rule)> = Vec::new();
-            for p in self.parsed[list].rules[range.clone()].iter().filter(|p| p.shared) {
+            for p in self.parsed[list].chunks[*chunk][range.clone()].iter().filter(|p| p.shared) {
                 let mut scoped_rules = Vec::new();
                 scoped(self.rule(list, p), &self.lists[list].scope, &mut scoped_rules);
                 for rule in scoped_rules {
@@ -753,18 +758,81 @@ impl Plan {
     }
 }
 
+/// Bytes of list text one thread parses at a time. Chunks end at line ends.
+/// A list with an affinity block is parsed in one piece, because the block's
+/// type carries from one line to the next.
+const PARSE_CHUNK: usize = 1 << 20;
+
 /// The records of `list`. Each rule is parsed again from its line when a
 /// blocker needs it (`Plan::rule`), with the list's index, so the index is not
 /// needed here.
 fn parse(list: &ListSpec) -> ParsedList {
+    parse_chunked(list, PARSE_CHUNK)
+}
+
+/// `parse` with chunks of about `chunk_bytes`, parsed in parallel. The records,
+/// line numbers, and stats are the same whatever the chunk size.
+fn parse_chunked(list: &ListSpec, chunk_bytes: usize) -> ParsedList {
+    let text = list.text.as_str();
+    let spans = if text.contains(AFFINITY) {
+        vec![(0..text.len(), 0)]
+    } else {
+        line_spans(text, chunk_bytes)
+    };
+    let parts = if spans.len() == 1 {
+        vec![parse_lines(list, spans[0].0.clone(), spans[0].1)]
+    } else {
+        parallel_indices(spans.len(), |i| parse_lines(list, spans[i].0.clone(), spans[i].1))
+    };
+    let mut merged = ParsedList {
+        chunks: Vec::with_capacity(parts.len()),
+        has_affinity: false,
+        has_directive: false,
+        stats: Stats::default(),
+    };
+    for part in parts {
+        merged.has_affinity |= part.has_affinity;
+        merged.has_directive |= part.has_directive;
+        merged.stats.merge(&part.stats);
+        merged.chunks.extend(part.chunks);
+    }
+    merged
+}
+
+/// Byte ranges of `text` of about `chunk_bytes` each, ending after a newline,
+/// with the number of lines before each.
+fn line_spans(text: &str, chunk_bytes: usize) -> Vec<(Range<usize>, u32)> {
+    let bytes = text.as_bytes();
+    let mut spans = Vec::new();
+    let (mut start, mut lines_before) = (0, 0u32);
+    loop {
+        let end = if bytes.len() - start <= chunk_bytes {
+            bytes.len()
+        } else {
+            memchr::memchr(b'\n', &bytes[start + chunk_bytes..])
+                .map_or(bytes.len(), |at| start + chunk_bytes + at + 1)
+        };
+        spans.push((start..end, lines_before));
+        lines_before += bytes[start..end].iter().filter(|&&b| b == b'\n').count() as u32;
+        start = end;
+        if start == bytes.len() {
+            return spans;
+        }
+    }
+}
+
+/// The records of the lines of `list.text` in `span`, whose first line is
+/// number `lines_before + 1`.
+fn parse_lines(list: &ListSpec, span: Range<usize>, lines_before: u32) -> ParsedList {
+    let text = &list.text[span];
     let mut stats = Stats::default();
     // Sized up front: growing it would leave the old buffers behind.
-    let mut rules = Vec::with_capacity(list.text.lines().count());
+    let mut rules = Vec::with_capacity(text.lines().count());
     let mut affinity: Option<u8> = None;
     let mut has_affinity = false;
     let mut has_directive = false;
     // Lines are parsed one at a time so affinity blocks can be tracked.
-    for (n, line) in list.text.lines().enumerate() {
+    for (n, line) in text.lines().enumerate() {
         let trimmed = line.trim();
         if let Some(rest) = trimmed.strip_prefix(AFFINITY) {
             has_affinity = true;
@@ -783,7 +851,7 @@ fn parse(list: &ListSpec) -> ParsedList {
         for (position, rule) in parsed_line.iter().enumerate() {
             rules.push(Parsed {
                 offset,
-                line: n as u32 + 1,
+                line: lines_before + n as u32 + 1,
                 index: position as u32,
                 identity: identity_in_scope(raw(rule), &list.scope),
                 shared: is_shared(rule),
@@ -796,7 +864,7 @@ fn parse(list: &ListSpec) -> ParsedList {
         stats.merge(&line_stats);
     }
     ParsedList {
-        rules,
+        chunks: vec![rules],
         has_affinity,
         has_directive,
         stats,
@@ -1249,7 +1317,7 @@ mod tests {
     fn included(plan: &Plan, target: usize, list: usize) -> Vec<Rule> {
         let scope = &plan.lists[list].scope;
         let mut out = Vec::new();
-        for p in &plan.parsed[list].rules {
+        for p in plan.parsed[list].records() {
             if plan.keeps(target, list, p) {
                 scoped(plan.rule(list, p), scope, &mut out);
             }
@@ -1305,6 +1373,39 @@ mod tests {
         assert!(!Arc::ptr_eq(&second.parsed[0], &scoped.parsed[0]));
         cache.clear();
         assert!(cache.entries().is_empty());
+    }
+
+    #[test]
+    fn chunked_parse_matches_one_piece() {
+        let text: String = (0..300)
+            .map(|i| match i % 4 {
+                0 => format!("||ad{i}.example^$third-party\n"),
+                1 => format!("! comment {i}\n"),
+                2 => format!("@@||ad{}.example^\r\n", i - 2),
+                _ => format!("example.com##.ad-{i}\n"),
+            })
+            .collect();
+        let list = ListSpec {
+            id: "chunks".into(),
+            text,
+            path: None,
+            trusted: false,
+            scope: SiteScope::default(),
+        };
+        let records = |parsed: &ParsedList| -> Vec<(usize, u32, u32, u64, bool, bool)> {
+            parsed
+                .records()
+                .map(|p| (p.offset, p.line, p.index, p.identity, p.shared, p.network))
+                .collect()
+        };
+        let whole = parse_chunked(&list, usize::MAX);
+        for chunk in [1, 64, 1000] {
+            let chunked = parse_chunked(&list, chunk);
+            assert!(chunked.chunks.len() > 1, "chunk {chunk} gives one chunk");
+            assert_eq!(records(&chunked), records(&whole), "chunk {chunk}");
+            assert_eq!(chunked.stats.lines, whole.stats.lines);
+            assert_eq!(chunked.stats.rules, whole.stats.rules);
+        }
     }
 
     #[test]
