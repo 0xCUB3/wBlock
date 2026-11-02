@@ -15,14 +15,18 @@
 use crate::ast::{
     DomainList, DomainMatcher, NetworkAction, NetworkRule, Party, ResourceTypes, Rule,
 };
-use crate::compile::{compile_rules, parse_list, CompileOptions, CompileOutput, RuleSet, Stats};
+use crate::compile::{
+    compile_blocker, compile_rules, parallel_indices, parse_list, CompileOptions, CompileOutput,
+    NetworkContext, Others, RuleSet, Stats,
+};
 use crate::parse::cosmetic::with_domains;
 use crate::webkit::{SafariVersion, WebkitJson, WkAction, WkRule, WkTrigger};
 use serde::{Deserialize, Serialize};
-use std::borrow::Cow;
 use std::collections::hash_map::DefaultHasher;
 use rustc_hash::{FxHashMap, FxHashSet};
 use std::collections::BTreeMap;
+use std::ops::Range;
+use std::sync::Mutex;
 use std::hash::{Hash, Hasher};
 
 #[derive(Debug, Clone, Default, Deserialize)]
@@ -141,6 +145,39 @@ struct ParsedList {
     stats: Stats,
 }
 
+/// Records per network unit: the granularity at which rules are parsed and
+/// compiled, so a unit's rules are the only ones held at once.
+const UNIT_RECORDS: usize = 2048;
+
+/// What one list adds to a blocker, gathered by `Plan::scan` in one pass over
+/// the list's rules, which are then dropped.
+#[derive(Default)]
+struct ListScan {
+    /// Whether the blocker takes any rule of the list. A list it takes none
+    /// from adds no stats and no admission counts.
+    takes: bool,
+    /// #836 keys of the kept network rules, exceptions excluded.
+    keys: Vec<PatternKey>,
+    /// Admission identities of the kept rules, in order.
+    admitted: Vec<u64>,
+    /// The whole-set facts of the kept network rules.
+    ctx: NetworkContext,
+    /// Cosmetic and scriptlet rules kept, in order.
+    others: Others,
+}
+
+impl ListScan {
+    /// Adds `part`, the scan of a later range of the same list.
+    fn absorb(&mut self, part: ListScan) {
+        self.takes |= part.takes;
+        self.keys.extend(part.keys);
+        self.admitted.extend(part.admitted);
+        self.ctx.merge(part.ctx);
+        self.others.cosmetic.extend(part.others.cosmetic);
+        self.others.scriptlets.extend(part.others.scriptlets);
+    }
+}
+
 pub struct Plan {
     opts: CompileOptions,
     lists: Vec<ListSpec>,
@@ -158,8 +195,8 @@ impl Plan {
         let opts = CompileOptions {
             safari: SafariVersion::new(request.safari.0, request.safari.1),
         };
-        let parsed = parallel(&request.lists, |index, list| parse(list, index as u32));
-        let text_hashes = parallel(&request.lists, |_, list| hash(&list.text));
+        let parsed = parallel_indices(request.lists.len(), |i| parse(&request.lists[i], i as u32));
+        let text_hashes = parallel_indices(request.lists.len(), |i| hash(&request.lists[i].text));
         let mut plan = Plan {
             opts,
             lists: request.lists,
@@ -192,34 +229,118 @@ impl Plan {
         self.targets[target].lists.iter().find(|l| l.list == list)
     }
 
-    /// The rules of `list` that blocker `target` compiles, site scope applied.
-    /// `included` for every list, materialized in parallel.
-    fn included_all(&self, target: usize) -> Vec<Vec<Rule>> {
-        let lists: Vec<usize> = (0..self.lists.len()).collect();
-        parallel(&lists, |_, &list| self.included(target, list))
-    }
-
-    fn included(&self, target: usize, list: usize) -> Vec<Rule> {
+    /// Whether blocker `target` keeps the rule at `p` of `list`: its shard or
+    /// affinity types, and no #681 duplicate of another blocker's.
+    fn keeps(&self, target: usize, list: usize, p: &Parsed) -> bool {
         let types = slot_types(self.targets[target].slot);
         let assignment = self.assigned(target, list);
         let parsed = &self.parsed[list];
-        if assignment.is_none() && !parsed.has_affinity {
-            return Vec::new();
+        let keep = match (parsed.has_affinity, p.affinity, assignment) {
+            (true, Some(mask), _) => mask & types != 0,
+            (_, _, Some(a)) => {
+                p.shared || a.shard.map_or(true, |(i, n)| p.identity % n as u64 == i as u64)
+            }
+            _ => false,
+        };
+        keep && !self.duplicates[target][list].contains(&p.identity)
+    }
+
+    /// One pass over records `range` of `list` for blocker `target`, which
+    /// keeps what the compile needs from them and drops the rules themselves.
+    /// `segment` is the blocker's #925 segment list, whose plain blocks stay
+    /// out of the set.
+    fn scan(
+        &self,
+        target: usize,
+        list: usize,
+        range: Range<usize>,
+        segment: Option<usize>,
+    ) -> ListScan {
+        let scope = &self.lists[list].scope;
+        let mut out = ListScan::default();
+        for p in &self.parsed[list].rules[range] {
+            if !self.keeps(target, list, p) {
+                continue;
+            }
+            let mut rules = Vec::new();
+            scoped(self.rule(list, p), scope, &mut rules);
+            out.takes |= !rules.is_empty();
+            for rule in rules {
+                let Some(rule) = self.cosmetic_scoped(rule) else {
+                    continue;
+                };
+                out.admitted.push(identity(raw(&rule)));
+                if let Rule::Network(r) = &rule {
+                    if let Some(key) = PatternKey::of(r).filter(|_| !r.exception) {
+                        out.keys.push(key);
+                    }
+                }
+                // Segment blocks compile unscoped; the ignore rules scope them.
+                if Some(list) == segment && is_plain_block(&rule) {
+                    continue;
+                }
+                match rule {
+                    Rule::Network(r) => out.ctx.add(&r),
+                    Rule::Cosmetic(r) => out.others.cosmetic.push(r),
+                    Rule::Scriptlet(r) => out.others.scriptlets.push(r),
+                }
+            }
         }
+        out
+    }
+
+    /// The record ranges every blocker's passes work on, in list order.
+    fn record_units(&self) -> Vec<(usize, Range<usize>)> {
+        self.parsed
+            .iter()
+            .enumerate()
+            .flat_map(|(list, parsed)| {
+                let records = parsed.rules.len();
+                (0..records)
+                    .step_by(UNIT_RECORDS)
+                    .map(move |start| (list, start..(start + UNIT_RECORDS).min(records)))
+            })
+            .collect()
+    }
+
+    /// `scan` for every list, the record ranges in parallel and merged per list.
+    fn scans(&self, target: usize, segment: Option<usize>) -> Vec<ListScan> {
+        let units = self.record_units();
+        let parts = parallel_indices(units.len(), |u| {
+            let (list, range) = &units[u];
+            (*list, self.scan(target, *list, range.clone(), segment))
+        });
+        let mut lists: Vec<ListScan> = (0..self.lists.len()).map(|_| ListScan::default()).collect();
+        for (list, part) in parts {
+            lists[list].absorb(part);
+        }
+        lists
+    }
+
+    /// The network rules `scan` adds to the blocker's set from records `range`
+    /// of `list`, in order. Parsed again, so a unit can be compiled on its own.
+    fn network_unit(
+        &self,
+        target: usize,
+        list: usize,
+        range: Range<usize>,
+        segment: Option<usize>,
+    ) -> Vec<NetworkRule> {
         let scope = &self.lists[list].scope;
         let mut out = Vec::new();
-        for p in &parsed.rules {
-            let keep = match (parsed.has_affinity, p.affinity, assignment) {
-                (true, Some(mask), _) => mask & types != 0,
-                (_, _, Some(a)) => {
-                    p.shared
-                        || a.shard
-                            .map_or(true, |(i, n)| p.identity % n as u64 == i as u64)
+        for p in &self.parsed[list].rules[range] {
+            if !self.keeps(target, list, p) {
+                continue;
+            }
+            let mut rules = Vec::new();
+            scoped(self.rule(list, p), scope, &mut rules);
+            for rule in rules {
+                if Some(list) == segment && is_plain_block(&rule) {
+                    continue;
                 }
-                _ => false,
-            };
-            if keep && !self.duplicates[target][list].contains(&p.identity) {
-                scoped(self.rule(list, p), scope, &mut out);
+                if let Rule::Network(r) = rule {
+                    out.push(*r);
+                }
             }
         }
         out
@@ -291,8 +412,8 @@ impl Plan {
     /// blockers changes it only through those copies, so callers can reuse a
     /// blocker's last output when it is unchanged.
     pub fn fingerprint(&self, target: usize, extras: &[Extra]) -> u64 {
-        let included = self.included_all(target);
-        let replicated = self.replicated_exceptions(target, &included);
+        let scans = self.scans(target, None);
+        let replicated = self.replicated(target, &scans);
         self.fingerprint_of(target, extras, &replicated)
     }
 
@@ -326,53 +447,47 @@ impl Plan {
 
     pub fn compile_target(&self, target: usize, extras: &[Extra]) -> TargetOutput {
         let segment_list = self.segment_list(target);
-        let mut set = RuleSet::default();
-        let mut segment = RuleSet::default();
+        let scans = self.scans(target, segment_list);
+        let replicated = self.replicated(target, &scans);
+        let fingerprint = self.fingerprint_of(target, extras, &replicated);
+
+        let mut stats = Stats::default();
         let mut admitted = BTreeMap::new();
         let mut seen = FxHashSet::default();
-        let mut stats = Stats::default();
-        let included = self.included_all(target);
-        let replicated = self.replicated_exceptions(target, &included);
-        let fingerprint = self.fingerprint_of(target, extras, &replicated);
-        for (list, rules) in included.into_iter().enumerate() {
-            if rules.is_empty() {
-                continue;
-            }
-            stats.merge(&self.parsed[list].stats);
-            let count = admitted.entry(self.lists[list].id.clone()).or_insert(0u64);
-            for rule in rules {
-                let Some(rule) = self.cosmetic_scoped(rule) else {
-                    continue;
-                };
-                if seen.insert(identity(raw(&rule))) {
-                    *count += 1;
+        let mut ctx = NetworkContext::default();
+        let mut others = Others::default();
+        // Network rules come in units: one range of records per list, then the
+        // replicated and extra rules.
+        for (list, scan) in scans.into_iter().enumerate() {
+            if scan.takes {
+                stats.merge(&self.parsed[list].stats);
+                let count = admitted.entry(self.lists[list].id.clone()).or_insert(0u64);
+                for id in scan.admitted {
+                    if seen.insert(id) {
+                        *count += 1;
+                    }
                 }
-                // Segment blocks compile unscoped; the ignore rules scope them.
-                if Some(list) == segment_list && is_plain_block(&rule) {
-                    continue;
-                }
-                set.push(Cow::Owned(rule));
             }
+            ctx.merge(scan.ctx);
+            others.cosmetic.extend(scan.others.cosmetic);
+            others.scriptlets.extend(scan.others.scriptlets);
         }
-        if let Some(list) = segment_list {
-            let assignment = self.assigned(target, list).cloned();
-            for p in &self.parsed[list].rules {
-                let keep = assignment.as_ref().is_some_and(|a| {
-                    a.shard
-                        .is_none_or(|(i, n)| p.identity % n as u64 == i as u64)
-                });
-                // A badfilter is segment-wide, whatever its shard.
-                let kept = keep && p.plain && !self.duplicates[target][list].contains(&p.identity);
-                if p.badfilter || kept {
-                    segment.push(Cow::Owned(self.rule(list, p)));
-                }
-            }
-        }
+        let units = self.record_units();
+        let mut tail = Vec::new();
+        // The segment's `$badfilter` rules include the replicated ones.
+        let mut replicated_badfilters = Vec::new();
         for rule in replicated {
-            if matches!(&rule, Rule::Network(r) if r.badfilter) {
-                segment.push(Cow::Owned(rule.clone()));
+            match rule {
+                Rule::Network(r) => {
+                    ctx.add(&r);
+                    if r.badfilter {
+                        replicated_badfilters.push(Rule::Network(r.clone()));
+                    }
+                    tail.push(*r);
+                }
+                Rule::Cosmetic(r) => others.cosmetic.push(r),
+                Rule::Scriptlet(r) => others.scriptlets.push(r),
             }
-            set.push(Cow::Owned(rule));
         }
         for (i, extra) in extras.iter().enumerate() {
             let mut extra_stats = Stats::default();
@@ -382,15 +497,53 @@ impl Plan {
                 extra.trusted,
                 &mut extra_stats,
             ) {
-                if let Some(rule) = self.cosmetic_scoped(rule) {
-                    set.push(Cow::Owned(rule));
+                match self.cosmetic_scoped(rule) {
+                    Some(Rule::Network(r)) => {
+                        ctx.add(&r);
+                        tail.push(*r);
+                    }
+                    Some(Rule::Cosmetic(r)) => others.cosmetic.push(r),
+                    Some(Rule::Scriptlet(r)) => others.scriptlets.push(r),
+                    None => {}
                 }
             }
             stats.merge(&extra_stats);
         }
-        let mut output = compile_rules(&set, &self.opts, stats);
+        let tail = Mutex::new(Some(tail));
+        let mut output = compile_blocker(
+            &ctx,
+            units.len() + 1,
+            |unit| match units.get(unit) {
+                Some((list, range)) => {
+                    self.network_unit(target, *list, range.clone(), segment_list)
+                }
+                None => tail.lock().expect("tail lock").take().expect("tail unit once"),
+            },
+            others,
+            &self.opts,
+            stats,
+        );
         if let Some(list) = segment_list {
-            let front = compile_rules(&segment, &self.opts, Stats::default()).webkit;
+            let mut segment = RuleSet::default();
+            let assignment = self.assigned(target, list).cloned();
+            for p in &self.parsed[list].rules {
+                // A badfilter is segment-wide, whatever its shard.
+                if p.badfilter {
+                    segment.push(self.rule(list, p));
+                    continue;
+                }
+                let keep = assignment.as_ref().is_some_and(|a| {
+                    a.shard
+                        .is_none_or(|(i, n)| p.identity % n as u64 == i as u64)
+                });
+                if keep && p.plain && !self.duplicates[target][list].contains(&p.identity) {
+                    segment.push(self.rule(list, p));
+                }
+            }
+            for rule in replicated_badfilters {
+                segment.push(rule);
+            }
+            let front = compile_rules(segment, &self.opts, Stats::default()).webkit;
             let ignores: Vec<WkRule> = self.lists[list]
                 .scope
                 .exclude
@@ -444,83 +597,67 @@ impl Plan {
     /// #836: network exceptions of lists this blocker does not compile, when
     /// they can cancel one of its blocks (Safari applies an exception only in
     /// its own blocker). Matching errs toward copying, which is harmless.
-    fn replicated_exceptions(&self, target: usize, included: &[Vec<Rule>]) -> Vec<Rule> {
+    fn replicated(&self, target: usize, scans: &[ListScan]) -> Vec<Rule> {
         let mut patterns = FxHashSet::default();
         let mut bare_hosts = FxHashSet::default();
-        for rules in included {
-            for rule in rules {
-                if let Rule::Network(r) = rule {
-                    if let Some(key) = PatternKey::of(r).filter(|_| !r.exception) {
-                        if key.bare {
-                            bare_hosts.insert(key.host.clone().unwrap_or_default());
-                        }
-                        patterns.insert(key.pattern);
-                    }
-                }
+        for key in scans.iter().flat_map(|scan| &scan.keys) {
+            if key.bare {
+                bare_hosts.insert(key.host.clone().unwrap_or_default());
             }
+            patterns.insert(key.pattern.clone());
         }
         let mut sorted: Vec<&String> = patterns.iter().collect();
         sorted.sort_unstable();
-        let mut seen = FxHashSet::default();
-        let mut out = Vec::new();
-        for list in 0..self.lists.len() {
-            if self.assigned(target, list).is_some() {
-                continue;
-            }
-            let mut scoped_rules = Vec::new();
-            for p in self.parsed[list].rules.iter().filter(|p| p.shared) {
+        let units: Vec<(usize, Range<usize>)> = self
+            .record_units()
+            .into_iter()
+            .filter(|(list, _)| self.assigned(target, *list).is_none())
+            .collect();
+        // Candidates pass the cancel check per record range, in parallel; the
+        // `seen` check that makes each rule count once runs after, in order.
+        let candidates = parallel_indices(units.len(), |u| {
+            let (list, range) = &units[u];
+            let list = *list;
+            let mut found: Vec<(u64, Rule)> = Vec::new();
+            for p in self.parsed[list].rules[range.clone()].iter().filter(|p| p.shared) {
+                let mut scoped_rules = Vec::new();
                 scoped(self.rule(list, p), &self.lists[list].scope, &mut scoped_rules);
-            }
-            for rule in scoped_rules {
-                match &rule {
-                    Rule::Cosmetic(r) if r.exception => {
-                        if seen.insert(identity(&r.raw)) {
-                            if let Some(rule) = self.cosmetic_scoped(rule) {
-                                out.push(rule);
+                for rule in scoped_rules {
+                    match &rule {
+                        Rule::Cosmetic(r) if r.exception => {
+                            found.push((identity(&r.raw), rule));
+                        }
+                        Rule::Network(r) if r.exception || r.badfilter => {
+                            let matches = PatternKey::of(r).is_none_or(|key| {
+                                key.host.is_none() || key.cancels(&patterns, &bare_hosts, &sorted)
+                            });
+                            if matches {
+                                found.push((identity(&r.raw), rule));
                             }
                         }
+                        _ => {}
                     }
-                    Rule::Network(r) if r.exception || r.badfilter => {
-                        let matches = PatternKey::of(r).is_none_or(|key| {
-                            key.host.is_none() || key.cancels(&patterns, &bare_hosts, &sorted)
-                        });
-                        if matches && seen.insert(identity(&r.raw)) {
-                            out.push(rule);
-                        }
-                    }
-                    _ => {}
                 }
+            }
+            found
+        });
+        let mut seen = FxHashSet::default();
+        let mut out = Vec::new();
+        for (id, rule) in candidates.into_iter().flatten() {
+            if !seen.insert(id) {
+                continue;
+            }
+            match rule {
+                Rule::Cosmetic(_) => {
+                    if let Some(rule) = self.cosmetic_scoped(rule) {
+                        out.push(rule);
+                    }
+                }
+                rule => out.push(rule),
             }
         }
         out
     }
-}
-
-/// `body(i, item)` for every item on all cores, results in order.
-fn parallel<T: Sync, R: Send>(items: &[T], body: impl Fn(usize, &T) -> R + Sync) -> Vec<R> {
-    let threads = std::thread::available_parallelism()
-        .map_or(4, |n| n.get())
-        .min(items.len().max(1));
-    let chunk = items.len().div_ceil(threads.max(1)).max(1);
-    std::thread::scope(|scope| {
-        let handles: Vec<_> = items
-            .chunks(chunk)
-            .enumerate()
-            .map(|(c, part)| {
-                let body = &body;
-                scope.spawn(move || {
-                    part.iter()
-                        .enumerate()
-                        .map(|(i, item)| body(c * chunk + i, item))
-                        .collect::<Vec<R>>()
-                })
-            })
-            .collect();
-        handles
-            .into_iter()
-            .flat_map(|h| h.join().expect("parse thread"))
-            .collect()
-    })
 }
 
 fn parse(list: &ListSpec, index: u32) -> ParsedList {
@@ -1009,6 +1146,18 @@ mod tests {
     use serde_json::{json, Value};
     use std::collections::HashSet;
 
+    /// The rules blocker `target` keeps from `list`, site scope applied.
+    fn included(plan: &Plan, target: usize, list: usize) -> Vec<Rule> {
+        let scope = &plan.lists[list].scope;
+        let mut out = Vec::new();
+        for p in &plan.parsed[list].rules {
+            if plan.keeps(target, list, p) {
+                scoped(plan.rule(list, p), scope, &mut out);
+            }
+        }
+        out
+    }
+
     fn plan(lists: Value, targets: Value, cosmetics: Value) -> Plan {
         Plan::new(serde_json::from_value(json!({"safari": [18, 0], "lists": lists, "targets": targets, "cosmetics": cosmetics})).unwrap())
     }
@@ -1258,8 +1407,7 @@ mod tests {
                 json!([{"slot":1,"lists":[{"list":0}]}]),
                 json!({}),
             );
-            let kept: Vec<String> = plan
-                .included(0, 0)
+            let kept: Vec<String> = included(&plan, 0, 0)
                 .iter()
                 .map(|r| raw(r).to_string())
                 .collect();
@@ -1282,8 +1430,8 @@ mod tests {
         );
         let output = crate::webkit::to_json(&plan.compile_target(0, &[]).output.webkit);
         assert!(output.contains("deep"), "{output}");
-        let included: Vec<_> = (0..2).map(|list| plan.included(0, list)).collect();
-        assert_eq!(plan.replicated_exceptions(0, &included).len(), 2);
+        let scans = plan.scans(0, None);
+        assert_eq!(plan.replicated(0, &scans).len(), 2);
         assert!(!output.contains("other\\\\.test"), "{output}");
     }
 

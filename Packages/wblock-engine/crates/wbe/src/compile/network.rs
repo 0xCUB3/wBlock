@@ -6,7 +6,7 @@
 //! `compile/mod.rs`; exceptions use ignore-previous-rules.
 
 use super::regex::{domain_top_url, url_filter};
-use super::{CompileOptions, DomainSpan, Emitted, Entry, Stats, Tier};
+use super::{DomainSpan, Emitted, Entry, Stats, Tier};
 use crate::ast::{
     DomainList, DomainMatcher, ExceptionScope, NetworkAction, NetworkRule, Party, Pattern,
     PatternKind, ResourceTypes, SourceRef,
@@ -15,7 +15,6 @@ use crate::webkit::{SafariVersion, WkLoadContext, WkLoadType, WkResourceType};
 use rustc_hash::{FxHashMap, FxHashSet, FxHasher};
 use serde::Serialize;
 use std::collections::hash_map::Entry as MapEntry;
-use std::collections::HashSet;
 use std::hash::Hasher;
 
 /// uBO's default for a rule without `$type`: every type except the main
@@ -29,35 +28,54 @@ const DEFAULT_TYPES: ResourceTypes = ResourceTypes::all().difference(
         .union(ResourceTypes::INLINE_FONT),
 );
 
-pub(super) fn compile(
-    rules: &[&NetworkRule],
-    opts: &CompileOptions,
+/// What a blocker's network rules need from the whole set before any of them
+/// compiles: the hosts of untyped blocks (`StrictHosts`) and the `$badfilter`
+/// rules that cancel identical filters.
+#[derive(Default)]
+pub(crate) struct Context {
+    strict: StrictHosts,
+    bad: Vec<NetworkRule>,
+    bad_bodies: FxHashSet<String>,
+}
+
+impl Context {
+    pub(crate) fn add(&mut self, rule: &NetworkRule) {
+        self.strict.add(rule);
+        if rule.badfilter {
+            let bad = unlabeled(rule);
+            self.bad_bodies.insert(bad.pattern.body.clone());
+            self.bad.push(bad);
+        }
+    }
+
+    pub(crate) fn merge(&mut self, other: Context) {
+        self.strict.hosts.extend(other.strict.hosts);
+        self.strict.parents.extend(other.strict.parents);
+        self.bad.extend(other.bad);
+        self.bad_bodies.extend(other.bad_bodies);
+    }
+}
+
+/// Compiles one network rule of a blocker whose `ctx` covers every rule.
+/// A dropped rule records its reason in `stats`.
+pub(crate) fn emit_rule(
+    ctx: &Context,
+    safari: SafariVersion,
+    rule: &NetworkRule,
     out: &mut Emitted,
     stats: &mut Stats,
 ) {
-    let bad: Vec<NetworkRule> = rules
-        .iter()
-        .filter(|r| r.badfilter)
-        .map(|r| unlabeled(r))
-        .collect();
-    let bad_bodies: HashSet<&str> = bad.iter().map(|b| b.pattern.body.as_str()).collect();
-    let strict = StrictHosts::new(rules);
-    let start = out.entries.len();
-    for rule in rules {
-        if rule.badfilter {
-            continue;
-        }
-        if !bad_bodies.is_empty()
-            && bad_bodies.contains(rule.pattern.body.as_str())
-            && bad.contains(&unlabeled(rule))
-        {
-            continue;
-        }
-        if let Err(reason) = compile_rule(rule, opts.safari, &strict, out) {
-            stats.drop(&reason);
-        }
+    if rule.badfilter {
+        return;
     }
-    dedupe_and_merge(out, start);
+    if ctx.bad_bodies.contains(rule.pattern.body.as_str())
+        && ctx.bad.contains(&unlabeled(rule))
+    {
+        return;
+    }
+    if let Err(reason) = compile_rule(rule, safari, &ctx.strict, out) {
+        stats.drop(&reason);
+    }
 }
 
 /// A rule with its provenance and `$badfilter` flag cleared, for comparing
@@ -186,7 +204,8 @@ fn compile_denyallow(
         denyallow: Vec::new(),
         ..r.clone()
     };
-    let mark = (out.bytes.len(), out.entries.len());
+    let arena = out.arena();
+    let mark = (out.arenas[arena].len(), out.entries.len());
     let result = compile_rule(&block, v, strict, out).and_then(|()| {
         r.denyallow.iter().try_for_each(|host| {
             let allow = NetworkRule {
@@ -204,7 +223,7 @@ fn compile_denyallow(
     });
     if result.is_err() {
         // The block was emitted before a failing exception: drop it too.
-        out.bytes.truncate(mark.0);
+        out.arenas[arena].truncate(mark.0);
         out.entries.truncate(mark.1);
     }
     result
@@ -303,27 +322,23 @@ fn page_cond(p: &Pattern, v: SafariVersion) -> Option<Cond> {
 
 /// Hosts of untyped `||host^` blocks and all their parents, so an exception
 /// can tell whether it lifts one.
+#[derive(Default)]
 struct StrictHosts {
     hosts: FxHashSet<String>,
     parents: FxHashSet<String>,
 }
 
 impl StrictHosts {
-    fn new(rules: &[&NetworkRule]) -> Self {
-        let mut hosts = FxHashSet::default();
-        let mut parents = FxHashSet::default();
-        for r in rules {
-            if r.exception || !r.types.is_empty() || !r.negated_types.is_empty() {
-                continue;
-            }
-            if let Some(h) = host_only(&r.pattern) {
-                for (i, _) in h.match_indices('.') {
-                    parents.insert(h[i + 1..].to_string());
-                }
-                hosts.insert(h);
-            }
+    fn add(&mut self, r: &NetworkRule) {
+        if r.exception || !r.types.is_empty() || !r.negated_types.is_empty() {
+            return;
         }
-        Self { hosts, parents }
+        if let Some(h) = host_only(&r.pattern) {
+            for (i, _) in h.match_indices('.') {
+                self.parents.insert(h[i + 1..].to_string());
+            }
+            self.hosts.insert(h);
+        }
     }
 
     /// A block on `host`, a parent of it, or a subdomain of it.
@@ -474,7 +489,8 @@ struct Trigger<'a> {
 /// field order `WkTrigger` serializes, so the output matches `WkRule`'s.
 /// `ignore` picks `ignore-previous-rules` over `block`.
 fn emit(out: &mut Emitted, tier: Tier, t: &Trigger, ignore: bool) {
-    let bytes = &mut out.bytes;
+    let arena = out.arena();
+    let bytes = &mut out.arenas[arena];
     let start = bytes.len();
     bytes.extend_from_slice(b"{\"trigger\":{\"url-filter\":");
     json_write(bytes, t.url);
@@ -526,6 +542,7 @@ fn emit(out: &mut Emitted, tier: Tier, t: &Trigger, ignore: bool) {
     let end = bytes.len();
     out.entries.push(Entry {
         tier,
+        arena: arena as u32,
         start,
         end,
         domain,
@@ -636,48 +653,92 @@ fn type_drop_reason(types: ResourceTypes, v: SafariVersion) -> String {
     }
 }
 
-/// Drops exact duplicates. Rules that differ only in an `if-domain` list are
-/// merged into one rule with the union, which is exact for `if-domain`. The
-/// tier is part of the key, so the merge never changes precedence.
-fn dedupe_and_merge(out: &mut Emitted, start: usize) {
-    let Emitted { bytes, entries } = out;
-    let count = entries.len() - start;
+/// Compiles the network rules of `units` groups (see `compile_blocker`) in
+/// parallel. Returns them in order, with their stats and the raw text of the
+/// page exceptions among them.
+pub(crate) fn compile_units<U>(
+    ctx: &Context,
+    units: usize,
+    unit: U,
+    safari: SafariVersion,
+) -> (Emitted, Stats, Vec<String>)
+where
+    U: Fn(usize) -> Vec<NetworkRule> + Sync,
+{
+    let parts = super::parallel_indices(units, |i| {
+        let mut out = Emitted::default();
+        let mut stats = Stats::default();
+        let mut page = Vec::new();
+        for rule in unit(i) {
+            if rule.exception
+                && rule
+                    .scope
+                    .intersects(ExceptionScope::DOC | ExceptionScope::EHIDE | ExceptionScope::GHIDE)
+            {
+                page.push(rule.raw.clone());
+            }
+            emit_rule(ctx, safari, &rule, &mut out, &mut stats);
+        }
+        (out, stats, page)
+    });
+    let mut stats = Stats::default();
+    let mut page = Vec::new();
+    let mut arenas = Vec::with_capacity(parts.len());
+    for (out, part_stats, part_page) in parts {
+        stats.merge(&part_stats);
+        page.extend(part_page);
+        arenas.push(out);
+    }
+    let mut emitted = Emitted::absorb(arenas);
+    dedupe_and_merge(&mut emitted);
+    (emitted, stats, page)
+}
+
+/// Drops exact duplicates (the first of each tier and rule wins), then merges
+/// `if-domain` rules that differ only in their domains into the first of them.
+/// Rules are compared in emission order, and the arenas are compacted once
+/// the dropped ones are gone.
+fn dedupe_and_merge(out: &mut Emitted) {
+    let Emitted { arenas, entries } = out;
+    let count = entries.len();
     let mut keep = vec![true; count];
     // Per (tier, hash of the rule's bytes), the newest entry; `older` chains
     // the entries with the same key, and bytes decide each match exactly.
     let mut newest: FxHashMap<(Tier, u64), usize> = FxHashMap::default();
     let mut older = vec![usize::MAX; count];
-    for j in start..entries.len() {
-        let text = &bytes[entries[j].start..entries[j].end];
+    for j in 0..count {
+        let text = &arenas[entries[j].arena as usize][entries[j].start..entries[j].end];
         let mut hasher = FxHasher::default();
         hasher.write(text);
         let key = (entries[j].tier, hasher.finish());
         let mut duplicate = false;
         let mut candidate = newest.get(&key).copied();
         while let Some(i) = candidate {
-            if bytes[entries[i].start..entries[i].end] == *text {
+            let other = &entries[i];
+            if arenas[other.arena as usize][other.start..other.end] == *text {
                 duplicate = true;
                 break;
             }
-            candidate = Some(older[i - start]).filter(|&o| o != usize::MAX);
+            candidate = Some(older[i]).filter(|&o| o != usize::MAX);
         }
         if duplicate {
-            keep[j - start] = false;
+            keep[j] = false;
         } else {
-            older[j - start] = newest.insert(key, j).unwrap_or(usize::MAX);
+            older[j] = newest.insert(key, j).unwrap_or(usize::MAX);
         }
     }
     // An `if-domain` rule whose base (the rule without that key) matches an
     // earlier kept rule's adds its domains to that rule and is dropped.
     let mut merged: FxHashMap<(Tier, Vec<u8>), usize> = FxHashMap::default();
-    for j in start..entries.len() {
-        if !keep[j - start] {
+    for j in 0..count {
+        if !keep[j] {
             continue;
         }
         let entry = &entries[j];
         let Some(span) = &entry.domain else { continue };
-        let mut base = bytes[entry.start..span.head].to_vec();
-        base.extend_from_slice(&bytes[span.tail..entry.end]);
+        let arena = &arenas[entry.arena as usize];
+        let mut base = arena[entry.start..span.head].to_vec();
+        base.extend_from_slice(&arena[span.tail..entry.end]);
         match merged.entry((entry.tier, base)) {
             MapEntry::Occupied(kept) => {
                 let incoming = std::mem::take(
@@ -692,7 +753,7 @@ fn dedupe_and_merge(out: &mut Emitted, start: usize) {
                         target.domains.push(d);
                     }
                 }
-                keep[j - start] = false;
+                keep[j] = false;
             }
             MapEntry::Vacant(slot) => {
                 slot.insert(j);
@@ -701,10 +762,44 @@ fn dedupe_and_merge(out: &mut Emitted, start: usize) {
     }
     let mut index = 0;
     entries.retain(|_| {
-        let kept = index < start || keep[index - start];
         index += 1;
-        kept
+        keep[index - 1]
     });
+    // Dropped rules leave gaps in their arena: slide the kept ones down, and
+    // empty the arenas none of the kept rules is in.
+    let mut used = vec![false; arenas.len()];
+    for entry in entries.iter() {
+        used[entry.arena as usize] = true;
+    }
+    for (arena, _) in arenas.iter_mut().zip(&used).filter(|(_, used)| !**used) {
+        arena.clear();
+    }
+    let mut write = 0;
+    let mut current = usize::MAX;
+    for entry in entries.iter_mut() {
+        let arena_index = entry.arena as usize;
+        if arena_index != current {
+            if current != usize::MAX {
+                arenas[current].truncate(write);
+            }
+            current = arena_index;
+            write = 0;
+        }
+        let bytes = &mut arenas[arena_index];
+        let shift = entry.start - write;
+        let len = entry.end - entry.start;
+        bytes.copy_within(entry.start..entry.end, write);
+        if let Some(span) = entry.domain.as_mut() {
+            span.head -= shift;
+            span.tail -= shift;
+        }
+        entry.start = write;
+        entry.end = write + len;
+        write += len;
+    }
+    if current != usize::MAX {
+        arenas[current].truncate(write);
+    }
 }
 
 #[cfg(test)]
@@ -779,14 +874,14 @@ mod tests {
     }
 
     fn run(rules: &[NetworkRule], v: SafariVersion) -> (Vec<Tiered>, Stats) {
+        let mut ctx = Context::default();
+        rules.iter().for_each(|r| ctx.add(r));
         let mut out = Emitted::default();
         let mut stats = Stats::default();
-        compile(
-            &rules.iter().collect::<Vec<_>>(),
-            &CompileOptions { safari: v },
-            &mut out,
-            &mut stats,
-        );
+        for rule in rules {
+            emit_rule(&ctx, v, rule, &mut out, &mut stats);
+        }
+        dedupe_and_merge(&mut out);
         (out.tiered(), stats)
     }
 

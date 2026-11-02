@@ -28,15 +28,20 @@ pub(super) fn compile(
     stats: &mut Stats,
 ) {
     let safari = opts.safari;
+    // The verdicts parse each selector, and each is independent of the rest.
+    let verdicts = super::parallel_indices(rules.len(), |i| match &rules[i].body {
+        CosmeticBody::Hide(selector) => Some(verdict(selector, safari)),
+        CosmeticBody::Procedural(_) => None,
+    });
     let mut hides: BTreeMap<Key, Vec<Entry>> = BTreeMap::new();
     let mut exceptions: BTreeMap<Key, Vec<Entry>> = BTreeMap::new();
     let mut runtime_lines = BTreeSet::new();
-    for rule in rules {
+    for (rule, verdict) in rules.iter().zip(verdicts) {
         match &rule.body {
             CosmeticBody::Procedural(_) => {
                 runtime_lines.insert(rule.raw.as_str());
             }
-            CosmeticBody::Hide(selector) => match verdict(selector, safari) {
+            CosmeticBody::Hide(selector) => match verdict.expect("hide has a verdict") {
                 Verdict::Invalid => stats.drop("invalid cosmetic selector"),
                 verdict => {
                     let scope = if verdict == Verdict::Native {

@@ -12,10 +12,9 @@ mod cosmetic;
 mod network;
 pub mod regex;
 
-use crate::ast::{ExceptionScope, ParsedLine, Rule, SourceRef};
+use crate::ast::{CosmeticRule, NetworkRule, ParsedLine, Rule, ScriptletRule, SourceRef};
 use crate::webkit::{SafariVersion, WebkitJson, WkRule};
 use serde::{Deserialize, Serialize};
-use std::borrow::Cow;
 use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -74,19 +73,21 @@ pub(crate) struct Tiered {
     pub rule: WkRule,
 }
 
-/// Safari JSON of the network rules, written as they are compiled: one object
-/// per rule in `bytes`, located by `entries`. Nothing is held as a `WkRule`,
-/// which costs several allocations per rule.
+/// Safari JSON of the network rules, written as they are compiled. Each unit
+/// of work writes its own arena and `entries` locates every rule in one of
+/// them. Nothing is held as a `WkRule`, which costs several allocations per
+/// rule.
 #[derive(Debug, Default)]
 pub(crate) struct Emitted {
-    bytes: Vec<u8>,
+    arenas: Vec<Vec<u8>>,
     entries: Vec<Entry>,
 }
 
 #[derive(Debug)]
-struct Entry {
+pub(super) struct Entry {
     tier: Tier,
-    /// `bytes[start..end]` is the rule, unless `domain` is set.
+    arena: u32,
+    /// `arenas[arena][start..end]` is the rule, unless `domain` is set.
     start: usize,
     end: usize,
     /// An `if-domain` rule: its domain list can grow when rules merge.
@@ -94,12 +95,28 @@ struct Entry {
 }
 
 #[derive(Debug)]
-struct DomainSpan {
-    /// `bytes[start..head]` ends before the `if-domain` key and
-    /// `bytes[tail..end]` starts after its array.
+pub(super) struct DomainSpan {
+    /// `arena[start..head]` ends before the `if-domain` key and
+    /// `arena[tail..end]` starts after its array.
     head: usize,
     tail: usize,
     domains: Vec<String>,
+}
+
+pub(crate) use network::Context as NetworkContext;
+
+/// Counts the bytes written to it.
+struct Count(usize);
+
+impl std::io::Write for Count {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        self.0 += buf.len();
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
 }
 
 /// Tiers in output order.
@@ -115,32 +132,81 @@ const TIERS: [Tier; 8] = [
 ];
 
 impl Emitted {
+    /// The arena rules are written to now.
+    pub(super) fn arena(&mut self) -> usize {
+        if self.arenas.is_empty() {
+            self.arenas.push(Vec::new());
+        }
+        self.arenas.len() - 1
+    }
+
+    /// `parts` in order, as one output. Arenas move; entries are re-pointed.
+    fn absorb(parts: Vec<Emitted>) -> Emitted {
+        let mut out = Emitted::default();
+        for part in parts {
+            let base = out.arenas.len() as u32;
+            out.arenas.extend(part.arenas);
+            out.entries.extend(part.entries.into_iter().map(|mut e| {
+                e.arena += base;
+                e
+            }));
+        }
+        out
+    }
+
     fn render(&self, entry: &Entry, out: &mut Vec<u8>) {
+        let arena = &self.arenas[entry.arena as usize];
         match &entry.domain {
-            None => out.extend_from_slice(&self.bytes[entry.start..entry.end]),
+            None => out.extend_from_slice(&arena[entry.start..entry.end]),
             Some(span) => {
-                out.extend_from_slice(&self.bytes[entry.start..span.head]);
+                out.extend_from_slice(&arena[entry.start..span.head]);
                 out.extend_from_slice(b",\"if-domain\":");
                 serde_json::to_writer(&mut *out, &span.domains).expect("domains serialize");
-                out.extend_from_slice(&self.bytes[span.tail..entry.end]);
+                out.extend_from_slice(&arena[span.tail..entry.end]);
+            }
+        }
+    }
+
+    /// The bytes `render` writes for `entry`.
+    fn rendered_len(&self, entry: &Entry) -> usize {
+        match &entry.domain {
+            None => entry.end - entry.start,
+            Some(span) => {
+                let mut domains = Count(0);
+                serde_json::to_writer(&mut domains, &span.domains).expect("domains serialize");
+                (span.head - entry.start)
+                    + b",\"if-domain\":".len()
+                    + domains.0
+                    + (entry.end - span.tail)
             }
         }
     }
 
     pub(crate) fn push_rule(&mut self, tier: Tier, rule: &WkRule) {
-        let start = self.bytes.len();
-        serde_json::to_writer(&mut self.bytes, rule).expect("WkRule serializes");
+        let arena = self.arena();
+        let bytes = &mut self.arenas[arena];
+        let start = bytes.len();
+        serde_json::to_writer(&mut *bytes, rule).expect("WkRule serializes");
+        let end = bytes.len();
         self.entries.push(Entry {
             tier,
+            arena: arena as u32,
             start,
-            end: self.bytes.len(),
+            end,
             domain: None,
         });
     }
 
     /// Everything emitted, in tier order; within a tier, emission order.
     fn into_webkit(self) -> WebkitJson {
-        let mut json = Vec::with_capacity(self.bytes.len() + self.entries.len() + 2);
+        // Sized up front so the output is never copied to grow.
+        let size = self
+            .entries
+            .iter()
+            .map(|e| self.rendered_len(e) + 1)
+            .sum::<usize>()
+            + 2;
+        let mut json = Vec::with_capacity(size);
         json.push(b'[');
         let mut first = true;
         for tier in TIERS {
@@ -172,15 +238,58 @@ impl Emitted {
     }
 }
 
-/// Parsed rules ready for `compile_rules`.
-#[derive(Debug, Clone, Default)]
-pub struct RuleSet<'a> {
-    pub rules: Vec<Cow<'a, Rule>>,
+/// `body(i)` for every `i < count`, on all cores, results in order. Indices
+/// are handed out one at a time, so uneven items still balance.
+pub(crate) fn parallel_indices<R: Send>(count: usize, body: impl Fn(usize) -> R + Sync) -> Vec<R> {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    let threads = std::thread::available_parallelism()
+        .map_or(4, |n| n.get())
+        .min(count.max(1));
+    let next = AtomicUsize::new(0);
+    let done: Vec<(usize, R)> = std::thread::scope(|scope| {
+        let handles: Vec<_> = (0..threads)
+            .map(|_| {
+                let (body, next) = (&body, &next);
+                scope.spawn(move || {
+                    let mut done = Vec::new();
+                    loop {
+                        let i = next.fetch_add(1, Ordering::Relaxed);
+                        if i >= count {
+                            break done;
+                        }
+                        done.push((i, body(i)));
+                    }
+                })
+            })
+            .collect();
+        handles
+            .into_iter()
+            .flat_map(|h| h.join().expect("worker thread"))
+            .collect()
+    });
+    let mut slots: Vec<Option<R>> = (0..count).map(|_| None).collect();
+    for (i, r) in done {
+        slots[i] = Some(r);
+    }
+    slots.into_iter().map(|r| r.expect("every index ran")).collect()
 }
 
-impl<'a> RuleSet<'a> {
-    pub fn push(&mut self, rule: impl Into<Cow<'a, Rule>>) {
-        self.rules.push(rule.into());
+/// The cosmetic and scriptlet rules of one blocker, in compile order.
+#[derive(Debug, Clone, Default)]
+pub struct Others {
+    pub cosmetic: Vec<CosmeticRule>,
+    pub scriptlets: Vec<ScriptletRule>,
+}
+
+/// Parsed rules ready for `compile_rules`, which takes them over.
+#[derive(Debug, Clone, Default)]
+pub struct RuleSet {
+    pub rules: Vec<Rule>,
+}
+
+impl RuleSet {
+    pub fn push(&mut self, rule: Rule) {
+        self.rules.push(rule);
     }
 }
 
@@ -217,55 +326,66 @@ pub fn compile(inputs: &[ListInput], opts: &CompileOptions) -> CompileOutput {
     let mut stats = Stats::default();
     let mut set = RuleSet::default();
     for (list, input) in inputs.iter().enumerate() {
-        for rule in parse_list(input.text, list as u32, input.trusted, &mut stats) {
-            set.push(Cow::Owned(rule));
-        }
+        set.rules
+            .extend(parse_list(input.text, list as u32, input.trusted, &mut stats));
     }
-    compile_rules(&set, opts, stats)
+    compile_rules(set, opts, stats)
 }
 
 /// Compiles parsed rules. `stats` carries what parsing counted.
-pub fn compile_rules(set: &RuleSet, opts: &CompileOptions, mut stats: Stats) -> CompileOutput {
-    let mut runtime = Vec::new();
+pub fn compile_rules(set: RuleSet, opts: &CompileOptions, stats: Stats) -> CompileOutput {
     let mut network = Vec::new();
-    let mut cosmetic = Vec::new();
-    let mut scriptlets = Vec::new();
-    for rule in &set.rules {
-        match rule.as_ref() {
-            Rule::Network(r) => network.push(r.as_ref()),
-            Rule::Cosmetic(r) => cosmetic.push(r),
-            Rule::Scriptlet(r) => scriptlets.push(r),
+    let mut others = Others::default();
+    for rule in set.rules {
+        match rule {
+            Rule::Network(r) => network.push(*r),
+            Rule::Cosmetic(r) => others.cosmetic.push(r),
+            Rule::Scriptlet(r) => others.scriptlets.push(r),
         }
     }
-    let (mut emitted, network_stats, tiered) = std::thread::scope(|scope| {
-        let worker = scope.spawn(|| {
-            let mut emitted = Emitted::default();
-            let mut stats = Stats::default();
-            network::compile(&network, opts, &mut emitted, &mut stats);
-            (emitted, stats)
-        });
-        let mut tiered = Vec::new();
+    let mut ctx = network::Context::default();
+    network.iter().for_each(|r| ctx.add(r));
+    let network = std::sync::Mutex::new(Some(network));
+    compile_blocker(
+        &ctx,
+        1,
+        |_| network.lock().expect("unit lock").take().expect("one unit"),
+        others,
+        opts,
+        stats,
+    )
+}
+
+/// Compiles one blocker. Its network rules come in `units` groups: `unit(i)`
+/// returns group `i` and is called once, from any thread. `ctx` covers every
+/// network rule. Groups compile in parallel and are written in order, while
+/// the cosmetic and scriptlet rules compile alongside them.
+pub(crate) fn compile_blocker<U>(
+    ctx: &network::Context,
+    units: usize,
+    unit: U,
+    others: Others,
+    opts: &CompileOptions,
+    mut stats: Stats,
+) -> CompileOutput
+where
+    U: Fn(usize) -> Vec<NetworkRule> + Sync,
+{
+    let mut runtime = Vec::new();
+    let mut tiered = Vec::new();
+    let cosmetic: Vec<&CosmeticRule> = others.cosmetic.iter().collect();
+    let (mut emitted, network_stats, page_exceptions) = std::thread::scope(|scope| {
+        let worker = scope.spawn(|| network::compile_units(ctx, units, &unit, opts.safari));
         cosmetic::compile(&cosmetic, opts, &mut tiered, &mut runtime, &mut stats);
-        let (emitted, network_stats) = worker.join().expect("network compiler thread");
-        (emitted, network_stats, tiered)
+        worker.join().expect("network compiler thread")
     });
     stats.merge(&network_stats);
     for t in &tiered {
         emitted.push_rule(t.tier, &t.rule);
     }
-    runtime.extend(
-        network
-            .iter()
-            .filter(|r| {
-                r.exception
-                    && r.scope.intersects(
-                        ExceptionScope::DOC | ExceptionScope::EHIDE | ExceptionScope::GHIDE,
-                    )
-            })
-            .map(|r| r.raw.clone()),
-    );
-    for s in scriptlets {
-        runtime.push(s.raw.clone());
+    runtime.extend(page_exceptions);
+    for s in others.scriptlets {
+        runtime.push(s.raw);
     }
     stats.runtime_rules = runtime.len() as u64;
 
