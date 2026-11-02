@@ -129,6 +129,15 @@ npx --yes "esbuild@${ESBUILD_VERSION}" "${SCRIPTLETS_TMP}"/*.js \
   --log-level=error \
   --outdir="${RES_DIR}/scriptlets"
 rm -rf "${SCRIPTLETS_TMP}"
+# AdGuard's scriptlet library, for AdGuard-only scriptlets (loaded on demand).
+npx --yes "esbuild@${ESBUILD_VERSION}" "${ENGINE_JS_DIR}/adguard-scriptlets.mjs" \
+  --bundle \
+  --format=iife \
+  --minify \
+  --target="${ESBUILD_TARGET}" \
+  --legal-comments=none \
+  --log-level=error \
+  --outfile="${RES_DIR}/scriptlets/adguard.js"
 for file in "${RES_DIR}"/scriptlets/*.js; do
   node --check "${file}" 2>/dev/null || { error "JS syntax INVALID: scriptlets/$(basename "${file}")"; FAIL=1; }
 done
@@ -141,7 +150,8 @@ check_grep "hide-selector rule" "display: none !important" "${RES_DIR}/content.j
 check_grep "procedural API" "wbeProcedural" "${RES_DIR}/procedural.js"
 check_grep "procedural API use" "wbeProcedural" "${RES_DIR}/content.js"
 check_grep "procedural API use" "wbeProcedural" "${RES_DIR}/background.js"
-check_absent "retired AdGuard runtime" "adguard|ExtendedCss|getScriptletFunction|scriptletsMap" "${RES_DIR}/background.js"
+# background.js loads scriptlets/adguard.js on demand; the library itself must stay out of it.
+check_absent "bundled AdGuard runtime" "ExtendedCss|scriptletsMap" "${RES_DIR}/background.js"
 check_absent "retired AdGuard runtime" "adguard|ExtendedCss|getScriptletFunction|scriptletsMap" "${RES_DIR}/content.js"
 
 if [[ "${FAIL}" -ne 0 ]]; then

@@ -101,7 +101,9 @@ pub fn parse_list(text: &str, list: u32, trusted: bool, stats: &mut Stats) -> Ve
             ParsedLine::Unsupported { reason } | ParsedLine::Invalid { reason } => {
                 stats.drop(&reason)
             }
-            ParsedLine::Rule(Rule::Scriptlet(r)) if !trusted && r.name.starts_with("trusted-") => {
+            ParsedLine::Rule(Rule::Scriptlet(r))
+                if !trusted && crate::parse::cosmetic::is_trusted_only(&r.name) =>
+            {
                 stats.drop("untrusted trusted-* scriptlet")
             }
             ParsedLine::Rule(rule) => {

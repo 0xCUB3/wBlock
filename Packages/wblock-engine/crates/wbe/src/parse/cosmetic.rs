@@ -253,10 +253,10 @@ pub(super) fn parse(line: &str, source: SourceRef) -> Option<ParsedLine> {
     let body = &line[at + marker.len()..];
     match marker {
         "$$" | "$@$" => return Some(unsupported("AdGuard HTML filtering")),
-        "#%#" | "#@%#" if body.starts_with("//scriptlet(") => {
-            return Some(unsupported("AdGuard scriptlet without a uBO equivalent"));
-        }
-        "#%#" | "#@%#" => return Some(unsupported("AdGuard JavaScript injection")),
+        // AdGuard scriptlets with no uBO equivalent (the rest were rewritten
+        // to `+js()` by the normalizer) and raw JavaScript run through
+        // AdGuard's own scriptlet library and injector, as `adg:` calls.
+        "#%#" | "#@%#" => return Some(adguard_script(body, exception, domains, source, line)),
         "#$#" | "#$?#" | "#@$#" | "#@$?#" => {
             return Some(unsupported("AdGuard CSS injection or ABP snippet"));
         }
@@ -337,6 +337,50 @@ fn scriptlet(
         name: name.to_string(),
         args,
     }))
+}
+
+/// An AdGuard `#%#` rule: `//scriptlet('name', ...)` becomes the call
+/// `["adg:name", ...]`, anything else the call `["adg:js", code]`.
+fn adguard_script(
+    body: &str,
+    exception: bool,
+    domains: DomainList,
+    source: SourceRef,
+    raw: &str,
+) -> ParsedLine {
+    let (name, args) = match body
+        .strip_prefix("//scriptlet(")
+        .and_then(|s| s.strip_suffix(')'))
+    {
+        Some(inner) => {
+            let Some((token, args)) = split_args(inner, true) else {
+                return invalid("malformed AdGuard scriptlet arguments");
+            };
+            if token.is_empty() {
+                return invalid("scriptlet without a name");
+            }
+            (format!("adg:{token}"), args)
+        }
+        None if body.trim().is_empty() => return invalid("empty AdGuard JavaScript rule"),
+        None => (ADGUARD_JS.to_string(), vec![body.to_string()]),
+    };
+    ParsedLine::Rule(Rule::Scriptlet(ScriptletRule {
+        source,
+        raw: raw.to_string(),
+        exception,
+        domains,
+        name,
+        args,
+    }))
+}
+
+/// The call name for a raw AdGuard `#%#` script.
+pub(crate) const ADGUARD_JS: &str = "adg:js";
+
+/// Calls only trusted lists may make: uBO's `trusted-*` scriptlets, AdGuard's,
+/// and raw JavaScript, which AdGuard also runs only from its own filters.
+pub(crate) fn is_trusted_only(name: &str) -> bool {
+    name.starts_with("trusted-") || name.starts_with("adg:trusted-") || name == ADGUARD_JS
 }
 
 /// uBO's `ArglistParser`, reading one argument from `s` at `beg`. Arguments
@@ -1170,19 +1214,23 @@ mod tests {
             ),
             (
                 "example.com#%#var a = 1;",
-                "unsupported: AdGuard JavaScript injection",
+                "[h:example.com] js adg:js[var a = 1;]",
             ),
             (
                 "example.com#@%#var a = 1;",
-                "unsupported: AdGuard JavaScript injection",
+                "@[h:example.com] js adg:js[var a = 1;]",
             ),
             (
                 "example.com#%#//scriptlet('nosuch', 'x')",
-                "unsupported: AdGuard scriptlet without a uBO equivalent",
+                "[h:example.com] js adg:nosuch[x]",
             ),
             (
-                "example.com#%#//scriptlet('abort-on-property-read', 'x')",
-                "unsupported: AdGuard scriptlet without a uBO equivalent",
+                "example.com#%#//scriptlet('set-cookie', 'a, b', '1')",
+                "[h:example.com] js adg:set-cookie[a, b | 1]",
+            ),
+            (
+                "example.com#%#//scriptlet()",
+                "invalid: malformed AdGuard scriptlet arguments",
             ),
             (
                 "example.com#$#.pub_728x90 { display: block !important; }",
@@ -1261,6 +1309,10 @@ mod tests {
                 let text = std::fs::read_to_string(entry.path()).unwrap_or_default();
                 lines.extend(text.lines().map(str::to_string));
             }
+        }
+        if lines.is_empty() {
+            eprintln!("corpus_counts: no lists in {dir}, skipped");
+            return;
         }
         let source = SourceRef::default();
         let mut counts: BTreeMap<String, usize> = BTreeMap::new();

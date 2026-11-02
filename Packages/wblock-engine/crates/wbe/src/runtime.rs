@@ -494,6 +494,31 @@ example.com##+js(set-constant, adsEnabled, false)
     }
 
     #[test]
+    fn adguard_scripts_round_trip_with_exceptions() {
+        let rules = [
+            "example.com#%#//scriptlet('prevent-canvas')",
+            "example.com#%#window.x = 1;",
+            "sub.example.com#@%#window.x = 1;",
+        ];
+        let url = "https://example.com/";
+        assert_eq!(
+            calls(&rules, url),
+            vec![
+                call(&["adg:prevent-canvas"]),
+                call(&["adg:js", "window.x = 1;"])
+            ]
+        );
+        assert_eq!(
+            calls(&rules, "https://sub.example.com/"),
+            vec![call(&["adg:prevent-canvas"])]
+        );
+        // Untrusted lists never reach the runtime with raw JavaScript.
+        let mut stats = crate::compile::Stats::default();
+        let parsed = crate::compile::parse_list(rules[1], 0, false, &mut stats);
+        assert!(parsed.is_empty(), "{parsed:?}");
+    }
+
+    #[test]
     fn lookup_returns_matching_actions() {
         let page = Engine::build(&lines(RULES)).lookup("https://www.example.com/watch");
         assert_eq!(page.hide, vec![".ad"]);

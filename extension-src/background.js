@@ -35,10 +35,56 @@
     const queue = globalThis.__wbeScriptletCalls || (globalThis.__wbeScriptletCalls = {});
     for (const [name, ...args] of calls) (queue[name] || (queue[name] = [])).push(args);
   };
+  // AdGuard-syntax rules with no uBO equivalent arrive as `adg:<name>` calls,
+  // raw `#%#` scripts as `adg:js`; both run the way AdGuard runs them.
+  const ADGUARD_PREFIX = 'adg:';
+  let adguardScriptlets;
+  const loadAdguardScriptlets = () => adguardScriptlets || (adguardScriptlets = import('./scriptlets/adguard.js')
+    .then(() => globalThis.wbeAdguardScriptlets || null)
+    .catch(error => { logError('[wBlock] Failed to load AdGuard scriptlets', error); return null; }));
+  // A page script element, like AdGuard's injector, so the code runs as the
+  // page wrote it. Runs as a function, so it must not close over anything.
+  const runPageScript = code => {
+    // Pages that enforce Trusted Types (YouTube) reject a plain string.
+    const key = Symbol.for('wBlock.pageScriptPolicy');
+    let policy = window[key];
+    if (policy === undefined) {
+      try {
+        policy = window.trustedTypes ? window.trustedTypes.createPolicy('wblock-scripts', { createScript: text => text }) : null;
+      } catch (_) {
+        policy = null;
+      }
+      Object.defineProperty(window, key, { value: policy });
+    }
+    const script = document.createElement('script');
+    script.textContent = policy ? policy.createScript(code) : code;
+    (document.head || document.documentElement).appendChild(script);
+    script.remove();
+  };
+  const runAdguardCalls = async (target, calls) => {
+    const library = calls.some(([name]) => name !== 'adg:js') ? await loadAdguardScriptlets() : null;
+    await Promise.all(calls.map(([prefixed, ...args]) => {
+      const name = prefixed.slice(ADGUARD_PREFIX.length);
+      if (name === 'js') return executeInFrame({ target, world: 'MAIN', injectImmediately: true, func: runPageScript, args });
+      const func = library && library.getScriptletFunction(name);
+      if (!func) return undefined;
+      const source = { name, args, engine: 'extension', version: '', verbose: false };
+      return executeInFrame({ target, world: 'MAIN', injectImmediately: true, func, args: [source, args] });
+    }));
+  };
   const runScriptlets = async (target, calls) => {
-    await executeInFrame({ target, world: 'MAIN', injectImmediately: true, func: queueScriptletCalls, args: [calls] });
-    const files = [...new Set(calls.map(([name]) => `scriptlets/${name}.js`))];
-    await executeInFrame({ target, world: 'MAIN', injectImmediately: true, files });
+    const adguard = calls.filter(([name]) => name.startsWith(ADGUARD_PREFIX));
+    const ubo = calls.filter(([name]) => !name.startsWith(ADGUARD_PREFIX));
+    const pending = [];
+    if (adguard.length > 0) pending.push(runAdguardCalls(target, adguard));
+    if (ubo.length > 0) {
+      pending.push((async () => {
+        await executeInFrame({ target, world: 'MAIN', injectImmediately: true, func: queueScriptletCalls, args: [ubo] });
+        const files = [...new Set(ubo.map(([name]) => `scriptlets/${name}.js`))];
+        await executeInFrame({ target, world: 'MAIN', injectImmediately: true, files });
+      })());
+    }
+    await Promise.all(pending);
   };
   // Safari's extension error summary shows only the first console argument, so
   // each line is one string with its details folded in.
