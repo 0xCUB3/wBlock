@@ -285,6 +285,8 @@
   const CONFIG_REVALIDATE_INTERVAL_MS = 5000;
   const configValidatedAt = new Map();
   const recentNativeReads = new Map();
+  const userScriptBodies = new Map();
+  let userScriptBodyBytes = 0;
   const isConfigFresh = key => Date.now() - (configValidatedAt.get(key) || 0) < CONFIG_REVALIDATE_INTERVAL_MS;
   // A lookup that was in flight when state changed must not start a window.
   let nativeStateEpoch = 0;
@@ -292,6 +294,8 @@
     nativeStateEpoch += 1;
     configValidatedAt.clear();
     recentNativeReads.clear();
+    userScriptBodies.clear();
+    userScriptBodyBytes = 0;
   };
   // Mutations end the window when sent and again when done, so reads that
   // overlapped them are not shared either.
@@ -1079,6 +1083,9 @@
       }
     }
     if (message && message.action === "getUserScripts") {
+      // Snapshot entries so another frame's eviction cannot lose an in-flight body.
+      const bodies = new Map(userScriptBodies);
+      const epoch = nativeStateEpoch;
       const userScriptRequest = {
         action: "getUserScripts",
         url: message.url,
@@ -1090,13 +1097,45 @@
       try {
         // Only "no scripts here" is shared: script payloads carry revisions and
         // GM storage that must stay current.
-        const response = await readNativeRecently(userScriptRequest, sendPriorityNativeMessage,
-          answer => Array.isArray(answer.userScripts) && answer.userScripts.length === 0);
+        const response = await readNativeRecently(userScriptRequest, request => sendPriorityNativeMessage({
+          ...request,
+          cachedPayloads: Object.fromEntries([...bodies].map(([id, entry]) => [id, entry.token]))
+        }), answer => Array.isArray(answer.userScripts) && answer.userScripts.length === 0);
+        // Native matching is authoritative. Only reuse its negative subframe
+        // result for this URL, within the existing invalidated freshness window.
+        if (epoch === nativeStateEpoch && !response?.error && response?.emptySubframes === true) {
+          readNativeRecently({ ...userScriptRequest, isTopFrame: false },
+            () => Promise.resolve({ userScripts: [] }));
+        }
         const scripts = response && response.userScripts ? response.userScripts : [];
         if (response && response.error) {
           return { userScripts: scripts, error: response.error };
         }
-        return { userScripts: scripts };
+        const hydrated = scripts.map(script => {
+          if (script.contentCached) {
+            const body = bodies.get(script.id);
+            if (!body || body.token !== script.payloadCacheToken) throw new Error("Missing cached userscript body");
+            return { ...script, ...body.payload };
+          }
+          if (epoch === nativeStateEpoch && typeof script.payloadCacheToken === 'string'
+              && typeof script.content === 'string') {
+            const payload = { content: script.content, resources: script.resources };
+            const bytes = 2 * (script.content.length + JSON.stringify(script.resources || {}).length);
+            userScriptBodyBytes -= userScriptBodies.get(script.id)?.bytes || 0;
+            userScriptBodies.delete(script.id);
+            if (bytes <= 16 * 1024 * 1024) {
+              userScriptBodies.set(script.id, { token: script.payloadCacheToken, payload, bytes });
+              userScriptBodyBytes += bytes;
+            }
+            while (userScriptBodyBytes > 16 * 1024 * 1024) {
+              const id = userScriptBodies.keys().next().value;
+              userScriptBodyBytes -= userScriptBodies.get(id).bytes;
+              userScriptBodies.delete(id);
+            }
+          }
+          return script;
+        });
+        return { userScripts: hydrated };
       } catch (error) {
         const errorMessage = String(error && error.message ? error.message : error);
         console.error(`[wBlock] Failed to get userscripts: ${errorMessage}`, error);

@@ -148,12 +148,12 @@
     }
   }
 
-  async function migrateLegacyZapperRulesDisabled(host, rules = null) {
+  async function migrateLegacyZapperRulesDisabled(host, rules = null, legacyDisabled) {
     if (!host) return false;
     const key = `wblock.zapperRulesDisabled.v1:${host}`;
     try {
-      const result = await browser.storage.local.get(key);
-      if (result[key] !== true) {
+      if (legacyDisabled === undefined) legacyDisabled = (await browser.storage.local.get(key))[key] === true;
+      if (!legacyDisabled) {
         return false;
       }
       if (Array.isArray(rules) && rules.length > 0) {
@@ -192,7 +192,7 @@
 
   function normalizeRules(rules) {
     return Array.from(new Set(
-      (rules || [])
+      (Array.isArray(rules) ? rules : [])
         .filter((s) => typeof s === 'string')
         .map((s) => s.trim())
         .filter((s) => s.length > 0)
@@ -228,20 +228,11 @@
     }
   }
 
-  async function loadCachedRulesDisabled(host) {
-    if (!host) return false;
-    return (await getSyncMeta(host)).disabled === true;
-  }
-
-  async function cacheZapperState(host, rules, disabled) {
-    if (!host) return;
-    const key = storageKey(host);
-    await browser.storage.local.set({ [key]: normalizeRules(rules) });
-    await setSyncMeta(host, {
-      pendingSync: false,
-      lastSyncAt: Date.now(),
-      disabled: disabled === true
-    });
+  async function loadSiteState(host) {
+    const legacyKey = `wblock.zapperRulesDisabled.v1:${host}`;
+    const cached = await browser.storage.local.get([storageKey(host), metaKey(host), legacyKey]).catch(() => ({}));
+    return { rules: normalizeRules(cached[storageKey(host)]),
+      meta: normalizeMeta(cached[metaKey(host)]), legacyDisabled: cached[legacyKey] === true };
   }
 
   function normalizeNativeZapperState(response) {
@@ -264,22 +255,6 @@
       ...patch
     });
     await browser.storage.local.set({ [key]: next });
-  }
-
-  async function loadRulesForHost(host) {
-    if (!host) return [];
-    try {
-      const key = storageKey(host);
-      const result = await browser.storage.local.get(key);
-      const value = result[key];
-      if (!Array.isArray(value)) return [];
-      return value
-        .filter((s) => typeof s === 'string')
-        .map((s) => s.trim())
-        .filter((s) => s.length > 0);
-    } catch {
-      return [];
-    }
   }
 
   async function syncRulesToNative(host, rules) {
@@ -317,19 +292,23 @@
       if (!nativeState) {
         return null;
       }
-      const localRules = await loadRulesForHost(host);
+      const { rules: localRules, meta, legacyDisabled } = await loadSiteState(host);
       const localSig = rulesSignature(localRules);
       const nativeSig = rulesSignature(nativeState.rules);
-      const meta = await getSyncMeta(host);
       if (meta.pendingSync && localSig !== nativeSig) {
         const reconciled = await syncRulesToNative(host, localRules);
         const rules = Array.isArray(reconciled) ? reconciled : localRules;
-        const disabled = nativeState.disabled || await migrateLegacyZapperRulesDisabled(host, rules);
+        const disabled = nativeState.disabled || await migrateLegacyZapperRulesDisabled(host, rules, legacyDisabled);
         await setSyncMeta(host, { disabled });
         return { rules, disabled, inheritedRules: nativeState.inheritedRules };
       }
-      const disabled = nativeState.disabled || await migrateLegacyZapperRulesDisabled(host, nativeState.rules.length === 0 ? localRules : null);
-      await cacheZapperState(host, nativeState.rules, disabled);
+      const disabled = nativeState.disabled || await migrateLegacyZapperRulesDisabled(host, nativeState.rules.length === 0 ? localRules : null, legacyDisabled);
+      if (localSig !== nativeSig || meta.disabled !== disabled || meta.pendingSync) {
+        await browser.storage.local.set({
+          [storageKey(host)]: nativeState.rules,
+          [metaKey(host)]: { ...meta, pendingSync: false, lastSyncAt: Date.now(), disabled }
+        });
+      }
       return { rules: nativeState.rules, disabled, inheritedRules: nativeState.inheritedRules };
     } catch {
       return null;
@@ -1150,9 +1129,10 @@
   async function reloadRulesAndApply() {
     state.inheritedRules = [];
     state.host = safeHostname();
-    state.rules = await loadRulesForHost(state.host);
-    state.rulesDisabled = await loadCachedRulesDisabled(state.host);
-    if (await migrateLegacyZapperRulesDisabled(state.host, state.rules)) {
+    const cached = await loadSiteState(state.host);
+    state.rules = cached.rules;
+    state.rulesDisabled = cached.meta.disabled;
+    if (await migrateLegacyZapperRulesDisabled(state.host, state.rules, cached.legacyDisabled)) {
       state.rulesDisabled = true;
       await setSyncMeta(state.host, { disabled: true });
     }

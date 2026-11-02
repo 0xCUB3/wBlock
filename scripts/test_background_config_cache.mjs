@@ -645,6 +645,55 @@ for (const [label, inertState, activeCSS] of [
     !state.storage[CACHE_KEY] || !state.storage[CACHE_KEY].entries.some(([key]) => key === `${pageUrl}#`));
 }
 
+// Body reuse must remain bound to the native revision and current descriptor.
+{
+  let revision = 1;
+  const state = loadBackground({ nativeHandler: async message => {
+    if (message.action !== 'getUserScripts') return { payload: makeConfig([], 1) };
+    const cached = message.cachedPayloads?.script;
+    return { userScripts: [{ id: 'script', payloadRevision: revision, payloadCacheToken: `session-${revision}`, name: 'current',
+      ...(cached === `session-${revision}` ? { contentCached: true } : { content: `body-${revision}`, resources: { text: 'resource' } }) }] };
+  } });
+  await sleep(20); // Let startup configuration invalidation finish.
+  const request = {action:'getUserScripts', includeContent:true};
+  const first = await state.onMessage(request, topFrameSender('https://body.example/one'));
+  const second = await state.onMessage(request, topFrameSender('https://body.example/two'));
+  check('native payload reuse preserves the script body and resources', second.userScripts[0].content === first.userScripts[0].content && second.userScripts[0].resources.text === 'resource');
+  const reads = state.nativeMessages.filter(m => m.action === 'getUserScripts');
+  check('next frame advertises the cached native body revision', reads[1].cachedPayloads?.script === 'session-1');
+  revision = 2;
+  const updated = await state.onMessage(request, topFrameSender('https://body.example/three'));
+  check('new native revision replaces cached body', updated.userScripts[0].content === 'body-2');
+  state.nativePortMessage({action:'wblock:userscriptsChanged'});
+  await state.onMessage(request, topFrameSender('https://body.example/four'));
+  check('native invalidation discards cached bodies', !state.nativeMessages.filter(m => m.action === 'getUserScripts').at(-1).cachedPayloads?.script);
+}
+
+// Cache hints must not fragment negative matching results between frames.
+{
+  const state = loadBackground({ nativeHandler: async message => {
+    if (message.action !== 'getUserScripts') return { payload: makeConfig([], 1) };
+    if (message.url.includes('body.example')) return { userScripts: [{id:'body',payloadCacheToken:'v1',content:'body'}] };
+    if (message.url.includes('top-only.example')) return { userScripts: [{id:'top',noframes:true}], emptySubframes:true };
+    return {userScripts:[]};
+  } });
+  await sleep(20);
+  const request = {action:'getUserScripts',includeContent:true};
+  await state.onMessage(request, topFrameSender('https://empty.example/'));
+  await state.onMessage(request, topFrameSender('https://body.example/'));
+  await state.onMessage(request, topFrameSender('https://empty.example/'));
+  check('body cache changes do not invalidate an empty frame match',
+    state.nativeMessages.filter(m => m.action === 'getUserScripts' && m.url === 'https://empty.example/').length === 1);
+  await state.onMessage(request, topFrameSender('https://top-only.example/'));
+  await state.onMessage(request, {...topFrameSender('https://top-only.example/'),frameId:2});
+  check('native noframes result skips a same-URL subframe lookup',
+    state.nativeMessages.filter(m => m.action === 'getUserScripts' && m.url === 'https://top-only.example/').length === 1);
+  state.nativePortMessage({action:'wblock:userscriptsChanged'});
+  await state.onMessage(request, {...topFrameSender('https://top-only.example/'),frameId:3});
+  check('configuration invalidation ends the noframes shortcut',
+    state.nativeMessages.filter(m => m.action === 'getUserScripts' && m.url === 'https://top-only.example/').length === 2);
+}
+
 // Scenario M: a freshly validated cache hit skips the native state query, and
 // state changes through the popup end that window so the next hit resolves
 // current state before applying rules.

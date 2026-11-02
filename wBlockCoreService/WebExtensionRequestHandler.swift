@@ -1075,6 +1075,7 @@ public enum WebExtensionRequestHandler {
 
         let includeContent = message["includeContent"] as? Bool == true
         let maxInlineContentBytes = message["maxInlineContentBytes"] as? Int ?? Int.max
+        let cachedBodies = message["cachedPayloads"] as? [String: String]
         Task { @MainActor in
             // Site disable affects content filtering and scriptlets. Userscripts keep
             // running unless the global userscript pause or per-script site toggle says
@@ -1082,7 +1083,8 @@ public enum WebExtensionRequestHandler {
             let userScriptManager = UserScriptManager.shared
             await userScriptManager.waitUntilReady()
             let payloadMutationRevision = userScriptManager.payloadMutationRevision
-            let userScripts = userScriptManager.getEnabledUserScriptsForURL(urlString).filter {
+            let matchedScripts = userScriptManager.getEnabledUserScriptsForURL(urlString)
+            let userScripts = matchedScripts.filter {
                 !$0.noframes || message["isTopFrame"] as? Bool == true
             }
 
@@ -1158,7 +1160,14 @@ public enum WebExtensionRequestHandler {
                         for: script.id.uuidString
                     )
                 }
-                if includeContent, !script.content.isEmpty {
+                // The host session prevents a restarted native process from reusing
+                // a revision number for different content. Configured scripts also
+                // include their existing digest, since preferences can change the body.
+                let bodyToken = "\(userScriptPayloadSession):\(payloadMutationRevision):\(descriptor["contentDigest"] as? String ?? "")"
+                descriptor["payloadCacheToken"] = bodyToken
+                if includeContent, cachedBodies?[script.id.uuidString] == bodyToken {
+                    descriptor["contentCached"] = true
+                } else if includeContent, !script.content.isEmpty {
                     let executableContent = configuredExecutableContent(for: script)
                     let inlinePayloadBytes = executableContent.utf8.count
                         + script.resourceContents.values.reduce(0) { $0 + $1.utf8.count }
@@ -1202,7 +1211,8 @@ public enum WebExtensionRequestHandler {
             }
 
             let response = createResponse(with: userScriptsResponse(
-                userScripts: userScriptDescriptors
+                userScripts: userScriptDescriptors,
+                emptySubframes: matchedScripts.allSatisfy(\.noframes)
             ))
             context.completeRequest(returningItems: [response])
         }
@@ -1210,9 +1220,10 @@ public enum WebExtensionRequestHandler {
 
     private static func userScriptsResponse(
         userScripts: [[String: Any]],
-        error: String? = nil
+        error: String? = nil,
+        emptySubframes: Bool = false
     ) -> [String: Any?] {
-        var response: [String: Any?] = ["userScripts": userScripts]
+        var response: [String: Any?] = ["userScripts": userScripts, "emptySubframes": emptySubframes]
         if let error {
             response["error"] = error
         }
@@ -1299,6 +1310,8 @@ public enum WebExtensionRequestHandler {
         }
         return descriptor
     }
+
+    private static let userScriptPayloadSession = UUID().uuidString
 
     /// Per-script inline allowance for `document-start` userscripts. Timing-critical
     /// scripts should arrive in the first response; scripts that still exceed this

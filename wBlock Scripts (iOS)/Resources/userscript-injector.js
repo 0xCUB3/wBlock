@@ -486,6 +486,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 return;
             }
 
+            scriptElement.setAttribute('data-wblock-menu-bridge', bridgeId);
             this.pageMenuBridgeElements.set(bridgeId, scriptElement);
             scriptElement.addEventListener('wblock-gm-menu-register', (event) => {
                 const detail = event && event.detail ? event.detail : {};
@@ -1001,10 +1002,10 @@ if (window.wBlockUserscriptInjectorHasRun) {
             this.sendNativeRequest('getUserScripts', {
                 url,
                 includeContent: true,
-                // Conservative per-script cap for ordinary scripts. The native side grants
+                // Keep ordinary scripts within one chunk-sized response. Native grants
                 // document-start scripts a larger allowance so timing-critical shims arrive
                 // inline (no chunked round-trips) and can run before the page's own code.
-                maxInlineContentBytes: 128 * 1024
+                maxInlineContentBytes: 512 * 1024
             })
                 .then((response) => {
                     if (generation !== this.documentStartRequestGeneration) return;
@@ -1173,13 +1174,6 @@ if (window.wBlockUserscriptInjectorHasRun) {
             if (userScripts.length === 0) {
                 wBlockLog('[wBlock] No userscripts to inject.');
                 return;
-            }
-            // Empty frames only listen for configuration changes. Install the
-            // GM bridges when a script needs them.
-            if (!this.scriptRuntimeReady) {
-                this.scriptRuntimeReady = true;
-                this.setupMenuCommandBridge();
-                this.setupStorageBridge();
             }
             const runAtPriority = { 'document-start': 0, 'document-body': 1, 'document-end': 2, 'document-idle': 3 };
             const orderedScripts = [...userScripts].sort((left, right) => {
@@ -1361,6 +1355,10 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 delete script.storageSnapshot;
             }
             try {
+                if (script.runAt === 'document-idle' && typeof requestIdleCallback === 'function') {
+                    await new Promise(resolve => requestIdleCallback(resolve, { timeout: 1000 }));
+                    if (generation !== this.documentStartRequestGeneration) return;
+                }
                 const fullScript = await this.ensureScriptPayload(script);
                 if (generation !== this.documentStartRequestGeneration) return;
                 if (warmStart) fullScript.storageSnapshot = {};
@@ -1400,6 +1398,12 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 // Cached code must obey current site permissions before it runs, too.
                 const validated = await this.validateScriptForExecution(fullScript);
                 if (generation !== this.documentStartRequestGeneration || !validated) return;
+                // Styles and scripts waiting for their run-at phase need no GM bridges.
+                if (!this.scriptRuntimeReady) {
+                    this.scriptRuntimeReady = true;
+                    this.setupMenuCommandBridge();
+                    this.setupStorageBridge();
+                }
                 this.removeDarkReaderGuard(fullScript);
                 if (!warmStart && injectInto !== 'content' && isTubeCleanerPageScript(fullScript)) {
                     this.tubeCleanerSettingsScript = fullScript;
@@ -1494,8 +1498,8 @@ if (window.wBlockUserscriptInjectorHasRun) {
             try {
                 const wrappedCode = this.wrapUserScript(script, 'content');
                 // Execute directly in the content script context using Function constructor
-                const executeScript = new Function(wrappedCode);
-                executeScript();
+                const executeScript = new Function('__wblockContext', wrappedCode);
+                executeScript(script);
                 wBlockLog(`[wBlock] Injected ${script.name} in content context (CSP-safe)`);
             } catch (error) {
                 wBlockError(`[wBlock] Content context execution failed for ${script.name}:`, error);
@@ -1622,10 +1626,10 @@ if (window.wBlockUserscriptInjectorHasRun) {
     const pendingStorageRequests = new Map(); // requestId -> { onFailure, timeoutId }
     const menuCommandCallbacks = new Map(); // commandId -> callback
     let listenerIdCounter = 0;
-    const storageBridgeId = '${escapeForJS(script.storageBridgeId || '')}';
-    const menuBridgeId = '${escapeForJS(script.menuBridgeId || '')}';
-    const xhrBridgeId = '${escapeForJS(script.xhrBridgeId || '')}';
-    const portBridgeId = '${escapeForJS(script.portBridgeId || '')}';
+    const storageBridgeId = ${isContentContext ? "__wblockContext.storageBridgeId || ''" : "''"};
+    const menuBridgeId = ${isContentContext ? "__wblockContext.menuBridgeId || ''" : "document.currentScript?.getAttribute('data-wblock-menu-bridge') || ''"};
+    const xhrBridgeId = ${isContentContext ? "__wblockContext.xhrBridgeId || ''" : "''"};
+    const portBridgeId = ${isContentContext ? "__wblockContext.portBridgeId || ''" : "''"};
     const pageMenuBridgeElement = ${isContentContext ? 'null' : 'document.currentScript'};
     const contentMenuBridge = ${isContentContext ? 'window.__wBlockMenuCommandBridge' : 'null'};
     const scriptStorageState = Object.assign({}, ${storageSnapshotJSON});

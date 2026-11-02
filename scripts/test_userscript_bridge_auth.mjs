@@ -214,6 +214,20 @@ try {
 }
 check("injector can be evaluated repeatedly in one isolated world", repeatedEvaluationSucceeded);
 
+// Fresh frame tokens must not change executable page source and defeat WebKit's code cache.
+{
+  const wrappers = [];
+  for (const menuBridgeId of ['first-frame', 'second-frame']) {
+    const sandbox = buildContentScriptSandbox(null, [{...fakeScript, menuBridgeId}]);
+    vm.createContext(sandbox);
+    vm.runInContext(source, sandbox);
+    await tick();
+    wrappers.push(sandbox.document.head.children.find(el => el.attributes['data-userscript'] === fakeScript.name));
+  }
+  check('identical page scripts reuse executable source across frame tokens', wrappers[0].textContent === wrappers[1].textContent);
+  check('page menu bridges retain their distinct frame identity', wrappers[0].getAttribute('data-wblock-menu-bridge') === 'first-frame' && wrappers[1].getAttribute('data-wblock-menu-bridge') === 'second-frame');
+}
+
 const rydScript = {
   ...fakeScript,
   id: "ryd-test",
@@ -1118,6 +1132,29 @@ for (const runAt of ['document-start', 'document-body']) {
   for (const callback of loads) callback();
   await tick();
   check('document-idle still executes on load after a late reply', probe.__idleRuns === 1);
+}
+
+// Readiness waiting and userstyles do not need GM bridges.
+for (const kind of ['script', 'style']) {
+  const probe = buildContentScriptSandbox(null, [{ ...fakeScript, kind,
+    runAt: kind === 'script' ? 'document-end' : 'document-start',
+    content: kind === 'style' ? '.ad { display:none }' : 'window.__endRan = true;' }]);
+  probe.document.readyState = 'loading';
+  vm.createContext(probe); vm.runInContext(source, probe); await tick();
+  check(`${kind} avoids GM bridges before executable code runs`, !probe.__wBlockMenuCommandBridge);
+}
+
+// document-idle may yield until idle time, but must keep a bounded timeout.
+{
+  const probe = buildContentScriptSandbox(null, [{ ...fakeScript, runAt: 'document-idle', injectInto: 'content',
+    content: 'window.__idleRuns = (window.__idleRuns || 0) + 1;' }]);
+  const idle = [];
+  probe.requestIdleCallback = (callback, options) => idle.push({callback, options});
+  vm.createContext(probe); vm.runInContext(source, probe); await tick();
+  check('document-idle yields before executing its body', !probe.__idleRuns && idle.length === 1);
+  check('document-idle has a bounded scheduling timeout', idle[0]?.options.timeout === 1000);
+  idle[0]?.callback(); await tick();
+  check('document-idle executes once at idle time', probe.__idleRuns === 1);
 }
 
 console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);

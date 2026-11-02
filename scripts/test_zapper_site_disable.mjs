@@ -34,6 +34,7 @@ function makeSandbox({ nativeRules, nativeDisabled, inheritedRules = [], localSt
     siteStateCalls: 0,
   };
   const storage = new Map(Object.entries(localStorageSeed));
+  const storageCalls = {get:0, set:0};
   const elementsById = new Map();
 
   const makeStyleElement = (id) => ({
@@ -92,6 +93,7 @@ function makeSandbox({ nativeRules, nativeDisabled, inheritedRules = [], localSt
     storage: {
       local: {
         get: async (key) => {
+          storageCalls.get += 1;
           const keys = Array.isArray(key) ? key : [key];
           const out = {};
           for (const k of keys) {
@@ -100,6 +102,7 @@ function makeSandbox({ nativeRules, nativeDisabled, inheritedRules = [], localSt
           return out;
         },
         set: async (items) => {
+          storageCalls.set += 1;
           for (const [k, v] of Object.entries(items)) storage.set(k, v);
         },
         remove: async (key) => {
@@ -175,6 +178,7 @@ function makeSandbox({ nativeRules, nativeDisabled, inheritedRules = [], localSt
     sandbox,
     native,
     storage,
+    storageCalls,
     intervalDelays,
     intervalCallbacks,
     styleText: () => elementsById.get(STYLE_ID)?.textContent ?? null,
@@ -198,7 +202,8 @@ function loadScript(sandbox) {
 
 // Scenario 1+2: enabled rules apply, then native disable + reloadRules clears them.
 {
-  const env = makeSandbox({ nativeRules: [".ad-banner", "#promo"], nativeDisabled: false });
+  const env = makeSandbox({ nativeRules: [".ad-banner", "#promo"], nativeDisabled: false,
+    localStorageSeed: { [`wblock.zapperRules.v1:${HOST}`]: { corrupt: true } } });
   loadScript(env.sandbox);
 
   const applied = await waitFor(() => (env.styleText() ?? "").includes(".ad-banner"));
@@ -231,6 +236,8 @@ function loadScript(sandbox) {
   loadScript(env.sandbox);
   await new Promise((r) => setTimeout(r, 20));
   check("subframes do not start periodic rule polling", env.intervalDelays.length === 0);
+  check("empty zapper startup reads storage at most twice", env.storageCalls.get <= 2);
+  check("unchanged empty zapper state does not write storage", env.storageCalls.set === 0);
   check("empty zapper rules create no styles", env.styleText() === null);
   check("empty zapper rules need no site-state messages", env.native.siteStateCalls === 0);
   env.native.rules = ['.later'];
