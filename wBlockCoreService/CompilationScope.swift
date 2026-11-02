@@ -10,10 +10,11 @@ final class CompilationScope: @unchecked Sendable {
     /// compiler crashes came from memory and time pressure on phones,
     /// background refreshes, and smaller Macs, so only a foreground Apply on a
     /// Mac with at least 16 GB, 8 cores, normal thermal state, and Low Power
-    /// Mode off gets more.
+    /// Mode off gets more. Phones with 4 GB or less compile one at a time: each
+    /// compile holds the plan's parsed lists plus its own output.
     static func targetCapacity(interactive: Bool) -> Int {
-        #if os(macOS)
         let info = ProcessInfo.processInfo
+        #if os(macOS)
         let roomy = interactive
             && info.physicalMemory >= 16 << 30
             && info.activeProcessorCount >= 8
@@ -21,7 +22,7 @@ final class CompilationScope: @unchecked Sendable {
             && !info.isLowPowerModeEnabled
         return roomy ? 5 : 3
         #else
-        return 2
+        return info.physicalMemory <= 4 << 30 ? 1 : 2
         #endif
     }
 
