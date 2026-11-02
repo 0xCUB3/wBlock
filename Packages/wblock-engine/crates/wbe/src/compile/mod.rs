@@ -132,6 +132,15 @@ const TIERS: [Tier; 8] = [
 ];
 
 impl Emitted {
+    /// Room for `rules` network rules of roughly 500 bytes of JSON each, in
+    /// one arena. The reserved bytes are not touched, so they cost nothing.
+    fn with_capacity(rules: usize) -> Self {
+        Self {
+            arenas: vec![Vec::with_capacity(rules * 512)],
+            entries: Vec::with_capacity(rules * 2),
+        }
+    }
+
     /// The arena rules are written to now.
     pub(super) fn arena(&mut self) -> usize {
         if self.arenas.is_empty() {
@@ -142,7 +151,11 @@ impl Emitted {
 
     /// `parts` in order, as one output. Arenas move; entries are re-pointed.
     fn absorb(parts: Vec<Emitted>) -> Emitted {
-        let mut out = Emitted::default();
+        let rules: usize = parts.iter().map(|p| p.entries.len()).sum();
+        let mut out = Emitted {
+            arenas: Vec::with_capacity(parts.len()),
+            entries: Vec::with_capacity(rules),
+        };
         for part in parts {
             let base = out.arenas.len() as u32;
             out.arenas.extend(part.arenas);

@@ -18,7 +18,8 @@ const GROUP_SIZE: usize = 250;
 /// Host part of an `if-top-url` pattern that matches any host.
 const ANY_HOST: &str = r"[^\/]+";
 
-type Key = (String, Option<String>);
+/// A selector and the `:matches-path()` argument it is scoped to.
+type Key<'a> = (&'a str, Option<&'a str>);
 
 pub(super) fn compile(
     rules: &[&CosmeticRule],
@@ -28,28 +29,32 @@ pub(super) fn compile(
     stats: &mut Stats,
 ) {
     let safari = opts.safari;
-    // The verdicts parse each selector, and each is independent of the rest.
-    let verdicts = super::parallel_indices(rules.len(), |i| match &rules[i].body {
-        CosmeticBody::Hide(selector) => Some(verdict(selector, safari)),
+    // Each rule's verdict and scope depend on the rule alone, so they are
+    // worked out in parallel; the rest is in rule order.
+    let decided = super::parallel_indices(rules.len(), |i| match &rules[i].body {
+        CosmeticBody::Hide(selector) => {
+            let verdict = verdict(selector, safari);
+            let scope = if verdict == Verdict::Native {
+                Scope::of(rules[i])
+            } else {
+                None
+            };
+            Some((verdict, scope))
+        }
         CosmeticBody::Procedural(_) => None,
     });
     let mut hides: BTreeMap<Key, Vec<Entry>> = BTreeMap::new();
     let mut exceptions: BTreeMap<Key, Vec<Entry>> = BTreeMap::new();
     let mut runtime_lines = BTreeSet::new();
-    for (rule, verdict) in rules.iter().zip(verdicts) {
+    for (rule, decided) in rules.iter().zip(decided) {
         match &rule.body {
             CosmeticBody::Procedural(_) => {
                 runtime_lines.insert(rule.raw.as_str());
             }
-            CosmeticBody::Hide(selector) => match verdict.expect("hide has a verdict") {
-                Verdict::Invalid => stats.drop("invalid cosmetic selector"),
-                verdict => {
-                    let scope = if verdict == Verdict::Native {
-                        Scope::of(rule)
-                    } else {
-                        None
-                    };
-                    let key = (selector.clone(), rule.matches_path.clone());
+            CosmeticBody::Hide(selector) => match decided.expect("hide has a verdict") {
+                (Verdict::Invalid, _) => stats.drop("invalid cosmetic selector"),
+                (_, scope) => {
+                    let key = (selector.as_str(), rule.matches_path.as_deref());
                     let map = if rule.exception {
                         &mut exceptions
                     } else {
@@ -61,14 +66,25 @@ pub(super) fn compile(
         }
     }
 
-    let keys: BTreeSet<&Key> = hides.keys().chain(exceptions.keys()).collect();
-    let mut resolved: Vec<(&Key, Vec<(Tier, Trigger)>)> = Vec::new();
-    for key in keys {
+    let keys: Vec<&Key> = hides
+        .keys()
+        .chain(exceptions.keys())
+        .collect::<BTreeSet<&Key>>()
+        .into_iter()
+        .collect();
+    let resolved_all = super::parallel_indices(keys.len(), |i| {
+        let key = keys[i];
         let hs = hides.get(key).map(Vec::as_slice).unwrap_or_default();
         let es = exceptions.get(key).map(Vec::as_slice).unwrap_or_default();
-        match resolve(hs, es, safari) {
+        resolve(hs, es, safari)
+    });
+    let mut resolved: Vec<(&Key, Vec<(Tier, Trigger)>)> = Vec::new();
+    for (key, triggers) in keys.into_iter().zip(resolved_all) {
+        match triggers {
             Some(triggers) => resolved.push((key, triggers)),
             None => {
+                let hs = hides.get(key).map(Vec::as_slice).unwrap_or_default();
+                let es = exceptions.get(key).map(Vec::as_slice).unwrap_or_default();
                 for entry in hs.iter().chain(es) {
                     runtime_lines.insert(entry.rule.raw.as_str());
                 }
@@ -81,36 +97,37 @@ pub(super) fn compile(
         .iter()
         .filter(|(key, _)| key.1.is_none())
         .filter(|(_, ts)| ts.contains(&(Tier::GenericHide, Trigger::Generic)))
-        .map(|(key, _)| key.0.as_str())
+        .map(|(key, _)| key.0)
         .collect();
 
-    let mut groups: BTreeMap<(Tier, Trigger), BTreeSet<&str>> = BTreeMap::new();
+    let mut groups: BTreeMap<(Tier, &Trigger), BTreeSet<&str>> = BTreeMap::new();
     for (key, triggers) in &resolved {
         for (tier, trigger) in triggers {
-            let redundant = *tier == Tier::SpecificHide
-                && key.1.is_none()
-                && universal.contains(key.0.as_str());
+            let redundant =
+                *tier == Tier::SpecificHide && key.1.is_none() && universal.contains(key.0);
             if !redundant {
-                groups
-                    .entry((*tier, trigger.clone()))
-                    .or_default()
-                    .insert(key.0.as_str());
+                groups.entry((*tier, trigger)).or_default().insert(key.0);
             }
         }
     }
-    for ((tier, trigger), selectors) in groups {
-        let selectors: Vec<&str> = selectors.into_iter().collect();
-        for chunk in selectors.chunks(GROUP_SIZE) {
-            out.push(Tiered {
-                tier,
-                rule: WkRule {
-                    trigger: trigger.to_trigger(),
-                    action: WkAction::CssDisplayNone {
-                        selector: chunk.join(", "),
-                    },
+    let groups: Vec<((Tier, &Trigger), Vec<&str>)> = groups
+        .into_iter()
+        .map(|(group, selectors)| (group, selectors.into_iter().collect()))
+        .collect();
+    let emitted = super::parallel_indices(groups.len(), |g| {
+        let ((_, trigger), selectors) = &groups[g];
+        selectors
+            .chunks(GROUP_SIZE)
+            .map(|chunk| WkRule {
+                trigger: trigger.to_trigger(),
+                action: WkAction::CssDisplayNone {
+                    selector: chunk.join(", "),
                 },
-            });
-        }
+            })
+            .collect::<Vec<WkRule>>()
+    });
+    for (((tier, _), _), rules) in groups.iter().zip(emitted) {
+        out.extend(rules.into_iter().map(|rule| Tiered { tier: *tier, rule }));
     }
 
     runtime.extend(runtime_lines.into_iter().map(str::to_string));

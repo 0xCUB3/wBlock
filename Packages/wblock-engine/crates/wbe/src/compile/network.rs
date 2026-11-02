@@ -666,10 +666,12 @@ where
     U: Fn(usize) -> Vec<NetworkRule> + Sync,
 {
     let parts = super::parallel_indices(units, |i| {
-        let mut out = Emitted::default();
+        let rules = unit(i);
+        // Arenas are reserved, not grown: growing leaves the old buffers behind.
+        let mut out = Emitted::with_capacity(rules.len());
         let mut stats = Stats::default();
         let mut page = Vec::new();
-        for rule in unit(i) {
+        for rule in rules {
             if rule.exception
                 && rule
                     .scope
@@ -702,15 +704,22 @@ fn dedupe_and_merge(out: &mut Emitted) {
     let Emitted { arenas, entries } = out;
     let count = entries.len();
     let mut keep = vec![true; count];
+    let hashes = {
+        let (arenas, entries): (&[Vec<u8>], &[Entry]) = (arenas, entries);
+        super::parallel_indices(count, |j| {
+            let e = &entries[j];
+            let mut hasher = FxHasher::default();
+            hasher.write(&arenas[e.arena as usize][e.start..e.end]);
+            hasher.finish()
+        })
+    };
     // Per (tier, hash of the rule's bytes), the newest entry; `older` chains
     // the entries with the same key, and bytes decide each match exactly.
     let mut newest: FxHashMap<(Tier, u64), usize> = FxHashMap::default();
     let mut older = vec![usize::MAX; count];
     for j in 0..count {
         let text = &arenas[entries[j].arena as usize][entries[j].start..entries[j].end];
-        let mut hasher = FxHasher::default();
-        hasher.write(text);
-        let key = (entries[j].tier, hasher.finish());
+        let key = (entries[j].tier, hashes[j]);
         let mut duplicate = false;
         let mut candidate = newest.get(&key).copied();
         while let Some(i) = candidate {

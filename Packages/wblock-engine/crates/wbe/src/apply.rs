@@ -130,6 +130,8 @@ struct Parsed {
     identity: u64,
     /// Exceptions and `$badfilter` stay in every shard and drive #681.
     shared: bool,
+    /// A network rule, so the network pass can skip the other kinds unparsed.
+    network: bool,
     /// `is_plain_block`, which the segment of #925 compiles unscoped.
     plain: bool,
     badfilter: bool,
@@ -148,6 +150,16 @@ struct ParsedList {
 /// Records per network unit: the granularity at which rules are parsed and
 /// compiled, so a unit's rules are the only ones held at once.
 const UNIT_RECORDS: usize = 2048;
+
+/// A `fmt::Write` that hashes the text it is given.
+struct HashText<'a>(&'a mut DefaultHasher);
+
+impl std::fmt::Write for HashText<'_> {
+    fn write_str(&mut self, text: &str) -> std::fmt::Result {
+        self.0.write(text.as_bytes());
+        Ok(())
+    }
+}
 
 /// What one list adds to a blocker, gathered by `Plan::scan` in one pass over
 /// the list's rules, which are then dropped.
@@ -328,7 +340,7 @@ impl Plan {
     ) -> Vec<NetworkRule> {
         let scope = &self.lists[list].scope;
         let mut out = Vec::new();
-        for p in &self.parsed[list].rules[range] {
+        for p in self.parsed[list].rules[range].iter().filter(|p| p.network) {
             if !self.keeps(target, list, p) {
                 continue;
             }
@@ -436,8 +448,12 @@ impl Plan {
                 (owned.len(), sum).hash(&mut h);
             }
         }
+        // The rule's Debug text, hashed as it is written: the same bytes as
+        // `format!("{rule:?}").hash`, without a string per rule.
         for rule in replicated {
-            format!("{rule:?}").hash(&mut h);
+            let mut text = HashText(&mut h);
+            std::fmt::Write::write_fmt(&mut text, format_args!("{rule:?}")).expect("hash");
+            h.write_u8(0xff);
         }
         for extra in extras {
             (&extra.text, extra.trusted).hash(&mut h);
@@ -602,11 +618,11 @@ impl Plan {
         let mut bare_hosts = FxHashSet::default();
         for key in scans.iter().flat_map(|scan| &scan.keys) {
             if key.bare {
-                bare_hosts.insert(key.host.clone().unwrap_or_default());
+                bare_hosts.insert(key.host.as_deref().unwrap_or_default());
             }
-            patterns.insert(key.pattern.clone());
+            patterns.insert(key.pattern.as_str());
         }
-        let mut sorted: Vec<&String> = patterns.iter().collect();
+        let mut sorted: Vec<&str> = patterns.iter().copied().collect();
         sorted.sort_unstable();
         let units: Vec<(usize, Range<usize>)> = self
             .record_units()
@@ -662,7 +678,8 @@ impl Plan {
 
 fn parse(list: &ListSpec, index: u32) -> ParsedList {
     let mut stats = Stats::default();
-    let mut rules = Vec::new();
+    // Sized up front: growing it would leave the old buffers behind.
+    let mut rules = Vec::with_capacity(list.text.lines().count());
     let mut affinity: Option<u8> = None;
     let mut has_affinity = false;
     let mut has_directive = false;
@@ -690,6 +707,7 @@ fn parse(list: &ListSpec, index: u32) -> ParsedList {
                 index: position as u32,
                 identity: identity_in_scope(raw(rule), &list.scope),
                 shared: is_shared(rule),
+                network: matches!(rule, Rule::Network(_)),
                 plain: is_plain_block(rule),
                 badfilter: matches!(rule, Rule::Network(r) if r.badfilter),
                 affinity,
@@ -697,7 +715,6 @@ fn parse(list: &ListSpec, index: u32) -> ParsedList {
         }
         stats.merge(&line_stats);
     }
-    rules.shrink_to_fit();
     ParsedList {
         rules,
         has_affinity,
@@ -1101,20 +1118,22 @@ impl PatternKey {
 
     fn cancels(
         &self,
-        patterns: &FxHashSet<String>,
-        bare_hosts: &FxHashSet<String>,
-        sorted: &[&String],
+        patterns: &FxHashSet<&str>,
+        bare_hosts: &FxHashSet<&str>,
+        sorted: &[&str],
     ) -> bool {
-        if patterns.contains(&self.pattern) {
+        if patterns.contains(self.pattern.as_str()) {
             return true;
         }
         let Some(host) = &self.host else { return false };
-        // A whole-host block on this host or a parent domain covers the URL.
-        let labels: Vec<&str> = host.split('.').collect();
-        for start in 0..labels.len().saturating_sub(1) {
-            if bare_hosts.contains(&labels[start..].join(".")) {
+        // A whole-host block on this host or a parent domain covers the URL:
+        // each suffix of two or more labels.
+        let mut suffix = host.as_str();
+        while let Some((_, parent)) = suffix.split_once('.') {
+            if bare_hosts.contains(suffix) {
                 return true;
             }
+            suffix = parent;
         }
         let key = self.pattern.trim_end_matches(['^', '|']);
         if key.len() < 4 {
@@ -1125,7 +1144,7 @@ impl PatternKey {
             return true;
         }
         // An exception whose pattern is a prefix of a block is broader than it.
-        let at = sorted.partition_point(|p| p.as_str() < key);
+        let at = sorted.partition_point(|p| *p < key);
         sorted.get(at).is_some_and(|p| p.starts_with(key))
     }
 }
