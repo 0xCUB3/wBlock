@@ -46,18 +46,20 @@ echo "[test] building WBE.xcframework"
   cat "$TMP/wbe-build.log"
   exit 1
 }
-echo "[test] building wBlockCoreService"
+# The app scheme builds wBlockCoreService too, and catches app and extension
+# code that no longer compiles against it.
+echo "[test] building wBlock (with wBlockCoreService)"
 (
   started=$SECONDS
   xcodebuild -project wBlock.xcodeproj \
-    -scheme wBlockCoreService \
+    -scheme wBlock \
     -configuration Debug \
     -destination 'generic/platform=macOS' \
     -derivedDataPath "$CORE_DERIVED_DATA" \
     ${build_args[@]+"${build_args[@]}"} \
     build > "$TMP/core-build.log" 2>&1
   status=$?
-  echo "[test] wBlockCoreService build finished in $((SECONDS - started))s"
+  echo "[test] wBlock build finished in $((SECONDS - started))s"
   exit $status
 ) &
 core_build=$!
