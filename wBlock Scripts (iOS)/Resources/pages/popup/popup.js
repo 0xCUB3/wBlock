@@ -77,25 +77,23 @@ function withTimeout(promise, timeoutMs, message = 'Operation timed out.') {
     ]);
 }
 
-function sendNativeMessageWithTimeout(message, timeoutMs = NATIVE_MESSAGE_TIMEOUT_MS) {
-    return withTimeout(
-        // Safari native messaging belongs to the background context, not the popup.
-        browser.runtime.sendMessage({ action: 'wblock:popup:nativeMessage', message }).then((response) => {
-            if (!response || response.ok !== true) {
-                throw new Error((response && response.error) || 'Native message relay failed');
-            }
-            return response.response;
-        }),
-        timeoutMs,
-        `Native message timed out: ${message && message.action ? message.action : 'unknown'}`
-    );
+// The background times out each native call by action, with room for the
+// native host's slow first launch after an update. A shorter cutoff here
+// reported that launch as a failure.
+async function sendNativeMessage(message) {
+    // Safari native messaging belongs to the background context, not the popup.
+    const response = await browser.runtime.sendMessage({ action: 'wblock:popup:nativeMessage', message });
+    if (!response || response.ok !== true) {
+        throw new Error((response && response.error) || 'Native message relay failed');
+    }
+    return response.response;
 }
 
 async function logExtensionDiagnostic(fields) {
     const normalizedFields = normalizeDiagnosticFields(fields);
     console.info('[wBlock] Support diagnostic', normalizedFields);
     try {
-        await sendNativeMessageWithTimeout({
+        await sendNativeMessage({
             action: 'logExtensionDiagnostic',
             fields: normalizedFields,
         }, 1200);
@@ -215,7 +213,7 @@ async function syncRulesToNative(host, rules) {
         return null;
     } catch {
         try {
-            const response = await sendNativeMessageWithTimeout({
+            const response = await sendNativeMessage({
                 action: 'syncZapperRules',
                 hostname: host,
                 rules: normalizedRules
@@ -261,7 +259,7 @@ async function fetchRulesFromNative(host) {
         return { rules: state.rules, disabled };
     } catch {
         try {
-            const response = await sendNativeMessageWithTimeout({
+            const response = await sendNativeMessage({
                 action: 'getZapperRules',
                 hostname: host,
             });
@@ -495,7 +493,7 @@ async function openWBlockApp(host) {
 // native handler declines on iOS, so any failure falls back to the wblockapp URL.
 async function openAppFromHeader() {
     if (await isMacPlatform()) {
-        const response = await sendNativeMessageWithTimeout({ action: 'openApp' }).catch(() => null);
+        const response = await sendNativeMessage({ action: 'openApp' }).catch(() => null);
         if (response && response.ok === true) {
             window.close();
             return;
@@ -867,7 +865,7 @@ function renderZapperRules(rules) {
 
 async function getBlockingPausedState() {
     try {
-        const response = await sendNativeMessageWithTimeout({
+        const response = await sendNativeMessage({
             action: 'getBlockingPausedState',
         });
         if (!response || typeof response.paused !== 'boolean' ||
@@ -886,7 +884,7 @@ async function getBlockingPausedState() {
 
 async function getResumeRequestStatus() {
     try {
-        const response = await sendNativeMessageWithTimeout({
+        const response = await sendNativeMessage({
             action: 'getResumeRequestStatus',
         });
         if (!response || response.ok !== true || typeof response.status !== 'string') {
@@ -902,7 +900,7 @@ async function getResumeRequestStatus() {
 async function resumeBlocking() {
     let response;
     try {
-        response = await sendNativeMessageWithTimeout({
+        response = await sendNativeMessage({
             action: 'resumeBlocking',
         }, 10000);
     } catch (error) {
@@ -946,7 +944,7 @@ let siteWhitelisted = false;
 async function getSiteDisabledState(host) {
     if (!host) return false;
     try {
-        const response = await sendNativeMessageWithTimeout({
+        const response = await sendNativeMessage({
             action: 'getSiteFilterDisabledState',
             host,
         });
@@ -969,7 +967,7 @@ async function readSiteDisabledStateAfterTimeout(targetHost) {
 
 async function setSiteDisabledState(host, disabled) {
     if (!host) return;
-    return sendNativeMessageWithTimeout({
+    return sendNativeMessage({
         action: 'setSiteFilterDisabledState',
         host,
         disabled: Boolean(disabled),
@@ -978,7 +976,7 @@ async function setSiteDisabledState(host, disabled) {
 
 async function setUserScriptsSiteDisabled(host, disabled) {
     if (!host) return { ok: false, disabled: false };
-    const response = await sendNativeMessageWithTimeout({
+    const response = await sendNativeMessage({
         action: 'setUserScriptsSiteDisabled',
         host,
         disabled: Boolean(disabled),
@@ -996,7 +994,7 @@ async function setUserScriptsSiteDisabled(host, disabled) {
 
 async function setSiteZapperDisabled(host, disabled) {
     if (!host) return { ok: false, disabled: false };
-    const response = await sendNativeMessageWithTimeout({
+    const response = await sendNativeMessage({
         action: 'setSiteZapperDisabled',
         hostname: host,
         disabled: Boolean(disabled),
@@ -1119,7 +1117,7 @@ let userScriptsSiteDisabled = false;
 async function fetchPageUserScripts(url) {
     if (!url) return [];
     try {
-        const response = await sendNativeMessageWithTimeout({
+        const response = await sendNativeMessage({
             action: 'getPageUserScripts',
             url,
         });
@@ -1144,7 +1142,7 @@ async function setUserscriptSiteDisabled(scriptId, disabled) {
         return { ok: false, error: 'Invalid userscript site setting request' };
     }
     try {
-        const response = await sendNativeMessageWithTimeout({
+        const response = await sendNativeMessage({
             action: 'setUserScriptSiteDisabledState',
             scriptId,
             host,
@@ -1296,7 +1294,7 @@ async function fetchNativeNoAutoplayState(siteHost) {
     try {
         const message = { action: 'getNoAutoplayState' };
         if (siteHost) message.host = siteHost;
-        const response = await sendNativeMessageWithTimeout(message);
+        const response = await sendNativeMessage(message);
         if (!isNativeNoAutoplayState(response)) return null;
         return {
             enabled: response.enabled,
@@ -1368,7 +1366,7 @@ async function migrateLegacyNoAutoplayToNative(local, siteHost) {
     try {
         const hosts = await collectLegacyNoAutoplayAllowHosts(siteHost, local.siteAllowed);
         for (const host of hosts) {
-            const siteResponse = await sendNativeMessageWithTimeout({
+            const siteResponse = await sendNativeMessage({
                 action: 'setNoAutoplaySiteAllowed',
                 host,
                 allowed: true,
@@ -1383,7 +1381,7 @@ async function migrateLegacyNoAutoplayToNative(local, siteHost) {
             }
         }
         if (local.enabled === true) {
-            const enabledResponse = await sendNativeMessageWithTimeout({
+            const enabledResponse = await sendNativeMessage({
                 action: 'setNoAutoplayEnabled',
                 enabled: true,
             });
@@ -1422,7 +1420,7 @@ async function getNoAutoplayState(siteHost) {
 
 async function setNoAutoplayEnabled(enabled) {
     const nextEnabled = enabled === true;
-    const response = await sendNativeMessageWithTimeout({
+    const response = await sendNativeMessage({
         action: 'setNoAutoplayEnabled',
         enabled: nextEnabled,
     });
@@ -1435,7 +1433,7 @@ async function setNoAutoplayEnabled(enabled) {
 async function setNoAutoplaySiteAllowed(siteHost, allowed) {
     if (!siteHost) return;
     const nextAllowed = allowed === true;
-    const response = await sendNativeMessageWithTimeout({
+    const response = await sendNativeMessage({
         action: 'setNoAutoplaySiteAllowed',
         host: siteHost,
         allowed: nextAllowed,
