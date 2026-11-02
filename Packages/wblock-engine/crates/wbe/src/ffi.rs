@@ -6,7 +6,6 @@
 use crate::apply::{Extra, Plan, PlanRequest};
 use crate::ast::SourceRef;
 use crate::runtime::Engine;
-use crate::webkit::to_json;
 use std::cell::RefCell;
 use std::ffi::{c_char, CStr, CString};
 use std::panic::{catch_unwind, AssertUnwindSafe};
@@ -75,7 +74,7 @@ pub unsafe extern "C" fn wbe_plan_compile_target(
         // A string: JSON readers may round integers above 2^53.
         stats["fingerprint"] = compiled.fingerprint.to_string().into();
         Ok(Box::into_raw(Box::new(WbeCompileResult {
-            webkit: to_c(to_json(&compiled.output.webkit))?,
+            webkit: to_c(compiled.output.webkit.into_string())?,
             runtime: to_c(compiled.output.runtime.join("\n"))?,
             stats: to_c(stats.to_string())?,
         })))

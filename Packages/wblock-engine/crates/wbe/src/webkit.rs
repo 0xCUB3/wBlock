@@ -145,6 +145,11 @@ impl WebkitJson {
         &self.json
     }
 
+    /// The JSON, without copying it.
+    pub fn into_string(self) -> String {
+        self.json
+    }
+
     /// `json` is a complete, valid JSON array of `rules` objects.
     pub(crate) fn from_bytes(json: Vec<u8>, rules: usize) -> Self {
         Self {

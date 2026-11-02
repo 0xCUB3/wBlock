@@ -74,7 +74,7 @@
   };
   const runScriptlets = async (target, calls) => {
     const adguard = calls.filter(([name]) => name.startsWith(ADGUARD_PREFIX));
-    const ubo = calls.filter(([name]) => !name.startsWith(ADGUARD_PREFIX));
+    const ubo = adguard.length > 0 ? calls.filter(([name]) => !name.startsWith(ADGUARD_PREFIX)) : calls;
     const pending = [];
     if (adguard.length > 0) pending.push(runAdguardCalls(target, adguard));
     if (ubo.length > 0) {
