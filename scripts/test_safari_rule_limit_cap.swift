@@ -17,16 +17,16 @@ struct SafariRuleLimitCapTests {
         ])
 
         let unchanged = ContentBlockerService.finalizeContentBlockerJSON(
-            baseJSON: threeRuleJSON,
+            baseJSON: Data(threeRuleJSON.utf8),
             disabledSites: [],
             knownBaseCount: 3
         )
         expectEqual(unchanged.ruleCount, 3, "empty disabled sites should keep the base count")
         expectEqual(unchanged.truncatedRuleCount, 0, "under-limit base must not report truncation")
-        expectEqual(unchanged.json, threeRuleJSON, "empty disabled sites should keep the base JSON")
+        expectEqual(unchanged.json, Data(threeRuleJSON.utf8), "empty disabled sites should keep the base JSON")
 
         let underLimit = ContentBlockerService.finalizeContentBlockerJSON(
-            baseJSON: threeRuleJSON,
+            baseJSON: Data(threeRuleJSON.utf8),
             disabledSites: ["example.com"],
             knownBaseCount: 3
         )
@@ -37,7 +37,7 @@ struct SafariRuleLimitCapTests {
         expect(isIgnoreRule(underRules[3], for: "*example.com"), "ignore rule should be last")
 
         let atLimit = ContentBlockerService.finalizeContentBlockerJSON(
-            baseJSON: threeRuleJSON,
+            baseJSON: Data(threeRuleJSON.utf8),
             disabledSites: ["example.com"],
             knownBaseCount: 3,
             ruleLimit: 3
@@ -51,7 +51,7 @@ struct SafariRuleLimitCapTests {
         expect(isIgnoreRule(atLimitRules[2], for: "*example.com"), "the dropped rule must be a converted rule, not the ignore rule")
 
         let twoSites = ContentBlockerService.finalizeContentBlockerJSON(
-            baseJSON: threeRuleJSON,
+            baseJSON: Data(threeRuleJSON.utf8),
             disabledSites: ["one.example", "two.example"],
             knownBaseCount: 3,
             ruleLimit: 3
@@ -64,7 +64,7 @@ struct SafariRuleLimitCapTests {
         expect(isIgnoreRule(twoSiteRules[2], for: "*two.example"), "second ignore rule should be preserved")
 
         let emptyBase = ContentBlockerService.finalizeContentBlockerJSON(
-            baseJSON: "[]",
+            baseJSON: Data("[]".utf8),
             disabledSites: ["example.com"],
             knownBaseCount: 0
         )
@@ -73,15 +73,25 @@ struct SafariRuleLimitCapTests {
         expect(isIgnoreRule(emptyRules[0], for: "*example.com"), "empty lists should inject the ignore rule")
 
         let normalized = ContentBlockerService.finalizeContentBlockerJSON(
-            baseJSON: threeRuleJSON,
+            baseJSON: Data(threeRuleJSON.utf8),
             disabledSites: [" Example.com ", "EXAMPLE.com", "not a host"],
             knownBaseCount: 3
         )
         expectEqual(normalized.ruleCount, 4, "duplicate and invalid sites should not add extra ignore rules")
         expect(isIgnoreRule(rules(in: normalized.json)[3], for: "*example.com"), "normalized domain should be injected once")
 
+        let padded = ContentBlockerService.finalizeContentBlockerJSON(
+            baseJSON: Data("\n  [ ]  \n".utf8),
+            disabledSites: ["example.com"],
+            knownBaseCount: 0
+        )
+        expectEqual(String(decoding: padded.json, as: UTF8.self), "[" + String(decoding: padded.json.dropFirst().dropLast(), as: UTF8.self) + "]",
+                    "padding around an empty array must not survive injection")
+        expectEqual(padded.ruleCount, 1, "padded empty array should receive one ignore rule")
+        expect(isIgnoreRule(rules(in: padded.json)[0], for: "*example.com"), "padded empty array should keep the ignore rule")
+
         let ignoreOnly = ContentBlockerService.finalizeContentBlockerJSON(
-            baseJSON: threeRuleJSON,
+            baseJSON: Data(threeRuleJSON.utf8),
             disabledSites: ["one.example", "two.example"],
             knownBaseCount: 3,
             ruleLimit: 1
@@ -92,7 +102,7 @@ struct SafariRuleLimitCapTests {
         expect(isIgnoreRule(ignoreOnlyRules[0], for: "*one.example"), "the first ignore rule should win when even ignore rules must be capped")
 
         let overLimitBase = ContentBlockerService.finalizeContentBlockerJSON(
-            baseJSON: threeRuleJSON,
+            baseJSON: Data(threeRuleJSON.utf8),
             disabledSites: [],
             knownBaseCount: 3,
             ruleLimit: 2
@@ -111,7 +121,7 @@ struct SafariRuleLimitCapTests {
         try! prior.write(to: targetURL, atomically: true, encoding: .utf8)
 
         let rejectedFresh = try! ContentBlockerService.finalizeAndSaveContentBlockerIfWithinLimit(
-            baseJSON: threeRuleJSON,
+            baseJSON: Data(threeRuleJSON.utf8),
             disabledSites: [],
             knownBaseCount: 3,
             ruleLimit: 2,
@@ -125,7 +135,7 @@ struct SafariRuleLimitCapTests {
                     "fresh over-limit publish must preserve prior valid target")
 
         let rejectedCached = try! ContentBlockerService.finalizeAndSaveContentBlockerIfWithinLimit(
-            baseJSON: threeRuleJSON,
+            baseJSON: Data(threeRuleJSON.utf8),
             disabledSites: ["example.com"],
             knownBaseCount: 3,
             ruleLimit: 3,
@@ -153,10 +163,9 @@ struct SafariRuleLimitCapTests {
         return String(data: data, encoding: .utf8)!
     }
 
-    private static func rules(in json: String) -> [[String: Any]] {
-        guard let data = json.data(using: .utf8),
-              let parsed = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] else {
-            fputs("FAIL: could not parse content blocker JSON: \(json)\n", stderr)
+    private static func rules(in json: Data) -> [[String: Any]] {
+        guard let parsed = try? JSONSerialization.jsonObject(with: json) as? [[String: Any]] else {
+            fputs("FAIL: could not parse content blocker JSON: \(String(decoding: json, as: UTF8.self))\n", stderr)
             exit(1)
         }
         return parsed

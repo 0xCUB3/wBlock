@@ -1954,7 +1954,7 @@ public actor SharedAutoUpdateManager {
 
         for target in ContentBlockerTargetManager.shared.allTargets(forPlatform: platform) {
             let saveResult = try? ContentBlockerService.saveContentBlockerIfChanged(
-                jsonRules: ContentBlockerService.inertContentBlockerRulesJSON,
+                jsonRules: Data(ContentBlockerService.inertContentBlockerRulesJSON.utf8),
                 groupIdentifier: groupIdentifier,
                 targetRulesFilename: target.rulesFilename
             )

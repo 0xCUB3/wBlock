@@ -1241,14 +1241,13 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
     ///                      the file will be saved.
     /// - Returns: The rule count and whether the shared output bytes changed.
     public static func saveContentBlockerIfChanged(
-        jsonRules: String,
+        jsonRules data: Data,
         groupIdentifier: String,
         targetRulesFilename: String,
         containerURL explicitContainerURL: URL? = nil,
         knownRuleCount: Int? = nil
     ) throws -> ContentBlockerSaveResult {
         os_log(.info, "Saving pre-formatted JSON content blocker rules to %@", targetRulesFilename)
-        let data = Data(jsonRules.utf8)
         // Callers that built the array pass its count; parsing a 20 MB array
         // again just to count it was a large share of each compile.
         guard let ruleCount = knownRuleCount ?? ContentBlockerRuleArray.count(data) else {
@@ -1281,7 +1280,7 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
     }
 
     public static func finalizeAndSaveContentBlockerIfWithinLimit(
-        baseJSON: String,
+        baseJSON: Data,
         disabledSites: [String],
         knownBaseCount: Int? = nil,
         ruleLimit: Int = safariContentBlockerRuleLimit,
@@ -1517,7 +1516,7 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         }
         let compiled = try plan.compileTarget(targetIndex, extras: extrasJSON)
         if Task.isCancelled || isCancelled?() == true { throw CancellationError() }
-        let baseJSON = compiled.stats.nativeRules == 0 ? inertContentBlockerRulesJSON : compiled.safariRulesJSON
+        let baseJSON = compiled.stats.nativeRules == 0 ? Data(inertContentBlockerRulesJSON.utf8) : compiled.safariRulesJSON
         let baseCount = compiled.stats.nativeRules == 0 ? inertContentBlockerRuleCount : compiled.stats.nativeRules
         let advanced = compiled.runtimeRules.isEmpty ? nil : compiled.runtimeRules
         let admitted = Dictionary(uniqueKeysWithValues: (compiled.stats.admitted ?? [:]).compactMap { key, value in
@@ -1628,7 +1627,7 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
             groupIdentifier: groupIdentifier,
             containerURL: containerURL
         ),
-           let baseJSON = try? String(contentsOf: baseURL, encoding: .utf8),
+           let baseJSON = try? Data(contentsOf: baseURL, options: .alwaysMapped),
            let parsedBaseCount = ContentBlockerRuleArray.count(baseJSON),
            let baseCount = (try? String(contentsOf: baseCountURL, encoding: .utf8))
                 .flatMap({ Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) }),
@@ -1670,11 +1669,11 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
     /// When the combined list would overflow, trailing converted rules are dropped so
     /// the ignore rules still fit.
     public static func finalizeContentBlockerJSON(
-        baseJSON: String,
+        baseJSON: Data,
         disabledSites: [String],
         knownBaseCount: Int? = nil,
         ruleLimit: Int = safariContentBlockerRuleLimit
-    ) -> (json: String, ruleCount: Int, truncatedRuleCount: Int) {
+    ) -> (json: Data, ruleCount: Int, truncatedRuleCount: Int) {
         let limit = max(ruleLimit, 0)
         let sites = Array(
             DisabledSitesNormalizer.normalizedDomains(from: disabledSites).prefix(limit)
@@ -1763,42 +1762,39 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
     
     /// Injects Safari content blocker ignore-previous-rules for disabled sites into existing JSON.
     /// This uses Safari's native ignore-previous-rules action to whitelist disabled sites.
+    /// Whitespace around the array is dropped; bytes without an array are returned as they are.
     ///
     /// - Parameters:
-    ///   - json: Existing Safari content blocker JSON string.
+    ///   - json: Existing Safari content blocker JSON bytes.
     ///   - disabledSites: Array of site hostnames to whitelist.
-    /// - Returns: Modified JSON string with ignore rules injected.
-    private static func injectIgnoreRulesForDisabledSites(json: String, disabledSites: [String]) -> String {
+    /// - Returns: Modified JSON bytes with ignore rules injected.
+    private static func injectIgnoreRulesForDisabledSites(json: Data, disabledSites: [String]) -> Data {
         guard !disabledSites.isEmpty else { return json }
-        let trimmed = json.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let openBracket = trimmed.firstIndex(of: "["),
-              let closeBracket = trimmed.lastIndex(of: "]"),
-              openBracket < closeBracket else {
-            return json
+        let ignoreRules = Data(disabledSites.map { disabledSiteIgnoreRuleJSON(for: $0) }.joined(separator: ",").utf8)
+        return json.withUnsafeBytes { raw -> Data in
+            func isSpace(_ byte: UInt8) -> Bool { byte == 0x20 || (0x09...0x0D).contains(byte) }
+            var start = raw.startIndex
+            var end = raw.endIndex
+            while start < end, isSpace(raw[start]) { start += 1 }
+            while end > start, isSpace(raw[end - 1]) { end -= 1 }
+            var open = start
+            while open < end, raw[open] != 0x5B { open += 1 }
+            var close = end - 1
+            while close > open, raw[close] != 0x5D { close -= 1 }
+            guard open < end, close > open, raw[close] == 0x5D, let base = raw.baseAddress else { return json }
+
+            var result: Data
+            if raw[(open + 1)..<close].allSatisfy(isSpace) {
+                result = Data([0x5B])
+            } else {
+                result = Data(bytes: base + start, count: close - start)
+                result.append(0x2C)
+            }
+            result.append(ignoreRules)
+            result.append(0x5D)
+            return result
         }
-
-        let ignoreRules = disabledSites.map { disabledSiteIgnoreRuleJSON(for: $0) }.joined(separator: ",")
-        guard !ignoreRules.isEmpty else { return trimmed }
-
-        let inner = trimmed[trimmed.index(after: openBracket)..<closeBracket]
-        if inner.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            return "[\(ignoreRules)]"
-        }
-
-        return String(trimmed[..<closeBracket]) + "," + ignoreRules + "]"
     }
-    
-    /// Joins two content blocker rule arrays, keeping their order.
-    static func concatenatedRuleArrays(_ first: String, _ second: String) -> String {
-        func inner(_ json: String) -> Substring {
-            let trimmed = json.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard let open = trimmed.firstIndex(of: "["), let close = trimmed.lastIndex(of: "]"), open < close else { return "" }
-            return trimmed[trimmed.index(after: open)..<close]
-        }
-        let parts = [inner(first), inner(second)].filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-        return "[" + parts.joined(separator: ",") + "]"
-    }
-
 
     /// Whether the Scripts extension has a per-page engine to read. An upgrade
     /// from before wBlock 4 has none until its first apply.

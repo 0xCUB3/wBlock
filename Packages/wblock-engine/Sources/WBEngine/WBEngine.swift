@@ -14,8 +14,8 @@ public enum WBEngine {
     public static var outputVersion: UInt32 { wbe_output_version() }
 
     public struct Compiled {
-        /// Safari content-blocker JSON array.
-        public let safariRulesJSON: String
+        /// Safari content-blocker JSON array, as UTF-8 bytes.
+        public let safariRulesJSON: Data
         /// Rules for the per-page engine, one per line.
         public let runtimeRules: String
         public let stats: Stats
@@ -66,8 +66,10 @@ public enum WBEngine {
             }
             defer { wbe_compile_free(result) }
             let statsJSON = String(cString: wbe_compile_stats_json(result))
+            let webkit = wbe_compile_webkit_json(result)!
             return Compiled(
-                safariRulesJSON: String(cString: wbe_compile_webkit_json(result)),
+                // One copy out of the engine's buffer; no String round trip.
+                safariRulesJSON: Data(bytes: webkit, count: strlen(webkit)),
                 runtimeRules: String(cString: wbe_compile_runtime_text(result)),
                 stats: try JSONDecoder().decode(Stats.self, from: Data(statsJSON.utf8))
             )
