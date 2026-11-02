@@ -517,6 +517,9 @@
         #${UI_ROOT_ID} { --wb-text: #f5f5f7; --wb-panel: rgba(36,36,40,0.82); --wb-fill: rgba(120,120,128,0.3); --wb-menu: rgb(44,44,48); --wb-line: rgba(255,255,255,0.12); --wb-shadow: rgba(0,0,0,0.4); --wb-highlight: rgba(255,255,255,0.14); --wb-danger: rgb(255,105,97); --wb-danger-fill: rgba(255,105,97,0.2); }
       }
       #${UI_ROOT_ID}.wblock-dragging { cursor: grabbing; }
+      #${UI_ROOT_ID}.wblock-left { right: auto; left: calc(10px + env(safe-area-inset-left, 0px)); }
+      #${UI_ROOT_ID}.wblock-left .wblock-overflow { right: auto; left: calc(100% + 8px); }
+      #${UI_ROOT_ID}.wblock-left #${TOAST_ID} { right: auto; left: 0; }
       #${UI_ROOT_ID}:focus { outline: none; }
       #${UI_ROOT_ID} button { all: initial; appearance: none; cursor: pointer; display: flex; align-items: center; justify-content: center; box-sizing: border-box; min-width: 0; min-height: 34px; margin: 0; border: 0; border-radius: 12px; padding: 7px 6px; background: var(--wb-fill); color: var(--wb-text) !important; font: inherit; font-size: 13px; font-weight: 600; line-height: 1.15; text-align: center; overflow-wrap: anywhere; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
       #${UI_ROOT_ID} button:active { filter: brightness(0.9); }
@@ -678,50 +681,71 @@
     state.ui.childButton = childButton;
     state.ui.hideOnceButton = hideOnceButton;
 
-    // --- Vertical drag-to-move logic ---
+    // --- Drag-to-move logic ---
     // A press on the panel body only arms a drag. The panel moves once the
     // pointer has travelled DRAG_THRESHOLD_PX, so taps and small jitters on
-    // the panel never move it, and buttons never arm a drag at all.
+    // the panel never move it, and buttons never arm a drag at all. On release
+    // it settles against the nearer side edge.
     const DRAG_THRESHOLD_PX = 6;
+    let offsetX = 0;
     let offsetY = 0;
-    let pressY = null;
-    let dragStartY = 0;
-    let dragStartOffset = 0;
-    let isDragging = false;
+    let press = null;
+    let dragStart = null;
 
-    function moveDrag(clientY) {
-      if (pressY === null) return false;
-      if (!isDragging) {
-        if (Math.abs(clientY - pressY) < DRAG_THRESHOLD_PX) return false;
-        isDragging = true;
-        dragStartY = pressY;
-        dragStartOffset = offsetY;
+    const placePanel = (x, y) => {
+      root.style.transform = `translate(${x}px, calc(-50% + ${y}px))`;
+    };
+
+    function moveDrag(clientX, clientY) {
+      if (!press) return false;
+      if (!dragStart) {
+        if (Math.hypot(clientX - press.x, clientY - press.y) < DRAG_THRESHOLD_PX) return false;
+        const rect = root.getBoundingClientRect();
+        dragStart = { ...press, offsetX, offsetY, baseLeft: rect.left - offsetX };
+        root.style.transition = '';
         root.classList.add('wblock-dragging');
       }
+      const width = root.offsetWidth;
+      offsetX = Math.max(4 - dragStart.baseLeft, Math.min(window.innerWidth - 4 - width - dragStart.baseLeft,
+        dragStart.offsetX + clientX - dragStart.x));
       // Keep room above the panel for the toast, which sits there.
       const room = window.innerHeight / 2 - root.offsetHeight / 2;
-      offsetY = Math.max(-(room - 56), Math.min(room - 4, dragStartOffset + clientY - dragStartY));
-      root.style.transform = `translateY(calc(-50% + ${offsetY}px))`;
+      offsetY = Math.max(-(room - 56), Math.min(room - 4, dragStart.offsetY + clientY - dragStart.y));
+      placePanel(offsetX, offsetY);
       return true;
     }
 
     function endDrag() {
-      pressY = null;
-      isDragging = false;
+      const dragged = dragStart !== null;
+      press = null;
+      dragStart = null;
       root.classList.remove('wblock-dragging');
+      if (!dragged) return;
+      const before = root.getBoundingClientRect();
+      root.classList.toggle('wblock-left', before.left + before.width / 2 < window.innerWidth / 2);
+      offsetX = 0;
+      placePanel(0, offsetY);
+      const shift = before.left - root.getBoundingClientRect().left;
+      if (!shift) return;
+      // Start from where the finger let go and glide to the edge.
+      root.style.transition = 'none';
+      placePanel(shift, offsetY);
+      root.getBoundingClientRect();
+      root.style.transition = 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)';
+      placePanel(0, offsetY);
     }
 
     const onPanelPointerDown = (e) => {
       if (e.target.closest('button, .wblock-overflow')) return;
-      pressY = e.clientY;
+      press = { x: e.clientX, y: e.clientY };
     };
     const onPanelTouchStart = (e) => {
       if (e.target.closest('button, .wblock-overflow')) return;
       if (e.touches.length !== 1) return;
-      pressY = e.touches[0].clientY;
+      press = { x: e.touches[0].clientX, y: e.touches[0].clientY };
     };
-    const onDocPointerMove = (e) => { if (moveDrag(e.clientY)) e.preventDefault(); };
-    const onDocTouchMove = (e) => { if (e.touches[0] && moveDrag(e.touches[0].clientY)) e.preventDefault(); };
+    const onDocPointerMove = (e) => { if (moveDrag(e.clientX, e.clientY)) e.preventDefault(); };
+    const onDocTouchMove = (e) => { if (e.touches[0] && moveDrag(e.touches[0].clientX, e.touches[0].clientY)) e.preventDefault(); };
     const onDocPointerEnd = () => endDrag();
 
     root.addEventListener('pointerdown', onPanelPointerDown);
