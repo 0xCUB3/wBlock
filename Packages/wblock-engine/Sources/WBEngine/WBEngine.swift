@@ -38,6 +38,11 @@ public enum WBEngine {
         }
     }
 
+    /// Drops the parsed lists kept between plans. Plans in use keep theirs.
+    public static func clearParseCache() {
+        wbe_clear_parse_cache()
+    }
+
     public final class Plan: @unchecked Sendable {
         private let handle: OpaquePointer
 

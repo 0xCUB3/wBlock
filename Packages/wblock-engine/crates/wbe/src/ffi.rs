@@ -105,6 +105,13 @@ pub unsafe extern "C" fn wbe_plan_target_fingerprint(
     })
 }
 
+/// Drops the parsed lists kept between plans. Plans still in use keep theirs,
+/// and the next plan parses every list again.
+#[no_mangle]
+pub extern "C" fn wbe_clear_parse_cache() {
+    crate::apply::clear_parse_cache();
+}
+
 #[no_mangle]
 pub unsafe extern "C" fn wbe_plan_free(plan: *mut WbePlan) {
     if !plan.is_null() {

@@ -26,7 +26,7 @@ use std::collections::hash_map::DefaultHasher;
 use rustc_hash::{FxHashMap, FxHashSet};
 use std::collections::BTreeMap;
 use std::ops::Range;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use std::hash::{Hash, Hasher};
 
 #[derive(Debug, Clone, Default, Deserialize)]
@@ -147,6 +147,71 @@ struct ParsedList {
     stats: Stats,
 }
 
+/// What `parse` reads from a list, so a list's records can be reused by any
+/// plan with the same key. The text is hashed and its length kept beside the
+/// hash; the records' offsets point into that text.
+#[derive(Clone, Copy, PartialEq, Eq)]
+struct ParseKey {
+    text: u64,
+    len: usize,
+    trusted: bool,
+    scope: u64,
+    version: u32,
+}
+
+impl ParseKey {
+    fn of(list: &ListSpec, text: u64) -> ParseKey {
+        ParseKey {
+            text,
+            len: list.text.len(),
+            trusted: list.trusted,
+            scope: hash(&(&list.scope.exclude, &list.scope.only)),
+            version: crate::OUTPUT_VERSION,
+        }
+    }
+}
+
+/// Parsed lists kept between plans. A plan keeps only the entries of its own
+/// lists, so the cache holds one apply's lists and a changed list is parsed
+/// again alone. The app clears it on phones after each apply.
+#[derive(Default)]
+pub struct ParseCache(Mutex<Vec<(ParseKey, Arc<ParsedList>)>>);
+
+/// The cache `Plan::new` uses.
+static PARSE_CACHE: ParseCache = ParseCache(Mutex::new(Vec::new()));
+
+impl ParseCache {
+    fn entries(&self) -> MutexGuard<'_, Vec<(ParseKey, Arc<ParsedList>)>> {
+        self.0.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+
+    fn parsed(&self, key: ParseKey, list: &ListSpec) -> Arc<ParsedList> {
+        if let Some((_, hit)) = self.entries().iter().find(|(k, _)| *k == key) {
+            return hit.clone();
+        }
+        let parsed = Arc::new(parse(list));
+        let mut entries = self.entries();
+        if !entries.iter().any(|(k, _)| *k == key) {
+            entries.push((key, parsed.clone()));
+        }
+        parsed
+    }
+
+    fn keep(&self, keys: &[ParseKey]) {
+        self.entries().retain(|(k, _)| keys.contains(k));
+    }
+
+    /// Drops every entry. Plans in use keep the lists they already parsed.
+    pub fn clear(&self) {
+        self.entries().clear();
+    }
+}
+
+/// Empties the process-wide parse cache.
+pub fn clear_parse_cache() {
+    PARSE_CACHE.clear();
+}
+
 /// Records per network unit: the granularity at which rules are parsed and
 /// compiled, so a unit's rules are the only ones held at once.
 const UNIT_RECORDS: usize = 2048;
@@ -193,7 +258,7 @@ impl ListScan {
 pub struct Plan {
     opts: CompileOptions,
     lists: Vec<ListSpec>,
-    parsed: Vec<ParsedList>,
+    parsed: Vec<Arc<ParsedList>>,
     targets: Vec<TargetSpec>,
     cosmetics: CosmeticScope,
     /// List index -> rule identities a blocker other than this one owns (#681).
@@ -204,11 +269,23 @@ pub struct Plan {
 
 impl Plan {
     pub fn new(request: PlanRequest) -> Plan {
+        Plan::with_cache(request, &PARSE_CACHE)
+    }
+
+    /// `new`, taking each list's parse from `cache` when the cache has it.
+    pub fn with_cache(request: PlanRequest, cache: &ParseCache) -> Plan {
         let opts = CompileOptions {
             safari: SafariVersion::new(request.safari.0, request.safari.1),
         };
-        let parsed = parallel_indices(request.lists.len(), |i| parse(&request.lists[i], i as u32));
         let text_hashes = parallel_indices(request.lists.len(), |i| hash(&request.lists[i].text));
+        let keys: Vec<ParseKey> = request
+            .lists
+            .iter()
+            .zip(&text_hashes)
+            .map(|(list, &text)| ParseKey::of(list, text))
+            .collect();
+        let parsed = parallel_indices(request.lists.len(), |i| cache.parsed(keys[i], &request.lists[i]));
+        cache.keep(&keys);
         let mut plan = Plan {
             opts,
             lists: request.lists,
@@ -676,7 +753,10 @@ impl Plan {
     }
 }
 
-fn parse(list: &ListSpec, index: u32) -> ParsedList {
+/// The records of `list`. Each rule is parsed again from its line when a
+/// blocker needs it (`Plan::rule`), with the list's index, so the index is not
+/// needed here.
+fn parse(list: &ListSpec) -> ParsedList {
     let mut stats = Stats::default();
     // Sized up front: growing it would leave the old buffers behind.
     let mut rules = Vec::with_capacity(list.text.lines().count());
@@ -699,7 +779,7 @@ fn parse(list: &ListSpec, index: u32) -> ParsedList {
         }
         let mut line_stats = Stats::default();
         let offset = line.as_ptr() as usize - list.text.as_ptr() as usize;
-        let parsed_line = parse_list(line, index, list.trusted, &mut line_stats);
+        let parsed_line = parse_list(line, 0, list.trusted, &mut line_stats);
         for (position, rule) in parsed_line.iter().enumerate() {
             rules.push(Parsed {
                 offset,
@@ -1196,6 +1276,37 @@ mod tests {
         )
     }
 
+    fn two_list_request(left: &str, right: &str, scope: Value) -> PlanRequest {
+        serde_json::from_value(json!({
+            "safari": [18, 0],
+            "lists": [{ "id": "left", "text": left, "scope": scope }, { "id": "right", "text": right }],
+            "targets": [{ "slot": 1, "lists": [{"list": 0}, {"list": 1}] }],
+        }))
+        .unwrap()
+    }
+
+    #[test]
+    fn parse_cache_reparses_only_changed_lists() {
+        let cache = ParseCache::default();
+        let first = Plan::with_cache(two_list_request("||a.example^", "||b.example^", json!({})), &cache);
+        let changed = "||c.example^\n||d.example^";
+        let second = Plan::with_cache(two_list_request("||a.example^", changed, json!({})), &cache);
+        assert!(Arc::ptr_eq(&first.parsed[0], &second.parsed[0]));
+        assert!(!Arc::ptr_eq(&first.parsed[1], &second.parsed[1]));
+        // The new entry replaces the old one: the cache holds one plan's lists.
+        assert_eq!(cache.entries().len(), 2);
+        let fresh = Plan::new(two_list_request("||a.example^", changed, json!({})));
+        assert_eq!(rules(&second, 0), rules(&fresh, 0));
+        // A site scope changes what the records hold, so it is part of the key.
+        let scoped = Plan::with_cache(
+            two_list_request("||a.example^", changed, json!({"exclude": ["a.example"]})),
+            &cache,
+        );
+        assert!(!Arc::ptr_eq(&second.parsed[0], &scoped.parsed[0]));
+        cache.clear();
+        assert!(cache.entries().is_empty());
+    }
+
     #[test]
     fn cross_blocker_cosmetic_exception() {
         let plan = two_lists("##.consent-dialog", "example.com#@#.consent-dialog");
@@ -1632,7 +1743,7 @@ mod tests {
     /// spread over five blockers as lists % 5. `"scoped"` adds site scopes and
     /// a cosmetic scope; `"sharded"` splits every fourth list over two
     /// blockers, so shards and cross-blocker duplicates are covered too.
-    fn real_lists_plan(config: &str) -> Plan {
+    fn real_lists_plan(config: &str, change: Option<&str>) -> Plan {
         let scoped = config == "scoped";
         let sharded = config == "sharded";
         let dir = std::env::var("WBE_BENCH_LISTS").unwrap_or("/tmp/wbprof/container".into());
@@ -1666,9 +1777,15 @@ mod tests {
                 } else {
                     SiteScope::default()
                 };
+                let name = path.file_name().unwrap().to_string_lossy().into_owned();
+                // An apply after an edit: `change` names a list that gains a rule.
+                let mut text = std::fs::read_to_string(path).unwrap();
+                if change.is_some_and(|c| name.contains(c)) {
+                    text.push_str("\n||round.example^\n");
+                }
                 ListSpec {
-                    id: path.file_name().unwrap().to_string_lossy().into(),
-                    text: std::fs::read_to_string(path).unwrap(),
+                    id: name,
+                    text,
                     path: None,
                     trusted: false,
                     scope,
@@ -1705,19 +1822,30 @@ mod tests {
         })
     }
 
+    /// Times an apply's phases: `Plan::new` (with the real lists read from
+    /// `WBE_BENCH_LISTS`), then each blocker's fingerprint and compile.
+    /// Run twice with WBE_BENCH_CHANGE to see an apply after one edit.
     #[test]
     #[ignore]
     fn benchmark_real_lists() {
         let start = std::time::Instant::now();
-        let plan = real_lists_plan("plain");
-        println!("Plan::new {:?}", start.elapsed());
+        let _first = real_lists_plan("plain", None);
+        println!("Plan::new (first apply) {:?}", start.elapsed());
+        // WBE_BENCH_CHANGE=<name fragment> makes the second apply see one list edited.
+        let change = std::env::var("WBE_BENCH_CHANGE").ok();
+        let start = std::time::Instant::now();
+        let plan = real_lists_plan("plain", change.as_deref());
+        println!("Plan::new (next apply, change {change:?}) {:?}", start.elapsed());
         // WBE_BENCH_TARGET=n compiles only that blocker, to attribute peak memory.
         let only: Option<usize> = std::env::var("WBE_BENCH_TARGET").ok().and_then(|v| v.parse().ok());
         for target in (0..5).filter(|t| only.is_none_or(|o| o == *t)) {
             let start = std::time::Instant::now();
+            plan.fingerprint(target, &[]);
+            let fingerprint = start.elapsed();
+            let start = std::time::Instant::now();
             let output = plan.compile_target(target, &[]);
             println!(
-                "target {target}: {:?}, {} rules",
+                "target {target}: fingerprint {fingerprint:?}, compile {:?}, {} rules",
                 start.elapsed(),
                 output.output.webkit.rules()
             );
@@ -1744,7 +1872,7 @@ mod tests {
             ("sharded", "sharded", Vec::new()),
         ];
         for (name, config, extras) in cases {
-            let plan = real_lists_plan(config);
+            let plan = real_lists_plan(config, None);
             let mut fingerprints = String::new();
             for target in 0..plan.target_count() {
                 let output = plan.compile_target(target, &extras);

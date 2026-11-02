@@ -47,6 +47,8 @@ WbeCompileResult *wbe_plan_compile_target(const WbePlan *plan, size_t target,
 bool wbe_plan_target_fingerprint(const WbePlan *plan, size_t target,
                                  const char *extras_json, uint64_t *out);
 void wbe_plan_free(WbePlan *plan);
+/* Drops the parsed lists kept between plans; plans in use keep theirs. */
+void wbe_clear_parse_cache(void);
 
 /* Safari content-blocker JSON array. */
 const char *wbe_compile_webkit_json(const WbeCompileResult *result);

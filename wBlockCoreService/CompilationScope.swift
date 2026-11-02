@@ -1,4 +1,5 @@
 import Foundation
+internal import WBEngine
 
 /// Work shared by the blockers of one Apply. It lives only as long as the
 /// Apply, so idle processes keep nothing, and direct callers outside an Apply
@@ -24,6 +25,21 @@ final class CompilationScope: @unchecked Sendable {
         #else
         return info.physicalMemory <= 4 << 30 ? 1 : 2
         #endif
+    }
+
+    /// Whether the engine keeps each list's parse between applies, so a plan
+    /// after an edit parses only the changed list. Phones and Macs with 4 GB or
+    /// less drop it when their apply ends, as they drop the rest of the plan.
+    static let keepsParsedLists: Bool = {
+        #if os(macOS)
+        return ProcessInfo.processInfo.physicalMemory > 4 << 30
+        #else
+        return false
+        #endif
+    }()
+
+    deinit {
+        if !Self.keepsParsedLists { WBEngine.clearParseCache() }
     }
 
     private final class Entry {
