@@ -114,6 +114,7 @@
     if (results && results.length > 0 && results[0].error) {
       logError('[wBlock] Failed to execute script in target', injection.target, 'error', results[0].error);
     }
+    return results && results.length > 0 ? results[0].result : undefined;
   };
   /**
    * Applies a per-page payload to one frame. Scriptlets are queued first so
@@ -140,6 +141,14 @@
     }
     if (procedural.length > 0) {
       pending.push((async () => {
+        // The content script loads procedural.js into every frame already, so
+        // one call applies the filters. The file is injected only when it is missing.
+        const applied = await executeInFrame({ target, func: filters => {
+          if (!globalThis.wbeProcedural) return false;
+          globalThis.wbeProcedural.apply(filters);
+          return true;
+        }, args: [procedural] });
+        if (applied) return;
         await executeInFrame({ target, files: ['procedural.js'], injectImmediately: true });
         await executeInFrame({ target, func: filters => wbeProcedural.apply(filters), args: [procedural] });
       })());

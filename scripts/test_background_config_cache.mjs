@@ -576,6 +576,15 @@ const runScriptInjectionScenario = async executeScript => {
   check("HTTP frame injects each scriptlet file once in the MAIN world", httpState.executed.some(injection => injection.world === "MAIN" && JSON.stringify(injection.files) === JSON.stringify(["scriptlets/set-constant.js", "scriptlets/abort-on-property-read.js"])));
   check("HTTP frame loads procedural.js into the ISOLATED world", httpState.executed.some(injection => injection.files && injection.files[0] === "procedural.js" && injection.world === undefined));
   check("HTTP frame applies procedural filters after loading them", httpState.executed.some(injection => typeof injection.func === "function" && injection.args && injection.args[0][0] === '{"selector":[{"type":"css","arg":"div"}]}'));
+  // The content script already loaded procedural.js, so the probe applies the filters in one call.
+  const loadedState = loadBackground({
+    nativeHandler: () => ({ payload: makeConfig([], 19, ['{"selector":[{"type":"css","arg":"div"}]}']) }),
+    executeScript: async injection => [{ result: typeof injection.func === "function" ? true : undefined }]
+  });
+  await loadedState.onMessage({ type: "InitContentScript" }, topFrameSender(pageUrl));
+  const procedural = loadedState.executed.filter(injection => injection.args && injection.args[0] && injection.args[0][0] === '{"selector":[{"type":"css","arg":"div"}]}');
+  check("loaded procedural.js is not injected again", !loadedState.executed.some(injection => injection.files && injection.files[0] === "procedural.js"));
+  check("loaded procedural.js applies filters in one call", procedural.length === 1);
 }
 
 // Scenario J: disabled/paused cache misses remain uncached, and the first
