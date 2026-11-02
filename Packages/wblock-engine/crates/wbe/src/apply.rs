@@ -1648,40 +1648,61 @@ mod tests {
             })
             .collect();
         paths.sort();
-        let lists: Vec<Value> = paths
+        // Built directly, not through JSON, which would copy every list's text.
+        let lists: Vec<ListSpec> = paths
             .iter()
             .enumerate()
             .map(|(index, path)| {
-                let mut list = json!({"id": path.file_name().unwrap().to_string_lossy(), "text": std::fs::read_to_string(path).unwrap()});
-                if scoped && index % 3 == 0 {
-                    list["scope"] = json!({"exclude": ["example.com", "shop.*"]});
+                let scope = if scoped && index % 3 == 0 {
+                    SiteScope {
+                        exclude: vec!["example.com".into(), "shop.*".into()],
+                        only: None,
+                    }
                 } else if scoped && index % 5 == 4 {
-                    list["scope"] = json!({"only": ["news.example.com", "example.*"]});
+                    SiteScope {
+                        exclude: Vec::new(),
+                        only: Some(vec!["news.example.com".into(), "example.*".into()]),
+                    }
+                } else {
+                    SiteScope::default()
+                };
+                ListSpec {
+                    id: path.file_name().unwrap().to_string_lossy().into(),
+                    text: std::fs::read_to_string(path).unwrap(),
+                    path: None,
+                    trusted: false,
+                    scope,
                 }
-                list
             })
             .collect();
-        let mut blockers: Vec<Vec<Value>> = vec![Vec::new(); 5];
+        let mut blockers: Vec<Vec<TargetList>> = vec![Vec::new(); 5];
         for index in 0..lists.len() {
             let primary = index % 5;
             if sharded && index % 4 == 0 {
-                blockers[primary].push(json!({"list": index, "shard": [0, 2]}));
-                blockers[(primary + 1) % 5].push(json!({"list": index, "shard": [1, 2]}));
+                blockers[primary].push(TargetList { list: index, shard: Some((0, 2)) });
+                blockers[(primary + 1) % 5].push(TargetList { list: index, shard: Some((1, 2)) });
             } else {
-                blockers[primary].push(json!({"list": index}));
+                blockers[primary].push(TargetList { list: index, shard: None });
             }
         }
-        let targets: Vec<Value> = blockers
+        let targets: Vec<TargetSpec> = blockers
             .into_iter()
             .enumerate()
-            .map(|(slot, lists)| json!({"slot": slot + 1, "lists": lists}))
+            .map(|(slot, lists)| TargetSpec { slot: slot as u8 + 1, lists })
             .collect();
-        let cosmetics = if scoped {
-            json!({"exclude": ["news.example.com"]})
-        } else {
-            json!({})
+        let cosmetics = CosmeticScope {
+            sites: SiteScope {
+                exclude: if scoped { vec!["news.example.com".into()] } else { Vec::new() },
+                only: None,
+            },
+            generic: true,
         };
-        plan(json!(lists), json!(targets), cosmetics)
+        Plan::new(PlanRequest {
+            safari: (18, 0),
+            lists,
+            targets,
+            cosmetics,
+        })
     }
 
     #[test]
