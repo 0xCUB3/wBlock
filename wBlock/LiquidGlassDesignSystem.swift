@@ -118,10 +118,13 @@ struct ListActionsToolbar<Primary: View, Apply: View, Leading: View>: ViewModifi
                         }
                         ToolbarItem(placement: .topBarTrailing) {
                             Button {
-                                // The keyboard goes first: a swap made while it
-                                // animates away is swept into that animation.
-                                UIApplication.shared.sendAction(
-                                    #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                                // The keyboard goes first, and at once: a swap made
+                                // while it animates away is swept into that
+                                // animation, and its slide made Close drag.
+                                UIView.performWithoutAnimation {
+                                    UIApplication.shared.sendAction(
+                                        #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                                }
                                 DispatchQueue.main.async {
                                     searchText = ""
                                     setSearching(false)
