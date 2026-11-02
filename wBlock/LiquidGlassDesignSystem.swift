@@ -50,6 +50,14 @@ struct ListActionsToolbar<Primary: View, Apply: View, Leading: View>: ViewModifi
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var contentWidth: CGFloat = 0
+
+    /// Swaps the buttons and the search field at once. Animating the swap made
+    /// iOS morph the old and new glass shapes through a blur.
+    private func setSearching(_ searching: Bool) {
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) { focusRequest = searching }
+    }
     #else
     @State private var isSearchOpen = false
     #endif
@@ -110,8 +118,14 @@ struct ListActionsToolbar<Primary: View, Apply: View, Leading: View>: ViewModifi
                         }
                         ToolbarItem(placement: .topBarTrailing) {
                             Button {
-                                searchText = ""
-                                withAnimation(.smooth) { focusRequest = false }
+                                // The keyboard goes first: a swap made while it
+                                // animates away is swept into that animation.
+                                UIApplication.shared.sendAction(
+                                    #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                                DispatchQueue.main.async {
+                                    searchText = ""
+                                    setSearching(false)
+                                }
                             } label: {
                                 Label("Close", systemImage: "xmark")
                             }
@@ -123,7 +137,7 @@ struct ListActionsToolbar<Primary: View, Apply: View, Leading: View>: ViewModifi
                         // Search, Show Enabled Only, Add: the Mac order (#999).
                         if horizontalSizeClass != .regular {
                             ToolbarItem(placement: .topBarTrailing) {
-                                Button { withAnimation(.smooth) { focusRequest = true } } label: {
+                                Button { setSearching(true) } label: {
                                     Label("Search", systemImage: "magnifyingglass")
                                 }
                             }
