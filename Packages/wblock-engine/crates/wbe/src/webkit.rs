@@ -110,7 +110,93 @@ impl SafariVersion {
     }
 }
 
+/// A rule list as Safari's JSON array text. The compiler writes it directly,
+/// so the rules are never held as `WkRule` values.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WebkitJson {
+    /// `[...]`, compact.
+    json: String,
+    rules: usize,
+}
+
+impl Default for WebkitJson {
+    fn default() -> Self {
+        Self {
+            json: "[]".into(),
+            rules: 0,
+        }
+    }
+}
+
+impl WebkitJson {
+    pub fn from_rules(rules: &[WkRule]) -> Self {
+        Self {
+            json: to_json(rules),
+            rules: rules.len(),
+        }
+    }
+
+    /// Number of rules in the list.
+    pub fn rules(&self) -> usize {
+        self.rules
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.json
+    }
+
+    /// `json` is a complete, valid JSON array of `rules` objects.
+    pub(crate) fn from_bytes(json: Vec<u8>, rules: usize) -> Self {
+        Self {
+            json: String::from_utf8(json).expect("JSON is UTF-8"),
+            rules,
+        }
+    }
+
+    /// The rules of `parts`, in order, as one list.
+    pub fn join<'a>(parts: impl IntoIterator<Item = &'a WebkitJson>) -> Self {
+        let mut json = String::from("[");
+        let mut rules = 0;
+        for part in parts {
+            let items = &part.json[1..part.json.len() - 1];
+            if items.is_empty() {
+                continue;
+            }
+            if rules > 0 {
+                json.push(',');
+            }
+            json.push_str(items);
+            rules += part.rules;
+        }
+        json.push(']');
+        Self { json, rules }
+    }
+}
+
+/// Anything `to_json` can serialize as Safari's rule list.
+pub trait WebkitRules {
+    fn to_webkit_json(&self) -> String;
+}
+
+impl WebkitRules for [WkRule] {
+    fn to_webkit_json(&self) -> String {
+        serde_json::to_string(self).expect("WkRule serializes")
+    }
+}
+
+impl WebkitRules for Vec<WkRule> {
+    fn to_webkit_json(&self) -> String {
+        self.as_slice().to_webkit_json()
+    }
+}
+
+impl WebkitRules for WebkitJson {
+    fn to_webkit_json(&self) -> String {
+        self.json.clone()
+    }
+}
+
 /// Serialize rules as Safari expects (compact JSON array).
-pub fn to_json(rules: &[WkRule]) -> String {
-    serde_json::to_string(rules).expect("WkRule serializes")
+pub fn to_json<T: WebkitRules + ?Sized>(rules: &T) -> String {
+    rules.to_webkit_json()
 }

@@ -13,7 +13,7 @@ mod network;
 pub mod regex;
 
 use crate::ast::{ExceptionScope, ParsedLine, Rule, SourceRef};
-use crate::webkit::{SafariVersion, WkRule};
+use crate::webkit::{SafariVersion, WebkitJson, WkRule};
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::collections::BTreeMap;
@@ -63,7 +63,7 @@ impl Stats {
 
 #[derive(Debug, Clone, Default)]
 pub struct CompileOutput {
-    pub webkit: Vec<WkRule>,
+    pub webkit: WebkitJson,
     /// Normalized uBO lines for `runtime::Engine`, one per rule.
     pub runtime: Vec<String>,
     pub stats: Stats,
@@ -72,6 +72,104 @@ pub struct CompileOutput {
 pub(crate) struct Tiered {
     pub tier: Tier,
     pub rule: WkRule,
+}
+
+/// Safari JSON of the network rules, written as they are compiled: one object
+/// per rule in `bytes`, located by `entries`. Nothing is held as a `WkRule`,
+/// which costs several allocations per rule.
+#[derive(Debug, Default)]
+pub(crate) struct Emitted {
+    bytes: Vec<u8>,
+    entries: Vec<Entry>,
+}
+
+#[derive(Debug)]
+struct Entry {
+    tier: Tier,
+    /// `bytes[start..end]` is the rule, unless `domain` is set.
+    start: usize,
+    end: usize,
+    /// An `if-domain` rule: its domain list can grow when rules merge.
+    domain: Option<Box<DomainSpan>>,
+}
+
+#[derive(Debug)]
+struct DomainSpan {
+    /// `bytes[start..head]` ends before the `if-domain` key and
+    /// `bytes[tail..end]` starts after its array.
+    head: usize,
+    tail: usize,
+    domains: Vec<String>,
+}
+
+/// Tiers in output order.
+const TIERS: [Tier; 8] = [
+    Tier::GenericHide,
+    Tier::GenericHideException,
+    Tier::SpecificHide,
+    Tier::ElemHideException,
+    Tier::Block,
+    Tier::Exception,
+    Tier::ImportantBlock,
+    Tier::DocumentException,
+];
+
+impl Emitted {
+    fn render(&self, entry: &Entry, out: &mut Vec<u8>) {
+        match &entry.domain {
+            None => out.extend_from_slice(&self.bytes[entry.start..entry.end]),
+            Some(span) => {
+                out.extend_from_slice(&self.bytes[entry.start..span.head]);
+                out.extend_from_slice(b",\"if-domain\":");
+                serde_json::to_writer(&mut *out, &span.domains).expect("domains serialize");
+                out.extend_from_slice(&self.bytes[span.tail..entry.end]);
+            }
+        }
+    }
+
+    pub(crate) fn push_rule(&mut self, tier: Tier, rule: &WkRule) {
+        let start = self.bytes.len();
+        serde_json::to_writer(&mut self.bytes, rule).expect("WkRule serializes");
+        self.entries.push(Entry {
+            tier,
+            start,
+            end: self.bytes.len(),
+            domain: None,
+        });
+    }
+
+    /// Everything emitted, in tier order; within a tier, emission order.
+    fn into_webkit(self) -> WebkitJson {
+        let mut json = Vec::with_capacity(self.bytes.len() + self.entries.len() + 2);
+        json.push(b'[');
+        let mut first = true;
+        for tier in TIERS {
+            for entry in self.entries.iter().filter(|e| e.tier == tier) {
+                if !first {
+                    json.push(b',');
+                }
+                first = false;
+                self.render(entry, &mut json);
+            }
+        }
+        json.push(b']');
+        WebkitJson::from_bytes(json, self.entries.len())
+    }
+
+    #[cfg(test)]
+    pub(crate) fn tiered(&self) -> Vec<Tiered> {
+        self.entries
+            .iter()
+            .map(|entry| {
+                let mut json = Vec::new();
+                self.render(entry, &mut json);
+                Tiered {
+                    tier: entry.tier,
+                    rule: serde_json::from_slice(&json).expect("rule parses back"),
+                }
+            })
+            .collect()
+    }
 }
 
 /// Parsed rules ready for `compile_rules`.
@@ -128,7 +226,6 @@ pub fn compile(inputs: &[ListInput], opts: &CompileOptions) -> CompileOutput {
 
 /// Compiles parsed rules. `stats` carries what parsing counted.
 pub fn compile_rules(set: &RuleSet, opts: &CompileOptions, mut stats: Stats) -> CompileOutput {
-    let mut tiered = Vec::new();
     let mut runtime = Vec::new();
     let mut network = Vec::new();
     let mut cosmetic = Vec::new();
@@ -140,19 +237,22 @@ pub fn compile_rules(set: &RuleSet, opts: &CompileOptions, mut stats: Stats) -> 
             Rule::Scriptlet(r) => scriptlets.push(r),
         }
     }
-    let (mut network_tiered, network_stats) = std::thread::scope(|scope| {
+    let (mut emitted, network_stats, tiered) = std::thread::scope(|scope| {
         let worker = scope.spawn(|| {
-            let mut tiered = Vec::new();
+            let mut emitted = Emitted::default();
             let mut stats = Stats::default();
-            network::compile(&network, opts, &mut tiered, &mut stats);
-            (tiered, stats)
+            network::compile(&network, opts, &mut emitted, &mut stats);
+            (emitted, stats)
         });
+        let mut tiered = Vec::new();
         cosmetic::compile(&cosmetic, opts, &mut tiered, &mut runtime, &mut stats);
-        worker.join().expect("network compiler thread")
+        let (emitted, network_stats) = worker.join().expect("network compiler thread");
+        (emitted, network_stats, tiered)
     });
     stats.merge(&network_stats);
-    network_tiered.append(&mut tiered);
-    let mut tiered = network_tiered;
+    for t in &tiered {
+        emitted.push_rule(t.tier, &t.rule);
+    }
     runtime.extend(
         network
             .iter()
@@ -169,9 +269,8 @@ pub fn compile_rules(set: &RuleSet, opts: &CompileOptions, mut stats: Stats) -> 
     }
     stats.runtime_rules = runtime.len() as u64;
 
-    tiered.sort_by_key(|t| t.tier);
-    let webkit: Vec<WkRule> = tiered.into_iter().map(|t| t.rule).collect();
-    stats.native_rules = webkit.len() as u64;
+    let webkit = emitted.into_webkit();
+    stats.native_rules = webkit.rules() as u64;
     CompileOutput {
         webkit,
         runtime,

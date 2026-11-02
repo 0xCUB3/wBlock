@@ -6,16 +6,17 @@
 //! `compile/mod.rs`; exceptions use ignore-previous-rules.
 
 use super::regex::{domain_top_url, url_filter};
-use super::{CompileOptions, Stats, Tier, Tiered};
+use super::{CompileOptions, DomainSpan, Emitted, Entry, Stats, Tier};
 use crate::ast::{
     DomainList, DomainMatcher, ExceptionScope, NetworkAction, NetworkRule, Party, Pattern,
     PatternKind, ResourceTypes, SourceRef,
 };
-use crate::webkit::{
-    SafariVersion, WkAction, WkLoadContext, WkLoadType, WkResourceType, WkRule, WkTrigger,
-};
-use rustc_hash::{FxHashMap, FxHashSet};
+use crate::webkit::{SafariVersion, WkLoadContext, WkLoadType, WkResourceType};
+use rustc_hash::{FxHashMap, FxHashSet, FxHasher};
+use serde::Serialize;
+use std::collections::hash_map::Entry as MapEntry;
 use std::collections::HashSet;
+use std::hash::Hasher;
 
 /// uBO's default for a rule without `$type`: every type except the main
 /// document, popups and inline resources (static-net-filtering.js,
@@ -31,7 +32,7 @@ const DEFAULT_TYPES: ResourceTypes = ResourceTypes::all().difference(
 pub(super) fn compile(
     rules: &[&NetworkRule],
     opts: &CompileOptions,
-    out: &mut Vec<Tiered>,
+    out: &mut Emitted,
     stats: &mut Stats,
 ) {
     let bad: Vec<NetworkRule> = rules
@@ -41,7 +42,7 @@ pub(super) fn compile(
         .collect();
     let bad_bodies: HashSet<&str> = bad.iter().map(|b| b.pattern.body.as_str()).collect();
     let strict = StrictHosts::new(rules);
-    let start = out.len();
+    let start = out.entries.len();
     for rule in rules {
         if rule.badfilter {
             continue;
@@ -74,7 +75,7 @@ fn compile_rule(
     r: &NetworkRule,
     v: SafariVersion,
     strict: &StrictHosts,
-    out: &mut Vec<Tiered>,
+    out: &mut Emitted,
 ) -> Result<(), String> {
     match &r.action {
         NetworkAction::Block
@@ -138,34 +139,29 @@ fn compile_rule(
             Err(type_drop_reason(types, v))
         };
     }
-    let (action, tier) = if exception {
-        (WkAction::IgnorePreviousRules, Tier::Exception)
+    let (ignore, tier) = if exception {
+        (true, Tier::Exception)
     } else if r.important {
-        (WkAction::Block, Tier::ImportantBlock)
+        (false, Tier::ImportantBlock)
     } else {
-        (WkAction::Block, Tier::Block)
+        (false, Tier::Block)
     };
     for url in &urls {
         for (types, context) in &type_triggers {
             for cond in &conds {
-                let mut trigger = WkTrigger {
-                    url_filter: url.clone(),
-                    url_filter_is_case_sensitive: r.match_case.then_some(true),
-                    resource_type: (!types.is_empty()).then(|| types.clone()),
-                    load_type: party.map(|p| vec![p]),
-                    load_context: context.map(|c| vec![c]),
-                    ..Default::default()
-                };
-                if let Some(cond) = cond {
-                    cond.apply(&mut trigger);
-                }
-                out.push(Tiered {
+                emit(
+                    out,
                     tier,
-                    rule: WkRule {
-                        trigger,
-                        action: action.clone(),
+                    &Trigger {
+                        url,
+                        case_sensitive: r.match_case,
+                        types: (!types.is_empty()).then_some(types.as_slice()),
+                        load_type: party,
+                        load_context: *context,
+                        cond: cond.as_ref(),
                     },
-                });
+                    ignore,
+                );
             }
         }
     }
@@ -181,7 +177,7 @@ fn compile_denyallow(
     r: &NetworkRule,
     v: SafariVersion,
     strict: &StrictHosts,
-    out: &mut Vec<Tiered>,
+    out: &mut Emitted,
 ) -> Result<(), String> {
     if !r.pattern.is_match_all() || r.from.include.is_empty() {
         return Err("dnr:denyallow".into());
@@ -190,30 +186,35 @@ fn compile_denyallow(
         denyallow: Vec::new(),
         ..r.clone()
     };
-    let mut emitted = Vec::new();
-    compile_rule(&block, v, strict, &mut emitted)?;
-    for host in &r.denyallow {
-        let allow = NetworkRule {
-            exception: true,
-            important: false,
-            pattern: Pattern {
-                kind: PatternKind::Hostname,
-                body: format!("{host}^"),
-                right_anchored: false,
-            },
-            ..block.clone()
-        };
-        compile_rule(&allow, v, strict, &mut emitted)?;
+    let mark = (out.bytes.len(), out.entries.len());
+    let result = compile_rule(&block, v, strict, out).and_then(|()| {
+        r.denyallow.iter().try_for_each(|host| {
+            let allow = NetworkRule {
+                exception: true,
+                important: false,
+                pattern: Pattern {
+                    kind: PatternKind::Hostname,
+                    body: format!("{host}^"),
+                    right_anchored: false,
+                },
+                ..block.clone()
+            };
+            compile_rule(&allow, v, strict, out)
+        })
+    });
+    if result.is_err() {
+        // The block was emitted before a failing exception: drop it too.
+        out.bytes.truncate(mark.0);
+        out.entries.truncate(mark.1);
     }
-    out.append(&mut emitted);
-    Ok(())
+    result
 }
 
 /// `@@...$document`, `$generichide`, `$elemhide`, `$specifichide`: one
 /// ignore-previous-rules over every type, conditioned on the page URL.
 /// `$specifichide` is widened to `$elemhide`, which also cancels generic
 /// hides.
-fn compile_scope(r: &NetworkRule, v: SafariVersion, out: &mut Vec<Tiered>) -> Result<(), String> {
+fn compile_scope(r: &NetworkRule, v: SafariVersion, out: &mut Emitted) -> Result<(), String> {
     let remaining = r.scope.difference(ExceptionScope::GENERICBLOCK);
     let tier = if remaining.contains(ExceptionScope::DOC) {
         Tier::DocumentException
@@ -262,27 +263,24 @@ fn compile_scope(r: &NetworkRule, v: SafariVersion, out: &mut Vec<Tiered>) -> Re
         _ if r.pattern.is_match_all() => domain_conds(&r.from, v, true)?,
         _ => return Err("dnr:scope-domain-intersection".into()),
     };
+    // Hides fire on the page's document request, so a cosmetic exception
+    // needs only that; it must not cancel the network blocks a #925
+    // segment places ahead of it.
+    let documents = (tier != Tier::DocumentException).then_some(&[WkResourceType::Document][..]);
     for cond in conds {
-        let mut trigger = WkTrigger {
-            url_filter: ".*".into(),
-            ..Default::default()
-        };
-        if let Some(cond) = cond {
-            cond.apply(&mut trigger);
-        }
-        // Hides fire on the page's document request, so a cosmetic exception
-        // needs only that; it must not cancel the network blocks a #925
-        // segment places ahead of it.
-        if tier != Tier::DocumentException {
-            trigger.resource_type = Some(vec![WkResourceType::Document]);
-        }
-        out.push(Tiered {
+        emit(
+            out,
             tier,
-            rule: WkRule {
-                trigger,
-                action: WkAction::IgnorePreviousRules,
+            &Trigger {
+                url: ".*",
+                case_sensitive: false,
+                types: documents,
+                load_type: None,
+                load_context: None,
+                cond: cond.as_ref(),
             },
-        });
+            true,
+        );
     }
     Ok(())
 }
@@ -462,15 +460,80 @@ enum Cond {
     UnlessTopUrl(Vec<String>),
 }
 
-impl Cond {
-    fn apply(&self, t: &mut WkTrigger) {
-        match self {
-            Cond::IfDomain(d) => t.if_domain = Some(d.clone()),
-            Cond::UnlessDomain(d) => t.unless_domain = Some(d.clone()),
-            Cond::IfTopUrl(u) => t.if_top_url = Some(u.clone()),
-            Cond::UnlessTopUrl(u) => t.unless_top_url = Some(u.clone()),
+/// One WebKit trigger, borrowed from the rule it came from.
+struct Trigger<'a> {
+    url: &'a str,
+    case_sensitive: bool,
+    types: Option<&'a [WkResourceType]>,
+    load_type: Option<WkLoadType>,
+    load_context: Option<WkLoadContext>,
+    cond: Option<&'a Cond>,
+}
+
+/// Writes `{"trigger":{...},"action":{...}}` for `t`, with the keys in the
+/// field order `WkTrigger` serializes, so the output matches `WkRule`'s.
+/// `ignore` picks `ignore-previous-rules` over `block`.
+fn emit(out: &mut Emitted, tier: Tier, t: &Trigger, ignore: bool) {
+    let bytes = &mut out.bytes;
+    let start = bytes.len();
+    bytes.extend_from_slice(b"{\"trigger\":{\"url-filter\":");
+    json_write(bytes, t.url);
+    if t.case_sensitive {
+        bytes.extend_from_slice(b",\"url-filter-is-case-sensitive\":true");
+    }
+    if let Some(types) = t.types {
+        bytes.extend_from_slice(b",\"resource-type\":");
+        json_write(bytes, types);
+    }
+    if let Some(party) = t.load_type {
+        bytes.extend_from_slice(b",\"load-type\":[");
+        json_write(bytes, &party);
+        bytes.push(b']');
+    }
+    if let Some(context) = t.load_context {
+        bytes.extend_from_slice(b",\"load-context\":[");
+        json_write(bytes, &context);
+        bytes.push(b']');
+    }
+    let head = bytes.len();
+    let mut domain = None;
+    if let Some(cond) = t.cond {
+        let (key, list) = match cond {
+            Cond::IfDomain(list) => ("if-domain", list),
+            Cond::UnlessDomain(list) => ("unless-domain", list),
+            Cond::IfTopUrl(list) => ("if-top-url", list),
+            Cond::UnlessTopUrl(list) => ("unless-top-url", list),
+        };
+        bytes.extend_from_slice(b",\"");
+        bytes.extend_from_slice(key.as_bytes());
+        bytes.extend_from_slice(b"\":");
+        json_write(bytes, list);
+        if matches!(cond, Cond::IfDomain(_)) {
+            domain = Some(Box::new(DomainSpan {
+                head,
+                tail: bytes.len(),
+                domains: list.clone(),
+            }));
         }
     }
+    bytes.extend_from_slice(b"},\"action\":");
+    bytes.extend_from_slice(if ignore {
+        b"{\"type\":\"ignore-previous-rules\"}"
+    } else {
+        b"{\"type\":\"block\"}"
+    });
+    bytes.push(b'}');
+    let end = bytes.len();
+    out.entries.push(Entry {
+        tier,
+        start,
+        end,
+        domain,
+    });
+}
+
+fn json_write<T: Serialize + ?Sized>(bytes: &mut Vec<u8>, value: &T) {
+    serde_json::to_writer(bytes, value).expect("JSON writes to memory");
 }
 
 /// uBO's types for a rule. Negated types are removed from the positive set,
@@ -576,53 +639,80 @@ fn type_drop_reason(types: ResourceTypes, v: SafariVersion) -> String {
 /// Drops exact duplicates. Rules that differ only in an `if-domain` list are
 /// merged into one rule with the union, which is exact for `if-domain`. The
 /// tier is part of the key, so the merge never changes precedence.
-fn dedupe_and_merge(out: &mut Vec<Tiered>, start: usize) {
-    let tail = out.split_off(start);
-    let mut first_seen = vec![false; tail.len()];
-    {
-        let mut seen: FxHashSet<(Tier, &WkRule)> = FxHashSet::default();
-        for (keep, t) in first_seen.iter_mut().zip(&tail) {
-            *keep = seen.insert((t.tier, &t.rule));
+fn dedupe_and_merge(out: &mut Emitted, start: usize) {
+    let Emitted { bytes, entries } = out;
+    let count = entries.len() - start;
+    let mut keep = vec![true; count];
+    // Per (tier, hash of the rule's bytes), the newest entry; `older` chains
+    // the entries with the same key, and bytes decide each match exactly.
+    let mut newest: FxHashMap<(Tier, u64), usize> = FxHashMap::default();
+    let mut older = vec![usize::MAX; count];
+    for j in start..entries.len() {
+        let text = &bytes[entries[j].start..entries[j].end];
+        let mut hasher = FxHasher::default();
+        hasher.write(text);
+        let key = (entries[j].tier, hasher.finish());
+        let mut duplicate = false;
+        let mut candidate = newest.get(&key).copied();
+        while let Some(i) = candidate {
+            if bytes[entries[i].start..entries[i].end] == *text {
+                duplicate = true;
+                break;
+            }
+            candidate = Some(older[i - start]).filter(|&o| o != usize::MAX);
+        }
+        if duplicate {
+            keep[j - start] = false;
+        } else {
+            older[j - start] = newest.insert(key, j).unwrap_or(usize::MAX);
         }
     }
-    let mut kept: Vec<Tiered> = Vec::with_capacity(tail.len());
-    let mut merged: FxHashMap<(Tier, WkRule), usize> = FxHashMap::default();
-    for (t, keep) in tail.into_iter().zip(first_seen) {
-        if !keep {
+    // An `if-domain` rule whose base (the rule without that key) matches an
+    // earlier kept rule's adds its domains to that rule and is dropped.
+    let mut merged: FxHashMap<(Tier, Vec<u8>), usize> = FxHashMap::default();
+    for j in start..entries.len() {
+        if !keep[j - start] {
             continue;
         }
-        if t.rule.trigger.if_domain.is_some() {
-            let mut base = t.rule.clone();
-            base.trigger.if_domain = None;
-            match merged.entry((t.tier, base)) {
-                std::collections::hash_map::Entry::Occupied(entry) => {
-                    let list = kept[*entry.get()]
-                        .rule
-                        .trigger
-                        .if_domain
-                        .get_or_insert_with(Vec::new);
-                    for d in t.rule.trigger.if_domain.unwrap_or_default() {
-                        if !list.contains(&d) {
-                            list.push(d);
-                        }
+        let entry = &entries[j];
+        let Some(span) = &entry.domain else { continue };
+        let mut base = bytes[entry.start..span.head].to_vec();
+        base.extend_from_slice(&bytes[span.tail..entry.end]);
+        match merged.entry((entry.tier, base)) {
+            MapEntry::Occupied(kept) => {
+                let incoming = std::mem::take(
+                    &mut entries[j].domain.as_mut().expect("if-domain rule").domains,
+                );
+                let target = entries[*kept.get()]
+                    .domain
+                    .as_mut()
+                    .expect("merge target is an if-domain rule");
+                for d in incoming {
+                    if !target.domains.contains(&d) {
+                        target.domains.push(d);
                     }
-                    continue;
                 }
-                std::collections::hash_map::Entry::Vacant(entry) => {
-                    entry.insert(kept.len());
-                }
+                keep[j - start] = false;
+            }
+            MapEntry::Vacant(slot) => {
+                slot.insert(j);
             }
         }
-        kept.push(t);
     }
-    out.extend(kept);
+    let mut index = 0;
+    entries.retain(|_| {
+        let kept = index < start || keep[index - start];
+        index += 1;
+        kept
+    });
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::ast::{MethodList, NetworkRule, ResourceTypes as RT};
-    use crate::webkit::to_json;
+    use crate::compile::Tiered;
+    use crate::webkit::{to_json, WkRule};
 
     const V15: SafariVersion = SafariVersion::new(15, 4);
     const V14: SafariVersion = SafariVersion::new(14, 0);
@@ -689,7 +779,7 @@ mod tests {
     }
 
     fn run(rules: &[NetworkRule], v: SafariVersion) -> (Vec<Tiered>, Stats) {
-        let mut out = Vec::new();
+        let mut out = Emitted::default();
         let mut stats = Stats::default();
         compile(
             &rules.iter().collect::<Vec<_>>(),
@@ -697,7 +787,7 @@ mod tests {
             &mut out,
             &mut stats,
         );
-        (out, stats)
+        (out.tiered(), stats)
     }
 
     fn json(out: &[Tiered]) -> String {

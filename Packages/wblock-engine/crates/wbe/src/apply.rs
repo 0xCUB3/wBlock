@@ -17,11 +17,12 @@ use crate::ast::{
 };
 use crate::compile::{compile_rules, parse_list, CompileOptions, CompileOutput, RuleSet, Stats};
 use crate::parse::cosmetic::with_domains;
-use crate::webkit::{SafariVersion, WkAction, WkRule, WkTrigger};
+use crate::webkit::{SafariVersion, WebkitJson, WkAction, WkRule, WkTrigger};
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::collections::hash_map::DefaultHasher;
-use std::collections::{BTreeMap, HashMap, HashSet};
+use rustc_hash::{FxHashMap, FxHashSet};
+use std::collections::BTreeMap;
 use std::hash::{Hash, Hasher};
 
 #[derive(Debug, Clone, Default, Deserialize)]
@@ -147,7 +148,7 @@ pub struct Plan {
     targets: Vec<TargetSpec>,
     cosmetics: CosmeticScope,
     /// List index -> rule identities a blocker other than this one owns (#681).
-    duplicates: Vec<Vec<HashSet<u64>>>,
+    duplicates: Vec<Vec<FxHashSet<u64>>>,
     /// Hash of each list's text, for `fingerprint`.
     text_hashes: Vec<u64>,
 }
@@ -192,6 +193,12 @@ impl Plan {
     }
 
     /// The rules of `list` that blocker `target` compiles, site scope applied.
+    /// `included` for every list, materialized in parallel.
+    fn included_all(&self, target: usize) -> Vec<Vec<Rule>> {
+        let lists: Vec<usize> = (0..self.lists.len()).collect();
+        parallel(&lists, |_, &list| self.included(target, list))
+    }
+
     fn included(&self, target: usize, list: usize) -> Vec<Rule> {
         let types = slot_types(self.targets[target].slot);
         let assignment = self.assigned(target, list);
@@ -220,8 +227,9 @@ impl Plan {
 
     /// #681: a rule several blockers would compile goes to the first, list
     /// order, among blockers whose exceptions are the same.
-    fn duplicate_rules(&self) -> Vec<Vec<HashSet<u64>>> {
-        let mut duplicates = vec![vec![HashSet::new(); self.lists.len()]; self.targets.len()];
+    fn duplicate_rules(&self) -> Vec<Vec<FxHashSet<u64>>> {
+        let mut duplicates =
+            vec![vec![FxHashSet::default(); self.lists.len()]; self.targets.len()];
         let contexts: Vec<u64> = (0..self.targets.len())
             .map(|t| {
                 let mut exceptions: Vec<u64> = Vec::new();
@@ -244,7 +252,7 @@ impl Plan {
                 hash(&exceptions)
             })
             .collect();
-        let mut owner: HashMap<(u64, u64), usize> = HashMap::new();
+        let mut owner: FxHashMap<(u64, u64), usize> = FxHashMap::default();
         for list in 0..self.lists.len() {
             let parsed = &self.parsed[list];
             if parsed.has_affinity || parsed.has_directive {
@@ -283,9 +291,7 @@ impl Plan {
     /// blockers changes it only through those copies, so callers can reuse a
     /// blocker's last output when it is unchanged.
     pub fn fingerprint(&self, target: usize, extras: &[Extra]) -> u64 {
-        let included: Vec<_> = (0..self.lists.len())
-            .map(|list| self.included(target, list))
-            .collect();
+        let included = self.included_all(target);
         let replicated = self.replicated_exceptions(target, &included);
         self.fingerprint_of(target, extras, &replicated)
     }
@@ -323,11 +329,9 @@ impl Plan {
         let mut set = RuleSet::default();
         let mut segment = RuleSet::default();
         let mut admitted = BTreeMap::new();
-        let mut seen = HashSet::new();
+        let mut seen = FxHashSet::default();
         let mut stats = Stats::default();
-        let included: Vec<_> = (0..self.lists.len())
-            .map(|list| self.included(target, list))
-            .collect();
+        let included = self.included_all(target);
         let replicated = self.replicated_exceptions(target, &included);
         let fingerprint = self.fingerprint_of(target, extras, &replicated);
         for (list, rules) in included.into_iter().enumerate() {
@@ -386,17 +390,15 @@ impl Plan {
         }
         let mut output = compile_rules(&set, &self.opts, stats);
         if let Some(list) = segment_list {
-            let mut front = compile_rules(&segment, &self.opts, Stats::default()).webkit;
-            front.extend(
-                self.lists[list]
-                    .scope
-                    .exclude
-                    .iter()
-                    .filter_map(|site| ignore_rule(site)),
-            );
-            front.append(&mut output.webkit);
-            output.webkit = front;
-            output.stats.native_rules = output.webkit.len() as u64;
+            let front = compile_rules(&segment, &self.opts, Stats::default()).webkit;
+            let ignores: Vec<WkRule> = self.lists[list]
+                .scope
+                .exclude
+                .iter()
+                .filter_map(|site| ignore_rule(site))
+                .collect();
+            output.webkit = WebkitJson::join([&front, &WebkitJson::from_rules(&ignores), &output.webkit]);
+            output.stats.native_rules = output.webkit.rules() as u64;
         }
         TargetOutput {
             output,
@@ -443,8 +445,8 @@ impl Plan {
     /// they can cancel one of its blocks (Safari applies an exception only in
     /// its own blocker). Matching errs toward copying, which is harmless.
     fn replicated_exceptions(&self, target: usize, included: &[Vec<Rule>]) -> Vec<Rule> {
-        let mut patterns = HashSet::new();
-        let mut bare_hosts = HashSet::new();
+        let mut patterns = FxHashSet::default();
+        let mut bare_hosts = FxHashSet::default();
         for rules in included {
             for rule in rules {
                 if let Rule::Network(r) = rule {
@@ -459,7 +461,7 @@ impl Plan {
         }
         let mut sorted: Vec<&String> = patterns.iter().collect();
         sorted.sort_unstable();
-        let mut seen = HashSet::new();
+        let mut seen = FxHashSet::default();
         let mut out = Vec::new();
         for list in 0..self.lists.len() {
             if self.assigned(target, list).is_some() {
@@ -962,8 +964,8 @@ impl PatternKey {
 
     fn cancels(
         &self,
-        patterns: &HashSet<String>,
-        bare_hosts: &HashSet<String>,
+        patterns: &FxHashSet<String>,
+        bare_hosts: &FxHashSet<String>,
         sorted: &[&String],
     ) -> bool {
         if patterns.contains(&self.pattern) {
@@ -1005,6 +1007,7 @@ impl Stats {
 mod tests {
     use super::*;
     use serde_json::{json, Value};
+    use std::collections::HashSet;
 
     fn plan(lists: Value, targets: Value, cosmetics: Value) -> Plan {
         Plan::new(serde_json::from_value(json!({"safari": [18, 0], "lists": lists, "targets": targets, "cosmetics": cosmetics})).unwrap())
@@ -1528,7 +1531,7 @@ mod tests {
             println!(
                 "target {target}: {:?}, {} rules",
                 start.elapsed(),
-                output.output.webkit.len()
+                output.output.webkit.rules()
             );
         }
     }
