@@ -16,9 +16,13 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 
 pub struct Engine {
     cosmetic: adblock::Engine,
+    /// Generic hides and every exception, for pages under `$specifichide`.
+    generic: adblock::Engine,
     elemhide: adblock::Engine,
     document: adblock::Engine,
     genericblock: adblock::Engine,
+    /// Flags the pages with a `$specifichide` exception, via `$generichide`.
+    specifichide: adblock::Engine,
     scriptlets: Scriptlets,
     popups: Scriptlets,
 }
@@ -222,7 +226,14 @@ impl Scriptlets {
         self.generic_calls.get(&id).cloned().unwrap_or_else(|| self.calls.decode_at(id as usize))
     }
 
-    fn lookup(&self, host: &str) -> Vec<Vec<String>> {
+    /// The `wbe:css` and `wbe:procedural` rule of `id` applies to one site.
+    fn page_cosmetic(&self, id: u32) -> bool {
+        self.call(id).first().is_some_and(|name| matches!(name.as_str(), "wbe:css" | "wbe:procedural"))
+    }
+
+    /// `site_cosmetic` false leaves out the site-specific styles and procedurals
+    /// (`$specifichide`); generic ones and all other scriptlets stay.
+    fn lookup(&self, host: &str, site_cosmetic: bool) -> Vec<Vec<String>> {
         let mut keys = host_keys(host);
         keys.extend(self.regexes.matches(host).iter().map(|i| format!("/{}/", self.regexes.patterns()[i])));
         let mut excepted = HashSet::new();
@@ -243,7 +254,9 @@ impl Scriptlets {
             .map(|(id, _)| *id).collect();
         for k in keys.iter().filter(|k| !k.is_empty()) {
             for (id, exclude) in self.rules.get::<Vec<(u32, Vec<DomainMatcher>)>>(k) {
-                if !exclude.iter().any(|m| scope_matches(m, &keys, &self.regexes)) {
+                if !exclude.iter().any(|m| scope_matches(m, &keys, &self.regexes))
+                    && (site_cosmetic || !self.page_cosmetic(id))
+                {
                     ids.push(id);
                 }
             }
@@ -356,9 +369,11 @@ impl Engine {
         let mut scriptlets = ScriptletRules::default();
         let mut popups = ScriptletRules::default();
         let mut cosmetic = Vec::new();
+        let mut generic = Vec::new();
         let mut elemhide = Vec::new();
         let mut document = Vec::new();
         let mut genericblock = Vec::new();
+        let mut specifichide = Vec::new();
         for line in lines {
             match crate::parse_line(line, Default::default()) {
                 ParsedLine::Rule(Rule::Cosmetic(r)) if matches!(r.body, CosmeticBody::Style(_)) => {
@@ -391,10 +406,14 @@ impl Engine {
                 ParsedLine::Rule(Rule::Network(r)) if r.exception && !r.scope.is_empty() => {
                     if r.scope.contains(ExceptionScope::GHIDE) {
                         cosmetic.push(line.as_str());
+                        generic.push(line.as_str());
                     }
-                    if r.scope
-                        .intersects(ExceptionScope::EHIDE | ExceptionScope::DOC | ExceptionScope::GENERICBLOCK)
-                    {
+                    if r.scope.intersects(
+                        ExceptionScope::EHIDE
+                            | ExceptionScope::SHIDE
+                            | ExceptionScope::DOC
+                            | ExceptionScope::GENERICBLOCK,
+                    ) {
                         let (pattern, options) = line.rsplit_once('$').unwrap_or((line, ""));
                         let options: Vec<&str> = options
                             .split(',')
@@ -403,6 +422,8 @@ impl Engine {
                                     *option,
                                     "elemhide"
                                         | "ehide"
+                                        | "specifichide"
+                                        | "shide"
                                         | "document"
                                         | "doc"
                                         | "generichide"
@@ -422,40 +443,40 @@ impl Engine {
                         if r.scope.contains(ExceptionScope::EHIDE) {
                             elemhide.push(filter.clone());
                         }
+                        if r.scope.contains(ExceptionScope::SHIDE) { specifichide.push(filter.clone()); }
                         if r.scope.contains(ExceptionScope::GENERICBLOCK) { genericblock.push(filter.clone()); }
                         if r.scope.contains(ExceptionScope::DOC) {
                             document.push(filter);
                         }
                     }
                 }
-                ParsedLine::Rule(Rule::Cosmetic(_)) | ParsedLine::Rule(Rule::Network(_)) => cosmetic.push(line.as_str()),
+                ParsedLine::Rule(Rule::Cosmetic(r)) => {
+                    if r.exception || r.domains.include.is_empty() {
+                        generic.push(line.as_str());
+                    }
+                    cosmetic.push(line.as_str());
+                }
+                ParsedLine::Rule(Rule::Network(_)) => cosmetic.push(line.as_str()),
                 _ => {},
             }
         }
-        let mut set = FilterSet::new(false);
-        set.add_filter_list(
-            cosmetic.join("\n"),
-            ParseOptions {
-                rule_types: RuleTypes::All,
-                permissions: PermissionMask::from_bits(u8::MAX),
-                ..Default::default()
-            },
-        );
         Self {
-            cosmetic: adblock::Engine::new_with_filter_set(set),
+            cosmetic: hide_engine(&cosmetic),
+            generic: hide_engine(&generic),
             elemhide: exception_engine(&elemhide),
             document: exception_engine(&document),
             genericblock: exception_engine(&genericblock),
+            specifichide: exception_engine(&specifichide),
             scriptlets: scriptlets.finish(),
             popups: popups.finish(),
         }
     }
 
-    /// Four length-prefixed adblock engines, then the runtime tables, each
+    /// Six length-prefixed adblock engines, then the runtime tables, each
     /// length-prefixed.
     pub fn serialize(&self) -> Vec<u8> {
         let mut out = Vec::new();
-        for engine in [&self.cosmetic, &self.elemhide, &self.document, &self.genericblock] {
+        for engine in [&self.cosmetic, &self.elemhide, &self.document, &self.genericblock, &self.generic, &self.specifichide] {
             put(&mut out, &engine.serialize());
         }
         for index in [&self.scriptlets, &self.popups] {
@@ -472,13 +493,17 @@ impl Engine {
         let elemhide = read_engine(take(&mut rest)?)?;
         let document = read_engine(take(&mut rest)?)?;
         let genericblock = read_engine(take(&mut rest)?)?;
+        let generic = read_engine(take(&mut rest)?)?;
+        let specifichide = read_engine(take(&mut rest)?)?;
         let scriptlets = read_index(&mut rest)?;
         let popups = read_index(&mut rest)?;
         Ok(Self {
             cosmetic,
+            generic,
             elemhide,
             document,
             genericblock,
+            specifichide,
             scriptlets,
             popups,
         })
@@ -493,11 +518,16 @@ impl Engine {
                 && self.blocks_popup(source, target);
             return PagePayload { hide: vec![], styles: vec![], procedural: vec![], scriptlets: vec![], generichide: false, popup_blocked: Some(blocked) };
         }
-        let r = self.cosmetic.url_cosmetic_resources(url);
+        let specific_off = self.specifichide.url_cosmetic_resources(url).generichide;
+        let r = if specific_off {
+            self.generic.url_cosmetic_resources(url)
+        } else {
+            self.cosmetic.url_cosmetic_resources(url)
+        };
         let document = self.document.url_cosmetic_resources(url).generichide;
         let elemhide = document || self.elemhide.url_cosmetic_resources(url).generichide;
         let mut scriptlets = if document { Vec::new() } else {
-            self.scriptlets.lookup(&host_of(url).to_ascii_lowercase())
+            self.scriptlets.lookup(&host_of(url).to_ascii_lowercase(), !specific_off)
         };
         let mut styles = Vec::new();
         let mut procedural = if elemhide { Vec::new() } else { sorted(r.procedural_actions) };
@@ -531,7 +561,7 @@ impl Engine {
         let mut allow = false;
         let mut important_block = false;
         let mut important_allow = false;
-        for call in self.popups.lookup(&host) {
+        for call in self.popups.lookup(&host, true) {
             let Ok(rule) = serde_json::from_str::<serde_json::Value>(&call[1]) else { continue };
             let Some(pattern) = rule["pattern"].as_str() else { continue };
             let Ok(regex) = regex::RegexBuilder::new(pattern).case_insensitive(rule["matchCase"] != true).build() else { continue };
@@ -603,6 +633,20 @@ fn read_engine(section: &[u8]) -> Result<adblock::Engine, String> {
         .deserialize(section)
         .map_err(|e| format!("engine: {e}"))?;
     Ok(engine)
+}
+
+/// Hides and their exceptions. `lines` are cosmetic filters, one per line.
+fn hide_engine(lines: &[&str]) -> adblock::Engine {
+    let mut set = FilterSet::new(false);
+    set.add_filter_list(
+        lines.join("\n"),
+        ParseOptions {
+            rule_types: RuleTypes::All,
+            permissions: PermissionMask::from_bits(u8::MAX),
+            ..Default::default()
+        },
+    );
+    adblock::Engine::new_with_filter_set(set)
 }
 
 fn exception_engine(lines: &[String]) -> adblock::Engine {
@@ -707,6 +751,41 @@ example.com##+js(set-constant, adsEnabled, false)
             assert!(!other.generichide, "{option}");
             assert!(other.hide.contains(&"[data-ad]".to_string()), "{option}");
         }
+    }
+
+    #[test]
+    fn specifichide_exception_reaches_runtime_procedurals() {
+        let base = "example.com##div:has-text(ad)\n";
+        let page = |text: &str| {
+            let output = crate::compile(
+                &[crate::ListInput { text, trusted: false }],
+                &crate::CompileOptions { safari: crate::webkit::SafariVersion::new(18, 0) },
+            );
+            Engine::deserialize(&Engine::build(&output.runtime).serialize()).unwrap().lookup("https://example.com/")
+        };
+        assert_eq!(page(base).procedural.len(), 1);
+        assert!(page(&format!("{base}@@||example.com^$specifichide\n")).procedural.is_empty());
+    }
+
+    #[test]
+    fn specifichide_keeps_generic_cosmetics_and_scriptlets() {
+        let rules = "##[data-generic]\n\
+             example.com##[data-site]\n\
+             example.com##div:has-text(site)\n\
+             #$#.g { color: red }\n\
+             example.com#$#.s { color: red }\n\
+             example.com##+js(set-constant, a, 1)";
+        let engine = |text: &str| Engine::deserialize(&Engine::build(&lines(text)).serialize()).unwrap();
+        let site = engine(rules).lookup("https://example.com/");
+        assert_eq!(site.hide, ["[data-generic]", "[data-site]"]);
+        assert_eq!(site.styles.len(), 2);
+        assert_eq!(site.procedural.len(), 1);
+        let page = engine(&format!("{rules}\n@@||example.com^$specifichide")).lookup("https://example.com/");
+        assert_eq!(page.hide, ["[data-generic]"]);
+        assert_eq!(page.styles, [".g { color: red }"]);
+        assert!(page.procedural.is_empty());
+        assert_eq!(page.scriptlets, [call(&["set-constant", "a", "1"])]);
+        assert!(!page.generichide);
     }
 
     #[test]

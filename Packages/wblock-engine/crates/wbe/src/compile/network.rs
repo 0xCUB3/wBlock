@@ -714,7 +714,7 @@ where
             if rule.exception
                 && rule
                     .scope
-                    .intersects(ExceptionScope::DOC | ExceptionScope::EHIDE | ExceptionScope::GHIDE | ExceptionScope::GENERICBLOCK)
+                    .intersects(ExceptionScope::DOC | ExceptionScope::EHIDE | ExceptionScope::SHIDE | ExceptionScope::GHIDE | ExceptionScope::GENERICBLOCK)
             {
                 page.push(rule.raw.clone());
             }
