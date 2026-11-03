@@ -147,6 +147,8 @@ public enum RemoveParamDNRRuleGenerator {
 
     public struct RuleCondition: Codable, Equatable {
         public var urlFilter: String? = nil
+        /// Safari matches this regex against the request URL (macOS 12.3, iOS 15.4).
+        public var regexFilter: String? = nil
         public var resourceTypes: [String]? = nil
         // Safari has supported the legacy initiator-site spelling since the
         // original DNR implementation; `initiatorDomains` arrived much later.
@@ -384,7 +386,7 @@ public enum RemoveParamDNRRuleGenerator {
     }
 
     /// Bump when the generator's output changes for the same inputs.
-    private static let generationSchema = 2
+    private static let generationSchema = 3
     private static let generationStateFilename = "dnr-generation-state.json"
 
     private final class BuildMarker {}
@@ -718,7 +720,10 @@ public enum RemoveParamDNRRuleGenerator {
         let priority = parsed.isException ? 10_000 : (options.contains("important") ? 1_000 : 2)
         var rules: [DeclarativeRule] = []
         for group in groups {
-            guard let condition = makeCondition(parsed: parsed, removeValue: group.value) else { return skipped }
+            guard let made = makeCondition(parsed: parsed, removeValue: group.value) else { return skipped }
+            // An exception with entity exclusions would need the inverse carve-out; skip it.
+            if parsed.isException && !made.entities.isEmpty { return skipped }
+            let condition = made.condition
             let action: RuleAction
             if parsed.isException {
                 action = RuleAction(type: "allow", redirect: nil)
@@ -743,6 +748,21 @@ public enum RemoveParamDNRRuleGenerator {
                 )
             }
             rules.append(DeclarativeRule(id: 0, priority: priority, action: action, condition: condition))
+            // DNR cannot exclude a domain by pattern, so an allow one priority above
+            // the redirect exempts each entity. It only overrides rules at or below
+            // this priority, which leaves the 10000 exceptions and 15000 resource
+            // redirects untouched.
+            for entity in made.entities {
+                rules.append(DeclarativeRule(
+                    id: 0,
+                    priority: priority + 1,
+                    action: RuleAction(type: "allow", redirect: nil),
+                    condition: RuleCondition(
+                        regexFilter: entityRegexFilter(entity),
+                        resourceTypes: ["main_frame"]
+                    )
+                ))
+            }
         }
 
         return BuildResult(
@@ -807,12 +827,19 @@ public enum RemoveParamDNRRuleGenerator {
         return (name, value)
     }
 
-    private static func makeCondition(parsed: ParsedRule, removeValue: String) -> RuleCondition? {
-        let optionPairs = parsed.options.map(optionNameAndValue)
+    /// The condition for one rule, plus the entities whose `~entity.*` exclusions
+    /// were moved out of `domain=` into companion allow rules (see buildRules).
+    private static func makeCondition(
+        parsed: ParsedRule,
+        removeValue: String
+    ) -> (condition: RuleCondition, entities: [String])? {
+        let allPairs = parsed.options.map(optionNameAndValue)
 
-        guard !containsUnsupportedCriticalOptions(optionPairs) else { return nil }
+        guard !containsUnsupportedCriticalOptions(allPairs) else { return nil }
 
         guard isSupportedRemoveParamValue(removeValue) else { return nil }
+        guard let split = entityExclusions(in: allPairs) else { return nil }
+        let optionPairs = split.options
 
         var urlFilter = normalizeURLFilterPattern(parsed.pattern)
         if !removeValue.isEmpty, let decoded = decodeRemoveParamValue(removeValue) {
@@ -826,6 +853,9 @@ public enum RemoveParamDNRRuleGenerator {
         if condition.resourceTypes == nil {
             condition.resourceTypes = ["main_frame", "sub_frame"]
         }
+        // The companion matches the request URL, which is the document only for
+        // main_frame. For subresources `domain=` names the page, so skip them.
+        if !split.entities.isEmpty && condition.resourceTypes != ["main_frame"] { return nil }
 
         guard let domains = parseDomainOption(named: "domain", from: optionPairs),
               let toDomains = parseDomainOption(named: "to", from: optionPairs),
@@ -852,7 +882,59 @@ public enum RemoveParamDNRRuleGenerator {
             condition.isUrlFilterCaseSensitive = true
         }
 
-        return condition
+        return (condition, split.entities)
+    }
+
+    /// Moves `~entity.*` tokens out of `domain=` options. DNR excluded domains are
+    /// exact, so the entities are returned for companion rules instead. Nil when
+    /// an entity is combined with an included domain, which those rules cannot express.
+    private static func entityExclusions(
+        in options: [(name: String, value: String?)]
+    ) -> (options: [(name: String, value: String?)], entities: [String])? {
+        var entities: [String] = []
+        var hasIncludedDomain = false
+        var rewritten: [(name: String, value: String?)] = []
+        for option in options {
+            guard option.name == "domain", let value = option.value,
+                  value.split(separator: "|").contains(where: { entityName(inExclusion: String($0)) != nil })
+            else {
+                if option.name == "domain", let value = option.value,
+                   value.split(separator: "|").contains(where: { !$0.hasPrefix("~") }) {
+                    hasIncludedDomain = true
+                }
+                rewritten.append(option)
+                continue
+            }
+            var kept: [String] = []
+            for token in value.split(separator: "|", omittingEmptySubsequences: false).map(String.init) {
+                if let entity = entityName(inExclusion: token) {
+                    entities.append(entity)
+                } else {
+                    if !token.hasPrefix("~") { hasIncludedDomain = true }
+                    kept.append(token)
+                }
+            }
+            if !kept.isEmpty { rewritten.append((name: "domain", value: kept.joined(separator: "|"))) }
+        }
+        if !entities.isEmpty && hasIncludedDomain { return nil }
+        return (rewritten, entities.uniqued())
+    }
+
+    /// The lowercase entity name in `~entity.*`, or nil for any other token.
+    private static func entityName(inExclusion token: String) -> String? {
+        let lowered = token.lowercased()
+        guard lowered.hasPrefix("~"), lowered.hasSuffix(".*") else { return nil }
+        let name = lowered.dropFirst().dropLast(2)
+        guard !name.isEmpty, name.allSatisfy({ $0.isASCII && ($0.isLetter || $0.isNumber || $0 == "-") }) else {
+            return nil
+        }
+        return String(name)
+    }
+
+    /// Matches a main-frame request to any TLD of `entity`, or a subdomain of one.
+    /// The host ends after one label, so `entity.evil.com` and `user@host` do not match.
+    private static func entityRegexFilter(_ entity: String) -> String {
+        "^https?://([^/@]*\\.)?\(entity)\\.[^/.:?#@]+(:[0-9]+)?([/?#]|$)"
     }
 
     private static func containsUnsupportedCriticalOptions(_ options: [(name: String, value: String?)]) -> Bool {

@@ -196,6 +196,33 @@ struct RemoveParamDNRRuleGeneratorTests {
         expectEqual(regexScoped.action.redirect?.transform?.queryTransform?.removeParams, ["utm_content"], "/i matches the lowercase name")
         expectEqual(regexScoped.condition.domains, ["scoped.example"], "domain scope on regex redirect")
 
+        // An entity exclusion leaves the redirect with exact exclusions and adds an
+        // allow one priority above it. Subresources and inclusions stay skipped.
+        let entityRules = RemoveParamDNRRuleGenerator.generateRules(from: """
+        $document,removeparam=/^\\??utm_.*$/i,domain=~excluded.example|~transfernow.*
+        $removeparam=fbclid,domain=~transfernow.*,script
+        $document,removeparam=p,domain=site.example|~transfernow.*
+        """)
+        expectEqual(entityRules.summary.skippedRules, 2, "subresource and included-domain entity rules skipped")
+        expectEqual(entityRules.rules.count, 2, "entity redirect plus one companion allow")
+        let entityRedirect = entityRules.rules[0]
+        expectEqual(entityRedirect.condition.excludedDomains, ["excluded.example"], "entity removed from redirect exclusions")
+        expectEqual(entityRedirect.priority, 2, "redirect priority")
+        let entityCompanion = entityRules.rules[1]
+        expectEqual(entityCompanion.action.type, "allow", "companion is an allow rule")
+        expectEqual(entityCompanion.priority, entityRedirect.priority + 1, "companion sits one priority above the redirect")
+        expectEqual(entityCompanion.condition.resourceTypes, ["main_frame"], "companion scoped to main frames")
+        let companionPattern = try NSRegularExpression(pattern: entityCompanion.condition.regexFilter ?? "")
+        func companionMatches(_ url: String) -> Bool {
+            companionPattern.firstMatch(in: url, range: NSRange(location: 0, length: url.utf16.count)) != nil
+        }
+        expectEqual(companionMatches("https://www.transfernow.net/?utm_source=test&keep=1"), true, "subdomain of the entity matches")
+        expectEqual(companionMatches("https://transfernow.net:8443/x"), true, "port on the entity matches")
+        expectEqual(companionMatches("https://transfernow.evil.com/"), false, "two labels after the entity do not match")
+        expectEqual(companionMatches("https://transfernow.net.evil.com/"), false, "entity as a label of another host does not match")
+        expectEqual(companionMatches("https://nottransfernow.net/"), false, "entity must be a whole label")
+        expectEqual(companionMatches("https://user.transfernow.net@evil.com/"), false, "userinfo cannot hide the host")
+
         // Names a literal rule cannot express (here `a*b`) stay out of the expansion.
         let expressibleOnly = RemoveParamDNRRuleGenerator.generateRules(from: """
         ||star.example^$removeparam=a*b
