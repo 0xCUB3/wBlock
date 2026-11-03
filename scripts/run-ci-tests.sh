@@ -35,8 +35,14 @@ if [[ -z "${WBLOCK_DERIVED_DATA:-}" ]]; then
 fi
 : "${WBLOCK_DERIVED_DATA:?Set WBLOCK_DERIVED_DATA to the existing signed Xcode build directory}"
 build_args=()
+# The app scheme builds wBlockCoreService too, and catches app and extension
+# code that no longer compiles against it. CI's build jobs already compile the
+# app for macOS and iOS, so here CI builds only the framework, for one
+# architecture.
+scheme=wBlock
 if [[ "${CI:-}" == "true" ]]; then
-  build_args+=(CODE_SIGNING_ALLOWED=NO COMPILATION_CACHE_ENABLE_CACHING=YES)
+  scheme=wBlockCoreService
+  build_args+=(CODE_SIGNING_ALLOWED=NO COMPILATION_CACHE_ENABLE_CACHING=YES ARCHS=arm64)
 fi
 CORE_DERIVED_DATA="$WBLOCK_DERIVED_DATA"
 # Xcode resolves the WBEngine package against this XCFramework, so it must be
@@ -46,20 +52,18 @@ echo "[test] building WBE.xcframework"
   cat "$TMP/wbe-build.log"
   exit 1
 }
-# The app scheme builds wBlockCoreService too, and catches app and extension
-# code that no longer compiles against it.
-echo "[test] building wBlock (with wBlockCoreService)"
+echo "[test] building $scheme"
 (
   started=$SECONDS
   xcodebuild -project wBlock.xcodeproj \
-    -scheme wBlock \
+    -scheme "$scheme" \
     -configuration Debug \
     -destination 'generic/platform=macOS' \
     -derivedDataPath "$CORE_DERIVED_DATA" \
     ${build_args[@]+"${build_args[@]}"} \
     build > "$TMP/core-build.log" 2>&1
   status=$?
-  echo "[test] wBlock build finished in $((SECONDS - started))s"
+  echo "[test] $scheme build finished in $((SECONDS - started))s"
   exit $status
 ) &
 core_build=$!
