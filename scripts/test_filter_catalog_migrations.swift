@@ -65,11 +65,10 @@ private final class TestLoader: FilterListLoader {
             loader.migrateBuiltInFilterFilesIfNeeded(current)
             precondition(fm.fileExists(atPath: newURL.path) && fm.fileExists(atPath: newBaseline.path))
         }
-        // wBlock 4: replaced AdGuard lists stay in the catalog, off for new
-        // installs, and hand a wBlock 3 selection to the uBO lists once.
+        // wBlock 4: replaced AdGuard lists leave the catalog and hand their selection to the uBO lists.
         let byName = Dictionary(defaults.map { ($0.name, $0) }, uniquingKeysWith: { a, _ in a })
         for (adGuard, replacements) in FilterListLoader.adGuardReplacements {
-            precondition(byName[adGuard]?.isSelected == false, "\(adGuard) stays available, off by default")
+            precondition(byName[adGuard] == nil, "\(adGuard) left the catalog")
             precondition(Set(replacements).isSubset(of: Set(byName.keys)), "unknown list in \(adGuard) handover")
         }
         // Regional AdGuard lists whose language uBlock Origin covers with a different list hand over to that list.
@@ -104,47 +103,34 @@ private final class TestLoader: FilterListLoader {
         let easyPrivacy = stored.firstIndex { $0.name == "EasyPrivacy" }!
         stored[easyPrivacy].isSelected = true
         stored[easyPrivacy].excludedSites = ["mine.com"]
-        // Popups was on at upgrade but the user turned it off before it handed over.
+        // Popups was turned off: it goes at once.
         stored[stored.firstIndex { $0.id == popups.id }!].isSelected = false
-        let pending: Set<UUID> = [base.id, tracking.id, popups.id]
 
-        // 4.0.0 TestFlight builds ran AdGuard's converter, so the engine decides, not the version.
-        let wbe = "4.0.0|10|wbe-17|slots-2|safari-26.0"
-        precondition(FilterListLoader.handsOverAdGuardLists(lastApplied: "3.2.3|10", ranFirstWbeBuild: false), "3.2.3 hands over")
-        precondition(FilterListLoader.handsOverAdGuardLists(lastApplied: "4.0.0|10", ranFirstWbeBuild: false), "a 4.0.0 build before wbe hands over")
-        precondition(!FilterListLoader.handsOverAdGuardLists(lastApplied: wbe, ranFirstWbeBuild: false), "wbe does not hand over again")
-        precondition(FilterListLoader.handsOverAdGuardLists(lastApplied: wbe, ranFirstWbeBuild: true), "devices the first wbe build skipped hand over")
-        precondition(!FilterListLoader.handsOverAdGuardLists(lastApplied: nil, ranFirstWbeBuild: false), "a fresh install has nothing to hand over")
-
-        // Offline: no replacement has content, so nothing hands over yet.
-        let offline = FilterListLoader.handingOverReplacedAdGuardLists(stored, pending: pending, hasContent: { _ in false })
+        // Offline: no replacement has content, so only the list that is off goes.
+        let offline = FilterListLoader.handingOverReplacedAdGuardLists(stored, hasContent: { _ in false })
         precondition(offline.handedOver.isEmpty, "offline: \(offline.handedOver.map(\.name))")
-        precondition(offline.settled == [popups.id], "a list turned off leaves the handover: \(offline.settled)")
+        precondition(offline.removed.map(\.id) == [popups.id], "a list that is off goes at once: \(offline.removed.map(\.name))")
         precondition(offline.lists.contains { $0.id == base.id && $0.isSelected }, "a list keeps protecting until it can hand over")
-        // Nothing pending (fresh install, 4.x, or a list turned on after the upgrade): AdGuard lists stay on.
-        let optIn = FilterListLoader.handingOverReplacedAdGuardLists(stored, pending: [], hasContent: { _ in true })
-        precondition(optIn.handedOver.isEmpty && optIn.lists == stored, "an AdGuard list turned on in wBlock 4 stays on")
+        precondition(offline.lists.contains { $0.name == "AdGuard Cookie Notices" && $0.isCustom }, "a custom list is never touched")
 
         var urlTracking = adGuard("AdGuard URL Tracking Protection Filter", selected: true)
         urlTracking.excludedSites = ["url.example"]
         let overlap = defaults.map { list -> FilterList in var list = list; list.isSelected = false; return list } + [tracking, urlTracking]
-        let overlapPending: Set<UUID> = [tracking.id, urlTracking.id]
-        let first = FilterListLoader.handingOverReplacedAdGuardLists(overlap, pending: overlapPending, hasContent: { $0.name == "uBlock filters – Privacy" })
-        let second = FilterListLoader.handingOverReplacedAdGuardLists(first.lists, pending: overlapPending.subtracting(first.settled), hasContent: { _ in true })
+        let first = FilterListLoader.handingOverReplacedAdGuardLists(overlap, hasContent: { $0.name == "uBlock filters – Privacy" })
+        let second = FilterListLoader.handingOverReplacedAdGuardLists(first.lists, hasContent: { _ in true })
         precondition(second.lists.first { $0.name == "uBlock filters – Privacy" }!.excludedSites == ["b.com", "url.example"], "overlapping handovers must combine settings regardless of download order")
 
         // Only Base's replacements arrived: Base hands over, Tracking waits.
         let baseReplacements = Set(FilterListLoader.adGuardReplacements["AdGuard Base Filter"]!)
-        let remaining = pending.subtracting(offline.settled)
-        let partial = FilterListLoader.handingOverReplacedAdGuardLists(offline.lists, pending: remaining, hasContent: { baseReplacements.contains($0.name) })
+        let partial = FilterListLoader.handingOverReplacedAdGuardLists(offline.lists, hasContent: { baseReplacements.contains($0.name) })
         precondition(partial.handedOver.map(\.name) == ["AdGuard Base Filter"], "partial: \(partial.handedOver.map(\.name))")
-        precondition(partial.lists.contains { $0.id == base.id && !$0.isSelected }, "a handed-over list is turned off, not removed")
+        precondition(!partial.lists.contains { $0.id == base.id }, "a handed-over list is removed")
         let ads = partial.lists.first { $0.name == "uBlock filters – Ads" }!
         precondition(ads.isSelected && !ads.updatesAutomatically && ads.excludedSites == ["a.com"], "settings move with the selection: \(ads)")
 
-        let done = FilterListLoader.handingOverReplacedAdGuardLists(partial.lists, pending: remaining.subtracting(partial.settled), hasContent: { _ in true })
+        let done = FilterListLoader.handingOverReplacedAdGuardLists(partial.lists, hasContent: { _ in true })
         precondition(done.handedOver.map(\.name) == ["AdGuard Tracking Protection Filter"])
-        precondition(remaining.subtracting(partial.settled).subtracting(done.settled).isEmpty, "the handover finishes")
+        precondition(!done.lists.contains(where: FilterListLoader.isReplacedAdGuardList), "the handover finishes")
         let selected = Set(done.lists.filter(\.isSelected).map(\.name))
         let expected: Set<String> = ["uBlock filters – Ads", "uBlock filters – Badware risks", "uBlock filters – Quick fixes",
                                      "uBlock filters – Unbreak", "EasyList", "Online Malicious URL Blocklist",
@@ -152,11 +138,6 @@ private final class TestLoader: FilterListLoader {
         precondition(selected == expected, "handover: \(selected)")
         precondition(done.lists.first { $0.name == "uBlock filters – Privacy" }!.excludedSites == ["b.com"])
         precondition(done.lists.first { $0.name == "EasyPrivacy" }!.excludedSites == ["mine.com"], "a list the user set up keeps its settings")
-        // Turned on again after the handover: nothing is pending, so it stays on.
-        var reenabled = done.lists
-        reenabled[reenabled.firstIndex { $0.id == base.id }!].isSelected = true
-        precondition(FilterListLoader.handingOverReplacedAdGuardLists(reenabled, pending: [], hasContent: { _ in true }).lists == reenabled,
-                     "an AdGuard list turned back on stays on")
 
         // A default name that matches no catalog entry would silently drop that list from the defaults.
         let catalogNames = Set(defaults.map(\.name))
@@ -174,10 +155,7 @@ private final class TestLoader: FilterListLoader {
             ("\(registry)/extension/safari/filters/258_optimized.txt", "Block Outsider Intrusion into LAN", "Block Outsider Intrusion into LAN"),
             ("\(registry)/extension/safari/filters/123_optimized.txt", "Fanboy's Social Blocking List", "EasyList – Social Widgets"),
             ("https://easylist.to/easylist/fanboy-social.txt", "Fanboy's Social Blocking List", "EasyList – Social Widgets"),
-            ("\(registry)/extension/safari/filters/2_optimized.txt", "AdGuard Base Filter", "AdGuard Base Filter"),
             ("\(registry)/extension/safari/filters/4_optimized.txt", "AdGuard Social Media Filter", "AdGuard Social Media Filter"),
-            ("\(registry)/ios/filters/11_optimized.txt", "AdGuard Mobile Filter", "AdGuard Mobile Filter"),
-            ("\(registry)/mac_v3/filters/17_optimized.txt", "AdGuard URL Tracking Protection Filter", "AdGuard URL Tracking Protection Filter"),
             ("\(registry)/extension/safari/filters/25.txt", "AdGuard Mail Tracking Protection Filter", "AdGuard Mail Tracking Protection Filter"),
             ("https://ublockorigin.github.io/uAssetsCDN/thirdparties/easylist-annoyances.txt", "EasyList – Annoyances", "EasyList – Other Annoyances"),
             ("\(registry)/mac_v3/filters/251_optimized.txt", "Actually Legitimate URL Shortener Tool", "Actually Legitimate URL Shortener Tool"),
@@ -225,10 +203,15 @@ private final class TestLoader: FilterListLoader {
                      "a list whose source moved must not carry its old copy")
 
         // Every registry address of a kept AdGuard list moves to uBlock Origin's copy, which the catalog uses.
+        // A replaced list moves there too, so it keeps protecting until it hands over.
         let catalogURLs = Set(defaults.map(\.url))
-        for id in [1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 13, 16, 17, 18, 19, 20, 21, 22, 23, 25, 26, 27, 224] {
+        for id in [4, 5, 7, 8, 9, 13, 16, 23, 25, 224] {
             let migrated = FilterListLoader.migratedURL(for: "\(registry)/extension/safari/filters/\(id)_optimized.txt")
             precondition(migrated.map(catalogURLs.contains) == true, "AdGuard \(id) does not migrate to a catalog URL")
+        }
+        for id in [1, 2, 3, 6, 11, 17, 18, 19, 20, 21, 22, 26, 27] {
+            let migrated = FilterListLoader.migratedURL(for: "\(registry)/extension/safari/filters/\(id)_optimized.txt")
+            precondition(migrated?.path.contains("/extension/ublock/filters/") == true, "replaced AdGuard \(id) must still load uBlock Origin's copy")
         }
         for list in defaults where list.name.hasPrefix("AdGuard ") {
             precondition(list.url.host == "filters.adtidy.org" && list.url.path.contains("/extension/ublock/filters/"),
