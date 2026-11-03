@@ -89,6 +89,7 @@ struct RemoveParamDNRRuleGeneratorTests {
         expectEqual(generic.action.type, "redirect", "generic action")
         expectEqual(generic.action.redirect?.transform?.queryTransform?.removeParams, ["utm_source"], "generic remove param")
         expectEqual(generic.condition.urlFilter, "^utm_source=", "generic param-aware filter")
+        expectEqual(generic.priority, 4, "ordinary removeparam sits above entity companion allows")
         expectEqual(generic.condition.resourceTypes, ["main_frame", "sub_frame"], "default document resources")
 
         let scoped = rules[3]

@@ -386,7 +386,7 @@ public enum RemoveParamDNRRuleGenerator {
     }
 
     /// Bump when the generator's output changes for the same inputs.
-    private static let generationSchema = 3
+    private static let generationSchema = 4
     private static let generationStateFilename = "dnr-generation-state.json"
 
     private final class BuildMarker {}
@@ -716,14 +716,24 @@ public enum RemoveParamDNRRuleGenerator {
             groups = values.map { (value: $0, names: $0.isEmpty ? [] : [$0]) }
         }
 
-        // Priority 1 belongs to the blocked-request count's rules.
-        let priority = parsed.isException ? 10_000 : (options.contains("important") ? 1_000 : 2)
+        // Priorities: 1 blocked-request count, 2 entity-excluded redirects, 3 their
+        // companion allows, 4 ordinary removeparam, 1000 important, 10000 exceptions.
+        // An allow suppresses every matching rule below it, so ordinary rules sit
+        // above the companions, and only entity-excluded redirects fall beneath them.
         var rules: [DeclarativeRule] = []
         for group in groups {
             guard let made = makeCondition(parsed: parsed, removeValue: group.value) else { return skipped }
             // An exception with entity exclusions would need the inverse carve-out; skip it.
             if parsed.isException && !made.entities.isEmpty { return skipped }
             let condition = made.condition
+            let priority: Int
+            if parsed.isException {
+                priority = 10_000
+            } else if !made.entities.isEmpty {
+                priority = entityRedirectPriority
+            } else {
+                priority = options.contains("important") ? 1_000 : 4
+            }
             let action: RuleAction
             if parsed.isException {
                 action = RuleAction(type: "allow", redirect: nil)
@@ -749,9 +759,8 @@ public enum RemoveParamDNRRuleGenerator {
             }
             rules.append(DeclarativeRule(id: 0, priority: priority, action: action, condition: condition))
             // DNR cannot exclude a domain by pattern, so an allow one priority above
-            // the redirect exempts each entity. It only overrides rules at or below
-            // this priority, which leaves the 10000 exceptions and 15000 resource
-            // redirects untouched.
+            // the redirect exempts each entity. It overrides only the rules beneath it,
+            // which are the blocked-request count and the other entity redirects.
             for entity in made.entities {
                 rules.append(DeclarativeRule(
                     id: 0,
@@ -829,6 +838,9 @@ public enum RemoveParamDNRRuleGenerator {
 
     /// The condition for one rule, plus the entities whose `~entity.*` exclusions
     /// were moved out of `domain=` into companion allow rules (see buildRules).
+    /// Entity-excluded redirects sit here, and their companion allows one above.
+    private static let entityRedirectPriority = 2
+
     private static func makeCondition(
         parsed: ParsedRule,
         removeValue: String
