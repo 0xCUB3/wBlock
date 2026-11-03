@@ -196,12 +196,6 @@ class AppFilterManager: ObservableObject {
         autoApplyTask = nil
     }
 
-    private func currentUpgradeSignature() -> String {
-        let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
-        // A new engine or Safari level recompiles on launch like an app update.
-        return "\(appVersion)|\(ContentBlockerService.embeddedCompatibilityRulesVersion)|\(ContentBlockerService.compilerIdentity)"
-    }
-
     private func storedUpgradeSignature() -> String? {
         let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
         return defaults.string(forKey: Self.lastAppliedUpgradeSignatureKey)
@@ -237,12 +231,12 @@ class AppFilterManager: ObservableObject {
 
     func persistUpgradeRebuildSignature() {
         let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
-        defaults.set(currentUpgradeSignature(), forKey: Self.lastAppliedUpgradeSignatureKey)
+        defaults.set(ContentBlockerService.upgradeSignature, forKey: Self.lastAppliedUpgradeSignatureKey)
     }
 
     func persistFailedUpgradeRebuildSignature() {
         let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
-        defaults.set(currentUpgradeSignature(), forKey: Self.lastFailedUpgradeSignatureKey)
+        defaults.set(ContentBlockerService.upgradeSignature, forKey: Self.lastFailedUpgradeSignatureKey)
     }
 
     func clearFailedUpgradeRebuildSignature() {
@@ -781,7 +775,7 @@ class AppFilterManager: ObservableObject {
         // Set up observer for disabled sites changes
         setupDisabledSitesObserver()
 
-        let currentSignature = currentUpgradeSignature()
+        let currentSignature = ContentBlockerService.upgradeSignature
         let storedSignature = storedUpgradeSignature()
         let signatureMismatch = storedSignature != currentSignature
         let needsRebuild = dataManager.hasCompletedOnboarding

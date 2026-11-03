@@ -693,12 +693,10 @@ public actor SharedAutoUpdateManager {
     /// every successful apply (AppFilterManager.persistUpgradeRebuildSignature).
     public static let lastAppliedUpgradeSignatureKey = "wBlock.lastAppliedUpgradeSignature"
 
-    static func appHasAppliedCurrentVersion() -> Bool {
-        let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
-        guard let applied = defaults.string(forKey: lastAppliedUpgradeSignatureKey),
-              let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
-        else { return false }
-        return applied.split(separator: "|").first.map(String.init) == version
+    static func appHasAppliedCurrentVersion(
+        defaults: UserDefaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
+    ) -> Bool {
+        defaults.string(forKey: lastAppliedUpgradeSignatureKey) == ContentBlockerService.upgradeSignature
     }
 
     private func runIfNeeded(

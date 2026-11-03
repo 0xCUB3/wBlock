@@ -14,6 +14,19 @@ struct WbeUpgradeTests {
     }
 
     static func main() async throws {
+        let suite = "wblock.upgrade-gate.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        check(!SharedAutoUpdateManager.appHasAppliedCurrentVersion(defaults: defaults), "background work waits for the first apply")
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
+        for stale in ["3.2.3|9", "\(version)|old|\(ContentBlockerService.compilerIdentity)",
+                      "\(version)|\(ContentBlockerService.embeddedCompatibilityRulesVersion)|old"] {
+            defaults.set(stale, forKey: SharedAutoUpdateManager.lastAppliedUpgradeSignatureKey)
+            check(!SharedAutoUpdateManager.appHasAppliedCurrentVersion(defaults: defaults), "background work waits for the full upgrade signature: \(stale)")
+        }
+        defaults.set(ContentBlockerService.upgradeSignature, forKey: SharedAutoUpdateManager.lastAppliedUpgradeSignatureKey)
+        check(SharedAutoUpdateManager.appHasAppliedCurrentVersion(defaults: defaults), "background work resumes after this compiler has applied")
+
         let groupIdentifier = "group.wblock.test.wbe-upgrade.\(UUID().uuidString.prefix(8))"
         let container = FileManager.default.temporaryDirectory
             .appendingPathComponent("wblock-wbe-upgrade-\(UUID().uuidString)", isDirectory: true)

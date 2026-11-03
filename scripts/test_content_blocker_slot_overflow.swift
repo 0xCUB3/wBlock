@@ -18,6 +18,23 @@ struct Main {
         defer { try? FileManager.default.removeItem(at: container) }
         let targets = ContentBlockerTargetManager.shared.allTargets(forPlatform: .iOS)
 
+        // A large custom list alongside the upgrade defaults fits in five
+        // blockers, but coarse shards used to strand space and overflow two.
+        let counts = [400_000, 108_487, 86_027, 56_426, 28_178, 23_540, 4_862, 3_564, 3_108, 2_547, 2_408, 1_831, 403, 38, 1]
+        let upgrade = counts.enumerated().map { index, count -> FilterList in
+            var filter = FilterList(name: "upgrade-\(index)", url: URL(string: "https://example.com/\(index)")!, category: .ads, isSelected: true)
+            filter.sourceRuleCount = count
+            return filter
+        }
+        let packed = ContentBlockerMappingService.plan(selectedFilters: upgrade, across: targets)
+        for target in targets {
+            let estimated = (packed.filtersByTarget[target] ?? []).reduce(0) { total, filter in
+                let parts = packed.shardsByTarget[target]?[filter.id]?.count ?? 1
+                return total + ((filter.sourceRuleCount ?? 0) + parts - 1) / parts
+            }
+            if estimated >= ContentBlockerService.safariContentBlockerRuleLimit { fail("upgrade strands capacity: \(estimated)") }
+        }
+
         func list(_ name: String, _ count: Int, _ extra: String = "") throws -> FilterList {
             var filter = FilterList(name: name, url: URL(string: "https://example.com/\(name).txt")!, category: .ads, isSelected: true)
             let text = (0..<count).map { "||\(name)-\($0).example^" }.joined(separator: "\n") + "\n" + extra

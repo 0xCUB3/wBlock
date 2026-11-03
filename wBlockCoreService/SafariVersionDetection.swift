@@ -6,12 +6,12 @@ internal import WBEngine
 /// it follows the OS release that first shipped each WebKit feature level.
 enum SafariVersionDetection {
     /// What a compiled output depends on besides its input: the engine's
-    /// output version and the Safari level it targeted. Every cache of engine
+    /// output version, slot planner revision, and Safari level. Every cache of engine
     /// output is keyed on it, so nothing compiled by an older engine (or by
     /// AdGuard's converter before wBlock 4) or for another Safari is reused.
     static var compilerIdentity: String {
         let safari = current
-        return "wbe-\(WBEngine.outputVersion)|safari-\(safari.major).\(safari.minor)"
+        return "wbe-\(WBEngine.outputVersion)|slots-2|safari-\(safari.major).\(safari.minor)"
     }
 
     static var current: (major: UInt16, minor: UInt16) {

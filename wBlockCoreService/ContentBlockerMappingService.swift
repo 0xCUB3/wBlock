@@ -83,16 +83,30 @@ public enum ContentBlockerMappingService {
         selectedFilters: [FilterList],
         across targets: [ContentBlockerTargetInfo]
     ) -> ContentBlockerDistribution {
+        let ordered = orderedForDistribution(selectedFilters)
+        var budget = shardBudget
+        while true {
+            let (distribution, largest) = pack(ordered, across: targets, budget: budget)
+            // Large shards can strand free space in other blockers. Refine the
+            // same plan until it fits, or every list has reached the shard cap.
+            if largest <= shardBudget || budget == 1 { return distribution }
+            budget = max(1, budget / 2)
+        }
+    }
+
+    private static func pack(
+        _ ordered: [FilterList], across targets: [ContentBlockerTargetInfo], budget: Int
+    ) -> (ContentBlockerDistribution, Int) {
         var distribution = ContentBlockerDistribution(
             filtersByTarget: Dictionary(uniqueKeysWithValues: targets.map { ($0, []) })
         )
-        guard !targets.isEmpty else { return distribution }
+        guard !targets.isEmpty else { return (distribution, 0) }
 
         struct Item { let filter: FilterList; let order: Int; let shard: ContentBlockerShard?; let cost: Int }
         var items: [Item] = []
-        for (order, filter) in orderedForDistribution(selectedFilters).enumerated() {
+        for (order, filter) in ordered.enumerated() {
             let cost = filter.sourceRuleCount ?? 0
-            let parts = min(targets.count, max(1, (cost + shardBudget - 1) / shardBudget))
+            let parts = min(targets.count, max(1, (cost + budget - 1) / budget))
             for index in 0..<parts {
                 items.append(Item(
                     filter: filter, order: order,
@@ -112,7 +126,7 @@ public enum ContentBlockerMappingService {
             if let shard = item.shard { distribution.shardsByTarget[destination, default: [:]][item.filter.id] = shard }
             load[destination, default: 0] += item.cost
         }
-        return distribution
+        return (distribution, load.values.max() ?? 0)
     }
 }
 

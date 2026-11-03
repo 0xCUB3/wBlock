@@ -119,6 +119,10 @@ private struct StoredTargetSourceRuleProvenance: Codable {
     public static let embeddedCompatibilityRulesVersion = "10"
     /// The engine and Safari level outputs are compiled for; see SafariVersionDetection.
     public static var compilerIdentity: String { SafariVersionDetection.compilerIdentity }
+    public static var upgradeSignature: String {
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
+        return "\(version)|\(embeddedCompatibilityRulesVersion)|\(compilerIdentity)"
+    }
     private static let contentBlockerOutputLockTimeout: TimeInterval = 10
 
     /// Built-in compatibility rules that improve blocking of common dynamic ad script
