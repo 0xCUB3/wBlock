@@ -12,7 +12,7 @@
   'use strict';
 
   const DEFAULT_STYLE = 'display: none !important';
-  const OBSERVE = { attributes: true, childList: true, subtree: true };
+  const OBSERVE = { attributes: true, childList: true, characterData: true, subtree: true };
   const BAD_STYLE = /image-set\(|url\(|expression|\\|\/\s*\/|\/\*|[{}<>]/i;
 
   const state = {
@@ -22,6 +22,7 @@
     styleEl: null,
     observe: true,
     queued: false,
+    cleanups: [],
   };
 
   const observer = new MutationObserver(() => schedule());
@@ -61,24 +62,20 @@
     return out;
   };
 
-  const followingSiblings = (el) => {
-    const out = [];
-    for (let s = el.nextElementSibling; s; s = s.nextElementSibling) out.push(s);
-    return out;
-  };
-
   // Mirrors uBO's spath handling: a leading >, + or ~ is relative to each element,
   // a leading space is a descendant search, anything else tests the element itself.
   const cssOp = (arg) => {
     const t = arg.trimStart();
     const comb = t[0];
-    if (comb === '>' || comb === '+' || comb === '~') {
-      const sel = t.slice(1).trimStart();
-      const candidates =
-        comb === '>' ? (el) => Array.from(el.children)
-          : comb === '+' ? (el) => followingSiblings(el).slice(0, 1)
-            : followingSiblings;
-      return expand((el) => candidates(el).filter((x) => x.matches(sel)));
+    if (comb === '>') return expand(el => Array.from(el.querySelectorAll(':scope ' + t)));
+    if (comb === '+' || comb === '~') {
+      // querySelectorAll on the parent preserves the whole relative chain.
+      return expand(el => {
+        const parent = el.parentElement;
+        if (!parent) return [];
+        const index = Array.from(parent.children).indexOf(el) + 1;
+        return Array.from(parent.querySelectorAll(`:scope > :nth-child(${index}) ${t}`));
+      });
     }
     if (arg !== t) return expand((el) => Array.from(el.querySelectorAll(':scope ' + t)));
     return filter((el) => el.matches(arg));
@@ -134,9 +131,65 @@
     });
   };
 
+  const matchesMedia = (arg) => {
+    const media = matchMedia(arg);
+    media.addEventListener('change', schedule);
+    state.cleanups.push(() => media.removeEventListener('change', schedule));
+    return (els) => media.matches ? els : [];
+  };
+
+  const matchesProperty = (arg) => {
+    const equal = arg.indexOf('=');
+    const path = unquote(equal < 0 ? arg : arg.slice(0, equal));
+    const value = equal < 0 ? null : toRegex(unquote(arg.slice(equal + 1)), true);
+    // Regex path components may contain dots; split only outside /regex/.
+    const parts = path.match(/\/(?:\\.|[^/])+\/|[^.]+/g).map(part =>
+      part.startsWith('/') ? toRegex(part, true) : part);
+    const matches = (object, index) => {
+      if (index === parts.length) return object !== undefined && (!value || value.test(String(object)));
+      if (object == null) return false;
+      const part = parts[index];
+      const keys = typeof part === 'string' ? [part] : Object.getOwnPropertyNames(object).filter(key => part.test(key));
+      return keys.some(key => {
+        try { return matches(object[key], index + 1); } catch { return false; }
+      });
+    };
+    return filter(el => matches(el, 0));
+  };
+
+  const others = () => (els) => {
+    const targets = els.filter(el => !els.some(parent => parent !== el && parent.contains(el)));
+    const keep = new Set(targets);
+    const discard = new Set();
+    for (let el of targets) {
+      for (; el && el !== document.body && el !== document.head; el = el.parentElement) {
+        keep.add(el);
+        discard.delete(el);
+        for (const sibling of el.parentElement?.children || []) {
+          if (!keep.has(sibling) && !/^(head|link|meta|script|style)$/.test(sibling.localName)) discard.add(sibling);
+        }
+      }
+    }
+    return [...discard];
+  };
+
+  const nested = (arg, type) => {
+    const run = compileSelector(arg);
+    const self = type === 'not' || type === 'is' || type === 'where';
+    const negate = type === 'not' || type === 'if-not';
+    return filter(el => (run(el, self).length !== 0) !== negate);
+  };
+
   const OPS = new Map([
     ['css-selector', cssOp],
     ['has-text', hasText],
+    ['matches-media', matchesMedia],
+    ['matches-property', matchesProperty],
+    ['matches-prop', matchesProperty],
+    ['others', others],
+    // The shared observer already watches attributes throughout each subtree.
+    ['watch-attr', () => els => els],
+    ...['has', 'if', 'if-not', 'not', 'is', 'where'].map(type => [type, arg => nested(arg, type)]),
     ['matches-attr', matchesAttr],
     ['matches-css', (a) => matchesCss(a, null)],
     ['matches-css-after', (a) => matchesCss(a, '::after')],
@@ -188,31 +241,37 @@
     }
   };
 
-  const compileFilter = (json) => {
-    const { selector, action } = typeof json === 'string' ? JSON.parse(json) : json;
+  const compileSelector = (selector) => {
     if (!Array.isArray(selector) || selector.length === 0) throw new Error('empty selector');
     const ops = selector.map(({ type, arg }) => {
       const make = OPS.get(type);
-      if (!make || typeof arg !== 'string' || arg === '') throw new Error('bad operator');
+      if (!make || (typeof arg !== 'string' && !Array.isArray(arg))) throw new Error('bad operator');
+      if (arg === '' && type !== 'others' && type !== 'watch-attr') throw new Error('empty argument');
       return make(arg);
     });
     const head = selector[0];
-    // The first operator is evaluated against the document directly instead of
-    // against every element.
-    const source =
-      head.type === 'css-selector' ? () => Array.from(document.querySelectorAll(head.arg))
-        : head.type === 'xpath' ? () => xpathNodes(unquote(head.arg), document)
-          : (all) => all();
-    const skip = head.type === 'css-selector' || head.type === 'xpath' ? 1 : 0;
-    return {
-      dead: false,
-      run(all) {
-        let els = source(all);
-        for (let i = skip; i < ops.length && els.length > 0; i++) els = ops[i](els);
-        return els;
-      },
-      act: compileAction(action),
+    return (root = document, self = false) => {
+      let els;
+      let skip = 0;
+      if (head.type === 'css-selector') {
+        const css = head.arg.trim();
+        els = self ? (root.matches(css) ? [root] : [])
+          : /^[>+~]/.test(css) ? cssOp(css)([root]) : Array.from(root.querySelectorAll(css));
+        skip = 1;
+      } else if (head.type === 'xpath') {
+        els = xpathNodes(unquote(head.arg), root);
+        skip = 1;
+      } else {
+        els = root === document ? Array.from(document.querySelectorAll('*')).filter(el => el !== state.styleEl) : [root];
+      }
+      for (let i = skip; i < ops.length && els.length; i++) els = ops[i](els);
+      return els;
     };
+  };
+
+  const compileFilter = (json) => {
+    const { selector, action } = typeof json === 'string' ? JSON.parse(json) : json;
+    return { dead: false, run: compileSelector(selector), act: compileAction(action) };
   };
 
   const pass = () => {
@@ -222,12 +281,10 @@
       if (!set) next.set(el, (set = new Set()));
       set.add(attr);
     };
-    let all = null;
-    const everything = () => all || (all = Array.from(document.querySelectorAll('*')).filter((el) => el !== state.styleEl));
     for (const f of state.filters) {
       if (f.dead) continue;
       try {
-        for (const el of f.run(everything)) f.act(el, mark);
+        for (const el of f.run()) f.act(el, mark);
       } catch {
         // A filter that fails on this page (bad selector, regex or xpath) cannot start working later.
         f.dead = true;
@@ -269,6 +326,8 @@
   };
 
   const apply = (filters, options) => {
+    for (const cleanup of state.cleanups) cleanup();
+    state.cleanups = [];
     state.filters = [];
     for (const json of filters || []) {
       try {

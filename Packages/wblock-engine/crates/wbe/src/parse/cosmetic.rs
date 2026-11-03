@@ -17,7 +17,7 @@ const MARKERS: [&str; 10] = [
 ];
 
 /// uBO's `ExtSelectorCompiler` operator tables.
-const PROCEDURAL_OPS: [&str; 16] = [
+const PROCEDURAL_OPS: [&str; 17] = [
     "has-text",
     "if",
     "if-not",
@@ -28,6 +28,7 @@ const PROCEDURAL_OPS: [&str; 16] = [
     "matches-media",
     "matches-path",
     "matches-prop",
+    "matches-property",
     "min-text-length",
     "others",
     "shadow",
@@ -283,7 +284,7 @@ pub(super) fn parse(line: &str, source: SourceRef) -> Option<ParsedLine> {
         return Some(scriptlet(inner, exception, domains, source, line));
     }
     if body.starts_with("^responseheader(") {
-        return Some(unsupported("response header filtering"));
+        return Some(unsupported("response header removal: Safari DNR does not support responseHeaders"));
     }
     if body.starts_with('^') {
         return Some(unsupported("HTML filtering"));
@@ -297,6 +298,7 @@ pub(super) fn parse(line: &str, source: SourceRef) -> Option<ParsedLine> {
             if domains.include.is_empty() && !exception {
                 return Some(invalid("generic procedural or action filter"));
             }
+            if let Err(reason) = procedural(selector) { return Some(unsupported(reason)); }
             CosmeticBody::Procedural(selector.to_string())
         }
         Err(reason) => return Some(invalid(reason)),
@@ -830,10 +832,75 @@ fn classify(sel: &str) -> Result<Kind, String> {
     Ok(kind)
 }
 
+/// Compile our procedural dialect ourselves. Passing it to adblock-rust would
+/// let unrecognized operators become plain hide selectors.
+pub(crate) fn procedural(sel: &str) -> Result<serde_json::Value, String> {
+    use serde_json::json;
+    fn chain(sel: &str, level: usize) -> Result<serde_json::Value, String> {
+        if level > 32 { return Err("procedural nesting exceeds 32".into()); }
+        let b = sel.as_bytes();
+        let (mut i, mut start) = (0, 0);
+        let mut ops = Vec::new();
+        let mut action = None;
+        while i < b.len() {
+            match b[i] {
+                b'\\' => { i += 2; continue; }
+                b'[' => { i = skip_bracket(b, i)?; continue; }
+                b':' => {},
+                _ => { i += 1; continue; }
+            }
+            let end = i + 1 + b[i+1..].iter().take_while(|c| c.is_ascii_alphanumeric() || **c == b'-').count();
+            let name = &sel[i+1..end];
+            if name == "shadow" { return Err("procedural:shadow requires access to closed shadow roots unavailable in Safari".into()); }
+            if b.get(end) != Some(&b'(') { i = end.max(i + 1); continue; }
+            let close = find_close(b, end)?;
+            let arg = &sel[end+1..close];
+            let nested = matches!(name, "has" | "not" | "if" | "if-not" | "is" | "where");
+            if !nested && !PROCEDURAL_OPS.contains(&name) && !ACTION_OPS.contains(&name) {
+                // Native functional pseudos are kept intact; an extended
+                // operator inside one cannot safely be passed through as CSS.
+                if classify(arg).is_ok_and(|k| matches!(k, Kind::Procedural)) {
+                    return Err(format!("procedural operator nested in unsupported :{name}"));
+                }
+                i = close + 1; continue;
+            }
+            if !sel[start..i].trim().is_empty() {
+                let mut css = sel[start..i].to_string();
+                if css.trim_end().ends_with(['>', '+', '~']) { css.push('*'); }
+                ops.push(json!({"type":"css-selector", "arg":css}));
+            }
+            if ACTION_OPS.contains(&name) {
+                if level != 0 || !sel[close+1..].trim().is_empty() { return Err("procedural action must end the outer selector".into()); }
+                action = Some(json!({"type":name,"arg":arg.trim()}));
+            } else {
+                let arg = if nested { chain(arg, level + 1)?["selector"].clone() } else { json!(arg.trim()) };
+                ops.push(json!({"type":name,"arg":arg}));
+            }
+            i = close + 1;
+            start = i;
+        }
+        if !sel[start..].trim().is_empty() { ops.push(json!({"type":"css-selector", "arg": &sel[start..]})); }
+        if ops.is_empty() { ops.push(json!({"type":"css-selector", "arg":"*"})); }
+        for op in &ops {
+            if op["type"] != "css-selector" { continue; }
+            let css = op["arg"].as_str().unwrap().trim();
+            let relative = css.starts_with(['>', '+', '~']);
+            let css = if relative { format!("* {css}") } else { css.to_string() };
+            if !crate::compile::cosmetic::valid_selector(&css) {
+                return Err(format!("procedural: unsupported or invalid CSS segment {css}"));
+            }
+        }
+        let mut result = json!({"selector": ops});
+        if let Some(action) = action { result["action"] = action; }
+        Ok(result)
+    }
+    chain(sel, 0)
+}
+
 fn check_args(name: &str, arg: &str) -> Result<(), String> {
     match name {
         "remove" | "others" if !arg.is_empty() => Err(format!(":{name}() takes no argument")),
-        "remove" | "others" => Ok(()),
+        "remove" | "others" | "watch-attr" => Ok(()),
         "min-text-length" => arg
             .parse::<u32>()
             .map(|_| ())
@@ -1224,7 +1291,7 @@ mod tests {
             ),
             (
                 "example.com##^responseheader(set-cookie)",
-                "unsupported: response header filtering",
+                "unsupported: response header removal: Safari DNR does not support responseHeaders",
             ),
             (
                 "example.com$$script[tag-content=\"x\"]",

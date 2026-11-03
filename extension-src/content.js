@@ -139,7 +139,7 @@
         protectStyleElementContent(style);
       }
       if (configuration.procedural && configuration.procedural.length > 0) {
-        window.wbeProcedural.apply(configuration.procedural);
+        window.wbeProcedural.apply(configuration.procedural.filter(rule => !/"type"\s*:\s*"matches-(?:prop|property)"/.test(rule)));
       }
       const scriptlets = configuration.scriptlets || [];
       // Only the background can run scriptlets past the page's CSP. A page

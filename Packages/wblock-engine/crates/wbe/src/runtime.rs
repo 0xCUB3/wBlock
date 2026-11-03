@@ -18,7 +18,9 @@ pub struct Engine {
     cosmetic: adblock::Engine,
     elemhide: adblock::Engine,
     document: adblock::Engine,
+    genericblock: adblock::Engine,
     scriptlets: Scriptlets,
+    popups: Scriptlets,
 }
 
 /// Cosmetic actions for one page URL.
@@ -34,11 +36,14 @@ pub struct PagePayload {
     pub scriptlets: Vec<Vec<String>>,
     /// True when a `$generichide` exception applies to the page.
     pub generichide: bool,
+    /// Present only for a popup-target lookup on the opener URL.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub popup_blocked: Option<bool>,
 }
 
 /// Scriptlet calls and the rules that select them, read in place. Loading an
-/// engine copies these tables but decodes nothing; a lookup decodes only the
-/// entries for its host.
+/// engine copies these tables and decodes global calls once; a lookup decodes
+/// only the remaining entries for its host.
 struct Scriptlets {
     /// Entry `i` is call `i`; keys are empty.
     calls: Table,
@@ -47,9 +52,10 @@ struct Scriptlets {
     rules: Table,
     /// Keyed like `rules`. Values: call ids, or `null` for `#@#+js()`.
     exceptions: Table,
-    regexes: HashMap<String, regex::Regex>,
+    regexes: regex::RegexSet,
     // Global calls are consulted on every page; keep their scopes decoded.
     generic_rules: Vec<(u32, HashSet<String>)>,
+    generic_calls: HashMap<u32, Vec<String>>,
 }
 
 /// Scriptlet rules as `Engine::build` collects them.
@@ -104,12 +110,15 @@ impl ScriptletRules {
 
     fn finish(self) -> Scriptlets {
         let rules = Table::encode(self.rules.iter().map(|(k, v)| (k.as_str(), v)));
-        let generic_rules = generic_rules(&rules, &self.regexes);
+        let regexes = regex::RegexSet::new(self.regexes.keys()).expect("validated domain regexes");
+        let generic_rules = generic_rules(&rules, &regexes);
+        let calls = Table::encode(self.calls.iter().map(|call| ("", call)));
         Scriptlets {
-            calls: Table::encode(self.calls.iter().map(|call| ("", call))),
+            generic_calls: generic_rules.iter().map(|(id, _)| (*id, calls.decode_at(*id as usize))).collect(),
+            calls,
             rules,
             exceptions: Table::encode(self.exceptions.iter().map(|(k, v)| (k.as_str(), v))),
-            regexes: self.regexes,
+            regexes,
             generic_rules,
         }
     }
@@ -210,17 +219,17 @@ impl Table {
 
 impl Scriptlets {
     fn call(&self, id: u32) -> Vec<String> {
-        self.calls.decode_at(id as usize)
+        self.generic_calls.get(&id).cloned().unwrap_or_else(|| self.calls.decode_at(id as usize))
     }
 
     fn lookup(&self, host: &str) -> Vec<Vec<String>> {
         let mut keys = host_keys(host);
-        keys.extend(self.regexes.iter().filter(|(_, re)| re.is_match(host)).map(|(r, _)| format!("/{r}/")));
+        keys.extend(self.regexes.matches(host).iter().map(|i| format!("/{}/", self.regexes.patterns()[i])));
         let mut excepted = HashSet::new();
         let mut all_scriptlets_excepted = false;
         for k in &keys {
             for (e, exclude) in self.exceptions.get::<Vec<(Option<u32>, Vec<DomainMatcher>)>>(k) {
-                if exclude.iter().any(|m| scope_matches(m, host, &keys, &self.regexes)) { continue; }
+                if exclude.iter().any(|m| scope_matches(m, &keys, &self.regexes)) { continue; }
                 match e {
                     None => all_scriptlets_excepted = true,
                     Some(id) => {
@@ -234,13 +243,13 @@ impl Scriptlets {
             .map(|(id, _)| *id).collect();
         for k in keys.iter().filter(|k| !k.is_empty()) {
             for (id, exclude) in self.rules.get::<Vec<(u32, Vec<DomainMatcher>)>>(k) {
-                if !exclude.iter().any(|m| scope_matches(m, host, &keys, &self.regexes)) {
+                if !exclude.iter().any(|m| scope_matches(m, &keys, &self.regexes)) {
                     ids.push(id);
                 }
             }
         }
         ids.retain(|id| !excepted.contains(id)
-            && (!all_scriptlets_excepted || self.call(*id).first().is_some_and(|name| name == "wbe:css")));
+            && (!all_scriptlets_excepted || self.call(*id).first().is_some_and(|name| matches!(name.as_str(), "wbe:css" | "wbe:procedural" | "wbe:popup"))));
         ids.sort_unstable();
         ids.dedup();
         let mut calls: Vec<Vec<String>> = ids.into_iter().map(|id| self.call(id)).collect();
@@ -311,11 +320,11 @@ fn host_keys(host: &str) -> Vec<String> {
 
 // A global rule can exclude thousands of hosts. Index those scopes once instead
 // of scanning the complete exclusion list on every page.
-fn generic_rules(rules: &Table, regexes: &HashMap<String, regex::Regex>) -> Vec<(u32, HashSet<String>)> {
+fn generic_rules(rules: &Table, regexes: &regex::RegexSet) -> Vec<(u32, HashSet<String>)> {
     rules.get::<Vec<(u32, Vec<DomainMatcher>)>>("").into_iter().map(|(id, exclude)| {
         let keys = exclude.iter().map(|m| match m {
             DomainMatcher::Hostname(h) | DomainMatcher::Entity(h) => key(m, h),
-            DomainMatcher::Regex(r) if regexes.contains_key(r) => format!("/{r}/"),
+            DomainMatcher::Regex(r) if regexes.patterns().contains(r) => format!("/{r}/"),
             DomainMatcher::Regex(_) => String::new(),
         }).collect();
         (id, keys)
@@ -323,9 +332,9 @@ fn generic_rules(rules: &Table, regexes: &HashMap<String, regex::Regex>) -> Vec<
 }
 
 /// Invalid regex exclusions remain conservative and never widen a rule.
-fn scope_matches(m: &DomainMatcher, host: &str, keys: &[String], regexes: &HashMap<String, regex::Regex>) -> bool {
+fn scope_matches(m: &DomainMatcher, keys: &[String], regexes: &regex::RegexSet) -> bool {
     match m {
-        DomainMatcher::Regex(r) => regexes.get(r).is_none_or(|re| re.is_match(host)),
+        DomainMatcher::Regex(r) => !regexes.patterns().contains(r) || keys.contains(&format!("/{r}/")),
         DomainMatcher::Hostname(h) => keys.contains(h),
         DomainMatcher::Entity(h) => keys.contains(&key(m, h)),
     }
@@ -345,9 +354,11 @@ impl Engine {
     /// `lines` are uBO-syntax cosmetic, procedural, and scriptlet rules.
     pub fn build(lines: &[String]) -> Self {
         let mut scriptlets = ScriptletRules::default();
+        let mut popups = ScriptletRules::default();
         let mut cosmetic = Vec::new();
         let mut elemhide = Vec::new();
         let mut document = Vec::new();
+        let mut genericblock = Vec::new();
         for line in lines {
             match crate::parse_line(line, Default::default()) {
                 ParsedLine::Rule(Rule::Cosmetic(r)) if matches!(r.body, CosmeticBody::Style(_)) => {
@@ -355,16 +366,34 @@ impl Engine {
                         scriptlets.add(r.exception, r.domains, vec!["wbe:css".into(), css]);
                     }
                 }
+                ParsedLine::Rule(Rule::Cosmetic(r)) if matches!(r.body, CosmeticBody::Procedural(_)) => {
+                    if let CosmeticBody::Procedural(selector) = r.body {
+                        if let Ok(mut filter) = crate::parse::cosmetic::procedural(&selector) {
+                            if let Some(path) = r.matches_path {
+                                filter["selector"].as_array_mut().unwrap().insert(0, serde_json::json!({"type":"matches-path", "arg":path}));
+                            }
+                            scriptlets.add(r.exception, r.domains, vec!["wbe:procedural".into(), filter.to_string()]);
+                        }
+                    }
+                }
                 ParsedLine::Rule(Rule::Scriptlet(r)) => {
                     let call = std::iter::once(r.name).chain(r.args).collect();
                     scriptlets.add(r.exception, r.domains, call);
+                }
+                ParsedLine::Rule(Rule::Network(r)) if r.types.contains(crate::ast::ResourceTypes::POPUP) => {
+                    if let Ok(rule) = popup_rule(&r) {
+                        // Network allow rules are candidates, not cosmetic exceptions.
+                        // Safari's tab event identifies the opener tab, not its
+                        // frame. Scoped allows must protect every possible opener.
+                        popups.add(false, DomainList::default(), vec!["wbe:popup".into(), rule.to_string()]);
+                    }
                 }
                 ParsedLine::Rule(Rule::Network(r)) if r.exception && !r.scope.is_empty() => {
                     if r.scope.contains(ExceptionScope::GHIDE) {
                         cosmetic.push(line.as_str());
                     }
                     if r.scope
-                        .intersects(ExceptionScope::EHIDE | ExceptionScope::DOC)
+                        .intersects(ExceptionScope::EHIDE | ExceptionScope::DOC | ExceptionScope::GENERICBLOCK)
                     {
                         let (pattern, options) = line.rsplit_once('$').unwrap_or((line, ""));
                         let options: Vec<&str> = options
@@ -378,6 +407,7 @@ impl Engine {
                                         | "doc"
                                         | "generichide"
                                         | "ghide"
+                                        | "genericblock"
                                 )
                             })
                             .collect();
@@ -392,12 +422,14 @@ impl Engine {
                         if r.scope.contains(ExceptionScope::EHIDE) {
                             elemhide.push(filter.clone());
                         }
+                        if r.scope.contains(ExceptionScope::GENERICBLOCK) { genericblock.push(filter.clone()); }
                         if r.scope.contains(ExceptionScope::DOC) {
                             document.push(filter);
                         }
                     }
                 }
-                _ => cosmetic.push(line.as_str()),
+                ParsedLine::Rule(Rule::Cosmetic(_)) | ParsedLine::Rule(Rule::Network(_)) => cosmetic.push(line.as_str()),
+                _ => {},
             }
         }
         let mut set = FilterSet::new(false);
@@ -413,26 +445,24 @@ impl Engine {
             cosmetic: adblock::Engine::new_with_filter_set(set),
             elemhide: exception_engine(&elemhide),
             document: exception_engine(&document),
+            genericblock: exception_engine(&genericblock),
             scriptlets: scriptlets.finish(),
+            popups: popups.finish(),
         }
     }
 
-    /// Three length-prefixed adblock engines, then the scriptlet tables, each
+    /// Four length-prefixed adblock engines, then the runtime tables, each
     /// length-prefixed.
     pub fn serialize(&self) -> Vec<u8> {
         let mut out = Vec::new();
-        for engine in [&self.cosmetic, &self.elemhide, &self.document] {
+        for engine in [&self.cosmetic, &self.elemhide, &self.document, &self.genericblock] {
             put(&mut out, &engine.serialize());
         }
-        for table in [
-            &self.scriptlets.calls,
-            &self.scriptlets.rules,
-            &self.scriptlets.exceptions,
-        ] {
-            put(&mut out, &table.0);
+        for index in [&self.scriptlets, &self.popups] {
+            for table in [&index.calls, &index.rules, &index.exceptions] { put(&mut out, &table.0); }
+            let patterns: std::collections::BTreeSet<_> = index.regexes.patterns().iter().collect();
+            put(&mut out, &serde_json::to_vec(&patterns).expect("regex patterns serialize"));
         }
-        let patterns: std::collections::BTreeSet<_> = self.scriptlets.regexes.keys().collect();
-        put(&mut out, &serde_json::to_vec(&patterns).expect("regex patterns serialize"));
         out
     }
 
@@ -441,29 +471,28 @@ impl Engine {
         let cosmetic = read_engine(take(&mut rest)?)?;
         let elemhide = read_engine(take(&mut rest)?)?;
         let document = read_engine(take(&mut rest)?)?;
-        let calls = Table::parse(take(&mut rest)?)?;
-        let rules = Table::parse(take(&mut rest)?)?;
-        let exceptions = Table::parse(take(&mut rest)?)?;
-        let regexes = serde_json::from_slice::<Vec<String>>(take(&mut rest)?)
-            .map_err(|e| e.to_string())?.into_iter()
-            .map(|p| regex::Regex::new(&p).map(|r| (p, r)).map_err(|e| e.to_string()))
-            .collect::<Result<HashMap<_, _>, _>>()?;
-        let scriptlets = Scriptlets {
-            calls,
-            generic_rules: generic_rules(&rules, &regexes),
-            rules,
-            exceptions,
-            regexes,
-        };
+        let genericblock = read_engine(take(&mut rest)?)?;
+        let scriptlets = read_index(&mut rest)?;
+        let popups = read_index(&mut rest)?;
         Ok(Self {
             cosmetic,
             elemhide,
             document,
+            genericblock,
             scriptlets,
+            popups,
         })
     }
 
+    /// Normal page URLs return cosmetics and scriptlets. Internal
+    /// `wbe-popup-https://opener/path#https://target/` URIs ask the same engine
+    /// for a popup verdict while retaining the opener host for native site state.
     pub fn lookup(&self, url: &str) -> PagePayload {
+        if let Some((source, target)) = url.strip_prefix("wbe-popup-").and_then(|query| query.split_once('#')) {
+            let blocked = !self.document.url_cosmetic_resources(source).generichide
+                && self.blocks_popup(source, target);
+            return PagePayload { hide: vec![], styles: vec![], procedural: vec![], scriptlets: vec![], generichide: false, popup_blocked: Some(blocked) };
+        }
         let r = self.cosmetic.url_cosmetic_resources(url);
         let document = self.document.url_cosmetic_resources(url).generichide;
         let elemhide = document || self.elemhide.url_cosmetic_resources(url).generichide;
@@ -471,28 +500,85 @@ impl Engine {
             self.scriptlets.lookup(&host_of(url).to_ascii_lowercase())
         };
         let mut styles = Vec::new();
+        let mut procedural = if elemhide { Vec::new() } else { sorted(r.procedural_actions) };
+
         scriptlets.retain(|call| {
             if call.first().is_some_and(|name| name == "wbe:css") {
                 if !elemhide { styles.push(call[1].clone()); }
+                false
+            } else if call.first().is_some_and(|name| name == "wbe:procedural") {
+                if !elemhide { procedural.push(call[1].clone()); }
                 false
             } else { true }
         });
         PagePayload {
             styles,
+            popup_blocked: None,
             hide: if elemhide {
                 Vec::new()
             } else {
                 sorted(r.hide_selectors)
             },
-            procedural: if elemhide {
-                Vec::new()
-            } else {
-                sorted(r.procedural_actions)
-            },
+            procedural,
             scriptlets,
             generichide: elemhide || r.generichide,
         }
     }
+    fn blocks_popup(&self, source: &str, target: &str) -> bool {
+        if !["http://", "https://"].iter().any(|p| target.starts_with(p)) { return false; }
+        let host = host_of(source).to_ascii_lowercase();
+        let mut block = false;
+        let mut allow = false;
+        let mut important_block = false;
+        let mut important_allow = false;
+        for call in self.popups.lookup(&host) {
+            let Ok(rule) = serde_json::from_str::<serde_json::Value>(&call[1]) else { continue };
+            let Some(pattern) = rule["pattern"].as_str() else { continue };
+            let Ok(regex) = regex::RegexBuilder::new(pattern).case_insensitive(rule["matchCase"] != true).build() else { continue };
+            if !regex.is_match(target) { continue; }
+            match (rule["allow"] == true, rule["important"] == true) {
+                (false, false) => block = true, (true, false) => allow = true,
+                (false, true) => important_block = true, (true, true) => important_allow = true,
+            }
+        }
+        !important_allow && (important_block || (block && !allow && !self.genericblock.url_cosmetic_resources(source).generichide))
+    }
+
+}
+
+/// Popup matching uses the same URL compiler and source-domain index as the
+/// rest of the engine. Unsupported constraints never become broader blocks.
+pub(crate) fn popup_rule(r: &crate::ast::NetworkRule) -> Result<serde_json::Value, String> {
+    use crate::ast::NetworkAction;
+    if !matches!(r.action, NetworkAction::Block) || !r.scope.is_empty() {
+        return Err("popup: unsupported action or page scope".into());
+    }
+    if (!r.from.is_empty() || r.party != crate::ast::Party::Any) && !r.exception {
+        return Err("popup: Safari tab events do not identify opener frames for domain or party constraints".into());
+    }
+    let constrained = !r.to.is_empty() || !r.denyallow.is_empty()
+        || !r.method.include.is_empty() || !r.method.exclude.is_empty()
+        || !r.runtime_only_options.is_empty();
+    if constrained && !r.exception { return Err("popup: unsupported destination, method or response constraint".into()); }
+    let pattern = crate::compile::regex::url_filter(&r.pattern);
+    let pattern = match pattern {
+        Some(p) if !constrained => p,
+        _ if r.exception => ".*".into(), // conservative allow, never a broader block
+        _ => return Err("popup: unsupported URL pattern".into()),
+    };
+    Ok(serde_json::json!({"pattern":pattern, "allow":r.exception, "important":r.important,
+        "matchCase":r.match_case}))
+}
+
+fn read_index(rest: &mut &[u8]) -> Result<Scriptlets, String> {
+    let calls = Table::parse(take(rest)?)?;
+    let rules = Table::parse(take(rest)?)?;
+    let exceptions = Table::parse(take(rest)?)?;
+    let patterns = serde_json::from_slice::<Vec<String>>(take(rest)?).map_err(|e| e.to_string())?;
+    let regexes = regex::RegexSet::new(patterns).map_err(|e| e.to_string())?;
+    let generic_rules = generic_rules(&rules, &regexes);
+    let generic_calls = generic_rules.iter().map(|(id, _)| (*id, calls.decode_at(*id as usize))).collect();
+    Ok(Scriptlets { calls, generic_rules, generic_calls, rules, exceptions, regexes })
 }
 
 fn put(out: &mut Vec<u8>, section: &[u8]) {
@@ -553,6 +639,37 @@ example.com##+js(set-constant, adsEnabled, false)
 
     fn call(parts: &[&str]) -> Vec<String> {
         parts.iter().map(|p| p.to_string()).collect()
+    }
+
+    #[test]
+    fn unsupported_operators_and_headers_are_reported_without_output() {
+        for text in ["example.com##div:has-text(Ad):unknown-op(x)", "example.com##div:shadow(.ad)",
+            "||example.com^$removeheader=location", "example.com##^responseheader(location)",
+            "||example.com^$responseheader=set-cookie:ad"] {
+            let out = crate::compile(&[crate::ListInput { text, trusted: true }], &crate::CompileOptions { safari: crate::webkit::SafariVersion::new(18, 0) });
+            assert_eq!(out.stats.dropped.values().sum::<u64>(), 1, "{text}");
+            assert_eq!(out.stats.native_rules, 0, "{text}");
+            assert!(out.runtime.is_empty(), "{text}");
+        }
+    }
+
+    #[test]
+    fn procedural_operators_never_fall_back_to_plain_hides() {
+        for selector in ["div:matches-media((min-width: 1px))", "img:matches-property(naturalWidth=300)", "div:others()", "button:watch-attr(disabled):remove-attr(disabled)", "section:has(p:has-text(Ad))", "div:shadow(.ad)"] {
+            let text = format!("example.com##{selector}");
+            let out = crate::compile(&[crate::ListInput { text: &text, trusted: true }], &crate::CompileOptions { safari: crate::webkit::SafariVersion::new(18, 0) });
+            if selector.contains(":shadow") {
+                assert!(!out.stats.dropped.is_empty());
+                assert!(out.runtime.is_empty());
+                continue;
+            }
+            assert!(out.stats.dropped.is_empty(), "{selector}: {:?}", out.stats.dropped);
+            let engine = Engine::deserialize(&Engine::build(&out.runtime).serialize()).unwrap();
+            let page = engine.lookup("https://example.com/");
+            assert!(page.hide.is_empty(), "{selector}: {:?}", page.hide);
+            assert_eq!(page.procedural.len(), 1, "{selector}");
+            assert!(engine.lookup("https://other.com/").procedural.is_empty());
+        }
     }
 
     #[test]

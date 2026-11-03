@@ -8,7 +8,7 @@
 //! cosmetic exceptions sit right after the hides they cancel and before any
 //! network rule.
 
-mod cosmetic;
+pub(crate) mod cosmetic;
 mod network;
 pub mod regex;
 

@@ -420,6 +420,10 @@ fn verdict(selector: &str, safari: SafariVersion) -> Verdict {
     }
 }
 
+pub(crate) fn valid_selector(selector: &str) -> bool {
+    css::canonical(selector, css::Dialect::Permissive).is_some()
+}
+
 mod css {
     use cssparser::{CowRcStr, ParseError, ParserInput, SourceLocation, ToCss};
     use precomputed_hash::PrecomputedHash;

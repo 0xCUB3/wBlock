@@ -613,8 +613,13 @@ const runScriptInjectionScenario = async executeScript => {
   check("HTTP frame hides selectors one rule each", httpState.cssInserted.some(injection => injection.css === "#http-probe { display: none !important; }"));
   check("HTTP frame queues scriptlet calls in the MAIN world", httpState.executed.some(injection => injection.world === "MAIN" && typeof injection.func === "function" && injection.args[0] === scriptlets));
   check("HTTP frame injects each scriptlet file once in the MAIN world", httpState.executed.some(injection => injection.world === "MAIN" && JSON.stringify(injection.files) === JSON.stringify(["scriptlets/set-constant.js", "scriptlets/abort-on-property-read.js"])));
-  check("HTTP frame loads procedural.js into the ISOLATED world", httpState.executed.some(injection => injection.files && injection.files[0] === "procedural.js" && injection.world === undefined));
+  check("HTTP frame loads procedural.js into the ISOLATED world", httpState.executed.some(injection => injection.files && injection.files[0] === "procedural.js" && (injection.world === undefined || injection.world === "ISOLATED")));
   check("HTTP frame applies procedural filters after loading them", httpState.executed.some(injection => typeof injection.func === "function" && injection.args && injection.args[0][0] === '{"selector":[{"type":"css","arg":"div"}]}'));
+  const propertyRule = '{"selector":[{"type":"css-selector","arg":"img"},{"type":"matches-property","arg":"ad=true"}]}';
+  const propertyState = loadBackground({ nativeHandler: () => ({ payload: makeConfig([], 19, [propertyRule]) }) });
+  await propertyState.onMessage({ type: "InitContentScript" }, topFrameSender(pageUrl));
+  check("property filters run in the page world", propertyState.executed.some(injection => injection.world === "MAIN" && injection.args?.[0]?.[0] === propertyRule));
+  check("property filters never run in the isolated world", !propertyState.executed.some(injection => injection.world !== "MAIN" && injection.args?.[0]?.[0] === propertyRule));
   // The content script already loaded procedural.js, so the probe applies the filters in one call.
   const loadedState = loadBackground({
     nativeHandler: () => ({ payload: makeConfig([], 19, ['{"selector":[{"type":"css","arg":"div"}]}']) }),

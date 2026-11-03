@@ -598,3 +598,64 @@ describe('real uAssets lines', () => {
     });
   }
 });
+
+describe('compatibility gates', () => {
+  test('media conditions restore elements when they stop matching', async () => {
+    const { document, api, win } = setup('<div id="ad"></div>');
+    const media = new win.EventTarget();
+    media.matches = false;
+    win.matchMedia = () => media;
+    api.apply([filt([op('css-selector', '#ad'), op('matches-media', '(min-width: 1280px)')])]);
+    assert.equal(isMarked(document.querySelector('#ad')), false);
+    media.matches = true;
+    media.dispatchEvent(new win.Event('change'));
+    await sleep(150);
+    assert.equal(isMarked(document.querySelector('#ad')), true);
+    media.matches = false;
+    media.dispatchEvent(new win.Event('change'));
+    await sleep(150);
+    assert.equal(isMarked(document.querySelector('#ad')), false);
+  });
+
+  test('property paths support AdGuard regex keys and uBO literal values', () => {
+    const { document, api } = setup('<img id="ad"><img id="keep"><img id="throws">');
+    document.querySelector('#ad').__reactInstance42 = { props: { type: 'adv' } };
+    document.querySelector('#keep').__reactInstance42 = { props: { type: 'article' } };
+    Object.defineProperty(document.querySelector('#throws'), '__reactInstance42', { get() { throw Error(); } });
+    api.apply([filt([op('css-selector', 'img'), op('matches-property', '"/__reactInstance/.props.type"="adv"')])]);
+    assert.equal(isMarked(document.querySelector('#ad')), true);
+    assert.equal(isMarked(document.querySelector('#keep')), false);
+    assert.equal(isMarked(document.querySelector('#throws')), false);
+    api.apply([filt([op('css-selector', 'img'), op('matches-prop', 'id=keep')])]);
+    assert.equal(isMarked(document.querySelector('#keep')), true);
+    assert.equal(isMarked(document.querySelector('#ad')), false);
+  });
+
+  test('others preserves selected subtrees and their ancestors', () => {
+    const { document, api } = setup('<main id="parent"><div id="keep"><b id="child"></b></div><aside id="ad"></aside></main><footer id="footer"></footer><script id="script"></script>');
+    api.apply([filt([op('css-selector', '#keep, #child'), op('others', '')])]);
+    for (const id of ['keep', 'parent', 'child', 'script']) assert.equal(isMarked(document.getElementById(id)), false, id);
+    for (const id of ['ad', 'footer']) assert.equal(isMarked(document.getElementById(id)), true, id);
+  });
+
+  test('nested chains test descendants and preserve negative matches', () => {
+    const { document, api } = setup('<section id="ad"><p>Sponsored</p></section><section id="keep"><p>News</p></section>');
+    const nested = [op('css-selector', 'p'), op('has-text', 'Sponsored')];
+    api.apply([filt([op('css-selector', 'section'), op('has', nested)])]);
+    assert.equal(isMarked(document.querySelector('#ad')), true);
+    assert.equal(isMarked(document.querySelector('#keep')), false);
+    api.apply([filt([op('css-selector', 'section'), op('if-not', nested)])]);
+    assert.equal(isMarked(document.querySelector('#ad')), false);
+    assert.equal(isMarked(document.querySelector('#keep')), true);
+  });
+
+  test('watch-attr reapplies removal after attribute mutation', async () => {
+    const { document, api } = setup('<button id="button" disabled></button>');
+    const button = document.querySelector('button');
+    api.apply([filt([op('css-selector', 'button'), op('watch-attr', 'disabled')], act('remove-attr', 'disabled'))]);
+    assert.equal(button.hasAttribute('disabled'), false);
+    button.setAttribute('disabled', '');
+    await sleep(150);
+    assert.equal(button.hasAttribute('disabled'), false);
+  });
+});

@@ -36,11 +36,13 @@ pub(crate) struct Context {
     strict: StrictHosts,
     bad: Vec<NetworkRule>,
     bad_bodies: FxHashSet<String>,
+    generic_exceptions: Vec<NetworkRule>,
 }
 
 impl Context {
     pub(crate) fn add(&mut self, rule: &NetworkRule) {
         self.strict.add(rule);
+        if !rule.badfilter && genericblock_host(rule).is_some() { self.generic_exceptions.push(rule.clone()); }
         if rule.badfilter {
             let bad = unlabeled(rule);
             self.bad_bodies.insert(bad.pattern.body.clone());
@@ -51,9 +53,21 @@ impl Context {
     pub(crate) fn merge(&mut self, other: Context) {
         self.strict.hosts.extend(other.strict.hosts);
         self.strict.parents.extend(other.strict.parents);
+        self.generic_exceptions.extend(other.generic_exceptions);
         self.bad.extend(other.bad);
         self.bad_bodies.extend(other.bad_bodies);
     }
+}
+
+/// Safari has no network-only ignore action. Hostname genericblock exceptions
+/// are represented by exclusions on generic triggers, leaving cosmetic and
+/// specific network rules untouched (including their own exceptions).
+fn genericblock_host(r: &NetworkRule) -> Option<String> {
+    (r.exception && r.scope.contains(ExceptionScope::GENERICBLOCK) && r.types.is_empty()
+        && r.negated_types.is_empty() && r.from.is_empty() && r.to.is_empty()
+        && r.party == Party::Any && r.method.include.is_empty() && r.method.exclude.is_empty()
+        && r.runtime_only_options.is_empty() && matches!(r.action, NetworkAction::Block))
+        .then(|| host_only(&r.pattern)).flatten()
 }
 
 /// Compiles one network rule of a blocker whose `ctx` covers every rule.
@@ -73,7 +87,7 @@ pub(crate) fn emit_rule(
     {
         return;
     }
-    if let Err(reason) = compile_rule(rule, safari, &ctx.strict, out) {
+    if let Err(reason) = compile_rule(rule, safari, ctx, out) {
         stats.drop(&reason);
     }
 }
@@ -92,9 +106,10 @@ fn unlabeled(r: &NetworkRule) -> NetworkRule {
 fn compile_rule(
     r: &NetworkRule,
     v: SafariVersion,
-    strict: &StrictHosts,
+    ctx: &Context,
     out: &mut Emitted,
 ) -> Result<(), String> {
+    let strict = &ctx.strict;
     match &r.action {
         NetworkAction::Block
         | NetworkAction::Redirect {
@@ -123,6 +138,9 @@ fn compile_rule(
     if exception && r.runtime_only_options.iter().any(|o| o == "cname") {
         return Err("dnr:cname-exception".into());
     }
+    if r.runtime_only_options.iter().any(|o| o.starts_with("responseheader=")) {
+        return Err("response header matching: Safari DNR does not support responseHeaders conditions".into());
+    }
     if !exception && !r.runtime_only_options.is_empty() {
         return Err("dnr:runtime-option".into());
     }
@@ -130,11 +148,18 @@ fn compile_rule(
         return Err("dnr:method".into());
     }
     if !exception && !r.denyallow.is_empty() {
-        return compile_denyallow(r, v, strict, out);
+        return compile_denyallow(r, v, ctx, out);
     }
     let party = party(r.party, exception)?;
     let urls = urls(r, exception)?;
-    let conds = domain_conds(&r.from, v, exception)?;
+    let mut from = std::borrow::Cow::Borrowed(&r.from);
+    if !exception && !r.important && r.from.include.is_empty() {
+        for rule in &ctx.generic_exceptions {
+            if ctx.bad.contains(&unlabeled(rule)) { continue; }
+            from.to_mut().exclude.push(DomainMatcher::Hostname(genericblock_host(rule).unwrap()));
+        }
+    }
+    let conds = domain_conds(&from, v, exception)?;
     let types = effective_types(r);
     // uBO also strict-blocks top-level navigation for an untyped filter whose
     // match ends at the hostname (traffic.js, `shouldStrictBlock`), so such a
@@ -194,7 +219,7 @@ fn compile_rule(
 fn compile_denyallow(
     r: &NetworkRule,
     v: SafariVersion,
-    strict: &StrictHosts,
+    ctx: &Context,
     out: &mut Emitted,
 ) -> Result<(), String> {
     if !r.pattern.is_match_all() || r.from.include.is_empty() {
@@ -206,7 +231,7 @@ fn compile_denyallow(
     };
     let arena = out.arena();
     let mark = (out.arenas[arena].len(), out.entries.len());
-    let result = compile_rule(&block, v, strict, out).and_then(|()| {
+    let result = compile_rule(&block, v, ctx, out).and_then(|()| {
         r.denyallow.iter().try_for_each(|host| {
             let allow = NetworkRule {
                 exception: true,
@@ -218,7 +243,7 @@ fn compile_denyallow(
                 },
                 ..block.clone()
             };
-            compile_rule(&allow, v, strict, out)
+            compile_rule(&allow, v, ctx, out)
         })
     });
     if result.is_err() {
@@ -242,8 +267,9 @@ fn compile_scope(r: &NetworkRule, v: SafariVersion, out: &mut Emitted) -> Result
     } else if remaining.contains(ExceptionScope::GHIDE) {
         Tier::GenericHideException
     } else {
-        // uBO maps `$genericblock` to an unsupported type that matches nothing.
-        return Err("dnr:genericblock".into());
+        return if genericblock_host(r).is_some() { Ok(()) } else {
+            Err("genericblock: only unconstrained hostname page exceptions can be represented without canceling cosmetics".into())
+        };
     };
     let conds = match (
         host_only(&r.pattern),
@@ -644,7 +670,9 @@ fn type_triggers(
 }
 
 fn type_drop_reason(types: ResourceTypes, v: SafariVersion) -> String {
-    if types.intersects(ResourceTypes::POPUP | ResourceTypes::POPUNDER) {
+    if types.contains(ResourceTypes::POPUNDER) {
+        "popup: popunder-only enforcement is not implemented".into()
+    } else if types.contains(ResourceTypes::POPUP) {
         "dnr:popup".into()
     } else if types.intersects(ResourceTypes::DOC | ResourceTypes::FRAME) && !v.at_least(15, 0) {
         "dnr:document-needs-safari-15".into()
@@ -671,13 +699,22 @@ where
         let mut out = Emitted::with_capacity(rules.len());
         let mut stats = Stats::default();
         let mut page = Vec::new();
-        for rule in rules {
+        for mut rule in rules {
             if rule.exception
                 && rule
                     .scope
-                    .intersects(ExceptionScope::DOC | ExceptionScope::EHIDE | ExceptionScope::GHIDE)
+                    .intersects(ExceptionScope::DOC | ExceptionScope::EHIDE | ExceptionScope::GHIDE | ExceptionScope::GENERICBLOCK)
             {
                 page.push(rule.raw.clone());
+            }
+            if rule.types.contains(ResourceTypes::POPUP) && !rule.negated_types.contains(ResourceTypes::POPUP)
+                && !rule.badfilter && !ctx.bad.contains(&unlabeled(&rule)) {
+                match crate::runtime::popup_rule(&rule) {
+                    Ok(_) => page.push(rule.raw.clone()),
+                    Err(reason) => stats.drop(&reason),
+                }
+                rule.types.remove(ResourceTypes::POPUP);
+                if rule.types.is_empty() { continue; }
             }
             emit_rule(ctx, safari, &rule, &mut out, &mut stats);
         }
@@ -1637,15 +1674,13 @@ mod tests {
     }
 
     #[test]
-    fn genericblock_and_scoped_blocks_are_dropped() {
+    fn genericblock_cancels_only_generic_network_blocks() {
         let genericblock = NetworkRule {
             scope: ExceptionScope::GENERICBLOCK,
             ..exc("@@||x.com^$genericblock")
         };
-        assert_eq!(
-            drop_reason(std::slice::from_ref(&genericblock), V15),
-            ["dnr:genericblock"]
-        );
+        let out = run(&[genericblock], V15).0;
+        assert!(out.is_empty(), "genericblock narrows generic triggers instead of emitting a broad ignore");
         let scoped = NetworkRule {
             scope: ExceptionScope::GHIDE,
             ..net("||x.com^$generichide")

@@ -142,18 +142,18 @@
       const css = selectors.slice(i, i + CSS_SELECTORS_PER_INSERT).map(selector => `${selector} { display: none !important; }`).join('\n');
       pending.push(browser.scripting.insertCSS({ target, origin: 'USER', css }));
     }
-    if (procedural.length > 0) {
+    for (const world of ['ISOLATED', 'MAIN']) {
+      const filters = procedural.filter(rule => /"type"\s*:\s*"matches-(?:prop|property)"/.test(rule) === (world === 'MAIN'));
+      if (!filters.length) continue;
       pending.push((async () => {
-        // The content script loads procedural.js into every frame already, so
-        // one call applies the filters. The file is injected only when it is missing.
-        const applied = await executeInFrame({ target, func: filters => {
+        const applied = await executeInFrame({ target, world, func: filters => {
           if (!globalThis.wbeProcedural) return false;
           globalThis.wbeProcedural.apply(filters);
           return true;
-        }, args: [procedural] });
+        }, args: [filters] });
         if (applied) return;
-        await executeInFrame({ target, files: ['procedural.js'], injectImmediately: true });
-        await executeInFrame({ target, func: filters => wbeProcedural.apply(filters), args: [procedural] });
+        await executeInFrame({ target, world, files: ['procedural.js'], injectImmediately: true });
+        await executeInFrame({ target, world, func: filters => wbeProcedural.apply(filters), args: [filters] });
       })());
     }
     return Promise.all(pending);
@@ -451,6 +451,40 @@
     persistConfigCache();
     return configuration;
   };
+  // Safari lacks onCreatedNavigationTarget. Track only newly created tabs
+  // with an opener, then judge their first nonblank URL through that page's engine.
+  const popupCandidates = new Map();
+  const checkPopup = async (tabId, target) => {
+    const candidate = popupCandidates.get(tabId);
+    if (!candidate || !/^https?:/i.test(target || '') || candidate.checking) return;
+    candidate.checking = true;
+    try {
+      const opener = await browser.tabs.get(candidate.opener);
+      if (!/^https?:/i.test(opener.url || '')) return;
+      const source = opener.url.split('#')[0];
+      // An internal lookup URI retains the opener host for native pause/site checks.
+      const configuration = await requestConfiguration({}, 'wbe-popup-' + source + '#' + target.split('#')[0], undefined);
+      if (configuration.disabled || configuration.paused || !configuration.popup_blocked) return;
+      const current = await browser.tabs.get(tabId);
+      // A lookup that lost a navigation race must never close the new page.
+      if (current.url === target && current.openerTabId === candidate.opener) await browser.tabs.remove(tabId);
+    } catch {
+      // A tab or opener may disappear while its native lookup is in flight.
+    } finally {
+      popupCandidates.delete(tabId);
+    }
+  };
+  browser.tabs.onCreated?.addListener(tab => {
+    if (!Number.isInteger(tab.openerTabId)) return;
+    popupCandidates.set(tab.id, { opener: tab.openerTabId, checking: false });
+    if (popupCandidates.size > 128) popupCandidates.delete(popupCandidates.keys().next().value);
+    void checkPopup(tab.id, tab.url);
+  });
+  browser.tabs.onUpdated?.addListener((id, change) => {
+    if (change.url) void checkPopup(id, change.url);
+  });
+  browser.tabs.onRemoved?.addListener(id => popupCandidates.delete(id));
+
   const pendingConfigurationRequests = new Map();
   const requestConfigurationCoalesced = (request, url, topUrl) => {
     const key = cacheKey(url, topUrl);

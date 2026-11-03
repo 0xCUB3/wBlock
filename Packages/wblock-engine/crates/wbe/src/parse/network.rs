@@ -231,6 +231,10 @@ struct LineFlags {
 }
 
 pub(super) fn parse(line: &str, source: SourceRef) -> ParsedLine {
+    if line.rsplit_once('$').is_some_and(|(_, opts)| opts.split(',').any(|o| o == "removeheader" || o.starts_with("removeheader="))) {
+        return unsupported("response header removal: Safari DNR does not support responseHeaders");
+    }
+
     match parse_rule(line, source) {
         Ok(rule) => ParsedLine::Rule(Rule::Network(Box::new(rule))),
         Err(other) => other,
@@ -1517,9 +1521,6 @@ fn build(
     {
         types = ResourceTypes::DOC | ResourceTypes::FRAME;
     }
-    if scope == ExceptionScope::GENERICBLOCK && types.is_empty() {
-        return Err(unsupported("$genericblock without a request type"));
-    }
     if !exception && types.is_empty() && !scope.is_empty() {
         return Err(unsupported(
             "document-level option on a blocking rule never matches a request",
@@ -1911,7 +1912,7 @@ mod tests {
         ("@@||example.com^$generichide", "@@||example.com^ $scope:ghide"),
         ("@@||example.com^$specifichide", "@@||example.com^ $scope:shide"),
         ("@@||example.com^$doc,elemhide", "@@||example.com^ $doc,scope:doc,scope:ehide"),
-        ("@@||example.com^$genericblock", "unsupported"),
+        ("@@||example.com^$genericblock", "@@||example.com^ $scope:genericblock"),
         ("@@||example.com^$genericblock,script", "@@||example.com^ $script,scope:genericblock"),
         ("||example.com^$genericblock", "invalid: $genericblock is only valid on exceptions"),
         ("||example.com^$elemhide", "unsupported"),
