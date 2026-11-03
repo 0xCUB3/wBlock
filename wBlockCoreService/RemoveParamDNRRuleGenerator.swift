@@ -384,7 +384,7 @@ public enum RemoveParamDNRRuleGenerator {
     }
 
     /// Bump when the generator's output changes for the same inputs.
-    private static let generationSchema = 1
+    private static let generationSchema = 2
     private static let generationStateFilename = "dnr-generation-state.json"
 
     private final class BuildMarker {}
