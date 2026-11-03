@@ -87,7 +87,7 @@ pub(crate) fn emit_rule(
     {
         return;
     }
-    if let Err(reason) = compile_rule(rule, safari, ctx, out) {
+    if let Err(reason) = compile_rule(rule, safari, ctx, out, None) {
         stats.drop(&reason);
     }
 }
@@ -103,11 +103,13 @@ fn unlabeled(r: &NetworkRule) -> NetworkRule {
     r
 }
 
+/// `tier` overrides the tier the rule's own flags pick.
 fn compile_rule(
     r: &NetworkRule,
     v: SafariVersion,
     ctx: &Context,
     out: &mut Emitted,
+    tier: Option<Tier>,
 ) -> Result<(), String> {
     let strict = &ctx.strict;
     match &r.action {
@@ -182,13 +184,14 @@ fn compile_rule(
             Err(type_drop_reason(types, v))
         };
     }
-    let (ignore, tier) = if exception {
+    let (ignore, default) = if exception {
         (true, if r.important { Tier::ImportantException } else { Tier::Exception })
     } else if r.important {
         (false, Tier::ImportantBlock)
     } else {
         (false, Tier::Block)
     };
+    let tier = tier.unwrap_or(default);
     for url in &urls {
         for (types, context) in &type_triggers {
             for cond in &conds {
@@ -216,6 +219,9 @@ fn compile_rule(
 /// exception per allowed host under the same options. The exceptions also
 /// lift other lists' blocks of those hosts on those pages (under-blocking);
 /// with a pattern they would lift more, so only match-all rules expand.
+/// An important block takes its exclusions in the tiers just before the
+/// important blocks: an exception there lifts this block and no other
+/// important block, and it cannot follow the block without lifting them.
 fn compile_denyallow(
     r: &NetworkRule,
     v: SafariVersion,
@@ -225,13 +231,18 @@ fn compile_denyallow(
     if !r.pattern.is_match_all() || r.from.include.is_empty() {
         return Err("dnr:denyallow".into());
     }
+    let (block_tier, allow_tier) = if r.important {
+        (Tier::ImportantDenyallowBlock, Tier::ImportantDenyallowException)
+    } else {
+        (Tier::Block, Tier::Exception)
+    };
     let block = NetworkRule {
         denyallow: Vec::new(),
         ..r.clone()
     };
     let arena = out.arena();
     let mark = (out.arenas[arena].len(), out.entries.len());
-    let result = compile_rule(&block, v, ctx, out).and_then(|()| {
+    let result = compile_rule(&block, v, ctx, out, Some(block_tier)).and_then(|()| {
         r.denyallow.iter().try_for_each(|host| {
             let allow = NetworkRule {
                 exception: true,
@@ -243,7 +254,7 @@ fn compile_denyallow(
                 },
                 ..block.clone()
             };
-            compile_rule(&allow, v, ctx, out)
+            compile_rule(&allow, v, ctx, out, Some(allow_tier))
         })
     });
     if result.is_err() {

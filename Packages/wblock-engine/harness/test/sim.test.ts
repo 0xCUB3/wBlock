@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -177,4 +179,30 @@ describe('calibration against WKWebView', () => {
             assert.deepEqual(compare(c, observed.get(c.id)!), []);
         });
     }
+});
+
+describe('wbe output through the WebKit simulator', () => {
+    const wbe = process.env.WBE_BIN ?? join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'target/release/wbe');
+    const compileList = (text: string) => {
+        const dir = mkdtempSync(join(tmpdir(), 'wbe-sim-'));
+        try {
+            const list = join(dir, 'list.txt');
+            writeFileSync(list, text);
+            return JSON.parse(execFileSync(wbe, ['compile', '--safari', '18.0', list], { stdio: ['ignore', 'pipe', 'ignore'] }).toString());
+        } finally {
+            rmSync(dir, { recursive: true, force: true });
+        }
+    };
+
+    it('$denyallow exclusions of an important block do not lift other important blocks', () => {
+        const rules = compileList([
+            '*$script,domain=example.com,denyallow=cdn.example.net,important',
+            '||cdn.example.net/ads/$script,important',
+        ].join('\n'));
+        const blockedOn = (url: string, page = 'https://example.com/') => blocked(rules, url, { topUrl: page, frameUrl: page });
+        assert.equal(blockedOn('https://cdn.example.net/lib.js'), false);
+        assert.equal(blockedOn('https://cdn.example.net/ads/x.js'), true);
+        assert.equal(blockedOn('https://tracker.test/x.js'), true);
+        assert.equal(blockedOn('https://tracker.test/x.js', 'https://other.test/'), false);
+    });
 });

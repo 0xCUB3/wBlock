@@ -27,11 +27,16 @@ pub enum Tier {
     ElemHideException = 3,
     Block = 4,
     Exception = 5,
-    ImportantBlock = 6,
+    /// `$important` with `$denyallow`: the block, then its exclusions.
+    ImportantDenyallowBlock = 6,
+    /// The exclusions of an important `$denyallow` block. Each cancels only
+    /// the blocks before it, so they sit ahead of every other important block.
+    ImportantDenyallowException = 7,
+    ImportantBlock = 8,
     /// AdGuard `$important` exceptions override important blocks.
-    ImportantException = 7,
+    ImportantException = 9,
     /// `@@...$document`: cancels everything on the page.
-    DocumentException = 8,
+    DocumentException = 10,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -122,13 +127,15 @@ impl std::io::Write for Count {
 }
 
 /// Tiers in output order.
-const TIERS: [Tier; 9] = [
+const TIERS: [Tier; 11] = [
     Tier::GenericHide,
     Tier::GenericHideException,
     Tier::SpecificHide,
     Tier::ElemHideException,
     Tier::Block,
     Tier::Exception,
+    Tier::ImportantDenyallowBlock,
+    Tier::ImportantDenyallowException,
     Tier::ImportantBlock,
     Tier::ImportantException,
     Tier::DocumentException,
