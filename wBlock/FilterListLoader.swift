@@ -275,13 +275,23 @@ class FilterListLoader {
         "raw.githubusercontent.com/lonum1rus/Raajje-AdList/master/filter.txt",  // Raajje AdList, unmaintained (#921)
     ]
 
+    /// Retired built-ins deleted even when selected, instead of kept as custom lists.
+    private static let purgedBuiltInURLFragments = [
+        "hagezi/dns-blocklists@latest/adblock/pro.mini.txt",  // HaGeZi Multi Pro Mini, a DNS list (docs/HAGEZI.md)
+    ]
+
     static func isRetiredBuiltIn(_ filter: FilterList) -> Bool {
         !filter.isCustom && (filter.name == "d3Host List by d3ward" || isRetiredBuiltInURL(filter.url))
     }
 
+    static func isPurgedBuiltIn(_ filter: FilterList) -> Bool {
+        !filter.isCustom && purgedBuiltInURLFragments.contains { filter.url.absoluteString.contains($0) }
+    }
+
     /// A list whose address migrates to a catalog URL is still in the catalog, so it is never retired.
     static func isRetiredBuiltInURL(_ url: URL) -> Bool {
-        migratedURL(for: url.absoluteString) == nil && retiredBuiltInURLFragments.contains { url.absoluteString.contains($0) }
+        migratedURL(for: url.absoluteString) == nil
+            && (retiredBuiltInURLFragments + purgedBuiltInURLFragments).contains { url.absoluteString.contains($0) }
     }
 
     /// New built-in names and the names used by the previous catalog release.
@@ -289,7 +299,6 @@ class FilterListLoader {
         "EasyList – Social Widgets": ["Fanboy's Social Blocking List"],
         "EasyList – Other Annoyances": ["EasyList – Annoyances"],
         "Stevo's AI Blocklist": ["Fanboy's Anti-AI Suggestions"],
-        "HaGeZi Multi Pro Mini": ["HaGeZi Pro Mini", "Hagezi Pro Mini"],
         "PersianBlockerNG": ["Persian Blocker"],
         "filterslists-KO": ["List-KR"],
     ]
@@ -869,18 +878,6 @@ class FilterListLoader {
                 )!, category: FilterListCategory.privacy,
                 description:
                     "Privacy protection supplement for EasyList."))
-
-        // Multi Pro Mini is the size-optimized browser/mobile list. Keep its catalog
-        // identity on every platform; it remains opt-in like other extras.
-        filterLists.append(
-            FilterList(
-                id: UUID(), name: "HaGeZi Multi Pro Mini",
-                url: URL(
-                    string:
-                        "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/adblock/pro.mini.txt"
-                )!, category: FilterListCategory.multipurpose,
-                description:
-                    "Extensive blocklist targeting ads, trackers, and other unwanted content."))
 
         for index in filterLists.indices {
             filterLists[index].isSelected = Self.recommendedFilterNames.contains(filterLists[index].name)

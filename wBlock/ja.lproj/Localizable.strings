@@ -287,7 +287,6 @@
 "Rule Types" = "ルールの種類";
 "Network and element hiding rules count toward Safari's limit. wBlock Scripts applies its rules on its own, and URL parameter rules have a separate limit of %@." = "ネットワークルールと要素の非表示ルールはSafariの上限に含まれます。wBlock Scriptsは独自にルールを適用し、URLパラメータールールには別に%@件の上限があります。";
 "Extensions" = "機能拡張";
-"Extensive blocklist targeting ads, trackers, and other unwanted content." = "広告、トラッカー、その他の望ましくないコンテンツを対象とした広範なブロックリスト。";
 "Failed" = "失敗";
 "Failed saving user list" = "ユーザーリストの保存に失敗しました";
 "Failed saving user list edits" = "ユーザーリストの編集内容の保存に失敗しました";
@@ -358,7 +357,6 @@
 "go" = "移動";
 "Go to line" = "行へ移動";
 "Greek AdBlock Filter" = "Greek AdBlock Filter";
-"HaGeZi Multi Pro Mini" = "HaGeZi Multi Pro Mini";
 "Handles advanced anti-adblock cases that filter rules miss." = "フィルタールールが見逃す高度な広告ブロック対策ケースを処理します。";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "ページ内のポップアップ、バナー、その他の不要なページ要素を非表示にします。";
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
@@ -894,8 +892,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Next update" = "次回のアップデート";
 "Enable Experimental Filter?" = "実験的フィルターを有効にしますか？";
 "Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "実験的フィルターは、メインのリストに入る前の新しいルールを試すもので、ウェブサイトが正しく表示されなくなることがあります。不具合を見つけて報告できる場合にのみ有効にしてください。";
-"Enable HaGeZi Multi Pro Mini?" = "HaGeZi Multi Pro Mini を有効にしますか？";
-"HaGeZi Multi Pro Mini is better suited to a DNS blocker than Safari. Its many domain rules can consume a large share of Safari’s limited rule capacity, leaving less room for browser-focused filters, and may break websites by blocking services they need. We recommend leaving it off and using wBlock’s recommended filter lists instead." = "HaGeZi Multi Pro Mini は、Safari よりも DNS ブロッカーでの使用に適しています。多数のドメインルールが Safari の限られたルール容量を大きく消費し、ブラウザー向けフィルターの余地を減らすほか、必要なサービスを遮断してサイトの動作を妨げることがあります。このリストはオフのままにし、代わりに wBlock の推奨フィルターリストを使用することをおすすめします。";
 "Reset" = "リセット";
 "No sites selected. Cosmetic filtering will not apply." = "サイトが選択されていません。コスメティックフィルタリングは適用されません。";
 "Cosmetic filtering will not apply on these sites. Network blocking still applies." = "これらのサイトではコスメティックフィルタリングは適用されません。ネットワークブロックは引き続き適用されます。";

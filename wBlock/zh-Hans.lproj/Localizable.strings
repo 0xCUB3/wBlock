@@ -287,7 +287,6 @@
 "Rule Types" = "规则类型";
 "Network and element hiding rules count toward Safari's limit. wBlock Scripts applies its rules on its own, and URL parameter rules have a separate limit of %@." = "网络规则和元素隐藏规则计入 Safari 的上限。wBlock Scripts 会自行应用其规则，URL 参数规则另有 %@ 条的上限。";
 "Extensions" = "扩展";
-"Extensive blocklist targeting ads, trackers, and other unwanted content." = "针对广告、跟踪器和其他不需要的内容的广泛阻止列表。";
 "Failed" = "失败";
 "Failed saving user list" = "保存用户列表失败";
 "Failed saving user list edits" = "保存用户列表编辑失败";
@@ -358,7 +357,6 @@
 "go" = "跳转";
 "Go to line" = "跳转到行";
 "Greek AdBlock Filter" = "Greek AdBlock Filter";
-"HaGeZi Multi Pro Mini" = "HaGeZi Multi Pro Mini";
 "Handles advanced anti-adblock cases that filter rules miss." = "处理过滤规则遗漏的高级反广告拦截案例。";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "隐藏页内弹出窗口、横幅和其他不需要的页面元素。";
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
@@ -925,8 +923,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Next update" = "下次更新";
 "Enable Experimental Filter?" = "启用实验性过滤器？";
 "Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "实验性过滤器会在新规则进入主列表之前对其进行测试，可能会导致网站出现问题。仅在你愿意发现并反馈问题时启用。";
-"Enable HaGeZi Multi Pro Mini?" = "要启用 HaGeZi Multi Pro Mini 吗？";
-"HaGeZi Multi Pro Mini is better suited to a DNS blocker than Safari. Its many domain rules can consume a large share of Safari’s limited rule capacity, leaving less room for browser-focused filters, and may break websites by blocking services they need. We recommend leaving it off and using wBlock’s recommended filter lists instead." = "HaGeZi Multi Pro Mini 更适合用于 DNS 屏蔽工具，而不是 Safari。它包含大量域名规则，可能占用 Safari 有限规则容量中的很大一部分，挤占浏览器专用过滤器的空间，还可能屏蔽网站所需的服务，导致网站无法正常运行。我们建议保持关闭，改用 wBlock 推荐的过滤列表。";
 "Reset" = "重置";
 "No sites selected. Cosmetic filtering will not apply." = "未选择任何网站。外观过滤将不会应用。";
 "Cosmetic filtering will not apply on these sites. Network blocking still applies." = "外观过滤不会在这些网站上应用。网络拦截仍然有效。";

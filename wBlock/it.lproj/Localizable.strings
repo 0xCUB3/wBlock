@@ -287,7 +287,6 @@
 "Rule Types" = "Tipi di regole";
 "Network and element hiding rules count toward Safari's limit. wBlock Scripts applies its rules on its own, and URL parameter rules have a separate limit of %@." = "Le regole di rete e di elementi nascosti contano nel limite di Safari. wBlock Scripts applica le proprie regole da solo e le regole dei parametri URL hanno un limite separato di %@.";
 "Extensions" = "Estensioni";
-"Extensive blocklist targeting ads, trackers, and other unwanted content." = "Ampia blocklist mirata ad annunci, tracker e altri contenuti indesiderati.";
 "Failed" = "Non riuscito";
 "Failed saving user list" = "Salvataggio elenco utente non riuscito";
 "Failed saving user list edits" = "Salvataggio delle modifiche all'elenco utente non riuscito";
@@ -358,7 +357,6 @@
 "go" = "Vai";
 "Go to line" = "Vai alla riga";
 "Greek AdBlock Filter" = "Greek AdBlock Filter";
-"HaGeZi Multi Pro Mini" = "HaGeZi Multi Pro Mini";
 "Handles advanced anti-adblock cases that filter rules miss." = "Gestisce i casi avanzati di anti-adblock che le regole di filtro non intercettano.";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "Nasconde popup, banner e altri elementi della pagina indesiderati.";
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
@@ -925,8 +923,6 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "Next update" = "Prossimo aggiornamento";
 "Enable Experimental Filter?" = "Attivare il filtro sperimentale?";
 "Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "I filtri sperimentali testano nuove regole prima che arrivino negli elenchi principali e possono danneggiare i siti web. Attivali solo se ti senti a tuo agio nel trovare e segnalare i problemi.";
-"Enable HaGeZi Multi Pro Mini?" = "Attivare HaGeZi Multi Pro Mini?";
-"HaGeZi Multi Pro Mini is better suited to a DNS blocker than Safari. Its many domain rules can consume a large share of Safari’s limited rule capacity, leaving less room for browser-focused filters, and may break websites by blocking services they need. We recommend leaving it off and using wBlock’s recommended filter lists instead." = "HaGeZi Multi Pro Mini è più adatto a un blocco DNS che a Safari. Le sue numerose regole sui domini possono occupare gran parte della capacità limitata di Safari, lasciando meno spazio ai filtri pensati per i browser, e possono compromettere i siti bloccando servizi necessari al loro funzionamento. Consigliamo di lasciarlo disattivato e usare invece gli elenchi di filtri consigliati da wBlock.";
 "Reset" = "Reimposta";
 "No sites selected. Cosmetic filtering will not apply." = "Nessun sito selezionato. I filtri cosmetici non verranno applicati.";
 "Cosmetic filtering will not apply on these sites. Network blocking still applies." = "I filtri cosmetici non verranno applicati su questi siti. Il blocco di rete resta attivo.";
