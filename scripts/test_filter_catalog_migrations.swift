@@ -226,11 +226,13 @@ private final class TestLoader: FilterListLoader {
             precondition(list.url.host == "filters.adtidy.org" && list.url.path.contains("/extension/ublock/filters/"),
                          "\(list.name) should load uBlock Origin's copy")
         }
-        // Lists added from the old registry browser are custom: their address and name stay as the user saved them.
+        // A custom copy of a catalog list folds into the catalog entry, whatever registry address it was saved with.
         let registryCustom = FilterList(name: "AdGuard Social Media Filter", url: URL(string: "\(registry)/extension/safari/filters/4_optimized.txt")!,
                                         category: .annoyances, isCustom: true, isSelected: true)
-        precondition(loader.migrateFilterURLs(in: [registryCustom])[0].url == registryCustom.url, "custom registry list was migrated")
-        precondition(FilterListSetup.hydrate([registryCustom], defaults: defaults)[0].name == registryCustom.name, "custom registry list was renamed")
+        precondition(loader.migrateFilterURLs(in: [registryCustom])[0].url == registryCustom.url, "custom list was migrated by the built-in table")
+        let folded = FilterListSetup.hydrate([registryCustom], defaults: defaults)[0]
+        precondition(folded.id == registryCustom.id && folded.isSelected && !folded.isCustom && folded.name == "AdGuard Social Media Filter"
+                     && folded.url == defaults.first { $0.name == "AdGuard Social Media Filter" }!.url, "custom registry copy must fold into its catalog entry")
 
         // Retired built-ins leave the catalog and are recognized by address, so they go without errors.
         let retired = [
@@ -282,6 +284,38 @@ private final class TestLoader: FilterListLoader {
                 precondition(FilterListSetup.hydrate(hydrated, defaults: defaults) == hydrated, "\(name) fold must be idempotent")
                 let withEntry = FilterListSetup.hydrate([retiredCopy, entry], defaults: defaults)
                 precondition(withEntry.count == 1 && withEntry[0].isSelected == selected, "\(name) copy and entry must leave one list")
+            }
+        }
+        // A registry address of a list the catalog carries under another URL is that list. Stored as a built-in, or as the
+        // custom copy the retired-list conversion left behind, it must end as one catalog entry that keeps its selection.
+        let registryCopies = [
+            (101, "EasyList"), (107, "EasyList Germany"), (109, "EasyList Italy"), (208, "Online Malicious URL Blocklist"),
+            (212, "RU AdList: Counters"), (216, "Official Polish filters for AdBlock, uBlock Origin & AdGuard"),
+            (225, "Fanboy – Anti-Facebook"), (231, "EasyList Spanish"), (255, "Phishing URL Blocklist"),
+            (257, "uBlock filters – Badware risks"),
+        ]
+        for (id, name) in registryCopies {
+            let catalog = defaults.first { $0.name == name }!
+            let addresses = ["\(registry)/extension/safari/filters/\(id)_optimized.txt",
+                             "https://filters.adtidy.org/extension/safari/filters/\(id)_optimized.txt"]
+            for address in addresses.map({ URL(string: $0)! }) {
+                for custom in [false, true] {
+                    for selected in [false, true] {
+                        for copyFirst in [false, true] {
+                            let copy = FilterList(name: name, url: address, category: .security, isCustom: custom, isSelected: selected,
+                                                  hasUserProvidedName: custom)
+                            if !custom { precondition(!FilterListLoader.isRetiredBuiltIn(copy), "\(name) registry copy is retired") }
+                            let catalogEntries = defaults.map { list -> FilterList in var list = list; list.isSelected = false; return list }
+                            let stored = copyFirst ? [copy] + catalogEntries : catalogEntries + [copy]
+                            let result = FilterListSetup.hydrate(loader.migrateFilterURLs(in: stored), defaults: defaults)
+                            let entries = result.filter { $0.url == catalog.url }
+                            precondition(entries.count == 1 && !entries[0].isCustom && entries[0].isSelected == selected && entries[0].name == name,
+                                         "\(address) custom=\(custom) selected=\(selected) must fold into one catalog entry: \(entries.map(\.name))")
+                            precondition(result.count == defaults.count && !result.contains { $0.url == address || $0.isCustom },
+                                         "\(address) left a duplicate behind")
+                        }
+                    }
+                }
             }
         }
         print("PASS: replacement migrations preserve selection and discard legacy content")

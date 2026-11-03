@@ -155,7 +155,7 @@ class FilterListLoader {
             adGuardUBlockURL(17),
         // Actually Legitimate URL Shortener Tool, Dandelion Sprout's Anti-Malware List, AdBlockID, KAD, and
         // Persian Blocker now come from their upstream sources. Persian Blocker's entry merges into PersianBlockerNG.
-        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/mac_v3/filters/251_optimized.txt":
+        registryURL(251):
             URL(string: "https://raw.githubusercontent.com/DandelionSprout/adfilt/master/LegitimateURLShortener.txt")!,
         registryURL(259):
             URL(string: "https://raw.githubusercontent.com/DandelionSprout/adfilt/master/Dandelion%20Sprout's%20Anti-Malware%20List.txt")!,
@@ -163,6 +163,18 @@ class FilterListLoader {
         registryURL(232): URL(string: "https://raw.githubusercontent.com/FiltersHeroes/KAD/master/KAD.txt")!,
         registryURL(235):
             URL(string: "https://cdn.jsdelivr.net/gh/PersianBlocker/PersianBlocker@main/PersianBlocker.txt")!,
+        // Registry copies of lists the catalog carries under another URL, each moving to the catalog's address.
+        registryURL(101): URL(string: "https://cdn.jsdelivr.net/gh/uBlockOrigin/uAssetsCDN@main/thirdparties/easylist.txt")!,
+        registryURL(107): URL(string: "https://easylist.to/easylistgermany/easylistgermany.txt")!,
+        registryURL(109): URL(string: "https://easylist-downloads.adblockplus.org/easylistitaly.txt")!,
+        registryURL(208): URL(string: "https://curbengh.github.io/malware-filter/urlhaus-filter-vivaldi-online.txt")!,
+        registryURL(212): URL(string: "https://cdn.jsdelivr.net/gh/easylist/ruadlist@master/cntblock.txt")!,
+        registryURL(216):
+            URL(string: "https://raw.githubusercontent.com/MajkiIT/polish-ads-filter/master/polish-adblock-filters/adblock.txt")!,
+        registryURL(225): URL(string: "https://secure.fanboy.co.nz/fanboy-antifacebook.txt")!,
+        registryURL(231): URL(string: "https://easylist-downloads.adblockplus.org/easylistspanish.txt")!,
+        registryURL(255): URL(string: "https://curbengh.github.io/phishing-filter/phishing-filter.txt")!,
+        registryURL(257): URL(string: "https://ublockorigin.github.io/uAssetsCDN/filters/badware.min.txt")!,
         registryURL(102):
             URL(string: "https://raw.githubusercontent.com/ABPindo/indonesianadblockrules/master/subscriptions/abpindo.txt")!,
         registryURL(103): URL(string: "https://stanev.org/abp/adblock_bg.txt")!,
@@ -214,11 +226,8 @@ class FilterListLoader {
             URL(string: "https://cdn.jsdelivr.net/npm/@filteringdev/filterslists-ko@latest/dist/filterslist-uBlockOrigin-classic.txt")!,
         "https://raw.githubusercontent.com/List-KR/List-KR/master/filter-AdGuard-forward.txt": URL(
             string: "https://cdn.jsdelivr.net/npm/@filteringdev/filterslists-ko@latest/dist/filterslist-uBlockOrigin-classic.txt")!,
-        "https://filters.adtidy.org/extension/safari/filters/227_optimized.txt":
-            URL(string: "https://cdn.jsdelivr.net/npm/@filteringdev/filterslists-ko@latest/dist/filterslist-uBlockOrigin-classic.txt")!,
         "https://raw.githubusercontent.com/easylist/easylist/refs/heads/master/fanboy-addon/fanboy_ai_suggestions.txt": stevoAIBlocklistURL,
-        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/260.txt": stevoAIBlocklistURL,
-        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/260_optimized.txt": stevoAIBlocklistURL,
+        registryURL(260): stevoAIBlocklistURL,
         // 2026-09: the worker now mirrors BPC into R2; reads go to the bucket so
         // update checks stop counting against the worker's daily quota.
         "https://bpc-filter-proxy.wmailrelayb8d890.workers.dev": URL(string: "https://pub-d303b9085c0b41b5aa749fc74609d4d9.r2.dev/bpc-paywall-filter.txt")!,
@@ -238,7 +247,6 @@ class FilterListLoader {
     /// Built-in lists removed from the catalog, matched by URL fragment.
     private static let retiredBuiltInURLFragments = [
         "d3ward/toolz",
-        "platforms/extension/safari/filters/208_optimized.txt",  // Online Malicious URL Blocklist (#864)
         "platforms/extension/safari/filters/122_optimized.txt",  // Fanboy's Annoyances Filter (#877)
         "platforms/extension/safari/filters/207_optimized.txt",  // Adblock Warning Removal List
         "platforms/extension/safari/filters/10_optimized.txt",  // AdGuard Allowlist
@@ -271,8 +279,9 @@ class FilterListLoader {
         !filter.isCustom && (filter.name == "d3Host List by d3ward" || isRetiredBuiltInURL(filter.url))
     }
 
+    /// A list whose address migrates to a catalog URL is still in the catalog, so it is never retired.
     static func isRetiredBuiltInURL(_ url: URL) -> Bool {
-        retiredBuiltInURLFragments.contains { url.absoluteString.contains($0) }
+        migratedURL(for: url.absoluteString) == nil && retiredBuiltInURLFragments.contains { url.absoluteString.contains($0) }
     }
 
     /// New built-in names and the names used by the previous catalog release.
@@ -342,9 +351,10 @@ class FilterListLoader {
 
     /// The current address of a built-in list whose source moved, or nil when `urlString` is current.
     static func migratedURL(for urlString: String) -> URL? {
-        if let url = URL(string: urlString), let id = FilterListURLMirror.adGuardFilterID(for: url),
-           adGuardUBlockIDs.contains(id) {
-            return adGuardUBlockURL(id)
+        if let url = URL(string: urlString), let id = FilterListURLMirror.adGuardFilterID(for: url) {
+            if adGuardUBlockIDs.contains(id) { return adGuardUBlockURL(id) }
+            // Any platform's address for an AdGuard list resolves through its ID to the safari entry.
+            if let target = filterURLMigrations[registryURL(id)] { return target }
         }
         return filterURLMigrations[urlString]
     }

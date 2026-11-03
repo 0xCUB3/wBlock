@@ -209,7 +209,8 @@ compile_core_test disabled-sites-normalization scripts/test_disabled_sites_norma
 compile_direct_test filter-update-popup-status \
   wBlockCoreService/FilterUpdatePopupStatus.swift \
   scripts/test_filter_update_popup_status.swift
-compile_core_test filter-list-setup scripts/test_filter_list_setup.swift wBlock/FilterListSetup.swift
+compile_core_test filter-list-setup scripts/test_filter_list_setup.swift wBlock/FilterListSetup.swift \
+  wBlock/FilterListLoader.swift wBlock/LocalizationHelpers.swift wBlock/ConcurrentLogManager.swift wBlock/LogTimeZone.swift
 compile_core_test apply-baseline-acknowledgement scripts/test_apply_baseline_acknowledgement.swift \
   wBlock/ApplyFilterConfiguration.swift
 compile_core_test filter-list-site-exclusion scripts/test_filter_list_site_exclusion.swift

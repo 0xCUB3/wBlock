@@ -6,11 +6,18 @@ enum FilterListSetup {
         let defaultsByURL = Dictionary(defaults.map { ($0.url, $0) }, uniquingKeysWith: { first, _ in first })
         var result: [FilterList] = []
         for var filter in filters {
-            // A custom copy of a catalog list is that list again, e.g. a retired list that
-            // came back. It folds into the catalog entry and keeps its ID and selection.
-            if filter.isCustom, defaultsByURL[filter.url] != nil {
-                filter.isCustom = false
-                filter.hasUserProvidedName = false
+            // A custom copy of a catalog list is that list again, e.g. a retired list that came back,
+            // or a registry address the catalog carries under another URL. It folds into the catalog
+            // entry and keeps its ID and selection.
+            if filter.isCustom {
+                let address = FilterListLoader.migratedURL(for: filter.url.absoluteString) ?? filter.url
+                if defaultsByURL[address] != nil {
+                    filter.url = address
+                    filter.etag = nil
+                    filter.serverLastModified = nil
+                    filter.isCustom = false
+                    filter.hasUserProvidedName = false
+                }
             }
             if !filter.isCustom {
                 if let index = result.firstIndex(where: { !$0.isCustom && $0.url == filter.url }) {
