@@ -437,7 +437,6 @@ public enum RemoveParamDNRRuleGenerator {
             canonical += "|\(filter.isSelected)|" + FilterListSiteExclusion.scopeMarker(
                 excluding: filter.appliedExcludedSites, including: filter.appliedSelectedSites) + "\n"
         }
-        canonical += "redirect=\(RedirectFeed.sources(for: filters).joined(separator: "\n"))"
         return sha256Hex(data: Data(canonical.utf8))
     }
 
@@ -530,7 +529,7 @@ public enum RemoveParamDNRRuleGenerator {
         var pageRules: [PageRule] = []
         var scopedExceptions = Set<String>()
         var blockedCount = ""
-        var redirectSources = RedirectFeed.sources(for: filters)
+        var redirectSources: [String] = []
         var updated: [String: ExtractionEntry] = [:]
         var cacheChanged = false
         for (index, source) in sources.enumerated() {
