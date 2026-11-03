@@ -6,9 +6,11 @@ import os.log
 /// Safari can express: literal query parameter names and strip-all query rules,
 /// plus `$redirect` resource replacements (see RedirectDNRRules.swift).
 ///
-/// This is intentionally conservative. Regex-valued, inverted, malformed, and
-/// otherwise unsupported rules are skipped rather than widened into rules that
-/// would strip parameters on the wrong requests.
+/// This is intentionally conservative. Inverted, malformed, and otherwise
+/// unsupported rules are skipped rather than widened into rules that would strip
+/// parameters on the wrong requests. Regex-valued rules are expanded to the
+/// literal names they match (see `NameVocabulary`); a regex matching no known
+/// name is skipped.
 public enum RemoveParamDNRRuleGenerator {
     public static let rulesFilename = "removeparam_dnr_rules.json"
     public static let ruleIDBase = 1_500_000
@@ -39,6 +41,15 @@ public enum RemoveParamDNRRuleGenerator {
         "doc", "document", "main_frame", "subdocument", "sub_frame",
         "stylesheet", "script", "image", "font", "object",
         "xmlhttprequest", "xhr", "ping", "media", "websocket", "other",
+    ]
+
+    /// Common UTM and click-ID names that regex `$removeparam` rules can expand
+    /// into even when no list writes them as literals.
+    static let commonTrackingParameterNames = [
+        "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "utm_id",
+        "utm_name", "utm_cid", "utm_reader", "utm_referrer", "utm_social", "utm_brand",
+        "utm_place", "utm_pubreferrer", "utm_swu", "utm_viz_id", "utm_creative_format",
+        "utm_marketing_tactic", "utm_source_platform"
     ]
 
     static let resourceTypeMap: [String: [String]] = [
@@ -155,10 +166,47 @@ public enum RemoveParamDNRRuleGenerator {
     }
 
     private struct BuildResult {
-        var rule: DeclarativeRule?
+        var rules: [DeclarativeRule]
         var wasRemoveParamRule: Bool
         var wasExceptionRule: Bool
         var skipped: Bool
+    }
+
+    /// The literal `$removeparam` names a regex can expand into: every literal
+    /// name in the rules text plus `commonTrackingParameterNames`. A regex is
+    /// matched against each name's decoded form, honoring `/i`, so each
+    /// regex is evaluated once here rather than once per rule.
+    struct NameVocabulary {
+        private var matchesByRegex: [String: [String]] = [:]
+
+        init(rulesText: String) {
+            var literals = Set(commonTrackingParameterNames)
+            var regexValues = Set<String>()
+            RuleText.forEachLine(rulesText) { rawLine in
+                guard RuleText.containsIgnoringASCIICase(rawLine, "removeparam"),
+                      let value = parseRule(String(rawLine))?.removeParamValue,
+                      !value.isEmpty
+                else { return }
+                if value.hasPrefix("/") {
+                    regexValues.insert(value)
+                } else if isExpressibleLiteralRemoveValue(value) {
+                    literals.insert(value)
+                }
+            }
+            let names = literals.sorted()
+            for value in regexValues {
+                guard let regex = compiledRemoveParamRegex(value) else { continue }
+                matchesByRegex[value] = names.filter { name in
+                    let decoded = decodeRemoveParamValue(name) ?? name
+                    return regex.firstMatch(in: decoded, range: NSRange(location: 0, length: decoded.utf16.count)) != nil
+                }
+            }
+        }
+
+        /// Nil when `value` is not a regex this vocabulary could evaluate; empty when it matches nothing.
+        func literalNames(matching value: String) -> [String]? {
+            matchesByRegex[value]
+        }
     }
 
     public static func generateRules(
@@ -193,12 +241,13 @@ public enum RemoveParamDNRRuleGenerator {
             redirectRules.append(rule)
         }
 
+        let vocabulary = NameVocabulary(rulesText: rulesText)
         for rawLine in rulesText.split(whereSeparator: \.isNewline) {
-            let result = buildRule(from: String(rawLine), nextID: 0)
+            let result = buildRules(from: String(rawLine), vocabulary: vocabulary)
             if result.wasRemoveParamRule { removeParamRules += 1 }
             if result.wasExceptionRule { exceptionRules += 1 }
             if result.skipped { skippedRules += 1 }
-            if let rule = result.rule {
+            for rule in result.rules {
                 generatedSourceRuleCount += 1
                 if sourceRulesInOrder.count < maxGeneratedRules {
                     sourceRulesInOrder.append(rule)
@@ -629,56 +678,93 @@ public enum RemoveParamDNRRuleGenerator {
     }
 
     /// Nil means this is not a removeparam rule; otherwise use the actual DNR builder.
-    static func supportsRule(_ line: String) -> Bool? {
-        let result = buildRule(from: line, nextID: 1)
-        return result.wasRemoveParamRule ? result.rule != nil : nil
+    static func supportsRule(_ line: String, vocabulary: NameVocabulary) -> Bool? {
+        let result = buildRules(from: line, vocabulary: vocabulary)
+        return result.wasRemoveParamRule ? !result.rules.isEmpty : nil
     }
 
-    private static func buildRule(from rawLine: String, nextID: Int) -> BuildResult {
+    private static func buildRules(from rawLine: String, vocabulary: NameVocabulary) -> BuildResult {
         guard let parsed = parseRule(rawLine) else {
-            return BuildResult(rule: nil, wasRemoveParamRule: false, wasExceptionRule: false, skipped: false)
+            return BuildResult(rules: [], wasRemoveParamRule: false, wasExceptionRule: false, skipped: false)
         }
+        let skipped = BuildResult(rules: [], wasRemoveParamRule: true, wasExceptionRule: parsed.isException, skipped: true)
 
         let options = parsed.options.map { optionNameAndValue($0).name }
         if options.contains("badfilter") || parsed.options.contains(where: { $0.hasPrefix("~removeparam") }) {
-            return BuildResult(rule: nil, wasRemoveParamRule: true, wasExceptionRule: parsed.isException, skipped: true)
+            return skipped
         }
 
-        guard let condition = makeCondition(parsed: parsed) else {
-            return BuildResult(rule: nil, wasRemoveParamRule: true, wasExceptionRule: parsed.isException, skipped: true)
+        let value = parsed.removeParamValue ?? ""
+        let isRegex = value.hasPrefix("/")
+        let values: [String]
+        if isRegex {
+            guard let matched = vocabulary.literalNames(matching: value), !matched.isEmpty else { return skipped }
+            values = matched
+        } else {
+            values = [value]
+        }
+
+        // A regex redirect is one rule that lists every name it matches, with no
+        // per-name token. Exceptions keep one rule per name, since a token-less
+        // allow would also switch off replacements the literal rules leave alone.
+        let groups: [(value: String, names: [String])]
+        if isRegex && !parsed.isException {
+            groups = [("", values)]
+        } else {
+            groups = values.map { (value: $0, names: $0.isEmpty ? [] : [$0]) }
         }
 
         // Priority 1 belongs to the blocked-request count's rules.
         let priority = parsed.isException ? 10_000 : (options.contains("important") ? 1_000 : 2)
-        let action: RuleAction
-        if parsed.isException {
-            action = RuleAction(type: "allow", redirect: nil)
-        } else if let value = parsed.removeParamValue, !value.isEmpty {
-            guard let decoded = decodeRemoveParamValue(value), isSupportedLiteralParameterName(decoded) else {
-                return BuildResult(rule: nil, wasRemoveParamRule: true, wasExceptionRule: false, skipped: true)
-            }
-            action = RuleAction(
-                type: "redirect",
-                redirect: Redirect(
-                    transform: URLTransform(
-                        query: nil,
-                        queryTransform: QueryTransform(removeParams: [decoded])
+        var rules: [DeclarativeRule] = []
+        for group in groups {
+            guard let condition = makeCondition(parsed: parsed, removeValue: group.value) else { return skipped }
+            let action: RuleAction
+            if parsed.isException {
+                action = RuleAction(type: "allow", redirect: nil)
+            } else if group.names.isEmpty {
+                action = RuleAction(
+                    type: "redirect",
+                    redirect: Redirect(transform: URLTransform(query: "", queryTransform: nil))
+                )
+            } else {
+                let decoded = group.names.compactMap(decodeRemoveParamValue)
+                guard decoded.count == group.names.count, decoded.allSatisfy(isSupportedLiteralParameterName) else {
+                    return skipped
+                }
+                action = RuleAction(
+                    type: "redirect",
+                    redirect: Redirect(
+                        transform: URLTransform(
+                            query: nil,
+                            queryTransform: QueryTransform(removeParams: decoded)
+                        )
                     )
                 )
-            )
-        } else {
-            action = RuleAction(
-                type: "redirect",
-                redirect: Redirect(transform: URLTransform(query: "", queryTransform: nil))
-            )
+            }
+            rules.append(DeclarativeRule(id: 0, priority: priority, action: action, condition: condition))
         }
 
         return BuildResult(
-            rule: DeclarativeRule(id: nextID, priority: priority, action: action, condition: condition),
+            rules: rules,
             wasRemoveParamRule: true,
             wasExceptionRule: parsed.isException,
             skipped: false
         )
+    }
+
+    /// The options start at the first `$` whose tail has a `removeparam` option.
+    /// Regex values can contain `$`, so the last `$` is not always the separator.
+    private static func optionsSeparator(in line: String) -> String.Index? {
+        var search = line.startIndex
+        while let dollar = line[search...].firstIndex(of: "$") {
+            let tail = String(line[line.index(after: dollar)...])
+            if splitOptions(tail).contains(where: { optionNameAndValue($0).name == "removeparam" }) {
+                return dollar
+            }
+            search = line.index(after: dollar)
+        }
+        return nil
     }
 
     private static func parseRule(_ rawLine: String) -> ParsedRule? {
@@ -689,11 +775,10 @@ public enum RemoveParamDNRRuleGenerator {
         let isException = line.hasPrefix("@@")
         if isException { line.removeFirst(2) }
 
-        guard let dollarIndex = line.lastIndex(of: "$") else { return nil }
+        guard let dollarIndex = optionsSeparator(in: line) else { return nil }
         let pattern = String(line[..<dollarIndex]).trimmingCharacters(in: .whitespaces)
         let optionsText = String(line[line.index(after: dollarIndex)...])
         let options = splitOptions(optionsText)
-        guard options.contains(where: { optionNameAndValue($0).name == "removeparam" }) else { return nil }
 
         let removeParamValue = options.compactMap { option -> String? in
             let pair = optionNameAndValue(option)
@@ -722,12 +807,11 @@ public enum RemoveParamDNRRuleGenerator {
         return (name, value)
     }
 
-    private static func makeCondition(parsed: ParsedRule) -> RuleCondition? {
+    private static func makeCondition(parsed: ParsedRule, removeValue: String) -> RuleCondition? {
         let optionPairs = parsed.options.map(optionNameAndValue)
 
         guard !containsUnsupportedCriticalOptions(optionPairs) else { return nil }
 
-        let removeValue = parsed.removeParamValue ?? ""
         guard isSupportedRemoveParamValue(removeValue) else { return nil }
 
         var urlFilter = normalizeURLFilterPattern(parsed.pattern)
@@ -880,11 +964,31 @@ public enum RemoveParamDNRRuleGenerator {
         value.removingPercentEncoding
     }
 
+    /// `/body/` or `/body/i`. Other flags, an empty body, or an invalid pattern yield nil.
+    private static func compiledRemoveParamRegex(_ value: String) -> NSRegularExpression? {
+        guard value.hasPrefix("/"), let closing = value.lastIndex(of: "/"), closing > value.startIndex else {
+            return nil
+        }
+        let body = value[value.index(after: value.startIndex)..<closing]
+        let flags = value[value.index(after: closing)...]
+        guard !body.isEmpty, flags.isEmpty || flags == "i" else { return nil }
+        return try? NSRegularExpression(
+            pattern: String(body),
+            options: flags.isEmpty ? [] : [.caseInsensitive]
+        )
+    }
+
     private static func isSupportedLiteralParameterName(_ value: String) -> Bool {
         guard !value.isEmpty else { return false }
         guard value.trimmingCharacters(in: .whitespacesAndNewlines) == value else { return false }
         guard value.rangeOfCharacter(from: .whitespacesAndNewlines) == nil else { return false }
         return true
+    }
+
+    /// A literal value a single rule can express; the same test a literal rule applies.
+    private static func isExpressibleLiteralRemoveValue(_ value: String) -> Bool {
+        guard isSupportedRemoveParamValue(value), !value.isEmpty else { return false }
+        return decodeRemoveParamValue(value).flatMap(removeParamURLFilterToken(for:)) != nil
     }
 
     private static func removeParamURLFilterToken(for decodedValue: String) -> String? {

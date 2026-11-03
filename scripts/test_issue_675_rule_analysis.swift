@@ -43,8 +43,8 @@ struct Test {
         $removeparam=~keep
         $removeparam=x,unsupported-option
         """)
-        require(cleaning.lines.map(\.kind) == [.removeParam, .removeParam, .removeParam, .unsupported, .unsupported, .unsupported], "removeparam uses actual DNR support")
-        require(cleaning.count(of: .removeParam) == 3, "removeparam rules are counted on their own")
+        require(cleaning.lines.map(\.kind) == [.removeParam, .removeParam, .removeParam, .removeParam, .unsupported, .unsupported], "removeparam uses actual DNR support")
+        require(cleaning.count(of: .removeParam) == 4, "removeparam rules are counted on their own")
 
         let identities = FilterRuleAnalysis.analyze(content: """
         ||EXAMPLE.com^

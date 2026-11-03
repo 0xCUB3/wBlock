@@ -335,6 +335,7 @@ public struct FilterRuleAnalysis: Sendable {
         var seen = Set(seenInEarlierLists.map(ruleIdentity))
         var lines: [Line] = []
         var stop = false
+        let removeParamVocabulary = RemoveParamDNRRuleGenerator.NameVocabulary(rulesText: content)
         content.enumerateLines { raw, shouldStop in
             if isCancelled() { stop = true; shouldStop = true; return }
             let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -346,14 +347,14 @@ public struct FilterRuleAnalysis: Sendable {
                 lines.append(Line(text: raw, kind: .duplicate))
                 return
             }
-            lines.append(Line(text: raw, kind: classify(trimmed)))
+            lines.append(Line(text: raw, kind: classify(trimmed, removeParamVocabulary: removeParamVocabulary)))
         }
         if stop { return FilterRuleAnalysis(lines: []) }
         return FilterRuleAnalysis(lines: lines)
     }
 
-    static func classify(_ rule: String) -> FilterRuleKind {
-        if let supported = RemoveParamDNRRuleGenerator.supportsRule(rule) {
+    static func classify(_ rule: String, removeParamVocabulary: RemoveParamDNRRuleGenerator.NameVocabulary) -> FilterRuleKind {
+        if let supported = RemoveParamDNRRuleGenerator.supportsRule(rule, vocabulary: removeParamVocabulary) {
             return supported ? .removeParam : .unsupported
         }
         // The engine's own parse: procedural cosmetics and scriptlets need

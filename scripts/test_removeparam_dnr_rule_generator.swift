@@ -25,10 +25,10 @@ struct RemoveParamDNRRuleGeneratorTests {
 
         expectEqual(summary.removeParamRules, 9, "source removeparam count")
         expectEqual(summary.exceptionRules, 1, "exception count")
-        expectEqual(summary.skippedRules, 3, "unsupported rules skipped")
+        expectEqual(summary.skippedRules, 2, "unsupported rules skipped")
         expectEqual(summary.truncatedRules, 0, "nothing truncated under the budget")
         expectEqual(summary.disabledSiteAllowRules, 2, "disabled-site allow rules")
-        expectEqual(summary.generatedRules, 8, "generated DNR rule count")
+        expectEqual(summary.generatedRules, 9, "generated DNR rule count")
 
         // Over-budget redirect-only lists drop the tail and report it separately
         // from unsupported rules, so the apply result can say what happened.
@@ -103,13 +103,13 @@ struct RemoveParamDNRRuleGeneratorTests {
         expectEqual(stripAll.action.redirect?.transform?.query, "", "strip-all query transform")
         expectEqual(stripAll.condition.urlFilter, "||example.org^", "strip-all filter")
 
-        let encoded = rules[6]
+        let encoded = rules[7]
         expectEqual(encoded.action.redirect?.transform?.queryTransform?.removeParams, ["$param"], "encoded param decoded")
         expectEqual(encoded.condition.resourceTypes, ["script"], "explicit resource type")
         expectEqual(encoded.condition.domains, ["foo.example"], "included legacy-compatible domain")
         expectEqual(encoded.condition.excludedDomains, ["bar.example"], "excluded legacy-compatible domain")
 
-        let typed = rules[7]
+        let typed = rules[8]
         expectEqual(typed.condition.resourceTypes, ["xmlhttprequest"], "xmlhttprequest resource type")
         expectEqual(typed.condition.domainType, "thirdParty", "third-party domain type")
 
@@ -165,6 +165,45 @@ struct RemoveParamDNRRuleGeneratorTests {
         expectEqual(documentAliases.rules[1].condition.resourceTypes, ["main_frame"], "document scopes to main frame")
         expectEqual(documentAliases.rules[2].condition.resourceTypes, ["main_frame"], "document exception scopes to main frame")
         expectEqual(documentAliases.rules[3].condition.resourceTypes, ["main_frame", "sub_frame"], "combined document types preserve explicit subdocument scope")
+
+        // A regex expands to the literal names it matches. A redirect stays one
+        // rule carrying those names and the rule's scope; an exception keeps one
+        // rule per name so it stays as narrow as a literal exception.
+        let regexRules = RemoveParamDNRRuleGenerator.generateRules(from: """
+        $document,removeparam=/^\\??utm_.*$/i,domain=~excluded.example
+        @@||kept.example^$removeparam=/^utm_(medium|source)$/
+        ||scoped.example^$removeparam=/^UTM_CONTENT$/i,domain=scoped.example
+        ||case.example^$removeparam=/^UTM_SOURCE$/
+        ||nomatch.example^$removeparam=/^zzzz/
+        """)
+        expectEqual(regexRules.summary.removeParamRules, 5, "regex source count")
+        expectEqual(regexRules.summary.skippedRules, 2, "case-sensitive and unmatched regexes are skipped")
+        expectEqual(regexRules.rules.count, 4, "regex redirect plus one exception per matched name")
+
+        let regexRedirect = regexRules.rules[0]
+        let removed = regexRedirect.action.redirect?.transform?.queryTransform?.removeParams ?? []
+        expectEqual(regexRedirect.action.type, "redirect", "regex redirect action")
+        expectEqual(removed.contains("utm_source") && removed.contains("utm_medium"), true, "regex redirect lists matched names")
+        expectEqual(regexRedirect.condition.urlFilter, nil, "regex redirect keeps the pattern's filter with no name token")
+        expectEqual(regexRedirect.condition.resourceTypes, ["main_frame"], "document scope on regex redirect")
+        expectEqual(regexRedirect.condition.excludedDomains, ["excluded.example"], "excluded domain on regex redirect")
+
+        let regexExceptions = Array(regexRules.rules[1...2])
+        expectEqual(regexExceptions.map(\.action.type), ["allow", "allow"], "regex exceptions stay allow rules")
+        expectEqual(regexExceptions.map { $0.condition.urlFilter }, ["||kept.example^*^utm_medium=", "||kept.example^*^utm_source="], "regex exceptions keep name-scoped filters")
+
+        let regexScoped = regexRules.rules[3]
+        expectEqual(regexScoped.action.redirect?.transform?.queryTransform?.removeParams, ["utm_content"], "/i matches the lowercase name")
+        expectEqual(regexScoped.condition.domains, ["scoped.example"], "domain scope on regex redirect")
+
+        // Names a literal rule cannot express (here `a*b`) stay out of the expansion.
+        let expressibleOnly = RemoveParamDNRRuleGenerator.generateRules(from: """
+        ||star.example^$removeparam=a*b
+        ||ax.example^$removeparam=ax
+        $removeparam=/^a/
+        """)
+        expectEqual(expressibleOnly.rules.last?.action.redirect?.transform?.queryTransform?.removeParams, ["ax"],
+                    "regex expands only to names a literal rule can express")
 
         let encoder = JSONEncoder()
         _ = try encoder.encode(rules)
