@@ -1,4 +1,7 @@
 {
+  "popup_site_enabled": {
+    "message": "wBlock ezen a webhelyen"
+  },
   "context_menu_zap_element": {
     "message": "Elem zappelése",
     "description": "Right-click context menu item that activates the Element Zapper on the clicked element."

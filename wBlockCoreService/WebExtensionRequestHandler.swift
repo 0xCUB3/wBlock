@@ -158,6 +158,9 @@ public enum WebExtensionRequestHandler {
             case "getSiteFilterDisabledState":
                 handleGetSiteFilterDisabledState(message: message!, context: context)
                 return
+            case "setAllSiteComponentsDisabled":
+                handleSetSiteFilterDisabledState(message: message!, context: context, allComponents: true)
+                return
             case "setSiteFilterDisabledState":
                 handleSetSiteFilterDisabledState(message: message!, context: context)
                 return
@@ -431,13 +434,14 @@ public enum WebExtensionRequestHandler {
             let filterOnly = await currentFilterDisabledSites()
             let response = createResponse(with: [
                 "disabled": HostMatcher.isHostDisabled(host: host, disabledSites: filterOnly),
-                "whitelisted": HostMatcher.isHostDisabled(host: host, disabledSites: master)
+                "whitelisted": HostMatcher.isHostDisabled(host: host, disabledSites: master),
+                "allDisabled": ProtobufDataManager.shared.areAllSiteComponentsDisabled(onHost: host)
             ])
             context.completeRequest(returningItems: [response])
         }
     }
 
-    private static func handleSetSiteFilterDisabledState(message: [String: Any?], context: NSExtensionContext) {
+    private static func handleSetSiteFilterDisabledState(message: [String: Any?], context: NSExtensionContext, allComponents: Bool = false) {
         let host = (message["host"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let disabled = message["disabled"] as? Bool ?? false
         guard let normalizedHost = DisabledSitesNormalizer.normalizedDomain(host) else {
@@ -448,14 +452,15 @@ public enum WebExtensionRequestHandler {
         Task { @MainActor in
             await ProtobufDataManager.shared.waitUntilLoaded()
             _ = await ProtobufDataManager.shared.refreshFromDiskIfModified(forceRead: true)
-            var list = DisabledSitesNormalizer.normalizedDomains(from: ProtobufDataManager.shared.filterDisabledSites)
-            let previousList = list
-            if disabled {
-                if !list.contains(normalizedHost) { list.append(normalizedHost) }
-            } else {
-                list.removeAll { $0 == normalizedHost || normalizedHost.hasSuffix("." + $0) }
+            if allComponents && (BlockingPauseStore.isPaused()
+                || HostMatcher.isHostDisabled(host: normalizedHost, disabledSites: ProtobufDataManager.shared.disabledSites)) {
+                context.completeRequest(returningItems: [createResponse(with: ["ok": false, "error": "Site controls are locked"])])
+                return
             }
-            guard list != previousList else {
+            var list = ProtobufDataManager.shared.filterDisabledSites
+            let previousList = list
+            ProtobufDataManager.setSiteDisabled(disabled, onHost: normalizedHost, in: &list, includingParents: true)
+            guard allComponents || list != previousList else {
                 let response = createResponse(with: [
                     "disabled": HostMatcher.isHostDisabled(host: host, disabledSites: list),
                     "changed": false,
@@ -473,7 +478,14 @@ public enum WebExtensionRequestHandler {
             ContentBlockerService.markDisabledSitesApplyStarted(groupIdentifier: groupID)
             defer { ContentBlockerService.markDisabledSitesApplyFinished(groupIdentifier: groupID) }
 
-            await ProtobufDataManager.shared.setFilterDisabledDomains(list)
+            if allComponents {
+                guard await ProtobufDataManager.shared.setAllSiteComponentsDisabled(disabled, onHost: normalizedHost) else {
+                    context.completeRequest(returningItems: [createResponse(with: ["ok": false, "error": "Failed to save site settings"])])
+                    return
+                }
+            } else {
+                await ProtobufDataManager.shared.setFilterDisabledDomains(list)
+            }
 
             let selectedFilters = ProtobufDataManager.shared.getFilterLists().filter { $0.isSelected }
             let effectiveDisabledSites = await currentFilterDisabledSites()
@@ -501,6 +513,7 @@ public enum WebExtensionRequestHandler {
                 await applyDisabledSitesFastPath(disabledSites: effectiveDisabledSites, platform: platform)
             }.value
             let response = createResponse(with: [
+                "ok": true,
                 "disabled": disabled,
                 "changed": true,
                 "reloadDurationMs": Int(Date().timeIntervalSince(applyStart) * 1000),

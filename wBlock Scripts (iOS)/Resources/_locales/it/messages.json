@@ -1,4 +1,7 @@
 {
+  "popup_site_enabled": {
+    "message": "wBlock su questo sito"
+  },
   "context_menu_zap_element": {
     "message": "Zappa elemento",
     "description": "Right-click context menu item that activates the Element Zapper on the clicked element."

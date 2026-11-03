@@ -1,4 +1,7 @@
 {
+  "popup_site_enabled": {
+    "message": "wBlock على هذا الموقع"
+  },
   "context_menu_zap_element": {
     "message": "إخفاء عنصر",
     "description": "Right-click context menu item that activates the Element Zapper on the clicked element."

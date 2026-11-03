@@ -131,6 +131,8 @@ const elements = new Map();
 const requiredIds = [
   "blocking-status",
   "enable-toggle",
+  "site-enabled-toggle",
+  "userscripts-site-toggle",
   "error",
   "filter-update-status",
   "no-autoplay-enabled-toggle",
@@ -179,6 +181,13 @@ const siteScripts = [
   { id: "script-disabled", name: "Disabled Script", disabledForSite: true, running: false },
 ];
 
+let componentsDisabled = false;
+let filterDisabled = true;
+let whitelisted = false;
+let paused = false;
+let rejectCombined = false;
+let failAfterCombinedSave = false;
+let combinedApplyWarning = false;
 let zapperMutationResponse = { ok: true, disabled: true };
 const sandbox = {
   browser: {
@@ -193,7 +202,7 @@ const sandbox = {
         if (message?.action === "wblock:filterUpdate:getStatus") return { ok: true, state: "idle" };
         if (message?.action === "wblock:installRemoveParamDNRRules") return { ok: true };
         if (message?.action === "wblock:menu:getCommands") return { ok: true, commands: [] };
-        if (message?.action === "wblock:zapper:getRules") return { ok: true, rules: [], disabled: false };
+        if (message?.action === "wblock:zapper:getRules") return { ok: true, rules: [], disabled: componentsDisabled };
         if (message?.action === "wblock:clearCache") return { ok: true };
         return { ok: true };
       },
@@ -201,12 +210,23 @@ const sandbox = {
       testNativeHandler: async (message) => {
         nativeMessages.push(message);
         if (message?.action === "getBlockingPausedState") {
-          return { paused: false, filtersPaused: false, userScriptsPaused: false, elementZapperPaused: false, resumeAvailable: false };
+          return { paused, filtersPaused: paused, userScriptsPaused: paused, elementZapperPaused: paused, resumeAvailable: false };
         }
-        if (message?.action === "getSiteFilterDisabledState") return { disabled: true, whitelisted: false };
-        if (message?.action === "getPageUserScripts") return { userScripts: siteScripts.map((script) => ({ ...script })) };
-        if (message?.action === "getZapperRules") return { ok: true, rules: [], disabled: false };
-        if (message?.action === "getNoAutoplayState") return { enabled: true, siteAllowed: false };
+        if (message?.action === "getSiteFilterDisabledState") return { disabled: filterDisabled, whitelisted, allDisabled: whitelisted || componentsDisabled };
+        if (message?.action === "getPageUserScripts") return { siteDisabled: componentsDisabled, userScripts: siteScripts.map((script) => ({ ...script })) };
+        if (message?.action === "getZapperRules") return { ok: true, rules: [], disabled: componentsDisabled };
+        if (message?.action === "getNoAutoplayState") return { enabled: !componentsDisabled, siteAllowed: componentsDisabled };
+        if (message?.action === "setAllSiteComponentsDisabled") {
+          if (rejectCombined) return { ok: false, error: "Save failed" };
+          componentsDisabled = filterDisabled = message.disabled;
+          if (failAfterCombinedSave) throw new Error("Response lost after save");
+          return { ok: true, disabled: componentsDisabled, requiresFullApply: combinedApplyWarning };
+        }
+        if (message?.action === "setSiteFilterDisabledState") {
+          filterDisabled = message.disabled;
+          componentsDisabled = false;
+          return { disabled: filterDisabled };
+        }
         if (message?.action === "setUserScriptSiteDisabledState") return { ok: true };
         if (message?.action === "setSiteZapperDisabled") return zapperMutationResponse;
         return { ok: true };
@@ -292,7 +312,8 @@ check("userscript controls are configurable when site blocking is disabled", inp
 check("enabled per-script site state renders as checked", inputs[0].checked === true);
 check("disabled per-script site state renders as unchecked", inputs[1].checked === false);
 check("running count ignores scripts disabled for the site", elements.get("userscripts-count").textContent === "1");
-check("main site toggle still reflects the disabled site", elements.get("enable-toggle").checked === false);
+check("content filtering still reflects the disabled site", elements.get("enable-toggle").checked === false);
+check("whole-site switch stays on when only content filtering is disabled", elements.get("site-enabled-toggle").checked === true);
 
 await sandbox.__refreshPopupForTest();
 const refreshedInputs = elements.get("userscripts-list").children.map((row) => row.children[1].children[0]);
@@ -319,5 +340,50 @@ check("invalid zapper acknowledgment cannot overwrite cached state", rejected &&
 zapperMutationResponse = { ok: true, disabled: false };
 await vm.runInContext("setSiteZapperDisabled('example.com', false)", sandbox);
 check("zapper can be re-enabled through the relay", storage.get("wblock.zapperMeta.v1:example.com")?.disabled === false);
+
+async function changeToggle(id, checked) {
+  elements.get(id).checked = checked;
+  elements.get(id).dispatchEvent({ type: "change" });
+  for (let i = 0; i < 10; i += 1) await new Promise(resolve => setTimeout(resolve, 0));
+}
+
+await changeToggle("site-enabled-toggle", false);
+check("whole-site switch uses one native mutation", nativeMessages.filter(m => m.action === "setAllSiteComponentsDisabled").length === 1);
+check("whole-site off refreshes every component, with autoplay allowed", !elements.get("site-enabled-toggle").checked
+  && !elements.get("enable-toggle").checked && !elements.get("userscripts-site-toggle").checked
+  && !elements.get("zapper-enabled-toggle").checked && elements.get("no-autoplay-site-toggle").checked);
+check("whole-site off reports Disabled", elements.get("blocking-status").textContent === "Disabled");
+await changeToggle("site-enabled-toggle", true);
+check("whole-site on restores all components, with autoplay blocked", elements.get("site-enabled-toggle").checked
+  && elements.get("enable-toggle").checked && elements.get("userscripts-site-toggle").checked
+  && elements.get("zapper-enabled-toggle").checked && !elements.get("no-autoplay-site-toggle").checked);
+await changeToggle("enable-toggle", false);
+check("independent content filtering keeps the whole-site switch on", elements.get("site-enabled-toggle").checked && !elements.get("enable-toggle").checked);
+check("mixed state reports Active", elements.get("blocking-status").textContent === "Active");
+rejectCombined = true;
+await changeToggle("site-enabled-toggle", false);
+check("failed combined save restores the authoritative switch and reports an error", elements.get("site-enabled-toggle").checked && elements.get("error").textContent.length > 0);
+rejectCombined = false;
+failAfterCombinedSave = true;
+const reloadsBeforeLostResponse = reloads.length;
+await changeToggle("site-enabled-toggle", false);
+check("lost response reconciles committed whole-site state and reloads", !elements.get("site-enabled-toggle").checked && reloads.length > reloadsBeforeLostResponse);
+failAfterCombinedSave = false;
+combinedApplyWarning = true;
+await changeToggle("site-enabled-toggle", true);
+check("whole-site toggle preserves the content filtering apply warning", elements.get("error").textContent === "Open wBlock to finish applying filters.");
+combinedApplyWarning = false;
+whitelisted = true;
+await sandbox.__refreshPopupForTest();
+check("master-whitelisted hosts keep the combined switch off and locked", !elements.get("site-enabled-toggle").checked && elements.get("site-enabled-toggle").disabled);
+whitelisted = false;
+paused = true;
+await sandbox.__refreshPopupForTest();
+check("paused blocking locks the combined switch", elements.get("site-enabled-toggle").disabled);
+paused = false;
+sandbox.browser.tabs.query = async () => [{ id: 9, url: "about:blank", active: true }];
+sandbox.browser.tabs.get = async () => ({ id: 9, url: "about:blank", active: true });
+await sandbox.__refreshPopupForTest();
+check("unsupported pages lock the combined switch", elements.get("site-enabled-toggle").disabled);
 
 if (failures > 0) process.exitCode = 1;

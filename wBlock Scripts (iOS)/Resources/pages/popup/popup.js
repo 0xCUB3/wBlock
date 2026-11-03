@@ -935,11 +935,12 @@ async function resumeBlocking() {
     return { status: 'unavailable' };
 }
 
-// The popup's main switch is Content Filtering (#835): it reads and writes
+// Content Filtering (#835) reads and writes
 // the filter-only list, so userscripts and the zapper keep their own
 // switches. A site on the master whitelist reports disabled too, since
 // filtering is off there as well, and the switch stays locked for it.
 let siteWhitelisted = false;
+let allSiteComponentsDisabled = null;
 
 async function getSiteDisabledState(host) {
     if (!host) return false;
@@ -949,29 +950,35 @@ async function getSiteDisabledState(host) {
             host,
         });
         siteWhitelisted = Boolean(response && response.whitelisted);
+        allSiteComponentsDisabled = typeof response?.allDisabled === 'boolean' ? response.allDisabled : null;
         return Boolean(response && (response.disabled || response.whitelisted));
     } catch (error) {
         console.error('[wBlock] Failed to get disabled state:', error);
+        allSiteComponentsDisabled = null;
         return null;
     }
 }
 
-async function readSiteDisabledStateAfterTimeout(targetHost) {
+async function readSiteDisabledStateAfterTimeout(targetHost, allComponents = false) {
     let actuallyDisabled = await getSiteDisabledState(targetHost);
-    for (let attempt = 0; attempt < 2 && typeof actuallyDisabled !== 'boolean'; attempt += 1) {
+    for (let attempt = 0; attempt < 2 && typeof (allComponents ? allSiteComponentsDisabled : actuallyDisabled) !== 'boolean'; attempt += 1) {
         await sleep(300);
         actuallyDisabled = await getSiteDisabledState(targetHost);
     }
-    return actuallyDisabled;
+    return allComponents ? allSiteComponentsDisabled : actuallyDisabled;
 }
 
-async function setSiteDisabledState(host, disabled) {
+async function setSiteDisabledState(host, disabled, allComponents = false) {
     if (!host) return;
-    return sendNativeMessage({
-        action: 'setSiteFilterDisabledState',
+    const response = await sendNativeMessage({
+        action: allComponents ? 'setAllSiteComponentsDisabled' : 'setSiteFilterDisabledState',
         host,
         disabled: Boolean(disabled),
     }, 10000);
+    if (!response || response.error || (allComponents && response.ok !== true)) {
+        throw new Error(response?.error || 'Invalid site state response');
+    }
+    return response;
 }
 
 async function setUserScriptsSiteDisabled(host, disabled) {
@@ -1245,7 +1252,6 @@ async function invokeUserscriptCommand(tabId, frameId, bridgeId, commandId) {
     }
 }
 
-let noAutoplaySiteDisabled = false;
 
 function noAutoplayAllowKey(siteHost) {
     return `${NO_AUTOPLAY_ALLOW_PREFIX}${siteHost}`;
@@ -1555,26 +1561,30 @@ function setupListeners() {
         });
     }
 
-    if (disableToggle) {
-        disableToggle.addEventListener('change', async () => {
+    for (const toggle of [disableToggle, document.getElementById('site-enabled-toggle')].filter(Boolean)) {
+        const allComponents = toggle.id === 'site-enabled-toggle';
+        toggle.addEventListener('change', async () => {
             const generation = ++siteToggleGeneration;
             siteToggleInFlight = true;
-            const next = !disableToggle.checked;
-            const previousChecked = !disableToggle.checked;
+            const next = !toggle.checked;
+            const previousChecked = !toggle.checked;
             const targetHost = host;
             const targetTab = tab;
             try {
                 if (!targetHost) {
-                    disableToggle.checked = previousChecked;
+                    toggle.checked = previousChecked;
                     return;
                 }
 
                 setError('');
-                disableToggle.disabled = true;
+                for (const id of ['site-enabled-toggle', 'enable-toggle', 'userscripts-site-toggle', 'zapper-enabled-toggle', 'no-autoplay-site-toggle']) {
+                    const control = document.getElementById(id);
+                    if (control) control.disabled = true;
+                }
                 setStatus(next
                     ? t('popup_status_disabling', undefined, 'Disabling…')
                     : t('popup_status_enabling', undefined, 'Enabling…'), 'neutral');
-                const updateResult = await setSiteDisabledState(targetHost, next);
+                const updateResult = await setSiteDisabledState(targetHost, next, allComponents);
                 try {
                     await browser.runtime.sendMessage({ action: 'wblock:clearCache' });
                 } catch (error) {
@@ -1591,7 +1601,7 @@ function setupListeners() {
                 } else if (failedTargets > 0) {
                     setError(t('popup_error_update_site_setting', undefined, 'Failed to update site setting.'));
                 }
-                disableToggle.checked = !next;
+                toggle.checked = !next;
                 setStatus(next
                     ? t('popup_status_disabled', undefined, 'Disabled')
                     : t('popup_status_active', undefined, 'Active'),
@@ -1603,13 +1613,13 @@ function setupListeners() {
                 // the authoritative state before treating this as a hard failure.
                 let actuallyDisabled = null;
                 try {
-                    actuallyDisabled = await readSiteDisabledStateAfterTimeout(targetHost);
+                    actuallyDisabled = await readSiteDisabledStateAfterTimeout(targetHost, allComponents);
                 } catch (reconcileError) {
                     console.warn('[wBlock] Failed to reconcile site setting after error:', reconcileError);
                     actuallyDisabled = null;
                 }
                 if (typeof actuallyDisabled === 'boolean') {
-                    disableToggle.checked = !actuallyDisabled;
+                    toggle.checked = !actuallyDisabled;
                     if (actuallyDisabled === next) {
                         setStatus(next
                             ? t('popup_status_disabled', undefined, 'Disabled')
@@ -1619,14 +1629,14 @@ function setupListeners() {
                         return;
                     }
                 } else {
-                    disableToggle.checked = previousChecked;
+                    toggle.checked = previousChecked;
                 }
                 setError(t('popup_error_update_site_setting', undefined, 'Failed to update site setting.'));
                 setStatus(t('popup_status_error', undefined, 'Error'), 'error');
             } finally {
                 if (generation === siteToggleGeneration) {
                     siteToggleInFlight = false;
-                    disableToggle.disabled = false;
+                    await refreshUi({ preserveError: true });
                 }
             }
         });
@@ -1651,7 +1661,7 @@ function setupListeners() {
                 setError(t('popup_error_update_site_setting', undefined, 'Failed to update site setting.'));
                 zapperEnabledToggle.checked = !nextEnabled;
             } finally {
-                zapperEnabledToggle.disabled = false;
+                await refreshUi({ preserveError: true });
             }
         });
     }
@@ -1675,7 +1685,7 @@ function setupListeners() {
                 setError(t('popup_error_update_site_setting', undefined, 'Failed to update site setting.'));
                 userscriptsSiteToggle.checked = nextDisabled;
             } finally {
-                userscriptsSiteToggle.disabled = false;
+                await refreshUi({ preserveError: true });
             }
         });
     }
@@ -1692,7 +1702,7 @@ function setupListeners() {
                 setError(t('popup_error_update_site_setting', undefined, 'Failed to update site setting.'));
                 noAutoplaySiteToggle.checked = !nextAllowed;
             } finally {
-                noAutoplaySiteToggle.disabled = noAutoplaySiteDisabled;
+                await refreshUi({ preserveError: true });
             }
         });
     }
@@ -1830,9 +1840,9 @@ function scheduleResumeRecheck(resuming) {
     resumeRecheckTimer = resuming ? setTimeout(() => { refreshUi().catch(() => {}); }, 2000) : null;
 }
 
-async function refreshUi() {
+async function refreshUi(options = {}) {
     const generationAtStart = siteToggleGeneration;
-    if (!siteToggleInFlight) {
+    if (!siteToggleInFlight && !options.preserveError) {
         setError('');
     }
     const isMac = await isMacPlatform();
@@ -1853,6 +1863,8 @@ async function refreshUi() {
 
     const hostEl = document.getElementById('site-host');
     const disableToggle = document.getElementById('enable-toggle');
+    const siteToggle = document.getElementById('site-enabled-toggle');
+    if (siteToggle) siteToggle.disabled = true;
     const zapperEnabledToggle = document.getElementById('zapper-enabled-toggle');
     const zapperActivate = document.getElementById('zapper-activate');
     const rulesToggle = document.getElementById('zapper-rules-toggle');
@@ -1968,6 +1980,10 @@ async function refreshUi() {
             disableToggle.disabled = filtersPaused || siteWhitelisted;
         }
     }
+    if (siteToggle && !skipSiteToggleCommit) {
+        siteToggle.checked = allSiteComponentsDisabled === false;
+        siteToggle.disabled = blockingPaused || siteWhitelisted || allSiteComponentsDisabled === null;
+    }
     if (pausedPrompt) pausedPrompt.hidden = !blockingPaused || resuming;
     if (resumeButton) resumeButton.hidden = !(blockingPaused && resumeAvailable) || resuming;
     if (pausedPromptTitle) {
@@ -1990,15 +2006,14 @@ async function refreshUi() {
     // Filtering alone leaves the zapper, autoplay, and userscripts usable.
     if (zapperEnabledToggle) {
         zapperEnabledToggle.checked = !zapperRulesDisabled;
-        zapperEnabledToggle.disabled = siteWhitelisted || zapperPaused;
+        zapperEnabledToggle.disabled = siteWhitelisted || zapperPaused || siteToggleInFlight;
     }
-    noAutoplaySiteDisabled = siteWhitelisted;
-    updateNoAutoplayControls(noAutoplayState, { host, siteDisabled: siteWhitelisted });
+    updateNoAutoplayControls(noAutoplayState, { host, siteDisabled: siteWhitelisted, locked: siteToggleInFlight });
     const shouldCommitSiteStatus = !skipSiteToggleCommit || blockingPaused;
     if (shouldCommitSiteStatus) {
         if (resuming) {
             setStatus(t('popup_status_resuming', undefined, 'Resuming…'), 'neutral');
-        } else if (siteDisabledUnknown && !blockingPaused) {
+        } else if ((siteDisabledUnknown || allSiteComponentsDisabled === null) && !blockingPaused) {
             setStatus(t('popup_status_unavailable', undefined, 'Unavailable'), 'neutral');
         } else {
             setStatus(
@@ -2006,10 +2021,10 @@ async function refreshUi() {
                     ? t('popup_status_paused', undefined, 'Paused')
                     : blockingPaused
                         ? t('popup_status_partially_paused', undefined, 'Partially Paused')
-                        : siteDisabled
+                        : allSiteComponentsDisabled
                             ? t('popup_status_disabled', undefined, 'Disabled')
                             : t('popup_status_active', undefined, 'Active'),
-                blockingPaused || siteDisabled ? 'disabled' : 'active'
+                blockingPaused || allSiteComponentsDisabled ? 'disabled' : 'active'
             );
         }
     }
@@ -2021,6 +2036,7 @@ async function refreshUi() {
         rulesToggle.disabled = zapperPaused;
     }
     await renderPageUserScriptsPromise;
+    renderPageUserScripts(currentPageUserScripts, siteWhitelisted || userScriptsPaused || siteToggleInFlight);
     currentZapperRules = zapperState.rules;
     const zapperCount = await zapperCountPromise;
     const zapperClear = document.getElementById('zapper-clear');

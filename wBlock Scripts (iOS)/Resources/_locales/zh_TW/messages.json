@@ -1,4 +1,7 @@
 {
+  "popup_site_enabled": {
+    "message": "在此網站上啟用 wBlock"
+  },
   "context_menu_zap_element": {
     "message": "清除元素",
     "description": "Right-click context menu item that activates the Element Zapper on the clicked element."

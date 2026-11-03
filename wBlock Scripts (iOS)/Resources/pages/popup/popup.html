@@ -29,6 +29,15 @@
         <div class="popup-body">
         <div class="section">
             <div class="toggle-row">
+                <div id="site-enabled-title" class="label" data-i18n="popup_site_enabled">wBlock on this site</div>
+                <label class="switch" for="site-enabled-toggle">
+                    <input id="site-enabled-toggle" type="checkbox" aria-labelledby="site-enabled-title" disabled />
+                    <span class="slider" aria-hidden="true"></span>
+                </label>
+            </div>
+        </div>
+        <div class="section">
+            <div class="toggle-row">
                 <div id="enable-title" class="label section-label">
                     <svg class="section-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 1.8 13.2 3.6V7.6C13.2 10.6 11 13 8 14.2 5 13 2.8 10.6 2.8 7.6V3.6Z"/></svg>
                     <span data-i18n="popup_content_filtering">Content Filtering</span>
