@@ -28,6 +28,9 @@ if [[ -d "$OUT/WBE.xcframework" && "$(cat "$STAMP" 2>/dev/null)" == "$inputs" ]]
     echo "WBE.xcframework is current"
     exit 0
 fi
+# Xcode Cloud and some CI images ship without Rust.
+export PATH="$HOME/.cargo/bin:$PATH"
+command -v rustup >/dev/null || curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain none
 rustup toolchain install "$TOOLCHAIN" --profile minimal
 rustup target add --toolchain "$TOOLCHAIN" "$MAC_ARM" "$MAC_X86" "$IOS" "$SIM_ARM" "$SIM_X86"
 for target in "$MAC_ARM" "$MAC_X86" "$IOS" "$SIM_ARM" "$SIM_X86"; do

@@ -15,13 +15,7 @@ runs:
     - name: Build WBE.xcframework
       if: steps.restore.outputs.cache-hit != 'true'
       shell: bash
-      run: |
-        command -v rustup >/dev/null || {
-          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain none
-          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
-          export PATH="$HOME/.cargo/bin:$PATH"
-        }
-        Packages/wblock-engine/scripts/build-xcframework.sh
+      run: Packages/wblock-engine/scripts/build-xcframework.sh
 
     - name: Save WBE.xcframework
       if: steps.restore.outputs.cache-hit != 'true'
