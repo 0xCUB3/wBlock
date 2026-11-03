@@ -232,13 +232,11 @@ class AppFilterManager: ObservableObject {
     }
 
     /// Records the handover once per device: the selected replaced lists when
-    /// the last applied version is wBlock 3, nothing for fresh installs and 4.x.
+    /// the last apply used AdGuard's converter, nothing for fresh installs and wbe.
     private func recordAdGuardHandoverIfNeeded(_ lists: [FilterList]) {
         let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
         guard defaults.object(forKey: Self.adGuardHandoverPendingKey) == nil else { return }
-        let appliedMajor = storedUpgradeSignature()?.split(separator: "|").first?
-            .split(separator: ".").first.flatMap { Int($0) }
-        adGuardHandoverPending = (appliedMajor ?? 4) < 4
+        adGuardHandoverPending = FilterListLoader.lastAppliedWithAdGuard(storedUpgradeSignature())
             ? Set(lists.filter { $0.isSelected && FilterListLoader.isReplacedAdGuardList($0) }.map(\.id))
             : []
     }
