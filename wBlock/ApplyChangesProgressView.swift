@@ -139,9 +139,9 @@ struct ApplyChangesProgressView: View {
         #endif
         #if os(macOS)
         .frame(
-            minWidth: displayedMode == .result ? 460 : 560,
-            idealWidth: displayedMode == .result ? 460 : 560,
-            maxWidth: displayedMode == .result ? 460 : 560,
+            minWidth: displayedMode == .review ? 560 : 460,
+            idealWidth: displayedMode == .review ? 560 : 460,
+            maxWidth: displayedMode == .review ? 560 : 460,
             minHeight: fillsAvailableHeight ? 320 : nil,
             idealHeight: fillsAvailableHeight ? 560 : nil,
             maxHeight: 640
