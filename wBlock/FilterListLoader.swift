@@ -191,12 +191,21 @@ class FilterListLoader {
         "hole.cert.pl/domains/",  // CERT.PL's Warning List, almost entirely inside KAD (#931)
     ]
 
+    /// Retired built-ins deleted even when selected, instead of kept as custom lists.
+    private static let purgedBuiltInURLFragments = [
+        "hagezi/dns-blocklists@latest/adblock/pro.mini.txt",  // HaGeZi Multi Pro Mini, a DNS list (docs/HAGEZI.md)
+    ]
+
     static func isRetiredBuiltIn(_ filter: FilterList) -> Bool {
         !filter.isCustom && (filter.name == "d3Host List by d3ward" || isRetiredBuiltInURL(filter.url))
     }
 
+    static func isPurgedBuiltIn(_ filter: FilterList) -> Bool {
+        !filter.isCustom && purgedBuiltInURLFragments.contains { filter.url.absoluteString.contains($0) }
+    }
+
     static func isRetiredBuiltInURL(_ url: URL) -> Bool {
-        retiredBuiltInURLFragments.contains { url.absoluteString.contains($0) }
+        (retiredBuiltInURLFragments + purgedBuiltInURLFragments).contains { url.absoluteString.contains($0) }
     }
 
     /// Sources a built-in list used before it became AdGuard's list under a new
@@ -217,7 +226,6 @@ class FilterListLoader {
         "AdGuard Polish filter": ["Official Polish filters for AdBlock, uBlock Origin & AdGuard"],
         "Adblock Warning Removal List": ["Anti-Adblock List"],
         "Stevo's AI Blocklist": ["Fanboy's Anti-AI Suggestions"],
-        "HaGeZi Multi Pro Mini": ["HaGeZi Pro Mini", "Hagezi Pro Mini"],
         "filterslists-KO": ["List-KR"],
     ]
 
@@ -754,18 +762,6 @@ class FilterListLoader {
                     )!, category: FilterListCategory.ads, isSelected: true,
                     description: "Filter for all known mobile ad networks. Useful for mobile devices."))
         #endif
-
-        // Multi Pro Mini is the size-optimized browser/mobile list. Keep its catalog
-        // identity on every platform; it remains opt-in like other extras.
-        filterLists.append(
-            FilterList(
-                id: UUID(), name: "HaGeZi Multi Pro Mini",
-                url: URL(
-                    string:
-                        "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/adblock/pro.mini.txt"
-                )!, category: FilterListCategory.multipurpose,
-                description:
-                    "Extensive blocklist targeting ads, trackers, and other unwanted content."))
 
         for index in filterLists.indices {
             filterLists[index].isSelected = Self.recommendedFilterNames.contains(filterLists[index].name)

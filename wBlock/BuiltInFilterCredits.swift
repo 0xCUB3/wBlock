@@ -27,7 +27,6 @@ enum BuiltInFilterCredits {
 
     private static let byName: [String: Credit] = [
         "HaGeZi Referral Allowlist": hagezi,
-        "HaGeZi Multi Pro Mini": hagezi,
         "Actually Legitimate URL Shortener Tool": credit("iam-py-test, DandelionSprout", "https://github.com/DandelionSprout/adfilt"),
         "Dandelion Sprout's Anti-Malware List": dandelionSprout,
         "Dandelion Sprout's Nordic Filters": dandelionSprout,

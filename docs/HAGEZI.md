@@ -1,7 +1,7 @@
 # HaGeZi's lists in wBlock
 
 > [!TIP]
-> HaGeZi's lists are good lists made mainly for DNS blocking. In Safari they use rule space that browser-focused lists can put to better use. HaGeZi recommends content filter lists for mobile ad blockers and DNS lists at the DNS level, and wBlock follows the same split. HaGeZi Multi Pro Mini is still available in wBlock, but it isn't a recommended list.
+> HaGeZi's lists are good lists made mainly for DNS blocking. In Safari they use rule space that browser-focused lists can put to better use. HaGeZi recommends content filter lists for mobile ad blockers and DNS lists at the DNS level, and wBlock follows the same split. wBlock no longer offers HaGeZi Multi Pro Mini, and updating removes it from devices that had it on.
 
 ## What the lists are
 
@@ -11,7 +11,7 @@ The warning is about how the lists fit Safari, not their quality.
 
 ## Every rule blocks a whole domain
 
-The Pro Mini file wBlock downloads had 93,657 rules on November 3, 2026, and every one has the form `||example.com^`. The lists don't include element hiding or scriptlets. They don't have path rules or exceptions either.
+The Pro Mini file wBlock used to download had 93,657 rules on November 3, 2026, and every one has the form `||example.com^`. The lists don't include element hiding or scriptlets. They don't have path rules or exceptions either.
 
 That is by design. HaGeZi's [FAQ](https://github.com/hagezi/dns-blocklists/blob/main/FAQ.md) explains:
 

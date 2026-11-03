@@ -199,10 +199,10 @@ The recommended defaults cover most ads and trackers. Additional general-purpose
 </details>
 
 <details>
-<summary>Why does wBlock warn against HaGeZi's lists?</summary>
+<summary>Why doesn't wBlock offer HaGeZi's blocklists?</summary>
 <br>
 
-HaGeZi's lists are good lists made mainly for DNS blocking. In Safari they use rule space that browser-focused lists can put to better use. HaGeZi recommends content filter lists for mobile ad blockers and DNS lists at the DNS level, and wBlock follows the same split. HaGeZi Multi Pro Mini is still available in wBlock, but it isn't a recommended list.
+HaGeZi's lists are good lists made mainly for DNS blocking. In Safari they use rule space that browser-focused lists can put to better use. HaGeZi recommends content filter lists for mobile ad blockers and DNS lists at the DNS level, and wBlock follows the same split. wBlock no longer offers HaGeZi Multi Pro Mini, and updating removes it from devices that had it on.
 
 The full explanation, with sources, is in [docs/HAGEZI.md](docs/HAGEZI.md).
 

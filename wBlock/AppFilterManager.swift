@@ -669,19 +669,27 @@ class AppFilterManager: ObservableObject {
         var selectedDeprecatedListWasRemoved = false
 
         // Built-in lists wBlock no longer ships. A selected one becomes a custom
-        // list so the user keeps it; an unselected one is dropped.
+        // list so the user keeps it, unless it's purged; the rest are deleted.
         let deprecatedFilterLists = storedFilterLists.filter(FilterListLoader.isRetiredBuiltIn)
         if !deprecatedFilterLists.isEmpty {
+            let removedFilters = deprecatedFilterLists.filter {
+                !$0.isSelected || FilterListLoader.isPurgedBuiltIn($0)
+            }
+            let removedFilterIDs = Set(removedFilters.map(\.id))
             storedFilterLists = storedFilterLists.compactMap { filter in
                 guard FilterListLoader.isRetiredBuiltIn(filter) else { return filter }
-                guard filter.isSelected else { return nil }
+                guard !removedFilterIDs.contains(filter.id) else { return nil }
                 var kept = filter
                 kept.isCustom = true
                 kept.hasUserProvidedName = true
                 return kept
             }
 
-            let removedFilterIDs = deprecatedFilterLists.filter { !$0.isSelected }.map(\.id)
+            if let containerURL = loader.getSharedContainerURL() {
+                for filter in removedFilters {
+                    _ = try? ContentBlockerIncrementalCache.removeFilterCacheFiles(for: filter, containerURL: containerURL)
+                }
+            }
             Task {
                 for id in removedFilterIDs {
                     await self.dataManager.removeFilterList(withId: id)
