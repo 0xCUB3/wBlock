@@ -75,12 +75,14 @@ struct ListActionsToolbar<Primary: View, Apply: View, Leading: View>: ViewModifi
         // spacing between them (#999).
         if #available(macOS 26.0, *) {
             content.toolbar {
-                // One item: pause is a menu, which AppKit gives its own capsule.
+                // One item, so the pause menu shares update's capsule. A
+                // ControlGroup here moved both to the trailing edge.
                 ToolbarItem(placement: .navigation) {
-                    ControlGroup {
+                    HStack(spacing: 0) {
                         leading()
                         apply()
                     }
+                    .fixedSize()
                 }
                 .toolbarVisibilityPriorityCompat(.high)
                 ToolbarItem(placement: .primaryAction) {
