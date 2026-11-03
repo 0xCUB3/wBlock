@@ -279,15 +279,11 @@ struct OnboardingView: View {
         } message: {
             Text(backupRestoreError ?? "")
         }
-        .confirmationDialog(
-            "Use existing iCloud setup?",
-            isPresented: $showRemoteConfigPrompt,
-            titleVisibility: .visible
-        ) {
+        .alert("Use existing iCloud setup?", isPresented: $showRemoteConfigPrompt) {
             Button("Use iCloud Setup") {
                 Task { await adoptRemoteICloudSetup() }
             }
-            Button("Start Fresh") {}
+            Button("Start Fresh", role: .cancel) {}
         } message: {
             if let remoteConfigUpdatedAtText {
                 Text(

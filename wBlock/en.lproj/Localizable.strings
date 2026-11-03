@@ -119,7 +119,7 @@
 "All of these filter lists are already in wBlock." = "All of these filter lists are already in wBlock.";
 "All websites" = "All websites";
 "Already done this? Just check the boxes above." = "Already done this? Just check the boxes above.";
-"An existing wBlock configuration was found in iCloud (%@). Would you like to adopt it, or start fresh and upload your current setup?" = "wBlock found a configuration in iCloud from %@. Use it, or start fresh and upload your current setup?";
+"An existing wBlock configuration was found in iCloud (%@). Would you like to adopt it, or start fresh and upload your current setup?" = "wBlock found a configuration in iCloud (%@). Use it, or start fresh and upload your current setup?";
 "An existing wBlock configuration was found in iCloud. Would you like to adopt it, or start fresh and upload your current setup?" = "wBlock found a configuration in iCloud. Use it, or start fresh and upload your current setup?";
 "Annoyances" = "Annoyances";
 "Anti-Adblock List" = "Anti-Adblock List";

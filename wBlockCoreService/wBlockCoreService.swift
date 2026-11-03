@@ -138,7 +138,8 @@ private struct StoredTargetSourceRuleProvenance: Codable {
     // 8: defuse Urban Dictionary's AdShield fallback without triggering its sentinel redirect.
     // 9: remove the Valnet sites' anti-adblock dialog (#895).
     // 10: restart YouTube videos that the server backs off for blocking ads.
-    public static let embeddedCompatibilityRulesVersion = "10"
+    // 11: collapse Pornhub's mobile top ad slot, whose padding outlives a hidden ad.
+    public static let embeddedCompatibilityRulesVersion = "11"
     /// The engine and Safari level outputs are compiled for; see SafariVersionDetection.
     public static var compilerIdentity: String { SafariVersionDetection.compilerIdentity }
     public static var upgradeSignature: String {
@@ -186,6 +187,10 @@ urbandictionary.com#%#//scriptlet('trusted-replace-argument', 'eval', '0', 'repl
 topspeed.com,polygon.com,howtogeek.com,pocket-lint.com,cbr.com,thegamer.com,collider.com,xda-developers.com,gamerant.com,screenrant.com,makeuseof.com,androidpolice.com,fextralife.com#$?#.adblock { remove: true; }
 topspeed.com,polygon.com,howtogeek.com,pocket-lint.com,cbr.com,thegamer.com,collider.com,xda-developers.com,gamerant.com,screenrant.com,makeuseof.com,androidpolice.com,fextralife.com#$#body { overflow: auto !important; }
 topspeed.com,polygon.com,howtogeek.com,pocket-lint.com,cbr.com,thegamer.com,collider.com,xda-developers.com,gamerant.com,screenrant.com,makeuseof.com,androidpolice.com,fextralife.com#%#//scriptlet('prevent-fetch', 'adsbygoogle.js')
+
+! Pornhub mobile: the page pads #mobileContainer while the top ad slot exists,
+! so hiding the slot leaves an empty block. Removing it drops the padding.
+pornhub.*###mobileContainer > .noBottom:has(> .adsbytrafficjunky):remove()
 
 ! NameMC Ad-Shield/Network N compatibility
 ||html-load.com^$script,domain=namemc.com
