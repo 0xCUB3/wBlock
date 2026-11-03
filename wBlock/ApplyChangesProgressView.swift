@@ -21,13 +21,16 @@ struct ApplyChangesProgressView: View {
     @State private var isStartingSelectedUpdates = false
     @State private var showingLogs = false
     @State private var measuredHeights: [ApplySheetPart: CGFloat] = [:]
+    // The sheet is dismissed when an apply starts, so it keeps drawing the last
+    // non-progress mode it showed instead of the live one. Otherwise the sheet
+    // flashes its contents for a frame while it slides away.
+    @State private var displayedMode: ApplyChangesSheetMode
 
-    private var mode: ApplyChangesSheetMode {
-        viewModel.state.mode
-    }
-
-    private var presentation: ApplyProgressPresentation {
-        ApplyProgressPresentation.make(from: viewModel.state)
+    init(filterManager: AppFilterManager, viewModel: ApplyChangesViewModel, isPresented: Binding<Bool>) {
+        _filterManager = ObservedObject(wrappedValue: filterManager)
+        _viewModel = ObservedObject(wrappedValue: viewModel)
+        _isPresented = isPresented
+        _displayedMode = State(initialValue: viewModel.state.mode)
     }
 
     private var filtersByCategory: [FilterListCategory: [FilterList]] {
@@ -58,17 +61,16 @@ struct ApplyChangesProgressView: View {
     }
 
     private var isDismissDisabled: Bool {
-        mode == .progress || (mode == .review && isStartingSelectedUpdates)
+        displayedMode == .review && isStartingSelectedUpdates
     }
 
     private var fillsAvailableHeight: Bool {
-        mode == .review || mode == .failed
+        displayedMode == .review
     }
 
     private var fittedHeight: CGFloat? {
         guard !fillsAvailableHeight else { return nil }
-        let part: ApplySheetPart = mode == .progress ? .progress : .result
-        let contentHeight = measuredHeights[part] ?? (mode == .progress ? 480 : 240)
+        let contentHeight = measuredHeights[.content] ?? 240
         return ceil((measuredHeights[.header] ?? 52) + contentHeight)
     }
 
@@ -82,7 +84,7 @@ struct ApplyChangesProgressView: View {
             content
                 .frame(maxWidth: .infinity, maxHeight: fillsAvailableHeight ? .infinity : nil, alignment: .top)
 
-            if mode == .review {
+            if displayedMode == .review {
                 reviewToolbar
             }
             #if os(iOS)
@@ -110,7 +112,8 @@ struct ApplyChangesProgressView: View {
             .frame(width: 700, height: 500)
             #endif
         }
-        .onChangeCompat(of: mode) { _, newMode in
+        .onChangeCompat(of: viewModel.state.mode) { _, newMode in
+            if newMode != .progress { displayedMode = newMode }
             if newMode == .review {
                 deselectedFilters = []
                 deselectedScripts = []
@@ -132,13 +135,13 @@ struct ApplyChangesProgressView: View {
             .frame(width: 0, height: 0)
             .accessibilityHidden(true)
         }
-        .background(FinishedSheetDismissal(isActive: mode == .result) { isPresented = false })
+        .background(FinishedSheetDismissal(isActive: displayedMode == .result) { isPresented = false })
         #endif
         #if os(macOS)
         .frame(
-            minWidth: mode == .result ? 460 : 560,
-            idealWidth: mode == .result ? 460 : 560,
-            maxWidth: mode == .result ? 460 : 560,
+            minWidth: displayedMode == .result ? 460 : 560,
+            idealWidth: displayedMode == .result ? 460 : 560,
+            maxWidth: displayedMode == .result ? 460 : 560,
             minHeight: fillsAvailableHeight ? 320 : nil,
             idealHeight: fillsAvailableHeight ? 560 : nil,
             maxHeight: 640
@@ -148,36 +151,28 @@ struct ApplyChangesProgressView: View {
 
     @ViewBuilder
     private var content: some View {
-        switch mode {
+        switch displayedMode {
         case .review:
             reviewContent
         case .progress:
-            fittedContent { progressField }
+            EmptyView()
         case .result:
             fittedContent { resultWarnings }
         case .failed:
-            fittedContent {
-                VStack(alignment: .leading, spacing: 16) {
-                    failureCard
-                    ApplyProgressField(presentation: presentation, showsOnlyFailedPhase: true)
-                }
-            }
+            fittedContent { failureCard }
         }
     }
 
     @ViewBuilder
     private func fittedContent<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        let measured = content().padding(20)
-            .measureApplySheetPart(mode == .progress ? .progress : .result)
+        let measured = content().padding(20).measureApplySheetPart(.content)
         if #available(iOS 16.0, macOS 13.0, *) {
             ViewThatFits(in: .vertical) {
                 measured.fixedSize(horizontal: false, vertical: true)
                 ScrollView { measured }
             }
-        } else if mode == .result {
-            measured
         } else {
-            ScrollView { measured }.frame(height: 480)
+            measured
         }
     }
 
@@ -286,12 +281,6 @@ struct ApplyChangesProgressView: View {
             .font(.subheadline)
         }
         .textCase(nil)
-    }
-
-    // MARK: - Progress
-
-    private var progressField: some View {
-        ApplyProgressField(presentation: presentation)
     }
 
     // MARK: - Result
@@ -447,7 +436,7 @@ struct ApplyChangesProgressView: View {
     /// form's gray instead of sitting on white bands above and below it.
     private var sheetFill: SheetFill {
         #if os(iOS)
-        if #available(iOS 26.0, *), mode != .review { return .clear }
+        if #available(iOS 26.0, *), displayedMode != .review { return .clear }
         return .grouped
         #else
         return .clear
@@ -455,10 +444,10 @@ struct ApplyChangesProgressView: View {
     }
 
     private var headerTitle: String {
-        switch mode {
+        switch displayedMode {
         case .review:
             return "Available Updates"
-        case .progress, .result, .failed:
+        default:
             return "Apply Changes"
         }
     }
@@ -498,7 +487,7 @@ private extension View {
 }
 
 private enum ApplySheetPart: Hashable {
-    case header, progress, result
+    case header, content
 }
 
 private struct ApplySheetHeightsKey: PreferenceKey {
