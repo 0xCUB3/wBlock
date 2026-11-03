@@ -75,9 +75,14 @@ struct ListActionsToolbar<Primary: View, Apply: View, Leading: View>: ViewModifi
         // spacing between them (#999).
         if #available(macOS 26.0, *) {
             content.toolbar {
-                ToolbarItem(placement: .navigation) { leading() }
-                ToolbarItem(placement: .navigation) { apply() }
-                    .toolbarVisibilityPriorityCompat(.high)
+                // One item: pause is a menu, which AppKit gives its own capsule.
+                ToolbarItem(placement: .navigation) {
+                    ControlGroup {
+                        leading()
+                        apply()
+                    }
+                }
+                .toolbarVisibilityPriorityCompat(.high)
                 ToolbarItem(placement: .primaryAction) {
                     InlineGlassSearchField(text: $searchText, focusRequest: $focusRequest, isOpen: $isSearchOpen, prompt: searchPrompt)
                 }
