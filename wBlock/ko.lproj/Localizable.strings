@@ -1055,3 +1055,12 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Custom URL" = "사용자 지정 URL";
 
 "Content blocker JSON exceeds the %@ MB size limit on iOS. Disable some filter lists and try again." = "콘텐츠 차단기 JSON이 iOS의 크기 제한인 %@ MB를 초과합니다. 일부 필터 목록을 비활성화한 후 다시 시도하세요.";
+
+"uBlock filters – Experimental" = "uBlock filters – Experimental";
+"Phishing URL Blocklist" = "Phishing URL Blocklist";
+"Fanboy – Anti-Facebook" = "Fanboy – Anti-Facebook";
+"Dan Pollock's hosts file" = "Dan Pollock's hosts file";
+"Experimental rules from the uBlock Origin project. They may break sites." = "uBlock Origin 프로젝트의 실험적 규칙입니다. 일부 사이트가 제대로 작동하지 않을 수 있습니다.";
+"Blocks URLs that host phishing pages, based on OpenPhish, IPThreat and PhishTank data." = "OpenPhish, IPThreat, PhishTank 데이터를 기반으로 피싱 페이지를 호스팅하는 URL을 차단합니다.";
+"Blocks Facebook social plugins and login widgets on other websites. May break sites that rely on them." = "다른 웹사이트의 Facebook 소셜 플러그인과 로그인 위젯을 차단합니다. 이에 의존하는 사이트가 제대로 작동하지 않을 수 있습니다.";
+"Hosts file that blocks ads, trackers, and other unwanted sites, from Dan Pollock's project." = "광고, 추적기, 기타 원치 않는 사이트를 차단하는 hosts 파일입니다. Dan Pollock 프로젝트에서 제공합니다.";

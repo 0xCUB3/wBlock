@@ -419,6 +419,11 @@ class FilterListLoader {
                 category: FilterListCategory.security,
                 description: "Blocks URLs that distribute malware, based on URLhaus data."),
             FilterList(
+                id: UUID(), name: "Phishing URL Blocklist",
+                url: URL(string: "https://curbengh.github.io/phishing-filter/phishing-filter.txt")!,
+                category: FilterListCategory.security,
+                description: "Blocks URLs that host phishing pages, based on OpenPhish, IPThreat and PhishTank data."),
+            FilterList(
                 id: UUID(), name: "uBlock filters – Annoyances",
                 url: URL(string: "https://ublockorigin.github.io/uAssetsCDN/filters/annoyances.min.txt")!,
                 category: FilterListCategory.annoyances,
@@ -476,6 +481,10 @@ class FilterListLoader {
                 description:
                     "Hides social media content and icons. Blocks social widgets and scripts, including many that AdGuard Social Media Filter misses."),
             FilterList(
+                id: UUID(), name: "Fanboy – Anti-Facebook",
+                url: URL(string: "https://secure.fanboy.co.nz/fanboy-antifacebook.txt")!, category: FilterListCategory.annoyances,
+                description: "Blocks Facebook social plugins and login widgets on other websites. May break sites that rely on them."),
+            FilterList(
                 id: UUID(), name: "Stevo's AI Blocklist",
                 url: Self.stevoAIBlocklistURL, category: FilterListCategory.annoyances,
                 description:
@@ -505,6 +514,10 @@ class FilterListLoader {
                         "https://pgl.yoyo.org/adservers/serverlist.php?hostformat=hosts&showintro=1&mimetype=plaintext"
                 )!, category: FilterListCategory.multipurpose,
                 description: "Filter that blocks ads, trackers, and other nasty things."),
+            FilterList(
+                id: UUID(), name: "Dan Pollock's hosts file",
+                url: URL(string: "https://someonewhocares.org/hosts/hosts")!, category: FilterListCategory.multipurpose,
+                description: "Hosts file that blocks ads, trackers, and other unwanted sites, from Dan Pollock's project."),
             FilterList(
                 id: UUID(), name: "Bypass Paywalls Clean Filter",
                 url: URL(
@@ -573,6 +586,12 @@ class FilterListLoader {
                 id: UUID(), name: "AdGuard Experimental Filter",
                 url: Self.adGuardUBlockURL(5), category: FilterListCategory.experimental,
                 description: "Filter designed to test certain hazardous filtering rules before they are added to the basic filters."),
+            FilterList(
+                id: UUID(), name: "uBlock filters – Experimental",
+                url: URL(string: "https://ublockorigin.github.io/uAssetsCDN/filters/experimental.min.txt")!,
+                category: FilterListCategory.experimental,
+                description: "Experimental rules from the uBlock Origin project. They may break sites.",
+                trustLevel: "high"),
         ]
 
         filterLists.append(contentsOf: [

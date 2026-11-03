@@ -1024,3 +1024,12 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Custom URL" = "カスタムURL";
 
 "Content blocker JSON exceeds the %@ MB size limit on iOS. Disable some filter lists and try again." = "コンテンツブロッカーのJSONがiOSのサイズ上限（%@ MB）を超えています。一部のフィルターリストを無効にして、もう一度お試しください。";
+
+"uBlock filters – Experimental" = "uBlock filters – Experimental";
+"Phishing URL Blocklist" = "Phishing URL Blocklist";
+"Fanboy – Anti-Facebook" = "Fanboy – Anti-Facebook";
+"Dan Pollock's hosts file" = "Dan Pollock's hosts file";
+"Experimental rules from the uBlock Origin project. They may break sites." = "uBlock Origin プロジェクトの実験的なルールです。サイトの表示が崩れる場合があります。";
+"Blocks URLs that host phishing pages, based on OpenPhish, IPThreat and PhishTank data." = "OpenPhish、IPThreat、PhishTank のデータに基づき、フィッシングページを配信している URL をブロックします。";
+"Blocks Facebook social plugins and login widgets on other websites. May break sites that rely on them." = "他のウェブサイト上の Facebook のソーシャルプラグインやログインウィジェットをブロックします。これらに依存するサイトが動作しなくなる場合があります。";
+"Hosts file that blocks ads, trackers, and other unwanted sites, from Dan Pollock's project." = "広告、トラッカー、その他の不要なサイトをブロックする hosts ファイルです。Dan Pollock のプロジェクトのリストです。";

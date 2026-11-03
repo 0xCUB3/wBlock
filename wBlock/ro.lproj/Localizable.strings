@@ -1055,3 +1055,12 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Custom URL" = "URL personalizat";
 
 "Content blocker JSON exceeds the %@ MB size limit on iOS. Disable some filter lists and try again." = "Fișierul JSON al blocatorului de conținut depășește limita de dimensiune de %@ MB pe iOS. Dezactivează unele liste de filtre și încearcă din nou.";
+
+"uBlock filters – Experimental" = "uBlock filters – Experimental";
+"Phishing URL Blocklist" = "Phishing URL Blocklist";
+"Fanboy – Anti-Facebook" = "Fanboy – Anti-Facebook";
+"Dan Pollock's hosts file" = "Dan Pollock's hosts file";
+"Experimental rules from the uBlock Origin project. They may break sites." = "Reguli experimentale din proiectul uBlock Origin. Pot defecta unele site-uri.";
+"Blocks URLs that host phishing pages, based on OpenPhish, IPThreat and PhishTank data." = "Blochează adresele URL care găzduiesc pagini de phishing, pe baza datelor OpenPhish, IPThreat și PhishTank.";
+"Blocks Facebook social plugins and login widgets on other websites. May break sites that rely on them." = "Blochează modulele sociale și widgeturile de autentificare Facebook de pe alte site-uri. Poate defecta site-urile care se bazează pe ele.";
+"Hosts file that blocks ads, trackers, and other unwanted sites, from Dan Pollock's project." = "Fișier hosts care blochează reclamele, trackerele și alte site-uri nedorite. Din proiectul lui Dan Pollock.";

@@ -1064,3 +1064,12 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Custom URL" = "نشانی سفارشی";
 
 "Content blocker JSON exceeds the %@ MB size limit on iOS. Disable some filter lists and try again." = "فایل JSON مسدودکنندهٔ محتوا از محدودیت حجم %@ مگابایت در iOS بیشتر است. برخی فهرست‌های فیلتر را غیرفعال کنید و دوباره تلاش کنید.";
+
+"uBlock filters – Experimental" = "uBlock filters – Experimental";
+"Phishing URL Blocklist" = "Phishing URL Blocklist";
+"Fanboy – Anti-Facebook" = "Fanboy – Anti-Facebook";
+"Dan Pollock's hosts file" = "Dan Pollock's hosts file";
+"Experimental rules from the uBlock Origin project. They may break sites." = "قواعد آزمایشی از پروژه uBlock Origin. ممکن است برخی سایت‌ها را از کار بیندازد.";
+"Blocks URLs that host phishing pages, based on OpenPhish, IPThreat and PhishTank data." = "URLهایی را که صفحات فیشینگ را میزبانی می‌کنند مسدود می‌کند، بر اساس داده‌های OpenPhish، IPThreat و PhishTank.";
+"Blocks Facebook social plugins and login widgets on other websites. May break sites that rely on them." = "افزونه‌های اجتماعی فیس‌بوک و ویجت‌های ورود را در سایت‌های دیگر مسدود می‌کند. ممکن است سایت‌هایی را که به آن‌ها وابسته‌اند از کار بیندازد.";
+"Hosts file that blocks ads, trackers, and other unwanted sites, from Dan Pollock's project." = "فایل hosts که تبلیغات، ردیاب‌ها و سایت‌های ناخواسته دیگر را مسدود می‌کند. از پروژه Dan Pollock.";

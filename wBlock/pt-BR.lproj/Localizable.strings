@@ -1055,3 +1055,12 @@ Para reativá-los, desative outros filtros grandes e aplique as alterações nov
 "Custom URL" = "URL personalizada";
 
 "Content blocker JSON exceeds the %@ MB size limit on iOS. Disable some filter lists and try again." = "O JSON do bloqueador de conteúdo excede o limite de tamanho de %@ MB no iOS. Desative algumas listas de filtros e tente novamente.";
+
+"uBlock filters – Experimental" = "uBlock filters – Experimental";
+"Phishing URL Blocklist" = "Phishing URL Blocklist";
+"Fanboy – Anti-Facebook" = "Fanboy – Anti-Facebook";
+"Dan Pollock's hosts file" = "Dan Pollock's hosts file";
+"Experimental rules from the uBlock Origin project. They may break sites." = "Regras experimentais do projeto uBlock Origin. Podem quebrar alguns sites.";
+"Blocks URLs that host phishing pages, based on OpenPhish, IPThreat and PhishTank data." = "Bloqueia URLs que hospedam páginas de phishing, com base em dados do OpenPhish, IPThreat e PhishTank.";
+"Blocks Facebook social plugins and login widgets on other websites. May break sites that rely on them." = "Bloqueia plugins sociais e widgets de login do Facebook em outros sites. Pode quebrar sites que dependem deles.";
+"Hosts file that blocks ads, trackers, and other unwanted sites, from Dan Pollock's project." = "Arquivo hosts que bloqueia anúncios, rastreadores e outros sites indesejados. Do projeto de Dan Pollock.";

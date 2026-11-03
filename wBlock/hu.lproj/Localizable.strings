@@ -1055,3 +1055,12 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Custom URL" = "Egyéni URL";
 
 "Content blocker JSON exceeds the %@ MB size limit on iOS. Disable some filter lists and try again." = "A tartalomblokkoló JSON-fájlja meghaladja az iOS %@ MB-os méretkorlátját. Kapcsoljon ki néhány szűrőlistát, majd próbálja újra.";
+
+"uBlock filters – Experimental" = "uBlock filters – Experimental";
+"Phishing URL Blocklist" = "Phishing URL Blocklist";
+"Fanboy – Anti-Facebook" = "Fanboy – Anti-Facebook";
+"Dan Pollock's hosts file" = "Dan Pollock's hosts file";
+"Experimental rules from the uBlock Origin project. They may break sites." = "Kísérleti szabályok az uBlock Origin projekttől. Előfordulhat, hogy egyes oldalakat megzavarnak.";
+"Blocks URLs that host phishing pages, based on OpenPhish, IPThreat and PhishTank data." = "Az adathalász oldalakat tartalmazó URL-eket blokkolja az OpenPhish, az IPThreat és a PhishTank adatai alapján.";
+"Blocks Facebook social plugins and login widgets on other websites. May break sites that rely on them." = "Blokkolja a Facebook közösségi beépülő moduljait és bejelentkező widgetjeit más weboldalakon. Megzavarhatja az ezekre épülő oldalakat.";
+"Hosts file that blocks ads, trackers, and other unwanted sites, from Dan Pollock's project." = "Hosts-fájl, amely blokkolja a hirdetéseket, a követőket és más nem kívánt oldalakat. Dan Pollock projektje.";

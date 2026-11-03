@@ -1064,3 +1064,12 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Custom URL" = "Özel URL";
 
 "Content blocker JSON exceeds the %@ MB size limit on iOS. Disable some filter lists and try again." = "İçerik engelleyici JSON dosyası, iOS üzerindeki %@ MB boyut sınırını aşıyor. Bazı filtre listelerini devre dışı bırakıp tekrar deneyin.";
+
+"uBlock filters – Experimental" = "uBlock filters – Experimental";
+"Phishing URL Blocklist" = "Phishing URL Blocklist";
+"Fanboy – Anti-Facebook" = "Fanboy – Anti-Facebook";
+"Dan Pollock's hosts file" = "Dan Pollock's hosts file";
+"Experimental rules from the uBlock Origin project. They may break sites." = "uBlock Origin projesinden deneysel kurallar. Bazı siteleri bozabilirler.";
+"Blocks URLs that host phishing pages, based on OpenPhish, IPThreat and PhishTank data." = "OpenPhish, IPThreat ve PhishTank verilerine göre oltalama sayfaları barındıran URL'leri engeller.";
+"Blocks Facebook social plugins and login widgets on other websites. May break sites that rely on them." = "Diğer web sitelerindeki Facebook sosyal eklentilerini ve oturum açma widget'larını engeller. Bunlara bağlı siteleri bozabilir.";
+"Hosts file that blocks ads, trackers, and other unwanted sites, from Dan Pollock's project." = "Reklamları, izleyicileri ve diğer istenmeyen siteleri engelleyen bir hosts dosyası. Dan Pollock'un projesinden.";

@@ -1055,3 +1055,12 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Custom URL" = "自定义 URL";
 
 "Content blocker JSON exceeds the %@ MB size limit on iOS. Disable some filter lists and try again." = "内容拦截器 JSON 超出了 iOS 上 %@ MB 的大小限制。请停用部分过滤列表后重试。";
+
+"uBlock filters – Experimental" = "uBlock filters – Experimental";
+"Phishing URL Blocklist" = "Phishing URL Blocklist";
+"Fanboy – Anti-Facebook" = "Fanboy – Anti-Facebook";
+"Dan Pollock's hosts file" = "Dan Pollock's hosts file";
+"Experimental rules from the uBlock Origin project. They may break sites." = "来自 uBlock Origin 项目的实验性规则，可能导致部分网站无法正常显示。";
+"Blocks URLs that host phishing pages, based on OpenPhish, IPThreat and PhishTank data." = "根据 OpenPhish、IPThreat 和 PhishTank 的数据，拦截托管钓鱼页面的网址。";
+"Blocks Facebook social plugins and login widgets on other websites. May break sites that rely on them." = "拦截其他网站上的 Facebook 社交插件和登录小部件。可能导致依赖这些功能的网站无法正常使用。";
+"Hosts file that blocks ads, trackers, and other unwanted sites, from Dan Pollock's project." = "拦截广告、追踪器和其他不需要的网站的 hosts 文件。来自 Dan Pollock 的项目。";

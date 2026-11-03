@@ -257,10 +257,13 @@ private final class TestLoader: FilterListLoader {
         }
         precondition(!defaults.contains { $0.name.contains("AI Widgets") }, "EasyList AI Widgets must not be added")
         // New lists are off by default, and EasyDutch sits with the other regional lists.
-        for name in ["EasyList – Chat Widgets", "EasyList – Newsletter Notices", "EasyList – Notifications", "EasyDutch"] {
+        for name in ["EasyList – Chat Widgets", "EasyList – Newsletter Notices", "EasyList – Notifications", "EasyDutch",
+                     "uBlock filters – Experimental", "Phishing URL Blocklist", "Fanboy – Anti-Facebook", "Dan Pollock's hosts file"] {
             precondition(byName[name]?.isSelected == false, "\(name) must default to off")
         }
         precondition(byName["EasyDutch"]?.category == .foreign && byName["EasyList – Chat Widgets"]?.category == .annoyances)
+        precondition(byName["uBlock filters – Experimental"]?.category == .experimental && byName["Phishing URL Blocklist"]?.category == .security
+                     && byName["Dan Pollock's hosts file"]?.category == .multipurpose && byName["Fanboy – Anti-Facebook"]?.category == .annoyances)
         print("PASS: replacement migrations preserve selection and discard legacy content")
     }
 }
