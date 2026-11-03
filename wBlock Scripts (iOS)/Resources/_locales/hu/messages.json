@@ -127,7 +127,7 @@
     "description": "Button label to undo last zapper action."
   },
   "zapper_button_redo": {
-    "message": "Mégis",
+    "message": "Újra",
     "description": "Button label to redo the last zapper action that was undone."
   },
   "zapper_button_more": {

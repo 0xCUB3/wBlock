@@ -246,7 +246,7 @@
 "EasyList China + AdGuard Chinese filter. Filter list that specifically removes ads on websites in Chinese language." = "EasyList China + AdGuard Chinese filter。专门移除中文网站上广告的过滤器列表。";
 "EasyList Czech and Slovak" = "EasyList Czech and Slovak";
 "EasyList Dutch + AdGuard Dutch filter. Filter list that specifically removes ads on websites in Dutch language." = "EasyList Dutch + AdGuard Dutch filter。专门移除荷兰语网站上广告的过滤器列表。";
-"Blocks ads and anti-adblock messages on Dutch and Afrikaans websites, from the EasyDutch project." = "屏蔽荷兰语和南非荷兰语网站上的广告和反广告拦截提示。来自 EasyDutch 项目。";
+"Blocks ads and anti-adblock messages on Dutch and Afrikaans websites, from the EasyDutch project." = "拦截荷兰语和南非荷兰语网站上的广告和反广告拦截提示。来自 EasyDutch 项目。";
 "EasyList Hebrew" = "EasyList Hebrew";
 "EasyList Lithuania" = "EasyList Lithuania";
 "EasyList Thailand" = "EasyList Thailand";
@@ -746,7 +746,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Change File" = "更改文件";
 "Local imports won't auto-update; re-import to replace." = "本地导入不会自动更新；请重新导入以替换。";
 "Blocks Twitch ads with the vaft script from TwitchAdSolutions." = "使用 TwitchAdSolutions 的 vaft 脚本拦截 Twitch 广告。";
-"Optional. Blocks Twitch ads and handles complicated anti-adblock cases, but it slows page loads." = "可选。屏蔽 Twitch 广告并处理复杂的反广告拦截情况，但会降低页面加载速度。";
+"Optional. Blocks Twitch ads and handles complicated anti-adblock cases, but it slows page loads." = "可选。拦截 Twitch 广告并处理复杂的反广告拦截情况，但会降低页面加载速度。";
 
 /* Issue 508 UI */
 "Disable Essential Filter?" = "要停用必要过滤器吗？";
@@ -1056,7 +1056,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "自定义 URL";
 
-"Content blocker JSON exceeds the %@ MB size limit on iOS. Disable some filter lists and try again." = "内容拦截器 JSON 超出了 iOS 上 %@ MB 的大小限制。请停用部分过滤列表后重试。";
+"Content blocker JSON exceeds the %@ MB size limit on iOS. Disable some filter lists and try again." = "内容拦截器 JSON 超出了 iOS 上 %@ MB 的大小限制。请停用部分过滤器列表后重试。";
 
 "uBlock filters – Experimental" = "uBlock filters – Experimental";
 "Phishing URL Blocklist" = "Phishing URL Blocklist";

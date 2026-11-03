@@ -1049,7 +1049,7 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Hides miscellaneous annoyances on websites, from the EasyList project." = "Blendet verschiedene Ärgernisse auf Websites aus. Liste des EasyList-Projekts.";
 "Hides live chat and support widgets on websites, from the EasyList project." = "Blendet Live-Chat- und Support-Widgets auf Websites aus. Liste des EasyList-Projekts.";
 "Hides newsletter sign-up prompts on websites, from the EasyList project." = "Blendet Aufforderungen zur Newsletter-Anmeldung auf Websites aus. Liste des EasyList-Projekts.";
-"Hides prompts that ask you to allow notifications, from the EasyList project." = "Blendet Aufforderungen aus, Benachrichtigungen zu erlauben. Liste des EasyList-Projekts.";
+"Hides prompts that ask you to allow notifications, from the EasyList project." = "Blendet Aufforderungen zum Erlauben von Benachrichtigungen aus. Liste des EasyList-Projekts.";
 "Official Polish filters for AdBlock, uBlock Origin & AdGuard" = "Official Polish filters for AdBlock, uBlock Origin & AdGuard";
 "PersianBlockerNG" = "PersianBlockerNG";
 "RU AdList" = "RU AdList";
