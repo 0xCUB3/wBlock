@@ -28,6 +28,9 @@ jobs:
         with:
           ref: refs/tags/${{ inputs.release_tag || github.ref_name }}
 
+      - name: Build the engine library
+        uses: ./.github/actions/wbe-xcframework
+
       - name: Show Xcode version
         run: xcodebuild -version
 
@@ -56,6 +59,9 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: refs/tags/${{ inputs.release_tag || github.ref_name }}
+
+      - name: Build the engine library
+        uses: ./.github/actions/wbe-xcframework
 
       - name: Show Xcode version
         run: xcodebuild -version

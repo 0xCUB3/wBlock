@@ -20,6 +20,14 @@ SIM_X86=x86_64-apple-ios
 # the targets added through rustup. rustc 1.96 fails to build zerofrom with the
 # workspace's lto = "fat" (E0463 on zerofrom_derive); 1.97.1 and 1.98 build.
 TOOLCHAIN="${WBE_TOOLCHAIN:-1.98}"
+# A restored CI cache or an earlier local build is reused when nothing that
+# goes into the library changed.
+STAMP="$OUT/WBE.xcframework.inputs"
+inputs="$(cd "$ROOT" && { echo "$TOOLCHAIN"; find Cargo.toml Cargo.lock crates scripts/build-xcframework.sh -type f -print0 | sort -z | xargs -0 shasum; } | shasum | cut -d' ' -f1)"
+if [[ -d "$OUT/WBE.xcframework" && "$(cat "$STAMP" 2>/dev/null)" == "$inputs" ]]; then
+    echo "WBE.xcframework is current"
+    exit 0
+fi
 rustup toolchain install "$TOOLCHAIN" --profile minimal
 rustup target add --toolchain "$TOOLCHAIN" "$MAC_ARM" "$MAC_X86" "$IOS" "$SIM_ARM" "$SIM_X86"
 for target in "$MAC_ARM" "$MAC_X86" "$IOS" "$SIM_ARM" "$SIM_X86"; do
@@ -42,3 +50,4 @@ xcodebuild -create-xcframework \
     -output "$OUT/WBE.xcframework"
 
 du -h "$WORK"/*/libwbe.a
+echo "$inputs" > "$STAMP"

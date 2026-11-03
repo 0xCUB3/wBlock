@@ -28,6 +28,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - name: Build the engine library
+        uses: ./.github/actions/wbe-xcframework
+
       # The image's default Xcode is its newest release; iPhone Duo runs apps
       # built against an older iOS SDK letterboxed (#850).
       - name: Confirm a release host OS
