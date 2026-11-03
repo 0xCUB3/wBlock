@@ -97,7 +97,7 @@ The Safari popup turns filtering, userscripts, and autoplay on or off for each s
 <summary>More about per-site controls and sync</summary>
 <br>
 
-The Safari toolbar popup has separate switches for filtering, userscripts, and autoplay, plus the Element Zapper. Filter lists and userscripts can be limited to selected sites or excluded from specific domains. Zapper rules can be edited in Settings.
+The Safari toolbar popup has separate switches for filtering, userscripts, and autoplay, plus the Element Zapper. Filter lists and userscripts can be limited to selected sites or excluded from specific domains. Zapper rules can be edited in Settings. On iPhone and iPad, Element Zapper is also in the share sheet, so pages from other apps' built-in browsers can be zapped too. Those rules reach other apps after the next Apply in wBlock.
 
 wBlock runs on macOS, iOS, iPadOS, and visionOS. iCloud sync covers filter lists, custom filters, userscripts, the allowlist, and settings. Local backup export is also available.
 
