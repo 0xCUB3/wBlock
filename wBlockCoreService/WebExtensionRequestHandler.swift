@@ -88,6 +88,30 @@ public enum WebExtensionRequestHandler {
     ///
     /// - Parameters:
     ///   - context: The extension context containing the request from the extension.
+    /// Answers a native message from outside Safari, such as the share sheet
+    /// Zapper's web view (#1074), through the same handlers Safari uses.
+    public static func respond(to message: [String: Any], reply: @escaping (Any?) -> Void) {
+        beginRequest(with: ReplyContext(message: message, reply: reply))
+    }
+
+    private final class ReplyContext: NSExtensionContext {
+        private let item = NSExtensionItem()
+        private let reply: (Any?) -> Void
+
+        init(message: [String: Any], reply: @escaping (Any?) -> Void) {
+            item.userInfo = [SFExtensionMessageKey: message]
+            self.reply = reply
+            super.init()
+        }
+
+        override var inputItems: [Any] { [item] }
+
+        override func completeRequest(returningItems items: [Any]?, completionHandler: ((Bool) -> Void)? = nil) {
+            reply((items?.first as? NSExtensionItem)?.userInfo?[SFExtensionMessageKey])
+            completionHandler?(true)
+        }
+    }
+
     public static func beginRequest(with context: NSExtensionContext) {
         let request = context.inputItems.first as? NSExtensionItem
 
