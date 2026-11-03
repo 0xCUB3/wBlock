@@ -23,10 +23,10 @@ import wBlockCoreService
             precondition(FilterListSetup.hydrate(hydrated, defaults: [catalog]) == hydrated, "setup is idempotent")
         }
         let solo = FilterListSetup.hydrate([builtin], defaults: [catalog])[0]
-        precondition(solo.category == .security, "catalog hydration must preserve the moved built-in category")
+        precondition(solo.category == catalog.category, "a built-in list follows its catalog category")
         let folded = FilterListSetup.hydrate([custom], defaults: [catalog])[0]
-        precondition(folded.id == custom.id && !folded.isCustom && folded.isSelected && folded.category == .privacy,
-                     "a custom copy keeps its ID, selection, and placement when it folds into the catalog")
+        precondition(folded.id == custom.id && !folded.isCustom && folded.isSelected && folded.category == catalog.category,
+                     "a custom copy keeps its ID and selection and takes the catalog category when it folds in")
         precondition(folded.name == catalog.name && folded.description == catalog.description && !folded.hasUserProvidedName)
         let first = FilterList(name: "First", url: URL(string: "https://example.com/first")!, category: .annoyances)
         let restored = FilterList(name: "Restored", url: URL(string: "https://example.com/restored")!, category: .annoyances)

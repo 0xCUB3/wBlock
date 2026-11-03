@@ -823,21 +823,6 @@ class AppFilterManager: ObservableObject {
     }
 
 
-    /// Puts built-in lists back in their catalog categories and moves custom lists to Other.
-    func resetCategories() {
-        let defaults = Dictionary(
-            loader.getDefaultFilterLists().map { ($0.url, $0.category) },
-            uniquingKeysWith: { first, _ in first }
-        )
-        for index in filterLists.indices {
-            let filter = filterLists[index]
-            filterLists[index].category = filter.isCustom ? .custom : defaults[filter.url] ?? filter.category
-        }
-        saveFilterListsCoalesced()
-        // Compared with what was applied, so a reset that moves nothing asks for no apply (#953).
-        refreshPendingChanges()
-    }
-
     // MARK: - Core functionality
     /// Runs the complete filter update/apply pipeline and waits for it to finish.
     ///
