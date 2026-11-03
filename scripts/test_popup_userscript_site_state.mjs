@@ -186,6 +186,7 @@ let filterDisabled = true;
 let whitelisted = false;
 let paused = false;
 let rejectCombined = false;
+let relayAsleep = false;
 let failAfterCombinedSave = false;
 let combinedApplyWarning = false;
 let zapperMutationResponse = { ok: true, disabled: true };
@@ -197,6 +198,7 @@ const sandbox = {
       sendMessage: async (message) => {
         runtimeMessages.push(message);
         if (message?.action === "wblock:popup:nativeMessage") {
+          if (relayAsleep) return undefined;
           return { ok: true, response: await nativeHandler(message.message) };
         }
         if (message?.action === "wblock:filterUpdate:getStatus") return { ok: true, state: "idle" };
@@ -206,7 +208,10 @@ const sandbox = {
         if (message?.action === "wblock:clearCache") return { ok: true };
         return { ok: true };
       },
-      sendNativeMessage: () => { throw new Error("Native messaging is unavailable in the popup"); },
+      sendNativeMessage: async (_host, message) => {
+        if (!relayAsleep) throw new Error("Native messaging is unavailable in the popup");
+        return nativeHandler(message);
+      },
       testNativeHandler: async (message) => {
         nativeMessages.push(message);
         if (message?.action === "getBlockingPausedState") {
@@ -340,6 +345,13 @@ check("invalid zapper acknowledgment cannot overwrite cached state", rejected &&
 zapperMutationResponse = { ok: true, disabled: false };
 await vm.runInContext("setSiteZapperDisabled('example.com', false)", sandbox);
 check("zapper can be re-enabled through the relay", storage.get("wblock.zapperMeta.v1:example.com")?.disabled === false);
+
+relayAsleep = true;
+storage.set("wblockConfigCacheV1", { engineTimestamp: 1, entries: [] });
+const asleepState = await vm.runInContext("sendNativeMessage({ action: 'getBlockingPausedState' })", sandbox);
+relayAsleep = false;
+check("popup falls back to direct native when the relay has no listener", asleepState?.paused === false);
+check("the fallback drops the persisted config cache", !storage.has("wblockConfigCacheV1"));
 
 async function changeToggle(id, checked) {
   elements.get(id).checked = checked;

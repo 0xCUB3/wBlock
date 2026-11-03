@@ -1,0 +1,46 @@
+# HaGeZi's lists in wBlock
+
+> [!TIP]
+> HaGeZi's lists are good lists made mainly for DNS blocking. In Safari they use rule space that browser-focused lists can put to better use. HaGeZi recommends content filter lists for mobile ad blockers and DNS lists at the DNS level, and wBlock follows the same split. HaGeZi Multi Pro Mini is still available in wBlock, but it isn't a recommended list.
+
+## What the lists are
+
+HaGeZi publishes these lists in the [dns-blocklists](https://github.com/hagezi/dns-blocklists) repository. They come in formats for DNS servers such as Pi-hole and AdGuard Home, as well as an AdBlock format that browser blockers can read. The repository describes Pro Mini as "a size-optimized version made for DNS or browser blockers," and HaGeZi has [recommended Pro Mini](https://github.com/hagezi/dns-blocklists/issues/10246#issuecomment-4490774902) as the starting point for browser ad blockers.
+
+The warning is about how the lists fit Safari, not their quality.
+
+## Every rule blocks a whole domain
+
+The Pro Mini file wBlock downloads had 93,657 rules on November 3, 2026, and every one has the form `||example.com^`. The lists don't include element hiding or scriptlets. They don't have path rules or exceptions either.
+
+That is by design. HaGeZi's [FAQ](https://github.com/hagezi/dns-blocklists/blob/main/FAQ.md) explains:
+
+> Rules that depend on URLs, paths, page context, exceptions, or ambiguous pattern logic are not blindly converted into DNS entries.
+
+## Why that's a poor fit for Safari
+
+Safari compiles each content blocker from at most 150,000 rules ([WebKit source](https://github.com/WebKit/WebKit/blob/main/Source/WebCore/contentextensions/ContentExtensionParser.cpp)).
+
+| List | Rules | Share of one wBlock blocker |
+| --- | ---: | ---: |
+| Pro Mini | 93,657 | about 62% |
+| Pro | 211,778 | doesn't fit |
+
+About 31% of Pro Mini's domains are already blocked by wBlock's recommended lists. Those lists can also block a single ad path on a domain a site needs, or hide the gap an ad leaves behind. A domain-only rule can't do either. When a site depends on something served from a listed domain, that part of the site stops working and the list has no exception to fix it.
+
+On iOS, Safari also has to load these rules within the memory iOS gives a content blocker.
+
+## What HaGeZi recommends
+
+Asked about using the lists in wBlock, HaGeZi [wrote](https://github.com/hagezi/dns-blocklists/issues/10246#issuecomment-4491094864):
+
+> For mobile ad blockers, I would only use content filter lists, not DNS lists. Instead, use an upstream DNS with the appropriate lists.
+
+HaGeZi's own iOS devices run uBlock Origin Lite in Safari with HaGeZi's DNS servers upstream. uBlock Origin doesn't include any HaGeZi list in its built-in catalog either.
+
+## Using HaGeZi's lists with wBlock
+
+These lists do the most good at the DNS level. DNS blocking covers every app on the device, not just Safari, and costs no Safari rule capacity.
+
+1. Keep wBlock on its recommended lists.
+2. Set your device's DNS to a service that offers HaGeZi's lists. HaGeZi keeps a [list of DNS services](https://github.com/hagezi/dns-blocklists#dnsservices) that do.

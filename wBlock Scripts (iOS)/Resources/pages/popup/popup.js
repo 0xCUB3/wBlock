@@ -81,8 +81,17 @@ function withTimeout(promise, timeoutMs, message = 'Operation timed out.') {
 // native host's slow first launch after an update. A shorter cutoff here
 // reported that launch as a failure.
 async function sendNativeMessage(message) {
-    // Safari native messaging belongs to the background context, not the popup.
+    // The background relays so it can drop its caches around changes.
     const response = await browser.runtime.sendMessage({ action: 'wblock:popup:nativeMessage', message });
+    if (response === undefined) {
+        // After a Safari relaunch the non-persistent background stays unloaded, so
+        // nothing answers the relay. An unloaded background has no in-memory cache,
+        // but the persisted config cache survives and would be hydrated on wake, so
+        // drop it here (same key the background clears).
+        const result = await browser.runtime.sendNativeMessage('application.id', message);
+        await browser.storage.local.remove('wblockConfigCacheV1');
+        return result;
+    }
     if (!response || response.ok !== true) {
         throw new Error((response && response.error) || 'Native message relay failed');
     }
