@@ -672,6 +672,7 @@ class AppFilterManager: ObservableObject {
             }
             let generated = sources + baselines + rules + [
                 RemoveParamDNRRuleGenerator.rulesFilename, RemoveParamDNRRuleGenerator.blockedCountRulesFilename,
+                RemoveParamDNRRuleGenerator.pageRulesFilename, "dnr-generation-state.json",
                 "dnr-extraction-cache.json", "removeparam-extraction-cache.json"
             ]
             await Task.detached(priority: .utility) {
@@ -682,6 +683,20 @@ class AppFilterManager: ObservableObject {
             await dataManager.setFilterValidators(uuid, etag: nil, lastModified: nil)
         }
         validatorClearIDs.removeAll()
+        // Schema and app-version changes cannot wait for the download throttle.
+        // saveRules reuses unchanged inputs and performs no network requests.
+        let selected = filterLists.filter(\.isSelected)
+        let disabled = effectiveFilterDisabledSites()
+        let blockedCount = dataManager.isBlockedRequestCountEnabled
+        do {
+            _ = try await Task.detached(priority: .utility) {
+                try RemoveParamDNRRuleGenerator.saveRules(for: selected, disabledSites: disabled,
+                    blockedCount: blockedCount, groupIdentifier: GroupIdentifier.shared.value)
+            }.value
+        } catch {
+            await ConcurrentLogManager.shared.error(.filterApply, "Failed to prepare removeparam DNR rules",
+                metadata: ["error": LogErrorDescriber.describe(error)])
+        }
         setupTask = nil
     }
 

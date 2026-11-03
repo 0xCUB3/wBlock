@@ -165,6 +165,19 @@ public enum WebExtensionRequestHandler {
             case "setSiteDisabledState":
                 handleSetSiteDisabledState(message: message!, context: context)
                 return
+            case "getCleanPageURL":
+                Task { @MainActor in
+                    let original = message?["url"] as? String ?? ""
+                    let disabled = await currentFilterDisabledSites()
+                    let host = URL(string: original)?.host ?? ""
+                    var clean = original
+                    if !BlockingPauseStore.isPaused(.filters), !HostMatcher.isHostDisabled(host: host, disabledSites: disabled),
+                       let container = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value) {
+                        clean = RemoveParamDNRRuleGenerator.cleanSavedPageURL(original, containerURL: container)
+                    }
+                    context.completeRequest(returningItems: [createResponse(with: ["ok": true, "cleanUrl": clean])])
+                }
+                return
             case "getRemoveParamDNRRules":
                 handleGetRemoveParamDNRRules(message: message!, context: context)
                 return

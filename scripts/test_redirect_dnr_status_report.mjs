@@ -100,6 +100,8 @@ const loadBackground = ({
       getSessionRules: async () => sessionRules,
       updateDynamicRules: async update => {
         state.dnrUpdates.push(update);
+        const removed = new Set(update.removeRuleIds || []);
+        dynamicRules = dynamicRules.filter(rule => !removed.has(rule.id)).concat(update.addRules || []);
       }
     },
     i18n: { getMessage: () => "" }

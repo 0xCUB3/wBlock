@@ -442,7 +442,7 @@ try {
 // --- Tracking URL cleanup non-reload verification ---
 // Removing tracking parameters in-place must use history.replaceState and must
 // never invoke location.replace / location.reload to avoid infinite reload loops.
-const runTrackingCleanupScenario = async ({ href, cleanUrlResponse, runtimeError = false, challengeDuringCleanup = false }) => {
+const runTrackingCleanupScenario = async ({ href, cleanUrlResponse, runtimeError = false, challengeDuringCleanup = false, navigateDuringCleanup = false }) => {
   let replaceStateCalls = [];
   let locationReplaceCalls = [];
   let locationReloadCalls = [];
@@ -528,6 +528,7 @@ const runTrackingCleanupScenario = async ({ href, cleanUrlResponse, runtimeError
               return Promise.reject(new Error("runtime disconnected"));
             }
             if (challengeDuringCleanup) documentScenario.querySelector = () => ({});
+            if (navigateDuringCleanup) locationScenario.href = "https://example.com/another-page";
             return Promise.resolve({ ok: true, cleanUrl: cleanUrlResponse });
           }
           return Promise.resolve({});
@@ -567,6 +568,10 @@ try {
     challengeDuringCleanup: true
   });
   check("challenge markup arriving during cleanup prevents URL rewriting", challengeResult.replaceStateCalls.length === 0);
+
+  const movedResult = await runTrackingCleanupScenario({ href: "https://example.com/?utm_source=x",
+    cleanUrlResponse: "https://example.com/", navigateDuringCleanup: true });
+  check("navigation during cleanup cannot restore an old URL", movedResult.replaceStateCalls.length === 0);
 
   const unchangedResult = await runTrackingCleanupScenario({
     href: "https://example.com/landing?utm_source=keep&x=1",

@@ -237,12 +237,13 @@
       if (isCloudflareChallenge()) return;
       if (!/^https?:/i.test(window.location.href)) return;
       if (typeof browser === "undefined" || !browser.runtime || !browser.runtime.sendMessage) return;
+      const originalURL = window.location.href;
       const response = await browser.runtime.sendMessage({
         action: "wblock:getCleanURL",
-        url: window.location.href
+        url: originalURL
       });
       const cleanUrl = response && typeof response.cleanUrl === "string" ? response.cleanUrl : "";
-      if (cleanUrl && cleanUrl !== window.location.href) {
+      if (cleanUrl && cleanUrl !== originalURL && window.location.href === originalURL) {
         if (isCloudflareChallenge(true)) return;
         console.info("[wBlock] Removing tracking parameters:", window.location.href, "→", cleanUrl);
         if (typeof history !== "undefined" && typeof history.replaceState === "function") {

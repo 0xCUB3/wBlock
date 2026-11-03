@@ -1009,7 +1009,8 @@
     }
     if (message && message.action === "wblock:getCleanURL") {
       const url = typeof message.url === "string" ? message.url : "";
-      const cleanUrl = await getCleanURLWithRemoveParamRules(url);
+      const response = await sendPriorityNativeMessage({ action: "getCleanPageURL", url });
+      const cleanUrl = response && typeof response.cleanUrl === "string" ? response.cleanUrl : url;
       return {
         ok: true,
         cleanUrl
@@ -2054,16 +2055,8 @@
     if (!rule || !rule.condition) return rule;
     const condition = { ...rule.condition };
 
-    // Accept cached/generated rules from builds that used the newer spelling.
-    // `domains` is the compatibility representation wBlock now generates.
-    if (Array.isArray(condition.initiatorDomains)) {
-      condition.domains = condition.initiatorDomains;
-      delete condition.initiatorDomains;
-    }
-    if (Array.isArray(condition.excludedInitiatorDomains)) {
-      condition.excludedDomains = condition.excludedInitiatorDomains;
-      delete condition.excludedInitiatorDomains;
-    }
+    // Legacy domains describes the top document, not a nested initiator.
+    if (condition.initiatorDomains || condition.excludedInitiatorDomains) return null;
 
     if (Array.isArray(condition.excludedRequestDomains) && condition.excludedRequestDomains.length > 0) {
       // No exact pre-16.4 equivalent; dropping the scope would widen stripping.
@@ -2076,11 +2069,11 @@
           && !condition.urlFilter && condition.requestDomains.length === 1) {
         condition.urlFilter = `||${condition.requestDomains[0]}^`;
         delete condition.requestDomains;
-      } else {
-        // `$to=` redirect scopes have no exact legacy equivalent. Skip them
-        // rather than widening a removeparam rule beyond its intended target.
-        return null;
-      }
+      } else if (!condition.regexFilter && condition.requestDomains.length === 1 &&
+          (!condition.urlFilter || condition.urlFilter.startsWith("^"))) {
+        condition.urlFilter = `||${condition.requestDomains[0]}^*${condition.urlFilter || ""}`;
+        delete condition.requestDomains;
+      } else { return null; }
     }
     return { ...rule, condition };
   };
@@ -2128,7 +2121,7 @@
       logSupportDiagnostic({ event: "dnr_status_report_failed", error: String(error && error.message || error) });
     }
   };
-  const prepareRemoveParamRulesForRuntime = rules => {
+  const prepareRemoveParamRulesForRuntime = async rules => {
     const dnr = browser.declarativeNetRequest;
     const reported = Number(dnr && dnr.MAX_NUMBER_OF_DYNAMIC_AND_SESSION_RULES);
     const modernConditionSupport = Number.isFinite(reported) && reported > 0;
@@ -2141,7 +2134,24 @@
       // Without an exact legacy exception, keep query parameters untouched.
       prepared = lostProtection ? [] : legacyRules.filter(Boolean);
     }
-    return { prepared, reportedLimit: modernConditionSupport ? Math.floor(reported) : REMOVE_PARAM_DNR_OLD_SAFARI_FALLBACK_LIMIT };
+    const checked = [];
+    for (const rule of prepared) {
+      // WebKit added requestMethods in Safari 26, independently of the 16.4
+      // quota constant. Older releases must not ignore this restriction.
+      const safariVersion = Number(globalThis.navigator?.userAgent?.match(/Version\/(\d+)/)?.[1]) || 0;
+      const methodSupported = !rule.condition?.requestMethods || safariVersion >= 26;
+      const minor = Number(globalThis.navigator?.userAgent?.match(/Version\/\d+\.(\d+)/)?.[1]) || 0;
+      const initiatorSupported = !(rule.condition?.initiatorDomains || rule.condition?.excludedInitiatorDomains) ||
+        safariVersion > 18 || (safariVersion === 18 && minor >= 4);
+      const regex = rule.condition?.regexFilter;
+      const supported = methodSupported && initiatorSupported && (!regex || typeof dnr.isRegexSupported !== "function" ||
+        (await dnr.isRegexSupported({ regex, isCaseSensitive: rule.condition.isUrlFilterCaseSensitive === true })).isSupported);
+      if (!supported) {
+        logSupportDiagnostic({ event: "dnr_rule_unsupported", id: rule.id, reason: !methodSupported ? "Safari requestMethods unavailable" : !initiatorSupported ? "Safari initiatorDomains unavailable" : "Safari regex compiler" });
+        if (rule.action?.type === "allow") return { prepared: [], reportedLimit: 0 };
+      } else { checked.push(rule); }
+    }
+    return { prepared: checked, reportedLimit: modernConditionSupport ? Math.floor(reported) : REMOVE_PARAM_DNR_OLD_SAFARI_FALLBACK_LIMIT };
   };
   const installRemoveParamDNRRules = async () => {
     if (!browser.declarativeNetRequest || typeof browser.declarativeNetRequest.updateDynamicRules !== "function") {
@@ -2159,16 +2169,30 @@
     const sessionRules = typeof browser.declarativeNetRequest.getSessionRules === "function"
       ? await browser.declarativeNetRequest.getSessionRules()
       : [];
-    const { prepared, reportedLimit } = prepareRemoveParamRulesForRuntime(rules);
+    const { prepared, reportedLimit } = await prepareRemoveParamRulesForRuntime(rules);
     const availableCapacity = Math.max(0, Math.min(
       ruleIdLimit - ruleIdBase,
       reportedLimit - unrelatedDynamicCount - sessionRules.length
     ));
     const protectiveRules = prepared.filter(rule => rule && rule.action && rule.action.type === "allow");
     const redirectRules = prepared.filter(rule => !rule || !rule.action || rule.action.type !== "allow");
-    const installRules = protectiveRules.length > availableCapacity
-      ? []
-      : protectiveRules.concat(redirectRules.slice(0, availableCapacity - protectiveRules.length));
+    // Resource replacements and generic cleaning survive before narrowly scoped
+    // rules. Keep every exception, and budget WebKit's expanded content rules too.
+    const rank = rule => rule.action?.redirect?.extensionPath ? 2 :
+      (!rule.condition?.domains && !rule.condition?.requestDomains &&
+       (!rule.condition?.urlFilter || rule.condition.urlFilter.startsWith("^")) ? 1 : 0);
+    redirectRules.sort((a, b) => rank(b) - rank(a));
+    let translatedBudget = DNR_TRANSLATED_RULE_BUDGET - sessionRules.reduce((n, r) => n + translatedRuleCost(r), 0);
+    let byteBudget = 8 * 1024 * 1024; // Our memory budget, not a Safari per-rule limit.
+    let installRules = [];
+    for (const rule of protectiveRules.concat(redirectRules)) {
+      const cost = translatedRuleCost(rule), bytes = new TextEncoder().encode(JSON.stringify(rule)).length;
+      if (installRules.length >= availableCapacity || cost > translatedBudget || bytes > byteBudget) {
+        if (rule.action?.type === "allow") { installRules = []; break; }
+        continue;
+      }
+      installRules.push(rule); translatedBudget -= cost; byteBudget -= bytes;
+    }
     // The count needs Safari 16.4's action count and modern rule conditions.
     // A failed load keeps whatever counting rules are already installed.
     let blockedCount = null;
@@ -2239,14 +2263,41 @@
     if (!removeParamCurrent) {
       // One API call is one atomic ruleset replacement: validation/quota failure
       // leaves the previous complete set installed instead of a partial prefix.
-      await browser.declarativeNetRequest.updateDynamicRules({
-        removeRuleIds: trackedRules.map(rule => rule.id),
-        addRules: installRules
-      });
+      for (;;) {
+        try {
+          await browser.declarativeNetRequest.updateDynamicRules({
+            removeRuleIds: trackedRules.map(rule => rule.id), addRules: installRules
+          });
+          break;
+        } catch (error) {
+          const message = String(error?.message || error);
+          const id = Number(message.match(/rule with id (\d+)/i)?.[1]);
+          const rejected = installRules.find(rule => rule.id === id);
+          if (rejected) {
+            logSupportDiagnostic({ event: "dnr_rule_rejected", id, error: message });
+            // Removing a protection would widen every redirect beneath it.
+            installRules = rejected.action?.type === "allow" ? [] : installRules.filter(rule => rule.id !== id);
+          } else if (/quota|limit|maximum|too many|compiled rule/i.test(message) && installRules.length) {
+            const allows = installRules.filter(rule => rule.action?.type === "allow");
+            const redirects = installRules.filter(rule => rule.action?.type !== "allow");
+            installRules = redirects.length ? allows.concat(redirects.slice(0, Math.floor(redirects.length / 2))) : [];
+            logSupportDiagnostic({ event: "dnr_budget_reduced", count: installRules.length, error: message });
+          } else { throw error; }
+        }
+      }
     }
     if (replaceCountRules && installCountRules.length > 0) {
       await browser.declarativeNetRequest.updateDynamicRules({ addRules: installCountRules });
     }
+    const actual = (await browser.declarativeNetRequest.getDynamicRules())
+      .filter(rule => rule.id >= ruleIdBase && rule.id < ruleIdLimit);
+    const expectedIDs = new Set(installRules.map(rule => rule.id));
+    if (actual.length !== expectedIDs.size || actual.some(rule => !expectedIDs.has(rule.id))) {
+      throw new Error(`Safari installed ${actual.length} removeparam rules; expected ${expectedIDs.size}`);
+    }
+    logSupportDiagnostic({ event: "dnr_install_verified", generated: rules.length, installed: actual.length,
+      omitted: rules.length - actual.length, regexRules: actual.filter(rule => rule.condition?.regexFilter).length,
+      runtimeLimit: reportedLimit, version });
     await browser.storage.local.set({
       [REMOVE_PARAM_DNR_STORAGE_KEY]: {
         version,
@@ -2256,126 +2307,6 @@
       }
     });
     await reportRedirectDNRStatus(installRules);
-  };
-  const removeParamURLFilterRegexCache = new Map();
-  const dnrSeparatorPattern = "(?:[^A-Za-z0-9_.%-]|$)";
-  const domainMatches = (host, domain) => {
-    const normalizedHost = String(host || "").toLowerCase();
-    const normalizedDomain = String(domain || "").toLowerCase();
-    return normalizedHost === normalizedDomain || normalizedHost.endsWith(`.${normalizedDomain}`);
-  };
-  const urlFilterToRegex = urlFilter => {
-    if (!urlFilter) return null;
-    if (removeParamURLFilterRegexCache.has(urlFilter)) {
-      return removeParamURLFilterRegexCache.get(urlFilter);
-    }
-    let source = String(urlFilter);
-    let regexSource = "";
-    if (source.startsWith("||")) {
-      source = source.slice(2);
-      let domainPart = "";
-      while (domainPart.length < source.length && /[A-Za-z0-9._-]/.test(source[domainPart.length])) {
-        domainPart += source[domainPart.length];
-      }
-      source = source.slice(domainPart.length);
-      const escapedDomain = domainPart.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      regexSource = `^[a-z][a-z0-9+.-]*://([^/?#]*\\.)?${escapedDomain}`;
-    }
-    for (const char of source) {
-      if (char === "*") {
-        regexSource += ".*";
-      } else if (char === "^") {
-        regexSource += dnrSeparatorPattern;
-      } else if (char === "|") {
-        regexSource += "^";
-      } else {
-        regexSource += char.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      }
-    }
-    try {
-      const regex = new RegExp(regexSource);
-      removeParamURLFilterRegexCache.set(urlFilter, regex);
-      return regex;
-    } catch (_error) {
-      removeParamURLFilterRegexCache.set(urlFilter, null);
-      return null;
-    }
-  };
-  const conditionMatchesTopLevelURL = (condition, url) => {
-    if (!condition) return true;
-    if (Array.isArray(condition.resourceTypes) && !condition.resourceTypes.includes("main_frame")) {
-      return false;
-    }
-    if (condition.domainType) {
-      return false;
-    }
-    const host = url.hostname.toLowerCase();
-    if (Array.isArray(condition.requestDomains) && !condition.requestDomains.some(domain => domainMatches(host, domain))) {
-      return false;
-    }
-    if (Array.isArray(condition.excludedRequestDomains) && condition.excludedRequestDomains.some(domain => domainMatches(host, domain))) {
-      return false;
-    }
-    if (Array.isArray(condition.initiatorDomains) && condition.initiatorDomains.length > 0) {
-      return false;
-    }
-    if (Array.isArray(condition.excludedInitiatorDomains) && condition.excludedInitiatorDomains.some(domain => domainMatches(host, domain))) {
-      return false;
-    }
-    if (Array.isArray(condition.domains) && condition.domains.length > 0) {
-      return false;
-    }
-    if (Array.isArray(condition.excludedDomains) && condition.excludedDomains.some(domain => domainMatches(host, domain))) {
-      return false;
-    }
-    const regex = urlFilterToRegex(condition.urlFilter || "");
-    return regex ? regex.test(url.href) : true;
-  };
-  const applyRemoveParamRuleToURL = (rule, url) => {
-    const transform = rule && rule.action && rule.action.redirect && rule.action.redirect.transform;
-    if (!transform) return false;
-    if (transform.query === "") {
-      if (!url.search) return false;
-      url.search = "";
-      return true;
-    }
-    const params = transform.queryTransform && Array.isArray(transform.queryTransform.removeParams)
-      ? transform.queryTransform.removeParams
-      : [];
-    let changed = false;
-    for (const param of params) {
-      if (url.searchParams.has(param)) {
-        url.searchParams.delete(param);
-        changed = true;
-      }
-    }
-    return changed;
-  };
-  const getCleanURLWithRemoveParamRules = async urlString => {
-    if (!urlString || !/^https?:/i.test(urlString)) return urlString;
-    // Removeparam rules only strip query parameters.
-    if (!urlString.includes("?")) return urlString;
-    const loaded = await loadRemoveParamDNRRules();
-    if (!loaded.rules || loaded.rules.length === 0) return urlString;
-    const originalURL = new URL(urlString);
-    let url = new URL(urlString);
-    const rules = loaded.rules.slice().sort((a, b) => (b?.priority ?? 0) - (a?.priority ?? 0));
-    for (let pass = 0; pass < 8; pass += 1) {
-      let changed = false;
-      for (const rule of rules) {
-        if (!rule || !rule.action || !conditionMatchesTopLevelURL(rule.condition, url)) {
-          continue;
-        }
-        if (rule.action.type === "allow") {
-          return originalURL.href;
-        }
-        if (rule.action.type === "redirect") {
-          changed = applyRemoveParamRuleToURL(rule, url) || changed;
-        }
-      }
-      if (!changed) break;
-    }
-    return url.href;
   };
   const scheduleInstallRemoveParamDNRRules = (force = false) => {
     const now = Date.now();

@@ -53,6 +53,7 @@ const loadBackground = ({
   dynamicRules = [],
   sessionRules = [],
   dnrLimit = 30000,
+  dnrRegexSupported = async () => ({ isSupported: true }),
   dnrUpdateHandler = async () => {},
   removeParamHandler = null,
   tabMessageHandler = async () => ({}),
@@ -129,11 +130,14 @@ const loadBackground = ({
     },
     declarativeNetRequest: {
       ...(dnrLimit == null ? {} : { MAX_NUMBER_OF_DYNAMIC_AND_SESSION_RULES: dnrLimit }),
+      isRegexSupported: dnrRegexSupported,
       getDynamicRules: async () => dynamicRules,
       getSessionRules: async () => sessionRules,
       updateDynamicRules: async update => {
         state.dnrUpdates.push(update);
-        return dnrUpdateHandler(update);
+        await dnrUpdateHandler(update);
+        const removed = new Set(update.removeRuleIds || []);
+        dynamicRules = dynamicRules.filter(rule => !removed.has(rule.id)).concat(update.addRules || []);
       }
     },
     i18n: { getMessage: () => "" }
@@ -943,21 +947,10 @@ for (const maintenanceAction of ["maybeUpdateUserScripts", "maybeStageFilterUpda
 // canonical source so these checks do not depend on when the generated bundle
 // is refreshed.
 for (const source of [canonicalSource, bundleSource]) {
-  const rules = [
-    { id: 1500000, priority: 1, action: { type: "redirect", redirect: { transform: { queryTransform: { removeParams: ["ref"] } } } }, condition: { urlFilter: "^ref=", resourceTypes: ["main_frame"] } },
-    { id: 1500001, priority: 10000, action: { type: "allow" }, condition: { urlFilter: "^ref=", resourceTypes: ["main_frame"] } },
-  ];
-  const state = loadBackground({
-    source,
-    removeParamHandler: message => ({
-      ok: true, version: "priority-order", count: rules.length,
-      rules: message.offset === 0 ? rules : [], ruleIdBase: 1500000, ruleIdLimit: 1650000
-    }),
-    nativeHandler: () => ({ payload: makeConfig([], 1) }),
-  });
-  await sleep(50);
-  const result = await state.onMessage({ action: "wblock:getCleanURL", url: "https://docs.example/?ref=tracking" });
-  check("higher-priority document exception preserves the original URL", result.ok && result.cleanUrl === "https://docs.example/?ref=tracking");
+  const state = loadBackground({ source, nativeHandler: message => message.action === "getCleanPageURL"
+    ? { ok: true, cleanUrl: "https://docs.example/?keep=1" } : { payload: makeConfig([], 1) } });
+  const result = await state.onMessage({ action: "wblock:getCleanURL", url: "https://docs.example/?utm_new=x&keep=1" });
+  check("page cleanup uses native source selectors", result.cleanUrl === "https://docs.example/?keep=1");
 }
 
 {
@@ -980,10 +973,10 @@ for (const source of [canonicalSource, bundleSource]) {
   check("old Safari DNR uses one atomic replacement", state.dnrUpdates.length === 1 && Array.isArray(update?.removeRuleIds) && Array.isArray(update?.addRules));
   check("old Safari request-domain allow downgrades to exact host URL filter",
     update?.addRules?.some(rule => rule.id === 1500000 && rule.condition.urlFilter === "||disabled.example^" && !rule.condition.requestDomains));
-  check("old Safari initiatorDomains downgrades to legacy domains",
-    update?.addRules?.some(rule => rule.id === 1500001 && rule.condition.domains?.[0] === "page.example" && !rule.condition.initiatorDomains));
-  check("old Safari skips unrepresentable request-domain redirect instead of widening it",
-    !update?.addRules?.some(rule => rule.id === 1500002));
+  check("old Safari does not confuse the top document with an initiator",
+    !update?.addRules?.some(rule => rule.id === 1500001));
+  check("old Safari expresses a single request domain with a host URL filter",
+    update?.addRules?.some(rule => rule.id === 1500002 && rule.condition.urlFilter === "||target.example^*^id="));
 }
 
 for (const source of [canonicalSource, bundleSource]) {
@@ -1273,6 +1266,26 @@ for (const source of [canonicalSource, bundleSource]) {
   const again = await state.onMessage({ type: "InitContentScript" }, a);
   check("an inert answer ends every fresh window",
     again && again.paused === true && state.cssInserted.length === appliedBeforeA);
+}
+
+// A bad regex or one rejected redirect cannot prevent unrelated cleaning.
+for (const rejectAtInstall of [false, true]) {
+  const rules = [
+    { id: 1500000, priority: 4, action: { type: "redirect", redirect: { transform: { queryTransform: { removeParams: ["fbclid"] } } } }, condition: { urlFilter: "^fbclid=" } },
+    { id: 1500001, priority: 4, action: { type: "redirect", redirect: { transform: { queryTransform: { removeParams: ["x"] } } } }, condition: { regexFilter: "(?=unsupported)" } },
+  ];
+  const state = loadBackground({ source: canonicalSource,
+    removeParamHandler: () => ({ ok: true, version: "rejected-rule", count: 2, rules }),
+    nativeHandler: () => ({ payload: makeConfig([], 1) }),
+    dnrRegexSupported: async () => ({ isSupported: rejectAtInstall }),
+    dnrUpdateHandler: async update => {
+      if (rejectAtInstall && update.addRules?.some(rule => rule.id === 1500001)) throw new Error("Rule with id 1500001 is invalid.");
+    }
+  });
+  await sleep(50);
+  check(`unsupported redirect is isolated (${rejectAtInstall ? "install" : "preflight"})`,
+    state.dnrUpdates.at(-1)?.addRules?.length === 1 && state.dnrUpdates.at(-1).addRules[0].id === 1500000);
+  check("verified install count is persisted", state.storage.wblockRemoveParamDNRVersion?.count === 1);
 }
 
 if (failures > 0) {
