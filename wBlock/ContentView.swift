@@ -319,7 +319,9 @@ struct ContentView: View {
         } message: { _ in
             Text("This recommended filter is part of wBlock’s essential protection. Disabling it may reduce blocking coverage.")
         }
-        .riskyFilterAlert($pendingRiskyEnable)
+        // The info sheet shows its own copy; presenting this one too would
+        // dismiss the sheet and then the alert with it.
+        .riskyFilterAlert(selectedFilterInfo == nil ? $pendingRiskyEnable : .constant(nil))
         .onChangeCompat(of: dataManager.isForeignFiltersExpanded) { _, newValue in
             guard isForeignFiltersExpanded != newValue else { return }
             isForeignFiltersExpanded = newValue
