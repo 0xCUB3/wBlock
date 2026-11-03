@@ -42,7 +42,6 @@ struct Main {
         let selection = [blocker, excepter]
         let ordered = ContentBlockerMappingService.orderedForCompilation(selection)
         let mapping = ContentBlockerMappingService.distribute(selectedFilters: selection, across: targets)
-        let snapshot = SafariContentBlockerAffinityProcessor.snapshot(for: ordered, containerURL: container)
         guard let blockerSlot = mapping.first(where: { $0.value.contains(where: { $0.id == blocker.id }) })?.key,
               let excepterSlot = mapping.first(where: { $0.value.contains(where: { $0.id == excepter.id }) })?.key,
               blockerSlot != excepterSlot
@@ -51,17 +50,21 @@ struct Main {
         func compile(_ slot: ContentBlockerTargetInfo) throws -> [[String: Any]] {
             _ = try ContentBlockerService.compileTargetRules(
                 filters: mapping[slot] ?? [], orderedSelectedFilters: ordered,
-                affinitySnapshot: snapshot, targetInfo: slot, allTargets: targets,
+                targetInfo: slot, allTargets: targets,
                 disabledSites: [], extraRulesText: nil, groupIdentifier: groupIdentifier,
                 containerURL: container
             )
             let data = try Data(contentsOf: container.appendingPathComponent(slot.rulesFilename))
             return try JSONSerialization.jsonObject(with: data) as? [[String: Any]] ?? []
         }
+        // A rule may compile to several triggers; only the order of actions matters.
+        func runs(_ actions: [String]) -> [String] {
+            actions.reduce(into: []) { if $0.last != $1 { $0.append($1) } }
+        }
         func actions(_ rules: [[String: Any]], containing fragment: String) -> [String] {
             rules.compactMap { rule in
                 guard let trigger = rule["trigger"] as? [String: Any],
-                      let filter = trigger["url-filter"] as? String, filter.contains(fragment),
+                      let filter = trigger["url-filter"] as? String, filter.lowercased().contains(fragment.lowercased()),
                       let action = rule["action"] as? [String: Any]
                 else { return nil }
                 return action["type"] as? String
@@ -69,7 +72,7 @@ struct Main {
         }
 
         let blockerRules = try compile(blockerSlot)
-        if actions(blockerRules, containing: "GLinkPing") != ["block", "ignore-previous-rules"] {
+        if runs(actions(blockerRules, containing: "GLinkPing")) != ["block", "ignore-previous-rules"] {
             fail("exception for a block in another slot must be replicated after that block; got \(actions(blockerRules, containing: "GLinkPing"))")
         }
         if actions(blockerRules, containing: "tracker").last != "ignore-previous-rules" {
@@ -83,7 +86,7 @@ struct Main {
         }
 
         let excepterRules = try compile(excepterSlot)
-        if actions(excepterRules, containing: "ads\\.example") != ["block", "ignore-previous-rules"] {
+        if runs(actions(excepterRules, containing: "ads\\.example")) != ["block", "ignore-previous-rules"] {
             fail("same-slot exceptions must keep working")
         }
         if actions(excepterRules, containing: "GLinkPing").contains("block") {
@@ -93,7 +96,7 @@ struct Main {
         // Cache identity must cover the other slot's exceptions.
         let cached = try ContentBlockerService.compileTargetRules(
             filters: mapping[blockerSlot] ?? [], orderedSelectedFilters: ordered,
-            affinitySnapshot: snapshot, targetInfo: blockerSlot, allTargets: targets,
+            targetInfo: blockerSlot, allTargets: targets,
             disabledSites: [], extraRulesText: nil, groupIdentifier: groupIdentifier, containerURL: container
         )
         if !cached.reusedCachedBase { fail("unchanged inputs must hit the cache") }
@@ -101,13 +104,13 @@ struct Main {
         try write(excepter, "||ads.example^\n@@||unrelated.example^\n")
         let rebuilt = try ContentBlockerService.compileTargetRules(
             filters: mapping[blockerSlot] ?? [], orderedSelectedFilters: ordered,
-            affinitySnapshot: snapshot, targetInfo: blockerSlot, allTargets: targets,
+            targetInfo: blockerSlot, allTargets: targets,
             disabledSites: [], extraRulesText: nil, groupIdentifier: groupIdentifier, containerURL: container
         )
         if rebuilt.reusedCachedBase { fail("changing another slot's exceptions must rebuild this slot") }
         let data = try Data(contentsOf: container.appendingPathComponent(blockerSlot.rulesFilename))
         let after = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] ?? []
-        if actions(after, containing: "GLinkPing") != ["block"] {
+        if runs(actions(after, containing: "GLinkPing")) != ["block"] {
             fail("a removed exception must disappear from the other slot")
         }
 

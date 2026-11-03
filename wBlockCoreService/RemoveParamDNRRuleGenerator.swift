@@ -2,13 +2,10 @@ import CryptoKit
 import Foundation
 import os.log
 
-/// Builds the WebExtension DNR rules used for the subset of `$removeparam` that
-/// Safari can express: literal query parameter names and strip-all query rules,
-/// plus `$redirect` resource replacements (see RedirectDNRRules.swift).
-///
-/// This is intentionally conservative. Regex-valued, inverted, malformed, and
-/// otherwise unsupported rules are skipped rather than widened into rules that
-/// would strip parameters on the wrong requests.
+/// Compiles request-time query transforms and saves the source selectors for
+/// top-frame cleanup in RemoveParamPageRules. DNR gets literal names and safe
+/// prefix expansions; value-dependent selectors retain their full semantics in
+/// the page evaluator instead of guessing which names and values will arrive.
 public enum RemoveParamDNRRuleGenerator {
     public static let rulesFilename = "removeparam_dnr_rules.json"
     public static let ruleIDBase = 1_500_000
@@ -34,11 +31,20 @@ public enum RemoveParamDNRRuleGenerator {
     /// bare-domain syntax that this generator cannot interpret; skipping
     /// the rule avoids generating a global `v`-stripping rule.
     private static let recognizedOptionNames: Set<String> = [
-        "removeparam", "domain", "to", "denyallow", "third-party", "~third-party",
+        "removeparam", "domain", "to", "denyallow", "method", "third-party", "~third-party",
         "match-case", "important", "badfilter",
         "doc", "document", "main_frame", "subdocument", "sub_frame",
         "stylesheet", "script", "image", "font", "object",
-        "xmlhttprequest", "xhr", "ping", "media", "websocket", "other",
+        "xmlhttprequest", "xhr", "ping", "media", "websocket", "other", "frame",
+    ]
+
+    /// Common UTM and click-ID names that regex `$removeparam` rules can expand
+    /// into even when no list writes them as literals.
+    static let commonTrackingParameterNames = [
+        "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "utm_id",
+        "utm_name", "utm_cid", "utm_reader", "utm_referrer", "utm_social", "utm_brand",
+        "utm_place", "utm_pubreferrer", "utm_swu", "utm_viz_id", "utm_creative_format",
+        "utm_marketing_tactic", "utm_source_platform"
     ]
 
     static let resourceTypeMap: [String: [String]] = [
@@ -47,6 +53,7 @@ public enum RemoveParamDNRRuleGenerator {
         "main_frame": ["main_frame"],
         "subdocument": ["sub_frame"],
         "sub_frame": ["sub_frame"],
+        "frame": ["sub_frame"],
         "stylesheet": ["stylesheet"],
         "script": ["script"],
         "image": ["image"],
@@ -60,7 +67,16 @@ public enum RemoveParamDNRRuleGenerator {
         "other": ["other"]
     ]
 
-    public struct Summary: Equatable {
+    public struct Summary: Equatable, Codable {
+        func withRedirectCarveOuts(_ count: Int) -> Summary {
+            Summary(
+                generatedRules: generatedRules, removeParamRules: removeParamRules,
+                exceptionRules: exceptionRules, skippedRules: skippedRules,
+                truncatedRules: truncatedRules, disabledSiteAllowRules: disabledSiteAllowRules,
+                resourceRedirectRules: resourceRedirectRules, redirectCarveOuts: count, version: version
+            )
+        }
+
         public let generatedRules: Int
         public let removeParamRules: Int
         public let exceptionRules: Int
@@ -127,18 +143,23 @@ public enum RemoveParamDNRRuleGenerator {
 
     public struct RuleCondition: Codable, Equatable {
         public var urlFilter: String? = nil
+        /// Safari matches this regex against the request URL (macOS 12.3, iOS 15.4).
+        public var regexFilter: String? = nil
         public var resourceTypes: [String]? = nil
-        // Safari has supported the legacy initiator-site spelling since the
-        // original DNR implementation; `initiatorDomains` arrived much later.
+        // Keep document and initiator scopes separate: WebKit's legacy domains
+        // tests the top document. Actual initiating-frame scopes require 18.4.
+        public var initiatorDomains: [String]? = nil
+        public var excludedInitiatorDomains: [String]? = nil
         public var domains: [String]? = nil
         public var excludedDomains: [String]? = nil
         public var requestDomains: [String]? = nil
         public var excludedRequestDomains: [String]? = nil
+        public var requestMethods: [String]? = nil
         public var domainType: String? = nil
         public var isUrlFilterCaseSensitive: Bool? = nil
     }
 
-    private struct ParsedRule {
+    struct ParsedRule: Codable {
         var isException: Bool
         var pattern: String
         var removeParamValue: String?
@@ -146,10 +167,47 @@ public enum RemoveParamDNRRuleGenerator {
     }
 
     private struct BuildResult {
-        var rule: DeclarativeRule?
+        var rules: [DeclarativeRule]
         var wasRemoveParamRule: Bool
         var wasExceptionRule: Bool
         var skipped: Bool
+    }
+
+    /// The literal `$removeparam` names a regex can expand into: every literal
+    /// name in the rules text plus `commonTrackingParameterNames`. A regex is
+    /// matched against each name's decoded form, honoring `/i`, so each
+    /// regex is evaluated once here rather than once per rule.
+    struct NameVocabulary {
+        private var matchesByRegex: [String: [String]] = [:]
+
+        init(rulesText: String) {
+            var literals = Set(commonTrackingParameterNames)
+            var regexValues = Set<String>()
+            RuleText.forEachLine(rulesText) { rawLine in
+                guard RuleText.containsIgnoringASCIICase(rawLine, "removeparam"),
+                      let value = parseRule(String(rawLine))?.removeParamValue,
+                      !value.isEmpty
+                else { return }
+                if isRegexRemoveValue(value) {
+                    regexValues.insert(value)
+                } else if isExpressibleLiteralRemoveValue(value) {
+                    literals.insert(value)
+                }
+            }
+            let names = literals.sorted()
+            for value in regexValues {
+                guard isNamePrefixRegex(value), let regex = compiledRemoveParamRegex(value) else { continue }
+                matchesByRegex[value] = names.filter { name in
+                    let input = name + "="
+                    return regex.firstMatch(in: input, range: NSRange(location: 0, length: input.utf16.count)) != nil
+                }
+            }
+        }
+
+        /// Nil when `value` is not a regex this vocabulary could evaluate; empty when it matches nothing.
+        func literalNames(matching value: String) -> [String]? {
+            matchesByRegex[value]
+        }
     }
 
     public static func generateRules(
@@ -184,12 +242,25 @@ public enum RemoveParamDNRRuleGenerator {
             redirectRules.append(rule)
         }
 
-        for rawLine in rulesText.split(whereSeparator: \.isNewline) {
-            let result = buildRule(from: String(rawLine), nextID: 0)
+        let activeText = activeRulesText(rulesText)
+        let vocabulary = NameVocabulary(rulesText: activeText)
+        let networkValues = Set(activeText.components(separatedBy: .newlines).compactMap { line -> String? in
+            guard let parsed = parseRule(line), !parsed.isException,
+                  !buildRules(from: line, vocabulary: vocabulary).rules.isEmpty else { return nil }
+            return parsed.removeParamValue ?? ""
+        })
+        for rawLine in activeText.split(whereSeparator: \.isNewline) {
+            var result = buildRules(from: String(rawLine), vocabulary: vocabulary)
+            if let parsed = parseRule(String(rawLine)), parsed.isException,
+               let value = parsed.removeParamValue, isRegexRemoveValue(value), !networkValues.contains(value) {
+                // A value-specific exception only cancels that same selector in uBO.
+                // With no corresponding network transform it needs no DNR allow.
+                result.rules = []; result.skipped = false
+            }
             if result.wasRemoveParamRule { removeParamRules += 1 }
             if result.wasExceptionRule { exceptionRules += 1 }
             if result.skipped { skippedRules += 1 }
-            if let rule = result.rule {
+            for rule in result.rules {
                 generatedSourceRuleCount += 1
                 if sourceRulesInOrder.count < maxGeneratedRules {
                     sourceRulesInOrder.append(rule)
@@ -198,7 +269,7 @@ public enum RemoveParamDNRRuleGenerator {
                     if protectiveRules.count < maxGeneratedRules {
                         protectiveRules.append(rule)
                     }
-                } else if redirectRules.count < maxGeneratedRules {
+                } else {
                     redirectRules.append(rule)
                 }
             }
@@ -215,7 +286,15 @@ public enum RemoveParamDNRRuleGenerator {
                 admittedSourceRules = Array(protectiveRules.prefix(availableSourceCapacity))
             } else {
                 let redirectCapacity = availableSourceCapacity - protectiveRules.count
-                admittedSourceRules = protectiveRules + Array(redirectRules.prefix(redirectCapacity))
+                func rank(_ rule: DeclarativeRule) -> Int {
+                    if rule.action.redirect?.extensionPath != nil { return 2 }
+                    return rule.condition.domains == nil && rule.condition.requestDomains == nil &&
+                        (rule.condition.urlFilter == nil || rule.condition.urlFilter?.hasPrefix("^") == true) ? 1 : 0
+                }
+                admittedSourceRules = protectiveRules + Array(redirectRules.enumerated().sorted {
+                    let a = rank($0.element), b = rank($1.element)
+                    return a == b ? $0.offset < $1.offset : a > b
+                }.prefix(redirectCapacity).map(\.element))
             }
         }
 
@@ -241,21 +320,38 @@ public enum RemoveParamDNRRuleGenerator {
 
     /// `blockedCount` writes the blocked-request count's rules; otherwise
     /// their file is emptied.
+    private static let generationLock = NSLock()
+
     public static func saveRules(
         for filters: [FilterList],
         disabledSites: [String],
         blockedCount: Bool,
-        groupIdentifier: String
+        groupIdentifier: String,
+        containerURL explicitContainerURL: URL? = nil
     ) throws -> Summary {
-        guard let containerURL = FileManager.default.containerURL(
+        generationLock.lock()
+        defer { generationLock.unlock() }
+        guard let containerURL = explicitContainerURL ?? FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: groupIdentifier
         ) else {
             throw CocoaError(.fileNoSuchFile)
         }
 
+        let inputKey = generationInputKey(
+            for: filters, disabledSites: disabledSites, blockedCount: blockedCount, containerURL: containerURL
+        )
+        if let saved = savedGeneration(containerURL: containerURL), saved.inputKey == inputKey,
+           rulesFilesExist(containerURL: containerURL) {
+            // The rules are unchanged. Carve-outs also depend on the redirect status
+            // file, which changes without any input here, so they are rechecked.
+            let carveOuts = saveRedirectCarveOutLines(saved.carveOutLines, containerURL: containerURL)
+            return saved.summary.withRedirectCarveOuts(carveOuts)
+        }
+
         let extracted = extractedDNRSourceRules(
             for: filters,
-            containerURL: containerURL
+            containerURL: containerURL,
+            includeBlockedCount: blockedCount
         )
 
         let generated = generateRules(
@@ -263,12 +359,15 @@ public enum RemoveParamDNRRuleGenerator {
             redirectSources: extracted.redirectSources,
             disabledSites: disabledSites
         )
-        try saveRules(generated.rules, groupIdentifier: groupIdentifier)
+        try? FileManager.default.removeItem(at: containerURL.appendingPathComponent(generationStateFilename))
+        try FilterArtifactStorage.write(JSONEncoder().encode(extracted.pageRules), to: containerURL.appendingPathComponent(pageRulesFilename))
+        try saveRules(generated.rules, containerURL: containerURL)
         let blockedCountRules = blockedCount
             ? generateBlockedCountRules(from: extracted.blockedCount, disabledSites: disabledSites)
             : []
         try saveBlockedCountRules(blockedCountRules, containerURL: containerURL)
-        let carveOuts = saveRedirectCarveOuts(for: generated.rules, containerURL: containerURL)
+        let carveOutLines = generated.rules.compactMap(carveOutLine)
+        let carveOuts = saveRedirectCarveOutLines(carveOutLines, containerURL: containerURL)
         let summary = Summary(
             generatedRules: generated.summary.generatedRules,
             removeParamRules: generated.summary.removeParamRules,
@@ -280,6 +379,10 @@ public enum RemoveParamDNRRuleGenerator {
             redirectCarveOuts: carveOuts,
             version: generated.summary.version
         )
+        // Written last: a generation that stopped midway has no state to match.
+        saveGeneration(SavedGeneration(
+            schema: generationSchema, inputKey: inputKey, summary: summary, carveOutLines: carveOutLines
+        ), containerURL: containerURL)
         os_log(
             .info,
             "Saved %d DNR rules (%d source removeparam, %d exceptions, %d skipped, %d truncated, %d disabled-site allow rules, %d resource redirects, %d native carve-outs, %d blocked-count rules)",
@@ -294,6 +397,66 @@ public enum RemoveParamDNRRuleGenerator {
             blockedCountRules.count
         )
         return summary
+    }
+
+    // MARK: - Generation state
+
+    /// What the saved rules were generated from. A match skips extraction,
+    /// generation, and the rule writes; the carve-out check still runs.
+    private struct SavedGeneration: Codable {
+        let schema: Int
+        let inputKey: String
+        let summary: Summary
+        let carveOutLines: [String]
+    }
+
+    /// Bump when the generator's output changes for the same inputs.
+    private static let generationSchema = 8
+    private static let generationStateFilename = "dnr-generation-state.json"
+
+    private final class BuildMarker {}
+
+    /// Source files count by name, size, and modification time, as in the extraction cache.
+    private static func generationInputKey(
+        for filters: [FilterList],
+        disabledSites: [String],
+        blockedCount: Bool,
+        containerURL: URL
+    ) -> String {
+        let bundle = Bundle(for: BuildMarker.self)
+        var canonical = "schema=\(generationSchema)\nbuild=\(bundle.infoDictionary?["CFBundleShortVersionString"] ?? "")"
+        canonical += "|\(bundle.infoDictionary?["CFBundleVersion"] ?? "")\n"
+        canonical += "blocked=\(blockedCount ? blockedCountExtractionFormat : 0)\n"
+        canonical += "disabled=\(disabledSites.joined(separator: "\n"))\n"
+        for filter in filters {
+            guard let sourceURL = ContentBlockerIncrementalCache.existingLocalFileURL(
+                for: filter,
+                containerURL: containerURL
+            ) else { continue }
+            canonical += "\(sourceURL.lastPathComponent)|\(fileFingerprint(at: sourceURL) ?? "missing")"
+            canonical += "|\(filter.isSelected)|" + FilterListSiteExclusion.scopeMarker(
+                excluding: filter.appliedExcludedSites, including: filter.appliedSelectedSites) + "\n"
+        }
+        return sha256Hex(data: Data(canonical.utf8))
+    }
+
+    private static func savedGeneration(containerURL: URL) -> SavedGeneration? {
+        guard let data = try? Data(contentsOf: containerURL.appendingPathComponent(generationStateFilename)),
+              let saved = try? JSONDecoder().decode(SavedGeneration.self, from: data),
+              saved.schema == generationSchema
+        else { return nil }
+        return saved
+    }
+
+    private static func saveGeneration(_ saved: SavedGeneration, containerURL: URL) {
+        guard let data = try? JSONEncoder().encode(saved) else { return }
+        try? FilterArtifactStorage.write(data, to: containerURL.appendingPathComponent(generationStateFilename))
+    }
+
+    private static func rulesFilesExist(containerURL: URL) -> Bool {
+        [rulesFilename, pageRulesFilename, blockedCountRulesFilename].allSatisfy {
+            FileManager.default.fileExists(atPath: containerURL.appendingPathComponent($0).path)
+        }
     }
 
     // MARK: - Extraction cache
@@ -317,8 +480,9 @@ public enum RemoveParamDNRRuleGenerator {
 
     static func extractedDNRSourceRules(
         for filters: [FilterList],
-        containerURL: URL
-    ) -> (removeParam: String, redirectSources: [String], blockedCount: String) {
+        containerURL: URL,
+        includeBlockedCount: Bool
+    ) -> (removeParam: String, redirectSources: [String], blockedCount: String, pageRules: [PageRule]) {
         try? FileManager.default.removeItem(
             at: containerURL.appendingPathComponent(legacyExtractionCacheFilename)
         )
@@ -329,38 +493,61 @@ public enum RemoveParamDNRRuleGenerator {
             cache = decoded
         }
 
-        var combined = ""
-        var blockedCount = ""
-        var redirectSources = RedirectFeed.sources(for: filters)
-        var updated: [String: ExtractionEntry] = [:]
-        var cacheChanged = false
-
-        for filter in filters {
-            guard let sourceURL = SafariContentBlockerAffinityProcessor.sourceURL(
+        // Lists whose cached entry is stale are scanned together; the cache, the
+        // result order, and the combined text stay in filter order.
+        let selected = filters.filter(\.isSelected)
+        let sources: [(key: String, url: URL, fingerprint: String, cached: ExtractionEntry?, filter: FilterList)] = selected.compactMap { filter in
+            guard let sourceURL = ContentBlockerIncrementalCache.existingLocalFileURL(
                 for: filter,
                 containerURL: containerURL
-            ) else { continue }
+            ) else { return nil }
             let key = sourceURL.lastPathComponent
             let fingerprint = fileFingerprint(at: sourceURL) ?? "missing"
-
-            let entry: ExtractionEntry
-            if let cached = cache[key], cached.fingerprint == fingerprint,
-               cached.blockedCountFormat == blockedCountExtractionFormat {
-                entry = cached
-            } else {
-                guard let contents = try? String(contentsOf: sourceURL, encoding: .utf8) else { continue }
-                entry = ExtractionEntry(
-                    fingerprint: fingerprint,
+            let cached = cache[key].flatMap { entry in
+                entry.fingerprint == fingerprint
+                    && (!includeBlockedCount || entry.blockedCountFormat == blockedCountExtractionFormat)
+                    ? entry : nil
+            }
+            return (key, sourceURL, fingerprint, cached, filter)
+        }
+        var scanned = [ExtractionEntry?](repeating: nil, count: sources.count)
+        scanned.withUnsafeMutableBufferPointer { results in
+            forEachSourceIndex(sources.indices.filter { sources[$0].cached == nil }) { index in
+                guard let contents = try? String(contentsOf: sources[index].url, encoding: .utf8) else { return }
+                results[index] = ExtractionEntry(
+                    fingerprint: sources[index].fingerprint,
                     lines: extractRemoveParamLines(from: contents),
                     redirectLines: extractRedirectLines(from: contents),
-                    blockedCountLines: extractBlockedCountLines(from: contents),
-                    blockedCountFormat: blockedCountExtractionFormat
+                    blockedCountLines: includeBlockedCount ? extractBlockedCountLines(from: contents) : nil,
+                    blockedCountFormat: includeBlockedCount ? blockedCountExtractionFormat : nil
                 )
-                cacheChanged = true
             }
-            updated[key] = entry
-            combined.append(entry.lines)
-            blockedCount.append(entry.blockedCountLines ?? "")
+        }
+
+        var combined = ""
+        var allLines = ""
+        var pageRules: [PageRule] = []
+        var scopedExceptions = Set<String>()
+        var blockedCount = ""
+        var redirectSources: [String] = []
+        var updated: [String: ExtractionEntry] = [:]
+        var cacheChanged = false
+        for (index, source) in sources.enumerated() {
+            guard let entry = source.cached ?? scanned[index] else { continue }
+            if source.cached == nil { cacheChanged = true }
+            updated[source.key] = entry
+            allLines.append(entry.lines)
+            let scoped = !source.filter.appliedExcludedSites.isEmpty || source.filter.appliedSelectedSites != nil
+            // DNR cannot intersect arbitrary list scopes with a rule's own scope.
+            if !scoped { combined.append(entry.lines) }
+            pageRules += entry.lines.components(separatedBy: .newlines).compactMap { line in
+                guard var page = pageRule(line) else { return nil }
+                if scoped && page.rule.isException { scopedExceptions.insert(page.rule.removeParamValue ?? "") }
+                page.excludedSites = source.filter.appliedExcludedSites
+                page.includedSites = source.filter.appliedSelectedSites
+                return page
+            }
+            if includeBlockedCount { blockedCount.append(entry.blockedCountLines ?? "") }
             if !entry.redirectLines.isEmpty { redirectSources.append(entry.redirectLines) }
         }
 
@@ -369,7 +556,24 @@ public enum RemoveParamDNRRuleGenerator {
                 try? FilterArtifactStorage.write(data, to: cacheURL)
             }
         }
-        return (combined, redirectSources, blockedCount)
+        let active = Set(activeRulesText(allLines).components(separatedBy: .newlines).compactMap(parseRule).map { ruleKey($0) })
+        pageRules.removeAll { !active.contains(ruleKey($0.rule)) }
+        combined = combined.components(separatedBy: .newlines).filter { line in
+            guard let rule = parseRule(line), active.contains(ruleKey(rule)) else { return false }
+            return rule.isException || rule.options.contains("important") ||
+                (!scopedExceptions.contains("") && !scopedExceptions.contains(rule.removeParamValue ?? ""))
+        }.joined(separator: "\n")
+        return (combined, redirectSources, blockedCount, pageRules)
+    }
+
+    /// Scans lists in parallel on macOS. Phones scan one at a time, since each
+    /// scan holds a whole list's text.
+    private static func forEachSourceIndex(_ indices: [Int], _ body: (Int) -> Void) {
+        #if os(macOS)
+        DispatchQueue.concurrentPerform(iterations: indices.count) { body(indices[$0]) }
+        #else
+        indices.forEach(body)
+        #endif
     }
 
     static func extractRemoveParamLines(from contents: String) -> String {
@@ -388,18 +592,27 @@ public enum RemoveParamDNRRuleGenerator {
         }
         let size = (attrs[.size] as? NSNumber)?.int64Value ?? 0
         let modDate = (attrs[.modificationDate] as? Date)?.timeIntervalSince1970 ?? 0
-        return "\(size)|\(Int64(modDate * 1_000_000))"
+        return "\(attrs[.systemFileNumber] ?? 0)|\(size)|\(Int64(modDate * 1_000_000))"
     }
 
     public static func clearSavedRules(groupIdentifier: String) throws -> Summary {
-        let rules: [DeclarativeRule] = []
-        try saveRules(rules, groupIdentifier: groupIdentifier)
-        if let containerURL = FileManager.default.containerURL(
+        guard let containerURL = FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: groupIdentifier
-        ) {
-            _ = saveRedirectCarveOuts(for: rules, containerURL: containerURL)
-            try saveBlockedCountRules([], containerURL: containerURL)
+        ) else {
+            throw CocoaError(.fileNoSuchFile)
         }
+        return try clearSavedRules(containerURL: containerURL)
+    }
+
+    static func clearSavedRules(containerURL: URL) throws -> Summary {
+        generationLock.lock()
+        defer { generationLock.unlock() }
+        let rules: [DeclarativeRule] = []
+        try saveRules(rules, containerURL: containerURL)
+        try FilterArtifactStorage.write(Data("[]".utf8), to: containerURL.appendingPathComponent(pageRulesFilename))
+        _ = saveRedirectCarveOutLines([], containerURL: containerURL)
+        try saveBlockedCountRules([], containerURL: containerURL)
+        try? FileManager.default.removeItem(at: containerURL.appendingPathComponent(generationStateFilename))
         return Summary(
             generatedRules: 0,
             removeParamRules: 0,
@@ -463,13 +676,7 @@ public enum RemoveParamDNRRuleGenerator {
         ]
     }
 
-    private static func saveRules(_ rules: [DeclarativeRule], groupIdentifier: String) throws {
-        guard let containerURL = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: groupIdentifier
-        ) else {
-            throw CocoaError(.fileNoSuchFile)
-        }
-
+    private static func saveRules(_ rules: [DeclarativeRule], containerURL: URL) throws {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
         let data = try encoder.encode(rules)
@@ -522,60 +729,109 @@ public enum RemoveParamDNRRuleGenerator {
         return parsed
     }
 
-    /// Nil means this is not a removeparam rule; otherwise use the actual DNR builder.
-    static func supportsRule(_ line: String) -> Bool? {
-        let result = buildRule(from: line, nextID: 1)
-        return result.wasRemoveParamRule ? result.rule != nil : nil
+    /// The rules viewer counts both network transforms and page-only selectors.
+    static func supportsRule(_ line: String, vocabulary: NameVocabulary) -> Bool? {
+        let dnr = supportsDNRRule(line, vocabulary: vocabulary)
+        guard dnr == false, let page = pageRule(line) else { return dnr }
+        let types = resourceTypes(from: page.rule.options.map(optionNameAndValue))
+        return (types?.contains("main_frame") ?? true) && !page.rule.options.contains("third-party")
     }
 
-    private static func buildRule(from rawLine: String, nextID: Int) -> BuildResult {
+    static func supportsDNRRule(_ line: String, vocabulary: NameVocabulary) -> Bool? {
+        let result = buildRules(from: line, vocabulary: vocabulary)
+        return result.wasRemoveParamRule ? !result.rules.isEmpty : nil
+    }
+
+    private static func buildRules(from rawLine: String, vocabulary: NameVocabulary) -> BuildResult {
         guard let parsed = parseRule(rawLine) else {
-            return BuildResult(rule: nil, wasRemoveParamRule: false, wasExceptionRule: false, skipped: false)
+            return BuildResult(rules: [], wasRemoveParamRule: false, wasExceptionRule: false, skipped: false)
         }
+        let skipped = BuildResult(rules: [], wasRemoveParamRule: true, wasExceptionRule: parsed.isException, skipped: true)
 
         let options = parsed.options.map { optionNameAndValue($0).name }
         if options.contains("badfilter") || parsed.options.contains(where: { $0.hasPrefix("~removeparam") }) {
-            return BuildResult(rule: nil, wasRemoveParamRule: true, wasExceptionRule: parsed.isException, skipped: true)
+            return skipped
         }
 
-        guard let condition = makeCondition(parsed: parsed) else {
-            return BuildResult(rule: nil, wasRemoveParamRule: true, wasExceptionRule: parsed.isException, skipped: true)
-        }
-
-        // Priority 1 belongs to the blocked-request count's rules.
-        let priority = parsed.isException ? 10_000 : (options.contains("important") ? 1_000 : 2)
-        let action: RuleAction
+        let value = parsed.removeParamValue == "|" ? "" : (parsed.removeParamValue ?? "")
+        let isRegex = isRegexRemoveValue(value)
+        let values: [String]
         if parsed.isException {
-            action = RuleAction(type: "allow", redirect: nil)
-        } else if let value = parsed.removeParamValue, !value.isEmpty {
-            guard let decoded = decodeRemoveParamValue(value), isSupportedLiteralParameterName(decoded) else {
-                return BuildResult(rule: nil, wasRemoveParamRule: true, wasExceptionRule: false, skipped: true)
-            }
-            action = RuleAction(
-                type: "redirect",
-                redirect: Redirect(
-                    transform: URLTransform(
-                        query: nil,
-                        queryTransform: QueryTransform(removeParams: [decoded])
-                    )
-                )
-            )
+            values = [""]
+        } else if isRegex {
+            guard let matched = vocabulary.literalNames(matching: value), !matched.isEmpty else { return skipped }
+            values = matched
         } else {
-            action = RuleAction(
-                type: "redirect",
-                redirect: Redirect(transform: URLTransform(query: "", queryTransform: nil))
-            )
+            values = [value]
+        }
+
+        // One rule per name, each with the name's token, as a literal rule has. A
+        // token-less rule listing many names is a no-op on most navigations, and
+        // Safari applies the highest-priority match, so it would shadow the lower
+        // priority rules that do strip.
+        let groups = values.map { (value: $0, names: $0.isEmpty ? [] : [$0]) }
+
+        var rules: [DeclarativeRule] = []
+        for group in groups {
+            guard let made = makeCondition(parsed: parsed, removeValue: group.value),
+                  made.resourceTypes != [] else { return skipped }
+            let priority = parsed.isException ? 10_000 : (options.contains("important") ? 15_000 : 4)
+            let action: RuleAction
+            if parsed.isException {
+                action = RuleAction(type: "allow", redirect: nil)
+            } else if group.names.isEmpty {
+                action = RuleAction(type: "redirect", redirect: Redirect(transform: URLTransform(query: "")))
+            } else {
+                let decoded = group.names.compactMap(decodeRemoveParamValue)
+                guard decoded.count == group.names.count, decoded.allSatisfy(isSupportedLiteralParameterName) else { return skipped }
+                action = RuleAction(type: "redirect", redirect: Redirect(transform: URLTransform(
+                    queryTransform: QueryTransform(removeParams: decoded))))
+            }
+            var condition = made
+            if condition.domains != nil || condition.excludedDomains != nil {
+                // Safari's legacy domains means top-document, not the initiating
+                // frame. A main-frame request is its own document in uBO.
+                if condition.resourceTypes?.contains("main_frame") == true {
+                    var document = condition
+                    document.resourceTypes = ["main_frame"]
+                    rules.append(DeclarativeRule(id: 0, priority: priority, action: action, condition: document))
+                }
+                condition.resourceTypes?.removeAll { $0 == "main_frame" }
+                condition.initiatorDomains = condition.domains
+                condition.excludedInitiatorDomains = condition.excludedDomains
+                condition.domains = nil; condition.excludedDomains = nil
+            }
+            if condition.resourceTypes != [] {
+                rules.append(DeclarativeRule(id: 0, priority: priority, action: action, condition: condition))
+            }
         }
 
         return BuildResult(
-            rule: DeclarativeRule(id: nextID, priority: priority, action: action, condition: condition),
+            rules: rules,
             wasRemoveParamRule: true,
             wasExceptionRule: parsed.isException,
             skipped: false
         )
     }
 
-    private static func parseRule(_ rawLine: String) -> ParsedRule? {
+    /// The options start at the first `$` whose tail has a `removeparam` option.
+    /// Regex values can contain `$`, so the last `$` is not always the separator.
+    private static func optionsSeparator(in line: String) -> String.Index? {
+        var search = line.startIndex
+        while let dollar = line[search...].firstIndex(of: "$") {
+            let tail = String(line[line.index(after: dollar)...])
+            if line.hasPrefix("/"), line.contains("/$"), line[..<dollar].last != "/" {
+                search = line.index(after: dollar); continue
+            }
+            if splitOptions(tail).contains(where: { optionNameAndValue($0).name == "removeparam" }) {
+                return dollar
+            }
+            search = line.index(after: dollar)
+        }
+        return nil
+    }
+
+    static func parseRule(_ rawLine: String) -> ParsedRule? {
         var line = rawLine.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !line.isEmpty else { return nil }
         guard !line.hasPrefix("!") && !line.hasPrefix("#") && !line.hasPrefix("[") else { return nil }
@@ -583,11 +839,10 @@ public enum RemoveParamDNRRuleGenerator {
         let isException = line.hasPrefix("@@")
         if isException { line.removeFirst(2) }
 
-        guard let dollarIndex = line.lastIndex(of: "$") else { return nil }
+        guard let dollarIndex = optionsSeparator(in: line) else { return nil }
         let pattern = String(line[..<dollarIndex]).trimmingCharacters(in: .whitespaces)
         let optionsText = String(line[line.index(after: dollarIndex)...])
         let options = splitOptions(optionsText)
-        guard options.contains(where: { optionNameAndValue($0).name == "removeparam" }) else { return nil }
 
         let removeParamValue = options.compactMap { option -> String? in
             let pair = optionNameAndValue(option)
@@ -603,10 +858,40 @@ public enum RemoveParamDNRRuleGenerator {
         )
     }
 
-    static func splitOptions(_ optionsText: String) -> [String] {
-        optionsText.split(separator: ",", omittingEmptySubsequences: true)
-            .map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
+    static func splitOptions(_ text: String) -> [String] {
+        var result: [String] = [], token = ""
+        var inRegex = false, escaped = false
+        for char in text {
+            if char == "," && !inRegex && !escaped {
+                result.append(token); token = ""; continue
+            }
+            if char == "/" && !escaped {
+                if inRegex { inRegex = false }
+                else if token == "removeparam=" || token == "removeparam=~" { inRegex = true }
+            }
+            token.append(char)
+            if char == "\\" && !escaped { escaped = true } else { escaped = false }
+        }
+        result.append(token)
+        return result.map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }.map { option in
+            let pair = optionNameAndValue(option)
+            let name = ["from": "domain", "3p": "third-party", "1p": "~third-party",
+                        "~3p": "~third-party", "~1p": "third-party"][pair.name] ?? pair.name
+            return name + (pair.value.map { "=" + $0 } ?? "")
+        }
+    }
+
+    static func ruleKey(_ rule: ParsedRule) -> String {
+        (rule.isException ? "@@" : "") + rule.pattern + "$" + rule.options
+            .filter { $0 != "badfilter" }.sorted().joined(separator: ",")
+    }
+
+    static func activeRulesText(_ text: String) -> String {
+        let parsed = text.components(separatedBy: .newlines).compactMap { line -> (String, ParsedRule)? in
+            parseRule(line).map { (line, $0) }
+        }
+        let disabled = Set(parsed.filter { $0.1.options.contains("badfilter") }.map { ruleKey($0.1) })
+        return parsed.filter { !disabled.contains(ruleKey($0.1)) }.map(\.0).joined(separator: "\n")
     }
 
     static func optionNameAndValue(_ option: String) -> (name: String, value: String?) {
@@ -616,25 +901,34 @@ public enum RemoveParamDNRRuleGenerator {
         return (name, value)
     }
 
-    private static func makeCondition(parsed: ParsedRule) -> RuleCondition? {
-        let optionPairs = parsed.options.map(optionNameAndValue)
-
-        guard !containsUnsupportedCriticalOptions(optionPairs) else { return nil }
-
-        let removeValue = parsed.removeParamValue ?? ""
+    private static func makeCondition(
+        parsed: ParsedRule,
+        removeValue: String
+    ) -> RuleCondition? {
+        let allPairs = parsed.options.map(optionNameAndValue)
+        guard !containsUnsupportedCriticalOptions(allPairs) else { return nil }
         guard isSupportedRemoveParamValue(removeValue) else { return nil }
+        // A broader allow is safe; a broader redirect is not. Retain the URL and
+        // resource scope when an exception's entity restriction needs the page
+        // evaluator, rather than disabling every unrelated network transform.
+        let optionPairs = allPairs.filter { option in
+            !(parsed.isException && ["domain", "to", "denyallow"].contains(option.name)
+              && option.value?.contains(".*") == true)
+        }
 
+        let isURLRegex = parsed.pattern.hasPrefix("/") && parsed.pattern.hasSuffix("/")
         var urlFilter = normalizeURLFilterPattern(parsed.pattern)
-        if !removeValue.isEmpty, let decoded = decodeRemoveParamValue(removeValue) {
+        if !parsed.isException && !isURLRegex && !removeValue.isEmpty, let decoded = decodeRemoveParamValue(removeValue) {
             guard let token = removeParamURLFilterToken(for: decoded) else { return nil }
             urlFilter = urlFilter.map { $0 + "*" + token } ?? token
         }
 
         var condition = RuleCondition()
         condition.urlFilter = urlFilter
+        if isURLRegex { condition.regexFilter = String(parsed.pattern.dropFirst().dropLast()) }
         condition.resourceTypes = resourceTypes(from: optionPairs)
         if condition.resourceTypes == nil {
-            condition.resourceTypes = ["main_frame", "sub_frame"]
+            condition.resourceTypes = ["main_frame", "sub_frame", "image", "xmlhttprequest"]
         }
 
         guard let domains = parseDomainOption(named: "domain", from: optionPairs),
@@ -652,6 +946,11 @@ public enum RemoveParamDNRRuleGenerator {
         if !toDomains.included.isEmpty { condition.requestDomains = toDomains.included }
         if !excludedRequestDomains.isEmpty { condition.excludedRequestDomains = excludedRequestDomains }
 
+        if let method = optionPairs.first(where: { $0.name == "method" }) {
+            let methods = (method.value ?? "").lowercased().split(separator: "|").map(String.init)
+            guard !methods.isEmpty, methods.allSatisfy({ ["get", "post", "put", "delete", "head", "options", "patch", "connect", "trace"].contains($0) }) else { return nil }
+            condition.requestMethods = methods
+        }
         if optionPairs.contains(where: { $0.name == "third-party" }) {
             condition.domainType = "thirdParty"
         } else if optionPairs.contains(where: { $0.name == "~third-party" }) {
@@ -665,13 +964,12 @@ public enum RemoveParamDNRRuleGenerator {
         return condition
     }
 
-    private static func containsUnsupportedCriticalOptions(_ options: [(name: String, value: String?)]) -> Bool {
+    static func containsUnsupportedCriticalOptions(_ options: [(name: String, value: String?)]) -> Bool {
         for option in options {
             if option.name.hasPrefix("~"), resourceTypeMap[String(option.name.dropFirst())] != nil {
-                return true
+                continue
             }
             if skippedOptionNames.contains(option.name) { return true }
-            if option.name == "method" { return true }
             // Skip rules with options we do not understand. Silently ignoring
             // an unrecognized option (e.g. a bare domain list like
             // `hinta.fi|carrefoursa.com` without a `domain=` prefix) would
@@ -691,17 +989,13 @@ public enum RemoveParamDNRRuleGenerator {
         return pattern.isEmpty ? nil : pattern
     }
 
-    private static func resourceTypes(from options: [(name: String, value: String?)]) -> [String]? {
-        var ordered: [String] = []
-        var seen = Set<String>()
-        for option in options {
-            guard let mapped = resourceTypeMap[option.name] else { continue }
-            for resourceType in mapped where !seen.contains(resourceType) {
-                seen.insert(resourceType)
-                ordered.append(resourceType)
-            }
-        }
-        return ordered.isEmpty ? nil : ordered
+    static func resourceTypes(from options: [(name: String, value: String?)]) -> [String]? {
+        let included = options.flatMap { resourceTypeMap[$0.name] ?? [] }
+        let excluded = Set(options.filter { $0.name.hasPrefix("~") }
+            .flatMap { resourceTypeMap[String($0.name.dropFirst())] ?? [] })
+        guard !included.isEmpty || !excluded.isEmpty else { return nil }
+        return (included.isEmpty ? ["main_frame", "sub_frame", "image", "xmlhttprequest"] : included)
+            .uniqued().filter { !excluded.contains($0) }
     }
 
     private static func parseDomainOption(
@@ -763,7 +1057,7 @@ public enum RemoveParamDNRRuleGenerator {
     }
 
     private static func isSupportedRemoveParamValue(_ value: String) -> Bool {
-        guard !value.hasPrefix("~") && !value.hasPrefix("/") else { return false }
+        guard !value.hasPrefix("~") && !isRegexRemoveValue(value) else { return false }
         if value.contains("|") { return false }
         if value.isEmpty { return true }
         guard let decoded = decodeRemoveParamValue(value) else { return false }
@@ -771,7 +1065,35 @@ public enum RemoveParamDNRRuleGenerator {
     }
 
     private static func decodeRemoveParamValue(_ value: String) -> String? {
-        value.removingPercentEncoding
+        value
+    }
+
+    static func isRegexRemoveValue(_ value: String) -> Bool {
+        value.hasPrefix("/") && value.count > 2 && (value.hasSuffix("/") || value.hasSuffix("/i"))
+    }
+
+    private static func isNamePrefixRegex(_ value: String) -> Bool {
+        guard let end = value.lastIndex(of: "/"), value.hasPrefix("/^") else { return false }
+        var body = String(value[value.index(value.startIndex, offsetBy: 2)..<end])
+        if body.hasPrefix("\\??") { body.removeFirst(3) }
+        if body.hasSuffix(".*$") { body.removeLast(3) }
+        if body.hasSuffix("=") { body.removeLast() }
+        // This deliberately excludes value-dependent expressions and lookarounds.
+        return !body.isEmpty && body.allSatisfy { $0.isASCII && ($0.isLetter || $0.isNumber || "_-|()".contains($0)) }
+    }
+
+    /// `/body/` or `/body/i`. Other flags, an empty body, or an invalid pattern yield nil.
+    static func compiledRemoveParamRegex(_ value: String) -> NSRegularExpression? {
+        guard value.hasPrefix("/"), let closing = value.lastIndex(of: "/"), closing > value.startIndex else {
+            return nil
+        }
+        let body = value[value.index(after: value.startIndex)..<closing]
+        let flags = value[value.index(after: closing)...]
+        guard !body.isEmpty, flags.isEmpty || flags == "i" else { return nil }
+        return try? NSRegularExpression(
+            pattern: String(body),
+            options: flags.isEmpty ? [] : [.caseInsensitive]
+        )
     }
 
     private static func isSupportedLiteralParameterName(_ value: String) -> Bool {
@@ -779,6 +1101,12 @@ public enum RemoveParamDNRRuleGenerator {
         guard value.trimmingCharacters(in: .whitespacesAndNewlines) == value else { return false }
         guard value.rangeOfCharacter(from: .whitespacesAndNewlines) == nil else { return false }
         return true
+    }
+
+    /// A literal value a single rule can express; the same test a literal rule applies.
+    private static func isExpressibleLiteralRemoveValue(_ value: String) -> Bool {
+        guard isSupportedRemoveParamValue(value), !value.isEmpty else { return false }
+        return decodeRemoveParamValue(value).flatMap(removeParamURLFilterToken(for:)) != nil
     }
 
     private static func removeParamURLFilterToken(for decodedValue: String) -> String? {

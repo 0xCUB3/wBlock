@@ -91,17 +91,33 @@ public enum ContentBlockerMappingService {
         selectedFilters: [FilterList],
         across targets: [ContentBlockerTargetInfo]
     ) -> ContentBlockerDistribution {
+        let ordered = orderedForDistribution(selectedFilters)
+        var budget = shardBudget
+        while true {
+            let (distribution, largest) = pack(ordered, across: targets, budget: budget)
+            // Large shards can strand free space in other blockers. Refine the
+            // same plan until it fits, or every list has reached the shard cap.
+            if largest <= 1 || budget == 1 { return distribution }
+            budget = max(1, budget / 2)
+        }
+    }
+
+    private static func pack(
+        _ ordered: [FilterList], across targets: [ContentBlockerTargetInfo], budget: Int
+    ) -> (ContentBlockerDistribution, Double) {
         var distribution = ContentBlockerDistribution(
             filtersByTarget: Dictionary(uniqueKeysWithValues: targets.map { ($0, []) })
         )
-        guard !targets.isEmpty else { return distribution }
+        guard !targets.isEmpty else { return (distribution, 0) }
 
         struct Item { let filter: FilterList; let order: Int; let shard: ContentBlockerShard?; let cost: Double }
         var items: [Item] = []
-        for (order, filter) in orderedForDistribution(selectedFilters).enumerated() {
+        for (order, filter) in ordered.enumerated() {
+            // Cost in whole blockers: rule count and JSON size both count.
             let cost = Double(max(0, filter.sourceRuleCount ?? 0)) / Double(shardBudget)
                 + Double(max(0, filter.sourceSizeBytes ?? 0)) / Double(sourceByteBudget)
-            let parts = Int(min(Double(targets.count), max(1, cost.rounded(.up))))
+            let split = cost * Double(shardBudget) / Double(budget)
+            let parts = Int(min(Double(targets.count), max(1, split.rounded(.up))))
             for index in 0..<parts {
                 items.append(Item(
                     filter: filter, order: order,
@@ -121,7 +137,7 @@ public enum ContentBlockerMappingService {
             if let shard = item.shard { distribution.shardsByTarget[destination, default: [:]][item.filter.id] = shard }
             load[destination, default: 0] += item.cost
         }
-        return distribution
+        return (distribution, load.values.max() ?? 0)
     }
 }
 
@@ -132,44 +148,10 @@ public struct ContentBlockerDistribution: Sendable {
     public var shardsByTarget: [ContentBlockerTargetInfo: [UUID: ContentBlockerShard]] = [:]
 }
 
-/// One of `count` parts of a list. Block rules are spread by a stable hash so a
-/// list update moves few rules between blockers. Exceptions, `$badfilter`,
-/// directives, and affinity blocks stay in every part: Safari applies them only
-/// inside their own blocker, and each part needs the full set.
+/// One of `count` parts of a list too big for one blocker. The engine splits
+/// block rules between the parts by a stable hash and keeps exceptions,
+/// `$badfilter`, and directives in every part (wbe apply.rs).
 public struct ContentBlockerShard: Hashable, Sendable {
     public let index: Int
     public let count: Int
-
-    private func keeps(_ identity: String) -> Bool {
-        var hash: UInt64 = 0xcbf29ce484222325
-        for byte in identity.utf8 { hash = (hash ^ UInt64(byte)) &* 0x100000001b3 }
-        // FNV's low bits are a plain parity of the input; mix before the modulo.
-        hash = (hash ^ (hash >> 33)) &* 0xff51afd7ed558ccd
-        hash = (hash ^ (hash >> 33)) &* 0xc4ceb9fe1a85ec53
-        hash ^= hash >> 33
-        return Int(hash % UInt64(count)) == index
-    }
-
-    /// Whether every part keeps `trimmed` rather than one.
-    static func isShared(_ trimmed: Substring) -> Bool {
-        !FilterRuleAnalysis.isRuleLine(trimmed) || trimmed.utf8.starts(with: "@@".utf8)
-            || RuleText.contains(trimmed, "#@") || RuleText.contains(trimmed, "$badfilter")
-            || RuleText.contains(trimmed, ",badfilter")
-    }
-
-    func apply(to text: String) -> String {
-        var kept: [Substring] = []
-        var insideAffinity = false
-        RuleText.forEachLine(text, emptyLines: .keptPerScalar) { line in
-            let trimmed = RuleText.trimmed(line)
-            if trimmed.utf8.starts(with: SafariContentBlockerAffinityProcessor.directivePrefix.utf8) {
-                insideAffinity = trimmed.utf8.count > SafariContentBlockerAffinityProcessor.directivePrefix.utf8.count
-            } else if !insideAffinity, !Self.isShared(trimmed),
-                      !keeps(FilterRuleAnalysis.ruleIdentity(trimmed)) {
-                return
-            }
-            kept.append(line)
-        }
-        return kept.joined(separator: "\n")
-    }
 }

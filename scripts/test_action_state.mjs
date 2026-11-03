@@ -40,7 +40,7 @@ for (const file of ['extension-src/background.js', 'wBlock Scripts (iOS)/Resourc
         if (message.action === 'getBlockingPausedState') return { paused };
         if (message.action === 'getBlockingState') return { disabled: disabledHosts.has(message.host), paused: false };
         if (message.action === 'getRemoveParamDNRRules') return { ok: true, version: 'test', rules: [], count: 0 };
-        return { ok: true, payload: { css: [], extendedCss: [], js: [], scriptlets: [], engineTimestamp: 1 } };
+        return { ok: true, payload: { css: [], procedural: [], scriptlets: [], engineTimestamp: 1 } };
       }
     },
     storage: { local: {

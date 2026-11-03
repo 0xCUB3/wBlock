@@ -5,7 +5,6 @@
 //  Created by Andrey Meshkov on 11/04/2025.
 //
 
-internal import FilterEngine
 import Foundation
 #if os(macOS)
 import AppKit
@@ -53,8 +52,7 @@ public enum WebExtensionRequestHandler {
     private static func emptyRulesPayload(disabled: Bool, paused: Bool) -> [String: Any] {
         [
             "css": [],
-            "extendedCss": [],
-            "js": [],
+            "procedural": [],
             "scriptlets": [],
             "userScripts": [],
             "engineTimestamp": 0,
@@ -143,7 +141,7 @@ public enum WebExtensionRequestHandler {
             case "getUserScriptRequestPolicy":
                 handleUserScriptRequestPolicy(message: message!, context: context)
                 return
-            case "validateUserScriptExecution":
+            case "validateUserScriptExecutions":
                 handleValidateUserScriptExecution(message: message!, context: context)
                 return
             case "setUserScriptStorageValue":
@@ -190,6 +188,19 @@ public enum WebExtensionRequestHandler {
                 return
             case "setSiteDisabledState":
                 handleSetSiteDisabledState(message: message!, context: context)
+                return
+            case "getCleanPageURL":
+                Task { @MainActor in
+                    let original = message?["url"] as? String ?? ""
+                    let disabled = await currentFilterDisabledSites()
+                    let host = URL(string: original)?.host ?? ""
+                    var clean = original
+                    if !BlockingPauseStore.isPaused(.filters), !HostMatcher.isHostDisabled(host: host, disabledSites: disabled),
+                       let container = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value) {
+                        clean = RemoveParamDNRRuleGenerator.cleanSavedPageURL(original, containerURL: container)
+                    }
+                    context.completeRequest(returningItems: [createResponse(with: ["ok": true, "cleanUrl": clean])])
+                }
                 return
             case "getRemoveParamDNRRules":
                 handleGetRemoveParamDNRRules(message: message!, context: context)
@@ -258,12 +269,12 @@ public enum WebExtensionRequestHandler {
                         if disabled {
                             message?["payload"] = emptyRulesPayload(disabled: true, paused: false)
                         } else {
-                            let topUrl = (payload["topUrl"] as? String).flatMap(URL.init(string:))
-                            // The engine read can block on its file lock or a cold
-                            // deserialize; keep it off the main actor so state and
-                            // userscript requests are not stuck behind it.
+                            // A cold engine load reads and deserializes a file; keep it
+                            // off the main actor so state and userscript requests are
+                            // not stuck behind it. Cosmetic rules follow the frame URL,
+                            // as in uBO, so the top URL is not needed.
                             let lookup = await Task.detached(priority: .userInitiated) {
-                                lookupEnginePayload(url: url, topUrl: topUrl)
+                                lookupEnginePayload(url: url)
                             }.value
                             if let errorMessage = lookup.error {
                                 os_log(.error, "%@", errorMessage)
@@ -274,6 +285,13 @@ public enum WebExtensionRequestHandler {
                                 message?["payload"] = lookup.payload
                             }
                         }
+                    }
+
+                    if message?["includeUserScripts"] as? Bool == true, let request = message {
+                        message?["zapper"] = await getZapperRules(hostname: url.host ?? "")
+                        let scripts = await getUserScripts(message: request)
+                        message?["userScripts"] = scripts["userScripts"] ?? []
+                        message?["userScriptsError"] = scripts["error"] ?? nil
                     }
 
                     if var trace = message?["trace"] as? [String: Int64] {
@@ -321,58 +339,19 @@ public enum WebExtensionRequestHandler {
         }
     }
 
-    private static func lookupEnginePayload(url: URL, topUrl: URL?) -> (payload: [String: Any]?, error: String?) {
-        #if os(iOS)
-        // Reading the engine holds a kernel flock on the app group; if Safari
-        // backgrounds mid-read the extension is killed with 0xDEAD10CC. Defer
-        // suspension until the lookup returns.
-        let shield = SuspensionShield(reason: "wBlock engine lookup")
-        defer { shield.release() }
-        #endif
+    // The engine is replaced by atomic rename, so reading it takes no app group
+    // flock and needs no suspension shield.
+    private static func lookupEnginePayload(url: URL) -> (payload: [String: Any]?, error: String?) {
         do {
-            let configuration = try WebExtensionGate.shared.withLock {
-                try WebExtension.shared(groupID: GroupIdentifier.shared.value)
-                    .lookup(pageUrl: url, topUrl: topUrl)
+            guard var payload = try FilterEngineStore.lookup(url: url, groupIdentifier: GroupIdentifier.shared.value) else {
+                return (nil, "No filter engine published")
             }
-            guard let configuration else {
-                return (nil, "No WebExtension configuration available")
-            }
-            return (convertToPayload(configuration, disabled: false, paused: false), nil)
+            payload["disabled"] = false
+            payload["paused"] = false
+            return (payload, nil)
         } catch {
-            return (nil, "Failed to get WebExtension instance: \(error.localizedDescription)")
+            return (nil, "Filter engine lookup failed: \(error.localizedDescription)")
         }
-    }
-
-    /// Converts a WebExtension.Configuration object to a dictionary payload.
-    ///
-    /// - Parameters:
-    ///   - configuration: The WebExtension.Configuration object to convert.
-    /// - Returns: A dictionary containing CSS, extended CSS, JS, and scriptlets
-    ///           that should be applied to the web page.
-    private static func convertToPayload(
-        _ configuration: WebExtension.Configuration,
-        disabled: Bool,
-        paused: Bool
-    ) -> [String: Any] {
-        var payload: [String: Any] = [:]
-        payload["css"] = configuration.css
-        payload["extendedCss"] = configuration.extendedCss
-        payload["js"] = configuration.js
-
-        var scriptlets: [[String: Any]] = []
-        for scriptlet in configuration.scriptlets {
-            var scriptletData: [String: Any] = [:]
-            scriptletData["name"] = scriptlet.name
-            scriptletData["args"] = scriptlet.args
-            scriptlets.append(scriptletData)
-        }
-
-        payload["scriptlets"] = scriptlets
-        payload["engineTimestamp"] = configuration.engineTimestamp
-        payload["disabled"] = disabled
-        payload["paused"] = paused
-
-        return payload
     }
 
     /// Creates an NSExtensionItem response with the provided JSON payload.
@@ -1136,164 +1115,146 @@ public enum WebExtensionRequestHandler {
     /// but callers can request hydrated payloads to avoid repeated native chunk messages.
     private static func handleGetUserScriptsRequest(
         message: [String: Any?],
-        context: NSExtensionContext,
-        retryCount: Int = 0
+        context: NSExtensionContext
     ) {
+        Task { @MainActor in
+            let result = await getUserScripts(message: message)
+            context.completeRequest(returningItems: [createResponse(with: result)])
+        }
+    }
+
+    @MainActor
+    private static func getUserScripts(message: [String: Any?], retryCount: Int = 0) async -> [String: Any?] {
         // While the userscript component is paused, serve no userscripts or userstyles.
         if BlockingPauseStore.isPaused(.userScripts) {
-            let response = createResponse(with: userScriptsResponse(userScripts: []))
-            context.completeRequest(returningItems: [response])
-            return
+            return userScriptsResponse(userScripts: [])
         }
 
         guard let urlString = message["url"] as? String,
               let page = URL(string: urlString), page.host?.isEmpty == false,
               ["http", "https"].contains(page.scheme?.lowercased() ?? "") else {
-            let response = createResponse(with: userScriptsResponse(userScripts: []))
-            context.completeRequest(returningItems: [response])
-            return
+            return userScriptsResponse(userScripts: [])
         }
 
         let includeContent = message["includeContent"] as? Bool == true
         let maxInlineContentBytes = message["maxInlineContentBytes"] as? Int ?? Int.max
-        Task { @MainActor in
-            // Site disable affects content filtering and scriptlets. Userscripts keep
-            // running unless the global userscript pause or per-script site toggle says
-            // otherwise, so the popup controls stay available on disabled sites.
-            let userScriptManager = UserScriptManager.shared
-            await userScriptManager.waitUntilReady()
-            let payloadMutationRevision = userScriptManager.payloadMutationRevision
-            let userScripts = userScriptManager.getEnabledUserScriptsForURL(urlString).filter {
-                !$0.noframes || message["isTopFrame"] as? Bool == true
-            }
+        // Site disable affects content filtering and scriptlets. Userscripts keep
+        // running unless the global userscript pause or per-script site toggle says
+        // otherwise, so the popup controls stay available on disabled sites.
+        let userScriptManager = UserScriptManager.shared
+        await userScriptManager.waitUntilReady()
+        let payloadMutationRevision = userScriptManager.payloadMutationRevision
+        let matchedScripts = userScriptManager.getEnabledUserScriptsForURL(urlString)
+        let userScripts = matchedScripts.filter {
+            !$0.noframes || message["isTopFrame"] as? Bool == true
+        }
 
-            var userScriptDescriptors: [[String: Any]] = []
-            userScriptDescriptors.reserveCapacity(userScripts.count)
+        // Inlining content in this single response lets the injector run a script
+        // without extra native round-trips. That timing matters most for
+        // `document-start` scripts (for example anti-adblock shims), which must
+        // execute before the page's own code. The payload uses executable userscript
+        // content with the metadata block removed; matching and UI metadata stay on
+        // the native side.
+        let documentStartInlineCap = max(maxInlineContentBytes, Self.documentStartInlineContentCap)
+        var remainingInlineBudget = Self.totalInlineResponseBudget
 
-            // Inlining content in this single response lets the injector run a script
-            // without extra native round-trips. That timing matters most for
-            // `document-start` scripts (for example anti-adblock shims), which must
-            // execute before the page's own code. The payload uses executable userscript
-            // content with the metadata block removed; matching and UI metadata stay on
-            // the native side.
-            let documentStartInlineCap = max(maxInlineContentBytes, Self.documentStartInlineContentCap)
-            var remainingInlineBudget = Self.totalInlineResponseBudget
+        // Process timing-critical scripts first so they win the inline budget, but emit
+        // descriptors in the original order the manager returned.
+        let inlineOrder = userScripts.indices.sorted { lhs, rhs in
+            let lhsStart = userScripts[lhs].runAt == "document-start"
+            let rhsStart = userScripts[rhs].runAt == "document-start"
+            if lhsStart != rhsStart { return lhsStart }
+            return lhs < rhs
+        }
 
-            // Process timing-critical scripts first so they win the inline budget, but emit
-            // descriptors in the original order the manager returned.
-            let inlineOrder = userScripts.indices.sorted { lhs, rhs in
-                let lhsStart = userScripts[lhs].runAt == "document-start"
-                let rhsStart = userScripts[rhs].runAt == "document-start"
-                if lhsStart != rhsStart { return lhsStart }
-                return lhs < rhs
-            }
+        var descriptorsByIndex = [Int: [String: Any]](minimumCapacity: userScripts.count)
 
-            var descriptorsByIndex = [Int: [String: Any]](minimumCapacity: userScripts.count)
+        for index in inlineOrder {
+            let script = userScripts[index]
 
-            for index in inlineOrder {
-                let script = userScripts[index]
-
-                if script.isUserStyle {
-                    // Userstyles inline the effective CSS for this URL up front; there is
-                    // no GM machinery, no resources, and no namespace to ship. Oversized
-                    // payloads hydrate through the chunk path, which recomputes the same
-                    // effective CSS from the page URL.
-                    guard let css = UserStyleSupport.effectiveCSS(forContent: script.content, compiledBody: script.compiledStyleBody, url: urlString) else {
-                        continue
-                    }
-                    var descriptor: [String: Any] = [
-                        "id": script.id.uuidString,
-                        "kind": "style",
-                        "name": script.name,
-                        "version": script.version,
-                        "description": script.description,
-                        "runAt": "document-start",
-                        "noframes": false,
-                        "updateURL": script.updateURL ?? "",
-                        "downloadURL": script.downloadURL ?? ""
-                    ]
-                    if includeContent {
-                        let cssBytes = css.utf8.count
-                        if cssBytes <= documentStartInlineCap, cssBytes <= remainingInlineBudget {
-                            descriptor["content"] = css
-                            remainingInlineBudget -= cssBytes
-                            // Lets the injector warm-start this CSS from its page cache
-                            // before first paint (#670); validation recomputes the digest
-                            // for the page URL and rejects a stale copy.
-                            descriptor["contentDigest"] = UserStylePreprocessorService.digest(css)
-                        }
-                    }
-                    descriptor["payloadRevision"] = payloadMutationRevision
-                    descriptorsByIndex[index] = descriptor
+            if script.isUserStyle {
+                // Userstyles inline the effective CSS for this URL up front; there is
+                // no GM machinery, no resources, and no namespace to ship. Oversized
+                // payloads hydrate through the chunk path, which recomputes the same
+                // effective CSS from the page URL.
+                guard let css = UserStyleSupport.effectiveCSS(forContent: script.content, compiledBody: script.compiledStyleBody, url: urlString) else {
                     continue
                 }
-
-                var descriptor = userScriptDescriptor(script)
-                descriptor["disabledHosts"] = ProtobufDataManager.shared.getUserScriptDisabledHosts(
-                    forScriptID: script.id.uuidString
-                )
-                let siteAccess = ProtobufDataManager.shared.userScriptSiteAccess(forScriptID: script.id.uuidString)
-                if siteAccess.onlySelectedSites { descriptor["allowedHosts"] = siteAccess.hosts }
-                if script.usesGMStorage {
-                    descriptor["storageSnapshot"] = await UserScriptStorageManager.shared.snapshot(
-                        for: script.id.uuidString
-                    )
-                }
-                if includeContent, !script.content.isEmpty {
-                    let executableContent = configuredExecutableContent(for: script)
-                    let inlinePayloadBytes = executableContent.utf8.count
-                        + script.resourceContents.values.reduce(0) { $0 + $1.utf8.count }
-                    let perScriptCap = script.runAt == "document-start"
-                        ? documentStartInlineCap
-                        : maxInlineContentBytes
-                    if inlinePayloadBytes <= perScriptCap, inlinePayloadBytes <= remainingInlineBudget {
-                        descriptor["content"] = executableContent
-                        if !script.resourceContents.isEmpty {
-                            descriptor["resources"] = script.resourceContents
-                        }
-                        remainingInlineBudget -= inlinePayloadBytes
+                var descriptor: [String: Any] = [
+                    "id": script.id.uuidString,
+                    "kind": "style",
+                    "name": script.name,
+                    "version": script.version,
+                    "description": script.description,
+                    "runAt": "document-start",
+                    "noframes": false,
+                    "updateURL": script.updateURL ?? "",
+                    "downloadURL": script.downloadURL ?? ""
+                ]
+                if includeContent {
+                    let cssBytes = css.utf8.count
+                    if cssBytes <= documentStartInlineCap, cssBytes <= remainingInlineBudget {
+                        descriptor["content"] = css
+                        remainingInlineBudget -= cssBytes
+                        // Lets the injector warm-start this CSS from its page cache
+                        // before first paint (#670); validation recomputes the digest
+                        // for the page URL and rejects a stale copy.
+                        descriptor["contentDigest"] = UserStylePreprocessorService.digest(css)
                     }
                 }
-
                 descriptor["payloadRevision"] = payloadMutationRevision
                 descriptorsByIndex[index] = descriptor
+                continue
             }
 
-            for index in userScripts.indices {
-                if let descriptor = descriptorsByIndex[index] {
-                    userScriptDescriptors.append(descriptor)
+            var descriptor = userScriptDescriptor(script)
+            descriptor["disabledHosts"] = ProtobufDataManager.shared.getUserScriptDisabledHosts(
+                forScriptID: script.id.uuidString
+            )
+            let siteAccess = ProtobufDataManager.shared.userScriptSiteAccess(forScriptID: script.id.uuidString)
+            if siteAccess.onlySelectedSites { descriptor["allowedHosts"] = siteAccess.hosts }
+            if script.usesGMStorage {
+                descriptor["storageSnapshot"] = await UserScriptStorageManager.shared.snapshot(
+                    for: script.id.uuidString
+                )
+            }
+            if includeContent, !script.content.isEmpty {
+                let executableContent = configuredExecutableContent(for: script)
+                let inlinePayloadBytes = executableContent.utf8.count
+                    + script.resourceContents.values.reduce(0) { $0 + $1.utf8.count }
+                let perScriptCap = script.runAt == "document-start"
+                    ? documentStartInlineCap
+                    : maxInlineContentBytes
+                if inlinePayloadBytes <= perScriptCap, inlinePayloadBytes <= remainingInlineBudget {
+                    descriptor["content"] = executableContent
+                    if !script.resourceContents.isEmpty {
+                        descriptor["resources"] = script.resourceContents
+                    }
+                    remainingInlineBudget -= inlinePayloadBytes
                 }
             }
 
-            guard payloadMutationRevision == userScriptManager.payloadMutationRevision else {
-                if retryCount == 0 {
-                    handleGetUserScriptsRequest(
-                        message: message,
-                        context: context,
-                        retryCount: 1
-                    )
-                } else {
-                    let response = createResponse(with: userScriptsResponse(
-                        userScripts: [],
-                        error: "userscript-state-changed"
-                    ))
-                    context.completeRequest(returningItems: [response])
-                }
-                return
-            }
-
-            let response = createResponse(with: userScriptsResponse(
-                userScripts: userScriptDescriptors
-            ))
-            context.completeRequest(returningItems: [response])
+            descriptor["payloadRevision"] = payloadMutationRevision
+            descriptorsByIndex[index] = descriptor
         }
+
+        guard payloadMutationRevision == userScriptManager.payloadMutationRevision else {
+            return retryCount == 0
+                ? await getUserScripts(message: message, retryCount: 1)
+                : userScriptsResponse(userScripts: [], error: "userscript-state-changed")
+        }
+        return userScriptsResponse(
+            userScripts: userScripts.indices.compactMap { descriptorsByIndex[$0] },
+            emptySubframes: matchedScripts.allSatisfy(\.noframes)
+        )
     }
 
     private static func userScriptsResponse(
         userScripts: [[String: Any]],
-        error: String? = nil
+        error: String? = nil,
+        emptySubframes: Bool = false
     ) -> [String: Any?] {
-        var response: [String: Any?] = ["userScripts": userScripts]
+        var response: [String: Any?] = ["userScripts": userScripts, "emptySubframes": emptySubframes]
         if let error {
             response["error"] = error
         }
@@ -1343,7 +1304,7 @@ public enum WebExtensionRequestHandler {
     private static func userScriptDescriptor(_ script: UserScript) -> [String: Any] {
         let resourceNames = !script.resourceContents.isEmpty
             ? Array(script.resourceContents.keys).sorted()
-            : UserScriptMetadataParser.extractResourceNames(from: script.content)
+            : Array(Set(script.resource.map(\.name))).sorted()
         let hasUnsafeWindowGrant = script.grant.contains {
             $0.caseInsensitiveCompare("unsafeWindow") == .orderedSame
         }
@@ -1816,24 +1777,23 @@ public enum WebExtensionRequestHandler {
         }
 
         Task { @MainActor in
-            await ProtobufDataManager.shared.waitUntilLoaded()
-            // Native invalidation already tells content scripts when rules changed;
-            // avoid forcing a protobuf reread for every frame refresh. The normal
-            // mtime/version check still reloads cross-process changes when needed.
-            _ = await ProtobufDataManager.shared.refreshFromDiskIfModified()
-            let rules = ProtobufDataManager.shared.getZapperRules(forHost: hostname)
-            // The site switch and the global pause stay separate. Folding the pause
-            // into `disabled` made the popup and page cache read the site as off
-            // after a resume committed between two native reads.
-            let response = createResponse(with: [
-                "ok": true,
-                "rules": rules,
-                "inheritedRules": ProtobufDataManager.shared.getInheritedZapperRules(forHost: hostname),
-                "disabled": ProtobufDataManager.shared.isZapperDisabled(forHost: hostname),
-                "paused": BlockingPauseStore.isPaused(.elementZapper)
-            ])
-            context.completeRequest(returningItems: [response])
+            let rules = await getZapperRules(hostname: hostname)
+            context.completeRequest(returningItems: [createResponse(with: rules)])
         }
+    }
+
+    @MainActor
+    private static func getZapperRules(hostname: String) async -> [String: Any?] {
+        let manager = ProtobufDataManager.shared
+        await manager.waitUntilLoaded()
+        _ = await manager.refreshFromDiskIfModified()
+        return ["ok": true, "rules": manager.getZapperRules(forHost: hostname),
+                "inheritedRules": manager.getInheritedZapperRules(forHost: hostname),
+                // The site switch and the global pause stay separate. Folding the pause
+                // into `disabled` made the popup and page cache read the site as off
+                // after a resume committed between two native reads.
+                "disabled": manager.isZapperDisabled(forHost: hostname),
+                "paused": BlockingPauseStore.isPaused(.elementZapper)]
     }
 
     private static func handleSetSiteZapperDisabled(message: [String: Any?], context: NSExtensionContext) {
@@ -1947,58 +1907,42 @@ public enum WebExtensionRequestHandler {
         message: [String: Any?],
         context: NSExtensionContext
     ) {
-        let requestedContentDigest = message["contentDigest"] as? String
-        let hasContentDigest = message.keys.contains("contentDigest")
-        guard let scriptIDString = message["scriptId"] as? String,
-              let scriptID = UUID(uuidString: scriptIDString),
-              let pageURL = message["url"] as? String,
-              let requestedRevision = message["payloadRevision"] as? Int,
-              requestedRevision >= 0,
-              !hasContentDigest || requestedContentDigest?.isEmpty == false
-        else {
-            context.completeRequest(returningItems: [createResponse(with: [
-                "ok": false, "error": "Missing execution validation payload"
-            ])])
+        guard let requests = message["scripts"] as? [[String: Any]],
+              !requests.isEmpty, requests.count <= 256 else {
+            context.completeRequest(returningItems: [createResponse(with: ["ok": false])])
             return
         }
-
         Task { @MainActor in
-            guard !BlockingPauseStore.isPaused(.userScripts) else {
-                context.completeRequest(returningItems: [createResponse(with: ["ok": false])])
-                return
-            }
             let manager = UserScriptManager.shared
             await manager.refreshFromDiskForExecution()
-            guard UInt64(requestedRevision) == manager.payloadMutationRevision,
-                  let script = manager.userScript(withId: scriptID),
-                  scriptAllowsFrame(script, message: message, manager: manager),
-                  script.id.uuidString == scriptID.uuidString
-            else {
-                context.completeRequest(returningItems: [createResponse(with: [
-                    "ok": false, "error": "userscript-state-changed",
-                    "payloadRevision": manager.payloadMutationRevision
-                ])])
-                return
-            }
-            if hasContentDigest {
-                let expectedContent: String? = script.isUserStyle
-                    ? UserStyleSupport.effectiveCSS(forContent: script.content, compiledBody: script.compiledStyleBody, url: pageURL)
-                    : runtimeConfiguredExecutableContent(for: script)
-                guard let expectedContent,
-                      let requestedContentDigest,
-                      requestedContentDigest.range(of: "^[0-9a-f]{64}$", options: .regularExpression) != nil,
-                      requestedContentDigest == UserStylePreprocessorService.digest(expectedContent)
-                else {
-                    context.completeRequest(returningItems: [createResponse(with: [
-                        "ok": false, "error": "userscript-integrity-mismatch",
-                        "payloadRevision": manager.payloadMutationRevision
-                    ])])
-                    return
+            // One authoritative snapshot authorizes the batch. No suspension occurs
+            // between the revision, frame and digest checks for its members.
+            let results = requests.map { request -> [String: Any] in
+                guard !BlockingPauseStore.isPaused(.userScripts),
+                      let scriptIDString = request["scriptId"] as? String,
+                      let scriptID = UUID(uuidString: scriptIDString),
+                      let pageURL = message["url"] as? String,
+                      let revision = request["payloadRevision"] as? Int, revision >= 0,
+                      UInt64(revision) == manager.payloadMutationRevision,
+                      let script = manager.userScript(withId: scriptID),
+                      scriptAllowsFrame(script, message: message, manager: manager) else {
+                    return ["ok": false, "error": "userscript-state-changed",
+                            "payloadRevision": manager.payloadMutationRevision]
                 }
+                if request.keys.contains("contentDigest") {
+                    let expected = script.isUserStyle
+                        ? UserStyleSupport.effectiveCSS(forContent: script.content, compiledBody: script.compiledStyleBody, url: pageURL)
+                        : runtimeConfiguredExecutableContent(for: script)
+                    guard let expected, let digest = request["contentDigest"] as? String,
+                          digest.range(of: "^[0-9a-f]{64}$", options: .regularExpression) != nil,
+                          digest == UserStylePreprocessorService.digest(expected) else {
+                        return ["ok": false, "error": "userscript-integrity-mismatch",
+                                "payloadRevision": manager.payloadMutationRevision]
+                    }
+                }
+                return ["ok": true, "payloadRevision": manager.payloadMutationRevision]
             }
-            context.completeRequest(returningItems: [createResponse(with: [
-                "ok": true, "payloadRevision": manager.payloadMutationRevision
-            ])])
+            context.completeRequest(returningItems: [createResponse(with: ["results": results])])
         }
     }
 

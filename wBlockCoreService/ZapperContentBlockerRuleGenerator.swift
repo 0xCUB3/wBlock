@@ -1,5 +1,5 @@
 import Foundation
-import PublicSuffixList
+internal import WBEngine
 
 public enum ZapperContentBlockerRuleGenerator {
     public static func scope(forHost host: String) -> String {
@@ -7,7 +7,7 @@ public enum ZapperContentBlockerRuleGenerator {
             .trimmingCharacters(in: CharacterSet(charactersIn: "."))
         guard normalized.hasPrefix("www.") else { return normalized }
         let parent = String(normalized.dropFirst(4))
-        guard PublicSuffixList.effectiveTLDPlusOne(parent) != nil else { return normalized }
+        guard WBEngine.registrableDomain(of: parent) != nil else { return normalized }
         return parent
     }
 

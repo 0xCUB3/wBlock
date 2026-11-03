@@ -25,14 +25,16 @@ const HOST = "example.com";
 const STYLE_ID = "wblock-zapper-style";
 const LEGACY_KEY = `wblock.zapperRulesDisabled.v1:${HOST}`;
 
-function makeSandbox({ nativeRules, nativeDisabled, localStorageSeed = {}, isTopFrame = true, getRulesDelayMs = 0, siteStateDelayMs = 0, broadcastReload = null }) {
+function makeSandbox({ nativeRules, nativeDisabled, inheritedRules = [], localStorageSeed = {}, isTopFrame = true, getRulesDelayMs = 0, siteStateDelayMs = 0, broadcastReload = null }) {
   const native = {
     rules: [...nativeRules],
     disabled: nativeDisabled,
     setDisabledCalls: [],
     getRulesCalls: 0,
+    siteStateCalls: 0,
   };
   const storage = new Map(Object.entries(localStorageSeed));
+  const storageCalls = {get:0, set:0};
   const elementsById = new Map();
 
   const makeStyleElement = (id) => ({
@@ -68,7 +70,7 @@ function makeSandbox({ nativeRules, nativeDisabled, localStorageSeed = {}, isTop
             disabled: native.disabled
           }), getRulesDelayMs));
         }
-        return { ok: true, rules: [...native.rules], disabled: native.disabled };
+        return { ok: true, rules: [...native.rules], inheritedRules, disabled: native.disabled };
       case "setSiteZapperDisabled":
         native.disabled = Boolean(message.disabled);
         native.setDisabledCalls.push({ hostname: message.hostname, disabled: native.disabled });
@@ -91,6 +93,7 @@ function makeSandbox({ nativeRules, nativeDisabled, localStorageSeed = {}, isTop
     storage: {
       local: {
         get: async (key) => {
+          storageCalls.get += 1;
           const keys = Array.isArray(key) ? key : [key];
           const out = {};
           for (const k of keys) {
@@ -99,6 +102,7 @@ function makeSandbox({ nativeRules, nativeDisabled, localStorageSeed = {}, isTop
           return out;
         },
         set: async (items) => {
+          storageCalls.set += 1;
           for (const [k, v] of Object.entries(items)) storage.set(k, v);
         },
         remove: async (key) => {
@@ -120,6 +124,7 @@ function makeSandbox({ nativeRules, nativeDisabled, localStorageSeed = {}, isTop
           return handleNativeAction({ ...message, action: "setSiteZapperDisabled" });
         }
         if (message.action === "wblock:getSiteDisabledState") {
+          native.siteStateCalls += 1;
           if (siteStateDelayMs) await new Promise(resolve => setTimeout(resolve, siteStateDelayMs));
           return { ok: true, ...handleNativeAction({ ...message, action: "getSiteDisabledState" }) };
         }
@@ -173,6 +178,7 @@ function makeSandbox({ nativeRules, nativeDisabled, localStorageSeed = {}, isTop
     sandbox,
     native,
     storage,
+    storageCalls,
     intervalDelays,
     intervalCallbacks,
     styleText: () => elementsById.get(STYLE_ID)?.textContent ?? null,
@@ -196,7 +202,8 @@ function loadScript(sandbox) {
 
 // Scenario 1+2: enabled rules apply, then native disable + reloadRules clears them.
 {
-  const env = makeSandbox({ nativeRules: [".ad-banner", "#promo"], nativeDisabled: false });
+  const env = makeSandbox({ nativeRules: [".ad-banner", "#promo"], nativeDisabled: false,
+    localStorageSeed: { [`wblock.zapperRules.v1:${HOST}`]: { corrupt: true } } });
   loadScript(env.sandbox);
 
   const applied = await waitFor(() => (env.styleText() ?? "").includes(".ad-banner"));
@@ -229,6 +236,27 @@ function loadScript(sandbox) {
   loadScript(env.sandbox);
   await new Promise((r) => setTimeout(r, 20));
   check("subframes do not start periodic rule polling", env.intervalDelays.length === 0);
+  check("empty zapper startup reads storage at most twice", env.storageCalls.get <= 2);
+  check("unchanged empty zapper state does not write storage", env.storageCalls.set === 0);
+  check("empty zapper rules create no styles", env.styleText() === null);
+  check("empty zapper rules need no site-state messages", env.native.siteStateCalls === 0);
+  env.native.rules = ['.later'];
+  await env.sendRuntimeMessage({ type: 'wblock:zapper:reloadRules' });
+  check("an initially empty frame applies newly added rules", env.styleText().includes('.later'));
+  env.native.rules = [];
+  await env.sendRuntimeMessage({ type: 'wblock:zapper:reloadRules' });
+  check("removing all rules clears existing CSS", env.styleText() === '');
+  const stateCalls = env.native.siteStateCalls;
+  await env.sendRuntimeMessage({ type: 'wblock:zapper:reloadRules' });
+  check("clearing empty rules needs no site-state message", env.native.siteStateCalls === stateCalls);
+}
+
+// An empty local configuration must still apply a parent domain's rules.
+{
+  const env = makeSandbox({ nativeRules: [], inheritedRules: ['.parent-ad'], nativeDisabled: false, isTopFrame: false });
+  loadScript(env.sandbox);
+  check("empty local rules still apply inherited rules", await waitFor(() => env.styleText()?.includes('.parent-ad')));
+  check("inherited rules still check site state", env.native.siteStateCalls > 0);
 }
 
 // The top-frame safety tick asks the background to broadcast a reload, so an
@@ -305,6 +333,15 @@ function loadScript(sandbox) {
   const env = makeSandbox({ nativeRules: [".slow-ad"], nativeDisabled: false, siteStateDelayMs: 1000 });
   loadScript(env.sandbox);
   check("slow site-state lookup still applies enabled zapper rules", await waitFor(() => (env.styleText() ?? "").includes(".slow-ad"), 3000));
+}
+
+// Startup state is shared, but later reloads still ask for current native rules.
+{
+  const env = makeSandbox({nativeRules:['.later-ad'], nativeDisabled:false});
+  env.sandbox.__wblockZapperInitialization = Promise.resolve({ok:true,rules:['.startup-ad'],inheritedRules:[],disabled:false});
+  loadScript(env.sandbox);
+  check('zapper consumes combined frame startup', await waitFor(() => (env.styleText() ?? '').includes('.startup-ad')));
+  check('combined startup avoids a separate zapper request', env.native.getRulesCalls === 0);
 }
 
 if (failures > 0) {

@@ -226,21 +226,11 @@ if (window.wBlockUserscriptInjectorHasRun) {
 
         init() {
             wBlockLog('[wBlock] UserScriptEngine init.');
-            this.setupDocumentEventListeners();
             // Listen for response from native app before making any requests.
             // On Safari App Extensions, responses can arrive very quickly and be missed
             // if the listener isn't attached yet.
             this.setupMessageListener();
             if (!this.extensionContextAvailable) return;
-
-            // Bridge GM menu command registration/invocation between userscripts
-            // and the extension popup.
-            this.setupMenuCommandBridge();
-
-            // Bridge page-context GM storage writes through the extension/native layer.
-            this.setupStorageBridge();
-
-            // Privileged GM calls never arrive over page events.
 
             // Validate cached permissions before executing, with no native bridge privileges.
             const warmStartValidationDispatch = this.loadWarmStartScripts();
@@ -261,7 +251,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
             this.pendingScripts = [];
             this.tubeCleanerSettingsScript = null;
             this.popupBlockerScript = null;
-            this.pendingPageWrites.clear();
+            this.pendingPageWrites?.clear();
             this.scriptPayloadPromises.clear();
             this.warmStartValidationPromises.clear();
             this.injectingScripts.clear();
@@ -496,6 +486,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 return;
             }
 
+            scriptElement.setAttribute('data-wblock-menu-bridge', bridgeId);
             this.pageMenuBridgeElements.set(bridgeId, scriptElement);
             scriptElement.addEventListener('wblock-gm-menu-register', (event) => {
                 const detail = event && event.detail ? event.detail : {};
@@ -615,6 +606,13 @@ if (window.wBlockUserscriptInjectorHasRun) {
         }
 
         async sendNativeRequest(action, payload = {}) {
+            if (action === 'getUserScripts' && globalThis.__wblockFrameInitialization) {
+                const initialization = globalThis.__wblockFrameInitialization;
+                delete globalThis.__wblockFrameInitialization;
+                const response = await initialization;
+                return { userScripts: response?.userScripts || [],
+                    error: response?.userScriptsError || response?.error };
+            }
             const requestId = payload.requestId || this.generateRequestId(action);
             const messagePayload = { ...payload, requestId };
 
@@ -762,9 +760,11 @@ if (window.wBlockUserscriptInjectorHasRun) {
         }
 
         setupDocumentEventListeners() {
+            if (this.documentEventsReady) return;
+            this.documentEventsReady = true;
             // Listen for document ready states to inject pending scripts
-            if (document.readyState === 'loading') {
-                wBlockLog('[wBlock] Document is loading, setting up event listeners for ready states.');
+            if (document.readyState !== 'complete') {
+                wBlockLog('[wBlock] Waiting for document readiness.');
                 
                 document.addEventListener('DOMContentLoaded', () => {
                     wBlockLog('[wBlock] DOMContentLoaded event fired, retrying pending scripts.');
@@ -1009,10 +1009,10 @@ if (window.wBlockUserscriptInjectorHasRun) {
             this.sendNativeRequest('getUserScripts', {
                 url,
                 includeContent: true,
-                // Conservative per-script cap for ordinary scripts. The native side grants
+                // Keep ordinary scripts within one chunk-sized response. Native grants
                 // document-start scripts a larger allowance so timing-critical shims arrive
                 // inline (no chunked round-trips) and can run before the page's own code.
-                maxInlineContentBytes: 128 * 1024
+                maxInlineContentBytes: 512 * 1024
             })
                 .then((response) => {
                     if (generation !== this.documentStartRequestGeneration) return;
@@ -1190,12 +1190,12 @@ if (window.wBlockUserscriptInjectorHasRun) {
             });
 
             // Hydrate payloads and dispatch native execution validation for every
-            // document-start script up front. The ordered loop below still executes
+            // script up front. The ordered loop below still executes
             // scripts one at a time, but their native round-trips overlap instead of
             // serializing, so a queued script no longer loses the race against the
             // page's own code just because other scripts are enabled (issue #537).
             orderedScripts
-                .filter(script => script && script.runAt === 'document-start' && script.id)
+                .filter(script => script && script.id)
                 .forEach(script => {
                     this.ensureScriptPayload(script)
                         .then(fullScript => this.prefetchScriptValidation(fullScript))
@@ -1240,13 +1240,30 @@ if (window.wBlockUserscriptInjectorHasRun) {
         }
 
         requestScriptValidation(script) {
-            return this.sendNativeRequest('validateUserScriptExecution', {
+            if (!this.pendingValidations) {
+                this.pendingValidations = [];
+                queueMicrotask(async () => {
+                    const pending = this.pendingValidations;
+                    this.pendingValidations = null;
+                    for (let offset = 0; offset < pending.length; offset += 256) {
+                        const batch = pending.slice(offset, offset + 256);
+                        try {
+                            const reply = await this.sendNativeRequest('validateUserScriptExecutions', {
+                                scripts: batch.map(entry => entry.request)
+                            });
+                            batch.forEach((entry, index) => entry.resolve(reply?.results?.[index] || { ok: false }));
+                        } catch (error) {
+                            batch.forEach(entry => entry.reject(error));
+                        }
+                    }
+                });
+            }
+            return new Promise((resolve, reject) => this.pendingValidations.push({ resolve, reject, request: {
                 scriptId: script.id,
-                url: window.location.href,
                 payloadRevision: script.payloadRevision,
                 ...(typeof script.contentDigest === 'string' && script.contentDigest.length > 0
                     ? { contentDigest: script.contentDigest } : {})
-            });
+            }}));
         }
 
         prefetchScriptValidation(script) {
@@ -1344,6 +1361,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 if (!this.pendingScripts.some(s => s.name === script.name)) {
                     wBlockLog(`[wBlock] Adding ${script.name} to pending scripts list.`);
                     this.pendingScripts.push(script);
+                    this.setupDocumentEventListeners();
                 }
                 return;
             }
@@ -1361,6 +1379,10 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 delete script.storageSnapshot;
             }
             try {
+                if (script.runAt === 'document-idle' && typeof requestIdleCallback === 'function') {
+                    await new Promise(resolve => requestIdleCallback(resolve, { timeout: 1000 }));
+                    if (generation !== this.documentStartRequestGeneration) return;
+                }
                 const fullScript = await this.ensureScriptPayload(script);
                 if (generation !== this.documentStartRequestGeneration) return;
                 if (warmStart) fullScript.storageSnapshot = {};
@@ -1400,6 +1422,12 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 // Cached code must obey current site permissions before it runs, too.
                 const validated = await this.validateScriptForExecution(fullScript);
                 if (generation !== this.documentStartRequestGeneration || !validated) return;
+                // Styles and scripts waiting for their run-at phase need no GM bridges.
+                if (!this.scriptRuntimeReady) {
+                    this.scriptRuntimeReady = true;
+                    this.setupMenuCommandBridge();
+                    this.setupStorageBridge();
+                }
                 this.removeDarkReaderGuard(fullScript);
                 if (!warmStart && injectInto !== 'content' && isTubeCleanerPageScript(fullScript)) {
                     this.tubeCleanerSettingsScript = fullScript;
@@ -1494,8 +1522,8 @@ if (window.wBlockUserscriptInjectorHasRun) {
             try {
                 const wrappedCode = this.wrapUserScript(script, 'content');
                 // Execute directly in the content script context using Function constructor
-                const executeScript = new Function(wrappedCode);
-                executeScript();
+                const executeScript = new Function('__wblockContext', wrappedCode);
+                executeScript(script);
                 wBlockLog(`[wBlock] Injected ${script.name} in content context (CSP-safe)`);
             } catch (error) {
                 wBlockError(`[wBlock] Content context execution failed for ${script.name}:`, error);
@@ -1622,10 +1650,10 @@ if (window.wBlockUserscriptInjectorHasRun) {
     const pendingStorageRequests = new Map(); // requestId -> { onFailure, timeoutId }
     const menuCommandCallbacks = new Map(); // commandId -> callback
     let listenerIdCounter = 0;
-    const storageBridgeId = '${escapeForJS(script.storageBridgeId || '')}';
-    const menuBridgeId = '${escapeForJS(script.menuBridgeId || '')}';
-    const xhrBridgeId = '${escapeForJS(script.xhrBridgeId || '')}';
-    const portBridgeId = '${escapeForJS(script.portBridgeId || '')}';
+    const storageBridgeId = ${isContentContext ? "__wblockContext.storageBridgeId || ''" : "''"};
+    const menuBridgeId = ${isContentContext ? "__wblockContext.menuBridgeId || ''" : "document.currentScript?.getAttribute('data-wblock-menu-bridge') || ''"};
+    const xhrBridgeId = ${isContentContext ? "__wblockContext.xhrBridgeId || ''" : "''"};
+    const portBridgeId = ${isContentContext ? "__wblockContext.portBridgeId || ''" : "''"};
     const pageMenuBridgeElement = ${isContentContext ? 'null' : 'document.currentScript'};
     const contentMenuBridge = ${isContentContext ? 'window.__wBlockMenuCommandBridge' : 'null'};
     const scriptStorageState = Object.assign({}, ${storageSnapshotJSON});

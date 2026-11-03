@@ -1,0 +1,2356 @@
+//! uBO network rules to WebKit rules.
+//!
+//! Blocks are dropped when a condition cannot be expressed, so they never
+//! block more than uBO does. Exceptions drop the condition instead, which
+//! makes them wider and can only under-block. Each rule's tier follows
+//! `compile/mod.rs`; exceptions use ignore-previous-rules.
+
+use super::regex::{domain_top_url, url_filter};
+use super::{DomainSpan, Emitted, Entry, Stats, Tier};
+use crate::ast::{
+    DomainList, DomainMatcher, ExceptionScope, NetworkAction, NetworkRule, Party, Pattern,
+    PatternKind, ResourceTypes, SourceRef,
+};
+use crate::webkit::{SafariVersion, WkLoadContext, WkLoadType, WkResourceType};
+use rustc_hash::{FxHashMap, FxHashSet, FxHasher};
+use serde::Serialize;
+use std::collections::hash_map::Entry as MapEntry;
+use std::hash::Hasher;
+
+/// uBO's default for a rule without `$type`: every type except the main
+/// document, popups and inline resources (static-net-filtering.js,
+/// `typeNameToTypeValue`).
+const DEFAULT_TYPES: ResourceTypes = ResourceTypes::all().difference(
+    ResourceTypes::DOC
+        .union(ResourceTypes::POPUP)
+        .union(ResourceTypes::POPUNDER)
+        .union(ResourceTypes::INLINE_SCRIPT)
+        .union(ResourceTypes::INLINE_FONT),
+);
+
+/// What a blocker's network rules need from the whole set before any of them
+/// compiles: the hosts of untyped blocks (`StrictHosts`) and the `$badfilter`
+/// rules that cancel identical filters.
+#[derive(Default)]
+pub(crate) struct Context {
+    strict: StrictHosts,
+    bad: Vec<NetworkRule>,
+    bad_bodies: FxHashSet<String>,
+    generic_exceptions: Vec<NetworkRule>,
+}
+
+impl Context {
+    pub(crate) fn add(&mut self, rule: &NetworkRule) {
+        self.strict.add(rule);
+        if !rule.badfilter && genericblock_host(rule).is_some() { self.generic_exceptions.push(rule.clone()); }
+        if rule.badfilter {
+            let bad = unlabeled(rule);
+            self.bad_bodies.insert(bad.pattern.body.clone());
+            self.bad.push(bad);
+        }
+    }
+
+    pub(crate) fn merge(&mut self, other: Context) {
+        self.strict.hosts.extend(other.strict.hosts);
+        self.strict.parents.extend(other.strict.parents);
+        self.generic_exceptions.extend(other.generic_exceptions);
+        self.bad.extend(other.bad);
+        self.bad_bodies.extend(other.bad_bodies);
+    }
+}
+
+/// Safari has no network-only ignore action. Hostname genericblock exceptions
+/// are represented by exclusions on generic triggers, leaving cosmetic and
+/// specific network rules untouched (including their own exceptions).
+fn genericblock_host(r: &NetworkRule) -> Option<String> {
+    (r.exception && r.scope.contains(ExceptionScope::GENERICBLOCK) && r.types.is_empty()
+        && r.negated_types.is_empty() && r.from.is_empty() && r.to.is_empty()
+        && r.party == Party::Any && r.method.include.is_empty() && r.method.exclude.is_empty()
+        && r.runtime_only_options.is_empty() && matches!(r.action, NetworkAction::Block))
+        .then(|| host_only(&r.pattern)).flatten()
+}
+
+/// Compiles one network rule of a blocker whose `ctx` covers every rule.
+/// A dropped rule records its reason in `stats`.
+pub(crate) fn emit_rule(
+    ctx: &Context,
+    safari: SafariVersion,
+    rule: &NetworkRule,
+    out: &mut Emitted,
+    stats: &mut Stats,
+) {
+    if rule.badfilter {
+        return;
+    }
+    if ctx.bad_bodies.contains(rule.pattern.body.as_str())
+        && ctx.bad.contains(&unlabeled(rule))
+    {
+        return;
+    }
+    if let Err(reason) = compile_rule(rule, safari, ctx, out, None) {
+        stats.drop(&reason);
+    }
+}
+
+/// A rule with its provenance and `$badfilter` flag cleared, for comparing
+/// filters. uBO cancels a filter only when its compiled form is identical
+/// (static-net-filtering.js, `freeze`); there is no domain-subset matching.
+fn unlabeled(r: &NetworkRule) -> NetworkRule {
+    let mut r = r.clone();
+    r.source = SourceRef::default();
+    r.raw.clear();
+    r.badfilter = false;
+    r
+}
+
+/// `tier` overrides the tier the rule's own flags pick.
+fn compile_rule(
+    r: &NetworkRule,
+    v: SafariVersion,
+    ctx: &Context,
+    out: &mut Emitted,
+    tier: Option<Tier>,
+) -> Result<(), String> {
+    let strict = &ctx.strict;
+    match &r.action {
+        NetworkAction::Block
+        | NetworkAction::Redirect {
+            rule_only: false, ..
+        } => {}
+        NetworkAction::Redirect {
+            rule_only: true, ..
+        } => {
+            return Err("dnr:redirect-rule".into());
+        }
+        NetworkAction::RemoveParam(_) => return Err("dnr:removeparam".into()),
+        NetworkAction::Csp(_) => return Err("dnr:csp".into()),
+        NetworkAction::Permissions(_) => return Err("dnr:permissions".into()),
+        NetworkAction::Other { option, .. } => return Err(format!("dnr:{option}")),
+    }
+    if !r.scope.is_empty() {
+        return if r.exception {
+            compile_scope(r, v, out)
+        } else {
+            Err("dnr:scope-on-block".into())
+        };
+    }
+    let exception = r.exception;
+    // `@@...$cname` only exempts a request from CNAME uncloaking; it never
+    // allows one (static-net-filtering.js), so it has nothing to lift here.
+    if exception && r.runtime_only_options.iter().any(|o| o == "cname") {
+        return Err("dnr:cname-exception".into());
+    }
+    if r.runtime_only_options.iter().any(|o| o.starts_with("responseheader=")) {
+        return Err("response header matching: Safari DNR does not support responseHeaders conditions".into());
+    }
+    if !exception && !r.runtime_only_options.is_empty() {
+        return Err("dnr:runtime-option".into());
+    }
+    if !exception && (!r.method.include.is_empty() || !r.method.exclude.is_empty()) {
+        return Err("dnr:method".into());
+    }
+    if !exception && !r.denyallow.is_empty() {
+        return compile_denyallow(r, v, ctx, out);
+    }
+    let party = party(r.party, exception)?;
+    let urls = urls(r, exception)?;
+    let mut from = std::borrow::Cow::Borrowed(&r.from);
+    if !exception && !r.important && r.from.include.is_empty() {
+        for rule in &ctx.generic_exceptions {
+            if ctx.bad.contains(&unlabeled(rule)) { continue; }
+            from.to_mut().exclude.push(DomainMatcher::Hostname(genericblock_host(rule).unwrap()));
+        }
+    }
+    let conds = domain_conds(&from, v, exception)?;
+    let types = effective_types(r);
+    // uBO also strict-blocks top-level navigation for an untyped filter whose
+    // match ends at the hostname (traffic.js, `shouldStrictBlock`), so such a
+    // block is one trigger over every type, documents included. An exception
+    // takes that form only where it must lift such a block: on a page load,
+    // ignore-previous-rules also cancels the page's cosmetic hides.
+    let untyped = r.types.is_empty()
+        && r.negated_types.is_empty()
+        && host_only(&r.pattern).is_some_and(|h| !exception || strict.related(&h));
+    let type_triggers = if untyped {
+        vec![(Vec::new(), None)]
+    } else {
+        type_triggers(types, v)
+    };
+    if type_triggers.is_empty() {
+        // An exception without a type WebKit can match cancels nothing.
+        return if exception {
+            Ok(())
+        } else {
+            Err(type_drop_reason(types, v))
+        };
+    }
+    let (ignore, default) = if exception {
+        (true, if r.important { Tier::ImportantException } else { Tier::Exception })
+    } else if r.important {
+        (false, Tier::ImportantBlock)
+    } else {
+        (false, Tier::Block)
+    };
+    let tier = tier.unwrap_or(default);
+    for url in &urls {
+        for (types, context) in &type_triggers {
+            for cond in &conds {
+                emit(
+                    out,
+                    tier,
+                    &Trigger {
+                        url,
+                        case_sensitive: r.match_case,
+                        types: (!types.is_empty()).then_some(types.as_slice()),
+                        load_type: party,
+                        load_context: *context,
+                        cond: cond.as_ref(),
+                    },
+                    ignore,
+                );
+            }
+        }
+    }
+    Ok(())
+}
+
+/// uBO blocks what the rule matches except requests to the `$denyallow`
+/// hosts. For a match-all rule scoped to pages that is the block plus one
+/// exception per allowed host under the same options. The exceptions also
+/// lift other lists' blocks of those hosts on those pages (under-blocking);
+/// with a pattern they would lift more, so only match-all rules expand.
+/// An important block takes its exclusions in the tiers just before the
+/// important blocks: an exception there lifts this block and no other
+/// important block, and it cannot follow the block without lifting them.
+fn compile_denyallow(
+    r: &NetworkRule,
+    v: SafariVersion,
+    ctx: &Context,
+    out: &mut Emitted,
+) -> Result<(), String> {
+    if !r.pattern.is_match_all() || r.from.include.is_empty() {
+        return Err("dnr:denyallow".into());
+    }
+    let (block_tier, allow_tier) = if r.important {
+        (Tier::ImportantDenyallowBlock, Tier::ImportantDenyallowException)
+    } else {
+        (Tier::Block, Tier::Exception)
+    };
+    let block = NetworkRule {
+        denyallow: Vec::new(),
+        ..r.clone()
+    };
+    let arena = out.arena();
+    let mark = (out.arenas[arena].len(), out.entries.len());
+    let result = compile_rule(&block, v, ctx, out, Some(block_tier)).and_then(|()| {
+        r.denyallow.iter().try_for_each(|host| {
+            let allow = NetworkRule {
+                exception: true,
+                important: false,
+                pattern: Pattern {
+                    kind: PatternKind::Hostname,
+                    body: format!("{host}^"),
+                    right_anchored: false,
+                },
+                ..block.clone()
+            };
+            compile_rule(&allow, v, ctx, out, Some(allow_tier))
+        })
+    });
+    if result.is_err() {
+        // The block was emitted before a failing exception: drop it too.
+        out.arenas[arena].truncate(mark.0);
+        out.entries.truncate(mark.1);
+    }
+    result
+}
+
+/// `@@...$document`, `$generichide`, `$elemhide`, `$specifichide`: one
+/// ignore-previous-rules over every type, conditioned on the page URL.
+/// `$specifichide` is widened to `$elemhide`, which also cancels generic
+/// hides.
+fn compile_scope(r: &NetworkRule, v: SafariVersion, out: &mut Emitted) -> Result<(), String> {
+    let remaining = r.scope.difference(ExceptionScope::GENERICBLOCK);
+    let tier = if remaining.contains(ExceptionScope::DOC) {
+        Tier::DocumentException
+    } else if remaining.intersects(ExceptionScope::EHIDE | ExceptionScope::SHIDE) {
+        Tier::ElemHideException
+    } else if remaining.contains(ExceptionScope::GHIDE) {
+        Tier::GenericHideException
+    } else {
+        return if genericblock_host(r).is_some() { Ok(()) } else {
+            Err("genericblock: only unconstrained hostname page exceptions can be represented without canceling cosmetics".into())
+        };
+    };
+    let conds = match (
+        host_only(&r.pattern),
+        r.from.include.is_empty(),
+        r.from.exclude.is_empty(),
+    ) {
+        (Some(host), false, true)
+            if r.from
+                .include
+                .iter()
+                .all(|d| matches!(d, DomainMatcher::Hostname(_))) =>
+        {
+            let domains = r
+                .from
+                .include
+                .iter()
+                .filter_map(|domain| {
+                    let DomainMatcher::Hostname(domain) = domain else {
+                        unreachable!()
+                    };
+                    if domain == &host || domain.ends_with(&format!(".{host}")) {
+                        Some(format!("*{domain}"))
+                    } else if host.ends_with(&format!(".{domain}")) {
+                        Some(format!("*{host}"))
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<_>>();
+            if domains.is_empty() {
+                return Ok(());
+            }
+            vec![Some(Cond::IfDomain(domains))]
+        }
+        (_, true, true) => vec![page_cond(&r.pattern, v)],
+        _ if r.pattern.is_match_all() => domain_conds(&r.from, v, true)?,
+        _ => return Err("dnr:scope-domain-intersection".into()),
+    };
+    // Hides fire on the page's document request, so a cosmetic exception
+    // needs only that; it must not cancel the network blocks a #925
+    // segment places ahead of it.
+    let documents = (tier != Tier::DocumentException).then_some(&[WkResourceType::Document][..]);
+    for cond in conds {
+        emit(
+            out,
+            tier,
+            &Trigger {
+                url: ".*",
+                case_sensitive: false,
+                types: documents,
+                load_type: None,
+                load_context: None,
+                cond: cond.as_ref(),
+            },
+            true,
+        );
+    }
+    Ok(())
+}
+
+/// The page condition of a scope exception: a host-only pattern becomes
+/// if-domain, anything else if-top-url. `None` means no condition, which
+/// widens the exception.
+fn page_cond(p: &Pattern, v: SafariVersion) -> Option<Cond> {
+    if p.is_match_all() {
+        return None;
+    }
+    if let Some(host) = host_only(p) {
+        return Some(Cond::IfDomain(vec![format!("*{host}")]));
+    }
+    if !v.at_least(15, 0) {
+        return None;
+    }
+    Some(Cond::IfTopUrl(vec![url_filter(p)?]))
+}
+
+/// Hosts of untyped `||host^` blocks and all their parents, so an exception
+/// can tell whether it lifts one.
+#[derive(Default)]
+struct StrictHosts {
+    hosts: FxHashSet<String>,
+    parents: FxHashSet<String>,
+}
+
+impl StrictHosts {
+    fn add(&mut self, r: &NetworkRule) {
+        if r.exception || !r.types.is_empty() || !r.negated_types.is_empty() {
+            return;
+        }
+        if let Some(h) = host_only(&r.pattern) {
+            for (i, _) in h.match_indices('.') {
+                self.parents.insert(h[i + 1..].to_string());
+            }
+            self.hosts.insert(h);
+        }
+    }
+
+    /// A block on `host`, a parent of it, or a subdomain of it.
+    fn related(&self, host: &str) -> bool {
+        self.parents.contains(host)
+            || std::iter::once(host)
+                .chain(host.match_indices('.').map(|(i, _)| &host[i + 1..]))
+                .any(|h| self.hosts.contains(h))
+    }
+}
+
+/// The lowercase hostname of a `||host^` pattern with nothing after the host.
+fn host_only(p: &Pattern) -> Option<String> {
+    if p.kind != PatternKind::Hostname || p.right_anchored {
+        return None;
+    }
+    let body = p.body.to_ascii_lowercase();
+    let end = body
+        .find(|c: char| !(c.is_ascii_alphanumeric() || c == '-' || c == '.'))
+        .unwrap_or(body.len());
+    let (host, rest) = body.split_at(end);
+    // A body cut at `*` (`||google.*^`) leaves a trailing dot: not a host.
+    (!host.is_empty() && !host.ends_with('.') && (rest.is_empty() || rest == "^"))
+        .then(|| host.to_string())
+}
+
+fn party(p: Party, exception: bool) -> Result<Option<WkLoadType>, String> {
+    Ok(match p {
+        Party::Any => None,
+        Party::First => Some(WkLoadType::FirstParty),
+        Party::Third => Some(WkLoadType::ThirdParty),
+        // Strict parties are subsets of first/third, so an exception may use
+        // the wider one. A block cannot.
+        Party::StrictFirst if exception => Some(WkLoadType::FirstParty),
+        Party::StrictThird if exception => Some(WkLoadType::ThirdParty),
+        Party::StrictFirst | Party::StrictThird => return Err("dnr:strict-party".into()),
+    })
+}
+
+/// The url-filters for a rule. `$to=` with a match-all pattern becomes one
+/// filter per target hostname. Other `$to=` uses are dropped for blocks and
+/// ignored for exceptions.
+fn urls(r: &NetworkRule, exception: bool) -> Result<Vec<String>, String> {
+    let pattern = match url_filter(&r.pattern) {
+        Some(u) => u,
+        None if exception => ".*".into(),
+        None => return Err("dnr:url-filter".into()),
+    };
+    if r.to.is_empty() || exception {
+        return Ok(vec![pattern]);
+    }
+    if !r.to.exclude.is_empty() || !r.pattern.is_match_all() {
+        return Err("dnr:to".into());
+    }
+    r.to.include
+        .iter()
+        .map(|m| match m {
+            DomainMatcher::Hostname(h) => url_filter(&Pattern {
+                kind: PatternKind::Hostname,
+                body: format!("{h}^"),
+                ..Default::default()
+            })
+            .ok_or_else(|| "dnr:to".to_string()),
+            _ => Err("dnr:to".into()),
+        })
+        .collect()
+}
+
+/// One condition per trigger. Each alternative is a separate trigger, which
+/// makes a mixed include list (hostnames and entities) a union. `None` means
+/// no condition. For an exception, anything inexpressible is removed.
+fn domain_conds(
+    list: &DomainList,
+    v: SafariVersion,
+    exception: bool,
+) -> Result<Vec<Option<Cond>>, String> {
+    let top = v.at_least(15, 0);
+    let split = |items: &[DomainMatcher]| {
+        let (mut hosts, mut tops, mut all) = (Vec::new(), Vec::new(), true);
+        for m in items {
+            match m {
+                DomainMatcher::Hostname(h) => hosts.push(format!("*{h}")),
+                _ => match domain_top_url(m) {
+                    Some(u) if top => tops.push(u),
+                    _ => all = false,
+                },
+            }
+        }
+        (hosts, tops, all)
+    };
+    let (inc_hosts, inc_tops, inc_ok) = split(&list.include);
+    if !inc_ok {
+        // Dropping an include item would narrow the exception, so the
+        // exception takes no domain condition at all.
+        return if exception {
+            Ok(vec![None])
+        } else {
+            Err("dnr:domain".into())
+        };
+    }
+    if !inc_hosts.is_empty() || !inc_tops.is_empty() {
+        if !list.exclude.is_empty() && !exception {
+            return Err("dnr:domain".into());
+        }
+        let mut alts = Vec::new();
+        if !inc_hosts.is_empty() {
+            alts.push(Some(Cond::IfDomain(inc_hosts)));
+        }
+        if !inc_tops.is_empty() {
+            alts.push(Some(Cond::IfTopUrl(inc_tops)));
+        }
+        return Ok(alts);
+    }
+    let (exc_hosts, exc_tops, exc_ok) = split(&list.exclude);
+    if !exc_ok && !exception {
+        return Err("dnr:domain".into());
+    }
+    Ok(match (exc_hosts.is_empty(), exc_tops.is_empty()) {
+        (true, true) => vec![None],
+        (false, true) => vec![Some(Cond::UnlessDomain(exc_hosts))],
+        (true, false) => vec![Some(Cond::UnlessTopUrl(exc_tops))],
+        // WebKit allows one domain condition per trigger.
+        (false, false) if exception => vec![Some(Cond::UnlessDomain(exc_hosts))],
+        (false, false) => return Err("dnr:domain".into()),
+    })
+}
+
+/// A domain condition for one WebKit trigger. Only one is allowed per trigger.
+#[derive(Debug, Clone)]
+enum Cond {
+    IfDomain(Vec<String>),
+    UnlessDomain(Vec<String>),
+    IfTopUrl(Vec<String>),
+    UnlessTopUrl(Vec<String>),
+}
+
+/// One WebKit trigger, borrowed from the rule it came from.
+struct Trigger<'a> {
+    url: &'a str,
+    case_sensitive: bool,
+    types: Option<&'a [WkResourceType]>,
+    load_type: Option<WkLoadType>,
+    load_context: Option<WkLoadContext>,
+    cond: Option<&'a Cond>,
+}
+
+/// Writes `{"trigger":{...},"action":{...}}` for `t`, with the keys in the
+/// field order `WkTrigger` serializes, so the output matches `WkRule`'s.
+/// `ignore` picks `ignore-previous-rules` over `block`.
+fn emit(out: &mut Emitted, tier: Tier, t: &Trigger, ignore: bool) {
+    let arena = out.arena();
+    let bytes = &mut out.arenas[arena];
+    let start = bytes.len();
+    bytes.extend_from_slice(b"{\"trigger\":{\"url-filter\":");
+    json_write(bytes, t.url);
+    if t.case_sensitive {
+        bytes.extend_from_slice(b",\"url-filter-is-case-sensitive\":true");
+    }
+    if let Some(types) = t.types {
+        bytes.extend_from_slice(b",\"resource-type\":");
+        json_write(bytes, types);
+    }
+    if let Some(party) = t.load_type {
+        bytes.extend_from_slice(b",\"load-type\":[");
+        json_write(bytes, &party);
+        bytes.push(b']');
+    }
+    if let Some(context) = t.load_context {
+        bytes.extend_from_slice(b",\"load-context\":[");
+        json_write(bytes, &context);
+        bytes.push(b']');
+    }
+    let head = bytes.len();
+    let mut domain = None;
+    if let Some(cond) = t.cond {
+        let (key, list) = match cond {
+            Cond::IfDomain(list) => ("if-domain", list),
+            Cond::UnlessDomain(list) => ("unless-domain", list),
+            Cond::IfTopUrl(list) => ("if-top-url", list),
+            Cond::UnlessTopUrl(list) => ("unless-top-url", list),
+        };
+        bytes.extend_from_slice(b",\"");
+        bytes.extend_from_slice(key.as_bytes());
+        bytes.extend_from_slice(b"\":");
+        json_write(bytes, list);
+        if matches!(cond, Cond::IfDomain(_)) {
+            domain = Some(Box::new(DomainSpan {
+                head,
+                tail: bytes.len(),
+                domains: list.clone(),
+            }));
+        }
+    }
+    bytes.extend_from_slice(b"},\"action\":");
+    bytes.extend_from_slice(if ignore {
+        b"{\"type\":\"ignore-previous-rules\"}"
+    } else {
+        b"{\"type\":\"block\"}"
+    });
+    bytes.push(b'}');
+    let end = bytes.len();
+    out.entries.push(Entry {
+        tier,
+        arena: arena as u32,
+        start,
+        end,
+        domain,
+    });
+}
+
+fn json_write<T: Serialize + ?Sized>(bytes: &mut Vec<u8>, value: &T) {
+    serde_json::to_writer(bytes, value).expect("JSON writes to memory");
+}
+
+/// uBO's types for a rule. Negated types are removed from the positive set,
+/// or from the default set if none is given.
+fn effective_types(r: &NetworkRule) -> ResourceTypes {
+    let base = if r.types.is_empty() {
+        DEFAULT_TYPES
+    } else {
+        r.types
+    };
+    base.difference(r.negated_types)
+}
+
+/// A WebKit resource-type list and the load-context it needs. A trigger with
+/// a context cannot share resource types with one without: `load-context`
+/// applies to the whole trigger, and `child-frame` also matches subresources
+/// inside child frames.
+fn type_triggers(
+    types: ResourceTypes,
+    v: SafariVersion,
+) -> Vec<(Vec<WkResourceType>, Option<WkLoadContext>)> {
+    let modern = v.at_least(15, 0);
+    let mut plain = Vec::new();
+    if types.contains(ResourceTypes::IMAGE) {
+        plain.push(WkResourceType::Image);
+    }
+    if types.contains(ResourceTypes::CSS) {
+        plain.push(WkResourceType::StyleSheet);
+    }
+    if types.contains(ResourceTypes::SCRIPT) {
+        plain.push(WkResourceType::Script);
+    }
+    if types.contains(ResourceTypes::FONT) {
+        plain.push(WkResourceType::Font);
+    }
+    if types.contains(ResourceTypes::MEDIA) {
+        plain.push(WkResourceType::Media);
+    }
+    if types.contains(ResourceTypes::PING) && v.at_least(14, 0) {
+        plain.push(WkResourceType::Ping);
+    }
+    if types.contains(ResourceTypes::XHR) {
+        plain.push(if modern {
+            WkResourceType::Fetch
+        } else {
+            WkResourceType::Raw
+        });
+    }
+    if types.intersects(ResourceTypes::OTHER | ResourceTypes::OBJECT) {
+        plain.push(if modern {
+            WkResourceType::Other
+        } else {
+            WkResourceType::Raw
+        });
+    }
+    if types.contains(ResourceTypes::WEBSOCKET) {
+        plain.push(if modern {
+            WkResourceType::Websocket
+        } else {
+            WkResourceType::Raw
+        });
+    }
+    // Before Safari 15 `document` also matches subframes, so documents cannot
+    // be targeted safely and are not emitted.
+    let (doc, frame) = (
+        types.contains(ResourceTypes::DOC),
+        types.contains(ResourceTypes::FRAME),
+    );
+    let mut triggers = Vec::new();
+    if modern {
+        if doc && frame {
+            plain.push(WkResourceType::Document);
+        } else if doc {
+            triggers.push((
+                vec![WkResourceType::Document],
+                Some(WkLoadContext::TopFrame),
+            ));
+        } else if frame {
+            triggers.push((
+                vec![WkResourceType::Document],
+                Some(WkLoadContext::ChildFrame),
+            ));
+        }
+    }
+    plain.sort();
+    plain.dedup();
+    if !plain.is_empty() {
+        triggers.insert(0, (plain, None));
+    }
+    triggers
+}
+
+fn type_drop_reason(types: ResourceTypes, v: SafariVersion) -> String {
+    if types.contains(ResourceTypes::POPUNDER) {
+        "popup: popunder-only enforcement is not implemented".into()
+    } else if types.contains(ResourceTypes::POPUP) {
+        "dnr:popup".into()
+    } else if types.intersects(ResourceTypes::DOC | ResourceTypes::FRAME) && !v.at_least(15, 0) {
+        "dnr:document-needs-safari-15".into()
+    } else {
+        "dnr:type".into()
+    }
+}
+
+/// Compiles the network rules of `units` groups (see `compile_blocker`) in
+/// parallel. Returns them in order, with their stats and the raw text of the
+/// page exceptions among them.
+pub(crate) fn compile_units<U>(
+    ctx: &Context,
+    units: usize,
+    unit: U,
+    safari: SafariVersion,
+) -> (Emitted, Stats, Vec<String>)
+where
+    U: Fn(usize) -> Vec<NetworkRule> + Sync,
+{
+    let parts = super::parallel_indices(units, |i| {
+        let rules = unit(i);
+        // Arenas are reserved, not grown: growing leaves the old buffers behind.
+        let mut out = Emitted::with_capacity(rules.len());
+        let mut stats = Stats::default();
+        let mut page = Vec::new();
+        for mut rule in rules {
+            if rule.exception
+                && rule
+                    .scope
+                    .intersects(ExceptionScope::DOC | ExceptionScope::EHIDE | ExceptionScope::SHIDE | ExceptionScope::GHIDE | ExceptionScope::GENERICBLOCK)
+            {
+                page.push(rule.raw.clone());
+            }
+            if rule.types.contains(ResourceTypes::POPUP) && !rule.negated_types.contains(ResourceTypes::POPUP)
+                && !rule.badfilter && !ctx.bad.contains(&unlabeled(&rule)) {
+                match crate::runtime::popup_rule(&rule) {
+                    Ok(_) => page.push(rule.raw.clone()),
+                    Err(reason) => stats.drop(&reason),
+                }
+                rule.types.remove(ResourceTypes::POPUP);
+                if rule.types.is_empty() { continue; }
+            }
+            emit_rule(ctx, safari, &rule, &mut out, &mut stats);
+        }
+        (out, stats, page)
+    });
+    let mut stats = Stats::default();
+    let mut page = Vec::new();
+    let mut arenas = Vec::with_capacity(parts.len());
+    for (out, part_stats, part_page) in parts {
+        stats.merge(&part_stats);
+        page.extend(part_page);
+        arenas.push(out);
+    }
+    let mut emitted = Emitted::absorb(arenas);
+    dedupe_and_merge(&mut emitted);
+    (emitted, stats, page)
+}
+
+/// Drops exact duplicates (the first of each tier and rule wins), then merges
+/// `if-domain` rules that differ only in their domains into the first of them.
+/// Rules are compared in emission order, and the arenas are compacted once
+/// the dropped ones are gone.
+fn dedupe_and_merge(out: &mut Emitted) {
+    let Emitted { arenas, entries } = out;
+    let count = entries.len();
+    let mut keep = vec![true; count];
+    let hashes = {
+        let (arenas, entries): (&[Vec<u8>], &[Entry]) = (arenas, entries);
+        super::parallel_indices(count, |j| {
+            let e = &entries[j];
+            let mut hasher = FxHasher::default();
+            hasher.write(&arenas[e.arena as usize][e.start..e.end]);
+            hasher.finish()
+        })
+    };
+    // Per (tier, hash of the rule's bytes), the newest entry; `older` chains
+    // the entries with the same key, and bytes decide each match exactly.
+    let mut newest: FxHashMap<(Tier, u64), usize> = FxHashMap::default();
+    let mut older = vec![usize::MAX; count];
+    for j in 0..count {
+        let text = &arenas[entries[j].arena as usize][entries[j].start..entries[j].end];
+        let key = (entries[j].tier, hashes[j]);
+        let mut duplicate = false;
+        let mut candidate = newest.get(&key).copied();
+        while let Some(i) = candidate {
+            let other = &entries[i];
+            if arenas[other.arena as usize][other.start..other.end] == *text {
+                duplicate = true;
+                break;
+            }
+            candidate = Some(older[i]).filter(|&o| o != usize::MAX);
+        }
+        if duplicate {
+            keep[j] = false;
+        } else {
+            older[j] = newest.insert(key, j).unwrap_or(usize::MAX);
+        }
+    }
+    // An `if-domain` rule whose base (the rule without that key) matches an
+    // earlier kept rule's adds its domains to that rule and is dropped.
+    let mut merged: FxHashMap<(Tier, Vec<u8>), usize> = FxHashMap::default();
+    for j in 0..count {
+        if !keep[j] {
+            continue;
+        }
+        let entry = &entries[j];
+        let Some(span) = &entry.domain else { continue };
+        let arena = &arenas[entry.arena as usize];
+        let mut base = arena[entry.start..span.head].to_vec();
+        base.extend_from_slice(&arena[span.tail..entry.end]);
+        match merged.entry((entry.tier, base)) {
+            MapEntry::Occupied(kept) => {
+                let incoming = std::mem::take(
+                    &mut entries[j].domain.as_mut().expect("if-domain rule").domains,
+                );
+                let target = entries[*kept.get()]
+                    .domain
+                    .as_mut()
+                    .expect("merge target is an if-domain rule");
+                for d in incoming {
+                    if !target.domains.contains(&d) {
+                        target.domains.push(d);
+                    }
+                }
+                keep[j] = false;
+            }
+            MapEntry::Vacant(slot) => {
+                slot.insert(j);
+            }
+        }
+    }
+    let mut index = 0;
+    entries.retain(|_| {
+        index += 1;
+        keep[index - 1]
+    });
+    // Dropped rules leave gaps in their arena: slide the kept ones down, and
+    // empty the arenas none of the kept rules is in.
+    let mut used = vec![false; arenas.len()];
+    for entry in entries.iter() {
+        used[entry.arena as usize] = true;
+    }
+    for (arena, _) in arenas.iter_mut().zip(&used).filter(|(_, used)| !**used) {
+        arena.clear();
+    }
+    let mut write = 0;
+    let mut current = usize::MAX;
+    for entry in entries.iter_mut() {
+        let arena_index = entry.arena as usize;
+        if arena_index != current {
+            if current != usize::MAX {
+                arenas[current].truncate(write);
+            }
+            current = arena_index;
+            write = 0;
+        }
+        let bytes = &mut arenas[arena_index];
+        let shift = entry.start - write;
+        let len = entry.end - entry.start;
+        bytes.copy_within(entry.start..entry.end, write);
+        if let Some(span) = entry.domain.as_mut() {
+            span.head -= shift;
+            span.tail -= shift;
+        }
+        entry.start = write;
+        entry.end = write + len;
+        write += len;
+    }
+    if current != usize::MAX {
+        arenas[current].truncate(write);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ast::{MethodList, NetworkRule, ResourceTypes as RT};
+    use crate::compile::Tiered;
+    use crate::webkit::{to_json, WkRule};
+
+    const V15: SafariVersion = SafariVersion::new(15, 4);
+    const V14: SafariVersion = SafariVersion::new(14, 0);
+    const V13: SafariVersion = SafariVersion::new(13, 0);
+    const V26: SafariVersion = SafariVersion::new(26, 0);
+
+    /// Parses the pattern forms used in these tests: `||host^path`, `|left`,
+    /// `plain`, `/regex/`, and a trailing `|`.
+    fn pat(s: &str) -> Pattern {
+        let mut body = s;
+        let right_anchored = body.len() > 1 && body.ends_with('|') && !body.starts_with("/");
+        if right_anchored {
+            body = &body[..body.len() - 1];
+        }
+        let (kind, body) = if let Some(rest) = body.strip_prefix("||") {
+            (PatternKind::Hostname, rest)
+        } else if let Some(rest) = body.strip_prefix('|') {
+            (PatternKind::Left, rest)
+        } else if body.len() > 2 && body.starts_with('/') && body.ends_with('/') {
+            (PatternKind::Regex, &body[1..body.len() - 1])
+        } else {
+            (PatternKind::Plain, body)
+        };
+        Pattern {
+            kind,
+            body: body.to_string(),
+            right_anchored,
+        }
+    }
+
+    /// A block from uBO text. Options after `$` are not parsed: tests set
+    /// them on the struct.
+    fn net(s: &str) -> NetworkRule {
+        let s = s.trim_start_matches("@@");
+        let pattern = match s.rfind('$') {
+            Some(i) if !s.ends_with('/') => &s[..i],
+            _ => s,
+        };
+        NetworkRule {
+            pattern: pat(pattern),
+            raw: s.into(),
+            ..Default::default()
+        }
+    }
+
+    fn exc(s: &str) -> NetworkRule {
+        NetworkRule {
+            exception: true,
+            ..net(s)
+        }
+    }
+
+    fn hosts(v: &[&str]) -> Vec<DomainMatcher> {
+        v.iter()
+            .map(|h| DomainMatcher::Hostname(h.to_string()))
+            .collect()
+    }
+
+    fn list(include: &[&str], exclude: &[&str]) -> DomainList {
+        DomainList {
+            include: hosts(include),
+            exclude: hosts(exclude),
+        }
+    }
+
+    fn run(rules: &[NetworkRule], v: SafariVersion) -> (Vec<Tiered>, Stats) {
+        let mut ctx = Context::default();
+        rules.iter().for_each(|r| ctx.add(r));
+        let mut out = Emitted::default();
+        let mut stats = Stats::default();
+        for rule in rules {
+            emit_rule(&ctx, v, rule, &mut out, &mut stats);
+        }
+        dedupe_and_merge(&mut out);
+        (out.tiered(), stats)
+    }
+
+    fn json(out: &[Tiered]) -> String {
+        let rules: Vec<WkRule> = out.iter().map(|t| t.rule.clone()).collect();
+        to_json(&rules)
+    }
+
+    fn tiers(out: &[Tiered]) -> Vec<Tier> {
+        out.iter().map(|t| t.tier).collect()
+    }
+
+    /// Asserts the JSON and the drop count, and returns the rules for other
+    /// checks.
+    fn check(rules: &[NetworkRule], v: SafariVersion, expect: &str) -> Vec<Tiered> {
+        let (out, stats) = run(rules, v);
+        assert_eq!(json(&out), expect);
+        assert!(
+            stats.dropped.is_empty(),
+            "unexpected drops: {:?}",
+            stats.dropped
+        );
+        out
+    }
+
+    fn drop_reason(rules: &[NetworkRule], v: SafariVersion) -> Vec<String> {
+        let (out, stats) = run(rules, v);
+        assert!(out.is_empty(), "expected no output, got {}", json(&out));
+        stats.dropped.keys().cloned().collect()
+    }
+
+    #[test]
+    fn plain_host_block_is_one_untyped_rule() {
+        // uBO strict-blocks navigation to the host too, so documents are in.
+        check(
+            &[net("||ads.example.com^")],
+            V15,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?ads\\.example\\.com[^a-zA-Z0-9_.%-]"},"action":{"type":"block"}}]"#,
+        );
+    }
+
+    #[test]
+    fn host_exception_is_untyped_only_next_to_a_host_block() {
+        let lone = check(
+            &[exc("@@||cdn.x.com^")],
+            V15,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?cdn\\.x\\.com[^a-zA-Z0-9_.%-]","resource-type":["image","style-sheet","script","font","media","ping","fetch","websocket","other"]},"action":{"type":"ignore-previous-rules"}},{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?cdn\\.x\\.com[^a-zA-Z0-9_.%-]","resource-type":["document"],"load-context":["child-frame"]},"action":{"type":"ignore-previous-rules"}}]"#,
+        );
+        assert_eq!(lone.len(), 2);
+        for block in ["||x.com^", "||cdn.x.com^", "||a.cdn.x.com^"] {
+            let (out, _) = run(&[net(block), exc("@@||cdn.x.com^")], V15);
+            assert!(
+                out.iter().all(|t| t.rule.trigger.resource_type.is_none()),
+                "{block}"
+            );
+        }
+    }
+
+    #[test]
+    fn path_block_default_types() {
+        check(
+            &[net("||ads.example.com/x")],
+            V15,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?ads\\.example\\.com/x","resource-type":["image","style-sheet","script","font","media","ping","fetch","websocket","other"]},"action":{"type":"block"}},{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?ads\\.example\\.com/x","resource-type":["document"],"load-context":["child-frame"]},"action":{"type":"block"}}]"#,
+        );
+    }
+
+    #[test]
+    fn default_types_on_safari_14_use_raw_and_no_documents() {
+        check(
+            &[net("||ads.com/x")],
+            V14,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?ads\\.com/x","resource-type":["image","style-sheet","script","font","raw","media","ping"]},"action":{"type":"block"}}]"#,
+        );
+    }
+
+    #[test]
+    fn explicit_script_type() {
+        check(
+            &[NetworkRule {
+                types: RT::SCRIPT,
+                ..net("||cdn.com/ads.js")
+            }],
+            V15,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?cdn\\.com/ads\\.js","resource-type":["script"]},"action":{"type":"block"}}]"#,
+        );
+    }
+
+    #[test]
+    fn xhr_maps_to_fetch_on_15_and_raw_before() {
+        let rule = NetworkRule {
+            types: RT::XHR,
+            ..net("||t.com^")
+        };
+        check(
+            std::slice::from_ref(&rule),
+            V15,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[^a-zA-Z0-9_.%-]","resource-type":["fetch"]},"action":{"type":"block"}}]"#,
+        );
+        check(
+            std::slice::from_ref(&rule),
+            V13,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[^a-zA-Z0-9_.%-]","resource-type":["raw"]},"action":{"type":"block"}}]"#,
+        );
+    }
+
+    #[test]
+    fn object_and_other_share_one_type_and_websocket_is_gated() {
+        let rule = NetworkRule {
+            types: RT::OBJECT | RT::OTHER | RT::WEBSOCKET,
+            ..net("||t.com^")
+        };
+        check(
+            std::slice::from_ref(&rule),
+            V15,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[^a-zA-Z0-9_.%-]","resource-type":["websocket","other"]},"action":{"type":"block"}}]"#,
+        );
+        check(
+            std::slice::from_ref(&rule),
+            V14,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[^a-zA-Z0-9_.%-]","resource-type":["raw"]},"action":{"type":"block"}}]"#,
+        );
+    }
+
+    #[test]
+    fn ping_needs_safari_14() {
+        let rule = NetworkRule {
+            types: RT::PING,
+            ..net("||t.com^")
+        };
+        check(
+            std::slice::from_ref(&rule),
+            V14,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[^a-zA-Z0-9_.%-]","resource-type":["ping"]},"action":{"type":"block"}}]"#,
+        );
+        assert_eq!(drop_reason(std::slice::from_ref(&rule), V13), ["dnr:type"]);
+    }
+
+    #[test]
+    fn subdocument_block_uses_child_frame() {
+        let rule = NetworkRule {
+            types: RT::FRAME,
+            ..net("||frames.com^")
+        };
+        check(
+            std::slice::from_ref(&rule),
+            V15,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?frames\\.com[^a-zA-Z0-9_.%-]","resource-type":["document"],"load-context":["child-frame"]},"action":{"type":"block"}}]"#,
+        );
+        assert_eq!(
+            drop_reason(std::slice::from_ref(&rule), V14),
+            ["dnr:document-needs-safari-15"]
+        );
+    }
+
+    #[test]
+    fn document_block_uses_top_frame() {
+        let rule = NetworkRule {
+            types: RT::DOC,
+            ..net("||top.com^")
+        };
+        check(
+            std::slice::from_ref(&rule),
+            V15,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?top\\.com[^a-zA-Z0-9_.%-]","resource-type":["document"],"load-context":["top-frame"]},"action":{"type":"block"}}]"#,
+        );
+    }
+
+    #[test]
+    fn document_and_frame_together_need_no_context() {
+        let rule = NetworkRule {
+            types: RT::DOC | RT::FRAME | RT::SCRIPT,
+            ..net("||x.com^")
+        };
+        check(
+            std::slice::from_ref(&rule),
+            V15,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[^a-zA-Z0-9_.%-]","resource-type":["document","script"]},"action":{"type":"block"}}]"#,
+        );
+    }
+
+    #[test]
+    fn all_types_keeps_documents_and_drops_popups() {
+        let rule = NetworkRule {
+            types: RT::all(),
+            ..net("||x.com^")
+        };
+        let (out, _) = run(std::slice::from_ref(&rule), V15);
+        assert_eq!(out.len(), 1, "{}", json(&out));
+        assert!(json(&out).contains(r#""document","#) || json(&out).contains(r#""document"]"#));
+        assert!(!json(&out).contains("popup"));
+    }
+
+    #[test]
+    fn negated_types_come_off_the_default() {
+        let rule = NetworkRule {
+            negated_types: RT::IMAGE,
+            ..net("||x.com^")
+        };
+        let (out, _) = run(std::slice::from_ref(&rule), V15);
+        assert!(!json(&out).contains("image"));
+        assert!(json(&out).contains("script"));
+    }
+
+    #[test]
+    fn popup_only_block_is_dropped() {
+        assert_eq!(
+            drop_reason(
+                &[NetworkRule {
+                    types: RT::POPUP,
+                    ..net("||x.com^")
+                }],
+                V15
+            ),
+            ["dnr:popup"]
+        );
+    }
+
+    #[test]
+    fn popup_exception_is_a_no_op() {
+        let (out, stats) = run(
+            &[NetworkRule {
+                types: RT::POPUP,
+                ..exc("@@||x.com^")
+            }],
+            V15,
+        );
+        assert!(out.is_empty());
+        assert!(stats.dropped.is_empty());
+    }
+
+    #[test]
+    fn third_party_and_first_party_load_type() {
+        let third = NetworkRule {
+            party: Party::Third,
+            ..net("||t.com/x")
+        };
+        let first = NetworkRule {
+            party: Party::First,
+            types: RT::SCRIPT,
+            ..net("||t.com^")
+        };
+        check(
+            &[third, first],
+            V15,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com/x","resource-type":["image","style-sheet","script","font","media","ping","fetch","websocket","other"],"load-type":["third-party"]},"action":{"type":"block"}},{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com/x","resource-type":["document"],"load-type":["third-party"],"load-context":["child-frame"]},"action":{"type":"block"}},{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[^a-zA-Z0-9_.%-]","resource-type":["script"],"load-type":["first-party"]},"action":{"type":"block"}}]"#,
+        );
+    }
+
+    #[test]
+    fn strict_party_blocks_are_dropped_and_exceptions_widen() {
+        let strict = NetworkRule {
+            party: Party::StrictThird,
+            types: RT::SCRIPT,
+            ..net("||t.com^")
+        };
+        assert_eq!(
+            drop_reason(std::slice::from_ref(&strict), V15),
+            ["dnr:strict-party"]
+        );
+        let widened = NetworkRule {
+            party: Party::StrictThird,
+            types: RT::SCRIPT,
+            ..exc("@@||t.com^")
+        };
+        check(
+            std::slice::from_ref(&widened),
+            V15,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[^a-zA-Z0-9_.%-]","resource-type":["script"],"load-type":["third-party"]},"action":{"type":"ignore-previous-rules"}}]"#,
+        );
+    }
+
+    #[test]
+    fn match_case_sets_case_sensitive_flag() {
+        check(
+            &[NetworkRule {
+                match_case: true,
+                types: RT::SCRIPT,
+                ..net("/Ads[0-9]+\\.js/")
+            }],
+            V15,
+            r#"[{"trigger":{"url-filter":"Ads[0-9]+\\.js","url-filter-is-case-sensitive":true,"resource-type":["script"]},"action":{"type":"block"}}]"#,
+        );
+    }
+
+    #[test]
+    fn important_block_uses_its_own_tier() {
+        let rule = NetworkRule {
+            important: true,
+            types: RT::SCRIPT,
+            ..net("||x.com^")
+        };
+        let out = check(
+            std::slice::from_ref(&rule),
+            V15,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[^a-zA-Z0-9_.%-]","resource-type":["script"]},"action":{"type":"block"}}]"#,
+        );
+        assert_eq!(tiers(&out), [Tier::ImportantBlock]);
+    }
+
+    #[test]
+    fn exception_is_ignore_previous_at_exception_tier() {
+        let out = check(
+            &[NetworkRule {
+                types: RT::SCRIPT,
+                ..exc("@@||x.com^")
+            }],
+            V15,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[^a-zA-Z0-9_.%-]","resource-type":["script"]},"action":{"type":"ignore-previous-rules"}}]"#,
+        );
+        assert_eq!(tiers(&out), [Tier::Exception]);
+    }
+
+    #[test]
+    fn exception_with_no_types_uses_default_set() {
+        let out = check(
+            &[exc("@@||x.com/x")],
+            V15,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com/x","resource-type":["image","style-sheet","script","font","media","ping","fetch","websocket","other"]},"action":{"type":"ignore-previous-rules"}},{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com/x","resource-type":["document"],"load-context":["child-frame"]},"action":{"type":"ignore-previous-rules"}}]"#,
+        );
+        assert_eq!(tiers(&out), [Tier::Exception, Tier::Exception]);
+    }
+
+    #[test]
+    fn redirect_block_is_native_and_rule_only_is_dropped() {
+        let native = NetworkRule {
+            action: NetworkAction::Redirect {
+                resource: "noop.js".into(),
+                rule_only: false,
+            },
+            types: RT::SCRIPT,
+            ..net("||x.com^")
+        };
+        check(
+            std::slice::from_ref(&native),
+            V15,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[^a-zA-Z0-9_.%-]","resource-type":["script"]},"action":{"type":"block"}}]"#,
+        );
+        let rule_only = NetworkRule {
+            action: NetworkAction::Redirect {
+                resource: "noop.js".into(),
+                rule_only: true,
+            },
+            ..net("||x.com^")
+        };
+        assert_eq!(
+            drop_reason(std::slice::from_ref(&rule_only), V15),
+            ["dnr:redirect-rule"]
+        );
+    }
+
+    #[test]
+    fn non_native_actions_are_dropped_including_exceptions() {
+        let cases = [
+            (
+                NetworkAction::RemoveParam(Some("utm_source".into())),
+                "dnr:removeparam",
+            ),
+            (
+                NetworkAction::Csp(Some("script-src 'none'".into())),
+                "dnr:csp",
+            ),
+            (
+                NetworkAction::Permissions(Some("camera=()".into())),
+                "dnr:permissions",
+            ),
+            (
+                NetworkAction::Other {
+                    option: "urlskip".into(),
+                    value: Some("x".into()),
+                },
+                "dnr:urlskip",
+            ),
+        ];
+        for (action, reason) in cases {
+            let block = NetworkRule {
+                action: action.clone(),
+                ..net("||x.com^")
+            };
+            let except = NetworkRule {
+                action,
+                ..exc("@@||x.com^")
+            };
+            assert_eq!(drop_reason(std::slice::from_ref(&block), V15), [reason]);
+            assert_eq!(drop_reason(std::slice::from_ref(&except), V15), [reason]);
+        }
+    }
+
+    #[test]
+    fn domain_include_becomes_if_domain_with_subdomains() {
+        check(
+            &[NetworkRule {
+                from: list(&["a.com", "b.org"], &[]),
+                types: RT::SCRIPT,
+                ..net("||t.com^")
+            }],
+            V15,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[^a-zA-Z0-9_.%-]","resource-type":["script"],"if-domain":["*a.com","*b.org"]},"action":{"type":"block"}}]"#,
+        );
+    }
+
+    #[test]
+    fn domain_exclude_becomes_unless_domain() {
+        check(
+            &[NetworkRule {
+                from: list(&[], &["a.com"]),
+                types: RT::SCRIPT,
+                ..net("||t.com^")
+            }],
+            V15,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[^a-zA-Z0-9_.%-]","resource-type":["script"],"unless-domain":["*a.com"]},"action":{"type":"block"}}]"#,
+        );
+    }
+
+    #[test]
+    fn include_plus_exclude_drops_block_and_widens_exception() {
+        let block = NetworkRule {
+            from: list(&["a.com"], &["b.a.com"]),
+            types: RT::SCRIPT,
+            ..net("||t.com^")
+        };
+        assert_eq!(
+            drop_reason(std::slice::from_ref(&block), V15),
+            ["dnr:domain"]
+        );
+        let except = NetworkRule {
+            from: list(&["a.com"], &["b.a.com"]),
+            types: RT::SCRIPT,
+            ..exc("@@||t.com^")
+        };
+        check(
+            std::slice::from_ref(&except),
+            V15,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[^a-zA-Z0-9_.%-]","resource-type":["script"],"if-domain":["*a.com"]},"action":{"type":"ignore-previous-rules"}}]"#,
+        );
+    }
+
+    #[test]
+    fn entity_domain_uses_if_top_url() {
+        let rule = NetworkRule {
+            from: DomainList {
+                include: vec![DomainMatcher::Entity("google".into())],
+                exclude: vec![],
+            },
+            types: RT::SCRIPT,
+            ..net("||t.com^")
+        };
+        check(
+            std::slice::from_ref(&rule),
+            V15,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[^a-zA-Z0-9_.%-]","resource-type":["script"],"if-top-url":["^[^:]+://+([^:/]+\\.)?google\\.(com?\\.)?[^:/.]+[/:?#]"]},"action":{"type":"block"}}]"#,
+        );
+    }
+
+    #[test]
+    fn mixed_include_splits_into_two_triggers() {
+        let rule = NetworkRule {
+            from: DomainList {
+                include: vec![
+                    DomainMatcher::Hostname("a.com".into()),
+                    DomainMatcher::Entity("google".into()),
+                ],
+                exclude: vec![],
+            },
+            types: RT::SCRIPT,
+            ..net("||t.com^")
+        };
+        let (out, _) = run(std::slice::from_ref(&rule), V15);
+        assert_eq!(out.len(), 2);
+        assert!(json(&out).contains(r#""if-domain":["*a.com"]"#));
+        assert!(json(&out).contains(r#""if-top-url":["#));
+    }
+
+    #[test]
+    fn entity_domains_are_gated_by_version() {
+        let rule = NetworkRule {
+            from: DomainList {
+                include: vec![DomainMatcher::Entity("google".into())],
+                exclude: vec![],
+            },
+            types: RT::SCRIPT,
+            ..net("||t.com^")
+        };
+        assert_eq!(
+            drop_reason(std::slice::from_ref(&rule), V14),
+            ["dnr:domain"]
+        );
+    }
+
+    #[test]
+    fn regex_domain_include_uses_if_top_url() {
+        let rule = NetworkRule {
+            from: DomainList {
+                include: vec![DomainMatcher::Regex("^ads\\d+".into())],
+                exclude: vec![],
+            },
+            types: RT::SCRIPT,
+            ..net("||t.com^")
+        };
+        let (out, stats) = run(std::slice::from_ref(&rule), V15);
+        assert!(stats.dropped.is_empty());
+        assert!(
+            json(&out).contains(r#""if-top-url":["^[^:]+://ads[0-9]+[^/:?#]*[/:?#]"]"#),
+            "{}",
+            json(&out)
+        );
+    }
+
+    #[test]
+    fn regex_domain_that_cannot_translate_drops_the_block() {
+        let rule = NetworkRule {
+            from: DomainList {
+                include: vec![DomainMatcher::Regex("a|b".into())],
+                exclude: vec![],
+            },
+            types: RT::SCRIPT,
+            ..net("||t.com^")
+        };
+        assert_eq!(
+            drop_reason(std::slice::from_ref(&rule), V15),
+            ["dnr:domain"]
+        );
+    }
+
+    #[test]
+    fn exception_with_unconvertible_domain_widens_to_no_condition() {
+        let rule = NetworkRule {
+            from: DomainList {
+                include: vec![DomainMatcher::Regex("a|b".into())],
+                exclude: vec![],
+            },
+            types: RT::SCRIPT,
+            ..exc("@@||t.com^")
+        };
+        check(
+            std::slice::from_ref(&rule),
+            V15,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[^a-zA-Z0-9_.%-]","resource-type":["script"]},"action":{"type":"ignore-previous-rules"}}]"#,
+        );
+    }
+
+    #[test]
+    fn to_hostnames_fold_into_url_filters() {
+        let rule = NetworkRule {
+            to: DomainList {
+                include: hosts(&["tracker.com", "t2.net"]),
+                exclude: vec![],
+            },
+            types: RT::SCRIPT,
+            ..net("*")
+        };
+        check(
+            std::slice::from_ref(&rule),
+            V15,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?tracker\\.com[^a-zA-Z0-9_.%-]","resource-type":["script"]},"action":{"type":"block"}},{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t2\\.net[^a-zA-Z0-9_.%-]","resource-type":["script"]},"action":{"type":"block"}}]"#,
+        );
+    }
+
+    #[test]
+    fn to_with_a_specific_pattern_is_dropped_for_blocks() {
+        let rule = NetworkRule {
+            to: list(&["tracker.com"], &[]),
+            ..net("/ads/")
+        };
+        assert_eq!(drop_reason(std::slice::from_ref(&rule), V15), ["dnr:to"]);
+        let except = NetworkRule {
+            to: list(&["tracker.com"], &[]),
+            types: RT::SCRIPT,
+            ..exc("@@/ads/")
+        };
+        check(
+            std::slice::from_ref(&except),
+            V15,
+            r#"[{"trigger":{"url-filter":"ads","resource-type":["script"]},"action":{"type":"ignore-previous-rules"}}]"#,
+        );
+    }
+
+    #[test]
+    fn denyallow_method_and_runtime_options_drop_blocks() {
+        let deny = NetworkRule {
+            denyallow: vec!["cdn.com".into()],
+            ..net("||x.com^")
+        };
+        assert_eq!(
+            drop_reason(std::slice::from_ref(&deny), V15),
+            ["dnr:denyallow"]
+        );
+        let method = NetworkRule {
+            method: MethodList {
+                include: vec!["POST".into()],
+                exclude: vec![],
+            },
+            ..net("||x.com^")
+        };
+        assert_eq!(
+            drop_reason(std::slice::from_ref(&method), V15),
+            ["dnr:method"]
+        );
+        let runtime = NetworkRule {
+            runtime_only_options: vec!["cname".into()],
+            ..net("||x.com^")
+        };
+        assert_eq!(
+            drop_reason(std::slice::from_ref(&runtime), V15),
+            ["dnr:runtime-option"]
+        );
+    }
+
+    #[test]
+    fn exceptions_ignore_denyallow_method_and_runtime_options() {
+        let rules = [
+            NetworkRule {
+                denyallow: vec!["cdn.com".into()],
+                types: RT::SCRIPT,
+                ..exc("@@||x.com^")
+            },
+            NetworkRule {
+                method: MethodList {
+                    include: vec!["POST".into()],
+                    exclude: vec![],
+                },
+                types: RT::SCRIPT,
+                ..exc("@@||x.com^")
+            },
+            NetworkRule {
+                runtime_only_options: vec!["ipaddress".into()],
+                types: RT::SCRIPT,
+                ..exc("@@||x.com^")
+            },
+        ];
+        let (out, stats) = run(&rules, V15);
+        assert!(stats.dropped.is_empty());
+        // The three exceptions differ only in options that are ignored, so
+        // they collapse to one rule.
+        assert_eq!(out.len(), 1);
+    }
+
+    #[test]
+    fn match_all_denyallow_is_a_block_plus_exceptions() {
+        let rule = NetworkRule {
+            types: RT::SCRIPT,
+            party: Party::Third,
+            from: list(&["s.com"], &[]),
+            denyallow: vec!["a.net".into(), "b.com".into()],
+            ..net("*")
+        };
+        let (out, stats) = run(&[rule], V15);
+        assert!(stats.dropped.is_empty());
+        assert_eq!(tiers(&out), [Tier::Block, Tier::Exception, Tier::Exception]);
+        assert!(out
+            .iter()
+            .all(|t| t.rule.trigger.if_domain == Some(vec!["*s.com".into()])));
+    }
+
+    #[test]
+    fn cname_exception_lifts_nothing() {
+        let cname = NetworkRule {
+            runtime_only_options: vec!["cname".into()],
+            ..exc("@@||google.*^")
+        };
+        let (out, stats) = run(&[net("||mail-ads.google.com^"), cname], V15);
+        assert_eq!(out.len(), 1);
+        assert_eq!(stats.dropped.get("dnr:cname-exception"), Some(&1));
+    }
+
+    #[test]
+    fn host_only_pattern_as_page_condition_for_document_exception() {
+        let rule = NetworkRule {
+            scope: ExceptionScope::DOC,
+            ..exc("@@||example.org^$document")
+        };
+        check(
+            std::slice::from_ref(&rule),
+            V15,
+            r#"[{"trigger":{"url-filter":".*","if-domain":["*example.org"]},"action":{"type":"ignore-previous-rules"}}]"#,
+        );
+        let out = run(std::slice::from_ref(&rule), V15).0;
+        assert_eq!(tiers(&out), [Tier::DocumentException]);
+    }
+
+    #[test]
+    fn document_exception_without_pattern_matches_everything() {
+        let rule = NetworkRule {
+            scope: ExceptionScope::DOC,
+            ..exc("@@$document")
+        };
+        check(
+            std::slice::from_ref(&rule),
+            V15,
+            r#"[{"trigger":{"url-filter":".*"},"action":{"type":"ignore-previous-rules"}}]"#,
+        );
+    }
+
+    #[test]
+    fn document_exception_with_path_uses_if_top_url() {
+        let rule = NetworkRule {
+            scope: ExceptionScope::DOC,
+            ..exc("@@||example.org/news^$document")
+        };
+        check(
+            std::slice::from_ref(&rule),
+            V15,
+            r#"[{"trigger":{"url-filter":".*","if-top-url":["^[^:]+://+([^:/]+\\.)?example\\.org/news[^a-zA-Z0-9_.%-]"]},"action":{"type":"ignore-previous-rules"}}]"#,
+        );
+    }
+
+    #[test]
+    fn generichide_exception_uses_generic_hide_tier() {
+        let rule = NetworkRule {
+            scope: ExceptionScope::GHIDE,
+            ..exc("@@||example.org^$generichide")
+        };
+        let out = check(
+            std::slice::from_ref(&rule),
+            V15,
+            r#"[{"trigger":{"url-filter":".*","resource-type":["document"],"if-domain":["*example.org"]},"action":{"type":"ignore-previous-rules"}}]"#,
+        );
+        assert_eq!(tiers(&out), [Tier::GenericHideException]);
+    }
+
+    #[test]
+    fn elemhide_and_specifichide_use_elemhide_tier() {
+        for scope in [ExceptionScope::EHIDE, ExceptionScope::SHIDE] {
+            let rule = NetworkRule {
+                scope,
+                ..exc("@@||example.org^$elemhide")
+            };
+            let (out, _) = run(std::slice::from_ref(&rule), V15);
+            assert_eq!(tiers(&out), [Tier::ElemHideException]);
+        }
+    }
+
+    #[test]
+    fn page_exception_with_regex_pattern_on_safari_14_widens() {
+        let rule = NetworkRule {
+            scope: ExceptionScope::GHIDE,
+            ..exc("@@/news/$generichide")
+        };
+        check(
+            std::slice::from_ref(&rule),
+            V14,
+            r#"[{"trigger":{"url-filter":".*","resource-type":["document"]},"action":{"type":"ignore-previous-rules"}}]"#,
+        );
+    }
+
+    #[test]
+    fn genericblock_cancels_only_generic_network_blocks() {
+        let genericblock = NetworkRule {
+            scope: ExceptionScope::GENERICBLOCK,
+            ..exc("@@||x.com^$genericblock")
+        };
+        let out = run(&[genericblock], V15).0;
+        assert!(out.is_empty(), "genericblock narrows generic triggers instead of emitting a broad ignore");
+        let scoped = NetworkRule {
+            scope: ExceptionScope::GHIDE,
+            ..net("||x.com^$generichide")
+        };
+        assert_eq!(
+            drop_reason(std::slice::from_ref(&scoped), V15),
+            ["dnr:scope-on-block"]
+        );
+    }
+
+    #[test]
+    fn badfilter_cancels_identical_filter_only() {
+        let block = NetworkRule {
+            types: RT::SCRIPT,
+            ..net("||ads.com^")
+        };
+        let bad = NetworkRule {
+            badfilter: true,
+            types: RT::SCRIPT,
+            ..net("||ads.com^")
+        };
+        let rules = [
+            NetworkRule {
+                types: RT::SCRIPT,
+                ..net("||ads.com^")
+            },
+            bad.clone(),
+            block,
+        ];
+        let (out, stats) = run(&rules, V15);
+        assert!(out.is_empty());
+        assert!(stats.dropped.is_empty());
+        let other = NetworkRule {
+            types: RT::IMAGE,
+            ..net("||ads.com^")
+        };
+        let (out, _) = run(&[other, bad], V15);
+        assert_eq!(out.len(), 1);
+    }
+
+    #[test]
+    fn badfilter_is_global_and_respects_exception_flag() {
+        let bad = NetworkRule {
+            badfilter: true,
+            types: RT::SCRIPT,
+            ..exc("@@||ads.com^")
+        };
+        let rules = [
+            NetworkRule {
+                types: RT::SCRIPT,
+                ..net("||ads.com^")
+            },
+            NetworkRule {
+                types: RT::SCRIPT,
+                ..exc("@@||ads.com^")
+            },
+            bad,
+        ];
+        let (out, _) = run(&rules, V15);
+        assert_eq!(out.len(), 1);
+        assert_eq!(tiers(&out), [Tier::Block]);
+    }
+
+    #[test]
+    fn identical_rules_are_deduplicated() {
+        let rule = NetworkRule {
+            types: RT::SCRIPT,
+            ..net("||x.com^")
+        };
+        let (out, _) = run(&[rule.clone(), rule], V15);
+        assert_eq!(out.len(), 1);
+    }
+
+    #[test]
+    fn blocks_differing_only_in_if_domain_are_merged() {
+        let a = NetworkRule {
+            from: list(&["a.com"], &[]),
+            types: RT::SCRIPT,
+            ..net("||t.com^")
+        };
+        let b = NetworkRule {
+            from: list(&["b.com"], &[]),
+            types: RT::SCRIPT,
+            ..net("||t.com^")
+        };
+        check(
+            &[a, b],
+            V15,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[^a-zA-Z0-9_.%-]","resource-type":["script"],"if-domain":["*a.com","*b.com"]},"action":{"type":"block"}}]"#,
+        );
+    }
+
+    #[test]
+    fn merge_keeps_tiers_apart() {
+        let block = NetworkRule {
+            from: list(&["a.com"], &[]),
+            types: RT::SCRIPT,
+            ..net("||t.com^")
+        };
+        let except = NetworkRule {
+            from: list(&["b.com"], &[]),
+            types: RT::SCRIPT,
+            ..exc("@@||t.com^")
+        };
+        let (out, _) = run(&[block, except], V15);
+        assert_eq!(tiers(&out), [Tier::Block, Tier::Exception]);
+    }
+
+    #[test]
+    fn unsupported_action_and_no_types_on_block_report_reasons() {
+        assert_eq!(
+            drop_reason(
+                &[NetworkRule {
+                    types: RT::WEBRTC,
+                    ..net("||x.com^")
+                }],
+                V15
+            ),
+            ["dnr:type"]
+        );
+        assert_eq!(
+            drop_reason(
+                &[NetworkRule {
+                    types: RT::FRAME,
+                    ..net("||x.com^")
+                }],
+                V13
+            ),
+            ["dnr:document-needs-safari-15"]
+        );
+    }
+
+    #[test]
+    fn match_all_pattern_with_no_conditions_is_every_request() {
+        check(
+            &[NetworkRule {
+                types: RT::IMAGE,
+                ..net("*")
+            }],
+            V15,
+            r#"[{"trigger":{"url-filter":".*","resource-type":["image"]},"action":{"type":"block"}}]"#,
+        );
+    }
+
+    #[test]
+    fn left_anchor_and_right_anchor_patterns() {
+        check(
+            &[NetworkRule {
+                types: RT::IMAGE,
+                ..net("|https://cdn.com/a.gif|")
+            }],
+            V15,
+            r#"[{"trigger":{"url-filter":"^https://cdn\\.com/a\\.gif$","resource-type":["image"]},"action":{"type":"block"}}]"#,
+        );
+    }
+
+    #[test]
+    fn separator_and_wildcard_patterns() {
+        check(
+            &[NetworkRule {
+                types: RT::IMAGE,
+                ..net("banner^*.gif")
+            }],
+            V15,
+            r#"[{"trigger":{"url-filter":"banner[^a-zA-Z0-9_.%-].*\\.gif","resource-type":["image"]},"action":{"type":"block"}}]"#,
+        );
+    }
+
+    #[test]
+    fn untranslatable_regex_drops_block_and_widens_exception() {
+        let block = NetworkRule {
+            types: RT::SCRIPT,
+            ..net("/a\\d+|b/")
+        };
+        assert_eq!(
+            drop_reason(std::slice::from_ref(&block), V15),
+            ["dnr:url-filter"]
+        );
+        let except = NetworkRule {
+            types: RT::SCRIPT,
+            ..exc("@@/a\\d+|b/")
+        };
+        check(
+            std::slice::from_ref(&except),
+            V15,
+            r#"[{"trigger":{"url-filter":".*","resource-type":["script"]},"action":{"type":"ignore-previous-rules"}}]"#,
+        );
+    }
+
+    #[test]
+    fn regex_pattern_translates_digit_class() {
+        check(
+            &[NetworkRule {
+                types: RT::SCRIPT,
+                ..net("/ads\\d{2}\\.js/")
+            }],
+            V15,
+            r#"[{"trigger":{"url-filter":"ads[0-9][0-9]\\.js","resource-type":["script"]},"action":{"type":"block"}}]"#,
+        );
+    }
+
+    #[test]
+    fn tiers_follow_block_important_and_exception_order() {
+        let rules = [
+            net("||x.com/a"),
+            NetworkRule {
+                important: true,
+                ..net("||y.com/a")
+            },
+            exc("@@||x.com/ok^"),
+        ];
+        let (out, _) = run(&rules, V15);
+        assert_eq!(
+            tiers(&out),
+            [
+                Tier::Block,
+                Tier::Block,
+                Tier::ImportantBlock,
+                Tier::ImportantBlock,
+                Tier::Exception,
+                Tier::Exception
+            ]
+        );
+    }
+
+    #[test]
+    fn same_rule_on_safari_26_matches_15() {
+        let rule = NetworkRule {
+            types: RT::SCRIPT,
+            ..net("||x.com^")
+        };
+        let (a, _) = run(std::slice::from_ref(&rule), V15);
+        let (b, _) = run(std::slice::from_ref(&rule), V26);
+        assert_eq!(json(&a), json(&b));
+    }
+
+    #[test]
+    fn entity_exclude_on_block_uses_unless_top_url() {
+        let rule = NetworkRule {
+            from: DomainList {
+                include: vec![],
+                exclude: vec![DomainMatcher::Entity("google".into())],
+            },
+            types: RT::SCRIPT,
+            ..net("||t.com^")
+        };
+        check(
+            std::slice::from_ref(&rule),
+            V15,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[^a-zA-Z0-9_.%-]","resource-type":["script"],"unless-top-url":["^[^:]+://+([^:/]+\\.)?google\\.(com?\\.)?[^:/.]+[/:?#]"]},"action":{"type":"block"}}]"#,
+        );
+    }
+
+    #[test]
+    fn exception_with_left_anchor_and_match_case() {
+        let rule = NetworkRule {
+            match_case: true,
+            types: RT::IMAGE,
+            ..exc("@@|https://cdn.net/ok.gif")
+        };
+        check(
+            std::slice::from_ref(&rule),
+            V15,
+            r#"[{"trigger":{"url-filter":"^https://cdn\\.net/ok\\.gif","url-filter-is-case-sensitive":true,"resource-type":["image"]},"action":{"type":"ignore-previous-rules"}}]"#,
+        );
+    }
+
+    #[test]
+    fn exception_to_redirect_is_ignore_previous() {
+        let rule = NetworkRule {
+            action: NetworkAction::Redirect {
+                resource: "noop.js".into(),
+                rule_only: false,
+            },
+            types: RT::SCRIPT,
+            ..exc("@@||x.com^")
+        };
+        check(
+            std::slice::from_ref(&rule),
+            V15,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[^a-zA-Z0-9_.%-]","resource-type":["script"]},"action":{"type":"ignore-previous-rules"}}]"#,
+        );
+    }
+
+    #[test]
+    fn exception_with_denyallow_drops_only_the_option() {
+        let rule = NetworkRule {
+            denyallow: vec!["cdn.com".into()],
+            types: RT::IMAGE,
+            ..exc("@@||x.com^")
+        };
+        check(
+            std::slice::from_ref(&rule),
+            V15,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[^a-zA-Z0-9_.%-]","resource-type":["image"]},"action":{"type":"ignore-previous-rules"}}]"#,
+        );
+    }
+
+    #[test]
+    fn exception_to_a_block_domain_with_exclude_widens_to_include() {
+        let rule = NetworkRule {
+            from: list(&["a.com"], &["b.a.com"]),
+            types: RT::IMAGE,
+            ..exc("@@||x.com^")
+        };
+        check(
+            std::slice::from_ref(&rule),
+            V15,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[^a-zA-Z0-9_.%-]","resource-type":["image"],"if-domain":["*a.com"]},"action":{"type":"ignore-previous-rules"}}]"#,
+        );
+    }
+
+    #[test]
+    fn subdocument_exception_on_safari_14_is_a_no_op() {
+        let rule = NetworkRule {
+            types: RT::FRAME,
+            ..exc("@@||x.com^")
+        };
+        let (out, stats) = run(std::slice::from_ref(&rule), V14);
+        assert!(out.is_empty());
+        assert!(stats.dropped.is_empty());
+    }
+
+    #[test]
+    fn ping_default_block_on_safari_13_skips_ping() {
+        let rule = NetworkRule {
+            types: RT::PING | RT::IMAGE,
+            ..net("||x.com^")
+        };
+        check(
+            std::slice::from_ref(&rule),
+            V13,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[^a-zA-Z0-9_.%-]","resource-type":["image"]},"action":{"type":"block"}}]"#,
+        );
+    }
+
+    #[test]
+    fn important_exception_ordering_against_block() {
+        let rules = [
+            NetworkRule {
+                types: RT::SCRIPT,
+                ..net("||x.com^")
+            },
+            NetworkRule {
+                types: RT::SCRIPT,
+                ..exc("@@||x.com/ok^")
+            },
+            NetworkRule {
+                types: RT::SCRIPT,
+                important: true,
+                ..net("||x.com/bad^")
+            },
+        ];
+        let out = check(
+            &rules,
+            V15,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[^a-zA-Z0-9_.%-]","resource-type":["script"]},"action":{"type":"block"}},{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com/ok[^a-zA-Z0-9_.%-]","resource-type":["script"]},"action":{"type":"ignore-previous-rules"}},{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com/bad[^a-zA-Z0-9_.%-]","resource-type":["script"]},"action":{"type":"block"}}]"#,
+        );
+        assert_eq!(
+            tiers(&out),
+            [Tier::Block, Tier::Exception, Tier::ImportantBlock]
+        );
+    }
+
+    #[test]
+    fn document_block_on_safari_14_is_dropped() {
+        let rule = NetworkRule {
+            types: RT::DOC,
+            ..net("||x.com^")
+        };
+        assert_eq!(
+            drop_reason(std::slice::from_ref(&rule), V14),
+            ["dnr:document-needs-safari-15"]
+        );
+    }
+
+    #[test]
+    fn third_party_exception_keeps_load_type() {
+        let rule = NetworkRule {
+            party: Party::Third,
+            types: RT::IMAGE,
+            ..exc("@@||x.com^")
+        };
+        check(
+            std::slice::from_ref(&rule),
+            V15,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[^a-zA-Z0-9_.%-]","resource-type":["image"],"load-type":["third-party"]},"action":{"type":"ignore-previous-rules"}}]"#,
+        );
+    }
+
+    #[test]
+    fn exception_with_negated_type_drops_it_from_default() {
+        let rule = NetworkRule {
+            negated_types: RT::FRAME | RT::XHR,
+            ..exc("@@||x.com^")
+        };
+        check(
+            std::slice::from_ref(&rule),
+            V15,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[^a-zA-Z0-9_.%-]","resource-type":["image","style-sheet","script","font","media","ping","websocket","other"]},"action":{"type":"ignore-previous-rules"}}]"#,
+        );
+    }
+
+    #[test]
+    fn all_types_exception_keeps_documents_in_one_trigger() {
+        let rule = NetworkRule {
+            types: RT::all(),
+            ..exc("@@||x.com^")
+        };
+        check(
+            std::slice::from_ref(&rule),
+            V15,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[^a-zA-Z0-9_.%-]","resource-type":["document","image","style-sheet","script","font","media","ping","fetch","websocket","other"]},"action":{"type":"ignore-previous-rules"}}]"#,
+        );
+    }
+
+    #[test]
+    fn document_exception_with_domain_list_uses_if_domain() {
+        let rule = NetworkRule {
+            scope: ExceptionScope::DOC,
+            from: list(&["news.com"], &[]),
+            ..exc("@@$document")
+        };
+        check(
+            std::slice::from_ref(&rule),
+            V15,
+            r#"[{"trigger":{"url-filter":".*","if-domain":["*news.com"]},"action":{"type":"ignore-previous-rules"}}]"#,
+        );
+    }
+
+    #[test]
+    fn document_exception_intersects_pattern_and_from_domains() {
+        let rule = NetworkRule {
+            scope: ExceptionScope::DOC,
+            from: list(&["shop.example.com"], &[]),
+            ..exc("@@||example.com^$document")
+        };
+        let (out, _) = run(&[rule], V15);
+        assert_eq!(
+            out[0].rule.trigger.if_domain,
+            Some(vec!["*shop.example.com".into()])
+        );
+    }
+
+    #[test]
+    fn generichide_exception_with_entity_uses_if_top_url() {
+        let rule = NetworkRule {
+            scope: ExceptionScope::GHIDE,
+            from: DomainList {
+                include: vec![DomainMatcher::Entity("google".into())],
+                exclude: vec![],
+            },
+            ..exc("@@$generichide")
+        };
+        check(
+            std::slice::from_ref(&rule),
+            V15,
+            r#"[{"trigger":{"url-filter":".*","resource-type":["document"],"if-top-url":["^[^:]+://+([^:/]+\\.)?google\\.(com?\\.)?[^:/.]+[/:?#]"]},"action":{"type":"ignore-previous-rules"}}]"#,
+        );
+    }
+
+    #[test]
+    fn badfilter_leaves_unrelated_exception_in_place() {
+        let rules = [
+            NetworkRule {
+                types: RT::SCRIPT,
+                ..exc("@@||x.com^")
+            },
+            NetworkRule {
+                types: RT::SCRIPT,
+                badfilter: true,
+                ..net("||x.com^")
+            },
+        ];
+        check(
+            &rules,
+            V15,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[^a-zA-Z0-9_.%-]","resource-type":["script"]},"action":{"type":"ignore-previous-rules"}}]"#,
+        );
+    }
+
+    /// Shapes covering every url-filter, top-url and domain form the compiler
+    /// emits, in both block and exception forms.
+    fn corpus() -> Vec<NetworkRule> {
+        let patterns = [
+            "||ads.com^",
+            "||ads.com/x^*.js|",
+            "|https://cdn.net/a.gif",
+            "/banner\\d{2,4}\\.js/",
+            "/^(?:ab|cd)$/",
+            "ads^",
+            "*",
+            "||xn--bcher-kva.example^",
+            "/a{3}[\\w.-]+(\\/x)?$/",
+            "/a|b/",
+        ];
+        let types = [
+            RT::empty(),
+            RT::SCRIPT,
+            RT::DOC,
+            RT::FRAME,
+            RT::POPUP,
+            RT::IMAGE
+                | RT::CSS
+                | RT::FONT
+                | RT::MEDIA
+                | RT::PING
+                | RT::XHR
+                | RT::OTHER
+                | RT::OBJECT
+                | RT::WEBSOCKET,
+            RT::all(),
+        ];
+        let domains = [
+            DomainList::default(),
+            list(&["a.com", "b.org"], &[]),
+            list(&[], &["a.com"]),
+            list(&["a.com"], &["b.a.com"]),
+            DomainList {
+                include: vec![DomainMatcher::Entity("google".into())],
+                exclude: vec![],
+            },
+            DomainList {
+                include: vec![DomainMatcher::Regex("^ads\\d+".into())],
+                exclude: vec![],
+            },
+            DomainList {
+                include: vec![],
+                exclude: vec![
+                    DomainMatcher::Entity("google".into()),
+                    DomainMatcher::Regex("cdn$".into()),
+                ],
+            },
+            DomainList {
+                include: vec![
+                    DomainMatcher::Hostname("a.com".into()),
+                    DomainMatcher::Entity("google".into()),
+                ],
+                exclude: vec![],
+            },
+        ];
+        let mut out = Vec::new();
+        for p in patterns {
+            for t in &types {
+                for d in &domains {
+                    for party in [Party::Any, Party::First, Party::Third, Party::StrictFirst] {
+                        for exception in [false, true] {
+                            for match_case in [false, true] {
+                                out.push(NetworkRule {
+                                    exception,
+                                    match_case,
+                                    party,
+                                    types: *t,
+                                    from: d.clone(),
+                                    ..net(p)
+                                });
+                            }
+                        }
+                    }
+                    for scope in [
+                        ExceptionScope::DOC,
+                        ExceptionScope::GHIDE,
+                        ExceptionScope::EHIDE,
+                        ExceptionScope::SHIDE,
+                    ] {
+                        out.push(NetworkRule {
+                            exception: true,
+                            scope,
+                            from: d.clone(),
+                            ..net(p)
+                        });
+                    }
+                }
+            }
+        }
+        out.push(NetworkRule {
+            to: list(&["tracker.com"], &[]),
+            ..net("*")
+        });
+        out.push(NetworkRule {
+            to: list(&["tracker.com", "t2.net"], &[]),
+            types: RT::SCRIPT,
+            ..net("*")
+        });
+        out
+    }
+
+    /// Every trigger the corpus produces at every Safari version we gate on is
+    /// accepted by the real WebKit compiler (`/tmp/research/bench/wk`). Skipped
+    /// when the binary is missing.
+    #[test]
+    fn webkit_accepts_every_generated_trigger() {
+        const WK: &str = "/tmp/research/bench/wk";
+        if !std::path::Path::new(WK).exists() {
+            eprintln!("skipping: {WK} not found");
+            return;
+        }
+        let mut seen = std::collections::BTreeSet::new();
+        for rule in corpus() {
+            for v in [V13, V14, V15, V26] {
+                for t in run(std::slice::from_ref(&rule), v).0 {
+                    seen.insert(to_json(std::slice::from_ref(&t.rule)));
+                }
+            }
+        }
+        let body = format!(
+            "[{}]",
+            seen.iter()
+                .map(|r| &r[1..r.len() - 1])
+                .collect::<Vec<_>>()
+                .join(",")
+        );
+        let path = std::env::temp_dir().join(format!("wbe-network-wk-{}.json", std::process::id()));
+        std::fs::write(&path, body).expect("write rules");
+        let output = std::process::Command::new(WK)
+            .arg(&path)
+            .output()
+            .expect("run wk");
+        std::fs::remove_file(&path).ok();
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        assert!(
+            stdout.trim_end().ends_with(" ok"),
+            "{} distinct rules: {stdout}",
+            seen.len()
+        );
+    }
+
+    #[cfg(not(debug_assertions))]
+    #[test]
+    fn seventy_five_thousand_rules_compile_quickly() {
+        let rules: Vec<NetworkRule> = (0..75_000u32)
+            .map(|i| {
+                let host = format!("h{}.example", i % 30_000);
+                NetworkRule {
+                    types: if i % 3 == 0 { RT::SCRIPT } else { RT::empty() },
+                    from: if i % 5 == 0 {
+                        list(&["site.com"], &[])
+                    } else {
+                        DomainList::default()
+                    },
+                    exception: i % 11 == 0,
+                    ..net(&format!("||{host}^"))
+                }
+            })
+            .collect();
+        let start = std::time::Instant::now();
+        let (out, _) = run(&rules, V15);
+        let elapsed = start.elapsed();
+        assert!(!out.is_empty());
+        assert!(elapsed.as_millis() < 100, "75k rules took {elapsed:?}");
+    }
+    #[test]
+    fn adguard_important_exceptions_follow_important_blocks() {
+        let text = "||ads.example^$important\n@@||ads.example^$important";
+        let output = crate::compile(&[crate::ListInput { text, trusted: false }], &crate::CompileOptions { safari: SafariVersion::new(18, 0) });
+        assert!(output.stats.dropped.is_empty(), "{:?}", output.stats.dropped);
+        let rules: serde_json::Value = serde_json::from_str(&crate::webkit::to_json(&output.webkit)).unwrap();
+        assert_eq!(rules[0]["action"]["type"], "block");
+        assert_eq!(rules[1]["action"]["type"], "ignore-previous-rules");
+    }
+
+}

@@ -7,16 +7,15 @@ import Foundation
 
 /// Platform constants table for evaluating `!#if` conditional directives in filter lists.
 ///
-/// wBlock identifies as an AdGuard-syntax Safari content blocker. All constants follow
-/// the AdGuard/uBlock Origin convention: only the constants that accurately describe
-/// wBlock's identity are `true`; everything else is `false`.
+/// wbe supports uBO filters and AdGuard syntax in Safari. Browser and capability
+/// flags remain independent of the accepted filter syntax.
 ///
 /// Unknown constant names always return `false` (PREP-08).
 public enum PlatformConstants {
 
     // MARK: - wBlock identity (true)
 
-    /// wBlock uses AdGuard syntax and SafariConverterLib.
+    /// AdGuard syntax remains supported by wbe.
     public static let adguard = true
 
     /// wBlock is a Safari content blocker extension.
@@ -24,6 +23,9 @@ public enum PlatformConstants {
 
     /// Running in a Safari environment.
     public static let env_safari = true
+
+    /// Include uBO rules, including lists wrapped entirely in this condition.
+    public static let ext_ublock = true
 
     // MARK: - Platform detection (compile-time)
 
@@ -51,7 +53,6 @@ public enum PlatformConstants {
     public static let adguard_ext_opera = false
     public static let adguard_ext_android_cb = false
 
-    public static let ext_ublock = false
     public static let ext_ubol = false
     public static let ext_abp = false
 
@@ -92,7 +93,7 @@ public enum PlatformConstants {
         case "adguard_ext_opera":       return adguard_ext_opera
         case "adguard_ext_android_cb":  return adguard_ext_android_cb
 
-        // uBlock / ABP variants (false)
+        // Filter syntax variants
         case "ext_ublock": return ext_ublock
         case "ext_ubol":   return ext_ubol
         case "ext_abp":    return ext_abp

@@ -25,7 +25,6 @@ struct SiteExclusionIgnoreSegmentTests {
         let ordered = ContentBlockerMappingService.orderedForCompilation([excluded, other])
         _ = try ContentBlockerService.compileTargetRules(
             filters: [excluded, other], orderedSelectedFilters: ordered,
-            affinitySnapshot: SafariContentBlockerAffinityProcessor.snapshot(for: ordered, containerURL: container),
             targetInfo: target, allTargets: [target], disabledSites: [], extraRulesText: nil,
             groupIdentifier: groupIdentifier, containerURL: container
         )
@@ -44,8 +43,8 @@ struct SiteExclusionIgnoreSegmentTests {
                 } }
                 if let only = trigger["if-domain"] as? [String], !matches(only) { continue }
                 if let except = trigger["unless-domain"] as? [String], matches(except) { continue }
-                if let frames = trigger["if-frame-url"] as? [String],
-                   !frames.contains(where: { "https://\(host)/".range(of: $0, options: .regularExpression) != nil }) { continue }
+                if let pages = trigger["if-top-url"] as? [String],
+                   !pages.contains(where: { "https://\(host)/".range(of: $0, options: .regularExpression) != nil }) { continue }
                 switch (rule["action"] as? [String: Any])?["type"] as? String {
                 case "block": state = true
                 case "ignore-previous-rules": state = false

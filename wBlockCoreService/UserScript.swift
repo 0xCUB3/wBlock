@@ -627,7 +627,7 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
         var suffix: [String: [String]] = [:]
         var fallback: [String] = []
 
-        init(_ patterns: [String]) {
+        init(_ patterns: [String], globs: Bool) {
             self.patterns = patterns
             for pattern in patterns {
                 guard let separator = pattern.range(of: "://"),
@@ -636,7 +636,12 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
                     continue
                 }
                 let host = String(pattern[separator.upperBound..<slash]).lowercased()
-                if host.hasPrefix("*.") && !host.dropFirst(2).contains("*") {
+                // @include globs let wildcards cross URL separators. Only a
+                // literal scheme/authority can safely use the host index.
+                if globs && (!["http", "https", "ftp"].contains(String(pattern[..<separator.lowerBound]))
+                    || host.contains(where: { "*?@%[".contains($0) }) || !host.utf8.allSatisfy({ $0 < 128 })) {
+                    fallback.append(pattern)
+                } else if host.hasPrefix("*.") && !host.dropFirst(2).contains("*") {
                     suffix[String(host.dropFirst(2)), default: []].append(pattern)
                 } else if !host.contains("*") {
                     exact[host, default: []].append(pattern)
@@ -666,27 +671,30 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
     }()
 
     private func indexedMatch(patterns: [String], kind: String, url: String,
-                              parsedURL: ParsedMatchURL, urlRange: NSRange) -> Bool {
+                              parsedURL: ParsedMatchURL, urlRange: NSRange, globs: Bool = false) -> Bool {
+        let asciiURL = globs && url.utf8.allSatisfy { $0 >= 32 && $0 < 127 }
+        let matches: (String) -> Bool = { pattern in
+            globs ? Self.matchesIncludePattern(pattern: pattern, url: url, urlRange: urlRange, asciiURL: asciiURL)
+                : Self.matchesPattern(pattern: pattern, url: url, parsedURL: parsedURL, urlRange: urlRange)
+        }
         // Small lists avoid index construction. Large lists share their immutable
         // array storage across frames; mutations invalidate the cached host index.
-        guard patterns.count > 64 else {
-            return patterns.contains { Self.matchesPattern(pattern: $0, url: url, parsedURL: parsedURL, urlRange: urlRange) }
+        guard patterns.count > 64, !globs || parsedURL.host.utf8.allSatisfy({ $0 < 128 }) else {
+            return patterns.contains(where: matches)
         }
         let key = "\(id.uuidString):\(kind)" as NSString
         let index: MatchHostIndex
         if let cached = Self.matchHostIndexes.object(forKey: key), cached.patterns == patterns {
             index = cached
         } else {
-            index = MatchHostIndex(patterns)
+            index = MatchHostIndex(patterns, globs: globs)
             Self.matchHostIndexes.setObject(index, forKey: key, cost: patterns.count)
         }
         var candidates = index.candidates(for: parsedURL.host)
         if parsedURL.hostWithPort != parsedURL.host {
             candidates += index.candidates(for: parsedURL.hostWithPort)
         }
-        return (candidates + index.fallback).contains {
-            Self.matchesPattern(pattern: $0, url: url, parsedURL: parsedURL, urlRange: urlRange)
-        }
+        return (candidates + index.fallback).contains(where: matches)
     }
 
     private static let matchRegexCache: NSCache<NSString, NSRegularExpression> = {
@@ -975,9 +983,8 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
         if isUserStyle {
             isIncluded = UserStyleSupport.matches(serializedConditions: matches, url: url)
         } else {
-            isIncluded = indexedMatch(patterns: matches, kind: "include", url: comparableURL, parsedURL: parsedURL, urlRange: comparableRange) || includes.contains {
-                Self.matchesIncludePattern(pattern: $0, url: url, urlRange: rawURLRange)
-            }
+            isIncluded = indexedMatch(patterns: matches, kind: "include", url: comparableURL, parsedURL: parsedURL, urlRange: comparableRange) || indexedMatch(patterns: includes, kind: "include-glob", url: url,
+                              parsedURL: parsedURL, urlRange: rawURLRange, globs: true)
         }
 
         guard isIncluded else { return false }
@@ -986,7 +993,8 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
             return false
         }
 
-        if excludes.contains(where: { Self.matchesIncludePattern(pattern: $0, url: url, urlRange: rawURLRange) }) {
+        if indexedMatch(patterns: excludes, kind: "exclude-glob", url: url,
+                        parsedURL: parsedURL, urlRange: rawURLRange, globs: true) {
             return false
         }
 
@@ -1004,7 +1012,8 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
 
     /// Greasemonkey-style `@include` glob evaluation for a single pattern.
     static func matchesIncludePattern(_ pattern: String, url: String) -> Bool {
-        matchesIncludePattern(pattern: pattern, url: url, urlRange: NSRange(location: 0, length: url.utf16.count))
+        matchesIncludePattern(pattern: pattern, url: url, urlRange: NSRange(location: 0, length: url.utf16.count),
+                              asciiURL: url.utf8.allSatisfy { $0 >= 32 && $0 < 127 })
     }
 
     private static func urlWithoutFragment(_ url: String) -> String {
@@ -1156,7 +1165,7 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
         return pattern.last == "*" || searchStart == value.endIndex
     }
     
-    private static func matchesIncludePattern(pattern: String, url: String, urlRange: NSRange) -> Bool {
+    private static func matchesIncludePattern(pattern: String, url: String, urlRange: NSRange, asciiURL: Bool) -> Bool {
         // Regex-form @include/@exclude is supported by userscript managers. Keep
         // it bounded before handing the expression to ICU so hostile metadata
         // cannot feed arbitrarily large patterns or subjects into the matcher.
@@ -1173,6 +1182,12 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
                 return false
             }
             return boundedRegexMatch(regex, in: url, range: urlRange)
+        }
+
+        // Ordinary ASCII globs need no regex compilation or cache entry. Keep
+        // ICU for question marks and Unicode/newlines, whose semantics differ.
+        if asciiURL, !pattern.contains("?"), pattern.utf8.allSatisfy({ $0 < 128 }) {
+            return wildcardMatch(pattern: pattern[...], value: url)
         }
 
         guard let regex = cachedRegex(

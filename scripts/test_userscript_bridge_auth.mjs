@@ -105,6 +105,7 @@ function buildContentScriptSandbox(
   const sandbox = {};
   sandbox.window = sandbox;
   sandbox.globalThis = sandbox;
+  sandbox.queueMicrotask = queueMicrotask;
   sandbox.top = sandbox;
   sandbox.self = sandbox;
   const pageURL = new URL(href);
@@ -173,6 +174,10 @@ function buildContentScriptSandbox(
       sendMessage: async (msg) => {
         sentMessages.push(msg);
         sandbox.__sentMessages.push(msg);
+        if (msg.action === "validateUserScriptExecutions") {
+          return { results: await Promise.all(msg.scripts.map(request => nativeHandler
+            ? nativeHandler({ ...request, action: msg.action }, sandbox) : { ok: true })) };
+        }
         if (nativeHandler) return nativeHandler(msg, sandbox);
         if (msg.action === "getUserScripts") return {
           userScripts: JSON.parse(JSON.stringify(userScripts)),
@@ -213,6 +218,20 @@ try {
   repeatedEvaluationSucceeded = false;
 }
 check("injector can be evaluated repeatedly in one isolated world", repeatedEvaluationSucceeded);
+
+// Fresh frame tokens must not change executable page source and defeat WebKit's code cache.
+{
+  const wrappers = [];
+  for (const menuBridgeId of ['first-frame', 'second-frame']) {
+    const sandbox = buildContentScriptSandbox(null, [{...fakeScript, menuBridgeId}]);
+    vm.createContext(sandbox);
+    vm.runInContext(source, sandbox);
+    await tick();
+    wrappers.push(sandbox.document.head.children.find(el => el.attributes['data-userscript'] === fakeScript.name));
+  }
+  check('identical page scripts reuse executable source across frame tokens', wrappers[0].textContent === wrappers[1].textContent);
+  check('page menu bridges retain their distinct frame identity', wrappers[0].getAttribute('data-wblock-menu-bridge') === 'first-frame' && wrappers[1].getAttribute('data-wblock-menu-bridge') === 'second-frame');
+}
 
 const rydScript = {
   ...fakeScript,
@@ -257,7 +276,7 @@ check(
           payloadRevision: 42,
         };
       }
-      if (message.action === "validateUserScriptExecution") return { ok: true };
+      if (message.action === "validateUserScriptExecutions") return { ok: true };
       if (message.action === "gmXmlhttpRequest") return { status: 200, responseText: "OK", responseHeaders: "", finalUrl: message.url };
       return { ok: true };
     },
@@ -344,7 +363,7 @@ check(
 );
 check(
   "fresh native scripts still request execution validation",
-  freshIOSSandbox.__sentMessages.some(message => message.action === "validateUserScriptExecution")
+  freshIOSSandbox.__sentMessages.some(message => message.action === "validateUserScriptExecutions")
 );
 
 // A Vencord-sized page-world payload must be seeded even when iOS reports that
@@ -395,7 +414,7 @@ const warmReply = new Promise((resolve) => { resolveWarmReply = resolve; });
 const warmWrapperIndex = appendedScripts.length;
 const warmSandbox = buildContentScriptSandbox(
   seededCache, [], "https://discord.com/app", [], false,
-  (msg) => msg.action === "validateUserScriptExecution" ? warmValidation
+  (msg) => msg.action === "validateUserScriptExecutions" ? warmValidation
     : msg.action === "getUserScripts" ? warmReply : { ok: true },
 );
 vm.createContext(warmSandbox);
@@ -403,7 +422,7 @@ vm.runInContext(source, warmSandbox, { filename: "userscript-injector-warm-start
 await tick();
 await tick();
 check("cached page script waits for current native site permission", appendedScripts.length === warmWrapperIndex);
-check("cached page script requests validation before the full payload", warmSandbox.__sentMessages[0]?.action === "validateUserScriptExecution");
+check("cached page script requests validation before the full payload", warmSandbox.__sentMessages[0]?.action === "validateUserScriptExecutions");
 resolveWarmValidation({ ok: true });
 await tick(); await tick();
 const warmWrapper = appendedScripts[warmWrapperIndex] || "";
@@ -442,7 +461,7 @@ const malformedContentSandbox = buildContentScriptSandbox(
 vm.createContext(malformedContentSandbox);
 vm.runInContext(source, malformedContentSandbox, { filename: "userscript-injector-dark-reader-malformed.js" });
 await tick();
-check("malformed Dark Reader content cache is rejected", !malformedContentSandbox.__sentMessages.some((m) => m.action === "validateUserScriptExecution"));
+check("malformed Dark Reader content cache is rejected", !malformedContentSandbox.__sentMessages.some((m) => m.action === "validateUserScriptExecutions"));
 
 const tamperedContentSandbox = buildContentScriptSandbox(
   JSON.stringify({ version: 1, savedAt: Date.now(), scripts: [{
@@ -456,7 +475,7 @@ vm.createContext(tamperedContentSandbox);
 vm.runInContext(source, tamperedContentSandbox, { filename: "userscript-injector-dark-reader-tampered.js" });
 await tick();
 await tick();
-check("altered cached bytes fail before native validation", !tamperedContentSandbox.__sentMessages.some((m) => m.action === "validateUserScriptExecution"));
+check("altered cached bytes fail before native validation", !tamperedContentSandbox.__sentMessages.some((m) => m.action === "validateUserScriptExecutions"));
 check("altered cached bytes never execute in the content world", tamperedContentSandbox.__darkReaderTamperedExecuted !== true);
 
 let resolveDarkReaderValidation;
@@ -465,7 +484,7 @@ const darkReaderSandbox = buildContentScriptSandbox(
   JSON.stringify({ version: 1, savedAt: Date.now(), scripts: [darkReaderScript] }),
   [], "https://example.com/page", [], false,
   (msg) => {
-    if (msg.action === "validateUserScriptExecution") return darkReaderValidation;
+    if (msg.action === "validateUserScriptExecutions") return darkReaderValidation;
     if (msg.action === "getUserScripts") return new Promise(() => {});
     return { ok: true };
   },
@@ -477,8 +496,8 @@ await tick();
 const darkReaderGuard = darkReaderSandbox.document.head.children.find((c) => c.textContent.includes("#181a1b"));
 check("dark root is painted while Dark Reader awaits validation", !!darkReaderGuard?.parentNode);
 const darkReaderActions = darkReaderSandbox.__sentMessages.map((m) => m.action);
-check("exact Dark Reader content candidate validates before getUserScripts", darkReaderActions[0] === "validateUserScriptExecution" && darkReaderActions[1] === "getUserScripts");
-check("Dark Reader validation includes the digest of its exact cached bytes", darkReaderSandbox.__sentMessages[0]?.contentDigest === darkReaderDigest);
+check("exact Dark Reader content candidate validates before getUserScripts", darkReaderActions[0] === "validateUserScriptExecutions" && darkReaderActions[1] === "getUserScripts");
+check("Dark Reader validation includes the digest of its exact cached bytes", darkReaderSandbox.__sentMessages[0]?.scripts?.[0]?.contentDigest === darkReaderDigest);
 check("content warm start does not execute before validation", darkReaderSandbox.__darkReaderContentExecuted !== true);
 resolveDarkReaderValidation({ ok: true });
 for (let i = 0; i < 10; i++) await tick();
@@ -491,7 +510,7 @@ const rejectedValidation = new Promise((resolve) => { resolveRejectedValidation 
 const rejectedDarkReaderSandbox = buildContentScriptSandbox(
   JSON.stringify({ version: 1, savedAt: Date.now(), scripts: [darkReaderScript] }),
   [], "https://example.com/page", [], false,
-  (msg) => msg.action === "validateUserScriptExecution" ? rejectedValidation
+  (msg) => msg.action === "validateUserScriptExecutions" ? rejectedValidation
     : msg.action === "getUserScripts" ? { userScripts: [] } : new Promise(() => {}),
 );
 rejectedDarkReaderSandbox.matchMedia = () => ({ matches: true });
@@ -509,7 +528,7 @@ const staleValidation = new Promise((resolve) => { resolveStaleValidation = reso
 const staleValidatedSandbox = buildContentScriptSandbox(
   JSON.stringify({ version: 1, savedAt: Date.now(), scripts: [darkReaderScript] }),
   [], "https://example.com/page", [], false,
-  (msg) => msg.action === "validateUserScriptExecution" ? staleValidation : new Promise(() => {}),
+  (msg) => msg.action === "validateUserScriptExecutions" ? staleValidation : new Promise(() => {}),
 );
 vm.createContext(staleValidatedSandbox);
 vm.runInContext(source, staleValidatedSandbox, { filename: "userscript-injector-dark-reader-stale-validation.js" });
@@ -612,7 +631,7 @@ for (const cached of [largeWarmScript, { ...largeWarmScript, allowedHosts: ["dis
   const sandbox = buildContentScriptSandbox(
     JSON.stringify({ version: 1, savedAt: Date.now(), scripts: [cached] }),
     [], "https://discord.com/app", [], false,
-    msg => msg.action === "validateUserScriptExecution" ? { ok: false, error: "userscript-state-changed" } : new Promise(() => {}),
+    msg => msg.action === "validateUserScriptExecutions" ? { ok: false, error: "userscript-state-changed" } : new Promise(() => {}),
   );
   vm.createContext(sandbox); vm.runInContext(source, sandbox);
   await tick(); await tick();
@@ -802,7 +821,7 @@ check(
 
 // ---------------------------------------------------------------------------
 // Cold-path validation round-trips must overlap, not serialize. With several
-// document-start scripts enabled, every script's validateUserScriptExecution
+// document-start scripts enabled, every script's validateUserScriptExecutions
 // must be dispatched up front so a queued script does not lose the race
 // against the page's own code (issue #537).
 // ---------------------------------------------------------------------------
@@ -819,7 +838,7 @@ const parallelSandbox = buildContentScriptSandbox(
     if (msg.action === "getUserScripts") {
       return { userScripts: JSON.parse(JSON.stringify(parallelScripts)), documentStartCacheAllowed: true, cacheRevision };
     }
-    if (msg.action === "validateUserScriptExecution") {
+    if (msg.action === "validateUserScriptExecutions") {
       return new Promise((resolve) => { heldValidations.push({ scriptId: msg.scriptId, resolve }); });
     }
     return { ok: true };
@@ -831,7 +850,7 @@ await tick();
 await tick();
 check(
   "validation for queued document-start scripts dispatches concurrently",
-  heldValidations.length === 2,
+  heldValidations.length === 2 && parallelSandbox.__sentMessages.filter(m => m.action === "validateUserScriptExecutions").length === 1,
 );
 check("no script executes before its validation resolves", appendedScripts.length === parallelWrapperBase);
 // Resolve out of order: execution must still follow the native script order.
@@ -893,7 +912,7 @@ check(
 );
 check(
   "local warm start validates native site permission",
-  localWarmSandbox.__sentMessages.some((message) => message.action === "validateUserScriptExecution"),
+  localWarmSandbox.__sentMessages.some((message) => message.action === "validateUserScriptExecutions"),
 );
 
 // Cached userstyles require both native permission and digest validation.
@@ -912,13 +931,13 @@ const styleValidation = new Promise((resolve) => { resolveStyleValidation = reso
 const styleSandbox = buildContentScriptSandbox(
   JSON.stringify({ version: 1, savedAt: Date.now(), scripts: [cachedStyle] }),
   [], "https://example.com/page", [], false,
-  (msg) => msg.action === "validateUserScriptExecution" ? styleValidation : new Promise(() => {}),
+  (msg) => msg.action === "validateUserScriptExecutions" ? styleValidation : new Promise(() => {}),
 );
 vm.createContext(styleSandbox);
 vm.runInContext(source, styleSandbox, { filename: "userscript-injector-style-warm.js" });
 for (let i = 0; i < 6; i++) await tick();
 check("cached userstyle waits for native site permission", styleElementsIn(styleSandbox).length === 0);
-check("userstyle warm start validates with its content digest", styleSandbox.__sentMessages.some((m) => m.action === "validateUserScriptExecution" && m.contentDigest === styleDigest));
+check("userstyle warm start validates with its content digest", styleSandbox.__sentMessages.some((m) => m.action === "validateUserScriptExecutions" && m.scripts?.[0]?.contentDigest === styleDigest));
 resolveStyleValidation({ ok: true });
 for (let i = 0; i < 10; i++) await tick();
 check("validated userstyle stays applied exactly once", styleElementsIn(styleSandbox).length === 1);
@@ -928,7 +947,7 @@ const styleRejection = new Promise((resolve) => { resolveStyleRejection = resolv
 const rejectedStyleSandbox = buildContentScriptSandbox(
   JSON.stringify({ version: 1, savedAt: Date.now(), scripts: [cachedStyle] }),
   [], "https://example.com/page", [], false,
-  (msg) => msg.action === "validateUserScriptExecution" ? styleRejection : new Promise(() => {}),
+  (msg) => msg.action === "validateUserScriptExecutions" ? styleRejection : new Promise(() => {}),
 );
 vm.createContext(rejectedStyleSandbox);
 vm.runInContext(source, rejectedStyleSandbox, { filename: "userscript-injector-style-rejected.js" });
@@ -1050,6 +1069,111 @@ for (const [grants, expected] of [[['GM.setValue', 'GM_getValue'], 'undefined'],
     content: 'window.__uwType = typeof unsafeWindow; window.__uwOnGM = GM.unsafeWindow !== undefined;' }]);
   vm.createContext(probe); vm.runInContext(source, probe); await tick(); await tick();
   check(`content-context unsafeWindow follows its grant: ${grants.join(',')}`, probe.__uwType === expected && probe.__uwOnGM === (expected === 'object') && !('unsafeWindow' in probe));
+}
+
+// Empty frames stay subscribed to changes without installing script machinery.
+{
+  let scripts = [];
+  const probe = buildContentScriptSandbox(null, [], 'https://example.com/empty', [], true,
+    async message => message.action === 'getUserScripts' ? { userScripts: scripts } : { ok: true });
+  probe.document.readyState = 'loading';
+  probe.document.body = null;
+  let observers = 0;
+  probe.MutationObserver = class { observe() { observers++; } disconnect() {} };
+  const listeners = windowMessageListeners.length;
+  vm.createContext(probe);
+  vm.runInContext(source, probe);
+  await tick();
+  check('empty configuration installs no readiness observer or GM bridge',
+    observers === 0 && !probe.__wBlockMenuCommandBridge && windowMessageListeners.length === listeners);
+  await probe.__onMessage({ type: 'wblock:clearDocumentStartSessionCache' });
+  await tick();
+  check('an empty frame can invalidate before its bridges exist',
+    probe.__sentMessages.filter(message => message.action === 'getUserScripts').length === 2);
+  probe.document.readyState = 'complete';
+  probe.document.body = makeElement('body');
+  scripts = [{ ...fakeScript, id: 'later-script', content: 'window.__laterScript = true;' }];
+  await probe.__onMessage({ type: 'wblock:clearDocumentStartSessionCache' });
+  await tick();
+  check('a newly enabled script installs its bridges once',
+    !!probe.__wBlockMenuCommandBridge && windowMessageListeners.length === listeners + 1);
+  await probe.__onMessage({ type: 'wblock:clearDocumentStartSessionCache' });
+  await tick();
+  check('further invalidation does not duplicate bridges', windowMessageListeners.length === listeners + 1);
+}
+
+// Readiness machinery is only needed by scripts waiting for a document phase.
+for (const runAt of ['document-start', 'document-body']) {
+  const probe = buildContentScriptSandbox(null, [{ ...fakeScript, runAt, injectInto: 'content',
+    content: 'window.__phaseRuns = (window.__phaseRuns || 0) + 1;' }]);
+  probe.document.readyState = 'loading';
+  probe.document.body = null;
+  const observers = [];
+  probe.MutationObserver = class {
+    constructor(callback) { this.callback = callback; }
+    observe() { observers.push(this); }
+    disconnect() { this.disconnected = true; }
+  };
+  vm.createContext(probe); vm.runInContext(source, probe); await tick();
+  check(`${runAt} only observes when waiting for body`, observers.length === (runAt === 'document-body' ? 1 : 0));
+  check(`${runAt} respects the document phase`, (probe.__phaseRuns || 0) === (runAt === 'document-start' ? 1 : 0));
+  probe.document.body = makeElement('body');
+  for (const observer of observers) observer.callback();
+  await tick();
+  check(`${runAt} executes once when ready`, probe.__phaseRuns === 1 && observers.every(observer => observer.disconnected));
+}
+
+// Native replies can arrive after DOMContentLoaded but before the load event.
+{
+  const probe = buildContentScriptSandbox(null, [{ ...fakeScript, runAt: 'document-idle', injectInto: 'content',
+    content: 'window.__idleRuns = (window.__idleRuns || 0) + 1;' }]);
+  probe.document.readyState = 'interactive';
+  const loads = [];
+  const add = probe.addEventListener;
+  probe.addEventListener = (type, callback) => { if (type === 'load') loads.push(callback); add(type, callback); };
+  vm.createContext(probe); vm.runInContext(source, probe); await tick();
+  check('document-idle waits when its reply arrives after DOMContentLoaded', !probe.__idleRuns);
+  probe.document.readyState = 'complete';
+  for (const callback of loads) callback();
+  await tick();
+  check('document-idle still executes on load after a late reply', probe.__idleRuns === 1);
+}
+
+// Readiness waiting and userstyles do not need GM bridges.
+for (const kind of ['script', 'style']) {
+  const probe = buildContentScriptSandbox(null, [{ ...fakeScript, kind,
+    runAt: kind === 'script' ? 'document-end' : 'document-start',
+    content: kind === 'style' ? '.ad { display:none }' : 'window.__endRan = true;' }]);
+  probe.document.readyState = 'loading';
+  vm.createContext(probe); vm.runInContext(source, probe); await tick();
+  check(`${kind} avoids GM bridges before executable code runs`, !probe.__wBlockMenuCommandBridge);
+}
+
+// document-idle may yield until idle time, but must keep a bounded timeout.
+{
+  const probe = buildContentScriptSandbox(null, [{ ...fakeScript, runAt: 'document-idle', injectInto: 'content',
+    content: 'window.__idleRuns = (window.__idleRuns || 0) + 1;' }]);
+  const idle = [];
+  probe.requestIdleCallback = (callback, options) => idle.push({callback, options});
+  vm.createContext(probe); vm.runInContext(source, probe); await tick();
+  check('document-idle yields before executing its body', !probe.__idleRuns && idle.length === 1);
+  check('document-idle has a bounded scheduling timeout', idle[0]?.options.timeout === 1000);
+  idle[0]?.callback(); await tick();
+  check('document-idle executes once at idle time', probe.__idleRuns === 1);
+}
+
+// A startup reply is consumed once; invalidation still performs fresh matching.
+{
+  const probe = buildContentScriptSandbox(null, []);
+  probe.__wblockFrameInitialization = Promise.resolve({userScripts:[fakeScript]});
+  vm.createContext(probe); vm.runInContext(source.replace("new UserScriptEngine();", "globalThis.__engine = new UserScriptEngine();"), probe);
+  await tick(); await tick();
+  check('combined startup avoids a separate userscript lookup', !probe.__sentMessages.some(m => m.action === 'getUserScripts'));
+  check('combined startup retains native execution validation', probe.__sentMessages.some(m => m.action === 'validateUserScriptExecutions'));
+  check('combined startup is consumed only once', !probe.__wblockFrameInitialization);
+  vm.runInContext("__engine.invalidateDocumentStartSessionCache()", probe);
+  await tick();
+  check('invalidation requests fresh userscripts after combined startup', probe.__sentMessages.some(m => m.action === 'getUserScripts'));
 }
 
 console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);

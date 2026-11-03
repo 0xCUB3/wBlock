@@ -41,6 +41,41 @@ struct UserScriptMatchingAndPayloadTests {
         expect(UserScript.matchesMatchPattern("ftp://namemc.com/*", url: "ftp://namemc.com/x"), "explicit ftp:// still matches ftp")
         expect(UserScript.matchesMatchPattern("https://namemc.com/profile/example", url: "https://namemc.com/profile/example#bio"), "@match must ignore URL fragments")
 
+        // Keep the glob fast path equivalent to the previous ICU matcher,
+        // including literal regex metacharacters and overlapping wildcard parts.
+        let parts = ["", "a", "aa", "*", "**", "a*", "*a", "a*b", "[x]", "?", "é"]
+        for first in parts {
+            for last in parts {
+                let pattern = first + last
+                let expression = "^" + NSRegularExpression.escapedPattern(for: pattern)
+                    .replacingOccurrences(of: "\\*", with: ".*")
+                    .replacingOccurrences(of: "\\?", with: ".") + "$"
+                let regex = try! NSRegularExpression(pattern: expression)
+                for value in ["", "a", "aa", "aba", "aab", "[x]", "é", "a\n", "a\r", "a\u{0B}", "https://a/b#c"] {
+                    let expected = regex.firstMatch(in: value, range: NSRange(value.startIndex..., in: value)) != nil
+                    expect(UserScript.matchesIncludePattern(pattern, url: value) == expected, "glob parity for \(pattern) / \(value)")
+                }
+            }
+        }
+
+        var indexedGlobs = UserScript(name: "indexed globs")
+        let globs = (0..<80).map { "https://host\($0).invalid/*" } + [
+            "https://*.example/*", "*://literal.example/*", "https://user@private.example/*",
+            "https://xn--bcher-kva.test/*", "https://%65xample.com/*"
+        ]
+        indexedGlobs.includes = globs
+        for url in ["https://host79.invalid/a", "https://other.invalid/path.example/a",
+                    "https://other.invalid/path://literal.example/a", "https://user@private.example/a",
+                    "https://xn--bcher-kva.test/a", "https://%65xample.com/a", "https://unmatched.invalid/"] {
+            let expected = globs.contains { UserScript.matchesIncludePattern($0, url: url) }
+            expect(indexedGlobs.matches(url: url) == expected, "indexed includes preserve raw URL glob semantics")
+        }
+        indexedGlobs.includes = ["*"]
+        indexedGlobs.excludes = globs
+        expect(!indexedGlobs.matches(url: "https://host79.invalid/a"), "exclusions use the same index")
+        indexedGlobs.excludes = (0..<80).map { "https://changed\($0).invalid/*" }
+        expect(indexedGlobs.matches(url: "https://host79.invalid/a"), "pattern mutations invalidate the index")
+
         testUpdateEligibility()
 
         var endpoints = UserScript(

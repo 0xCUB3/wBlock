@@ -9,7 +9,6 @@ struct TargetCompilationTests {
             targets.map {
                 SharedAutoUpdateManager.TargetCompilationRequest(
                     target: $0, filters: [], allTargets: targets, disabledSites: [],
-                    affinitySnapshot: SafariContentBlockerAffinitySnapshot(contentsByFilterID: [:]),
                     orderedFilters: [], extraRulesText: nil, deadline: deadline,
                     minimumTime: 12, isCancelled: { cancelled }
                 )

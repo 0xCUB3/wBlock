@@ -1,181 +1,93 @@
 import Foundation
+@testable import wBlockCoreService
 
-@main
-struct RemoveParamDNRRuleGeneratorTests {
+@main struct RemoveParamDNRRuleGeneratorTests {
+    typealias G = RemoveParamDNRRuleGenerator
     static func main() throws {
-        let rulesText = """
-        ! comment
-        $removeparam=utm_source
-        ||example.com^$removeparam=fbclid
-        @@||example.com^$removeparam=fbclid
-        ||example.org^$removeparam
-        ||bad.example^$removeparam=/^utm_/
-        ||bad.example^$removeparam=~keep
-        ||encoded.example^$removeparam=%24param,script,domain=foo.example|~bar.example
-        ||typed.example^$xmlhttprequest,removeparam=id,third-party
-        $removeparam=v,hinta.fi|carrefoursa.com
-        """
-
-        let generated = RemoveParamDNRRuleGenerator.generateRules(
-            from: rulesText,
-            disabledSites: ["Disabled.example", "bad host"]
-        )
-        let rules = generated.rules
-        let summary = generated.summary
-
-        expectEqual(summary.removeParamRules, 9, "source removeparam count")
-        expectEqual(summary.exceptionRules, 1, "exception count")
-        expectEqual(summary.skippedRules, 3, "unsupported rules skipped")
-        expectEqual(summary.truncatedRules, 0, "nothing truncated under the budget")
-        expectEqual(summary.disabledSiteAllowRules, 2, "disabled-site allow rules")
-        expectEqual(summary.generatedRules, 8, "generated DNR rule count")
-
-        // Over-budget redirect-only lists drop the tail and report it separately
-        // from unsupported rules, so the apply result can say what happened.
-        expectEqual(RemoveParamDNRRuleGenerator.maxGeneratedRules, 30_000, "budget matches WebKit's dynamic rule limit")
-        let overBudget = (0..<(RemoveParamDNRRuleGenerator.maxGeneratedRules + 250))
-            .map { "||site\($0).example^$removeparam=p\($0)" }
-            .joined(separator: "\n")
-        let truncated = RemoveParamDNRRuleGenerator.generateRules(from: overBudget)
-        expectEqual(truncated.rules.count, RemoveParamDNRRuleGenerator.maxGeneratedRules, "rules stop at the budget")
-        expectEqual(truncated.summary.truncatedRules, 250, "overflow is counted as truncated")
-        expectEqual(truncated.summary.skippedRules, 0, "overflow is not reported as unsupported")
-        expectEqual(truncated.rules.last?.id, RemoveParamDNRRuleGenerator.ruleIDBase + RemoveParamDNRRuleGenerator.maxGeneratedRules - 1, "rule IDs stay inside the reserved range")
-
-        // A protective exception after the old source-order cutoff must displace
-        // a redirect rather than disappear and widen parameter stripping.
-        let lateExceptionRules = (0..<RemoveParamDNRRuleGenerator.maxGeneratedRules)
-            .map { "||late\($0).example^$removeparam=p\($0)" }
-            + ["@@||late0.example^$removeparam=p0"]
-        let lateException = RemoveParamDNRRuleGenerator.generateRules(
-            from: lateExceptionRules.joined(separator: "\n")
-        )
-        expectEqual(lateException.rules.count, RemoveParamDNRRuleGenerator.maxGeneratedRules,
-                    "late exception overflow stays within the public ceiling")
-        expectEqual(lateException.summary.exceptionRules, 1, "late exception is counted")
-        expectEqual(lateException.summary.truncatedRules, 1, "late exception displaces exactly one redirect")
-        expectEqual(lateException.summary.skippedRules, 0, "capacity displacement is not unsupported syntax")
-        expectEqual(lateException.rules.filter { $0.action.type == "allow" }.count, 1,
-                    "late exception survives generator truncation")
-
-        let lateExceptionWithDisabledSite = RemoveParamDNRRuleGenerator.generateRules(
-            from: lateExceptionRules.joined(separator: "\n"), disabledSites: ["disabled.example"]
-        )
-        expectEqual(lateExceptionWithDisabledSite.summary.disabledSiteAllowRules, 2,
-                    "disabled-site protections reserve capacity before source rules")
-        expectEqual(lateExceptionWithDisabledSite.rules.filter { $0.action.type == "allow" }.count, 3,
-                    "the late exception and both disabled-site protections must survive together")
-        expectEqual(lateExceptionWithDisabledSite.summary.truncatedRules, 3,
-                    "all protected slots displace redirects within the same ceiling")
-
-        let protectionsOnly = (0...RemoveParamDNRRuleGenerator.maxGeneratedRules)
-            .map { "@@||protected\($0).example^$removeparam=p" }
-        let protectiveOverflow = RemoveParamDNRRuleGenerator.generateRules(
-            from: (["$removeparam=p"] + protectionsOnly).joined(separator: "\n")
-        )
-        expectEqual(protectiveOverflow.rules.count, RemoveParamDNRRuleGenerator.maxGeneratedRules,
-                    "protective overflow still respects the native ceiling")
-        expectEqual(protectiveOverflow.rules.filter { $0.action.type != "allow" }.count, 0,
-                    "no stripping rule may remain when all protections cannot fit")
-        expectEqual(protectiveOverflow.summary.truncatedRules, 2,
-                    "protective overflow accounts for the omitted exception and redirect")
-
-        let disabledByRequestDomain = rules[0]
-        expectEqual(disabledByRequestDomain.action.type, "allow", "disabled request-domain allow")
-        expectEqual(disabledByRequestDomain.priority, 20_000, "disabled allow priority")
-        expectEqual(disabledByRequestDomain.condition.requestDomains, ["disabled.example"], "disabled request domain")
-
-        let generic = rules[2]
-        expectEqual(generic.action.type, "redirect", "generic action")
-        expectEqual(generic.action.redirect?.transform?.queryTransform?.removeParams, ["utm_source"], "generic remove param")
-        expectEqual(generic.condition.urlFilter, "^utm_source=", "generic param-aware filter")
-        expectEqual(generic.condition.resourceTypes, ["main_frame", "sub_frame"], "default document resources")
-
-        let scoped = rules[3]
-        expectEqual(scoped.condition.urlFilter, "||example.com^*^fbclid=", "scoped param-aware filter")
-
-        let exception = rules[4]
-        expectEqual(exception.action.type, "allow", "exception action")
-        expectEqual(exception.priority, 10_000, "exception priority")
-        expectEqual(exception.condition.urlFilter, "||example.com^*^fbclid=", "exception filter")
-
-        let stripAll = rules[5]
-        expectEqual(stripAll.action.redirect?.transform?.query, "", "strip-all query transform")
-        expectEqual(stripAll.condition.urlFilter, "||example.org^", "strip-all filter")
-
-        let encoded = rules[6]
-        expectEqual(encoded.action.redirect?.transform?.queryTransform?.removeParams, ["$param"], "encoded param decoded")
-        expectEqual(encoded.condition.resourceTypes, ["script"], "explicit resource type")
-        expectEqual(encoded.condition.domains, ["foo.example"], "included legacy-compatible domain")
-        expectEqual(encoded.condition.excludedDomains, ["bar.example"], "excluded legacy-compatible domain")
-
-        let typed = rules[7]
-        expectEqual(typed.condition.resourceTypes, ["xmlhttprequest"], "xmlhttprequest resource type")
-        expectEqual(typed.condition.domainType, "thirdParty", "third-party domain type")
-
-        let scopedRegressionText = """
-        ||wildcard.example^$removeparam=utm,domain=*.example
-        ||slash.example^$removeparam=utm,domain=example.com/path
-        ||port.example^$removeparam=utm,to=example.com:443
-        ||empty-domain.example^$removeparam=utm,domain=
-        ||empty-to.example^$removeparam=utm,to=
-        ||empty-domain-segment.example^$removeparam=utm,domain=good.example||other.example
-        ||empty-to-segment.example^$removeparam=utm,to=target.example|
-        ||mixed-invalid.example^$removeparam=utm,domain=good.example|bad/*.example
-        ||valid-scoped.example^$removeparam=utm,domain=good.example|~excluded.example,to=target.example|~not-target.example
-        ||unscoped.example^$removeparam=utm
-        """
-        let scopedRegression = RemoveParamDNRRuleGenerator.generateRules(from: scopedRegressionText)
-        expectEqual(scopedRegression.summary.removeParamRules, 10, "scoped regression source count")
-        expectEqual(scopedRegression.summary.skippedRules, 8, "malformed scoped rules skipped")
-        expectEqual(scopedRegression.rules.count, 2, "valid scoped and unscoped rules generated")
-
-        let validScoped = scopedRegression.rules[0]
-        expectEqual(validScoped.condition.domains, ["good.example"], "valid included legacy-compatible domain")
-        expectEqual(validScoped.condition.excludedDomains, ["excluded.example"], "valid excluded legacy-compatible domain")
-        expectEqual(validScoped.condition.requestDomains, ["target.example"], "valid included request domain")
-        expectEqual(validScoped.condition.excludedRequestDomains, ["not-target.example"], "valid excluded request domain")
-
-        let unscoped = scopedRegression.rules[1]
-        expectEqual(unscoped.condition.domains, nil, "unscoped domains")
-        expectEqual(unscoped.condition.requestDomains, nil, "unscoped request domains")
-
-        // #975: denyallow lists request domains the rule must not touch.
-        let denyAllow = RemoveParamDNRRuleGenerator.generateRules(from: """
-        $removeparam=eid,doc,denyallow=b.example|a.example,domain=site.example
-        ||x.example^$removeparam=utm,to=~c.example,denyallow=a.example
-        ||y.example^$removeparam=utm,denyallow=~a.example
-        """)
-        expectEqual(denyAllow.rules.count, 2, "negated denyallow is skipped")
-        expectEqual(denyAllow.rules[0].condition.excludedRequestDomains, ["a.example", "b.example"], "denyallow excluded")
-        expectEqual(denyAllow.rules[1].condition.excludedRequestDomains, ["a.example", "c.example"], "denyallow merges with to")
-
-        let documentAliases = RemoveParamDNRRuleGenerator.generateRules(from: """
-        ||doc.example^$removeparam=utm,doc
-        ||document.example^$removeparam=utm,document
-        @@||document.example^$removeparam=utm,document
-        ||combined.example^$removeparam=utm,doc,subdocument
-        ||negated.example^$removeparam=utm,~doc
-        """)
-        expectEqual(documentAliases.summary.removeParamRules, 5, "document alias source count")
-        expectEqual(documentAliases.summary.exceptionRules, 1, "document alias exception count")
-        expectEqual(documentAliases.summary.skippedRules, 1, "negated document alias is skipped")
-        expectEqual(documentAliases.rules.count, 4, "document aliases and exception are generated")
-        expectEqual(documentAliases.rules[0].condition.resourceTypes, ["main_frame"], "doc scopes to main frame")
-        expectEqual(documentAliases.rules[1].condition.resourceTypes, ["main_frame"], "document scopes to main frame")
-        expectEqual(documentAliases.rules[2].condition.resourceTypes, ["main_frame"], "document exception scopes to main frame")
-        expectEqual(documentAliases.rules[3].condition.resourceTypes, ["main_frame", "sub_frame"], "combined document types preserve explicit subdocument scope")
-
-        let encoder = JSONEncoder()
-        _ = try encoder.encode(rules)
-
-        print("ok")
-    }
-
-    private static func expectEqual<T: Equatable>(_ actual: T, _ expected: T, _ message: String) {
-        guard actual == expected else {
-            fputs("FAIL: \(message)\nactual: \(String(describing: actual))\nexpected: \(String(describing: expected))\n", stderr)
-            exit(1)
+        func check(_ value: Bool, _ message: String) {
+            if !value { fputs("FAIL: \(message)\n", stderr); exit(1) }
         }
+        func clean(_ rules: String, _ url: String, _ expected: String) {
+            let actual = G.cleanPageURL(url, rules: G.generatePageRules(from: rules))
+            check(actual == expected, "\(rules) cleaned \(url) to \(actual), expected \(expected)")
+        }
+        let url = "https://example.com/?utm_source=x&utm_medium=y&fbclid=z&keep=1"
+        let trackers = "$doc,removeparam=/^\\??utm_.*$/i,domain=~transfernow.*\n$removeparam=fbclid"
+        clean(trackers, url, "https://example.com/?keep=1")
+        for host in ["transfernow.net", "www.transfernow.net", "transfernow.co.uk"] {
+            clean(trackers, "https://\(host)/?utm_source=x&fbclid=z&keep=1", "https://\(host)/?utm_source=x&keep=1")
+        }
+        clean(trackers, "https://transfernow.evil.com/?utm_unknown=x", "https://transfernow.evil.com/")
+        clean("$removeparam=/^utm_/i", "https://example.com/?UTM_NEW=x&keep=%2f+%20#hash", "https://example.com/?keep=%2f+%20#hash")
+        clean("$removeparam=/^amp=true$/", "https://example.com/?amp=true&amp=false&keep=1", "https://example.com/?amp=false&keep=1")
+        clean("$removeparam=/^x=a,b$/", "https://example.com/?x=a%2Cb&x=c", "https://example.com/?x=c")
+        clean("$removeparam=/^x=a\\,b$/", "https://example.com/?x=a%2Cb", "https://example.com/")
+        clean("$removeparam=/^x=a{2,3}$/", "https://example.com/?x=aaa&x=a", "https://example.com/?x=a")
+        clean("$removeparam=~keep", "https://example.com/?novel=x&keep=%2B&bare#x", "https://example.com/?keep=%2B#x")
+        clean("$removeparam=~/^(keep|id)=/", "https://example.com/?novel=x&keep=1&id=2", "https://example.com/?keep=1&id=2")
+        clean("$removeparam=/^(?!keep=)/", "https://example.com/?novel=x&keep=1", "https://example.com/?keep=1")
+        clean("||example.com^$removeparam", url, "https://example.com/")
+        clean("$removeparam=|", url, "https://example.com/")
+        clean("$removeparam=x", "https://example.com/?x&x=2&X=3&%78=4", "https://example.com/?X=3&%78=4")
+        clean("$removeparam=%78", "https://example.com/?x&%78=4", "https://example.com/?x")
+        clean("$removeparam=x", "https://example.com/#?x=2", "https://example.com/#?x=2")
+        clean("fragment$removeparam=x", "https://example.com/?x=1#fragment", "https://example.com/?x=1#fragment")
+        clean("$removeparam=x\n@@$removeparam=|", "https://example.com/?x=1", "https://example.com/")
+        clean("$removeparam=x\n@@/subscribe?$doc,removeparam=x\n$removeparam=y", "https://example.com/subscribe?x=1&y=2", "https://example.com/subscribe?x=1")
+        check(G.generateRules(from: "@@/subscribe?$doc,removeparam=x").rules.first?.condition.urlFilter == "/subscribe?", "DNR exceptions do not narrow past the first query separator")
+        clean("$removeparam=x\n@@||example.com^$removeparam=x\n$removeparam=y", "https://example.com/?x=1&y=2", "https://example.com/?x=1")
+        clean("$removeparam=x\n@@||example.com^$removeparam", "https://example.com/?x=1", "https://example.com/?x=1")
+        clean("$removeparam=x,important\n@@||example.com^$removeparam", "https://example.com/?x=1", "https://example.com/")
+        // uBO exceptions cancel the same modifier value, not every selector that
+        // happens to match a parameter with that name.
+        clean("$removeparam=/^x=/\n@@$removeparam=x", "https://example.com/?x=1", "https://example.com/")
+        clean("$removeparam=/^x=/\n@@$removeparam=/^x=/", "https://example.com/?x=1", "https://example.com/?x=1")
+        clean("$doc,removeparam=x\n$removeparam=x,badfilter,doc", "https://example.com/?x=1", "https://example.com/?x=1")
+        clean("$removeparam=x\n@@$removeparam=x\n@@$removeparam=x,badfilter", "https://example.com/?x=1", "https://example.com/")
+        clean("$removeparam=x,domain=example.*|~www.example.com", "https://example.co.uk/?x=1", "https://example.co.uk/")
+        clean("$removeparam=x,domain=example.*|~www.example.com", "https://www.example.com/?x=1", "https://www.example.com/?x=1")
+        clean("$removeparam=x,to=example.*", "https://example.com/?x=1", "https://example.com/")
+        clean("$removeparam=x,denyallow=example.com", "https://example.com/?x=1", "https://example.com/?x=1")
+        clean("$removeparam=x,from=example.com,1p", "https://example.com/?x=1", "https://example.com/")
+        clean("$removeparam=x,3p", "https://example.com/?x=1", "https://example.com/?x=1")
+        clean("$removeparam=x,xhr", "https://example.com/?x=1", "https://example.com/?x=1")
+        clean("$removeparam=x,~doc", "https://example.com/?x=1", "https://example.com/?x=1")
+        clean("$removeparam=x,~xhr", "https://example.com/?x=1", "https://example.com/")
+        clean("/example\\.com/.*\\?/$removeparam=x", "https://example.com/?x=1", "https://example.com/")
+        clean("/example\\.org/.*\\?/$removeparam=x", "https://example.com/?x=1", "https://example.com/?x=1")
+        clean("|https://example.com/?x=1|$removeparam=x", "https://example.com/?x=12", "https://example.com/?x=12")
+        clean("$removeparam=x,unknown", "https://example.com/?x=1", "https://example.com/?x=1")
+
+        clean("/^http.*[^?]\\?$/$doc,removeparam=/^=$/", "https://example.com/?", "https://example.com/")
+        let methods = G.generateRules(from: "||snappfood.ir^$xhr,1p,method=get,removeparam=deviceType")
+        check(methods.rules.first?.condition.requestMethods == ["get"], "Safari 26 method conditions remain explicit")
+        check(!G.generateRules(from: "||hktvmall.com/yuicombo?$script,removeparam=/_ui/shared/common/js/analytics/with-intersection-track.js").rules.isEmpty, "slash-prefixed literal is not a malformed regex")
+        let entityException = G.generateRules(from: "$removeparam=x\n@@/search-redirection$doc,removeparam,domain=audible.*")
+        check(entityException.rules.count == 2 && entityException.rules[0].action.type == "redirect" &&
+              entityException.rules[1].condition.urlFilter == "/search-redirection", "entity exception retains its URL scope without suppressing unrelated transforms")
+        clean("$removeparam=x\n@@/search-redirection$doc,removeparam,domain=audible.*", "https://example.com/search-redirection?x=1", "https://example.com/search-redirection")
+        clean("$removeparam=x\n@@/search-redirection$doc,removeparam,domain=audible.*", "https://audible.co.uk/search-redirection?x=1", "https://audible.co.uk/search-redirection?x=1")
+        let dnr = G.generateRules(from: "$removeparam=x\n||example.org^$removeparam\n||api.example^$xhr,3p,removeparam=y\n$removeparam=z,~doc")
+        check(dnr.summary.skippedRules == 0 && dnr.rules.count == 4, "literals, all, aliases and negated types admitted")
+        check(dnr.rules[1].action.redirect?.transform?.query == "", "strip-all uses empty query")
+        check(dnr.rules[2].condition.domainType == "thirdParty" && dnr.rules[2].condition.resourceTypes == ["xmlhttprequest"], "XHR party scope retained")
+        check(dnr.rules[3].condition.resourceTypes?.contains("main_frame") == false, "negated document retained")
+        check(G.generateRules(from: "$removeparam=x\n$removeparam=x,badfilter").rules.isEmpty, "badfilter cancels DNR")
+        let regex = G.generateRules(from: "$doc,removeparam=/^utm_.*$/i")
+        check(regex.rules.count == 19 && regex.rules.allSatisfy { $0.condition.urlFilter?.hasPrefix("^utm_") == true }, "expanded regex names cannot shadow unrelated redirects")
+        check(G.generateRules(from: "$removeparam=/^amp=true$/").rules.isEmpty, "value-specific regex never strips every amp value in DNR")
+        check(G.generateRules(from: "$removeparam=x,domain=~transfernow.*").rules.isEmpty, "entity scope goes to PSL-aware page evaluator")
+        let pattern = G.generateRules(from: "/example\\.com/$removeparam=x").rules.first
+        check(pattern?.condition.regexFilter == "example\\.com" && pattern?.condition.urlFilter == nil, "URL regex cannot become an unscoped redirect")
+        let scoped = G.generateRules(from: "$removeparam=x,domain=page.example|~except.example,to=target.example|~except-target.example").rules.first
+        check(scoped?.condition.domains == ["page.example"] && scoped?.condition.excludedRequestDomains == ["except-target.example"], "both domain scopes retained")
+        let capacity = G.maxGeneratedRules
+        let bulk = (0..<capacity + 1).map { "||site\($0).example^$removeparam=p\($0)" }.joined(separator: "\n")
+        let truncated = G.generateRules(from: bulk + "\n@@||site0.example^$removeparam=p0", disabledSites: ["disabled.example"])
+        check(truncated.rules.count == capacity && truncated.summary.truncatedRules > 0, "bounded DNR generation")
+        check(truncated.rules.contains { $0.action.type == "allow" && $0.priority == 10_000 }, "exceptions survive budget pressure")
+        check(truncated.rules.map(\.id) == Array(G.ruleIDBase..<G.ruleIDBase + capacity), "stable unique rule IDs")
+        _ = try JSONEncoder().encode(truncated.rules)
+        print("PASS removeparam selectors, scopes, exceptions, badfilter and DNR capacity")
     }
 }

@@ -1,0 +1,30 @@
+[package]
+name = "wbe"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0-or-later"
+
+[lib]
+crate-type = ["rlib", "staticlib", "cdylib"]
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+bitflags = { version = "2", features = ["serde"] }
+memchr = "2"
+regex = "1"
+idna = "1"
+rustc-hash = "2"
+cssparser = "0.35"
+selectors = "0.32"
+precomputed-hash = "0.1"
+# Public suffix list, for registrable domains (the same crate adblock embeds).
+addr = { version = "0.15", default-features = false, features = ["psl"] }
+# Cosmetic, procedural, and scriptlet matching only; network rules are compiled
+# to Safari JSON, so the adblock-rust network features are off. css-validation
+# is required: without it `:has-text(...)` is treated as a plain CSS selector.
+adblock = { version = "=0.13.3", default-features = false, features = ["embedded-domain-resolver", "single-thread", "css-validation"] }
+
+[features]
+default = []
+wasm = []

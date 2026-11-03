@@ -310,19 +310,19 @@ public enum ContentBlockerIncrementalCache {
             return nil
         }
 
-        var canonical = "schema=\(inputSignatureSchemaVersion)\ncount=\(filters.count)\n"
+        var canonical = "schema=\(inputSignatureSchemaVersion)\ncompiler=\(SafariVersionDetection.compilerIdentity)\ncount=\(filters.count)\n"
         canonical.append("jsonBudget=\(ContentBlockerService.safariContentBlockerJSONSizeLimit)\n")
         canonical.reserveCapacity((filters.count + affinityContributors.count) * 64)
 
         for filter in canonicalFilterOrder(filters) {
             let fileMarker = localFileFingerprint(for: filter, containerURL: containerURL)
-            canonical.append("\(filter.id.uuidString)|\(fileMarker)|\(siteScopeMarker(for: filter))\n")
+            canonical.append("\(filter.id.uuidString)|\(fileMarker)|\(filter.isTrustedSource)|\(siteScopeMarker(for: filter))\n")
         }
         if !affinityContributors.isEmpty {
             canonical.append("affinity=\(affinityContributors.count)\n")
             for filter in canonicalFilterOrder(affinityContributors) {
                 let fileMarker = localFileFingerprint(for: filter, containerURL: containerURL)
-                canonical.append("a|\(filter.id.uuidString)|\(fileMarker)|\(siteScopeMarker(for: filter))\n")
+                canonical.append("a|\(filter.id.uuidString)|\(fileMarker)|\(filter.isTrustedSource)|\(siteScopeMarker(for: filter))\n")
             }
         }
 
@@ -404,6 +404,7 @@ public enum ContentBlockerIncrementalCache {
         let baseURL = containerURL.appendingPathComponent(baseRulesFilename(for: targetRulesFilename))
         let countURL = containerURL.appendingPathComponent("\(baseURL.lastPathComponent).count")
         let advancedURL = containerURL.appendingPathComponent(baseAdvancedRulesFilename(for: targetRulesFilename))
+        let compilerURL = containerURL.appendingPathComponent(baseCompilerFilename(for: targetRulesFilename))
         // The base JSON is parsed once at the call site, which also compares
         // the parsed rule count against the .count sidecar. Here we only check
         // the sidecars and the outer array shape so a multi-megabyte file is
@@ -413,7 +414,9 @@ public enum ContentBlockerIncrementalCache {
               count >= 0,
               looksLikeJSONArrayFile(at: baseURL),
               FileManager.default.fileExists(atPath: advancedURL.path),
-              (try? String(contentsOf: advancedURL, encoding: .utf8)) != nil
+              (try? String(contentsOf: advancedURL, encoding: .utf8)) != nil,
+              // Written last, so it also marks the cache complete.
+              (try? String(contentsOf: compilerURL, encoding: .utf8)) == SafariVersionDetection.compilerIdentity
         else { return false }
         return true
     }
@@ -453,8 +456,12 @@ public enum ContentBlockerIncrementalCache {
         ) else {
             return nil
         }
+        // Only a cache this engine wrote: AdGuard-era advanced rules must not
+        // reach the new runtime.
+        guard hasCoherentBaseRulesCache(
+            targetRulesFilename: targetRulesFilename, groupIdentifier: groupIdentifier, containerURL: containerURL
+        ) else { return nil }
         let advancedURL = containerURL.appendingPathComponent(baseAdvancedRulesFilename(for: targetRulesFilename))
-        guard FileManager.default.fileExists(atPath: advancedURL.path) else { return nil }
         return try? String(contentsOf: advancedURL, encoding: .utf8)
     }
 
@@ -591,6 +598,12 @@ public enum ContentBlockerIncrementalCache {
         return "\(targetRulesFilename).base"
     }
 
+    /// The compiler identity (SafariVersionDetection.compilerIdentity) that
+    /// produced the base cache.
+    public static func baseCompilerFilename(for targetRulesFilename: String) -> String {
+        "\(baseRulesFilename(for: targetRulesFilename)).compiler"
+    }
+
     public static func baseAdvancedRulesFilename(for targetRulesFilename: String) -> String {
         "\(baseRulesFilename(for: targetRulesFilename)).advanced.txt"
     }
@@ -657,57 +670,27 @@ public enum UserScriptMetadataParser {
         let normalizedDirective = directive.hasPrefix("@") ? directive : "@\(directive)"
         var inMetadata = false
 
-        for line in userScriptContent.split(whereSeparator: \.isNewline) {
+        var result: String?
+        // Stop at the header boundary without splitting the executable body.
+        userScriptContent.enumerateLines { line, stop in
             let trimmed = line.trimmingCharacters(in: .whitespaces)
-
-            if trimmed == "// ==UserScript==" {
-                inMetadata = true
-                continue
-            }
-            if trimmed == "// ==/UserScript==" { break }
-            if !inMetadata { continue }
-
+            if trimmed == "// ==UserScript==" { inMetadata = true; return }
+            if trimmed == "// ==/UserScript==" { stop = true; return }
+            guard inMetadata else { return }
             let parts = trimmed.split(separator: " ", maxSplits: 2, omittingEmptySubsequences: true)
-            guard parts.count >= 2, parts[0] == "//", parts[1] == normalizedDirective else { continue }
+            guard parts.count >= 2, parts[0] == "//", parts[1] == normalizedDirective else { return }
             if parts.count >= 3 {
                 let value = String(parts[2]).trimmingCharacters(in: .whitespacesAndNewlines)
-                return value.isEmpty ? nil : value
+                result = value.isEmpty ? nil : value
             }
-            return nil
+            stop = true
         }
-
-        return nil
-    }
-
-    public static func extractResourceNames(from userScriptContent: String) -> [String] {
-        var names: [String] = []
-        var inMetadata = false
-
-        for line in userScriptContent.split(whereSeparator: \.isNewline) {
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-
-            if trimmed == "// ==UserScript==" {
-                inMetadata = true
-                continue
-            }
-            if trimmed == "// ==/UserScript==" { break }
-            if !inMetadata { continue }
-
-            if trimmed.hasPrefix("// @resource") {
-                let parts = trimmed.split(separator: " ", omittingEmptySubsequences: true)
-                if parts.count >= 3 {
-                    let name = String(parts[2]).trimmingCharacters(in: .whitespacesAndNewlines)
-                    if !name.isEmpty { names.append(name) }
-                }
-            }
-        }
-
-        return Array(Set(names)).sorted()
+        return result
     }
 }
 
-/// Serializes access to the shared WebExtension instance to prevent data races
-/// between concurrent lookup() and buildFilterEngine() calls.
+/// Serializes use of the per-page engine (FilterEngineStore), which is not
+/// safe for concurrent lookups.
 public final class WebExtensionGate: @unchecked Sendable {
     public static let shared = WebExtensionGate()
     private let lock = NSLock()

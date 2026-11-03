@@ -415,8 +415,7 @@ extension RemoveParamDNRRuleGenerator {
 
     /// Writes the carve-outs the next content-blocker conversion appends, or
     /// an empty file when they are not safe. Returns the number written.
-    static func saveRedirectCarveOuts(for rules: [DeclarativeRule], containerURL: URL) -> Int {
-        let lines = rules.compactMap(carveOutLine)
+    static func saveRedirectCarveOutLines(_ lines: [String], containerURL: URL) -> Int {
         let allowed = carveOutsAllowed(
             status: loadRedirectStatus(containerURL: containerURL), redirectCount: lines.count
         )
@@ -439,36 +438,5 @@ private extension Substring {
         var line = self
         while let last = line.last, last.isNewline { line = line.dropLast() }
         return line
-    }
-}
-
-/// Redirect directives AdGuard strips from its Safari builds, taken from the
-/// matching Chromium builds by scripts/update-redirect-feed.swift.
-enum RedirectFeed {
-    private final class BundleMarker {}
-
-    private static let lists: [String: String] = {
-        guard let url = Bundle(for: BundleMarker.self).url(forResource: "redirect-feed", withExtension: "json"),
-              let data = try? Data(contentsOf: url),
-              let decoded = try? JSONDecoder().decode([String: String].self, from: data)
-        else { return [:] }
-        return decoded
-    }()
-
-    /// AdGuard filter ID of a list served from AdGuard's Safari or iOS build.
-    static func adGuardFilterID(for url: URL) -> String? {
-        let path = url.path
-        guard path.contains("/extension/safari/filters/") || path.contains("/ios/filters/") else { return nil }
-        let name = url.deletingPathExtension().lastPathComponent
-        let id = name.hasSuffix("_optimized") ? String(name.dropLast("_optimized".count)) : name
-        return id.allSatisfy(\.isNumber) && !id.isEmpty ? id : nil
-    }
-
-    static func sources(for filters: [FilterList]) -> [String] {
-        var seen = Set<String>()
-        return filters.compactMap { filter in
-            guard let id = adGuardFilterID(for: filter.url), seen.insert(id).inserted else { return nil }
-            return lists[id]
-        }
     }
 }

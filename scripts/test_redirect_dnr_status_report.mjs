@@ -100,6 +100,8 @@ const loadBackground = ({
       getSessionRules: async () => sessionRules,
       updateDynamicRules: async update => {
         state.dnrUpdates.push(update);
+        const removed = new Set(update.removeRuleIds || []);
+        dynamicRules = dynamicRules.filter(rule => !removed.has(rule.id)).concat(update.addRules || []);
       }
     },
     i18n: { getMessage: () => "" }
@@ -123,7 +125,7 @@ const loadBackground = ({
           { id: 1500001, priority: 15100, action: { type: "redirect", redirect: { extensionPath: "/redirects/noop.html" } }, condition: {} }
         ], ruleIdBase: 1500000, ruleIdLimit: 1650000 };
       }
-      return { payload: { css: [], extendedCss: [], js: [], scriptlets: [], engineTimestamp: 1 } };
+      return { payload: { css: [], procedural: [], scriptlets: [], engineTimestamp: 1 } };
     },
     permissions: { '{\"origins\":[\"*://*/*\"]}': true },
     isAllowedIncognito: false,
@@ -155,7 +157,7 @@ const loadBackground = ({
           { id: 1500001, priority: 15100, action: { type: "redirect", redirect: { extensionPath: "/redirects/noop.html" } }, condition: {} }
         ], ruleIdBase: 1500000, ruleIdLimit: 1650000 };
       }
-      return { payload: { css: [], extendedCss: [], js: [], scriptlets: [], engineTimestamp: 1 } };
+      return { payload: { css: [], procedural: [], scriptlets: [], engineTimestamp: 1 } };
     },
     permissions: { '{\"origins\":[\"*://*/*\"]}': true },
     isAllowedIncognito: false,
@@ -186,7 +188,7 @@ const loadBackground = ({
           { id: 1500001, priority: 15100, action: { type: "redirect", redirect: { extensionPath: "/redirects/noop.html" } }, condition: {} }
         ], ruleIdBase: 1500000, ruleIdLimit: 1650000 };
       }
-      return { payload: { css: [], extendedCss: [], js: [], scriptlets: [], engineTimestamp: 1 } };
+      return { payload: { css: [], procedural: [], scriptlets: [], engineTimestamp: 1 } };
     },
     permissions: { '{\"origins\":[\"*://*/*\"]}': false },
     isAllowedIncognito: false,
@@ -212,7 +214,7 @@ const loadBackground = ({
           { id: 1500000, priority: 15000, action: { type: "redirect", redirect: { extensionPath: "/redirects/noopjs.js" } }, condition: {} }
         ], ruleIdBase: 1500000, ruleIdLimit: 1650000 };
       }
-      return { payload: { css: [], extendedCss: [], js: [], scriptlets: [], engineTimestamp: 1 } };
+      return { payload: { css: [], procedural: [], scriptlets: [], engineTimestamp: 1 } };
     },
     permissions: { '{\"origins\":[\"*://*/*\"]}': true },
     isAllowedIncognito: null,
@@ -238,7 +240,7 @@ const loadBackground = ({
             { id: 1500000, priority: 15000, action: { type: "redirect", redirect: { extensionPath: "/redirects/noopjs.js" } }, condition: {} }
           ], ruleIdBase: 1500000, ruleIdLimit: 1650000 };
         }
-        return { payload: { css: [], extendedCss: [], js: [], scriptlets: [], engineTimestamp: 1 } };
+        return { payload: { css: [], procedural: [], scriptlets: [], engineTimestamp: 1 } };
       },
       onMessage: { addListener: () => {} },
       connectNative: () => ({ onMessage: { addListener: () => {} }, onDisconnect: { addListener: () => {} } }),
@@ -303,7 +305,7 @@ const loadBackground = ({
           { id: 1500003, priority: 1, action: { type: "allow" }, condition: {} }
         ], ruleIdBase: 1500000, ruleIdLimit: 1650000 };
       }
-      return { payload: { css: [], extendedCss: [], js: [], scriptlets: [], engineTimestamp: 1 } };
+      return { payload: { css: [], procedural: [], scriptlets: [], engineTimestamp: 1 } };
     },
     permissions: { '{\"origins\":[\"*://*/*\"]}': true },
     isAllowedIncognito: true,

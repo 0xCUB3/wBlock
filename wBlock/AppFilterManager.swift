@@ -27,7 +27,7 @@ struct ApplyRunSnapshot {
 
 @MainActor
 class AppFilterManager: ObservableObject {
-    private static let lastAppliedUpgradeSignatureKey = "wBlock.lastAppliedUpgradeSignature"
+    private static let lastAppliedUpgradeSignatureKey = SharedAutoUpdateManager.lastAppliedUpgradeSignatureKey
     private static let lastFailedUpgradeSignatureKey = "wBlock.lastFailedUpgradeSignature"
     @Published var filterLists: [FilterList] = []
     @Published var isLoading: Bool = false
@@ -210,24 +210,47 @@ class AppFilterManager: ObservableObject {
         autoApplyTask = nil
     }
 
-    private func currentUpgradeSignature() -> String {
-        let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
-        return "\(appVersion)|\(ContentBlockerService.embeddedCompatibilityRulesVersion)"
-    }
-
     private func storedUpgradeSignature() -> String? {
         let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
         return defaults.string(forKey: Self.lastAppliedUpgradeSignatureKey)
     }
 
+    /// Replaced AdGuard lists this device had on when it upgraded from wBlock 3
+    /// and has not handed over yet (completeAdGuardHandover). Device-local, so
+    /// lists turned on later, here or on a synced device, are never moved.
+    private static let adGuardHandoverPendingKey = "wBlock.adGuardHandoverPending"
+
+    var adGuardHandoverPending: Set<UUID> {
+        get {
+            let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
+            return Set((defaults.stringArray(forKey: Self.adGuardHandoverPendingKey) ?? []).compactMap(UUID.init))
+        }
+        set {
+            let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
+            defaults.set(newValue.map(\.uuidString).sorted(), forKey: Self.adGuardHandoverPendingKey)
+        }
+    }
+
+    /// Records the handover once per device: the selected replaced lists when
+    /// the last applied version is wBlock 3, nothing for fresh installs and 4.x.
+    private func recordAdGuardHandoverIfNeeded(_ lists: [FilterList]) {
+        let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
+        guard defaults.object(forKey: Self.adGuardHandoverPendingKey) == nil else { return }
+        let appliedMajor = storedUpgradeSignature()?.split(separator: "|").first?
+            .split(separator: ".").first.flatMap { Int($0) }
+        adGuardHandoverPending = (appliedMajor ?? 4) < 4
+            ? Set(lists.filter { $0.isSelected && FilterListLoader.isReplacedAdGuardList($0) }.map(\.id))
+            : []
+    }
+
     func persistUpgradeRebuildSignature() {
         let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
-        defaults.set(currentUpgradeSignature(), forKey: Self.lastAppliedUpgradeSignatureKey)
+        defaults.set(ContentBlockerService.upgradeSignature, forKey: Self.lastAppliedUpgradeSignatureKey)
     }
 
     func persistFailedUpgradeRebuildSignature() {
         let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
-        defaults.set(currentUpgradeSignature(), forKey: Self.lastFailedUpgradeSignatureKey)
+        defaults.set(ContentBlockerService.upgradeSignature, forKey: Self.lastFailedUpgradeSignatureKey)
     }
 
     func clearFailedUpgradeRebuildSignature() {
@@ -275,17 +298,19 @@ class AppFilterManager: ObservableObject {
         }
     }
 
-    func scheduleAutoApplyDebounce() {
+    /// `delay` is in seconds; a list handover applies at once so its new lists
+    /// do not sit undownloaded behind the edit debounce.
+    func scheduleAutoApplyDebounce(delay: UInt64 = 60) {
         autoApplyTask?.cancel()
         autoApplyTask = Task { @MainActor [weak self] in
-            try? await Task.sleep(nanoseconds: 60_000_000_000)
+            try? await Task.sleep(nanoseconds: delay * 1_000_000_000)
             guard !Task.isCancelled else { return }
             guard let self else { return }
             if self.isAutoUpdateRunning {
                 self.autoApplyWaitingForAutoUpdate = true
                 return
             }
-            guard self.hasUnappliedChanges,
+            guard self.hasUnappliedChanges || !self.adGuardHandoverPending.isEmpty,
                   !self.isLoading,
                   !self.isApplyInFlight,
                   !self.pausedComponents.contains(.filters)
@@ -641,11 +666,13 @@ class AppFilterManager: ObservableObject {
             let rules = ContentBlockerTargetManager.shared.targets.flatMap { target -> [String] in
                 let base = ContentBlockerIncrementalCache.baseRulesFilename(for: target.rulesFilename)
                 return [target.rulesFilename, base, "\(base).count", "\(base).sha256",
+                        ContentBlockerIncrementalCache.baseCompilerFilename(for: target.rulesFilename),
                         ContentBlockerIncrementalCache.baseAdvancedRulesFilename(for: target.rulesFilename),
                         "\(target.rulesFilename).incremental-state.json", "\(target.rulesFilename).source-rule-provenance.json"]
             }
             let generated = sources + baselines + rules + [
                 RemoveParamDNRRuleGenerator.rulesFilename, RemoveParamDNRRuleGenerator.blockedCountRulesFilename,
+                RemoveParamDNRRuleGenerator.pageRulesFilename, "dnr-generation-state.json",
                 "dnr-extraction-cache.json", "removeparam-extraction-cache.json"
             ]
             await Task.detached(priority: .utility) {
@@ -656,6 +683,20 @@ class AppFilterManager: ObservableObject {
             await dataManager.setFilterValidators(uuid, etag: nil, lastModified: nil)
         }
         validatorClearIDs.removeAll()
+        // Schema and app-version changes cannot wait for the download throttle.
+        // saveRules reuses unchanged inputs and performs no network requests.
+        let selected = filterLists.filter(\.isSelected)
+        let disabled = effectiveFilterDisabledSites()
+        let blockedCount = dataManager.isBlockedRequestCountEnabled
+        do {
+            _ = try await Task.detached(priority: .utility) {
+                try RemoveParamDNRRuleGenerator.saveRules(for: selected, disabledSites: disabled,
+                    blockedCount: blockedCount, groupIdentifier: GroupIdentifier.shared.value)
+            }.value
+        } catch {
+            await ConcurrentLogManager.shared.error(.filterApply, "Failed to prepare removeparam DNR rules",
+                metadata: ["error": LogErrorDescriber.describe(error)])
+        }
         setupTask = nil
     }
 
@@ -733,7 +774,14 @@ class AppFilterManager: ObservableObject {
                 }
             }
         }
+        // AdGuard lists that uBO lists replaced in wBlock 4 are handed over by
+        // the next apply, which first downloads the replacements
+        // (completeAdGuardHandover). Start it at once.
+        recordAdGuardHandoverIfNeeded(migratedFilterLists)
+        let handedOverSelections = !adGuardHandoverPending.isEmpty
+        let customCountBeforeHydrate = migratedFilterLists.filter(\.isCustom).count
         migratedFilterLists = FilterListSetup.hydrate(migratedFilterLists, defaults: defaultLists)
+        let foldedCustomCopies = migratedFilterLists.filter(\.isCustom).count < customCountBeforeHydrate
         migratedFilterLists = deduplicateFilterIDs(migratedFilterLists)
         validatorClearIDs = migratedFilterLists.compactMap { filter in
             guard let originalURL = originalURLsByID[filter.id], originalURL != filter.url else { return nil }
@@ -749,7 +797,7 @@ class AppFilterManager: ObservableObject {
             guard let originalURL = originalURLsByID[filter.id] else { return false }
             return originalURL != filter.url
         }
-        if hasURLMigrations || addedDefaultFilters || selectedDeprecatedListWasRemoved {
+        if hasURLMigrations || addedDefaultFilters || selectedDeprecatedListWasRemoved || foldedCustomCopies {
             Task { await self.saveFilterLists() }
         }
 
@@ -766,15 +814,20 @@ class AppFilterManager: ObservableObject {
         // Set up observer for disabled sites changes
         setupDisabledSitesObserver()
 
-        let currentSignature = currentUpgradeSignature()
+        let currentSignature = ContentBlockerService.upgradeSignature
         let storedSignature = storedUpgradeSignature()
         let signatureMismatch = storedSignature != currentSignature
         let needsRebuild = dataManager.hasCompletedOnboarding
-            && (hasURLMigrations || selectedDeprecatedListWasRemoved || signatureMismatch)
+            && (hasURLMigrations || selectedDeprecatedListWasRemoved || foldedCustomCopies || handedOverSelections || signatureMismatch)
         if needsRebuild {
             markNonSelectionChangesPending()
-            if storedFailedUpgradeSignature() != currentSignature {
-                scheduleAutoApplyDebounce()
+            if let delay = ContentBlockerService.automaticRebuildDelay(
+                signatureMismatch: signatureMismatch,
+                failedCurrentUpgrade: storedFailedUpgradeSignature() == currentSignature,
+                handoverPending: handedOverSelections,
+                hasPublishedEngine: ContentBlockerService.hasPublishedFilterEngine(groupIdentifier: GroupIdentifier.shared.value)
+            ) {
+                scheduleAutoApplyDebounce(delay: delay)
             }
         } else {
             markCurrentStateApplied()
@@ -840,6 +893,33 @@ class AppFilterManager: ObservableObject {
         }
     }
 
+    /// Downloads the replacements of each pending AdGuard list, then hands over
+    /// those whose replacements all arrived
+    /// (FilterListLoader.handingOverReplacedAdGuardLists). One that cannot
+    /// hand over yet keeps protecting and is retried on the next apply.
+    func completeAdGuardHandover() async {
+        let pending = adGuardHandoverPending
+        guard !pending.isEmpty else { return }
+        let needed = Set(filterLists.filter { pending.contains($0.id) && $0.isSelected }
+            .flatMap { FilterListLoader.adGuardReplacements[$0.name] ?? [] })
+        for list in filterLists where !list.isCustom && needed.contains(list.name) && !loader.filterFileExists(list) {
+            _ = await filterUpdater.fetchAndProcessFilter(list)
+        }
+        let handover = FilterListLoader.handingOverReplacedAdGuardLists(
+            filterLists, pending: pending, hasContent: loader.filterFileExists)
+        if !handover.handedOver.isEmpty {
+            filterLists = handover.lists
+            refreshMissingItems()
+            await saveFilterLists()
+            await ConcurrentLogManager.shared.info(
+                .system, LocalizedStrings.text("Replaced AdGuard filter list(s) with uBlock Origin lists"),
+                metadata: ["filters": handover.handedOver.map(\.name).joined(separator: ", ")]
+            )
+        }
+        // After the selection is saved, so a crash in between retries the handover.
+        adGuardHandoverPending = pending.subtracting(handover.settled)
+    }
+
     /// `checkForUpdates: false` skips refreshing downloaded lists. Selected lists that have never
     /// been fetched are downloaded only when `downloadMissing` (default: `checkForUpdates`) is true.
     @discardableResult
@@ -849,6 +929,8 @@ class AppFilterManager: ObservableObject {
         refreshMissingItems()
 
         let started = await performExclusiveApply {
+            // Before the snapshot, so the run compiles the handed-over selection.
+            await self.completeAdGuardHandover()
             self.prepareApplyRunState()
             self.failedReloadTargets = []
             self.showingApplyProgressSheet = showProgress

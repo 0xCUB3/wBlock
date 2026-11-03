@@ -33,6 +33,25 @@ struct UserScriptFileStorageTests {
         try write("next", shared)
         expect(read([shared, extensionCache]) == "next", "subsequent shared updates must be visible")
         expect(read([shared, app]) == "next", "shared update must also supersede app-private source")
+        var decodes = 0
+        func decoded() -> String? {
+            UserScriptFileStorage.read(fileName: "cached.js", directories: [shared]) {
+                decodes += 1
+                return String(data: $0, encoding: .utf8)
+            }
+        }
+        try write("one", shared, "cached.js")
+        expect(decoded() == "one" && decoded() == "one" && decodes == 1, "unchanged files decode once")
+        let cachedURL = shared.appendingPathComponent("cached.js")
+        let modified = try FileManager.default.attributesOfItem(atPath: cachedURL.path)[.modificationDate]!
+        try Data("two".utf8).write(to: cachedURL)
+        try FileManager.default.setAttributes([.modificationDate: modified], ofItemAtPath: cachedURL.path)
+        expect(decoded() == "two", "same-size in-place writes invalidate even when mtime is restored")
+        try write("new", shared, "cached.js")
+        try FileManager.default.setAttributes([.modificationDate: modified], ofItemAtPath: cachedURL.path)
+        expect(decoded() == "new", "atomic replacements invalidate even with the same size and mtime")
+        try FileManager.default.removeItem(at: cachedURL)
+        expect(decoded() == nil, "removed files never use cached bytes")
         try write("legacy", extensionCache, "legacy.user.js")
         expect(read([shared, extensionCache], "legacy.user.js") == "legacy", "legacy fallback remains readable")
         expect(read([shared], "legacy.user.js") == "legacy", "legacy fallback migrates to shared storage")

@@ -22,11 +22,30 @@ enum BuiltInFilterCredits {
     }
 
     private static let adGuard = credit("AdGuard", "https://github.com/AdguardTeam/AdguardFilters")
-    private static let hagezi = credit("hagezi", "https://github.com/hagezi/dns-blocklists")
     private static let dandelionSprout = credit("DandelionSprout", "https://github.com/DandelionSprout/adfilt")
+    private static let uAssets = credit("Raymond Hill and the uAssets contributors", "https://github.com/uBlockOrigin/uAssets")
+    private static let easyList = credit("EasyList team", "https://easylist.to/")
+    private static let ruAdList = credit("dimisa-RUAdList", "https://github.com/easylist/ruadlist")
 
     private static let byName: [String: Credit] = [
-        "HaGeZi Referral Allowlist": hagezi,
+        "uBlock filters – Ads": uAssets,
+        "uBlock filters – Privacy": uAssets,
+        "uBlock filters – Badware risks": uAssets,
+        "uBlock filters – Quick fixes": uAssets,
+        "uBlock filters – Unbreak": uAssets,
+        "uBlock filters – Annoyances": uAssets,
+        "uBlock filters – Cookie Notices": uAssets,
+        "uBlock filters – Experimental": uAssets,
+        "EasyList": easyList,
+        "EasyList – Cookie Notices": easyList,
+        "EasyList – Other Annoyances": easyList,
+        "EasyList – Social Widgets": easyList,
+        "EasyList – Chat Widgets": easyList,
+        "EasyList – Newsletter Notices": easyList,
+        "EasyList – Notifications": easyList,
+        "EasyDutch": credit("Ignotum77, JohnyP36", "https://github.com/EasyDutch-uBlockOrigin/EasyDutch"),
+        "Online Malicious URL Blocklist": credit("curbengh", "https://gitlab.com/malware-filter/urlhaus-filter"),
+        "Phishing URL Blocklist": credit("curbengh", "https://gitlab.com/malware-filter/phishing-filter"),
         "Actually Legitimate URL Shortener Tool": credit("iam-py-test, DandelionSprout", "https://github.com/DandelionSprout/adfilt"),
         "Dandelion Sprout's Anti-Malware List": dandelionSprout,
         "Dandelion Sprout's Nordic Filters": dandelionSprout,
@@ -34,7 +53,8 @@ enum BuiltInFilterCredits {
         "Stevo's AI Blocklist": credit("Stevoisiak", "https://github.com/Stevoisiak/Stevos-AI-Blocklist"),
         "Block Outsider Intrusion into LAN": credit("stephenhawk8054, Yuki2718", "https://github.com/uBlockOrigin/uAssets"),
         "Peter Lowe's Blocklist": credit("Peter Lowe", "https://pgl.yoyo.org/adservers/"),
-        "Adblock Warning Removal List": credit("dimisa-RUAdList, smed79", "https://github.com/easylist/antiadblockfilters"),
+        "Dan Pollock's hosts file": credit("Dan Pollock", "https://someonewhocares.org/hosts/"),
+        "Fanboy – Anti-Facebook": credit(nil, "http://www.fanboy.co.nz/"),
         "EasyPrivacy": credit("ryanbr", "https://github.com/easylist/easylist"),
         "Bypass Paywalls Clean Filter": credit("magnolia1234", "https://gitflic.ru/project/magnolia1234/bypass-paywalls-clean-filters"),
         "ABPindo": credit("gmarcher", "https://github.com/ABPindo/indonesianadblockrules"),
@@ -43,8 +63,10 @@ enum BuiltInFilterCredits {
         "AdBlockID": credit("realodix", "https://github.com/realodix/AdBlockID"),
         "Bulgarian list": credit("Alex Stanev", "https://stanev.org/abp"),
         "EasyList Czech and Slovak": credit("sebm253", "https://github.com/tomasko126/easylistczechandslovak"),
+        "EasyList Germany": easyList,
         "EasyList Hebrew": credit("Hebrew-uBO-User", "https://github.com/easylist/EasyListHebrew"),
         "EasyList Italy": credit("Khrin", "https://github.com/easylist/easylistitaly"),
+        "EasyList Spanish": easyList,
         "EasyList Lithuania": credit("DandelionSprout, iibett", "https://github.com/EasyList-Lithuania/easylist_lithuania"),
         "EasyList Thailand": credit("gluons", "https://github.com/easylist-thailand/easylist-thailand"),
         "Estonian List": credit("sander85", "https://github.com/sander85/uBO-et"),
@@ -55,11 +77,14 @@ enum BuiltInFilterCredits {
         "IndianList": credit("indianfilterlist, mediumkreation", "https://github.com/mediumkreation/IndianList"),
         "KAD - Anti-Scam": credit("krystian3w", "https://github.com/FiltersHeroes/KAD"),
         "Latvian List": credit("anonymous74100", "https://github.com/Latvian-List/adblock-latvian"),
+        "PersianBlockerNG": credit("MasterKia, waifucon", "https://github.com/PersianBlocker/PersianBlocker"),
         "filterslists-KO": credit("piquark6046", "https://github.com/FilteringDev/filterslists-KO"),
         "Liste AR": credit("smed79", "https://github.com/easylist/listear"),
-        "Macedonian adBlock Filters": credit("DeepSpaceHarbor", "https://github.com/RandomAdversary/Macedonian-adBlock-Filters"),
+        "Macedonian adBlock Filters": credit("DeepSpaceHarbor", "https://github.com/DeepSpaceHarbor/Macedonian-adBlock-Filters"),
         "Official Polish filters for AdBlock, uBlock Origin & AdGuard": credit("MajkiIT, krystian3w", "https://github.com/MajkiIT/polish-ads-filter"),
-        "Persian Blocker": credit("MasterKia, waifucon", "https://github.com/PersianBlocker/PersianBlocker"),
         "road-block light": credit("mapx-", "https://github.com/tcptomato/ROad-Block"),
+        "RU AdList": ruAdList,
+        "RU AdList: Counters": ruAdList,
+        "CERT.PL's Warning List": credit("CERT Polska", "https://cert.pl/lista-ostrzezen/"),
     ]
 }

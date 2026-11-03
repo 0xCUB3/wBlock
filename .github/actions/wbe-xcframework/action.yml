@@ -1,0 +1,33 @@
+name: WBE.xcframework
+description: Build the Rust engine library Xcode links, reusing a cached copy when its inputs are unchanged.
+runs:
+  using: composite
+  steps:
+    - name: Restore WBE.xcframework
+      id: restore
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: |
+          Packages/wblock-engine/build/WBE.xcframework
+          Packages/wblock-engine/build/WBE.xcframework.inputs
+        key: wbe-xcframework-${{ hashFiles('Packages/wblock-engine/Cargo.toml', 'Packages/wblock-engine/Cargo.lock', 'Packages/wblock-engine/crates/**', 'Packages/wblock-engine/scripts/build-xcframework.sh') }}
+
+    - name: Build WBE.xcframework
+      if: steps.restore.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        command -v rustup >/dev/null || {
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain none
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+          export PATH="$HOME/.cargo/bin:$PATH"
+        }
+        Packages/wblock-engine/scripts/build-xcframework.sh
+
+    - name: Save WBE.xcframework
+      if: steps.restore.outputs.cache-hit != 'true'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: |
+          Packages/wblock-engine/build/WBE.xcframework
+          Packages/wblock-engine/build/WBE.xcframework.inputs
+        key: ${{ steps.restore.outputs.cache-primary-key }}

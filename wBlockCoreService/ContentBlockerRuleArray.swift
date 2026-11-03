@@ -6,22 +6,18 @@ import Foundation
 enum ContentBlockerRuleArray {
     /// The number of rules, or nil unless the bytes are one array of objects
     /// with balanced brackets and terminated strings.
-    static func count<Bytes: Collection<UInt8>>(_ bytes: Bytes) -> Int? {
-        scan(bytes, keeping: nil)?.count
-    }
-
-    static func count(_ json: String) -> Int? {
-        var json = json
-        return json.withUTF8 { count($0) }
+    static func count(_ json: Data) -> Int? {
+        json.withUnsafeBytes { scan($0, keeping: nil)?.count }
     }
 
     /// The array cut to its first `maxRules` rules, or nil when it is not a rule array.
-    static func truncated(_ json: String, to maxRules: Int) -> (json: String, ruleCount: Int)? {
-        var json = json
-        return json.withUTF8 { bytes in
+    static func truncated(_ json: Data, to maxRules: Int) -> (json: Data, ruleCount: Int)? {
+        json.withUnsafeBytes { bytes in
             guard let scan = scan(bytes, keeping: max(maxRules, 0)) else { return nil }
-            guard let end = scan.keptEnd else { return (String(decoding: bytes, as: UTF8.self), scan.count) }
-            return (String(decoding: bytes[..<end], as: UTF8.self) + "]", scan.keptCount)
+            guard let end = scan.keptEnd, let base = bytes.baseAddress else { return (json, scan.count) }
+            var cut = Data(bytes: base, count: end)
+            cut.append(contentsOf: [0x5D])
+            return (cut, scan.keptCount)
         }
     }
 

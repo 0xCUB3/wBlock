@@ -8,7 +8,6 @@
 //  Scriptlet rules are not cosmetic and are kept.
 //
 
-internal import ContentBlockerConverter
 import Foundation
 
 public enum CosmeticFilteringPreference {
@@ -46,12 +45,6 @@ public enum CosmeticFilteringPreference {
             return includesGeneric ? marker : marker + "|generic=off"
         }
 
-        public func restricting(_ rules: String) -> String {
-            FilterListSiteExclusion.restrictingCosmeticRules(
-                includesGeneric ? rules : FilterListSiteExclusion.droppingGenericCosmeticRules(rules),
-                excluding: excludedSites, including: selectedSites
-            )
-        }
     }
 
     public static func isEnabled(groupIdentifier: String = GroupIdentifier.shared.value) -> Bool {
@@ -86,17 +79,4 @@ public enum CosmeticFilteringPreference {
             : Sites(excludedSites: saved.excludedSites, includesGeneric: saved.includesGeneric)
     }
 
-    /// True for element-hiding and CSS injection rules, using the converter's own
-    /// marker detection so classification matches what it would compile.
-    public static func isCosmeticRule(_ line: String) -> Bool {
-        // Comments can contain marker text; the converter drops them anyway.
-        guard let first = line.utf8.first, first != UInt8(ascii: "!") else { return false }
-        switch CosmeticRuleMarker.findCosmeticRuleMarker(ruleText: line).marker {
-        case .elementHiding, .elementHidingException, .elementHidingExtCSS, .elementHidingExtCSSException,
-             .css, .cssException, .cssExtCSS, .cssExtCSSException:
-            return true
-        case .javascript, .javascriptException, .html, .htmlException, nil:
-            return false
-        }
-    }
 }

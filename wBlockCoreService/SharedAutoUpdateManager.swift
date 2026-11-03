@@ -689,6 +689,16 @@ public actor SharedAutoUpdateManager {
     // MARK: - State Management Helpers
 
     // MARK: - Core Logic
+    /// App-group key where the app records "version|compatibility|compiler" after
+    /// every successful apply (AppFilterManager.persistUpgradeRebuildSignature).
+    public static let lastAppliedUpgradeSignatureKey = "wBlock.lastAppliedUpgradeSignature"
+
+    static func appHasAppliedCurrentVersion(
+        defaults: UserDefaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
+    ) -> Bool {
+        defaults.string(forKey: lastAppliedUpgradeSignatureKey) == ContentBlockerService.upgradeSignature
+    }
+
     private func runIfNeeded(
         trigger: String,
         force: Bool = false,
@@ -715,6 +725,14 @@ public actor SharedAutoUpdateManager {
         if foregroundApplyInProgress {
             appendSkipTelemetry(trigger: trigger, reason: "foreground_apply")
             return .skipped(reason: "foreground_apply")
+        }
+        // A version's first rebuild belongs to the app: it migrates the list
+        // catalog and writes the first generation of every output (wBlock 4
+        // switched engines). Until then a background rebuild would compile the
+        // old catalog with the new engine.
+        if !Self.appHasAppliedCurrentVersion() {
+            appendSkipTelemetry(trigger: trigger, reason: "awaiting_app_upgrade")
+            return .skipped(reason: "awaiting_app_upgrade")
         }
         #if os(macOS)
         // Helpers cannot reload Safari; while the app runs, its own schedule
@@ -1936,7 +1954,7 @@ public actor SharedAutoUpdateManager {
 
         for target in ContentBlockerTargetManager.shared.allTargets(forPlatform: platform) {
             let saveResult = try? ContentBlockerService.saveContentBlockerIfChanged(
-                jsonRules: ContentBlockerService.inertContentBlockerRulesJSON,
+                jsonRules: Data(ContentBlockerService.inertContentBlockerRulesJSON.utf8),
                 groupIdentifier: groupIdentifier,
                 targetRulesFilename: target.rulesFilename
             )
@@ -1981,22 +1999,25 @@ public actor SharedAutoUpdateManager {
 
         let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value)
 
-        let counts = await MainActor.run { ProtobufDataManager.shared.ruleCountsByCategory.mapValues { Int($0) } }
-        let reloadResults = try await reloadTargets(targets, ruleCounts: counts, policy: policy)
-        let failedTargets = targets.filter { reloadResults[$0.bundleIdentifier]?.success == false }.map(\.displayName)
         for target in targets {
             if let containerURL,
-               let adv = loadCachedAdvancedRules(for: target, containerURL: containerURL),
+               let adv = ContentBlockerIncrementalCache.loadCachedAdvancedRules(
+                   targetRulesFilename: target.rulesFilename, groupIdentifier: "", containerURL: containerURL
+               ),
                !adv.isEmpty {
                 advancedRulesSnippets.append(adv)
             }
         }
-
+        // Engine before reloads, as in rebuildAndReload.
         try publishAdvancedEngine(
             advancedRulesSnippets: advancedRulesSnippets,
             policy: policy,
             failureLogPrefix: "Advanced engine publish failed while reusing existing outputs"
         )
+
+        let counts = await MainActor.run { ProtobufDataManager.shared.ruleCountsByCategory.mapValues { Int($0) } }
+        let reloadResults = try await reloadTargets(targets, ruleCounts: counts, policy: policy)
+        let failedTargets = targets.filter { reloadResults[$0.bundleIdentifier]?.success == false }.map(\.displayName)
 
         if !failedTargets.isEmpty {
             appendSharedLog(
@@ -2042,7 +2063,6 @@ public actor SharedAutoUpdateManager {
         public let filters: [FilterList]
         public let allTargets: [ContentBlockerTargetInfo]
         public let disabledSites: [String]
-        public let affinitySnapshot: SafariContentBlockerAffinitySnapshot
         public let orderedFilters: [FilterList]
         public let extraRulesText: String?
         public let deadline: Date?
@@ -2054,7 +2074,6 @@ public actor SharedAutoUpdateManager {
             filters: [FilterList],
             allTargets: [ContentBlockerTargetInfo],
             disabledSites: [String],
-            affinitySnapshot: SafariContentBlockerAffinitySnapshot,
             orderedFilters: [FilterList],
             extraRulesText: String?,
             deadline: Date?,
@@ -2065,7 +2084,6 @@ public actor SharedAutoUpdateManager {
             self.filters = filters
             self.allTargets = allTargets
             self.disabledSites = disabledSites
-            self.affinitySnapshot = affinitySnapshot
             self.orderedFilters = orderedFilters
             self.extraRulesText = extraRulesText
             self.deadline = deadline
@@ -2114,7 +2132,6 @@ public actor SharedAutoUpdateManager {
                 let outcome = try ContentBlockerService.compileTargetRules(
                     filters: request.filters,
                     orderedSelectedFilters: request.orderedFilters,
-                    affinitySnapshot: request.affinitySnapshot,
                     targetInfo: request.target,
                     allTargets: request.allTargets,
                     disabledSites: request.disabledSites,
@@ -2155,7 +2172,7 @@ public actor SharedAutoUpdateManager {
         let detectedPlatform: Platform = .macOS
         #endif
         let targets = ContentBlockerTargetManager.shared.allTargets(forPlatform: detectedPlatform)
-        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value) else {
+        guard FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value) != nil else {
             throw AutoUpdateError.sharedContainerUnavailable
         }
         let disabledSites = await getDisabledSites()
@@ -2167,7 +2184,6 @@ public actor SharedAutoUpdateManager {
         } catch { appendSharedLog("Failed to prepare removeparam DNR rules: \(error.localizedDescription)") }
         let ordered = ContentBlockerMappingService.orderedForCompilation(selectedFilters)
         let byTarget = ContentBlockerMappingService.distribute(selectedFilters: selectedFilters, across: targets)
-        let affinitySnapshot = SafariContentBlockerAffinityProcessor.snapshot(for: ordered, containerURL: containerURL)
         let zapper = await MainActor.run {
             BlockingPauseStore.isPaused(.elementZapper)
                 ? nil
@@ -2181,7 +2197,6 @@ public actor SharedAutoUpdateManager {
                 filters: byTarget[target] ?? [],
                 allTargets: targets,
                 disabledSites: disabledSites,
-                affinitySnapshot: affinitySnapshot,
                 orderedFilters: ordered,
                 extraRulesText: target.slot == 5 ? zapper : nil,
                 deadline: policy.isBackground ? policy.deadline : nil,
@@ -2214,22 +2229,11 @@ public actor SharedAutoUpdateManager {
                 throw NSError(domain: "SharedAutoUpdateManager.RuleLimit", code: 1, userInfo: [NSLocalizedDescriptionKey: String.localizedStringWithFormat(NSLocalizedString("%@ dropped %d rules at Safari's per-extension limit.", comment: "Truncated Safari rule count"), target.displayName, conversion.truncatedRuleCount)])
             }
         }
-        var reloadResults: [String: ContentBlockerService.ReloadAttemptResult] = [:]
-        if reloadContentBlockers {
-            let counts = results.mapValues { $0.outcome?.safariRulesCount ?? 0 }
-            reloadResults = try await reloadTargets(targets, ruleCounts: counts, policy: policy)
-        }
-        var metrics: [RebuildTargetMetrics] = []
-        var appliedSourceRuleCountsByFilterID: [UUID: Int] = [:]
+        // The per-page engine goes first, as in the app's apply: a Scripts
+        // extension that sees the new native rules then finds the matching engine.
         var advanced: [String] = []
-        var failedIDs: [String] = []
-        var failedNames: [String] = []
         for target in targets {
-            try Task.checkCancellation()
-            guard let result = results[target.bundleIdentifier],
-                  let conversion = result.outcome else {
-                throw CancellationError()
-            }
+            guard let conversion = results[target.bundleIdentifier]?.outcome else { throw CancellationError() }
             let cached = ContentBlockerIncrementalCache.loadCachedAdvancedRules(
                 targetRulesFilename: target.rulesFilename,
                 groupIdentifier: GroupIdentifier.shared.value
@@ -2237,6 +2241,23 @@ public actor SharedAutoUpdateManager {
             let fresh = conversion.advancedRulesText?.trimmingCharacters(in: .whitespacesAndNewlines)
             if let snippet = fresh?.isEmpty == false ? fresh : cached, !snippet.isEmpty {
                 advanced.append(snippet)
+            }
+        }
+        try publishAdvancedEngine(advancedRulesSnippets: advanced, policy: policy, failureLogPrefix: "Advanced engine publish failed after rebuilding content blockers")
+        var reloadResults: [String: ContentBlockerService.ReloadAttemptResult] = [:]
+        if reloadContentBlockers {
+            let counts = results.mapValues { $0.outcome?.safariRulesCount ?? 0 }
+            reloadResults = try await reloadTargets(targets, ruleCounts: counts, policy: policy)
+        }
+        var metrics: [RebuildTargetMetrics] = []
+        var appliedSourceRuleCountsByFilterID: [UUID: Int] = [:]
+        var failedIDs: [String] = []
+        var failedNames: [String] = []
+        for target in targets {
+            try Task.checkCancellation()
+            guard let result = results[target.bundleIdentifier],
+                  let conversion = result.outcome else {
+                throw CancellationError()
             }
 
             var reloadMs = 0
@@ -2269,7 +2290,6 @@ public actor SharedAutoUpdateManager {
             appendSharedLog("Rebuild reload failures: \(failedNames.joined(separator: ", "))")
             throw AutoUpdateError.contentBlockerReloadFailed(identifiers: failedIDs, names: failedNames)
         }
-        try publishAdvancedEngine(advancedRulesSnippets: advanced, policy: policy, failureLogPrefix: "Advanced engine publish failed after rebuilding content blockers")
         let hits = metrics.filter(\.cacheHit).count
         let writes = metrics.reduce(0) { $0 + $1.inputWriteMs }
         let bytes = metrics.reduce(Int64(0)) { $0 + $1.inputBytes }
@@ -2348,14 +2368,6 @@ public actor SharedAutoUpdateManager {
         }
     }
 
-
-    private func loadCachedAdvancedRules(for target: ContentBlockerTargetInfo, containerURL: URL) -> String? {
-        let url = containerURL.appendingPathComponent(
-            ContentBlockerIncrementalCache.baseAdvancedRulesFilename(for: target.rulesFilename)
-        )
-        guard FileManager.default.fileExists(atPath: url.path) else { return nil }
-        return try? String(contentsOf: url, encoding: .utf8)
-    }
 
     private func formatDurationMs(_ ms: Int) -> String {
         if ms < 1000 {

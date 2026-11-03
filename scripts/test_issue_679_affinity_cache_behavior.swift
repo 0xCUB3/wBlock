@@ -34,12 +34,9 @@ struct Main {
         try write(affinity, "||privacy.example^\n!#safari_cb_affinity(all)\n@@||allowed.example^\n!#safari_cb_affinity\n")
 
         func compile() throws -> ContentBlockerService.ContentBlockerTargetOutcome {
-            let snapshot = SafariContentBlockerAffinityProcessor.snapshot(for: [plain, affinity], containerURL: container)
-            guard !snapshot.isEmpty else { fail("affinity snapshot should contain the affinity list") }
             return try ContentBlockerService.compileTargetRules(
                 filters: [plain],
                 orderedSelectedFilters: [plain, affinity],
-                affinitySnapshot: snapshot,
                 targetInfo: target,
                 allTargets: [target, other],
                 disabledSites: [],

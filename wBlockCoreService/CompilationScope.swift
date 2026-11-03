@@ -1,4 +1,5 @@
 import Foundation
+internal import WBEngine
 
 /// Work shared by the blockers of one Apply. It lives only as long as the
 /// Apply, so idle processes keep nothing, and direct callers outside an Apply
@@ -10,10 +11,11 @@ final class CompilationScope: @unchecked Sendable {
     /// compiler crashes came from memory and time pressure on phones,
     /// background refreshes, and smaller Macs, so only a foreground Apply on a
     /// Mac with at least 16 GB, 8 cores, normal thermal state, and Low Power
-    /// Mode off gets more.
+    /// Mode off gets more. Phones with 4 GB or less compile one at a time: each
+    /// compile holds the plan's parsed lists plus its own output.
     static func targetCapacity(interactive: Bool) -> Int {
-        #if os(macOS)
         let info = ProcessInfo.processInfo
+        #if os(macOS)
         let roomy = interactive
             && info.physicalMemory >= 16 << 30
             && info.activeProcessorCount >= 8
@@ -21,8 +23,23 @@ final class CompilationScope: @unchecked Sendable {
             && !info.isLowPowerModeEnabled
         return roomy ? 5 : 3
         #else
-        return 2
+        return info.physicalMemory <= 4 << 30 ? 1 : 2
         #endif
+    }
+
+    /// Whether the engine keeps each list's parse between applies, so a plan
+    /// after an edit parses only the changed list. Phones and Macs with 4 GB or
+    /// less drop it when their apply ends, as they drop the rest of the plan.
+    static let keepsParsedLists: Bool = {
+        #if os(macOS)
+        return ProcessInfo.processInfo.physicalMemory > 4 << 30
+        #else
+        return false
+        #endif
+    }()
+
+    deinit {
+        if !Self.keepsParsedLists { WBEngine.clearParseCache() }
     }
 
     private final class Entry {

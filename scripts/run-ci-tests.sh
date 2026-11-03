@@ -39,18 +39,27 @@ if [[ "${CI:-}" == "true" ]]; then
   build_args+=(CODE_SIGNING_ALLOWED=NO COMPILATION_CACHE_ENABLE_CACHING=YES)
 fi
 CORE_DERIVED_DATA="$WBLOCK_DERIVED_DATA"
-echo "[test] building wBlockCoreService"
+# Xcode resolves the WBEngine package against this XCFramework, so it must be
+# current before the build starts.
+echo "[test] building WBE.xcframework"
+"$ROOT/Packages/wblock-engine/scripts/build-xcframework.sh" > "$TMP/wbe-build.log" 2>&1 || {
+  cat "$TMP/wbe-build.log"
+  exit 1
+}
+# The app scheme builds wBlockCoreService too, and catches app and extension
+# code that no longer compiles against it.
+echo "[test] building wBlock (with wBlockCoreService)"
 (
   started=$SECONDS
   xcodebuild -project wBlock.xcodeproj \
-    -scheme wBlockCoreService \
+    -scheme wBlock \
     -configuration Debug \
     -destination 'generic/platform=macOS' \
     -derivedDataPath "$CORE_DERIVED_DATA" \
     ${build_args[@]+"${build_args[@]}"} \
     build > "$TMP/core-build.log" 2>&1
   status=$?
-  echo "[test] wBlockCoreService build finished in $((SECONDS - started))s"
+  echo "[test] wBlock build finished in $((SECONDS - started))s"
   exit $status
 ) &
 core_build=$!
@@ -97,7 +106,7 @@ compile_core_test() {
   fi
   job core "$name ($test)"
   step swiftc -parse-as-library \
-    -F "$CORE_PRODUCTS" -I "$CORE_PRODUCTS" -L "$CORE_PRODUCTS" \
+    -F "$CORE_PRODUCTS" -I "$CORE_PRODUCTS" -I "$CORE_PRODUCTS/include" -L "$CORE_PRODUCTS" \
     -framework wBlockCoreService \
     -Xlinker -rpath -Xlinker "$CORE_PRODUCTS" \
     "$@" "$test_source" -o "$TMP/$name"
@@ -149,7 +158,6 @@ step npm --prefix scripts/proofs test
 compile_core_test issue-675-rule-analysis scripts/test_issue_675_rule_analysis.swift
 compile_core_test issue-679-affinity-cache-behavior scripts/test_issue_679_affinity_cache_behavior.swift
 compile_core_test issue-681-dedup-behavior scripts/test_issue_681_dedup_behavior.swift
-compile_core_test filter-rule-conversion scripts/test_filter_rule_conversion.swift
 compile_core_test zapper-rule-editing scripts/test_zapper_rule_editing.swift
 compile_core_test issue-836-cross-target-exceptions scripts/test_issue_836_cross_target_exceptions.swift
 compile_core_test content-blocker-slot-overflow scripts/test_content_blocker_slot_overflow.swift
@@ -201,7 +209,8 @@ compile_core_test disabled-sites-normalization scripts/test_disabled_sites_norma
 compile_direct_test filter-update-popup-status \
   wBlockCoreService/FilterUpdatePopupStatus.swift \
   scripts/test_filter_update_popup_status.swift
-compile_core_test filter-list-setup scripts/test_filter_list_setup.swift wBlock/FilterListSetup.swift
+compile_core_test filter-list-setup scripts/test_filter_list_setup.swift wBlock/FilterListSetup.swift \
+  wBlock/FilterListLoader.swift wBlock/LocalizationHelpers.swift wBlock/ConcurrentLogManager.swift wBlock/LogTimeZone.swift
 compile_core_test apply-baseline-acknowledgement scripts/test_apply_baseline_acknowledgement.swift \
   wBlock/ApplyFilterConfiguration.swift
 compile_core_test filter-list-site-exclusion scripts/test_filter_list_site_exclusion.swift
@@ -233,13 +242,13 @@ compile_core_test protobuf-reliability scripts/test_protobuf_reliability.swift
 compile_core_test filter-update-work-lifetime scripts/test_filter_update_work_lifetime.swift
 compile_core_test issue-508-import-identity scripts/test_issue_508_import_identity.swift
 compile_core_test issue-508-oversized-import scripts/test_issue_508_oversized_import.swift
-compile_core_test issue-531-custom-exception-affinity scripts/test_issue_531_custom_exception_affinity.swift
 compile_core_test removeparam-dnr scripts/test_removeparam_dnr_rule_generator.swift
 compile_core_test redirect-dnr scripts/test_redirect_dnr_rules.swift
 compile_core_test blocked-count-dnr scripts/test_blocked_count_dnr_rules.swift
-compile_core_test safari-affinity-snapshot scripts/test_safari_affinity_snapshot_behavior.swift
+compile_core_test dnr-generation-state scripts/test_dnr_generation_state.swift
 compile_core_test safari-rule-limit-cap scripts/test_safari_rule_limit_cap.swift
 compile_core_test content-blocker-domain-case scripts/test_content_blocker_domain_case.swift
+compile_core_test wbe-upgrade scripts/test_wbe_upgrade.swift
 compile_core_test site-component-disable-policy scripts/test_site_component_disable_policy.swift
 compile_core_test user-script-url-support scripts/test_userscript_url_support.swift
 compile_core_test zapper-native-rules scripts/test_zapper_native_rule_generator.swift
@@ -248,11 +257,11 @@ compile_core_test zapper-native-rules scripts/test_zapper_native_rule_generator.
 # production files beside the test. SwiftProtobuf is the package product built
 # by the same Xcode invocation.
 compile_direct_test issue-508-protobuf-roundtrip \
-  -I "$CORE_PRODUCTS" "$CORE_PRODUCTS/SwiftProtobuf.o" \
+  -I "$CORE_PRODUCTS" -I "$CORE_PRODUCTS/include" "$CORE_PRODUCTS/SwiftProtobuf.o" \
   wBlockCoreService/DataModels.pb.swift scripts/test_issue_508_protobuf_roundtrip.swift
 compile_core_test issue-742-provenance-migration scripts/test_issue_742_provenance_migration.swift
 compile_direct_test userscript-persistence-race \
-  -I "$CORE_PRODUCTS" "$CORE_PRODUCTS/SwiftProtobuf.o" \
+  -I "$CORE_PRODUCTS" -I "$CORE_PRODUCTS/include" "$CORE_PRODUCTS/SwiftProtobuf.o" \
   wBlockCoreService/DataModels.pb.swift \
   wBlockCoreService/UserScriptPersistence.swift \
   scripts/test_userscript_persistence_race.swift
@@ -341,7 +350,7 @@ step env "${COMPILER_BUNDLES[@]}" "$TMP/userstyle-parsing-matching"
 # This one intentionally remains a script-mode compile: its top-level semaphore
 # loop is the test's executable entry point.
 job core "packaged-compilers (scripts/test_issue_511_packaged_compilers.swift)"
-step swiftc -F "$CORE_PRODUCTS" -I "$CORE_PRODUCTS" -L "$CORE_PRODUCTS" \
+step swiftc -F "$CORE_PRODUCTS" -I "$CORE_PRODUCTS" -I "$CORE_PRODUCTS/include" -L "$CORE_PRODUCTS" \
   -framework wBlockCoreService -Xlinker -rpath -Xlinker "$CORE_PRODUCTS" \
   scripts/test_issue_511_packaged_compilers.swift -o "$TMP/packaged-compilers"
 step env "${COMPILER_BUNDLES[@]}" "$TMP/packaged-compilers"

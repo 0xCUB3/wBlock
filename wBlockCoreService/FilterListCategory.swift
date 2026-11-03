@@ -16,7 +16,6 @@ public enum FilterListCategory: String, CaseIterable, Identifiable, Codable, Sen
     case multipurpose = "Multipurpose"
     case annoyances = "Annoyances"
     case experimental = "Experimental"
-    case allowlists = "Allowlists"
     case custom = "Custom"
     case foreign = "Foreign"
     case scripts = "Scripts"

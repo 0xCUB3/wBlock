@@ -75,6 +75,7 @@
 "Active" = "Aktív";
 "Actually Legitimate URL Shortener Tool" = "Actually Legitimate URL Shortener Tool";
 "Adblock List for Finland" = "Adblock List for Finland";
+"Adblock List for Albania" = "Adblock List for Albania";
 "AdBlockID" = "AdBlockID";
 "Add" = "Add";
 "Add Filter" = "Szűrő hozzáadása";
@@ -95,31 +96,20 @@
 "Additional filter list for websites in Hebrew." = "További szűrőlista héber nyelvű webhelyekhez.";
 "Additional filter list for websites in Hindi, Tamil and other Dravidian and Indic languages." = "További szűrőlista hindi, tamil és más dravida és indiai nyelvű webhelyekhez.";
 "Additional filter list for websites in Icelandic." = "További szűrőlista izlandi nyelvű webhelyekhez.";
-"Persian Blocker" = "Persian Blocker";
 "Additional filter list for websites in Persian." = "További szűrőlista perzsa nyelvű webhelyekhez.";
 "Additional filter list for websites in Latvian." = "További szűrőlista lett nyelvű webhelyekhez.";
 "Additional filter list for websites in Lithuanian." = "További szűrőlista litván nyelvű webhelyekhez.";
 "Additional filter list for websites in Slovenian." = "További szűrőlista szlovén nyelvű webhelyekhez.";
-"AdGuard Base Filter" = "AdGuard Base Filter";
 "AdGuard Chinese filter" = "AdGuard Chinese filter";
-"AdGuard Cookie Notices" = "AdGuard Cookie Notices";
 "AdGuard Dutch filter" = "AdGuard Dutch filter";
+"EasyDutch" = "EasyDutch";
 "AdGuard Experimental Filter" = "AdGuard Experimental Filter";
 "AdGuard French filter" = "AdGuard French filter";
-"AdGuard German filter" = "AdGuard German filter";
 "AdGuard Japanese filter" = "AdGuard Japanese filter";
-"AdGuard Mobile App Banners" = "AdGuard Mobile App Banners";
-"AdGuard Mobile Filter" = "AdGuard Mobile Filter";
-"AdGuard Other Annoyances" = "AdGuard Other Annoyances";
-"AdGuard Popups" = "AdGuard Popups";
-"AdGuard Russian filter" = "AdGuard Russian filter";
 "AdGuard Social Media Filter" = "AdGuard Social Media Filter";
 "AdGuard Spanish/Portuguese filter" = "AdGuard Spanish/Portuguese filter";
-"AdGuard Tracking Protection Filter" = "AdGuard Tracking Protection Filter";
 "AdGuard Turkish filter" = "AdGuard Turkish filter";
 "AdGuard Ukrainian filter" = "AdGuard Ukrainian filter";
-"AdGuard URL Tracking Protection Filter" = "AdGuard URL Tracking Protection Filter";
-"AdGuard Widgets" = "AdGuard Widgets";
 "Ads" = "Hirdetések";
 "Advanced engine publish failed" = "A speciális motor közzététele sikertelen";
 "All" = "Összes";
@@ -128,7 +118,6 @@
 "All Levels" = "Összes szint";
 "All of these filter lists are already in wBlock." = "Mindegyik szűrőlista szerepel már a wBlockban.";
 "All websites" = "Minden webhely";
-"Allowlists" = "Engedélyező listák";
 "Already done this? Just check the boxes above." = "Már megvan? Csak jelöld be a fenti négyzeteket.";
 "An existing wBlock configuration was found in iCloud (%@). Would you like to adopt it, or start fresh and upload your current setup?" = "Meglévő wBlock-konfigurációt találtunk az iCloudban (%@). Szeretnéd ezt átvenni, vagy tiszta lappal indulni, és feltölteni a jelenlegi beállításaidat?";
 "An existing wBlock configuration was found in iCloud. Would you like to adopt it, or start fresh and upload your current setup?" = "Meglévő wBlock-konfigurációt találtunk az iCloudban. Szeretnéd ezt átvenni, vagy tiszta lappal indulni, és feltölteni a jelenlegi beállításaidat?";
@@ -257,7 +246,7 @@
 "EasyList China + AdGuard Chinese filter. Filter list that specifically removes ads on websites in Chinese language." = "EasyList China + AdGuard kínai szűrő. Szűrőlista, amely kifejezetten eltávolítja a hirdetéseket a kínai nyelvű webhelyekről.";
 "EasyList Czech and Slovak" = "EasyList Czech and Slovak";
 "EasyList Dutch + AdGuard Dutch filter. Filter list that specifically removes ads on websites in Dutch language." = "EasyList holland + AdGuard holland szűrő. Szűrőlista, amely kifejezetten eltávolítja a hirdetéseket a holland nyelvű webhelyekről.";
-"EasyList Germany + AdGuard German filter. Filter list that specifically removes ads on websites in German language." = "EasyList Németország + AdGuard német szűrő. Szűrőlista, amely kifejezetten eltávolítja a hirdetéseket német nyelvű webhelyekről.";
+"Blocks ads and anti-adblock messages on Dutch and Afrikaans websites, from the EasyDutch project." = "Blokkolja a hirdetéseket és a hirdetésblokkoló-ellenes üzeneteket a holland és afrikaans nyelvű weboldalakon. Az EasyDutch projekttől.";
 "EasyList Hebrew" = "EasyList Hebrew";
 "EasyList Lithuania" = "EasyList Lithuania";
 "EasyList Thailand" = "EasyList Thailand";
@@ -330,13 +319,13 @@
 "Failed to update script" = "A szkript frissítése sikertelen";
 "Fanboy's Annoyances Filter" = "Fanboy's Annoyances Filter";
 "Fanboy's Anti-AI Suggestions" = "Fanboy's Anti-AI Suggestions";
-"Fanboy's Social Blocking List" = "Fanboy's Social Blocking List";
 "Fast applying disabled sites changes without full conversion" = "A letiltott webhelyek változásainak gyors alkalmazása teljes konvertálás nélkül";
 "Fast disabled sites update completed" = "A letiltott webhelyek gyors frissítése befejeződött";
 "File" = "Fájl";
 "Filter '%@' added successfully. Apply changes to enable it." = "A „%@” szűrő sikeresen hozzáadva. Alkalmazza a módosításokat az engedélyezéséhez.";
 "Filter Apply" = "Szűrők alkalmazása";
 "Filter for ad blocking on Estonian sites." = "Szűrő hirdetésblokkoláshoz az észt webhelyeken.";
+"Community filter list that blocks ads on Albanian and Kosovar websites." = "Közösség által karbantartott szűrőlista, amely blokkolja a hirdetéseket az albán és koszovói webhelyeken.";
 "Filter list not found." = "Szűrőlista nem található.";
 "Filter list that specifically removes ads on websites in Spanish, Portuguese, and Brazilian Portuguese languages." = "Szűrőlista, amely kifejezetten eltávolítja a hirdetéseket a spanyol, portugál és brazil portugál nyelvű webhelyekről.";
 "Filter list that specifically removes ads on websites in Turkish language." = "Szűrőlista, amely kifejezetten eltávolítja a hirdetéseket a török ​​nyelvű webhelyekről.";
@@ -368,7 +357,6 @@
 "go" = "Ugrás";
 "Go to line" = "Ugrás sorra";
 "Greek AdBlock Filter" = "Greek AdBlock Filter";
-"HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Handles advanced anti-adblock cases that filter rules miss." = "Kezeli a fejlett hirdetésblokkolás-ellenes eseteket, amelyek kihagyják a szabályokat.";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "Elrejti az oldalon belüli felugró ablakokat, szalaghirdetéseket és egyéb nem kívánt oldalelemeket.";
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
@@ -502,6 +490,7 @@
 "Remove Older Versions" = "Régebbi verziók eltávolítása";
 "Removed custom filter" = "Egyéni szűrő eltávolítva";
 "Removed deprecated filter list(s)" = "Elavult szűrőlisták eltávolítva";
+"Replaced AdGuard filter list(s) with uBlock Origin lists" = "Az AdGuard szűrőlisták uBlock Origin listákra cserélve";
 "Removing userscript" = "Felhasználói szkript eltávolítása";
 "Replace" = "Csere";
 "replace" = "csere";
@@ -636,7 +625,6 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Unable to access shared container" = "Nem érhető el a megosztott konténer";
 "Unapplied Filter Changes" = "Nem alkalmazott szűrőmódosítások";
 "Unavailable" = "Nem érhető el";
-"Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Feloldja a partner- és követő hivatkozásokat, amelyek egyébként e-mailekben, keresési eredményekben és átirányításokban elromlanak.";
 "Undo" = "Visszavonás";
 "Redo" = "Újra";
 "Element Zapper" = "Elemzapper";
@@ -742,11 +730,9 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 
 /* Filter catalog additions */
 "Online Malicious URL Blocklist" = "Online Malicious URL Blocklist";
-"Adblock Warning Removal List" = "Adblock Warning Removal List";
 "AdGuard Mail Tracking Protection Filter" = "AdGuard Mail Tracking Protection Filter";
 "Block Outsider Intrusion into LAN" = "Block Outsider Intrusion into LAN";
 "Stevo's AI Blocklist" = "Stevo's AI Blocklist";
-"AdGuard Allowlist" = "AdGuard Allowlist";
 
 
 /* Auto-update controls */
@@ -759,8 +745,8 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Choose File" = "Fájl kiválasztása";
 "Change File" = "Fájl módosítása";
 "Local imports won't auto-update; re-import to replace." = "A helyi importok nem frissülnek automatikusan; az új importálással cserélhetők.";
-"AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "Az AdGuard Extra blokkolja a Twitch-hirdetéseket, és kezeli a bonyolult reklámblokkolás-ellenes eseteket.";
 "Blocks Twitch ads with the vaft script from TwitchAdSolutions." = "Blokkolja a Twitch-hirdetéseket a TwitchAdSolutions vaft szkriptjével.";
+"Optional. Blocks Twitch ads and handles complicated anti-adblock cases, but it slows page loads." = "Opcionális. Blokkolja a Twitch-hirdetéseket és kezeli a bonyolult hirdetésblokkoló-ellenes eseteket, de lassítja az oldalak betöltését.";
 
 /* Issue 508 UI */
 "Disable Essential Filter?" = "Letiltja az alapvető szűrőt?";
@@ -983,42 +969,20 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Available when the current sync finishes." = "Az aktuális szinkronizálás befejezése után érhető el.";
 "Generic Rules" = "Általános szabályok";
 "Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps." = "Minden webhelyen elrejt elemeket olyan szabályokkal, amelyek nem neveznek meg webhelyet. Kikapcsolva a webhelyekre szabott elrejtés megmarad, az oldalak pedig könnyebbek lesznek, főleg az összetett webalkalmazások.";
-"AdGuard Italian filter" = "AdGuard olasz szűrő";
-"AdGuard Polish filter" = "AdGuard lengyel szűrő";
-"EasyList + AdGuard English filter. This filter is necessary for quality ad blocking." = "EasyList + AdGuard English filter. Ez a szűrő szükséges a minőségi hirdetésblokkoláshoz.";
-"The most comprehensive list of various online counters and web analytics tools. Use this filter if you do not want your actions on the Internet to be tracked." = "A legátfogóbb lista a különféle online számlálókról és a webes analitikai eszközökről. Használja ezt a szűrőt, ha nem szeretné, hogy nyomon kövessék az interneten végzett tevékenységeit.";
-"Filter that enhances privacy by removing tracking parameters from URLs." = "Ez a szűrő fokozza az adatvédelmet azáltal, hogy eltávolítja a követésre használt paramétereket az oldalak URL-jeiből.";
 "Automatically removes unnecessary '$' and '&' values from URLs, making them easier to copy from the URL bar and pasting elsewhere as links. Already included in Dandelion Sprout's Annoyances List." = "Automatikusan eltávolítja a felesleges '$' és '&' értékeket az URL-ekből, így azok könnyebben másolhatók az URL-sávból, és máshová beilleszthetők linkként. Már szerepel a Dandelion Sprout kártevők elleni listáján.";
 "Blocks cookie notices on web pages." = "Blokkolja a weboldalakon megjelenő cookie-értesítéseket.";
-"Blocks all kinds of pop-ups that are not necessary for websites' operation according to our Filter policy." = "Blokkolja az összes olyan felugró ablakot, amely nem szükséges a webhelyek működéséhez a Szűrő irányelvünk szerint.";
-"Blocks irritating banners that promote mobile apps of websites." = "Blokkolja az irritáló bannereket, amelyek a webhelyek mobilalkalmazásait népszerűsítik.";
-"Blocks irritating elements that do not fall under popular categories of annoyances, such as website promotional offers and restrictions on copying and text selection." = "Blokkolja azokat az irritáló elemeket, amelyek nem tartoznak a bosszúságok népszerű kategóriáiba, mint például a weboldalak promóciós ajánlatai, valamint a másolásra és a szövegkijelölésre vonatkozó korlátozások.";
-"Blocks annoying third-party widgets: online assistants, live support chats, etc." = "Blokkolja a bosszantó harmadik féltől származó widgeteket: online asszisztensek, élő támogatási csevegések stb.";
 "Filter for social media widgets such as 'Like' and 'Share' buttons and more." = "Szűrő a közösségi média widgetekhez (\"Lájk\" gombok és hasonlók).";
 "Hides website features that use generative AI and AI-generated content." = "Elrejti azokat a webhelyfunkciókat, amelyek generatív MI-t és MI által generált tartalmat használnak.";
 "This filter blocks tracking pixels in email clients." = "Ez a szűrő blokkolja a követő pixeleket az email kliensekben.";
 "Prevents public Internet sites from digging into your LAN files." = "Megakadályozza, hogy a nyilvános Internet oldalakról betekintsenek a LAN fájljaidba.";
 "Blocks more malware than most other major anti-malware lists - domains and URL patterns used in malware redirection chains, IP addresses that are solely used by malware, PUP nags, and a few scammers. Already included in Dandelion Sprout's Annoyances List." = "Több kártevőt blokkol, mint a legtöbb másik nagy kártevő-ellenes lista – olyan domaineket és URL-mintákat, amelyeket kártevő átirányítási láncokban használnak, kizárólag kártevő által használt IP-címeket, PUP figyelmeztetéseket és néhány csalót. Már tartalmazza a Dandelion Sprout's Annoyances List.";
 "Filter that blocks ads, trackers, and other nasty things." = "Szűrő, amely blokkolja a hirdetéseket, a nyomkövetőket és az egyéb zavaró tényezőket.";
-"Removes anti-adblock warnings and other obtrusive messages." = "Eltávolítja a hirdetésblokkolók elleni figyelmeztetéseket és más zavaró üzeneteket.";
-"Filter that unblocks search ads in Google, DuckDuckGo, Bing, or Yahoo and self-promotion on websites." = "Szűrő, amely feloldja a Google, DuckDuckGo, Bing vagy Yahoo keresőhirdetéseket és a weboldalakon megjelenő önreklámokat.";
 "Filter designed to test certain hazardous filtering rules before they are added to the basic filters." = "Szűrő, amelynek célja a kockázatosabb szűrési szabályok tesztelése, mielőtt azok bekerülnének az alap szűrőkbe.";
 "Additional filter list for websites in Indonesian and Malay." = "Kiegészítő szűrőlista indonéz és maláj nyelvű weboldalakhoz.";
-"EasyList Italy + AdGuard Italian filter. Filter list that specifically removes ads on websites in the Italian language." = "EasyList Italy + AdGuard olasz szűrő. Szűrőlista, amely kifejezetten eltávolítja a hirdetéseket az olasz nyelvű weboldalakon.";
 "Hufilter. Filter list that specifically removes ads, privacy threats, and security risks on websites in the Hungarian language." = "Hufilter. Szűrőlista, amely kifejezetten eltávolítja a hirdetéseket, az adatvédelmi fenyegetéseket és a biztonsági kockázatokat a magyar nyelvű weboldalakon.";
-"The filterslist-KO Classic filter list for AdGuard blocks ads and disables anti-adblock scripts on Korean-language websites and apps." = "Az AdGuardhoz készült filterslist-KO Classic szűrőlista blokkolja a hirdetéseket, és letiltja a reklámblokkolás elleni szkripteket a koreai nyelvű webhelyeken és alkalmazásokban.";
-"Official Polish filters for AdBlock, uBlock Origin & AdGuard + AdGuard Polish filter. Filter list that specifically removes ads on websites in the Polish language." = "Official Polish filters for AdBlock, uBlock Origin & AdGuard + AdGuard lengyel szűrő. Szűrőlista, amely kifejezetten a lengyel nyelvű weboldalakon távolítja el a hirdetéseket.";
 "Privacy protection supplement for EasyList." = "Adatvédelmi kiegészítő az EasyList-hez.";
-"Filter for all known mobile ad networks. Useful for mobile devices." = "Szűrő az összes ismert mobil hirdetési hálózathoz. Hasznos mobil eszközökhöz.";
 
 /* Add Filter List: Find */
-"Name, language, or topic" = "Név, nyelv vagy téma";
-"Searches wBlock’s lists and AdGuard’s filter registry for Safari." = "Keresés a wBlock listái és az AdGuard Safari-szűrőjegyzéke között.";
-"In wBlock" = "A wBlockban";
-"AdGuard Filter Registry" = "AdGuard szűrőjegyzék";
-"wBlock already includes every list in the registry." = "A wBlock már tartalmazza a jegyzék összes listáját.";
-"No matching lists." = "Nincs egyező lista.";
-"No longer built into wBlock" = "Már nem része a wBlocknak";
 "wBlock Ad and Tracking Hosts" = "wBlock hirdetési és követő hosztok";
 "Blocks ad and tracking hosts that the other lists only block in part." = "Letiltja azokat a hirdetési és követő hosztokat, amelyeket a többi lista csak részben tilt le.";
 
@@ -1028,7 +992,6 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Clear Logs?" = "Törlöd a naplókat?";
 "This deletes every log entry." = "Ez minden naplóbejegyzést töröl.";
 "Settings…" = "Beállítások…";
-"Browse" = "Böngészés";
 "Global Privacy Control" = "Global Privacy Control";
 "Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it. Enabling GPC may make your browser easier to fingerprint." = "A Global Privacy Control arra kéri a webhelyeket, hogy ne adják el és ne osszák meg a személyes adataidat. Egyes helyeken a webhelyek kötelesek ezt betartani. A GPC bekapcsolása megkönnyítheti a böngésződ azonosítását digitális ujjlenyomat alapján.";
 "Learn More" = "További információ";
@@ -1044,6 +1007,58 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Import…" = "Importálás…";
 "Excluded Sites" = "Kizárt webhelyek";
 "Cosmetic filtering applies only on these sites." = "A kozmetikai szűrés csak ezeken a webhelyeken érvényes.";
+
+"uBlock filters – Ads" = "uBlock filters – Ads";
+"uBlock filters – Privacy" = "uBlock filters – Privacy";
+"uBlock filters – Badware risks" = "uBlock filters – Badware risks";
+"uBlock filters – Quick fixes" = "uBlock filters – Quick fixes";
+"uBlock filters – Unbreak" = "uBlock filters – Unbreak";
+"uBlock filters – Annoyances" = "uBlock filters – Annoyances";
+"uBlock filters – Cookie Notices" = "uBlock filters – Cookie Notices";
+"EasyList" = "EasyList";
+"EasyList – Cookie Notices" = "EasyList – Cookie Notices";
+"EasyList – Other Annoyances" = "EasyList – Other Annoyances";
+"EasyList – Social Widgets" = "EasyList – Social Widgets";
+"EasyList – Chat Widgets" = "EasyList – Chat Widgets";
+"EasyList – Newsletter Notices" = "EasyList – Newsletter Notices";
+"EasyList – Notifications" = "EasyList – Notifications";
+"Ad blocking rules from the uBlock Origin project. Meant to be used alongside EasyList." = "Hirdetésblokkoló szabályok az uBlock Origin projekttől. Az EasyListtel együtt használatra készültek.";
+"Additional filter list for websites in German." = "További szűrőlista német nyelvű webhelyekhez.";
+"Additional filter list for websites in Italian." = "További szűrőlista olasz nyelvű webhelyekhez.";
+"Additional filter list for websites in Korean." = "További szűrőlista koreai nyelvű webhelyekhez.";
+"Additional filter list for websites in Persian." = "További szűrőlista perzsa nyelvű webhelyekhez.";
+"Additional filter list for websites in Polish." = "További szűrőlista lengyel nyelvű webhelyekhez.";
+"Additional filter list for websites in Spanish." = "További szűrőlista spanyol nyelvű webhelyekhez.";
+"Blocks trackers and removes tracking parameters from URLs, from the uBlock Origin project." = "Blokkolja a nyomkövetőket, és eltávolítja a követési paramétereket az URL-ekből. Az uBlock Origin projekt listája.";
+"Blocks sites documented to install adware or malware, or to steal login credentials." = "Olyan webhelyeket blokkol, amelyekről dokumentálták, hogy adware-t vagy kártevőt telepítenek, vagy bejelentkezési adatokat lopnak.";
+"Short-term rules that fix sites broken by other filter lists." = "Rövid távú szabályok, amelyek javítják a más szűrőlisták miatt elromlott webhelyeket.";
+"Rules that keep sites working when default lists break them." = "Olyan szabályok, amelyek működésben tartják a webhelyeket, ha az alapértelmezett listák elrontják őket.";
+"Hides annoying page elements, such as overlays and promotional banners, from the uBlock Origin project." = "Elrejti a zavaró oldalelemeket, például a rétegeket és a promóciós bannereket. Az uBlock Origin projekt listája.";
+"Blocks ads on websites, from the EasyList project." = "Blokkolja a hirdetéseket a webhelyeken. Az EasyList projekt listája.";
+"Blocks phishing and malware domains flagged by CERT Polska." = "Blokkolja a CERT Polska által jelentett adathalász és kártevő domaineket.";
+"Blocks URLs that distribute malware, based on URLhaus data." = "Blokkolja a kártevőket terjesztő URL-eket, az URLhaus adatai alapján.";
+"Blocks visitor counters on Russian-language websites." = "Blokkolja a látogatószámlálókat az orosz nyelvű webhelyeken.";
+"CERT.PL's Warning List" = "CERT.PL's Warning List";
+"EasyList Germany" = "EasyList Germany";
+"EasyList Italy" = "EasyList Italy";
+"EasyList Spanish" = "EasyList Spanish";
+"Hides miscellaneous annoyances on websites, from the EasyList project." = "Elrejti a webhelyek különféle bosszantó elemeit. Az EasyList projekt listája.";
+"Hides live chat and support widgets on websites, from the EasyList project." = "Elrejti az élő csevegő és ügyfélszolgálati widgeteket a weboldalakon. Az EasyList projekttől.";
+"Hides newsletter sign-up prompts on websites, from the EasyList project." = "Elrejti a hírlevél-feliratkozásra felszólító üzeneteket a weboldalakon. Az EasyList projekttől.";
+"Hides prompts that ask you to allow notifications, from the EasyList project." = "Elrejti az értesítések engedélyezésére kérő üzeneteket. Az EasyList projekttől.";
+"Official Polish filters for AdBlock, uBlock Origin & AdGuard" = "Official Polish filters for AdBlock, uBlock Origin & AdGuard";
+"PersianBlockerNG" = "PersianBlockerNG";
+"RU AdList" = "RU AdList";
+"RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "Egyéni URL";
 
 "Content blocker JSON exceeds the %@ MB size limit on iOS. Disable some filter lists and try again." = "A tartalomblokkoló JSON-fájlja meghaladja az iOS %@ MB-os méretkorlátját. Kapcsoljon ki néhány szűrőlistát, majd próbálja újra.";
+
+"uBlock filters – Experimental" = "uBlock filters – Experimental";
+"Phishing URL Blocklist" = "Phishing URL Blocklist";
+"Fanboy – Anti-Facebook" = "Fanboy – Anti-Facebook";
+"Dan Pollock's hosts file" = "Dan Pollock's hosts file";
+"Experimental rules from the uBlock Origin project. They may break sites." = "Kísérleti szabályok az uBlock Origin projekttől. Előfordulhat, hogy egyes oldalakat megzavarnak.";
+"Blocks URLs that host phishing pages, based on OpenPhish, IPThreat and PhishTank data." = "Az adathalász oldalakat tartalmazó URL-eket blokkolja az OpenPhish, az IPThreat és a PhishTank adatai alapján.";
+"Blocks Facebook social plugins and login widgets on other websites. May break sites that rely on them." = "Blokkolja a Facebook közösségi beépülő moduljait és bejelentkező widgetjeit más weboldalakon. Megzavarhatja az ezekre épülő oldalakat.";
+"Hosts file that blocks ads, trackers, and other unwanted sites, from Dan Pollock's project." = "Hosts-fájl, amely blokkolja a hirdetéseket, a követőket és más nem kívánt oldalakat. Dan Pollock projektje.";

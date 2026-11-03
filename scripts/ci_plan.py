@@ -11,7 +11,6 @@ SHEET_SOURCES = {
 CHEAP_SOURCES = {
     '.github/workflows/ci.yml', 'scripts/ci_plan.py', 'scripts/test_ci_plan.py',
     'scripts/minify-extension-js.sh',
-    'scripts/update-scriptlets.sh',
 }
 
 

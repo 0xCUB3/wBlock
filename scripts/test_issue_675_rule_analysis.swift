@@ -24,8 +24,8 @@ struct Test {
         let analysis = FilterRuleAnalysis.analyze(content: content, seenInEarlierLists: ["example.com##.banner"])
         let kinds = analysis.lines.map(\.kind)
         let expected: [FilterRuleKind] = [
-            .comment, .comment, .network, .duplicate, .advanced, .advanced,
-            .duplicate, .unsupported, .comment, .advanced, .advanced
+            .comment, .comment, .network, .duplicate, .elementHiding, .advanced,
+            .duplicate, .unsupported, .comment, .advanced, .network
         ]
         require(kinds == expected, "line kinds: \(kinds.map(\.rawValue))")
         require(analysis.count(of: .duplicate) == 2, "duplicate count \(analysis.count(of: .duplicate))")
@@ -43,8 +43,8 @@ struct Test {
         $removeparam=~keep
         $removeparam=x,unsupported-option
         """)
-        require(cleaning.lines.map(\.kind) == [.removeParam, .removeParam, .removeParam, .unsupported, .unsupported, .unsupported], "removeparam uses actual DNR support")
-        require(cleaning.count(of: .removeParam) == 3, "removeparam rules are counted on their own")
+        require(cleaning.lines.map(\.kind) == [.removeParam, .removeParam, .removeParam, .removeParam, .removeParam, .unsupported], "removeparam uses DNR and page support")
+        require(cleaning.count(of: .removeParam) == 5, "removeparam rules are counted on their own")
 
         let identities = FilterRuleAnalysis.analyze(content: """
         ||EXAMPLE.com^

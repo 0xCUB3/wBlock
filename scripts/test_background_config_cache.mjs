@@ -17,7 +17,7 @@ const bundlePath = path.join(repoRoot, "wBlock Scripts (iOS)", "Resources", "bac
 const bundleSource = readFileSync(bundlePath, "utf8");
 const canonicalSource = readFileSync(path.join(repoRoot, "extension-src", "background.js"), "utf8");
 
-const CACHE_KEY = "wblockConfigCacheV1";
+const CACHE_KEY = "wblockConfigCacheV2";
 const DOCUMENT_START_SCRIPT_CACHE_KEY = "wblockDocumentStartScriptCacheV1";
 const WARMUP_URL = "https://warmup.wblock.invalid/";
 
@@ -33,10 +33,9 @@ const check = (name, condition) => {
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-const makeConfig = (css, engineTimestamp, js = [], scriptlets = [], state = {}) => ({
+const makeConfig = (css, engineTimestamp, procedural = [], scriptlets = [], state = {}) => ({
   css,
-  extendedCss: [],
-  js,
+  procedural,
   scriptlets,
   engineTimestamp,
   ...state
@@ -54,6 +53,7 @@ const loadBackground = ({
   dynamicRules = [],
   sessionRules = [],
   dnrLimit = 30000,
+  dnrRegexSupported = async () => ({ isSupported: true }),
   dnrUpdateHandler = async () => {},
   removeParamHandler = null,
   tabMessageHandler = async () => ({}),
@@ -130,11 +130,14 @@ const loadBackground = ({
     },
     declarativeNetRequest: {
       ...(dnrLimit == null ? {} : { MAX_NUMBER_OF_DYNAMIC_AND_SESSION_RULES: dnrLimit }),
+      isRegexSupported: dnrRegexSupported,
       getDynamicRules: async () => dynamicRules,
       getSessionRules: async () => sessionRules,
       updateDynamicRules: async update => {
         state.dnrUpdates.push(update);
-        return dnrUpdateHandler(update);
+        await dnrUpdateHandler(update);
+        const removed = new Set(update.removeRuleIds || []);
+        dynamicRules = dynamicRules.filter(rule => !removed.has(rule.id)).concat(update.addRules || []);
       }
     },
     i18n: { getMessage: () => "" }
@@ -152,19 +155,23 @@ const topFrameSender = url => ({ url, frameId: 0, tab: { id: 7, url } });
 
 // The browser's sender metadata, never content-supplied fields, binds native relays.
 {
-  const actions = ['getUserScripts', 'validateUserScriptExecution', 'getUserScriptContentChunk',
+  const actions = ['getUserScripts', 'validateUserScriptExecutions', 'getUserScriptContentChunk',
     'getUserScriptResourceChunk', 'setUserScriptStorageValue', 'deleteUserScriptStorageValue'];
   for (const action of actions) {
     const state = loadBackground({nativeHandler: async () => ({ok:true, userScripts:[]})});
     const actualURL = 'https://actual.example/frame';
     await state.onMessage({action, scriptId:'selected', url:'https://forged.example/',
       pageURL:'https://forged.example/', isTopFrame:true, key:'key', rawValue:'true',
-      chunkIndex:0, chunkSize:100, payloadRevision:0, resourceName:'resource'},
+      chunkIndex:0, chunkSize:100, payloadRevision:0, resourceName:'resource',
+      scripts:[{scriptId:'selected', payloadRevision:9, contentDigest:'abc', url:'https://forged.example/', isTopFrame:true}]},
       {url:actualURL, frameId:3, tab:{id:7, url:'https://top.example/'}});
     const forwarded = state.nativeMessages.find(message => message.action === action);
     assert.ok(forwarded, `${action} reaches native with a verified frame`);
     assert.equal(forwarded.pageURL ?? forwarded.url, actualURL, `${action} ignores forged site`);
     assert.equal(forwarded.isTopFrame, false, `${action} ignores forged top-frame status`);
+    if (action === 'validateUserScriptExecutions') {
+      assert.deepEqual(forwarded.scripts, [{scriptId:'selected', payloadRevision:9, contentDigest:'abc'}]);
+    }
     for (const sender of [{}, {url:actualURL,tab:{id:7}}, {url:actualURL,frameId:-1,tab:{id:7}},
       {url:'data:text/html,forged',frameId:0,tab:{id:7}}]) {
       const before = state.nativeMessages.filter(message => message.action === action).length;
@@ -177,6 +184,41 @@ const topFrameSender = url => ({ url, frameId: 0, tab: { id: 7, url } });
 }
 
 const frameSender = (url, topUrl, frameId = 1) => ({ url, frameId, tab: { id: 7, url: topUrl } });
+
+// Startup combines matching for the authenticated frame with its configuration.
+{
+  const state = loadBackground({ nativeHandler: async message => ({
+    payload: makeConfig([], 1, [], [], { disabled:false, paused:false }),
+    userScripts: [{id:'matched', content:message.payload?.url}],
+  }) });
+  await sleep(20);
+  const before = state.nativeMessages.length;
+  const url = 'https://frame.example/matched';
+  const result = await state.onMessage({type:'InitContentScript', includeUserScripts:true,
+    url:'https://forged.example/', isTopFrame:true}, frameSender(url, 'https://top.example/'));
+  check('combined startup returns scripts matched to the frame URL', result.userScripts?.[0]?.content === url);
+  const calls = state.nativeMessages.slice(before).filter(m => m.type === 'InitContentScript');
+  check('combined startup uses one native request with verified frame authority',
+    calls.length === 1 && calls[0].url === url && calls[0].isTopFrame === false);
+}
+
+// Empty startup reuse is URL-specific and ends on native settings invalidation.
+{
+  let reads = 0;
+  const state = loadBackground({nativeHandler: async message => {
+    if (message.includeUserScripts) reads++;
+    return {payload:makeConfig([], 1, [], [], {disabled:false,paused:false}), userScripts:[]};
+  }});
+  await sleep(20);
+  const init = url => state.onMessage({type:'InitContentScript',includeUserScripts:true}, frameSender(url,'https://top.example/'));
+  await init('https://frame.example/one'); await init('https://frame.example/one');
+  check('empty startup shares one native reply for the same frame URL', reads === 1);
+  await init('https://frame.example/two');
+  check('startup never reuses another path matching result', reads === 2);
+  state.nativePortMessage({action:'wblock:userscriptsChanged'});
+  await init('https://frame.example/one');
+  check('native settings invalidation expires empty startup replies', reads === 3);
+}
 
 // Scenario A: persisted cache serves a top-frame config instantly while the
 // native host hangs (cold start after Safari relaunch).
@@ -484,7 +526,7 @@ const runScriptInjectionScenario = async executeScript => {
   const pageUrl = "https://injection.example/";
   const state = loadBackground({
     storage: {},
-    nativeHandler: () => ({ payload: makeConfig([], 9, ["test script"]) }),
+    nativeHandler: () => ({ payload: makeConfig([], 9, [], [["set-constant", "probe", "1"]]) }),
     executeScript
   });
   const errors = [];
@@ -535,23 +577,18 @@ const runScriptInjectionScenario = async executeScript => {
   );
 }
 
-// Scenario I: blank-frame fallback receives background-compiled scriptlet source,
-// while normal HTTP frames retain MAIN-world function injection.
+// Scenario I: blank frames receive the payload back so the content script can
+// apply it; normal HTTP frames are applied by the background page.
 {
   const pageUrl = "https://example.com/";
-  const scriptlet = { name: "set-constant", args: ["__wblockBlankProbe", "1"] };
-  const fallbackScriptlets = [
-    { name: "missing-scriptlet", args: [] },
-    scriptlet,
-    { name: "another-missing-scriptlet", args: [] }
-  ];
+  const scriptlets = [["set-constant", "blankProbe", "1"], ["set-constant", "other", "2"], ["abort-on-property-read", "x"]];
   const state = loadBackground({
     nativeHandler: message => {
       if (message && message.action === "getBlockingState") {
         return { disabled: false, paused: false };
       }
       if (message && message.payload && message.payload.url === pageUrl) {
-        return { payload: makeConfig([], 17, [], fallbackScriptlets) };
+        return { payload: makeConfig(["#blank-probe"], 17, ['{"selector":[{"type":"css","arg":"div"}]}'], scriptlets) };
       }
       return { payload: makeConfig([], 17) };
     }
@@ -566,23 +603,36 @@ const runScriptInjectionScenario = async executeScript => {
       { type: "InitContentScript" },
       frameSender(frameUrl, pageUrl)
     );
-    const scriptlets = response && response.payload && response.payload.scriptlets;
-    const compiled = scriptlets && scriptlets[1];
-    check(`${frameUrl} routes through the content fallback`, !!(response && response.payload) && state.executed.length === 0);
-    check(`${frameUrl} carries precompiled scriptlet source`, compiled && compiled.code.includes("__wblockBlankProbe"));
-    check(`${frameUrl} preserves thrown/unknown ordering`, scriptlets && scriptlets[0].code === "" && scriptlets[2].code === "");
-    check(`${frameUrl} preserves blank-frame verbose=false metadata`, compiled
-      && compiled.code.includes('"engine":"safari-extension"')
-      && compiled.code.includes('"name":"set-constant"')
-      && compiled.code.includes('"verbose":false'));
+    const payload = response && response.payload;
+    check(`${frameUrl} routes through the content fallback`, !!payload && state.executed.length === 0 && state.cssInserted.length === 0);
+    check(`${frameUrl} carries the scriptlet calls unchanged`, !!payload && JSON.stringify(payload.scriptlets) === JSON.stringify(scriptlets));
+    check(`${frameUrl} carries selectors and procedural filters`, !!payload && payload.css[0] === "#blank-probe" && payload.procedural.length === 1);
   }
 
   const httpState = loadBackground({
-    nativeHandler: () => ({ payload: makeConfig([], 18, [], [scriptlet]) })
+    nativeHandler: () => ({ payload: makeConfig(["#http-probe"], 18, ['{"selector":[{"type":"css","arg":"div"}]}'], scriptlets) })
   });
-  await httpState.onMessage({ type: "InitContentScript" }, topFrameSender(pageUrl));
-  check("HTTP frame still uses MAIN-world scriptlet injection", httpState.executed.some(injection => injection.world === "MAIN" && typeof injection.func === "function"));
-  check("HTTP frame does not receive fallback payload", httpState.executed.every(injection => injection.world !== "ISOLATED" || injection.args === undefined || !injection.args.some(arg => arg && arg.code)));
+  const httpResponse = await httpState.onMessage({ type: "InitContentScript" }, topFrameSender(pageUrl));
+  check("HTTP frame does not receive fallback payload", !(httpResponse && httpResponse.payload));
+  check("HTTP frame hides selectors one rule each", httpState.cssInserted.some(injection => injection.css === "#http-probe { display: none !important; }"));
+  check("HTTP frame queues scriptlet calls in the MAIN world", httpState.executed.some(injection => injection.world === "MAIN" && typeof injection.func === "function" && injection.args[0] === scriptlets));
+  check("HTTP frame injects each scriptlet file once in the MAIN world", httpState.executed.some(injection => injection.world === "MAIN" && JSON.stringify(injection.files) === JSON.stringify(["scriptlets/set-constant.js", "scriptlets/abort-on-property-read.js"])));
+  check("HTTP frame loads procedural.js into the ISOLATED world", httpState.executed.some(injection => injection.files && injection.files[0] === "procedural.js" && (injection.world === undefined || injection.world === "ISOLATED")));
+  check("HTTP frame applies procedural filters after loading them", httpState.executed.some(injection => typeof injection.func === "function" && injection.args && injection.args[0][0] === '{"selector":[{"type":"css","arg":"div"}]}'));
+  const propertyRule = '{"selector":[{"type":"css-selector","arg":"img"},{"type":"matches-property","arg":"ad=true"}]}';
+  const propertyState = loadBackground({ nativeHandler: () => ({ payload: makeConfig([], 19, [propertyRule]) }) });
+  await propertyState.onMessage({ type: "InitContentScript" }, topFrameSender(pageUrl));
+  check("property filters run in the page world", propertyState.executed.some(injection => injection.world === "MAIN" && injection.args?.[0]?.[0] === propertyRule));
+  check("property filters never run in the isolated world", !propertyState.executed.some(injection => injection.world !== "MAIN" && injection.args?.[0]?.[0] === propertyRule));
+  // The content script already loaded procedural.js, so the probe applies the filters in one call.
+  const loadedState = loadBackground({
+    nativeHandler: () => ({ payload: makeConfig([], 19, ['{"selector":[{"type":"css","arg":"div"}]}']) }),
+    executeScript: async injection => [{ result: typeof injection.func === "function" ? true : undefined }]
+  });
+  await loadedState.onMessage({ type: "InitContentScript" }, topFrameSender(pageUrl));
+  const procedural = loadedState.executed.filter(injection => injection.args && injection.args[0] && injection.args[0][0] === '{"selector":[{"type":"css","arg":"div"}]}');
+  check("loaded procedural.js is not injected again", !loadedState.executed.some(injection => injection.files && injection.files[0] === "procedural.js"));
+  check("loaded procedural.js applies filters in one call", procedural.length === 1);
 }
 
 // Scenario J: disabled/paused cache misses remain uncached, and the first
@@ -597,7 +647,7 @@ for (const [label, inertState, activeCSS] of [
     nativeHandler: message => {
       if (message && message.payload && message.payload.url === pageUrl) {
         const css = stateValue.disabled || stateValue.paused ? ["#must-not-run"] : [activeCSS];
-        return { payload: makeConfig(css, 23, [], [], stateValue) };
+        return { payload: makeConfig(css, 23, [], "", stateValue) };
       }
       return { payload: makeConfig([], 23) };
     }
@@ -643,6 +693,31 @@ for (const [label, inertState, activeCSS] of [
     !state.storage[CACHE_KEY] || !state.storage[CACHE_KEY].entries.some(([key]) => key === `${pageUrl}#`));
 }
 
+// Cache hints must not fragment negative matching results between frames.
+{
+  const state = loadBackground({ nativeHandler: async message => {
+    if (message.action !== 'getUserScripts') return { payload: makeConfig([], 1) };
+    if (message.url.includes('body.example')) return { userScripts: [{id:'body',payloadCacheToken:'v1',content:'body'}] };
+    if (message.url.includes('top-only.example')) return { userScripts: [{id:'top',noframes:true}], emptySubframes:true };
+    return {userScripts:[]};
+  } });
+  await sleep(20);
+  const request = {action:'getUserScripts',includeContent:true};
+  await state.onMessage(request, topFrameSender('https://empty.example/'));
+  await state.onMessage(request, topFrameSender('https://body.example/'));
+  await state.onMessage(request, topFrameSender('https://empty.example/'));
+  check('body cache changes do not invalidate an empty frame match',
+    state.nativeMessages.filter(m => m.action === 'getUserScripts' && m.url === 'https://empty.example/').length === 1);
+  await state.onMessage(request, topFrameSender('https://top-only.example/'));
+  await state.onMessage(request, {...topFrameSender('https://top-only.example/'),frameId:2});
+  check('native noframes result skips a same-URL subframe lookup',
+    state.nativeMessages.filter(m => m.action === 'getUserScripts' && m.url === 'https://top-only.example/').length === 1);
+  state.nativePortMessage({action:'wblock:userscriptsChanged'});
+  await state.onMessage(request, {...topFrameSender('https://top-only.example/'),frameId:3});
+  check('configuration invalidation ends the noframes shortcut',
+    state.nativeMessages.filter(m => m.action === 'getUserScripts' && m.url === 'https://top-only.example/').length === 2);
+}
+
 // Scenario M: a freshly validated cache hit skips the native state query, and
 // state changes through the popup end that window so the next hit resolves
 // current state before applying rules.
@@ -658,7 +733,7 @@ for (const [label, inertState, activeCSS] of [
       }
       const url = message && message.payload ? message.payload.url : "";
       if (url === WARMUP_URL) return { payload: makeConfig([], 31) };
-      return { payload: makeConfig(["#cached-state"], 31, [], [], { disabled: false, paused: false }) };
+      return { payload: makeConfig(["#cached-state"], 31, [], "", { disabled: false, paused: false }) };
     }
   });
 
@@ -714,7 +789,7 @@ for (const [label, inertState, activeCSS] of [
       if (message && message.action === "getBlockingState") {
         return new Promise(resolve => setTimeout(() => resolve({ disabled: false, paused: false }), 1500));
       }
-      return { payload: makeConfig(["#slow-state"], 32, [], [], { disabled: false, paused: false }) };
+      return { payload: makeConfig(["#slow-state"], 32, [], "", { disabled: false, paused: false }) };
     }
   });
   await sleep(20);
@@ -872,21 +947,10 @@ for (const maintenanceAction of ["maybeUpdateUserScripts", "maybeStageFilterUpda
 // canonical source so these checks do not depend on when the generated bundle
 // is refreshed.
 for (const source of [canonicalSource, bundleSource]) {
-  const rules = [
-    { id: 1500000, priority: 1, action: { type: "redirect", redirect: { transform: { queryTransform: { removeParams: ["ref"] } } } }, condition: { urlFilter: "^ref=", resourceTypes: ["main_frame"] } },
-    { id: 1500001, priority: 10000, action: { type: "allow" }, condition: { urlFilter: "^ref=", resourceTypes: ["main_frame"] } },
-  ];
-  const state = loadBackground({
-    source,
-    removeParamHandler: message => ({
-      ok: true, version: "priority-order", count: rules.length,
-      rules: message.offset === 0 ? rules : [], ruleIdBase: 1500000, ruleIdLimit: 1650000
-    }),
-    nativeHandler: () => ({ payload: makeConfig([], 1) }),
-  });
-  await sleep(50);
-  const result = await state.onMessage({ action: "wblock:getCleanURL", url: "https://docs.example/?ref=tracking" });
-  check("higher-priority document exception preserves the original URL", result.ok && result.cleanUrl === "https://docs.example/?ref=tracking");
+  const state = loadBackground({ source, nativeHandler: message => message.action === "getCleanPageURL"
+    ? { ok: true, cleanUrl: "https://docs.example/?keep=1" } : { payload: makeConfig([], 1) } });
+  const result = await state.onMessage({ action: "wblock:getCleanURL", url: "https://docs.example/?utm_new=x&keep=1" });
+  check("page cleanup uses native source selectors", result.cleanUrl === "https://docs.example/?keep=1");
 }
 
 {
@@ -909,10 +973,10 @@ for (const source of [canonicalSource, bundleSource]) {
   check("old Safari DNR uses one atomic replacement", state.dnrUpdates.length === 1 && Array.isArray(update?.removeRuleIds) && Array.isArray(update?.addRules));
   check("old Safari request-domain allow downgrades to exact host URL filter",
     update?.addRules?.some(rule => rule.id === 1500000 && rule.condition.urlFilter === "||disabled.example^" && !rule.condition.requestDomains));
-  check("old Safari initiatorDomains downgrades to legacy domains",
-    update?.addRules?.some(rule => rule.id === 1500001 && rule.condition.domains?.[0] === "page.example" && !rule.condition.initiatorDomains));
-  check("old Safari skips unrepresentable request-domain redirect instead of widening it",
-    !update?.addRules?.some(rule => rule.id === 1500002));
+  check("old Safari does not confuse the top document with an initiator",
+    !update?.addRules?.some(rule => rule.id === 1500001));
+  check("old Safari expresses a single request domain with a host URL filter",
+    update?.addRules?.some(rule => rule.id === 1500002 && rule.condition.urlFilter === "||target.example^*^id="));
 }
 
 for (const source of [canonicalSource, bundleSource]) {
@@ -1177,7 +1241,7 @@ for (const source of [canonicalSource, bundleSource]) {
     if (url === "https://race.example/slow") {
       return new Promise(resolve => { releaseSlow = () => resolve({ payload: makeConfig(["#race"], 40) }); });
     }
-    return { payload: makeConfig(["#race"], 40, [], [], { disabled: false, paused }) };
+    return { payload: makeConfig(["#race"], 40, [], "", { disabled: false, paused }) };
   } });
   await sleep(20);
   const popupSender = { origin: "null" };
@@ -1202,6 +1266,26 @@ for (const source of [canonicalSource, bundleSource]) {
   const again = await state.onMessage({ type: "InitContentScript" }, a);
   check("an inert answer ends every fresh window",
     again && again.paused === true && state.cssInserted.length === appliedBeforeA);
+}
+
+// A bad regex or one rejected redirect cannot prevent unrelated cleaning.
+for (const rejectAtInstall of [false, true]) {
+  const rules = [
+    { id: 1500000, priority: 4, action: { type: "redirect", redirect: { transform: { queryTransform: { removeParams: ["fbclid"] } } } }, condition: { urlFilter: "^fbclid=" } },
+    { id: 1500001, priority: 4, action: { type: "redirect", redirect: { transform: { queryTransform: { removeParams: ["x"] } } } }, condition: { regexFilter: "(?=unsupported)" } },
+  ];
+  const state = loadBackground({ source: canonicalSource,
+    removeParamHandler: () => ({ ok: true, version: "rejected-rule", count: 2, rules }),
+    nativeHandler: () => ({ payload: makeConfig([], 1) }),
+    dnrRegexSupported: async () => ({ isSupported: rejectAtInstall }),
+    dnrUpdateHandler: async update => {
+      if (rejectAtInstall && update.addRules?.some(rule => rule.id === 1500001)) throw new Error("Rule with id 1500001 is invalid.");
+    }
+  });
+  await sleep(50);
+  check(`unsupported redirect is isolated (${rejectAtInstall ? "install" : "preflight"})`,
+    state.dnrUpdates.at(-1)?.addRules?.length === 1 && state.dnrUpdates.at(-1).addRules[0].id === 1500000);
+  check("verified install count is persisted", state.storage.wblockRemoveParamDNRVersion?.count === 1);
 }
 
 if (failures > 0) {

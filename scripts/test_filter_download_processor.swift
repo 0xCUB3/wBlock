@@ -61,7 +61,14 @@ struct FilterDownloadProcessorTests {
         ! Diff-Name: main
         !#unsupported foo
         !#include child.txt
+        !#if ext_ublock
         ||parent.example^
+        !#else
+        ||wrong-engine.example^
+        !#endif
+        !#if env_firefox
+        ||wrong-browser.example^
+        !#endif
         """
 
         let processed = try await FilterDownloadProcessor.processAndPublish(
@@ -77,8 +84,8 @@ struct FilterDownloadProcessorTests {
         expectEqual(processed.filter.name, "My Name", "user-provided name must survive remote metadata")
         expectEqual(processed.filter.description, "My Description", "user-provided description must survive remote metadata")
         expectEqual(processed.filter.version, "2026.09.07", "remote version should update")
-        expectEqual(processed.filter.sourceRuleCount, 2, "expanded source count should include included rules")
-        expectEqual(processed.filter.rawSourceRuleCount, 1, "raw count should be measured before include expansion")
+        expectEqual(processed.filter.sourceRuleCount, 2, "expanded source count should include uBO and included rules")
+        expectEqual(processed.filter.rawSourceRuleCount, 3, "raw count should include all branches before preprocessing")
         expectEqual(processed.filter.etag, "etag-1", "etag should be reflected in processed metadata")
         expect(processed.strippedDirectives.contains("!#unsupported foo"), "unknown directives should be reported")
         expectEqual(
@@ -95,7 +102,8 @@ struct FilterDownloadProcessorTests {
         expectEqual(try baselineURL.resourceValues(forKeys: [.isExcludedFromBackupKey]).isExcludedFromBackup, true,
                     "regenerable diff baselines must not enter backups")
         let published = try String(contentsOf: publishedURL, encoding: .utf8)
-        expect(published.contains("||parent.example^"), "published source should include parent rule")
+        expect(published.contains("||parent.example^"), "published source should include the uBO branch")
+        expect(!published.contains("wrong-"), "engine and browser conditionals must select only applicable rules")
         expect(published.contains("||included.example^"), "published source should include resolved include")
         expect(!published.contains("!#unsupported"), "published source should strip unknown directives")
 

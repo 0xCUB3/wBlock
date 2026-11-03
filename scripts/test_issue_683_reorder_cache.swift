@@ -45,7 +45,6 @@ struct ReorderCacheTests {
         func compile(_ assigned: [FilterList], _ ordered: [FilterList], extra: String? = nil) throws -> ContentBlockerService.ContentBlockerTargetOutcome {
             try ContentBlockerService.compileTargetRules(
                 filters: assigned, orderedSelectedFilters: ordered,
-                affinitySnapshot: SafariContentBlockerAffinityProcessor.snapshot(for: ordered, containerURL: container),
                 targetInfo: target, allTargets: targets, disabledSites: [], extraRulesText: extra,
                 groupIdentifier: group, containerURL: container
             )
@@ -65,6 +64,9 @@ struct ReorderCacheTests {
             groupIdentifier: group,
             containerURL: container
         )
+        // The plan fingerprint would otherwise keep the blocker's output.
+        try FileManager.default.removeItem(at: container.appendingPathComponent(
+            "\(ContentBlockerIncrementalCache.baseRulesFilename(for: target.rulesFilename)).plan-fingerprint"))
         let rebuilt = try compile([b, a], [d, b, c, a])
         let fresh = try output()
         precondition(!rebuilt.reusedCachedBase && original == fresh, "fresh output must match cached output after reorder")
