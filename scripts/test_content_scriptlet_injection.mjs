@@ -165,6 +165,10 @@ const runBlankFrameWithPayload = async payload => {
     selectorsOnly.scripts.length === 0
   );
 
+  const media = '@media (max-width: 768px) { .ad { margin: 0 !important; } }';
+  const styled = await runBlankFrameWithPayload({ css: [], styles: [media], procedural: [], scriptlets: [] });
+  check("blank frame preserves conditional stylesheets", styled.styles.length === 1 && styled.styles[0].textContent === media);
+
   const empty = await runBlankFrameWithPayload({ css: [], procedural: [], scriptlets: [] });
   check(
     "empty blank-frame payload injects nothing",

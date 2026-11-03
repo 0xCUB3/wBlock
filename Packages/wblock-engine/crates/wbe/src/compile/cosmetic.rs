@@ -41,14 +41,14 @@ pub(super) fn compile(
             };
             Some((verdict, scope))
         }
-        CosmeticBody::Procedural(_) => None,
+        CosmeticBody::Procedural(_) | CosmeticBody::Style(_) => None,
     });
     let mut hides: BTreeMap<Key, Vec<Entry>> = BTreeMap::new();
     let mut exceptions: BTreeMap<Key, Vec<Entry>> = BTreeMap::new();
     let mut runtime_lines = BTreeSet::new();
     for (rule, decided) in rules.iter().zip(decided) {
         match &rule.body {
-            CosmeticBody::Procedural(_) => {
+            CosmeticBody::Procedural(_) | CosmeticBody::Style(_) => {
                 runtime_lines.insert(rule.raw.as_str());
             }
             CosmeticBody::Hide(selector) => match decided.expect("hide has a verdict") {
@@ -715,7 +715,7 @@ mod tests {
             let marker = if self.exception { "#@#" } else { "##" };
             let body = match &self.body {
                 CosmeticBody::Hide(s) => s.clone(),
-                CosmeticBody::Procedural(s) => s.clone(),
+                CosmeticBody::Procedural(s) | CosmeticBody::Style(s) => s.clone(),
             };
             let raw_domains: Vec<String> = self
                 .include

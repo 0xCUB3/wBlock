@@ -272,6 +272,8 @@ pub enum CosmeticBody {
     /// action (`:remove()`, `:style()`, `:remove-attr()`, `:remove-class()`).
     /// Kept as the normalized uBO selector text.
     Procedural(String),
+    /// A stylesheet, including conditional at-rules, injected by the extension.
+    Style(String),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

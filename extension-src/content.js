@@ -130,10 +130,11 @@
   const applyConfiguration = configuration => {
     try {
       const selectors = configuration.css || [];
-      if (selectors.length > 0) {
+      const styles = configuration.styles || [];
+      if (selectors.length > 0 || styles.length > 0) {
         const style = document.createElement('style');
         style.setAttribute('type', 'text/css');
-        style.textContent = selectors.map(selector => `${selector} { display: none !important; }`).join('\n');
+        style.textContent = [...styles, ...selectors.map(selector => `${selector} { display: none !important; }`)].join('\n');
         (document.head || document.documentElement).appendChild(style);
         protectStyleElementContent(style);
       }

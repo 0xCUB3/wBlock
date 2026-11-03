@@ -61,7 +61,7 @@ export const LIST_SETS: Record<string, { description: string; urls: string[] }> 
 };
 
 // PlatformConstants.value(for:) is true only for these names on macOS (env_mobile is false).
-const TRUE_CONSTANTS = new Set(['true', 'adguard', 'adguard_ext_safari', 'env_safari']);
+const TRUE_CONSTANTS = new Set(['true', 'adguard', 'adguard_ext_safari', 'env_safari', 'ext_ublock']);
 const MAX_INCLUDE_DEPTH = 5;
 const MAX_EXPANDED_LINES = 500_000;
 

@@ -671,6 +671,7 @@ dependencies = [
  "idna",
  "memchr",
  "precomputed-hash",
+ "regex",
  "rustc-hash",
  "selectors",
  "serde",

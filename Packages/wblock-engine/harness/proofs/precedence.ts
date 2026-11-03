@@ -29,6 +29,7 @@ const TIERS = [
   ['block', { add: 'blocked' }],
   ['exception', {}],
   ['importantBlock', { add: 'blocked' }],
+  ['importantException', {}],
   ['documentException', {}],
 ] as const;
 type Input = (typeof TIERS)[number][0];
@@ -47,11 +48,12 @@ function model(name: string, order: readonly (typeof TIERS)[number][]) {
 }
 
 const laws = (m: any) => [
-  m.law('an important block beats exceptions', (e: any) => e.importantBlock.and(e.documentException.not()), (o: any) => o.blocked),
+  m.law('an important block beats exceptions', (e: any) => e.importantBlock.and(e.documentException.not(), e.importantException.not()), (o: any) => o.blocked),
+  m.law('an important exception lifts every block', (e: any) => e.importantException, (o: any) => o.blocked.not()),
   m.law('an exception lifts an ordinary block', (e: any) => e.exception.and(e.importantBlock.not()), (o: any) => o.blocked.not()),
   m.law('nothing is blocked without a blocking filter', (e: any) => e.block.not().and(e.importantBlock.not()), (o: any) => o.blocked.not()),
   m.law('$document lifts everything on the page', (e: any) => e.documentException, (o: any) => o.blocked.not().and(o.generic.not(), o.specific.not())),
-  m.law('$generichide keeps specific hides', (e: any) => e.specificHide.and(e.elemHideException.not(), e.exception.not(), e.documentException.not()), (o: any) => o.specific),
+  m.law('$generichide keeps specific hides', (e: any) => e.specificHide.and(e.elemHideException.not(), e.exception.not(), e.importantException.not(), e.documentException.not()), (o: any) => o.specific),
   // WebKit limit, not uBO: an exception matching the page load itself also lifts
   // its hides. network.rs gives exceptions a page-load trigger only where one
   // must lift a strict host block.
@@ -86,6 +88,7 @@ const FILTERS: Record<Input, string> = {
   block: '||t.example/x',
   exception: '@@||t.example/x',
   importantBlock: '||t.example/x$important',
+  importantException: '@@||t.example/x$important',
   documentException: '@@||page.example^$document',
 };
 const names = TIERS.map(([n]) => n);
@@ -99,7 +102,7 @@ for (let mask = 0; mask < 1 << names.length; mask++) {
   const sub = rules.length ? simulate(rules, { url: 'https://t.example/x', resourceType: 'script', loadContext: 'top-frame', frameUrl: page, topUrl: page }) : null;
   const doc = rules.length ? simulate(rules, { url: page, resourceType: 'top-document', loadContext: 'top-frame', frameUrl: page, topUrl: page }) : null;
   // The exception filter targets the subresource, so it does not match the page load.
-  const onPage = precedence.run({ ...env, exception: false });
+  const onPage = precedence.run({ ...env, exception: false, importantException: false });
   const expected = { blocked: precedence.run(env).blocked, generic: onPage.generic, specific: onPage.specific };
   const actual = {
     blocked: sub?.blocked ?? false,

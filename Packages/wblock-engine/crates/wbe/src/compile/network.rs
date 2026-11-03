@@ -158,7 +158,7 @@ fn compile_rule(
         };
     }
     let (ignore, tier) = if exception {
-        (true, Tier::Exception)
+        (true, if r.important { Tier::ImportantException } else { Tier::Exception })
     } else if r.important {
         (false, Tier::ImportantBlock)
     } else {
@@ -2297,4 +2297,14 @@ mod tests {
         assert!(!out.is_empty());
         assert!(elapsed.as_millis() < 100, "75k rules took {elapsed:?}");
     }
+    #[test]
+    fn adguard_important_exceptions_follow_important_blocks() {
+        let text = "||ads.example^$important\n@@||ads.example^$important";
+        let output = crate::compile(&[crate::ListInput { text, trusted: false }], &crate::CompileOptions { safari: SafariVersion::new(18, 0) });
+        assert!(output.stats.dropped.is_empty(), "{:?}", output.stats.dropped);
+        let rules: serde_json::Value = serde_json::from_str(&crate::webkit::to_json(&output.webkit)).unwrap();
+        assert_eq!(rules[0]["action"]["type"], "block");
+        assert_eq!(rules[1]["action"]["type"], "ignore-previous-rules");
+    }
+
 }

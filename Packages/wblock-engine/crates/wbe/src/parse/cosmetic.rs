@@ -168,6 +168,14 @@ pub(crate) const SCRIPTLETS: &[(&str, &[&str])] = &[
     ("webrtc-if", &[]),
     ("window.name-defuser", &[]),
     ("xml-prune", &[]),
+    // Legacy uBO names implemented by the bundled AdGuard library.
+    ("adg:ubo-noeval.js", &["noeval"]),
+    ("adg:ubo-nofab.js", &["nofab"]),
+    ("adg:ubo-popads.net.js", &["popads.net"]),
+    ("adg:ubo-popads-dummy.js", &["popads-dummy"]),
+    ("adg:ubo-google-ima.js", &["google-ima"]),
+    ("adg:ubo-fingerprint2.js", &["fingerprint2"]),
+    ("adg:ubo-std.js", &["std"]),
 ];
 
 /// Scriptlet name as uBO resolves it: the token without `.js`, matched exactly
@@ -257,6 +265,15 @@ pub(super) fn parse(line: &str, source: SourceRef) -> Option<ParsedLine> {
         // to `+js()` by the normalizer) and raw JavaScript run through
         // AdGuard's own scriptlet library and injector, as `adg:` calls.
         "#%#" | "#@%#" => return Some(adguard_script(body, exception, domains, source, line)),
+        "#$#" | "#@$#" if body.contains('{') && body.trim_end().ends_with('}') => {
+            if body.to_ascii_lowercase().contains("url(") {
+                return Some(invalid("forbidden URL in CSS injection"));
+            }
+            return Some(ParsedLine::Rule(Rule::Cosmetic(CosmeticRule {
+                source, raw: line.to_string(), exception, domains, matches_path: None,
+                body: CosmeticBody::Style(body.trim().to_string()),
+            })));
+        }
         "#$#" | "#$?#" | "#@$#" | "#@$?#" => {
             return Some(unsupported("AdGuard CSS injection or ABP snippet"));
         }
@@ -540,20 +557,24 @@ impl From<Reject> for ParsedLine {
 fn parse_domains(list: &str) -> Result<DomainList, Reject> {
     let mut out = DomainList::default();
     let mut rest = list;
+    let mut universal = false;
     if list.is_empty() {
         return Ok(out);
     }
     loop {
         let (entry, next) = take_entry(rest);
-        let (negated, matcher) = parse_domain(entry)?;
-        if negated {
-            out.exclude.push(matcher);
+        if entry == "*" {
+            universal = true;
         } else {
-            out.include.push(matcher);
+            let (negated, matcher) = parse_domain(entry)?;
+            if negated { out.exclude.push(matcher); } else { out.include.push(matcher); }
         }
         match next {
             Some(r) => rest = r,
-            None => return Ok(out.without_unreachable_excludes()),
+            None => {
+                if universal { out.include.clear(); }
+                return Ok(out.without_unreachable_excludes());
+            }
         }
     }
 }
@@ -852,6 +873,7 @@ mod tests {
                 let body = match c.body {
                     CosmeticBody::Hide(s) => format!("hide {s}"),
                     CosmeticBody::Procedural(s) => format!("proc {s}"),
+                    CosmeticBody::Style(s) => format!("style {s}"),
                 };
                 format!("{exc}{dom}{body}{mp}")
             }
@@ -957,7 +979,7 @@ mod tests {
             ("example.com##.a:not(.b", "invalid: unbalanced parentheses"),
             ("example.com,##.x", "invalid: empty domain"),
             ("a*b.com##.x", "invalid: bad domain 'a*b.com'"),
-            ("*##.x", "unsupported: wildcard domain"),
+            ("*##.x", "hide .x"),
             ("example.com>>##.x", "unsupported: domain ancestor or path"),
             (
                 "example.com/path##.x",
@@ -1234,7 +1256,7 @@ mod tests {
             ),
             (
                 "example.com#$#.pub_728x90 { display: block !important; }",
-                "unsupported: AdGuard CSS injection or ABP snippet",
+                "[h:example.com] style .pub_728x90 { display: block !important; }",
             ),
             (
                 "example.com#$?#div { display: none !important; }",
@@ -1242,7 +1264,7 @@ mod tests {
             ),
             (
                 "example.com#@$#.ad { color: red; }",
-                "unsupported: AdGuard CSS injection or ABP snippet",
+                "@[h:example.com] style .ad { color: red; }",
             ),
             (
                 "example.com#$#log 'x'",
@@ -1331,6 +1353,7 @@ mod tests {
                 Some(ParsedLine::Rule(Rule::Cosmetic(c))) => match c.body {
                     CosmeticBody::Hide(_) => "hide".into(),
                     CosmeticBody::Procedural(_) => "procedural".into(),
+                    CosmeticBody::Style(_) => "style".into(),
                 },
                 Some(ParsedLine::Rule(Rule::Scriptlet(_))) => "scriptlet".into(),
                 Some(ParsedLine::Rule(Rule::Network(_))) => unreachable!(),

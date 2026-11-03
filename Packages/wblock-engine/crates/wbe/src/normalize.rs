@@ -46,9 +46,8 @@ pub fn adguard_to_ubo(line: &str) -> Cow<'_, str> {
             .and_then(adg_scriptlet)
             .map(|js| format!("{domains}{prefix}{js}")),
         "#$#" | "#$?#" | "#@$#" | "#@$?#" => style_injection(body)
-            // An exception with an action has no uBO form we can keep.
-            .filter(|(_, plain)| !exception || *plain)
-            .map(|(sel, _)| format!("{domains}{prefix}{sel}")),
+            .filter(|(sel, plain)| *plain || sel.ends_with(":remove()") || marker.contains('?'))
+            .map(|(sel, _)| format!("{domains}{prefix}{}", rewrite_ops(&sel, marker.contains('?')))),
         _ => {
             let ops = rewrite_ops(body, marker.contains('?'));
             if marker.contains('?') || matches!(ops, Cow::Owned(_)) {
@@ -65,7 +64,8 @@ pub fn adguard_to_ubo(line: &str) -> Cow<'_, str> {
 /// uBO selector, with `:remove()` or `:style()` when needed. The flag is true
 /// when no action is needed.
 fn style_injection(body: &str) -> Option<(String, bool)> {
-    let inner = body.strip_suffix('}')?;
+    if body.trim_start().starts_with('@') { return None; }
+    let inner = body.trim().strip_suffix('}')?;
     let open = inner.rfind('{')?;
     let selector = inner[..open].trim();
     let style = inner[open + 1..].trim();
@@ -116,7 +116,9 @@ fn adg_scriptlet(inner: &str) -> Option<String> {
         .find(|(from, _)| *from == token)
         .map_or(token.as_str(), |(_, to)| to);
     let renamed = renamed.strip_prefix("ubo-").unwrap_or(renamed);
-    let mut out = format!("+js({}", scriptlet_name(renamed)?);
+    let name = scriptlet_name(renamed)?;
+    if name.starts_with("adg:") { return None; }
+    let mut out = format!("+js({name}");
     for arg in &args {
         out.push_str(", ");
         out.push_str(&requote(arg)?);
@@ -227,10 +229,6 @@ mod tests {
             ("example.com##^script", "example.com##^script"),
             ("example.com##+js(aopr, a)", "example.com##+js(aopr, a)"),
             ("example.com#$#log 'x'", "example.com#$#log 'x'"),
-            (
-                "example.com#@$#.ad { color: red; }",
-                "example.com#@$#.ad { color: red; }",
-            ),
             ("example.com#$#.a {}", "example.com#$#.a {}"),
             (
                 "example.com#$#.a { color: red } extra",
@@ -353,9 +351,10 @@ mod tests {
     #[test]
     fn adguard_css_injection() {
         check(&[
+            ("example.com#@$#.ad { color: red; }", "example.com#@$#.ad { color: red; }"),
             (
                 "example.com#$#.pub { display: block !important; }",
-                "example.com##.pub:style(display: block !important;)",
+                "example.com#$#.pub { display: block !important; }",
             ),
             (
                 "example.com#$#.ad { display: none !important; }",
@@ -383,17 +382,17 @@ mod tests {
             ),
             (
                 "example.com#$#.a { color : red }",
-                "example.com##.a:style(color : red)",
+                "example.com#$#.a { color : red }",
             ),
             (
                 "example.com#$#.a { background: url(x.png) }",
-                "example.com##.a:style(background: url(x.png))",
+                "example.com#$#.a { background: url(x.png) }",
             ),
             (
                 "example.com#$#body > * { filter: none !important; }",
-                "example.com##body > *:style(filter: none !important;)",
+                "example.com#$#body > * { filter: none !important; }",
             ),
-            ("#$#body { color: red }", "##body:style(color: red)"),
+            ("#$#body { color: red }", "#$#body { color: red }"),
             (
                 "example.com#@$#.ad { display: none !important; }",
                 "example.com#@#.ad",
@@ -402,10 +401,10 @@ mod tests {
                 "example.com#@$?#.ad { display: none !important; }",
                 "example.com#@#.ad",
             ),
-            // uBO takes the last `{` (greedy `(.+)`), so the selector keeps the first block.
+            // Preserve complete stylesheets instead of treating a block as a selector.
             (
                 "example.com#$#div { color: red; }{ x }",
-                "example.com##div { color: red; }:style(x)",
+                "example.com#$#div { color: red; }{ x }",
             ),
         ]);
     }

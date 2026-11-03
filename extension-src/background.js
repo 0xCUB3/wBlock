@@ -134,6 +134,9 @@
     if (scriptlets.length > 0) {
       pending.push(runScriptlets(target, scriptlets));
     }
+    if (configuration.styles?.length) {
+      pending.push(browser.scripting.insertCSS({ target, origin: 'USER', css: configuration.styles.join('\n') }));
+    }
     // One rule per selector: a selector the engine rejects drops only itself.
     for (let i = 0; i < selectors.length; i += CSS_SELECTORS_PER_INSERT) {
       const css = selectors.slice(i, i + CSS_SELECTORS_PER_INSERT).map(selector => `${selector} { display: none !important; }`).join('\n');

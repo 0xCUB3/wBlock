@@ -28,8 +28,10 @@ pub enum Tier {
     Block = 4,
     Exception = 5,
     ImportantBlock = 6,
+    /// AdGuard `$important` exceptions override important blocks.
+    ImportantException = 7,
     /// `@@...$document`: cancels everything on the page.
-    DocumentException = 7,
+    DocumentException = 8,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -120,7 +122,7 @@ impl std::io::Write for Count {
 }
 
 /// Tiers in output order.
-const TIERS: [Tier; 8] = [
+const TIERS: [Tier; 9] = [
     Tier::GenericHide,
     Tier::GenericHideException,
     Tier::SpecificHide,
@@ -128,6 +130,7 @@ const TIERS: [Tier; 8] = [
     Tier::Block,
     Tier::Exception,
     Tier::ImportantBlock,
+    Tier::ImportantException,
     Tier::DocumentException,
 ];
 

@@ -6,7 +6,7 @@
 //! script string would be subject to the page's CSP). The lines come from
 //! `compile`, which already dropped untrusted `trusted-*` scriptlets.
 
-use crate::ast::{DomainList, DomainMatcher, ExceptionScope, ParsedLine, Rule};
+use crate::ast::{CosmeticBody, DomainList, DomainMatcher, ExceptionScope, ParsedLine, Rule};
 use adblock::lists::{FilterSet, ParseOptions, RuleTypes};
 use adblock::resources::PermissionMask;
 use serde::de::DeserializeOwned;
@@ -26,6 +26,8 @@ pub struct Engine {
 pub struct PagePayload {
     /// Selectors to hide with `display: none !important`.
     pub hide: Vec<String>,
+    /// Stylesheets that cannot be expressed as native hide actions.
+    pub styles: Vec<String>,
     /// JSON-encoded procedural filters and actions.
     pub procedural: Vec<String>,
     /// Scriptlet calls, each `[name, args...]`, in rule order.
@@ -45,6 +47,9 @@ struct Scriptlets {
     rules: Table,
     /// Keyed like `rules`. Values: call ids, or `null` for `#@#+js()`.
     exceptions: Table,
+    regexes: HashMap<String, regex::Regex>,
+    // Global calls are consulted on every page; keep their scopes decoded.
+    generic_rules: Vec<(u32, HashSet<String>)>,
 }
 
 /// Scriptlet rules as `Engine::build` collects them.
@@ -53,11 +58,21 @@ struct ScriptletRules {
     calls: Vec<Vec<String>>,
     index: HashMap<Vec<String>, u32>,
     rules: BTreeMap<String, Vec<(u32, Vec<DomainMatcher>)>>,
-    exceptions: BTreeMap<String, Vec<Option<u32>>>,
+    exceptions: BTreeMap<String, Vec<(Option<u32>, Vec<DomainMatcher>)>>,
+    regexes: HashMap<String, regex::Regex>,
 }
 
 impl ScriptletRules {
     fn add(&mut self, exception: bool, domains: DomainList, call: Vec<String>) {
+        for matcher in domains.include.iter().chain(&domains.exclude) {
+            if let DomainMatcher::Regex(pattern) = matcher {
+                if !self.regexes.contains_key(pattern) {
+                    if let Ok(regex) = regex::Regex::new(pattern) {
+                        self.regexes.insert(pattern.clone(), regex);
+                    }
+                }
+            }
+        }
         let id = (!call[0].is_empty()).then(|| {
             *self.index.entry(call.clone()).or_insert_with(|| {
                 self.calls.push(call);
@@ -67,10 +82,9 @@ impl ScriptletRules {
         let mut keys: Vec<String> = domains
             .include
             .iter()
-            .filter_map(|m| match m {
-                DomainMatcher::Hostname(h) | DomainMatcher::Entity(h) => Some(key(m, h)),
-                // A regex scope cannot be keyed; the rule is not applied.
-                DomainMatcher::Regex(_) => None,
+            .map(|m| match m {
+                DomainMatcher::Hostname(h) | DomainMatcher::Entity(h) => key(m, h),
+                DomainMatcher::Regex(r) => format!("/{r}/"),
             })
             .collect();
         if domains.include.is_empty() {
@@ -78,7 +92,7 @@ impl ScriptletRules {
         }
         for k in keys {
             if exception {
-                self.exceptions.entry(k).or_default().push(id);
+                self.exceptions.entry(k).or_default().push((id, domains.exclude.clone()));
             } else if let Some(id) = id {
                 self.rules
                     .entry(k)
@@ -89,10 +103,14 @@ impl ScriptletRules {
     }
 
     fn finish(self) -> Scriptlets {
+        let rules = Table::encode(self.rules.iter().map(|(k, v)| (k.as_str(), v)));
+        let generic_rules = generic_rules(&rules, &self.regexes);
         Scriptlets {
             calls: Table::encode(self.calls.iter().map(|call| ("", call))),
-            rules: Table::encode(self.rules.iter().map(|(k, v)| (k.as_str(), v))),
+            rules,
             exceptions: Table::encode(self.exceptions.iter().map(|(k, v)| (k.as_str(), v))),
+            regexes: self.regexes,
+            generic_rules,
         }
     }
 }
@@ -196,26 +214,33 @@ impl Scriptlets {
     }
 
     fn lookup(&self, host: &str) -> Vec<Vec<String>> {
-        let keys = host_keys(host);
+        let mut keys = host_keys(host);
+        keys.extend(self.regexes.iter().filter(|(_, re)| re.is_match(host)).map(|(r, _)| format!("/{r}/")));
         let mut excepted = HashSet::new();
+        let mut all_scriptlets_excepted = false;
         for k in &keys {
-            for e in self.exceptions.get::<Vec<Option<u32>>>(k) {
+            for (e, exclude) in self.exceptions.get::<Vec<(Option<u32>, Vec<DomainMatcher>)>>(k) {
+                if exclude.iter().any(|m| scope_matches(m, host, &keys, &self.regexes)) { continue; }
                 match e {
-                    None => return Vec::new(),
+                    None => all_scriptlets_excepted = true,
                     Some(id) => {
                         excepted.insert(id);
                     }
                 }
             }
         }
-        let mut ids: Vec<u32> = Vec::new();
-        for k in &keys {
+        let mut ids: Vec<u32> = self.generic_rules.iter()
+            .filter(|(_, excluded)| !keys.iter().any(|k| excluded.contains(k)))
+            .map(|(id, _)| *id).collect();
+        for k in keys.iter().filter(|k| !k.is_empty()) {
             for (id, exclude) in self.rules.get::<Vec<(u32, Vec<DomainMatcher>)>>(k) {
-                if !excepted.contains(&id) && !exclude.iter().any(|m| scope_matches(m, host)) {
+                if !exclude.iter().any(|m| scope_matches(m, host, &keys, &self.regexes)) {
                     ids.push(id);
                 }
             }
         }
+        ids.retain(|id| !excepted.contains(id)
+            && (!all_scriptlets_excepted || self.call(*id).first().is_some_and(|name| name == "wbe:css")));
         ids.sort_unstable();
         ids.dedup();
         let mut calls: Vec<Vec<String>> = ids.into_iter().map(|id| self.call(id)).collect();
@@ -225,6 +250,7 @@ impl Scriptlets {
             .iter()
             .any(|id| self.call(*id).as_slice() == [REQUEST]);
         if matches!(host, "youtube.com" | "www.youtube.com")
+            && !all_scriptlets_excepted
             && !request_excepted
             && calls.iter().any(|call| {
                 call.len() == 4
@@ -283,19 +309,25 @@ fn host_keys(host: &str) -> Vec<String> {
     keys
 }
 
-/// Whether an exclude entry covers `host`. A regex entry counts as covering
-/// it, so an exclusion that cannot be judged never widens a rule.
-fn scope_matches(m: &DomainMatcher, host: &str) -> bool {
+// A global rule can exclude thousands of hosts. Index those scopes once instead
+// of scanning the complete exclusion list on every page.
+fn generic_rules(rules: &Table, regexes: &HashMap<String, regex::Regex>) -> Vec<(u32, HashSet<String>)> {
+    rules.get::<Vec<(u32, Vec<DomainMatcher>)>>("").into_iter().map(|(id, exclude)| {
+        let keys = exclude.iter().map(|m| match m {
+            DomainMatcher::Hostname(h) | DomainMatcher::Entity(h) => key(m, h),
+            DomainMatcher::Regex(r) if regexes.contains_key(r) => format!("/{r}/"),
+            DomainMatcher::Regex(_) => String::new(),
+        }).collect();
+        (id, keys)
+    }).collect()
+}
+
+/// Invalid regex exclusions remain conservative and never widen a rule.
+fn scope_matches(m: &DomainMatcher, host: &str, keys: &[String], regexes: &HashMap<String, regex::Regex>) -> bool {
     match m {
-        DomainMatcher::Regex(_) => true,
-        DomainMatcher::Hostname(_) | DomainMatcher::Entity(_) => {
-            let k = match m {
-                DomainMatcher::Entity(e) => format!("{e}.*"),
-                DomainMatcher::Hostname(h) => h.clone(),
-                DomainMatcher::Regex(_) => unreachable!(),
-            };
-            host_keys(host).contains(&k)
-        }
+        DomainMatcher::Regex(r) => regexes.get(r).is_none_or(|re| re.is_match(host)),
+        DomainMatcher::Hostname(h) => keys.contains(h),
+        DomainMatcher::Entity(h) => keys.contains(&key(m, h)),
     }
 }
 
@@ -318,6 +350,11 @@ impl Engine {
         let mut document = Vec::new();
         for line in lines {
             match crate::parse_line(line, Default::default()) {
+                ParsedLine::Rule(Rule::Cosmetic(r)) if matches!(r.body, CosmeticBody::Style(_)) => {
+                    if let CosmeticBody::Style(css) = r.body {
+                        scriptlets.add(r.exception, r.domains, vec!["wbe:css".into(), css]);
+                    }
+                }
                 ParsedLine::Rule(Rule::Scriptlet(r)) => {
                     let call = std::iter::once(r.name).chain(r.args).collect();
                     scriptlets.add(r.exception, r.domains, call);
@@ -394,6 +431,8 @@ impl Engine {
         ] {
             put(&mut out, &table.0);
         }
+        let patterns: std::collections::BTreeSet<_> = self.scriptlets.regexes.keys().collect();
+        put(&mut out, &serde_json::to_vec(&patterns).expect("regex patterns serialize"));
         out
     }
 
@@ -402,10 +441,19 @@ impl Engine {
         let cosmetic = read_engine(take(&mut rest)?)?;
         let elemhide = read_engine(take(&mut rest)?)?;
         let document = read_engine(take(&mut rest)?)?;
+        let calls = Table::parse(take(&mut rest)?)?;
+        let rules = Table::parse(take(&mut rest)?)?;
+        let exceptions = Table::parse(take(&mut rest)?)?;
+        let regexes = serde_json::from_slice::<Vec<String>>(take(&mut rest)?)
+            .map_err(|e| e.to_string())?.into_iter()
+            .map(|p| regex::Regex::new(&p).map(|r| (p, r)).map_err(|e| e.to_string()))
+            .collect::<Result<HashMap<_, _>, _>>()?;
         let scriptlets = Scriptlets {
-            calls: Table::parse(take(&mut rest)?)?,
-            rules: Table::parse(take(&mut rest)?)?,
-            exceptions: Table::parse(take(&mut rest)?)?,
+            calls,
+            generic_rules: generic_rules(&rules, &regexes),
+            rules,
+            exceptions,
+            regexes,
         };
         Ok(Self {
             cosmetic,
@@ -419,7 +467,18 @@ impl Engine {
         let r = self.cosmetic.url_cosmetic_resources(url);
         let document = self.document.url_cosmetic_resources(url).generichide;
         let elemhide = document || self.elemhide.url_cosmetic_resources(url).generichide;
+        let mut scriptlets = if document { Vec::new() } else {
+            self.scriptlets.lookup(&host_of(url).to_ascii_lowercase())
+        };
+        let mut styles = Vec::new();
+        scriptlets.retain(|call| {
+            if call.first().is_some_and(|name| name == "wbe:css") {
+                if !elemhide { styles.push(call[1].clone()); }
+                false
+            } else { true }
+        });
         PagePayload {
+            styles,
             hide: if elemhide {
                 Vec::new()
             } else {
@@ -430,11 +489,7 @@ impl Engine {
             } else {
                 sorted(r.procedural_actions)
             },
-            scriptlets: if document {
-                Vec::new()
-            } else {
-                self.scriptlets.lookup(&host_of(url).to_ascii_lowercase())
-            },
+            scriptlets,
             generichide: elemhide || r.generichide,
         }
     }
@@ -745,4 +800,53 @@ example.com##+js(set-constant, adsEnabled, false)
         assert!(Engine::deserialize(b"junk").is_err());
         assert!(Engine::deserialize(&[]).is_err());
     }
+    #[test]
+    fn adguard_css_exceptions_and_media_survive_compile_and_reload() {
+        let text = "example.com#@#+js()\nexample.com#$#.ad { color: red }\nexample.com#@$#.ad { color: red }\nexample.com#$#@media (max-width: 768px) { .ad { margin: 0 !important; } }";
+        let output = crate::compile(&[crate::ListInput { text, trusted: true }], &crate::CompileOptions { safari: crate::webkit::SafariVersion::new(18, 0) });
+        assert!(output.stats.dropped.is_empty(), "{:?}", output.stats.dropped);
+        let engine = Engine::deserialize(&Engine::build(&output.runtime).serialize()).unwrap();
+        let page = engine.lookup("https://example.com/");
+        assert!(page.procedural.is_empty(), "CSS exception must cancel the style action");
+        let payload = serde_json::to_value(page).unwrap();
+        assert_eq!(payload["styles"][0], "@media (max-width: 768px) { .ad { margin: 0 !important; } }");
+        assert_eq!(serde_json::to_value(engine.lookup("https://other.com/")).unwrap()["styles"], serde_json::json!([]));
+    }
+
+    #[test]
+    fn scriptlet_regex_domains_and_excluded_exception_domains() {
+        let set = call(&["set-constant", "a", "1"]);
+        assert_eq!(calls(&[r"/example\.com$/##+js(set, a, 1)"], "https://www.example.com/"), [set.clone()]);
+        assert!(calls(&[r"/example\.com$/##+js(set, a, 1)"], "https://other.com/").is_empty());
+        let filters = ["example.com##+js(set, a, 1)", "example.com,~keep.example.com#@#+js(set, a, 1)"];
+        assert_eq!(calls(&filters, "https://keep.example.com/"), [set]);
+        assert!(calls(&filters, "https://example.com/").is_empty());
+    }
+
+    #[test]
+    fn generic_adguard_styles_survive_scriptlet_exceptions() {
+        let text = "#$#.ad { color: red }\nexample.com#@#+js()\nskip.example.com#@$#.ad { color: red }";
+        let output = crate::compile(&[crate::ListInput { text, trusted: false }], &crate::CompileOptions { safari: crate::webkit::SafariVersion::new(18, 0) });
+        assert!(output.stats.dropped.is_empty());
+        let engine = Engine::deserialize(&Engine::build(&output.runtime).serialize()).unwrap();
+        assert!(engine.lookup("https://skip.example.com/").styles.is_empty());
+        for host in ["example.com", "other.com"] {
+            assert_eq!(engine.lookup(&format!("https://{host}/")).styles, [".ad { color: red }"]);
+        }
+    }
+
+    #[test]
+    fn wildcard_scriptlet_scopes_survive_reload() {
+        let text = r"*,example.com,~skip.example.com,~/blocked\.net$/##+js(set, a, 1)";
+        let output = crate::compile(&[crate::ListInput { text, trusted: true }], &crate::CompileOptions { safari: crate::webkit::SafariVersion::new(18, 0) });
+        assert!(output.stats.dropped.is_empty());
+        let engine = Engine::deserialize(&Engine::build(&output.runtime).serialize()).unwrap();
+        for host in ["example.com", "other.com"] {
+            assert_eq!(engine.lookup(&format!("https://{host}/")).scriptlets, [call(&["set-constant", "a", "1"])]);
+        }
+        for host in ["skip.example.com", "blocked.net"] {
+            assert!(engine.lookup(&format!("https://{host}/")).scriptlets.is_empty());
+        }
+    }
+
 }

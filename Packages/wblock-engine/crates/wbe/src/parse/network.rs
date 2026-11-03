@@ -653,8 +653,8 @@ fn validate(opts: &[NetOpt], exception: bool, is_regex: bool) -> Result<(), &'st
                 }
             }
             Opt::Important => {
-                if exception || neg || hv {
-                    return Err("$important is only valid on blocking rules");
+                if neg || hv {
+                    return Err("$important takes no value and cannot be negated");
                 }
             }
             Opt::InlineFont | Opt::InlineScript => {
@@ -1818,7 +1818,7 @@ mod tests {
         ("||example.com^$third-party,3p", "invalid: duplicate option `3p`"),
         // Flags and no-ops
         ("||example.com^$important", "||example.com^ $important"),
-        ("@@||example.com^$important", "invalid: $important is only valid on blocking rules"),
+        ("@@||example.com^$important", "@@||example.com^ $important"),
         ("||example.com^$badfilter", "||example.com^ $badfilter"),
         ("||example.com^$_", "||example.com^"),
         ("||example.com^$_,image", "||example.com^ $image"),
