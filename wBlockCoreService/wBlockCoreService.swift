@@ -139,7 +139,8 @@ private struct StoredTargetSourceRuleProvenance: Codable {
     // 9: remove the Valnet sites' anti-adblock dialog (#895).
     // 10: restart YouTube videos that the server backs off for blocking ads.
     // 11: collapse Pornhub's mobile top ad slot, whose padding outlives a hidden ad.
-    public static let embeddedCompatibilityRulesVersion = "11"
+    // 12: hide Pornhub's ad boxes, from AdGuard Base and Mobile Ads.
+    public static let embeddedCompatibilityRulesVersion = "12"
     /// The engine and Safari level outputs are compiled for; see SafariVersionDetection.
     public static var compilerIdentity: String { SafariVersionDetection.compilerIdentity }
     public static var upgradeSignature: String {
@@ -191,6 +192,8 @@ topspeed.com,polygon.com,howtogeek.com,pocket-lint.com,cbr.com,thegamer.com,coll
 ! Pornhub mobile: the page pads #mobileContainer while the top ad slot exists,
 ! so hiding the slot leaves an empty block. Removing it drops the padding.
 pornhub.*###mobileContainer > .noBottom:has(> .adsbytrafficjunky):remove()
+! The boxes around its ad slots, which keep a "Remove Ads" strip and their size.
+pornhub.*##div:has(> ins.adsbytrafficjunky)
 
 ! NameMC Ad-Shield/Network N compatibility
 ||html-load.com^$script,domain=namemc.com
