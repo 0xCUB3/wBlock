@@ -20,9 +20,9 @@ vm.runInNewContext(source.slice(start, end), {
   requestConfiguration: async (_request, url) => { requests.push(url); beforeResponse(); return response; },
 });
 const flush = () => new Promise(resolve => setImmediate(resolve));
+// Safari's created event omits openerTabId; tabs.get reports it.
 async function create(id, url, openerTabId) {
-  const tab = { id, url, openerTabId };
-  tabs.set(id, tab); listeners.created(tab); await flush();
+  tabs.set(id, { id, url, openerTabId }); listeners.created({ id, url }); await flush();
 }
 await create(2, 'https://ads.test/', undefined);
 assert.deepEqual(removed, [], 'ordinary navigation has no opener and is untouched');

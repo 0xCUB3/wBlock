@@ -459,7 +459,9 @@
     if (!candidate || !/^https?:/i.test(target || '') || candidate.checking) return;
     candidate.checking = true;
     try {
-      const opener = await browser.tabs.get(candidate.opener);
+      const openerId = await candidate.opener;
+      if (!Number.isInteger(openerId)) return;
+      const opener = await browser.tabs.get(openerId);
       if (!/^https?:/i.test(opener.url || '')) return;
       const source = opener.url.split('#')[0];
       // An internal lookup URI retains the opener host for native pause/site checks.
@@ -467,7 +469,7 @@
       if (configuration.disabled || configuration.paused || !configuration.popup_blocked) return;
       const current = await browser.tabs.get(tabId);
       // A lookup that lost a navigation race must never close the new page.
-      if (current.url === target && current.openerTabId === candidate.opener) await browser.tabs.remove(tabId);
+      if (current.url === target && current.openerTabId === openerId) await browser.tabs.remove(tabId);
     } catch {
       // A tab or opener may disappear while its native lookup is in flight.
     } finally {
@@ -475,8 +477,9 @@
     }
   };
   browser.tabs.onCreated?.addListener(tab => {
-    if (!Number.isInteger(tab.openerTabId)) return;
-    popupCandidates.set(tab.id, { opener: tab.openerTabId, checking: false });
+    // Safari leaves openerTabId off the created event; tabs.get reports it.
+    const opener = browser.tabs.get(tab.id).then(current => current.openerTabId, () => null);
+    popupCandidates.set(tab.id, { opener, checking: false });
     if (popupCandidates.size > 128) popupCandidates.delete(popupCandidates.keys().next().value);
     void checkPopup(tab.id, tab.url);
   });
