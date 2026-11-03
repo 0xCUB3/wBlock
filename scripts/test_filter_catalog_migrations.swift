@@ -172,6 +172,12 @@ private final class TestLoader: FilterListLoader {
             ("\(registry)/mac_v3/filters/17_optimized.txt", "AdGuard URL Tracking Protection Filter", "AdGuard URL Tracking Protection Filter"),
             ("\(registry)/extension/safari/filters/25.txt", "AdGuard Mail Tracking Protection Filter", "AdGuard Mail Tracking Protection Filter"),
             ("https://ublockorigin.github.io/uAssetsCDN/thirdparties/easylist-annoyances.txt", "EasyList – Annoyances", "EasyList – Other Annoyances"),
+            ("\(registry)/mac_v3/filters/251_optimized.txt", "Actually Legitimate URL Shortener Tool", "Actually Legitimate URL Shortener Tool"),
+            ("\(registry)/extension/safari/filters/259_optimized.txt", "Dandelion Sprout's Anti-Malware List", "Dandelion Sprout's Anti-Malware List"),
+            ("\(registry)/extension/safari/filters/120_optimized.txt", "AdBlockID", "AdBlockID"),
+            ("\(registry)/extension/safari/filters/232_optimized.txt", "KAD - Anti-Scam", "KAD - Anti-Scam"),
+            // Persian Blocker's entry merged into PersianBlockerNG, which is the same project's list at uBlock Origin's address.
+            ("\(registry)/extension/safari/filters/235_optimized.txt", "Persian Blocker", "PersianBlockerNG"),
         ]
         for (oldURL, oldName, name) in moved {
             let current = defaults.first { $0.name == name }!
@@ -189,6 +195,19 @@ private final class TestLoader: FilterListLoader {
         loader.migrateBuiltInFilterFilesIfNeeded(annoyances)
         precondition(fm.fileExists(atPath: container.appendingPathComponent(ContentBlockerIncrementalCache.localFilename(for: annoyances)).path)
                      && !fm.fileExists(atPath: annoyancesOld.path), "renamed cache was not carried over")
+        // Persian Blocker's cached copy came from another source, so PersianBlockerNG downloads its own.
+        let persian = defaults.first { $0.name == "PersianBlockerNG" }!
+        let persianOld = container.appendingPathComponent("Persian Blocker.txt")
+        try "! Title: Persian Blocker (Optimized)\n||old.example^".write(to: persianOld, atomically: true, encoding: .utf8)
+        loader.migrateBuiltInFilterFilesIfNeeded(persian)
+        precondition(!fm.fileExists(atPath: persianOld.path)
+                     && !fm.fileExists(atPath: container.appendingPathComponent(ContentBlockerIncrementalCache.localFilename(for: persian)).path),
+                     "a Persian Blocker copy from another source must not carry over")
+        // Moved lists on raw GitHub keep a jsDelivr fallback, derived from the same address.
+        for name in ["Actually Legitimate URL Shortener Tool", "Dandelion Sprout's Anti-Malware List", "AdBlockID", "KAD - Anti-Scam"] {
+            let url = defaults.first { $0.name == name }!.url
+            precondition(FilterListURLMirror.fallbackURLs(for: url).contains { $0.host == "cdn.jsdelivr.net" }, "\(name) has no jsDelivr fallback")
+        }
         let social = defaults.first { $0.name == "EasyList – Social Widgets" }!
         let socialOld = container.appendingPathComponent("Fanboy's Social Blocking List.txt")
         try "! Title: Fanboy's Social Blocking List\n||old.example^".write(to: socialOld, atomically: true, encoding: .utf8)

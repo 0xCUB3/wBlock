@@ -153,10 +153,16 @@ class FilterListLoader {
         registryURL(258): lanBlockURL,
         "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_17_TrackParam/filter.txt":
             adGuardUBlockURL(17),
-        "https://raw.githubusercontent.com/DandelionSprout/adfilt/master/LegitimateURLShortener.txt":
-            URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/mac_v3/filters/251_optimized.txt")!,
-        "https://raw.githubusercontent.com/realodix/AdBlockID/main/dist/adblockid.adfl.txt":
-            URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/120_optimized.txt")!,
+        // Actually Legitimate URL Shortener Tool, Dandelion Sprout's Anti-Malware List, AdBlockID, KAD, and
+        // Persian Blocker now come from their upstream sources. Persian Blocker's entry merges into PersianBlockerNG.
+        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/mac_v3/filters/251_optimized.txt":
+            URL(string: "https://raw.githubusercontent.com/DandelionSprout/adfilt/master/LegitimateURLShortener.txt")!,
+        registryURL(259):
+            URL(string: "https://raw.githubusercontent.com/DandelionSprout/adfilt/master/Dandelion%20Sprout's%20Anti-Malware%20List.txt")!,
+        registryURL(120): URL(string: "https://raw.githubusercontent.com/realodix/AdBlockID/main/dist/adblockid.adfl.txt")!,
+        registryURL(232): URL(string: "https://raw.githubusercontent.com/FiltersHeroes/KAD/master/KAD.txt")!,
+        registryURL(235):
+            URL(string: "https://cdn.jsdelivr.net/gh/PersianBlocker/PersianBlocker@main/PersianBlocker.txt")!,
         registryURL(102):
             URL(string: "https://raw.githubusercontent.com/ABPindo/indonesianadblockrules/master/subscriptions/abpindo.txt")!,
         registryURL(103): URL(string: "https://stanev.org/abp/adblock_bg.txt")!,
@@ -190,8 +196,6 @@ class FilterListLoader {
         registryURL(253): URL(string: "https://easylist-downloads.adblockplus.org/indianlist.txt")!,
         registryURL(254):
             URL(string: "https://raw.githubusercontent.com/DeepSpaceHarbor/Macedonian-adBlock-Filters/master/Filters")!,
-        "https://raw.githubusercontent.com/FiltersHeroes/KAD/master/KAD.txt":
-            URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/232_optimized.txt")!,
         "https://raw.githubusercontent.com/EasyList-Lithuania/easylist_lithuania/master/easylistlithuania.txt":
             URL(string: "https://cdn.jsdelivr.net/gh/EasyList-Lithuania/easylist_lithuania@master/easylistlithuania.txt")!,
         "https://adblock.ee/list.txt": URL(string: "https://ubo-et.lepik.io/list.txt")!,
@@ -228,6 +232,7 @@ class FilterListLoader {
     private static let replacedSourceLegacyTitles: [String: String] = [
         "Fanboy's Anti-AI Suggestions": "! Title: Fanboy's Anti-AI",
         "Fanboy's Social Blocking List": "! Title: Fanboy's Social Blocking List",
+        "Persian Blocker": "! Title: Persian Blocker (Optimized)",
     ]
 
     /// Built-in lists removed from the catalog, matched by URL fragment.
@@ -278,6 +283,7 @@ class FilterListLoader {
         "EasyList – Other Annoyances": ["EasyList – Annoyances"],
         "Stevo's AI Blocklist": ["Fanboy's Anti-AI Suggestions"],
         "HaGeZi Multi Pro Mini": ["HaGeZi Pro Mini", "Hagezi Pro Mini"],
+        "PersianBlockerNG": ["Persian Blocker"],
         "filterslists-KO": ["List-KR"],
     ]
 
@@ -456,10 +462,8 @@ class FilterListLoader {
                 trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "Actually Legitimate URL Shortener Tool",
-                url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/mac_v3/filters/251_optimized.txt"
-                )!, category: FilterListCategory.privacy,
+                url: URL(string: "https://raw.githubusercontent.com/DandelionSprout/adfilt/master/LegitimateURLShortener.txt")!,
+                category: FilterListCategory.privacy,
                 description: "Automatically removes unnecessary '$' and '&' values from URLs, making them easier to copy from the URL bar and pasting elsewhere as links. Already included in Dandelion Sprout's Annoyances List.",
                 trustLevel: "high"),
             FilterList(
@@ -491,7 +495,7 @@ class FilterListLoader {
                 id: UUID(), name: "Dandelion Sprout's Anti-Malware List",
                 url: URL(
                     string:
-                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/259_optimized.txt"
+                        "https://raw.githubusercontent.com/DandelionSprout/adfilt/master/Dandelion%20Sprout's%20Anti-Malware%20List.txt"
                 )!, category: FilterListCategory.security,
                 description: "Blocks more malware than most other major anti-malware lists - domains and URL patterns used in malware redirection chains, IP addresses that are solely used by malware, PUP nags, and a few scammers. Already included in Dandelion Sprout's Annoyances List."),
             FilterList(
@@ -673,10 +677,8 @@ class FilterListLoader {
                 languages: ["id", "ms"], trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "AdBlockID",
-                url: URL(
-                    string:
-                        "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/120_optimized.txt"
-                )!, category: .foreign,
+                url: URL(string: "https://raw.githubusercontent.com/realodix/AdBlockID/main/dist/adblockid.adfl.txt")!,
+                category: .foreign,
                 description: "Additional filter list for websites in Indonesian and Malay.",
                 languages: ["id", "ms"], trustLevel: "high"),
             FilterList(
@@ -724,13 +726,6 @@ class FilterListLoader {
                     "This list covers websites for Norway, Denmark, Iceland, Danish territories, and the Sami indigenous population.",
                 languages: ["nb", "nn", "no", "da", "is"], trustLevel: "high"),
             FilterList(
-                id: UUID(), name: "Persian Blocker",
-                url: URL(
-                    string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/235_optimized.txt"
-                )!, category: .foreign,
-                description: "Additional filter list for websites in Persian.",
-                languages: ["fa"], trustLevel: "high"),
-            FilterList(
                 id: UUID(), name: "Official Polish filters for AdBlock, uBlock Origin & AdGuard",
                 url: URL(string: "https://raw.githubusercontent.com/MajkiIT/polish-ads-filter/master/polish-adblock-filters/adblock.txt")!,
                 category: .foreign, description: "Additional filter list for websites in Polish.",
@@ -742,8 +737,7 @@ class FilterListLoader {
                 trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "KAD - Anti-Scam",
-                url: URL(
-                    string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/232_optimized.txt")!,
+                url: URL(string: "https://raw.githubusercontent.com/FiltersHeroes/KAD/master/KAD.txt")!,
                 category: .foreign,
                 description:
                     "Filter that protects against various types of scams in the Polish network, such as mass text messaging, fake online stores, etc.",
