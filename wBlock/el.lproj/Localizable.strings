@@ -75,6 +75,7 @@
 "Active" = "Ενεργή";
 "Actually Legitimate URL Shortener Tool" = "Actually Legitimate URL Shortener Tool";
 "Adblock List for Finland" = "Adblock List for Finland";
+"Adblock List for Albania" = "Adblock List for Albania";
 "AdBlockID" = "AdBlockID";
 "Add" = "Προσθήκη";
 "Add Filter" = "Προσθήκη φίλτρου";
@@ -325,6 +326,7 @@
 "Filter '%@' added successfully. Apply changes to enable it." = "Το φίλτρο '%@' προστέθηκε με επιτυχία. Εφαρμόστε τις αλλαγές για να το ενεργοποιήσετε.";
 "Filter Apply" = "Εφαρμογή Φίλτρου";
 "Filter for ad blocking on Estonian sites." = "Φίλτρο για αποκλεισμό διαφημίσεων σε εσθονικούς ιστότοπους.";
+"Community filter list that blocks ads on Albanian and Kosovar websites." = "Λίστα φίλτρων που διατηρείται από την κοινότητα και αποκλείει διαφημίσεις σε αλβανικούς και κοσοβάρικους ιστότοπους.";
 "Filter list not found." = "Η λίστα φίλτρων δεν βρέθηκε.";
 "Filter list that specifically removes ads on websites in Spanish, Portuguese, and Brazilian Portuguese languages." = "Λίστα φίλτρων που αφαιρεί ειδικά τις διαφημίσεις σε ιστότοπους στην ισπανική, την πορτογαλική και τη βραζιλιάνικη πορτογαλική γλώσσα.";
 "Filter list that specifically removes ads on websites in Turkish language." = "Λίστα φίλτρων που αφαιρεί ειδικά τις διαφημίσεις σε ιστότοπους στην τουρκική γλώσσα.";

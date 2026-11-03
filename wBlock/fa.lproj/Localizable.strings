@@ -75,6 +75,7 @@
 "Active" = "فعال";
 "Actually Legitimate URL Shortener Tool" = "Actually Legitimate URL Shortener Tool";
 "Adblock List for Finland" = "Adblock List for Finland";
+"Adblock List for Albania" = "Adblock List for Albania";
 "AdBlockID" = "AdBlockID";
 "Add" = "افزودن";
 "Add Filter" = "افزودن فیلتر";
@@ -325,6 +326,7 @@
 "Filter '%@' added successfully. Apply changes to enable it." = "فیلتر «%@» با موفقیت اضافه شد. برای فعال کردن آن، تغییرات را اعمال کنید.";
 "Filter Apply" = "اعمال فیلتر";
 "Filter for ad blocking on Estonian sites." = "فیلتر مسدودسازی تبلیغات در سایت‌های استونیایی.";
+"Community filter list that blocks ads on Albanian and Kosovar websites." = "فهرست فیلتر جامعه‌محور که تبلیغات را در وب‌سایت‌های آلبانیایی و کوزوویی مسدود می‌کند.";
 "Filter list not found." = "فهرست فیلتر پیدا نشد.";
 "Filter list that specifically removes ads on websites in Spanish, Portuguese, and Brazilian Portuguese languages." = "فهرست فیلتری که به‌طور خاص تبلیغات را در وب‌سایت‌های به زبان‌های اسپانیایی، پرتغالی و پرتغالی برزیلی حذف می‌کند.";
 "Filter list that specifically removes ads on websites in Turkish language." = "فهرست فیلتری که به‌طور خاص تبلیغات را در وب‌سایت‌های به زبان ترکی حذف می‌کند.";

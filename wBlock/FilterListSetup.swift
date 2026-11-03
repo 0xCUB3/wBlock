@@ -6,8 +6,12 @@ enum FilterListSetup {
         let defaultsByURL = Dictionary(defaults.map { ($0.url, $0) }, uniquingKeysWith: { first, _ in first })
         var result: [FilterList] = []
         for var filter in filters {
-            // A custom subscription can share a catalog URL after cloud sync or
-            // backup restore. Its ID and user-owned metadata are independent.
+            // A custom copy of a catalog list is that list again, e.g. a retired list that
+            // came back. It folds into the catalog entry and keeps its ID and selection.
+            if filter.isCustom, defaultsByURL[filter.url] != nil {
+                filter.isCustom = false
+                filter.hasUserProvidedName = false
+            }
             if !filter.isCustom {
                 if let index = result.firstIndex(where: { !$0.isCustom && $0.url == filter.url }) {
                     result[index].isSelected = result[index].isSelected || filter.isSelected

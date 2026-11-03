@@ -264,6 +264,26 @@ private final class TestLoader: FilterListLoader {
         precondition(byName["EasyDutch"]?.category == .foreign && byName["EasyList – Chat Widgets"]?.category == .annoyances)
         precondition(byName["uBlock filters – Experimental"]?.category == .experimental && byName["Phishing URL Blocklist"]?.category == .security
                      && byName["Dan Pollock's hosts file"]?.category == .multipurpose && byName["Fanboy – Anti-Facebook"]?.category == .annoyances)
+        // Albanian and Slovenian lists were retired into custom copies. When uBO's lists come back, a copy folds into the catalog entry.
+        for (name, url) in [
+            ("Adblock List for Albania", "https://raw.githubusercontent.com/AnXh3L0/blocklist/master/albanian-easylist-addition/Albania.txt"),
+            ("Slovenian List", "https://raw.githubusercontent.com/betterwebleon/slovenian-list/master/filters.txt"),
+        ] {
+            let entry = defaults.first { $0.name == name }!
+            precondition(entry.url == URL(string: url)! && entry.category == .foreign && !entry.isSelected, "\(name) must return to Regional, off")
+            precondition(!FilterListLoader.isRetiredBuiltIn(entry), "\(name) is still retired")
+            for selected in [false, true] {
+                let retiredCopy = FilterList(name: "\(name) (retired)", url: entry.url, category: .custom, isCustom: true,
+                                             isSelected: selected, hasUserProvidedName: true)
+                let hydrated = FilterListSetup.hydrate([retiredCopy], defaults: defaults)
+                precondition(hydrated.count == 1 && hydrated[0].id == retiredCopy.id && !hydrated[0].isCustom, "\(name) copy must fold into the catalog entry")
+                precondition(hydrated[0].isSelected == selected && hydrated[0].name == name && hydrated[0].languages == entry.languages,
+                             "\(name) copy must keep its selection and take the catalog metadata")
+                precondition(FilterListSetup.hydrate(hydrated, defaults: defaults) == hydrated, "\(name) fold must be idempotent")
+                let withEntry = FilterListSetup.hydrate([retiredCopy, entry], defaults: defaults)
+                precondition(withEntry.count == 1 && withEntry[0].isSelected == selected, "\(name) copy and entry must leave one list")
+            }
+        }
         print("PASS: replacement migrations preserve selection and discard legacy content")
     }
 }

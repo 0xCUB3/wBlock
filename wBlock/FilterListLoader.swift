@@ -264,9 +264,7 @@ class FilterListLoader {
         "raw.githubusercontent.com/xinggsf/Adblock-Plus-Rule/master/rule.txt",  // xinggsf (#882)
         "raw.githubusercontent.com/yous/YousList/master/youslist.txt",  // YousList (#882)
         "raw.githubusercontent.com/MasterKia/PersianBlocker/main/PersianBlocker.txt",  // Persian Blocker, maintainer passed away (#921)
-        "raw.githubusercontent.com/AnXh3L0/blocklist/master/albanian-easylist-addition/Albania.txt",  // Adblock List for Albania and Kosovo, unmaintained (#921)
         "raw.githubusercontent.com/lonum1rus/Raajje-AdList/master/filter.txt",  // Raajje AdList, unmaintained (#921)
-        "raw.githubusercontent.com/betterwebleon/slovenian-list/master/filters.txt",  // Slovenian List, unmaintained since 2024 (#931)
     ]
 
     static func isRetiredBuiltIn(_ filter: FilterList) -> Bool {
@@ -695,6 +693,14 @@ class FilterListLoader {
                 description: "Additional filter list for websites in Indonesian and Malay.",
                 languages: ["id", "ms"], trustLevel: "high"),
             FilterList(
+                id: UUID(), name: "Adblock List for Albania",
+                url: URL(
+                    string:
+                        "https://raw.githubusercontent.com/AnXh3L0/blocklist/master/albanian-easylist-addition/Albania.txt"
+                )!, category: .foreign,
+                description: "Community filter list that blocks ads on Albanian and Kosovar websites.",
+                languages: ["sq"], trustLevel: "low"),
+            FilterList(
                 id: UUID(), name: "AdBlockID",
                 url: URL(string: "https://raw.githubusercontent.com/realodix/AdBlockID/main/dist/adblockid.adfl.txt")!,
                 category: .foreign,
@@ -766,6 +772,11 @@ class FilterListLoader {
                 url: URL(string: "https://hole.cert.pl/domains/v2/domains_ublock.txt")!,
                 category: .foreign, description: "Blocks phishing and malware domains flagged by CERT Polska.",
                 languages: ["szl", "pl"], trustLevel: "low"),
+            FilterList(
+                id: UUID(), name: "Slovenian List",
+                url: URL(string: "https://raw.githubusercontent.com/betterwebleon/slovenian-list/master/filters.txt")!,
+                category: .foreign, description: "Additional filter list for websites in Slovenian.",
+                languages: ["sl"], trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "road-block light",
                 url: URL(

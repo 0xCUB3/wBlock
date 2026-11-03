@@ -756,7 +756,9 @@ class AppFilterManager: ObservableObject {
         // (completeAdGuardHandover). Start it at once.
         recordAdGuardHandoverIfNeeded(migratedFilterLists)
         let handedOverSelections = !adGuardHandoverPending.isEmpty
+        let customCountBeforeHydrate = migratedFilterLists.filter(\.isCustom).count
         migratedFilterLists = FilterListSetup.hydrate(migratedFilterLists, defaults: defaultLists)
+        let foldedCustomCopies = migratedFilterLists.filter(\.isCustom).count < customCountBeforeHydrate
         migratedFilterLists = deduplicateFilterIDs(migratedFilterLists)
         validatorClearIDs = migratedFilterLists.compactMap { filter in
             guard let originalURL = originalURLsByID[filter.id], originalURL != filter.url else { return nil }
@@ -772,7 +774,7 @@ class AppFilterManager: ObservableObject {
             guard let originalURL = originalURLsByID[filter.id] else { return false }
             return originalURL != filter.url
         }
-        if hasURLMigrations || addedDefaultFilters || selectedDeprecatedListWasRemoved {
+        if hasURLMigrations || addedDefaultFilters || selectedDeprecatedListWasRemoved || foldedCustomCopies {
             Task { await self.saveFilterLists() }
         }
 
@@ -793,7 +795,7 @@ class AppFilterManager: ObservableObject {
         let storedSignature = storedUpgradeSignature()
         let signatureMismatch = storedSignature != currentSignature
         let needsRebuild = dataManager.hasCompletedOnboarding
-            && (hasURLMigrations || selectedDeprecatedListWasRemoved || handedOverSelections || signatureMismatch)
+            && (hasURLMigrations || selectedDeprecatedListWasRemoved || foldedCustomCopies || handedOverSelections || signatureMismatch)
         if needsRebuild {
             markNonSelectionChangesPending()
             if let delay = ContentBlockerService.automaticRebuildDelay(
