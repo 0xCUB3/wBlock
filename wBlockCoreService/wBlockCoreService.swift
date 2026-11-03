@@ -123,6 +123,17 @@ private struct StoredTargetSourceRuleProvenance: Codable {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
         return "\(version)|\(embeddedCompatibilityRulesVersion)|\(compilerIdentity)"
     }
+
+    public static func automaticRebuildDelay(
+        signatureMismatch: Bool, failedCurrentUpgrade: Bool,
+        handoverPending: Bool, hasPublishedEngine: Bool
+    ) -> UInt64? {
+        // An interrupted upgrade resumes at once even if its engine was already
+        // published. A known failure waits for an explicit retry or new handover.
+        guard !failedCurrentUpgrade || handoverPending else { return nil }
+        return signatureMismatch || handoverPending || !hasPublishedEngine ? 0 : 60
+    }
+
     private static let contentBlockerOutputLockTimeout: TimeInterval = 10
 
     /// Built-in compatibility rules that improve blocking of common dynamic ad script

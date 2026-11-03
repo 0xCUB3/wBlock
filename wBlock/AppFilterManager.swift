@@ -782,12 +782,13 @@ class AppFilterManager: ObservableObject {
             && (hasURLMigrations || selectedDeprecatedListWasRemoved || handedOverSelections || signatureMismatch)
         if needsRebuild {
             markNonSelectionChangesPending()
-            // Lists to hand over, or no engine for wBlock Scripts yet: protection
-            // is incomplete until this apply, so it does not wait.
-            if handedOverSelections || !ContentBlockerService.hasPublishedFilterEngine(groupIdentifier: GroupIdentifier.shared.value) {
-                scheduleAutoApplyDebounce(delay: 0)
-            } else if storedFailedUpgradeSignature() != currentSignature {
-                scheduleAutoApplyDebounce()
+            if let delay = ContentBlockerService.automaticRebuildDelay(
+                signatureMismatch: signatureMismatch,
+                failedCurrentUpgrade: storedFailedUpgradeSignature() == currentSignature,
+                handoverPending: handedOverSelections,
+                hasPublishedEngine: ContentBlockerService.hasPublishedFilterEngine(groupIdentifier: GroupIdentifier.shared.value)
+            ) {
+                scheduleAutoApplyDebounce(delay: delay)
             }
         } else {
             markCurrentStateApplied()

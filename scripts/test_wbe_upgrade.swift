@@ -27,6 +27,25 @@ struct WbeUpgradeTests {
         defaults.set(ContentBlockerService.upgradeSignature, forKey: SharedAutoUpdateManager.lastAppliedUpgradeSignatureKey)
         check(SharedAutoUpdateManager.appHasAppliedCurrentVersion(defaults: defaults), "background work resumes after this compiler has applied")
 
+        for hasEngine in [false, true] {
+            check(ContentBlockerService.automaticRebuildDelay(
+                signatureMismatch: true, failedCurrentUpgrade: false,
+                handoverPending: false, hasPublishedEngine: hasEngine
+            ) == 0, "interrupted upgrades resume immediately, including after engine publication")
+            check(ContentBlockerService.automaticRebuildDelay(
+                signatureMismatch: true, failedCurrentUpgrade: true,
+                handoverPending: false, hasPublishedEngine: hasEngine
+            ) == nil, "a failed upgrade must not retry on every launch")
+        }
+        check(ContentBlockerService.automaticRebuildDelay(
+            signatureMismatch: false, failedCurrentUpgrade: false,
+            handoverPending: false, hasPublishedEngine: true
+        ) == 60, "ordinary catalog changes retain their debounce")
+        check(ContentBlockerService.automaticRebuildDelay(
+            signatureMismatch: true, failedCurrentUpgrade: true,
+            handoverPending: true, hasPublishedEngine: true
+        ) == 0, "newly pending handover can retry after a failure")
+
         let groupIdentifier = "group.wblock.test.wbe-upgrade.\(UUID().uuidString.prefix(8))"
         let container = FileManager.default.temporaryDirectory
             .appendingPathComponent("wblock-wbe-upgrade-\(UUID().uuidString)", isDirectory: true)
