@@ -1846,7 +1846,10 @@ public enum WebExtensionRequestHandler {
         Task { @MainActor in
             await ProtobufDataManager.shared.waitUntilLoaded()
             _ = await ProtobufDataManager.shared.refreshFromDiskIfModified(forceRead: true)
-            let response = createResponse(with: ["enabled": ProtobufDataManager.shared.isGlobalPrivacyControlEnabled])
+            let response = createResponse(with: [
+                "enabled": ProtobufDataManager.shared.isGlobalPrivacyControlEnabled
+                    && !ProtobufDataManager.safariHasGlobalPrivacyControl,
+            ])
             context.completeRequest(returningItems: [response])
         }
     }

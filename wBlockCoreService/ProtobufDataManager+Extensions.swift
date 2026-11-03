@@ -248,6 +248,18 @@ extension ProtobufDataManager {
         appData.whitelist.globalPrivacyControlEnabled
     }
 
+    /// Safari 27.3 has its own Global Privacy Control setting, so wBlock's
+    /// toggle and header step aside there. Mac Safari updates apart from macOS.
+    public static let safariHasGlobalPrivacyControl: Bool = {
+        #if os(macOS)
+        let version = Bundle(path: "/Applications/Safari.app")?
+            .object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
+        return version.compare("27.3", options: .numeric) != .orderedAscending
+        #else
+        return ProcessInfo.processInfo.isOperatingSystemAtLeast(OperatingSystemVersion(majorVersion: 27, minorVersion: 3, patchVersion: 0))
+        #endif
+    }()
+
     @discardableResult
     public func setGlobalPrivacyControlEnabled(_ enabled: Bool) async -> Bool {
         return await updateDataImmediately { data in

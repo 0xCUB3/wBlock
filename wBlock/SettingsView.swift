@@ -231,12 +231,14 @@ struct SettingsView: View {
     private var generalSection: some View {
         Section {
             Toggle("Autoplay", isOn: autoplayBinding)
-            Toggle(isOn: globalPrivacyControlBinding) {
-                rowLabel(
-                    "Global Privacy Control",
-                    detail: Text("Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it. Enabling GPC may make your browser easier to fingerprint.")
-                        + Text(" ") + Text(gpcLearnMore)
-                )
+            if !ProtobufDataManager.safariHasGlobalPrivacyControl {
+                Toggle(isOn: globalPrivacyControlBinding) {
+                    rowLabel(
+                        "Global Privacy Control",
+                        detail: Text("Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it. Enabling GPC may make your browser easier to fingerprint.")
+                            + Text(" ") + Text(gpcLearnMore)
+                    )
+                }
             }
             appearancePicker
             #if os(iOS)
