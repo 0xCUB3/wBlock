@@ -67,6 +67,7 @@ struct ProgressBanners<Leading: View>: ViewModifier {
                         // The system's control background sets the card apart from the gray rows under it.
                         .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                         .shadow(color: .black.opacity(0.12), radius: 8, y: 2)
+                        .background(FinishedResultDismissal(isActive: dismiss != nil) { dismiss?() })
                         #endif
                         .liquidGlassCompat(cornerRadius: 16)
                         .contentShape(RoundedRectangle(cornerRadius: 16))

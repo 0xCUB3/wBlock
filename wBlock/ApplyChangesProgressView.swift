@@ -135,7 +135,7 @@ struct ApplyChangesProgressView: View {
             .frame(width: 0, height: 0)
             .accessibilityHidden(true)
         }
-        .background(FinishedSheetDismissal(isActive: displayedMode == .result) { isPresented = false })
+        .background(FinishedResultDismissal(isActive: displayedMode == .result) { isPresented = false })
         #endif
         #if os(macOS)
         .frame(
@@ -508,9 +508,9 @@ private extension View {
 }
 
 #if os(macOS)
-/// Once an apply has finished, Return, Space, or a click outside the sheet
-/// closes it, the way a tap outside closes it on iOS.
-private struct FinishedSheetDismissal: NSViewRepresentable {
+/// Return, Space, or a click outside the view it backs closes a finished
+/// apply's sheet or banner, the way a tap outside closes them on iOS.
+struct FinishedResultDismissal: NSViewRepresentable {
     let isActive: Bool
     let dismiss: () -> Void
 
@@ -532,15 +532,18 @@ private struct FinishedSheetDismissal: NSViewRepresentable {
             monitor = nil
             guard window != nil else { return }
             monitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .keyDown]) { [weak self] event in
-                guard let self, self.isActive, let sheet = self.window else { return event }
+                guard let self, self.isActive, let window = self.window else { return event }
                 switch event.type {
-                case .keyDown where [36, 49, 76].contains(event.keyCode)
-                    && event.modifierFlags.intersection([.command, .option, .control, .shift]).isEmpty:
+                case .keyDown where event.window === window && [36, 49, 76].contains(event.keyCode)
+                    && event.modifierFlags.intersection([.command, .option, .control, .shift]).isEmpty
+                    && !(window.firstResponder is NSText):
                     self.dismiss()
                     return nil
-                case .leftMouseDown where event.window !== sheet:
+                case .leftMouseDown where event.window !== window
+                    || !self.bounds.contains(self.convert(event.locationInWindow, from: nil)):
                     self.dismiss()
-                    return nil
+                    // A click on a sheet's parent window would only beep.
+                    return event.window === window.sheetParent ? nil : event
                 default:
                     return event
                 }
