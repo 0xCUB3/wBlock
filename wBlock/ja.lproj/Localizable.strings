@@ -454,7 +454,6 @@
 "Paste" = "ペースト";
 "Paste one or more filter URLs, one per line." = "1行に1つずつ、1つ以上のフィルターURLをペーストしてください。";
 "Pause Blocking" = "ブロックを一時停止";
-"Paused Components" = "一時停止中の機能";
 "Enabled Userscripts & Userstyles" = "有効なユーザースクリプトとユーザースタイル";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "選択した機能が一時停止している間は、「ブロックを一時停止」が有効になります。再開すると、全ての機能の一時停止が解除されます。";
 "Pausing blocking..." = "ブロックを一時停止しています…";
@@ -1031,3 +1030,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "RU AdList" = "RU AdList";
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "カスタムURL";
+
+"Content blocker JSON exceeds the %@ MB size limit on iOS. Disable some filter lists and try again." = "コンテンツブロッカーのJSONがiOSのサイズ上限（%@ MB）を超えています。一部のフィルターリストを無効にして、もう一度お試しください。";

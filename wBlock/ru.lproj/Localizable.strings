@@ -454,7 +454,6 @@
 "Paste" = "Вставить";
 "Paste one or more filter URLs, one per line." = "Вставьте один или несколько URL-адресов фильтров, по одному в строке.";
 "Pause Blocking" = "Приостановить блокировку";
-"Paused Components" = "Приостановленные компоненты";
 "Enabled Userscripts & Userstyles" = "Включённые пользовательские скрипты и стили";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "Пауза блокировки включена, пока выбранный компонент находится на паузе. Возобновление восстанавливает все компоненты.";
 "Pausing blocking..." = "Приостановка блокировки…";
@@ -1062,3 +1061,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "RU AdList" = "RU AdList";
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "Свой URL";
+
+"Content blocker JSON exceeds the %@ MB size limit on iOS. Disable some filter lists and try again." = "Размер JSON-файла блокировщика контента превышает ограничение %@ МБ в iOS. Отключите несколько списков фильтров и повторите попытку.";

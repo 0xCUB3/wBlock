@@ -311,6 +311,7 @@ public enum ContentBlockerIncrementalCache {
         }
 
         var canonical = "schema=\(inputSignatureSchemaVersion)\ncompiler=\(SafariVersionDetection.compilerIdentity)\ncount=\(filters.count)\n"
+        canonical.append("jsonBudget=\(ContentBlockerService.safariContentBlockerJSONSizeLimit)\n")
         canonical.reserveCapacity((filters.count + affinityContributors.count) * 64)
 
         for filter in canonicalFilterOrder(filters) {
@@ -333,7 +334,7 @@ public enum ContentBlockerIncrementalCache {
             canonical.append("extra=\n")
         }
         for filter in canonicalFilterOrder(filters + affinityContributors) {
-            canonical.append("distribution=\(filter.id.uuidString)|\(filter.sourceRuleCount ?? 0)\n")
+            canonical.append("distribution=\(filter.id.uuidString)|\(filter.sourceRuleCount ?? 0)|\(filter.sourceSizeBytes ?? 0)\n")
         }
         if !compileOrder.isEmpty {
             canonical.append("compileOrder=\(compileOrder.map(\.id.uuidString).joined(separator: ","))\n")

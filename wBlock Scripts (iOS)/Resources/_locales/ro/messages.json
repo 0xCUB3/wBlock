@@ -1,4 +1,7 @@
 {
+  "popup_site_enabled": {
+    "message": "wBlock pe acest site"
+  },
   "context_menu_zap_element": {
     "message": "Elimină elementul",
     "description": "Right-click context menu item that activates the Element Zapper on the clicked element."
@@ -123,9 +126,21 @@
     "message": "Anulează",
     "description": "Button label to undo last zapper action."
   },
+  "zapper_button_redo": {
+    "message": "Refă",
+    "description": "Button label to redo the last zapper action that was undone."
+  },
   "zapper_button_more": {
     "message": "Mai multe opțiuni",
     "description": "Tooltip label for the overflow menu button in zapper toolbar."
+  },
+  "zapper_button_select_parent": {
+    "message": "Selectează elementul părinte",
+    "description": "Tooltip for choosing the parent element in refine mode."
+  },
+  "zapper_button_select_child": {
+    "message": "Selectează elementul copil",
+    "description": "Tooltip for choosing the child element in refine mode."
   },
   "zapper_button_add_custom_rule": {
     "message": "Adaugă regulă CSS personalizată…",

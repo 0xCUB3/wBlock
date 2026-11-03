@@ -1,4 +1,7 @@
 {
+  "popup_site_enabled": {
+    "message": "このサイトで wBlock を有効にする"
+  },
   "context_menu_zap_element": {
     "message": "要素をZap",
     "description": "Right-click context menu item that activates the Element Zapper on the clicked element."
@@ -123,9 +126,21 @@
     "message": "元に戻す",
     "description": "Button label to undo last zapper action."
   },
+  "zapper_button_redo": {
+    "message": "やり直す",
+    "description": "Button label to redo the last zapper action that was undone."
+  },
   "zapper_button_more": {
     "message": "その他のオプション",
     "description": "Tooltip label for the overflow menu button in zapper toolbar."
+  },
+  "zapper_button_select_parent": {
+    "message": "親要素を選択",
+    "description": "Tooltip for choosing the parent element in refine mode."
+  },
+  "zapper_button_select_child": {
+    "message": "子要素を選択",
+    "description": "Tooltip for choosing the child element in refine mode."
   },
   "zapper_button_add_custom_rule": {
     "message": "カスタム CSS ルールを追加…",

@@ -86,6 +86,11 @@ struct ContentView: View {
         filterManager.lastRuleCount
     }
 
+    /// Paused filters load empty blockers, so neither count means anything.
+    private var filtersPaused: Bool {
+        filterManager.pausedComponents.contains(.filters)
+    }
+
     /// Whether filters have been applied at least once
     private var hasAppliedFilters: Bool {
         filterManager.lastRuleCount > 0
@@ -403,7 +408,6 @@ struct ContentView: View {
             #endif
                 // Inside the stack, like Userscripts; iOS ignores toolbar items attached outside it.
                 .modifier(filtersToolbar)
-                .toolbar { pauseBlockingToolbar }
         }
         #if os(iOS)
             .searchableCompat(
@@ -435,26 +439,8 @@ struct ContentView: View {
             .help("Add Filter")
         } apply: {
             applyChangesToolbarButton
-        }
-    }
-
-    /// Pause everything, or resume, in its own item on the leading edge so it never displaces Add.
-    private var pauseBlockingToolbar: some ToolbarContent {
-        #if os(macOS)
-        let placement = ToolbarItemPlacement.navigation
-        #else
-        let placement = ToolbarItemPlacement.topBarLeading
-        #endif
-        return ToolbarItem(placement: placement) {
-            let isPaused = !filterManager.pausedComponents.isEmpty
-            let title: LocalizedStringKey = isPaused ? "Resume Blocking" : "Pause Blocking"
-            Button {
-                Task { await filterManager.setBlockingPaused(!isPaused) }
-            } label: {
-                Label(title, systemImage: isPaused ? "pause.circle.fill" : "pause.circle")
-            }
-            .help(title)
-            .disabled(filterManager.isLoading || filterManager.isApplyInFlight)
+        } leading: {
+            PauseBlockingButton(filterManager: filterManager)
         }
     }
 
@@ -510,6 +496,7 @@ struct ContentView: View {
                     await filterManager.checkForUpdates(scope: .scripts, presentation: .refresh)
                 },
                 applyButton: AnyView(applyChangesToolbarButton),
+                pauseButton: AnyView(PauseBlockingButton(filterManager: filterManager)),
                 isApplying: filterManager.showingApplyProgressSheet
             )
                 .modifier(topBanners)
@@ -544,16 +531,18 @@ struct ContentView: View {
                         #if os(iOS)
                         return "Safari Rules"
                         #else
-                        return (enabledListsCount == 0 || !hasAppliedFilters) ? "Source Rules" : "Safari Rules"
+                        return (enabledListsCount == 0 || !hasAppliedFilters) && !filtersPaused ? "Source Rules" : "Safari Rules"
                         #endif
                     }(),
-                    value: enabledListsCount == 0
+                    value: filtersPaused
+                        ? String(localized: "N/A")
+                        : enabledListsCount == 0
                         ? "0"
                         : (hasAppliedFilters
                             ? appliedSafariRulesCount.formatted()
                             : (sourceRulesCount > 0 ? "~\(sourceRulesCount.formatted())" : "0")),
                     icon: "shield.lefthalf.filled",
-                    valueColor: enabledListsCount == 0 ? .secondary : (hasAppliedFilters ? .primary : .secondary),
+                    valueColor: enabledListsCount == 0 || filtersPaused || !hasAppliedFilters ? .secondary : .primary,
                     showsDisclosure: true
                 )
                 .overlay(alignment: .topTrailing) {

@@ -1,4 +1,7 @@
 {
+  "popup_site_enabled": {
+    "message": "在此网站上启用 wBlock"
+  },
   "context_menu_zap_element": {
     "message": "清除元素",
     "description": "Right-click context menu item that activates the Element Zapper on the clicked element."
@@ -123,9 +126,21 @@
     "message": "撤销",
     "description": "Button label to undo last zapper action."
   },
+  "zapper_button_redo": {
+    "message": "重做",
+    "description": "Button label to redo the last zapper action that was undone."
+  },
   "zapper_button_more": {
     "message": "更多选项",
     "description": "Tooltip label for the overflow menu button in zapper toolbar."
+  },
+  "zapper_button_select_parent": {
+    "message": "选择父元素",
+    "description": "Tooltip for choosing the parent element in refine mode."
+  },
+  "zapper_button_select_child": {
+    "message": "选择子元素",
+    "description": "Tooltip for choosing the child element in refine mode."
   },
   "zapper_button_add_custom_rule": {
     "message": "添加自定义 CSS 规则…",

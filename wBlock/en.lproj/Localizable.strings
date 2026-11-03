@@ -454,7 +454,6 @@
 "Paste" = "Paste";
 "Paste one or more filter URLs, one per line." = "Paste one or more filter URLs, one per line.";
 "Pause Blocking" = "Pause Blocking";
-"Paused Components" = "Paused Components";
 "Pausing blocking..." = "Pausing blocking...";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";
 "Dandelion Sprout's Anti-Malware List" = "Dandelion Sprout's Anti-Malware List";
@@ -1071,3 +1070,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "RU AdList" = "RU AdList";
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "Custom URL";
+
+"Content blocker JSON exceeds the %@ MB size limit on iOS. Disable some filter lists and try again." = "Content blocker JSON exceeds the %@ MB size limit on iOS. Disable some filter lists and try again.";

@@ -77,25 +77,23 @@ function withTimeout(promise, timeoutMs, message = 'Operation timed out.') {
     ]);
 }
 
-function sendNativeMessageWithTimeout(message, timeoutMs = NATIVE_MESSAGE_TIMEOUT_MS) {
-    return withTimeout(
-        // Safari native messaging belongs to the background context, not the popup.
-        browser.runtime.sendMessage({ action: 'wblock:popup:nativeMessage', message }).then((response) => {
-            if (!response || response.ok !== true) {
-                throw new Error((response && response.error) || 'Native message relay failed');
-            }
-            return response.response;
-        }),
-        timeoutMs,
-        `Native message timed out: ${message && message.action ? message.action : 'unknown'}`
-    );
+// The background times out each native call by action, with room for the
+// native host's slow first launch after an update. A shorter cutoff here
+// reported that launch as a failure.
+async function sendNativeMessage(message) {
+    // Safari native messaging belongs to the background context, not the popup.
+    const response = await browser.runtime.sendMessage({ action: 'wblock:popup:nativeMessage', message });
+    if (!response || response.ok !== true) {
+        throw new Error((response && response.error) || 'Native message relay failed');
+    }
+    return response.response;
 }
 
 async function logExtensionDiagnostic(fields) {
     const normalizedFields = normalizeDiagnosticFields(fields);
     console.info('[wBlock] Support diagnostic', normalizedFields);
     try {
-        await sendNativeMessageWithTimeout({
+        await sendNativeMessage({
             action: 'logExtensionDiagnostic',
             fields: normalizedFields,
         }, 1200);
@@ -215,7 +213,7 @@ async function syncRulesToNative(host, rules) {
         return null;
     } catch {
         try {
-            const response = await sendNativeMessageWithTimeout({
+            const response = await sendNativeMessage({
                 action: 'syncZapperRules',
                 hostname: host,
                 rules: normalizedRules
@@ -261,7 +259,7 @@ async function fetchRulesFromNative(host) {
         return { rules: state.rules, disabled };
     } catch {
         try {
-            const response = await sendNativeMessageWithTimeout({
+            const response = await sendNativeMessage({
                 action: 'getZapperRules',
                 hostname: host,
             });
@@ -495,7 +493,7 @@ async function openWBlockApp(host) {
 // native handler declines on iOS, so any failure falls back to the wblockapp URL.
 async function openAppFromHeader() {
     if (await isMacPlatform()) {
-        const response = await sendNativeMessageWithTimeout({ action: 'openApp' }).catch(() => null);
+        const response = await sendNativeMessage({ action: 'openApp' }).catch(() => null);
         if (response && response.ok === true) {
             window.close();
             return;
@@ -867,7 +865,7 @@ function renderZapperRules(rules) {
 
 async function getBlockingPausedState() {
     try {
-        const response = await sendNativeMessageWithTimeout({
+        const response = await sendNativeMessage({
             action: 'getBlockingPausedState',
         });
         if (!response || typeof response.paused !== 'boolean' ||
@@ -886,7 +884,7 @@ async function getBlockingPausedState() {
 
 async function getResumeRequestStatus() {
     try {
-        const response = await sendNativeMessageWithTimeout({
+        const response = await sendNativeMessage({
             action: 'getResumeRequestStatus',
         });
         if (!response || response.ok !== true || typeof response.status !== 'string') {
@@ -902,7 +900,7 @@ async function getResumeRequestStatus() {
 async function resumeBlocking() {
     let response;
     try {
-        response = await sendNativeMessageWithTimeout({
+        response = await sendNativeMessage({
             action: 'resumeBlocking',
         }, 10000);
     } catch (error) {
@@ -937,48 +935,55 @@ async function resumeBlocking() {
     return { status: 'unavailable' };
 }
 
-// The popup's main switch is Content Filtering (#835): it reads and writes
+// Content Filtering (#835) reads and writes
 // the filter-only list, so userscripts and the zapper keep their own
 // switches. A site on the master whitelist reports disabled too, since
 // filtering is off there as well, and the switch stays locked for it.
 let siteWhitelisted = false;
+let allSiteComponentsDisabled = null;
 
 async function getSiteDisabledState(host) {
     if (!host) return false;
     try {
-        const response = await sendNativeMessageWithTimeout({
+        const response = await sendNativeMessage({
             action: 'getSiteFilterDisabledState',
             host,
         });
         siteWhitelisted = Boolean(response && response.whitelisted);
+        allSiteComponentsDisabled = typeof response?.allDisabled === 'boolean' ? response.allDisabled : null;
         return Boolean(response && (response.disabled || response.whitelisted));
     } catch (error) {
         console.error('[wBlock] Failed to get disabled state:', error);
+        allSiteComponentsDisabled = null;
         return null;
     }
 }
 
-async function readSiteDisabledStateAfterTimeout(targetHost) {
+async function readSiteDisabledStateAfterTimeout(targetHost, allComponents = false) {
     let actuallyDisabled = await getSiteDisabledState(targetHost);
-    for (let attempt = 0; attempt < 2 && typeof actuallyDisabled !== 'boolean'; attempt += 1) {
+    for (let attempt = 0; attempt < 2 && typeof (allComponents ? allSiteComponentsDisabled : actuallyDisabled) !== 'boolean'; attempt += 1) {
         await sleep(300);
         actuallyDisabled = await getSiteDisabledState(targetHost);
     }
-    return actuallyDisabled;
+    return allComponents ? allSiteComponentsDisabled : actuallyDisabled;
 }
 
-async function setSiteDisabledState(host, disabled) {
+async function setSiteDisabledState(host, disabled, allComponents = false) {
     if (!host) return;
-    return sendNativeMessageWithTimeout({
-        action: 'setSiteFilterDisabledState',
+    const response = await sendNativeMessage({
+        action: allComponents ? 'setAllSiteComponentsDisabled' : 'setSiteFilterDisabledState',
         host,
         disabled: Boolean(disabled),
     }, 10000);
+    if (!response || response.error || (allComponents && response.ok !== true)) {
+        throw new Error(response?.error || 'Invalid site state response');
+    }
+    return response;
 }
 
 async function setUserScriptsSiteDisabled(host, disabled) {
     if (!host) return { ok: false, disabled: false };
-    const response = await sendNativeMessageWithTimeout({
+    const response = await sendNativeMessage({
         action: 'setUserScriptsSiteDisabled',
         host,
         disabled: Boolean(disabled),
@@ -996,7 +1001,7 @@ async function setUserScriptsSiteDisabled(host, disabled) {
 
 async function setSiteZapperDisabled(host, disabled) {
     if (!host) return { ok: false, disabled: false };
-    const response = await sendNativeMessageWithTimeout({
+    const response = await sendNativeMessage({
         action: 'setSiteZapperDisabled',
         hostname: host,
         disabled: Boolean(disabled),
@@ -1119,7 +1124,7 @@ let userScriptsSiteDisabled = false;
 async function fetchPageUserScripts(url) {
     if (!url) return [];
     try {
-        const response = await sendNativeMessageWithTimeout({
+        const response = await sendNativeMessage({
             action: 'getPageUserScripts',
             url,
         });
@@ -1144,7 +1149,7 @@ async function setUserscriptSiteDisabled(scriptId, disabled) {
         return { ok: false, error: 'Invalid userscript site setting request' };
     }
     try {
-        const response = await sendNativeMessageWithTimeout({
+        const response = await sendNativeMessage({
             action: 'setUserScriptSiteDisabledState',
             scriptId,
             host,
@@ -1247,7 +1252,6 @@ async function invokeUserscriptCommand(tabId, frameId, bridgeId, commandId) {
     }
 }
 
-let noAutoplaySiteDisabled = false;
 
 function noAutoplayAllowKey(siteHost) {
     return `${NO_AUTOPLAY_ALLOW_PREFIX}${siteHost}`;
@@ -1296,7 +1300,7 @@ async function fetchNativeNoAutoplayState(siteHost) {
     try {
         const message = { action: 'getNoAutoplayState' };
         if (siteHost) message.host = siteHost;
-        const response = await sendNativeMessageWithTimeout(message);
+        const response = await sendNativeMessage(message);
         if (!isNativeNoAutoplayState(response)) return null;
         return {
             enabled: response.enabled,
@@ -1368,7 +1372,7 @@ async function migrateLegacyNoAutoplayToNative(local, siteHost) {
     try {
         const hosts = await collectLegacyNoAutoplayAllowHosts(siteHost, local.siteAllowed);
         for (const host of hosts) {
-            const siteResponse = await sendNativeMessageWithTimeout({
+            const siteResponse = await sendNativeMessage({
                 action: 'setNoAutoplaySiteAllowed',
                 host,
                 allowed: true,
@@ -1383,7 +1387,7 @@ async function migrateLegacyNoAutoplayToNative(local, siteHost) {
             }
         }
         if (local.enabled === true) {
-            const enabledResponse = await sendNativeMessageWithTimeout({
+            const enabledResponse = await sendNativeMessage({
                 action: 'setNoAutoplayEnabled',
                 enabled: true,
             });
@@ -1422,7 +1426,7 @@ async function getNoAutoplayState(siteHost) {
 
 async function setNoAutoplayEnabled(enabled) {
     const nextEnabled = enabled === true;
-    const response = await sendNativeMessageWithTimeout({
+    const response = await sendNativeMessage({
         action: 'setNoAutoplayEnabled',
         enabled: nextEnabled,
     });
@@ -1435,7 +1439,7 @@ async function setNoAutoplayEnabled(enabled) {
 async function setNoAutoplaySiteAllowed(siteHost, allowed) {
     if (!siteHost) return;
     const nextAllowed = allowed === true;
-    const response = await sendNativeMessageWithTimeout({
+    const response = await sendNativeMessage({
         action: 'setNoAutoplaySiteAllowed',
         host: siteHost,
         allowed: nextAllowed,
@@ -1557,26 +1561,30 @@ function setupListeners() {
         });
     }
 
-    if (disableToggle) {
-        disableToggle.addEventListener('change', async () => {
+    for (const toggle of [disableToggle, document.getElementById('site-enabled-toggle')].filter(Boolean)) {
+        const allComponents = toggle.id === 'site-enabled-toggle';
+        toggle.addEventListener('change', async () => {
             const generation = ++siteToggleGeneration;
             siteToggleInFlight = true;
-            const next = !disableToggle.checked;
-            const previousChecked = !disableToggle.checked;
+            const next = !toggle.checked;
+            const previousChecked = !toggle.checked;
             const targetHost = host;
             const targetTab = tab;
             try {
                 if (!targetHost) {
-                    disableToggle.checked = previousChecked;
+                    toggle.checked = previousChecked;
                     return;
                 }
 
                 setError('');
-                disableToggle.disabled = true;
+                for (const id of ['site-enabled-toggle', 'enable-toggle', 'userscripts-site-toggle', 'zapper-enabled-toggle', 'no-autoplay-site-toggle']) {
+                    const control = document.getElementById(id);
+                    if (control) control.disabled = true;
+                }
                 setStatus(next
                     ? t('popup_status_disabling', undefined, 'Disabling…')
                     : t('popup_status_enabling', undefined, 'Enabling…'), 'neutral');
-                const updateResult = await setSiteDisabledState(targetHost, next);
+                const updateResult = await setSiteDisabledState(targetHost, next, allComponents);
                 try {
                     await browser.runtime.sendMessage({ action: 'wblock:clearCache' });
                 } catch (error) {
@@ -1593,7 +1601,7 @@ function setupListeners() {
                 } else if (failedTargets > 0) {
                     setError(t('popup_error_update_site_setting', undefined, 'Failed to update site setting.'));
                 }
-                disableToggle.checked = !next;
+                toggle.checked = !next;
                 setStatus(next
                     ? t('popup_status_disabled', undefined, 'Disabled')
                     : t('popup_status_active', undefined, 'Active'),
@@ -1605,13 +1613,13 @@ function setupListeners() {
                 // the authoritative state before treating this as a hard failure.
                 let actuallyDisabled = null;
                 try {
-                    actuallyDisabled = await readSiteDisabledStateAfterTimeout(targetHost);
+                    actuallyDisabled = await readSiteDisabledStateAfterTimeout(targetHost, allComponents);
                 } catch (reconcileError) {
                     console.warn('[wBlock] Failed to reconcile site setting after error:', reconcileError);
                     actuallyDisabled = null;
                 }
                 if (typeof actuallyDisabled === 'boolean') {
-                    disableToggle.checked = !actuallyDisabled;
+                    toggle.checked = !actuallyDisabled;
                     if (actuallyDisabled === next) {
                         setStatus(next
                             ? t('popup_status_disabled', undefined, 'Disabled')
@@ -1621,14 +1629,14 @@ function setupListeners() {
                         return;
                     }
                 } else {
-                    disableToggle.checked = previousChecked;
+                    toggle.checked = previousChecked;
                 }
                 setError(t('popup_error_update_site_setting', undefined, 'Failed to update site setting.'));
                 setStatus(t('popup_status_error', undefined, 'Error'), 'error');
             } finally {
                 if (generation === siteToggleGeneration) {
                     siteToggleInFlight = false;
-                    disableToggle.disabled = false;
+                    await refreshUi({ preserveError: true });
                 }
             }
         });
@@ -1653,7 +1661,7 @@ function setupListeners() {
                 setError(t('popup_error_update_site_setting', undefined, 'Failed to update site setting.'));
                 zapperEnabledToggle.checked = !nextEnabled;
             } finally {
-                zapperEnabledToggle.disabled = false;
+                await refreshUi({ preserveError: true });
             }
         });
     }
@@ -1677,7 +1685,7 @@ function setupListeners() {
                 setError(t('popup_error_update_site_setting', undefined, 'Failed to update site setting.'));
                 userscriptsSiteToggle.checked = nextDisabled;
             } finally {
-                userscriptsSiteToggle.disabled = false;
+                await refreshUi({ preserveError: true });
             }
         });
     }
@@ -1694,7 +1702,7 @@ function setupListeners() {
                 setError(t('popup_error_update_site_setting', undefined, 'Failed to update site setting.'));
                 noAutoplaySiteToggle.checked = !nextAllowed;
             } finally {
-                noAutoplaySiteToggle.disabled = noAutoplaySiteDisabled;
+                await refreshUi({ preserveError: true });
             }
         });
     }
@@ -1824,9 +1832,17 @@ function setupListeners() {
     }
 }
 
-async function refreshUi() {
+// While the app finishes a resume, look again so the zapper and switches
+// unlock once it commits.
+let resumeRecheckTimer = null;
+function scheduleResumeRecheck(resuming) {
+    clearTimeout(resumeRecheckTimer);
+    resumeRecheckTimer = resuming ? setTimeout(() => { refreshUi().catch(() => {}); }, 2000) : null;
+}
+
+async function refreshUi(options = {}) {
     const generationAtStart = siteToggleGeneration;
-    if (!siteToggleInFlight) {
+    if (!siteToggleInFlight && !options.preserveError) {
         setError('');
     }
     const isMac = await isMacPlatform();
@@ -1847,6 +1863,8 @@ async function refreshUi() {
 
     const hostEl = document.getElementById('site-host');
     const disableToggle = document.getElementById('enable-toggle');
+    const siteToggle = document.getElementById('site-enabled-toggle');
+    if (siteToggle) siteToggle.disabled = true;
     const zapperEnabledToggle = document.getElementById('zapper-enabled-toggle');
     const zapperActivate = document.getElementById('zapper-activate');
     const rulesToggle = document.getElementById('zapper-rules-toggle');
@@ -1938,7 +1956,11 @@ async function refreshUi() {
     }
 
     const blockingPaused = pauseState.paused;
+    // The app keeps everything paused until a resume's reload commits. Saying
+    // Paused then contradicts the app, which already shows blocking on.
+    const resuming = blockingPaused && pauseState.resuming === true;
     const resumeAvailable = pauseState.resumeAvailable;
+    scheduleResumeRecheck(resuming);
     const filtersPaused = pauseState.filtersPaused;
     const userScriptsPaused = pauseState.userScriptsPaused;
     const zapperPaused = pauseState.elementZapperPaused;
@@ -1958,8 +1980,12 @@ async function refreshUi() {
             disableToggle.disabled = filtersPaused || siteWhitelisted;
         }
     }
-    if (pausedPrompt) pausedPrompt.hidden = !blockingPaused;
-    if (resumeButton) resumeButton.hidden = !(blockingPaused && resumeAvailable);
+    if (siteToggle && !skipSiteToggleCommit) {
+        siteToggle.checked = allSiteComponentsDisabled === false;
+        siteToggle.disabled = blockingPaused || siteWhitelisted || allSiteComponentsDisabled === null;
+    }
+    if (pausedPrompt) pausedPrompt.hidden = !blockingPaused || resuming;
+    if (resumeButton) resumeButton.hidden = !(blockingPaused && resumeAvailable) || resuming;
     if (pausedPromptTitle) {
         pausedPromptTitle.textContent = partiallyPaused
             ? t('popup_paused_partial_prompt_title', undefined, 'Some blocking components are paused')
@@ -1980,13 +2006,14 @@ async function refreshUi() {
     // Filtering alone leaves the zapper, autoplay, and userscripts usable.
     if (zapperEnabledToggle) {
         zapperEnabledToggle.checked = !zapperRulesDisabled;
-        zapperEnabledToggle.disabled = siteWhitelisted || zapperPaused;
+        zapperEnabledToggle.disabled = siteWhitelisted || zapperPaused || siteToggleInFlight;
     }
-    noAutoplaySiteDisabled = siteWhitelisted;
-    updateNoAutoplayControls(noAutoplayState, { host, siteDisabled: siteWhitelisted });
+    updateNoAutoplayControls(noAutoplayState, { host, siteDisabled: siteWhitelisted, locked: siteToggleInFlight });
     const shouldCommitSiteStatus = !skipSiteToggleCommit || blockingPaused;
     if (shouldCommitSiteStatus) {
-        if (siteDisabledUnknown && !blockingPaused) {
+        if (resuming) {
+            setStatus(t('popup_status_resuming', undefined, 'Resuming…'), 'neutral');
+        } else if ((siteDisabledUnknown || allSiteComponentsDisabled === null) && !blockingPaused) {
             setStatus(t('popup_status_unavailable', undefined, 'Unavailable'), 'neutral');
         } else {
             setStatus(
@@ -1994,10 +2021,10 @@ async function refreshUi() {
                     ? t('popup_status_paused', undefined, 'Paused')
                     : blockingPaused
                         ? t('popup_status_partially_paused', undefined, 'Partially Paused')
-                        : siteDisabled
+                        : allSiteComponentsDisabled
                             ? t('popup_status_disabled', undefined, 'Disabled')
                             : t('popup_status_active', undefined, 'Active'),
-                blockingPaused || siteDisabled ? 'disabled' : 'active'
+                blockingPaused || allSiteComponentsDisabled ? 'disabled' : 'active'
             );
         }
     }
@@ -2009,6 +2036,7 @@ async function refreshUi() {
         rulesToggle.disabled = zapperPaused;
     }
     await renderPageUserScriptsPromise;
+    renderPageUserScripts(currentPageUserScripts, siteWhitelisted || userScriptsPaused || siteToggleInFlight);
     currentZapperRules = zapperState.rules;
     const zapperCount = await zapperCountPromise;
     const zapperClear = document.getElementById('zapper-clear');

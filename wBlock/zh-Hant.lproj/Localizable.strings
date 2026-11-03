@@ -454,7 +454,6 @@
 "Paste" = "貼上";
 "Paste one or more filter URLs, one per line." = "貼上一個或多個過濾器 URL，每行一個。";
 "Pause Blocking" = "暫停封鎖";
-"Paused Components" = "已暫停的元件";
 "Enabled Userscripts & Userstyles" = "已啟用的使用者腳本與使用者樣式";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "只要有選取的元件處於暫停狀態，暫停封鎖就會開啟。恢復後會還原所有元件。";
 "Pausing blocking..." = "正在暫停封鎖…";
@@ -1062,3 +1061,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "RU AdList" = "RU AdList";
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "自訂 URL";
+
+"Content blocker JSON exceeds the %@ MB size limit on iOS. Disable some filter lists and try again." = "內容阻擋器 JSON 超過了 iOS 上 %@ MB 的大小限制。請停用部分過濾列表後重試。";

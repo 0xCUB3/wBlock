@@ -454,7 +454,6 @@
 "Paste" = "جای‌گذاری";
 "Paste one or more filter URLs, one per line." = "یک یا چند نشانی URL فیلتر را جای‌گذاری کنید، هر کدام در یک خط.";
 "Pause Blocking" = "توقف موقت مسدودسازی";
-"Paused Components" = "مؤلفه‌های متوقف‌شده";
 "Pausing blocking..." = "در حال توقف موقت مسدودسازی...";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";
 "Dandelion Sprout's Anti-Malware List" = "Dandelion Sprout's Anti-Malware List";
@@ -1071,3 +1070,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "RU AdList" = "RU AdList";
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "نشانی سفارشی";
+
+"Content blocker JSON exceeds the %@ MB size limit on iOS. Disable some filter lists and try again." = "فایل JSON مسدودکنندهٔ محتوا از محدودیت حجم %@ مگابایت در iOS بیشتر است. برخی فهرست‌های فیلتر را غیرفعال کنید و دوباره تلاش کنید.";

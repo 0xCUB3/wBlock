@@ -749,10 +749,6 @@ struct SettingsView: View {
     }
 
 
-    private var pauseBlockingToolbar: some ToolbarContent {
-        ToolbarItem(placement: .primaryAction) { PauseBlockingMenu(filterManager: filterManager) }
-    }
-
     @ViewBuilder
     private var aboutSection: some View {
         Section {
@@ -829,7 +825,7 @@ struct SettingsView: View {
             // can scroll to them in a page that has grown long (#999).
             ScrollViewReader { proxy in
                 settingsList
-                    .toolbar { pauseBlockingToolbar }
+                    .toolbar { PauseBlockingToolbarItem(filterManager: filterManager) }
                     .topBarCompat {
                         if filterManager.isBlockingPaused {
                             PauseBlockingBanner(filterManager: filterManager)
@@ -1397,7 +1393,7 @@ struct PauseBlockingControls: View {
             }
             .disabled(filterManager.pausedComponents == .all)
         }
-        .disabled(filterManager.isLoading || filterManager.isApplyInFlight)
+        .disabled(filterManager.isReloadBusy)
     }
 }
 
@@ -1429,13 +1425,13 @@ struct PauseBlockingBanner: View {
                         .controlSize(.small)
                 } else {
                     Text("Resume")
-                        .font(.subheadline.weight(.semibold))
+                        .font(.subheadline)
                 }
             }
             .buttonStyle(.borderedProminent)
             .tint(.orange)
             .controlSize(.small)
-            .disabled(filterManager.isLoading)
+            .disabled(filterManager.isReloadBusy)
             .accessibilityLabel("Resume Blocking")
         }
         .padding(.horizontal, 12)
@@ -1449,19 +1445,37 @@ struct PauseBlockingBanner: View {
     }
 }
 
-/// Toolbar menu for pausing blocking. The icon fills while anything is paused.
-struct PauseBlockingMenu: View {
+/// The pause control every tab shows in the same leading spot. A tap pauses or
+/// resumes everything; holding it (or its arrow on macOS) picks components.
+struct PauseBlockingToolbarItem: ToolbarContent {
+    @ObservedObject var filterManager: AppFilterManager
+
+    var body: some ToolbarContent {
+        #if os(macOS)
+        ToolbarItem(placement: .navigation) { PauseBlockingButton(filterManager: filterManager) }
+        #else
+        ToolbarItem(placement: .topBarLeading) { PauseBlockingButton(filterManager: filterManager) }
+        #endif
+    }
+}
+
+struct PauseBlockingButton: View {
     @ObservedObject var filterManager: AppFilterManager
 
     var body: some View {
         let isPaused = !filterManager.pausedComponents.isEmpty
-        let title: LocalizedStringKey = isPaused ? "Paused Components" : "Pause Blocking"
-        Menu {
+        let title: LocalizedStringKey = isPaused ? "Resume Blocking" : "Pause Blocking"
+        return Menu {
             Section("Pause Blocking") { PauseBlockingControls(filterManager: filterManager) }
         } label: {
             Label(title, systemImage: isPaused ? "pause.circle.fill" : "pause.circle")
+        } primaryAction: {
+            Task { await filterManager.setBlockingPaused(!isPaused) }
         }
+        // A click pauses or resumes; a long press opens the menu, as on iOS.
+        .menuIndicator(.hidden)
         .help(title)
+        .disabled(filterManager.isReloadBusy)
     }
 }
 

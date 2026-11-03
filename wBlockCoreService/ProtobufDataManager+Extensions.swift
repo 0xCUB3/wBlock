@@ -294,20 +294,58 @@ extension ProtobufDataManager {
             return false
         }
         return await updateDataImmediately { data in
-            var allowedSites = Set(DisabledSitesNormalizer.normalizedDomains(from: data.whitelist.noAutoplayAllowedSites))
-            var blockedSites = Set(DisabledSitesNormalizer.normalizedDomains(from: data.whitelist.noAutoplayBlockedSites))
-            allowedSites.remove(normalizedHost)
-            blockedSites.remove(normalizedHost)
-            let inherited = HostMatcher.override(
-                host: normalizedHost, allowedSites: Array(allowedSites), blockedSites: Array(blockedSites)
-            ) ?? !data.whitelist.noAutoplayEnabled
-            if allowed != inherited {
-                if allowed { allowedSites.insert(normalizedHost) } else { blockedSites.insert(normalizedHost) }
-            }
-            data.whitelist.noAutoplayAllowedSites = Array(allowedSites).sorted()
-            data.whitelist.noAutoplayBlockedSites = Array(blockedSites).sorted()
-            data.whitelist.lastUpdated = Int64(Date().timeIntervalSince1970)
+            Self.setAutoplayAllowed(allowed, onHost: normalizedHost, in: &data)
         }
+    }
+
+    private nonisolated static func setAutoplayAllowed(_ allowed: Bool, onHost host: String, in data: inout Wblock_Data_AppData) {
+        var allowedSites = Set(DisabledSitesNormalizer.normalizedDomains(from: data.whitelist.noAutoplayAllowedSites))
+        var blockedSites = Set(DisabledSitesNormalizer.normalizedDomains(from: data.whitelist.noAutoplayBlockedSites))
+        allowedSites.remove(host)
+        blockedSites.remove(host)
+        let inherited = HostMatcher.override(
+            host: host, allowedSites: Array(allowedSites), blockedSites: Array(blockedSites)
+        ) ?? !data.whitelist.noAutoplayEnabled
+        if allowed != inherited {
+            if allowed { allowedSites.insert(host) } else { blockedSites.insert(host) }
+        }
+        data.whitelist.noAutoplayAllowedSites = Array(allowedSites).sorted()
+        data.whitelist.noAutoplayBlockedSites = Array(blockedSites).sorted()
+        data.whitelist.lastUpdated = Int64(Date().timeIntervalSince1970)
+    }
+
+    /// The combined switch derives its state from the independent component preferences.
+    public func areAllSiteComponentsDisabled(onHost host: String) -> Bool {
+        HostMatcher.isHostDisabled(host: host, disabledSites: disabledSites)
+            || (HostMatcher.isHostDisabled(host: host, disabledSites: filterDisabledSites)
+                && areUserScriptsDisabled(onHost: host)
+                && isZapperDisabled(forHost: host)
+                && isAutoplayAllowed(onHost: host))
+    }
+
+    /// One disk transaction keeps a failed save from changing only some components.
+    @discardableResult
+    public func setAllSiteComponentsDisabled(_ disabled: Bool, onHost host: String) async -> Bool {
+        guard let host = DisabledSitesNormalizer.normalizedDomain(host) else { return false }
+        let saved = await updateDataImmediately { data in
+            guard !HostMatcher.isHostDisabled(host: host, disabledSites: data.whitelist.disabledSites) else { return }
+            Self.setSiteDisabled(disabled, onHost: host, in: &data.whitelist.filterDisabledSites, includingParents: true)
+            Self.setSiteDisabled(disabled, onHost: host, in: &data.whitelist.userScriptsDisabledSites, includingParents: true)
+            Self.setZapperRulesDisabled(disabled, forHost: host, in: &data)
+            Self.setAutoplayAllowed(disabled, onHost: host, in: &data)
+        }
+        if saved { UserScriptManager.invalidateDocumentStartExecutionCache() }
+        return saved && !HostMatcher.isHostDisabled(host: host, disabledSites: disabledSites)
+    }
+
+    nonisolated static func setSiteDisabled(_ disabled: Bool, onHost host: String, in sites: inout [String], includingParents: Bool = false) {
+        var normalized = Set(DisabledSitesNormalizer.normalizedDomains(from: sites))
+        if disabled {
+            normalized.insert(host)
+        } else {
+            normalized = normalized.filter { $0 != host && !(includingParents && host.hasSuffix("." + $0)) }
+        }
+        sites = normalized.sorted()
     }
 
     @discardableResult
@@ -336,9 +374,7 @@ extension ProtobufDataManager {
             return false
         }
         return await updateDataImmediately { data in
-            var sites = Set(DisabledSitesNormalizer.normalizedDomains(from: data.whitelist.userScriptsDisabledSites))
-            if disabled { sites.insert(normalizedHost) } else { sites.remove(normalizedHost) }
-            data.whitelist.userScriptsDisabledSites = Array(sites).sorted()
+            Self.setSiteDisabled(disabled, onHost: normalizedHost, in: &data.whitelist.userScriptsDisabledSites)
             data.whitelist.lastUpdated = Int64(Date().timeIntervalSince1970)
         }
     }

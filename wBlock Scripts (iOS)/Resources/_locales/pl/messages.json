@@ -1,4 +1,7 @@
 {
+  "popup_site_enabled": {
+    "message": "wBlock w tej witrynie"
+  },
   "context_menu_zap_element": {
     "message": "Zapnij element",
     "description": "Right-click context menu item that activates the Element Zapper on the clicked element."
@@ -123,9 +126,21 @@
     "message": "Cofnij",
     "description": "Button label to undo last zapper action."
   },
+  "zapper_button_redo": {
+    "message": "Ponów",
+    "description": "Button label to redo the last zapper action that was undone."
+  },
   "zapper_button_more": {
     "message": "Więcej opcji",
     "description": "Tooltip label for the overflow menu button in zapper toolbar."
+  },
+  "zapper_button_select_parent": {
+    "message": "Wybierz element nadrzędny",
+    "description": "Tooltip for choosing the parent element in refine mode."
+  },
+  "zapper_button_select_child": {
+    "message": "Wybierz element podrzędny",
+    "description": "Tooltip for choosing the child element in refine mode."
   },
   "zapper_button_add_custom_rule": {
     "message": "Dodaj niestandardową regułę CSS…",

@@ -454,7 +454,6 @@
 "Paste" = "Επικόλληση";
 "Paste one or more filter URLs, one per line." = "Επικολλήστε μία ή περισσότερες διευθύνσεις URL φίλτρου, μία ανά γραμμή.";
 "Pause Blocking" = "Παύση αποκλεισμού";
-"Paused Components" = "Στοιχεία σε παύση";
 "Enabled Userscripts & Userstyles" = "Ενεργοί κώδικες χρήστη και στυλ χρήστη";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "Η παύση αποκλεισμού είναι ενεργή όσο οποιοδήποτε επιλεγμένο στοιχείο βρίσκεται σε παύση. Η συνέχιση επαναφέρει όλα τα στοιχεία.";
 "Pausing blocking..." = "Παύση αποκλεισμού…";
@@ -1062,3 +1061,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "RU AdList" = "RU AdList";
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "Προσαρμοσμένο URL";
+
+"Content blocker JSON exceeds the %@ MB size limit on iOS. Disable some filter lists and try again." = "Το αρχείο JSON του αποκλεισμού περιεχομένου υπερβαίνει το όριο μεγέθους των %@ MB στο iOS. Απενεργοποιήστε ορισμένες λίστες φίλτρων και δοκιμάστε ξανά.";

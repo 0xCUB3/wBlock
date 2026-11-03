@@ -454,7 +454,6 @@
 "Paste" = "Einfügen";
 "Paste one or more filter URLs, one per line." = "Füge eine oder mehrere Filter-URLs ein, eine pro Zeile.";
 "Pause Blocking" = "Blockieren pausieren";
-"Paused Components" = "Pausierte Komponenten";
 "Enabled Userscripts & Userstyles" = "Aktivierte Benutzerskripte und Benutzerstile";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "„Blockieren pausieren“ ist aktiv, solange eine ausgewählte Komponente pausiert ist. „Fortsetzen“ aktiviert alle Komponenten wieder.";
 "Pausing blocking..." = "Blockieren wird pausiert...";
@@ -1062,3 +1061,5 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "RU AdList" = "RU AdList";
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "Eigene URL";
+
+"Content blocker JSON exceeds the %@ MB size limit on iOS. Disable some filter lists and try again." = "Die JSON-Datei des Inhaltsblockers überschreitet die Größenbegrenzung von %@ MB unter iOS. Deaktiviere einige Filterlisten und versuche es erneut.";

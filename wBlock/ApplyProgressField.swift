@@ -120,7 +120,6 @@ struct ProgressBanners<Leading: View>: ViewModifier {
     @ObservedObject var filterManager: AppFilterManager
     @ObservedObject var applyProgress: ApplyChangesViewModel
     @ViewBuilder let leading: Leading
-    @State private var showsApplied = false
 
     private enum Banner { case apply, check, applied, noUpdates }
 
@@ -130,20 +129,36 @@ struct ProgressBanners<Leading: View>: ViewModifier {
             return applyProgress.state.mode == .progress ? .apply : nil
         }
         if filterManager.isLoading && !filterManager.suppressBlockingOverlay { return .check }
-        if showsApplied { return .applied }
+        // Paused filters load empty blockers; "0 Safari rules" read as a failure,
+        // and the pause banner already says what happened.
+        if filterManager.showingAppliedBanner && !filterManager.pausedComponents.contains(.filters) { return .applied }
         return filterManager.showingNoUpdatesAlert ? .noUpdates : nil
     }
 
+    private var dismissDoneBanner: (() -> Void)? {
+        switch banner {
+        case .applied: return { filterManager.showingAppliedBanner = false }
+        case .noUpdates: return { filterManager.showingNoUpdatesAlert = false }
+        default: return nil
+        }
+    }
+
     func body(content: Content) -> some View {
+        let dismiss = dismissDoneBanner
+        // The card overlays the content under the leading bar, so it never
+        // covers the pause banner.
         content
-            .topBarCompat { leading }
+            .simultaneousGesture(
+                TapGesture().onEnded { dismiss?() },
+                including: dismiss == nil ? .subviews : .all
+            )
             .overlay(alignment: .top) {
                 ZStack {
                     if let banner {
                         // One card stays through a swap; the old content fades
                         // out before the new one fades in, so they never overlap.
                         ZStack {
-                            bannerContent(banner)
+                            bannerContent(banner, dismiss: dismiss ?? {})
                                 .id(banner)
                                 .transition(.asymmetric(
                                     insertion: .opacity.animation(.easeOut(duration: 0.15).delay(0.1)),
@@ -160,23 +175,21 @@ struct ProgressBanners<Leading: View>: ViewModifier {
                         .shadow(color: .black.opacity(0.12), radius: 8, y: 2)
                         #endif
                         .liquidGlassCompat(cornerRadius: 16)
+                        .contentShape(RoundedRectangle(cornerRadius: 16))
+                        // Keep taps on the card from reaching the content underneath.
+                        .onTapGesture {}
                         .transition(.move(edge: .top).combined(with: .opacity))
                     }
                 }
                 .padding(.horizontal, 12)
                 .padding(.top, 6)
             }
+            .topBarCompat { leading }
             .animation(.easeInOut(duration: 0.25), value: banner)
-            // Only a run the user watched ends in this banner; one that needs
-            // attention stays in the sheet, and background runs never had it.
-            .onChangeCompat(of: filterManager.showingApplyProgressSheet) { _, showing in
-                showsApplied = !showing && applyProgress.state.mode == .result
-                    && !applyProgress.state.resultNeedsAttention && filterManager.failedReloadTargets.isEmpty
-            }
     }
 
     @ViewBuilder
-    private func bannerContent(_ banner: Banner) -> some View {
+    private func bannerContent(_ banner: Banner, dismiss: @escaping () -> Void) -> some View {
         switch banner {
         case .apply:
             ApplyProgressBanner(presentation: .make(from: applyProgress.state))
@@ -188,17 +201,17 @@ struct ProgressBanners<Leading: View>: ViewModifier {
                 message: String.localizedStringWithFormat(
                     String(localized: "%@ Safari rules"),
                     filterManager.lastRuleCount.formatted()
-                )
-            ) { showsApplied = false }
+                ),
+                dismiss: dismiss
+            )
         case .noUpdates:
             DoneBanner(
                 title: String(localized: "No Updates Found"),
-                message: String(localized: "You're already using the latest filters.")
+                message: String(localized: "You're already using the latest filters."),
+                dismiss: dismiss
             ) {
-                filterManager.showingNoUpdatesAlert = false
-            } action: {
                 Button("Apply Anyway") {
-                    filterManager.showingNoUpdatesAlert = false
+                    dismiss()
                     filterManager.forceApplyChanges()
                 }
             }
@@ -299,7 +312,11 @@ private struct DoneBanner<Action: View>: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .contain)
         .task {
-            try? await Task.sleep(nanoseconds: 4_000_000_000)
+            do {
+                try await Task.sleep(nanoseconds: 4_000_000_000)
+            } catch {
+                return
+            }
             dismiss()
         }
     }

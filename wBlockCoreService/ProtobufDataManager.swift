@@ -1215,7 +1215,9 @@ public class ProtobufDataManager: ObservableObject {
             let existing = data.extensionData.zapperRulesByHost[host]
             if filtered.isEmpty {
                 guard existing != nil else { return }
-                data.extensionData.zapperRulesByHost.removeValue(forKey: host)
+                var empty = Wblock_Data_ZapperRuleList()
+                empty.disabled = existing?.disabled ?? false
+                data.extensionData.zapperRulesByHost[host] = empty.disabled ? empty : nil
             } else {
                 if let existing,
                    existing.selectors == filtered,
@@ -1251,7 +1253,7 @@ public class ProtobufDataManager: ObservableObject {
                 guard var ruleList = data.extensionData.zapperRulesByHost[host] else { continue }
                 ruleList.pendingDeletions.append(contentsOf: ruleList.selectors)
                 ruleList.selectors.removeAll()
-                if ruleList.pendingDeletions.isEmpty {
+                if ruleList.pendingDeletions.isEmpty && !ruleList.disabled {
                     data.extensionData.zapperRulesByHost.removeValue(forKey: host)
                 } else {
                     data.extensionData.zapperRulesByHost[host] = ruleList
@@ -1262,7 +1264,9 @@ public class ProtobufDataManager: ObservableObject {
                 let existing = data.extensionData.zapperRulesByHost[host]
                 if filtered.isEmpty {
                     guard existing != nil else { continue }
-                    data.extensionData.zapperRulesByHost.removeValue(forKey: host)
+                    var empty = Wblock_Data_ZapperRuleList()
+                    empty.disabled = existing?.disabled ?? false
+                    data.extensionData.zapperRulesByHost[host] = empty.disabled ? empty : nil
                 } else {
                     if let existing,
                        existing.selectors == filtered,
@@ -1327,7 +1331,7 @@ public class ProtobufDataManager: ObservableObject {
             let candidates = deleted.isEmpty ? incoming : rules.selectors + incoming
             rules.selectors = candidates.filter { !deleted.contains($0) && seen.insert($0).inserted }
             rules.pendingDeletions.removeAll()
-            if rules.selectors.isEmpty {
+            if rules.selectors.isEmpty && !rules.disabled {
                 data.extensionData.zapperRulesByHost.removeValue(forKey: host)
             } else {
                 data.extensionData.zapperRulesByHost[host] = rules
@@ -1346,7 +1350,7 @@ public class ProtobufDataManager: ObservableObject {
             guard ruleList.selectors.contains(selector) else { return }
             ruleList.selectors.removeAll { $0 == selector }
             if !ruleList.pendingDeletions.contains(selector) { ruleList.pendingDeletions.append(selector) }
-            if ruleList.selectors.isEmpty && ruleList.pendingDeletions.isEmpty {
+            if ruleList.selectors.isEmpty && ruleList.pendingDeletions.isEmpty && !ruleList.disabled {
                 data.extensionData.zapperRulesByHost.removeValue(forKey: host)
             } else {
                 data.extensionData.zapperRulesByHost[host] = ruleList
@@ -1364,7 +1368,7 @@ public class ProtobufDataManager: ObservableObject {
             guard !ruleList.selectors.isEmpty else { return }
             ruleList.pendingDeletions = Array(Set(ruleList.pendingDeletions + ruleList.selectors)).sorted()
             ruleList.selectors.removeAll()
-            if ruleList.pendingDeletions.isEmpty {
+            if ruleList.pendingDeletions.isEmpty && !ruleList.disabled {
                 data.extensionData.zapperRulesByHost.removeValue(forKey: host)
             } else {
                 data.extensionData.zapperRulesByHost[host] = ruleList
@@ -1400,16 +1404,20 @@ public class ProtobufDataManager: ObservableObject {
             .sorted()
     }
 
-    /// Flips the per-host kill switch. No-op for hosts without rules.
+    /// Flips the per-host kill switch, including hosts with no saved rules yet.
     @MainActor
     public func setZapperRulesDisabled(_ disabled: Bool, forHost host: String) async {
         await updateDataImmediately { data in
-            guard var ruleList = data.extensionData.zapperRulesByHost[host],
-                  ruleList.disabled != disabled else { return }
-            ruleList.disabled = disabled
-            data.extensionData.zapperRulesByHost[host] = ruleList
-            data.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
+            Self.setZapperRulesDisabled(disabled, forHost: host, in: &data)
         }
+    }
+
+    nonisolated static func setZapperRulesDisabled(_ disabled: Bool, forHost host: String, in data: inout Wblock_Data_AppData) {
+        var ruleList = data.extensionData.zapperRulesByHost[host] ?? Wblock_Data_ZapperRuleList()
+        guard ruleList.disabled != disabled else { return }
+        ruleList.disabled = disabled
+        data.extensionData.zapperRulesByHost[host] = ruleList
+        data.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
     }
 
     /// Rules per host with disabled hosts and empty selectors filtered out.

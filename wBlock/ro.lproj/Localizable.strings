@@ -454,7 +454,6 @@
 "Paste" = "Lipește";
 "Paste one or more filter URLs, one per line." = "Lipește unul sau mai multe URL-uri de filtru, câte unul pe linie.";
 "Pause Blocking" = "Pauză blocare";
-"Paused Components" = "Componente în pauză";
 "Pausing blocking..." = "Se pune pe pauză blocarea...";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";
 "Dandelion Sprout's Anti-Malware List" = "Dandelion Sprout's Anti-Malware List";
@@ -1062,3 +1061,5 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "RU AdList" = "RU AdList";
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "URL personalizat";
+
+"Content blocker JSON exceeds the %@ MB size limit on iOS. Disable some filter lists and try again." = "Fișierul JSON al blocatorului de conținut depășește limita de dimensiune de %@ MB pe iOS. Dezactivează unele liste de filtre și încearcă din nou.";

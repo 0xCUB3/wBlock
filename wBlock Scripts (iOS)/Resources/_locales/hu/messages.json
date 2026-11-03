@@ -1,4 +1,7 @@
 {
+  "popup_site_enabled": {
+    "message": "wBlock ezen a webhelyen"
+  },
   "context_menu_zap_element": {
     "message": "Elem zappelése",
     "description": "Right-click context menu item that activates the Element Zapper on the clicked element."
@@ -123,9 +126,21 @@
     "message": "Visszavonás",
     "description": "Button label to undo last zapper action."
   },
+  "zapper_button_redo": {
+    "message": "Mégis",
+    "description": "Button label to redo the last zapper action that was undone."
+  },
   "zapper_button_more": {
     "message": "További lehetőségek",
     "description": "Tooltip label for the overflow menu button in zapper toolbar."
+  },
+  "zapper_button_select_parent": {
+    "message": "Szülőelem kijelölése",
+    "description": "Tooltip for choosing the parent element in refine mode."
+  },
+  "zapper_button_select_child": {
+    "message": "Gyermekelem kijelölése",
+    "description": "Tooltip for choosing the child element in refine mode."
   },
   "zapper_button_add_custom_rule": {
     "message": "Egyéni CSS-szabály hozzáadása…",

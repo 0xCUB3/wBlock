@@ -454,7 +454,6 @@
 "Paste" = "붙여넣기";
 "Paste one or more filter URLs, one per line." = "한 줄에 하나씩, 하나 이상의 필터 URL을 붙여넣으세요.";
 "Pause Blocking" = "차단 일시정지";
-"Paused Components" = "일시정지된 구성 요소";
 "Enabled Userscripts & Userstyles" = "활성화된 유저스크립트 및 유저스타일";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "선택한 구성 요소 중 하나라도 일시정지되면 차단 일시정지가 켜집니다. 다시 시작하면 모든 구성 요소가 복원됩니다.";
 "Pausing blocking..." = "차단을 일시정지하는 중…";
@@ -1062,3 +1061,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "RU AdList" = "RU AdList";
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "사용자 지정 URL";
+
+"Content blocker JSON exceeds the %@ MB size limit on iOS. Disable some filter lists and try again." = "콘텐츠 차단기 JSON이 iOS의 크기 제한인 %@ MB를 초과합니다. 일부 필터 목록을 비활성화한 후 다시 시도하세요.";

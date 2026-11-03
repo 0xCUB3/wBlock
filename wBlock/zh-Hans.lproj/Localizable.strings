@@ -454,7 +454,6 @@
 "Paste" = "粘贴";
 "Paste one or more filter URLs, one per line." = "粘贴一个或多个过滤器 URL，每行一个。";
 "Pause Blocking" = "暂停拦截";
-"Paused Components" = "已暂停的组件";
 "Pausing blocking..." = "正在暂停拦截…";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";
 "Dandelion Sprout's Anti-Malware List" = "Dandelion Sprout's Anti-Malware List";
@@ -1062,3 +1061,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "RU AdList" = "RU AdList";
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "自定义 URL";
+
+"Content blocker JSON exceeds the %@ MB size limit on iOS. Disable some filter lists and try again." = "内容拦截器 JSON 超出了 iOS 上 %@ MB 的大小限制。请停用部分过滤列表后重试。";

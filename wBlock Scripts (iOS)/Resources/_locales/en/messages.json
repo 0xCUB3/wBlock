@@ -1,4 +1,7 @@
 {
+  "popup_site_enabled": {
+    "message": "wBlock on this site"
+  },
   "context_menu_zap_element": {
     "message": "Zap Element",
     "description": "Right-click context menu item that activates the Element Zapper on the clicked element."
@@ -123,12 +126,24 @@
     "message": "Undo",
     "description": "Button label to undo last zapper action."
   },
+  "zapper_button_redo": {
+    "message": "Redo",
+    "description": "Button label to redo the last zapper action that was undone."
+  },
   "zapper_button_more": {
     "message": "More options",
     "description": "Tooltip label for the overflow menu button in zapper toolbar."
   },
+  "zapper_button_select_parent": {
+    "message": "Select parent element",
+    "description": "Tooltip for choosing the parent element in refine mode."
+  },
+  "zapper_button_select_child": {
+    "message": "Select child element",
+    "description": "Tooltip for choosing the child element in refine mode."
+  },
   "zapper_button_add_custom_rule": {
-    "message": "Add custom CSS rule…",
+    "message": "Add Custom CSS Rule…",
     "description": "Menu item label for adding a manual CSS selector rule."
   },
   "zapper_button_done": {

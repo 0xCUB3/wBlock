@@ -454,7 +454,6 @@
 "Paste" = "Yapıştır";
 "Paste one or more filter URLs, one per line." = "Her satıra bir tane gelecek şekilde, bir veya daha fazla filtre URL'si yapıştırın.";
 "Pause Blocking" = "Engellemeyi duraklat";
-"Paused Components" = "Duraklatılan bileşenler";
 "Pausing blocking..." = "Engelleme duraklatılıyor...";
 "Peter Lowe's Blocklist" = "Peter Lowe's Blocklist";
 "Dandelion Sprout's Anti-Malware List" = "Dandelion Sprout's Anti-Malware List";
@@ -1071,3 +1070,5 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "RU AdList" = "RU AdList";
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "Özel URL";
+
+"Content blocker JSON exceeds the %@ MB size limit on iOS. Disable some filter lists and try again." = "İçerik engelleyici JSON dosyası, iOS üzerindeki %@ MB boyut sınırını aşıyor. Bazı filtre listelerini devre dışı bırakıp tekrar deneyin.";

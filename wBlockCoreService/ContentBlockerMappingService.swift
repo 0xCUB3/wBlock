@@ -17,11 +17,15 @@ public enum ContentBlockerMappingService {
         latest: [FilterList]
     ) -> [FilterList] {
         let latestByID = Dictionary(latest.map { ($0.id, $0) }, uniquingKeysWith: { _, newer in newer })
+        let container = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value)
         return snapshot.map { filter in
             guard let current = latestByID[filter.id] else { return filter }
             var refreshed = filter
             refreshed.version = current.version
             refreshed.sourceRuleCount = current.sourceRuleCount
+            let sourceURL = container?.appendingPathComponent(ContentBlockerIncrementalCache.localFilename(for: current))
+            refreshed.sourceSizeBytes = (try? sourceURL?.resourceValues(forKeys: [.fileSizeKey]).fileSize)
+                ?? current.sourceSizeBytes
             refreshed.rawSourceRuleCount = current.rawSourceRuleCount
             refreshed.lastUpdated = current.lastUpdated
             refreshed.etag = current.etag
@@ -62,7 +66,7 @@ public enum ContentBlockerMappingService {
     }
 
     /// Distributes selected filters across available content blocker targets by
-    /// least-filled estimated source-rule count.
+    /// estimated rule count and output size.
     public static func distribute(
         selectedFilters: [FilterList],
         across targets: [ContentBlockerTargetInfo]
@@ -74,6 +78,10 @@ public enum ContentBlockerMappingService {
     /// margin covers affinity rules, replicated exceptions, and conversion
     /// growth, none of which the source count includes.
     static let shardBudget = ContentBlockerService.safariContentBlockerRuleLimit * 4 / 5
+
+    // Base and Tracking JSON measured about 3.9x their downloaded UTF-8 size.
+    // Reserve the same 20% margin for replicated rules and conversion growth.
+    static let sourceByteBudget = ContentBlockerService.safariContentBlockerJSONSizeLimit / 5
 
     /// Each list goes whole to the least-filled blocker, largest first. A list
     /// too big for one blocker is split into equal shards that land on
@@ -89,35 +97,38 @@ public enum ContentBlockerMappingService {
             let (distribution, largest) = pack(ordered, across: targets, budget: budget)
             // Large shards can strand free space in other blockers. Refine the
             // same plan until it fits, or every list has reached the shard cap.
-            if largest <= shardBudget || budget == 1 { return distribution }
+            if largest <= 1 || budget == 1 { return distribution }
             budget = max(1, budget / 2)
         }
     }
 
     private static func pack(
         _ ordered: [FilterList], across targets: [ContentBlockerTargetInfo], budget: Int
-    ) -> (ContentBlockerDistribution, Int) {
+    ) -> (ContentBlockerDistribution, Double) {
         var distribution = ContentBlockerDistribution(
             filtersByTarget: Dictionary(uniqueKeysWithValues: targets.map { ($0, []) })
         )
         guard !targets.isEmpty else { return (distribution, 0) }
 
-        struct Item { let filter: FilterList; let order: Int; let shard: ContentBlockerShard?; let cost: Int }
+        struct Item { let filter: FilterList; let order: Int; let shard: ContentBlockerShard?; let cost: Double }
         var items: [Item] = []
         for (order, filter) in ordered.enumerated() {
-            let cost = filter.sourceRuleCount ?? 0
-            let parts = min(targets.count, max(1, (cost + budget - 1) / budget))
+            // Cost in whole blockers: rule count and JSON size both count.
+            let cost = Double(max(0, filter.sourceRuleCount ?? 0)) / Double(shardBudget)
+                + Double(max(0, filter.sourceSizeBytes ?? 0)) / Double(sourceByteBudget)
+            let split = cost * Double(shardBudget) / Double(budget)
+            let parts = Int(min(Double(targets.count), max(1, split.rounded(.up))))
             for index in 0..<parts {
                 items.append(Item(
                     filter: filter, order: order,
                     shard: parts > 1 ? ContentBlockerShard(index: index, count: parts) : nil,
-                    cost: (cost + parts - 1 - index) / parts
+                    cost: cost / Double(parts)
                 ))
             }
         }
         items.sort { ($0.cost, $1.order, $1.shard?.index ?? 0) > ($1.cost, $0.order, $0.shard?.index ?? 0) }
 
-        var load: [ContentBlockerTargetInfo: Int] = [:]
+        var load: [ContentBlockerTargetInfo: Double] = [:]
         for item in items {
             let free = targets.filter { distribution.shardsByTarget[$0]?[item.filter.id] == nil }
             guard let destination = (free.isEmpty ? targets : free).min(by: { load[$0, default: 0] < load[$1, default: 0] })

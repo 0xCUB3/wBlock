@@ -900,7 +900,7 @@
         "logExtensionDiagnostic", "syncZapperRules", "getZapperRules",
         "getBlockingPausedState", "getResumeRequestStatus", "resumeBlocking", "openApp",
         "getSiteDisabledState", "setSiteDisabledState", "setSiteZapperDisabled",
-        "getSiteFilterDisabledState", "setSiteFilterDisabledState", "setUserScriptsSiteDisabled",
+        "getSiteFilterDisabledState", "setSiteFilterDisabledState", "setUserScriptsSiteDisabled", "setAllSiteComponentsDisabled",
         "getPageUserScripts", "setUserScriptSiteDisabledState", "getNoAutoplayState",
         "setNoAutoplaySiteAllowed", "setNoAutoplayEnabled"
       ]);
@@ -920,7 +920,7 @@
       try {
         // User actions must not wait behind queued filter or userscript updates.
         const response = await sendPriorityNativeMessage(nativeRequest);
-        if (/^setNoAutoplay/.test(nativeRequest.action)) await syncNoAutoplayScripts(true);
+        if (/^setNoAutoplay/.test(nativeRequest.action) || nativeRequest.action === "setAllSiteComponentsDisabled") await syncNoAutoplayScripts(true);
         return { ok: true, response };
       } catch (error) {
         return { ok: false, error: String(error && error.message ? error.message : error) };

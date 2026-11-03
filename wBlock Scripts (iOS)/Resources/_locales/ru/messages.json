@@ -1,4 +1,7 @@
 {
+  "popup_site_enabled": {
+    "message": "wBlock на этом сайте"
+  },
   "context_menu_zap_element": {
     "message": "Скрыть элемент",
     "description": "Right-click context menu item that activates the Element Zapper on the clicked element."
@@ -123,9 +126,21 @@
     "message": "Отменить",
     "description": "Button label to undo last zapper action."
   },
+  "zapper_button_redo": {
+    "message": "Повторить",
+    "description": "Button label to redo the last zapper action that was undone."
+  },
   "zapper_button_more": {
     "message": "Больше опций",
     "description": "Tooltip label for the overflow menu button in zapper toolbar."
+  },
+  "zapper_button_select_parent": {
+    "message": "Выбрать родительский элемент",
+    "description": "Tooltip for choosing the parent element in refine mode."
+  },
+  "zapper_button_select_child": {
+    "message": "Выбрать дочерний элемент",
+    "description": "Tooltip for choosing the child element in refine mode."
   },
   "zapper_button_add_custom_rule": {
     "message": "Добавить пользовательское правило CSS…",
