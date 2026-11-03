@@ -218,7 +218,10 @@ class AppFilterManager: ObservableObject {
     /// Replaced AdGuard lists this device had on when it upgraded from wBlock 3
     /// and has not handed over yet (completeAdGuardHandover). Device-local, so
     /// lists turned on later, here or on a synced device, are never moved.
-    private static let adGuardHandoverPendingKey = "wBlock.adGuardHandoverPending"
+    private static let adGuardHandoverPendingKey = "wBlock.adGuardHandoverPending.2"
+    /// Recorded by the first wbe build, which skipped devices coming from
+    /// 4.0.0 TestFlight builds that still ran AdGuard's converter.
+    private static let firstAdGuardHandoverKey = "wBlock.adGuardHandoverPending"
 
     var adGuardHandoverPending: Set<UUID> {
         get {
@@ -232,13 +235,18 @@ class AppFilterManager: ObservableObject {
     }
 
     /// Records the handover once per device: the selected replaced lists when
-    /// the last apply used AdGuard's converter, nothing for fresh installs and wbe.
+    /// the last apply used AdGuard's converter or the first wbe build already
+    /// ran here, nothing for fresh installs.
     private func recordAdGuardHandoverIfNeeded(_ lists: [FilterList]) {
         let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
         guard defaults.object(forKey: Self.adGuardHandoverPendingKey) == nil else { return }
-        adGuardHandoverPending = FilterListLoader.lastAppliedWithAdGuard(storedUpgradeSignature())
+        let handsOver = FilterListLoader.handsOverAdGuardLists(
+            lastApplied: storedUpgradeSignature(),
+            ranFirstWbeBuild: defaults.object(forKey: Self.firstAdGuardHandoverKey) != nil)
+        adGuardHandoverPending = handsOver
             ? Set(lists.filter { $0.isSelected && FilterListLoader.isReplacedAdGuardList($0) }.map(\.id))
             : []
+        defaults.removeObject(forKey: Self.firstAdGuardHandoverKey)
     }
 
     func persistUpgradeRebuildSignature() {

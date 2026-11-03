@@ -109,10 +109,12 @@ private final class TestLoader: FilterListLoader {
         let pending: Set<UUID> = [base.id, tracking.id, popups.id]
 
         // 4.0.0 TestFlight builds ran AdGuard's converter, so the engine decides, not the version.
-        precondition(FilterListLoader.lastAppliedWithAdGuard("3.2.3|10"), "3.2.3 hands over")
-        precondition(FilterListLoader.lastAppliedWithAdGuard("4.0.0|10"), "a 4.0.0 build before wbe hands over")
-        precondition(!FilterListLoader.lastAppliedWithAdGuard("4.0.0|10|wbe-17|slots-2|safari-26.0"), "wbe does not hand over again")
-        precondition(!FilterListLoader.lastAppliedWithAdGuard(nil), "a fresh install has nothing to hand over")
+        let wbe = "4.0.0|10|wbe-17|slots-2|safari-26.0"
+        precondition(FilterListLoader.handsOverAdGuardLists(lastApplied: "3.2.3|10", ranFirstWbeBuild: false), "3.2.3 hands over")
+        precondition(FilterListLoader.handsOverAdGuardLists(lastApplied: "4.0.0|10", ranFirstWbeBuild: false), "a 4.0.0 build before wbe hands over")
+        precondition(!FilterListLoader.handsOverAdGuardLists(lastApplied: wbe, ranFirstWbeBuild: false), "wbe does not hand over again")
+        precondition(FilterListLoader.handsOverAdGuardLists(lastApplied: wbe, ranFirstWbeBuild: true), "devices the first wbe build skipped hand over")
+        precondition(!FilterListLoader.handsOverAdGuardLists(lastApplied: nil, ranFirstWbeBuild: false), "a fresh install has nothing to hand over")
 
         // Offline: no replacement has content, so nothing hands over yet.
         let offline = FilterListLoader.handingOverReplacedAdGuardLists(stored, pending: pending, hasContent: { _ in false })

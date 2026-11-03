@@ -68,11 +68,12 @@ class FilterListLoader {
     /// AdGuard list is turned off, not removed, so it can be turned on again.
     /// `settled` leaves `pending`: lists handed over, and lists the user turned
     /// off in the meantime.
-    /// Whether the last applied upgrade signature came from AdGuard's
-    /// converter. Keyed on the engine, not the version: 4.0.0 TestFlight builds
-    /// shipped AdGuard's converter before wbe. Nil (a fresh install) is not.
-    static func lastAppliedWithAdGuard(_ signature: String?) -> Bool {
-        signature.map { !$0.contains("|wbe-") } ?? false
+    /// Whether this device hands over its replaced AdGuard lists: its last
+    /// apply used AdGuard's converter (3.x, or a 4.0.0 TestFlight build before
+    /// wbe), or the first wbe build ran here and may have skipped it. A fresh
+    /// install (no signature) has nothing to hand over.
+    static func handsOverAdGuardLists(lastApplied signature: String?, ranFirstWbeBuild: Bool) -> Bool {
+        ranFirstWbeBuild || signature.map { !$0.contains("|wbe-") } ?? false
     }
 
     static func handingOverReplacedAdGuardLists(
