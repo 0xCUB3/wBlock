@@ -23,6 +23,9 @@
     observe: true,
     queued: false,
     cleanups: [],
+    shadowRoots: new Set(),
+    shadowStyles: new Map(),
+    shadowWatch: false,
   };
 
   const observer = new MutationObserver(() => schedule());
@@ -173,6 +176,21 @@
     return [...discard];
   };
 
+  const shadow = (arg) => {
+    if (!state.shadowWatch) {
+      // Attaching a root to an existing host is not a document mutation.
+      const timer = setInterval(() => { if (state.observe) schedule(); }, 1000);
+      state.cleanups.push(() => clearInterval(timer));
+      state.shadowWatch = true;
+    }
+    return expand(el => {
+      const root = el.shadowRoot;
+      if (!root) return [];
+      state.shadowRoots.add(root);
+      return Array.from(root.querySelectorAll(arg || '*'));
+    });
+  };
+
   const nested = (arg, type) => {
     const run = compileSelector(arg);
     const self = type === 'not' || type === 'is' || type === 'where';
@@ -187,6 +205,7 @@
     ['matches-property', matchesProperty],
     ['matches-prop', matchesProperty],
     ['others', others],
+    ['shadow', shadow],
     // The shared observer already watches attributes throughout each subtree.
     ['watch-attr', () => els => els],
     ...['has', 'if', 'if-not', 'not', 'is', 'where'].map(type => [type, arg => nested(arg, type)]),
@@ -211,6 +230,7 @@
       (document.head || document.documentElement).append(state.styleEl);
     }
     state.styleEl.textContent += `[${attr}]{${css}}\n`;
+    for (const sheet of state.shadowStyles.values()) sheet.textContent = state.styleEl.textContent;
     return attr;
   };
 
@@ -246,7 +266,7 @@
     const ops = selector.map(({ type, arg }) => {
       const make = OPS.get(type);
       if (!make || (typeof arg !== 'string' && !Array.isArray(arg))) throw new Error('bad operator');
-      if (arg === '' && type !== 'others' && type !== 'watch-attr') throw new Error('empty argument');
+      if (arg === '' && type !== 'others' && type !== 'watch-attr' && type !== 'shadow') throw new Error('empty argument');
       return make(arg);
     });
     const head = selector[0];
@@ -277,6 +297,13 @@
   const pass = () => {
     const next = new Map();
     const mark = (el, attr) => {
+      const root = el.getRootNode();
+      if (root.host && !state.shadowStyles.has(root)) {
+        const sheet = document.createElement('style');
+        sheet.textContent = state.styleEl.textContent;
+        root.append(sheet);
+        state.shadowStyles.set(root, sheet);
+      }
       let set = next.get(el);
       if (!set) next.set(el, (set = new Set()));
       set.add(attr);
@@ -298,6 +325,12 @@
       for (const a of attrs) if (!el.hasAttribute(a)) el.setAttribute(a, '');
     }
     state.marks = next;
+    for (const [root, sheet] of state.shadowStyles) {
+      if (root.host.isConnected) continue;
+      sheet.remove();
+      state.shadowStyles.delete(root);
+      state.shadowRoots.delete(root);
+    }
   };
 
   // Disconnecting first drops the records caused by our own attribute and style writes.
@@ -308,7 +341,10 @@
     } catch {
       // Keep the page usable; the next mutation retries.
     } finally {
-      if (state.observe) observer.observe(document, OBSERVE);
+      if (state.observe) {
+        observer.observe(document, OBSERVE);
+        for (const root of state.shadowRoots) if (root.host.isConnected) observer.observe(root, OBSERVE);
+      }
     }
   };
 
@@ -328,6 +364,8 @@
   const apply = (filters, options) => {
     for (const cleanup of state.cleanups) cleanup();
     state.cleanups = [];
+    state.shadowWatch = false;
+    state.shadowRoots.clear();
     state.filters = [];
     for (const json of filters || []) {
       try {

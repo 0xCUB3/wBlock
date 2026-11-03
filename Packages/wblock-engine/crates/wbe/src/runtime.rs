@@ -643,7 +643,7 @@ example.com##+js(set-constant, adsEnabled, false)
 
     #[test]
     fn unsupported_operators_and_headers_are_reported_without_output() {
-        for text in ["example.com##div:has-text(Ad):unknown-op(x)", "example.com##div:shadow(.ad)",
+        for text in ["example.com##div:has-text(Ad):unknown-op(x)", "example.com##div:shadow(.ad:unknown-op(x))",
             "||example.com^$removeheader=location", "example.com##^responseheader(location)",
             "||example.com^$responseheader=set-cookie:ad"] {
             let out = crate::compile(&[crate::ListInput { text, trusted: true }], &crate::CompileOptions { safari: crate::webkit::SafariVersion::new(18, 0) });
@@ -658,11 +658,6 @@ example.com##+js(set-constant, adsEnabled, false)
         for selector in ["div:matches-media((min-width: 1px))", "img:matches-property(naturalWidth=300)", "div:others()", "button:watch-attr(disabled):remove-attr(disabled)", "section:has(p:has-text(Ad))", "div:shadow(.ad)"] {
             let text = format!("example.com##{selector}");
             let out = crate::compile(&[crate::ListInput { text: &text, trusted: true }], &crate::CompileOptions { safari: crate::webkit::SafariVersion::new(18, 0) });
-            if selector.contains(":shadow") {
-                assert!(!out.stats.dropped.is_empty());
-                assert!(out.runtime.is_empty());
-                continue;
-            }
             assert!(out.stats.dropped.is_empty(), "{selector}: {:?}", out.stats.dropped);
             let engine = Engine::deserialize(&Engine::build(&out.runtime).serialize()).unwrap();
             let page = engine.lookup("https://example.com/");

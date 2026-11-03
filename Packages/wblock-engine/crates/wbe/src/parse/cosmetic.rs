@@ -851,7 +851,6 @@ pub(crate) fn procedural(sel: &str) -> Result<serde_json::Value, String> {
             }
             let end = i + 1 + b[i+1..].iter().take_while(|c| c.is_ascii_alphanumeric() || **c == b'-').count();
             let name = &sel[i+1..end];
-            if name == "shadow" { return Err("procedural:shadow requires access to closed shadow roots unavailable in Safari".into()); }
             if b.get(end) != Some(&b'(') { i = end.max(i + 1); continue; }
             let close = find_close(b, end)?;
             let arg = &sel[end+1..close];
@@ -882,8 +881,9 @@ pub(crate) fn procedural(sel: &str) -> Result<serde_json::Value, String> {
         if !sel[start..].trim().is_empty() { ops.push(json!({"type":"css-selector", "arg": &sel[start..]})); }
         if ops.is_empty() { ops.push(json!({"type":"css-selector", "arg":"*"})); }
         for op in &ops {
-            if op["type"] != "css-selector" { continue; }
+            if op["type"] != "css-selector" && op["type"] != "shadow" { continue; }
             let css = op["arg"].as_str().unwrap().trim();
+            let css = if css.is_empty() { "*" } else { css };
             let relative = css.starts_with(['>', '+', '~']);
             let css = if relative { format!("* {css}") } else { css.to_string() };
             if !crate::compile::cosmetic::valid_selector(&css) {
@@ -900,7 +900,7 @@ pub(crate) fn procedural(sel: &str) -> Result<serde_json::Value, String> {
 fn check_args(name: &str, arg: &str) -> Result<(), String> {
     match name {
         "remove" | "others" if !arg.is_empty() => Err(format!(":{name}() takes no argument")),
-        "remove" | "others" | "watch-attr" => Ok(()),
+        "remove" | "others" | "watch-attr" | "shadow" => Ok(()),
         "min-text-length" => arg
             .parse::<u32>()
             .map(|_| ())

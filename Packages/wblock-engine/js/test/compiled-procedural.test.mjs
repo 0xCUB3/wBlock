@@ -40,6 +40,31 @@ test('production compiler and DOM runtime agree on nested chains and property co
   } finally { dom.window.close(); built.close(); }
 });
 
+test('compiled shadow chains style open roots and observe their mutations', async () => {
+  const built = compile('example.com##article:shadow(div):has(:shadow(span:has-text(Ad)))');
+  // Nested procedural conditions live outside shadow(), whose argument is CSS.
+  assert.deepEqual(built.page('https://example.com/').procedural, []);
+  built.close();
+  const rules = compile('example.com##article:shadow(div):has(:shadow(span):has-text(Ad))');
+  const dom = new JSDOM('<article></article>', { url: 'https://example.com/', runScripts: 'outside-only', pretendToBeVisual: true });
+  try {
+    const outer = dom.window.document.querySelector('article').attachShadow({ mode: 'open' });
+    const host = dom.window.document.createElement('div'); outer.append(host);
+    const inner = host.attachShadow({ mode: 'open' });
+    inner.innerHTML = '<span>Ad</span>';
+    dom.window.eval(source);
+    const page = rules.page('https://example.com/');
+    assert.equal(page.procedural.length, 1);
+    dom.window.wbeProcedural.apply(page.procedural);
+    const marked = () => host.getAttributeNames().some(name => name.startsWith('data-wbe-'));
+    assert.equal(marked(), true);
+    assert.match(outer.querySelector('style').textContent, /display: none !important/);
+    inner.querySelector('span').firstChild.data = 'News';
+    await new Promise(resolve => setTimeout(resolve, 150));
+    assert.equal(marked(), false);
+  } finally { dom.window.wbeProcedural.apply([], { observe: false }); dom.window.close(); rules.close(); }
+});
+
 test('genericblock exempts generic network requests while preserving specific blocks and cosmetics', () => {
   const built = compile('||ads.test^\n||specific.test^$domain=example.com\n@@||example.com^$genericblock\nexample.com##.ad\n||important.test^$important');
   try {
