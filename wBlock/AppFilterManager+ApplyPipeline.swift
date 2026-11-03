@@ -782,11 +782,8 @@ extension AppFilterManager {
             overallSafariRulesApplied += ruleCountForThisTarget
         }
         await MainActor.run {
-            self.lastRuleCount = overallSafariRulesApplied
             self.lastConversionTime = String(
                 format: "%.2fs", Date().timeIntervalSince(overallConversionStartTime))
-            self.progress = 0.7
-            self.applyProgressViewModel.updatePhaseCompletion(converting: true, reloading: false)
         }
         await ConcurrentLogManager.shared.info(
             .filterApply, LocalizedStrings.text("Conversion phase summary"),
@@ -818,6 +815,12 @@ extension AppFilterManager {
                 statusMessage: limitStatus
             )
             return
+        }
+
+        await MainActor.run {
+            self.lastRuleCount = overallSafariRulesApplied
+            self.progress = 0.7
+            self.applyProgressViewModel.updatePhaseCompletion(converting: true, reloading: false)
         }
 
         // The per-page engine goes first: it is quick, and a Scripts extension
