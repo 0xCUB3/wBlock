@@ -6,12 +6,27 @@
 //
 
 import Foundation
+#if os(iOS)
+import UIKit
+#endif
 import wBlockCoreService
 
 class FilterListLoader {
     // Defaults mirror uBlock Origin's default-enabled lists, plus wBlock's own hosts list.
     static let minimalFilterNames: Set<String> = ["uBlock filters – Ads", "EasyList"]
-    static let recommendedFilterNames: Set<String> = [
+    /// uBlock Origin's own defaults, plus AdGuard – Mobile Ads, which uBO turns
+    /// on for a mobile user agent (assets.json `ua`). Safari on iPad presents
+    /// as a Mac, so that is iPhone only.
+    static let recommendedFilterNames: Set<String> = isPhone ? baseRecommendedFilterNames.union([mobileAdsFilterName]) : baseRecommendedFilterNames
+    static let mobileAdsFilterName = "AdGuard Mobile Filter"
+    static var isPhone: Bool {
+        #if os(iOS)
+        UIDevice.current.userInterfaceIdiom == .phone
+        #else
+        false
+        #endif
+    }
+    private static let baseRecommendedFilterNames: Set<String> = [
         "uBlock filters – Ads",
         "uBlock filters – Privacy",
         "uBlock filters – Badware risks",
@@ -37,7 +52,7 @@ class FilterListLoader {
         let ads = ["uBlock filters – Ads", "uBlock filters – Badware risks", "uBlock filters – Quick fixes",
                    "uBlock filters – Unbreak", "EasyList", "Online Malicious URL Blocklist"]
         let annoyances = ["uBlock filters – Annoyances", "EasyList – Other Annoyances"]
-        return [
+        var replacements = [
             "AdGuard Base Filter": ads,
             "AdGuard Mobile Filter": ads,
             "AdGuard Tracking Protection Filter": ["uBlock filters – Privacy", "EasyPrivacy"],
@@ -52,24 +67,39 @@ class FilterListLoader {
             "AdGuard Mobile App Banners": annoyances,
             "AdGuard Widgets": annoyances + ["EasyList – Chat Widgets"],
         ]
+        // A uBO default on iPhone, so it stays.
+        if isPhone { replacements[mobileAdsFilterName] = nil }
+        return replacements
     }()
 
     static func isReplacedAdGuardList(_ list: FilterList) -> Bool {
         !list.isCustom && adGuardReplacements[list.name] != nil
     }
 
-    /// Removes the AdGuard lists uBO lists replaced in wBlock 4. One that is off
-    /// goes at once. One that is on hands over to its replacements once every
-    /// replacement `hasContent`, so it keeps protecting (offline, say) until
-    /// then. Its replacements are turned on and, unless the user had already
-    /// turned one on, inherit its settings: automatic updates stay off if any
-    /// predecessor had them off, excluded sites are combined, and site-only
-    /// scoping is kept only when every predecessor used it.
+    /// AdGuard lists due to hand over: on, and either withdrawn from the
+    /// catalog or `pending` (on when this device first ran the handover). An
+    /// AdGuard list uBO also offers stays in the catalog, so turning one on
+    /// later keeps it on.
+    static func adGuardHandoverCandidates(
+        _ lists: [FilterList], pending: Set<UUID>, catalogURLs: Set<URL>
+    ) -> [FilterList] {
+        lists.filter { $0.isSelected && isReplacedAdGuardList($0) && (pending.contains($0.id) || !catalogURLs.contains($0.url)) }
+    }
+
+    /// Moves each candidate (adGuardHandoverCandidates) to its uBO
+    /// replacements once every replacement `hasContent`, so it keeps protecting
+    /// (offline, say) until then. Its replacements are turned on and, unless the
+    /// user had already turned one on, inherit its settings: automatic updates
+    /// stay off if any predecessor had them off, excluded sites are combined,
+    /// and site-only scoping is kept only when every predecessor used it. A
+    /// handed-over list that uBO also offers is turned off; one withdrawn from
+    /// the catalog is removed, and so is a withdrawn one that is off.
+    /// `settled` leaves `pending`: lists handed over or turned off.
     static func handingOverReplacedAdGuardLists(
-        _ lists: [FilterList], hasContent: (FilterList) -> Bool
-    ) -> (lists: [FilterList], handedOver: [FilterList], removed: [FilterList]) {
+        _ lists: [FilterList], pending: Set<UUID>, catalogURLs: Set<URL>, hasContent: (FilterList) -> Bool
+    ) -> (lists: [FilterList], handedOver: [FilterList], removed: [FilterList], settled: Set<UUID>) {
         let byName = Dictionary(lists.filter { !$0.isCustom }.map { ($0.name, $0) }, uniquingKeysWith: { a, _ in a })
-        let candidates = lists.filter { $0.isSelected && isReplacedAdGuardList($0) }
+        let candidates = adGuardHandoverCandidates(lists, pending: pending, catalogURLs: catalogURLs)
         var ready = candidates.filter { list in
             (adGuardReplacements[list.name] ?? []).allSatisfy { byName[$0].map(hasContent) == true }
         }
@@ -86,10 +116,16 @@ class FilterListLoader {
             for name in adGuardReplacements[list.name] ?? [] { predecessors[name, default: []].append(list) }
         }
         let readyIDs = Set(ready.map(\.id))
-        let removed = lists.filter { isReplacedAdGuardList($0) && (!$0.isSelected || readyIDs.contains($0.id)) }
+        let removed = lists.filter {
+            isReplacedAdGuardList($0) && !catalogURLs.contains($0.url) && (!$0.isSelected || readyIDs.contains($0.id))
+        }
         let removedIDs = Set(removed.map(\.id))
         let updated = lists.filter { !removedIDs.contains($0.id) }.map { list -> FilterList in
             var list = list
+            if readyIDs.contains(list.id) {
+                list.isSelected = false
+                return list
+            }
             guard !list.isCustom, let from = predecessors[list.name] else { return list }
             if !list.isSelected {
                 list.updatesAutomatically = from.allSatisfy(\.updatesAutomatically)
@@ -100,7 +136,8 @@ class FilterListLoader {
             list.isSelected = true
             return list
         }
-        return (updated, ready, removed)
+        let stillOn = Set(updated.filter(\.isSelected).map(\.id))
+        return (updated, ready, removed, pending.subtracting(stillOn))
     }
 
     /// Was built into wBlock 5 while any list was on, so upgrades turn it on
@@ -537,6 +574,41 @@ class FilterListLoader {
                 description:
                     "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites."
             ),
+            FilterList(
+                id: UUID(), name: "AdGuard Base Filter",
+                url: Self.adGuardUBlockURL(2), category: FilterListCategory.ads,
+                description: "EasyList + AdGuard English filter. This filter is necessary for quality ad blocking."),
+            FilterList(
+                id: UUID(), name: "AdGuard Mobile Filter",
+                url: Self.adGuardUBlockURL(11), category: FilterListCategory.ads,
+                description: "Filter for all known mobile ad networks. Useful for mobile devices."),
+            FilterList(
+                id: UUID(), name: "AdGuard URL Tracking Protection Filter",
+                url: Self.adGuardUBlockURL(17), category: FilterListCategory.privacy,
+                description: "Filter that enhances privacy by removing tracking parameters from URLs.",
+                trustLevel: "high"),
+            FilterList(
+                id: UUID(), name: "AdGuard Cookie Notices",
+                url: Self.adGuardUBlockURL(18), category: FilterListCategory.annoyances,
+                description: "Blocks cookie notices on web pages."),
+            FilterList(
+                id: UUID(), name: "AdGuard Popups",
+                url: Self.adGuardUBlockURL(19), category: FilterListCategory.annoyances,
+                description:
+                    "Blocks all kinds of pop-ups that are not necessary for websites' operation according to our Filter policy."),
+            FilterList(
+                id: UUID(), name: "AdGuard Other Annoyances",
+                url: Self.adGuardUBlockURL(21), category: FilterListCategory.annoyances,
+                description:
+                    "Blocks irritating elements that do not fall under popular categories of annoyances, such as website promotional offers and restrictions on copying and text selection."),
+            FilterList(
+                id: UUID(), name: "AdGuard Mobile App Banners",
+                url: Self.adGuardUBlockURL(20), category: FilterListCategory.annoyances,
+                description: "Blocks irritating banners that promote mobile apps of websites."),
+            FilterList(
+                id: UUID(), name: "AdGuard Widgets",
+                url: Self.adGuardUBlockURL(22), category: FilterListCategory.annoyances,
+                description: "Blocks annoying third-party widgets: online assistants, live support chats, etc."),
             FilterList(
                 id: UUID(), name: "AdGuard Experimental Filter",
                 url: Self.adGuardUBlockURL(5), category: FilterListCategory.experimental,

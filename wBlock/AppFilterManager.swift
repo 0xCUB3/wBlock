@@ -215,6 +215,31 @@ class AppFilterManager: ObservableObject {
         return defaults.string(forKey: Self.lastAppliedUpgradeSignatureKey)
     }
 
+    /// Replaced AdGuard lists that were on when this device first ran the
+    /// handover and have not handed over yet (completeAdGuardHandover).
+    /// Device-local and recorded once, so a list turned on later, here or on a
+    /// synced device, stays on.
+    private static let adGuardHandoverPendingKey = "wBlock.adGuardHandoverPending.3"
+
+    var adGuardHandoverPending: Set<UUID> {
+        get {
+            let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
+            return Set((defaults.stringArray(forKey: Self.adGuardHandoverPendingKey) ?? []).compactMap(UUID.init))
+        }
+        set {
+            let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
+            defaults.set(newValue.map(\.uuidString).sorted(), forKey: Self.adGuardHandoverPendingKey)
+        }
+    }
+
+    private func recordAdGuardHandoverIfNeeded(_ lists: [FilterList]) {
+        let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
+        guard defaults.object(forKey: Self.adGuardHandoverPendingKey) == nil else { return }
+        adGuardHandoverPending = Set(lists.filter { $0.isSelected && FilterListLoader.isReplacedAdGuardList($0) }.map(\.id))
+    }
+
+    private var catalogURLs: Set<URL> { Set(loader.getDefaultFilterLists().map(\.url)) }
+
     func persistUpgradeRebuildSignature() {
         let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
         defaults.set(ContentBlockerService.upgradeSignature, forKey: Self.lastAppliedUpgradeSignatureKey)
@@ -282,7 +307,8 @@ class AppFilterManager: ObservableObject {
                 self.autoApplyWaitingForAutoUpdate = true
                 return
             }
-            guard self.hasUnappliedChanges || self.filterLists.contains(where: FilterListLoader.isReplacedAdGuardList),
+            guard self.hasUnappliedChanges || !FilterListLoader.adGuardHandoverCandidates(
+                self.filterLists, pending: self.adGuardHandoverPending, catalogURLs: self.catalogURLs).isEmpty,
                   !self.isLoading,
                   !self.isApplyInFlight,
                   !self.pausedComponents.contains(.filters)
@@ -739,13 +765,19 @@ class AppFilterManager: ObservableObject {
                 }
             }
         }
-        // AdGuard lists that uBO lists replaced in wBlock 4: those off go now,
-        // those on are handed over by the next apply, which first downloads the
-        // replacements (completeAdGuardHandover). Start it at once.
-        let offAdGuard = FilterListLoader.handingOverReplacedAdGuardLists(migratedFilterLists, hasContent: { _ in false })
+        // AdGuard lists that uBO lists replaced in wBlock 4 hand over once, in
+        // the next apply, which first downloads the replacements
+        // (completeAdGuardHandover); start it at once. Withdrawn ones that are
+        // off go now.
+        recordAdGuardHandoverIfNeeded(migratedFilterLists)
+        let defaultURLs = Set(defaultLists.map(\.url))
+        let offAdGuard = FilterListLoader.handingOverReplacedAdGuardLists(
+            migratedFilterLists, pending: adGuardHandoverPending, catalogURLs: defaultURLs, hasContent: { _ in false })
         migratedFilterLists = offAdGuard.lists
         removeFilterLists(offAdGuard.removed)
-        let handedOverSelections = migratedFilterLists.contains(where: FilterListLoader.isReplacedAdGuardList)
+        adGuardHandoverPending.subtract(offAdGuard.settled)
+        let handedOverSelections = !FilterListLoader.adGuardHandoverCandidates(
+            migratedFilterLists, pending: adGuardHandoverPending, catalogURLs: defaultURLs).isEmpty
         let customCountBeforeHydrate = migratedFilterLists.filter(\.isCustom).count
         migratedFilterLists = FilterListSetup.hydrate(migratedFilterLists, defaults: defaultLists)
         let foldedCustomCopies = migratedFilterLists.filter(\.isCustom).count < customCountBeforeHydrate
@@ -845,27 +877,32 @@ class AppFilterManager: ObservableObject {
         }
     }
 
-    /// Downloads the replacements of each AdGuard list still on, then hands
-    /// over those whose replacements all arrived
+    /// Downloads the replacements of each AdGuard list due to hand over, then
+    /// hands over those whose replacements all arrived
     /// (FilterListLoader.handingOverReplacedAdGuardLists). One that cannot
     /// hand over yet keeps protecting and is retried on the next apply.
     func completeAdGuardHandover() async {
-        let needed = Set(filterLists.filter { $0.isSelected && FilterListLoader.isReplacedAdGuardList($0) }
+        let pending = adGuardHandoverPending, catalogURLs = catalogURLs
+        let needed = Set(FilterListLoader.adGuardHandoverCandidates(filterLists, pending: pending, catalogURLs: catalogURLs)
             .flatMap { FilterListLoader.adGuardReplacements[$0.name] ?? [] })
         guard !needed.isEmpty else { return }
         for list in filterLists where !list.isCustom && needed.contains(list.name) && !loader.filterFileExists(list) {
             _ = await filterUpdater.fetchAndProcessFilter(list)
         }
-        let handover = FilterListLoader.handingOverReplacedAdGuardLists(filterLists, hasContent: loader.filterFileExists)
-        guard !handover.removed.isEmpty else { return }
-        filterLists = handover.lists
-        removeFilterLists(handover.removed)
-        refreshMissingItems()
-        await saveFilterLists()
-        await ConcurrentLogManager.shared.info(
-            .system, LocalizedStrings.text("Replaced AdGuard filter list(s) with uBlock Origin lists"),
-            metadata: ["filters": handover.handedOver.map(\.name).joined(separator: ", ")]
-        )
+        let handover = FilterListLoader.handingOverReplacedAdGuardLists(
+            filterLists, pending: pending, catalogURLs: catalogURLs, hasContent: loader.filterFileExists)
+        if !handover.handedOver.isEmpty || !handover.removed.isEmpty {
+            filterLists = handover.lists
+            removeFilterLists(handover.removed)
+            refreshMissingItems()
+            await saveFilterLists()
+            await ConcurrentLogManager.shared.info(
+                .system, LocalizedStrings.text("Replaced AdGuard filter list(s) with uBlock Origin lists"),
+                metadata: ["filters": handover.handedOver.map(\.name).joined(separator: ", ")]
+            )
+        }
+        // After the selection is saved, so a crash in between retries the handover.
+        adGuardHandoverPending = pending.subtracting(handover.settled)
     }
 
     /// Deletes built-in lists that left the catalog, with their cached files.
