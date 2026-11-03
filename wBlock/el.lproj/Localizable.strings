@@ -102,6 +102,7 @@
 "Additional filter list for websites in Slovenian." = "Πρόσθετη λίστα φίλτρων για ιστότοπους στα σλοβενικά.";
 "AdGuard Chinese filter" = "AdGuard Chinese filter";
 "AdGuard Dutch filter" = "AdGuard Dutch filter";
+"EasyDutch" = "EasyDutch";
 "AdGuard Experimental Filter" = "AdGuard Experimental Filter";
 "AdGuard French filter" = "AdGuard French filter";
 "AdGuard Japanese filter" = "AdGuard Japanese filter";
@@ -117,7 +118,6 @@
 "All Levels" = "Όλα τα επίπεδα";
 "All of these filter lists are already in wBlock." = "Όλες αυτές οι λίστες φίλτρων υπάρχουν ήδη στο wBlock.";
 "All websites" = "Όλοι οι ιστότοποι";
-"Allowlists" = "Λίστες επιτρεπόμενων";
 "Already done this? Just check the boxes above." = "Το έχετε ήδη κάνει αυτό; Απλώς επιλέξτε τα παραπάνω πλαίσια.";
 "An existing wBlock configuration was found in iCloud (%@). Would you like to adopt it, or start fresh and upload your current setup?" = "Βρέθηκε υπάρχουσα διαμόρφωση του wBlock στο iCloud (%@). Θέλετε να την υιοθετήσετε ή να ξεκινήσετε από την αρχή και να ανεβάσετε την τρέχουσα ρύθμισή σας;";
 "An existing wBlock configuration was found in iCloud. Would you like to adopt it, or start fresh and upload your current setup?" = "Βρέθηκε υπάρχουσα διαμόρφωση του wBlock στο iCloud. Θέλετε να την υιοθετήσετε ή να ξεκινήσετε από την αρχή και να ανεβάσετε την τρέχουσα ρύθμισή σας;";
@@ -246,6 +246,7 @@
 "EasyList China + AdGuard Chinese filter. Filter list that specifically removes ads on websites in Chinese language." = "EasyList China + AdGuard Chinese filter. Λίστα φίλτρων που αφαιρεί ειδικά τις διαφημίσεις σε ιστότοπους στην κινεζική γλώσσα.";
 "EasyList Czech and Slovak" = "EasyList Czech and Slovak";
 "EasyList Dutch + AdGuard Dutch filter. Filter list that specifically removes ads on websites in Dutch language." = "EasyList Dutch + AdGuard Dutch filter. Λίστα φίλτρων που αφαιρεί ειδικά τις διαφημίσεις σε ιστότοπους στην ολλανδική γλώσσα.";
+"Blocks ads and anti-adblock messages on Dutch and Afrikaans websites, from the EasyDutch project." = "Αποκλείει διαφημίσεις και μηνύματα κατά των αποκλεισμών διαφημίσεων σε ολλανδόφωνους και αφρικανόφωνους ιστότοπους. Από το έργο EasyDutch.";
 "EasyList Hebrew" = "EasyList Hebrew";
 "EasyList Lithuania" = "EasyList Lithuania";
 "EasyList Thailand" = "EasyList Thailand";
@@ -319,7 +320,6 @@
 "Failed to update script" = "Αποτυχία ενημέρωσης κώδικα";
 "Fanboy's Annoyances Filter" = "Fanboy's Annoyances Filter";
 "Fanboy's Anti-AI Suggestions" = "Fanboy's Anti-AI Suggestions";
-"Fanboy's Social Blocking List" = "Fanboy's Social Blocking List";
 "Fast applying disabled sites changes without full conversion" = "Γρήγορη εφαρμογή αλλαγών απενεργοποιημένων ιστότοπων χωρίς πλήρη μετατροπή";
 "Fast disabled sites update completed" = "Ολοκληρώθηκε η γρήγορη ενημέρωση απενεργοποιημένων ιστότοπων";
 "File" = "Αρχείο";
@@ -358,7 +358,6 @@
 "Go to line" = "Μετάβαση στη γραμμή";
 "Greek AdBlock Filter" = "Greek AdBlock Filter";
 "HaGeZi Multi Pro Mini" = "HaGeZi Multi Pro Mini";
-"HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Handles advanced anti-adblock cases that filter rules miss." = "Χειρίζεται προηγμένες περιπτώσεις anti-adblock που δεν πιάνουν οι κανόνες φιλτραρίσματος.";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "Αποκρύπτει αναδυόμενα παράθυρα, banner και άλλα ανεπιθύμητα στοιχεία σελίδας.";
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
@@ -627,7 +626,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Unable to access shared container" = "Δεν είναι δυνατή η πρόσβαση στο κοινόχρηστο κοντέινερ";
 "Unapplied Filter Changes" = "Μη εφαρμοσμένες αλλαγές φίλτρου";
 "Unavailable" = "Μη διαθέσιμο";
-"Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Ξεμπλοκάρει συνδέσμους συνεργατών και παρακολούθησης που διαφορετικά σπάνε σε email, αποτελέσματα αναζήτησης και ανακατευθύνσεις.";
 "Undo" = "Αναίρεση";
 "Redo" = "Επανάληψη";
 "Element Zapper" = "Εργαλείο απόκρυψης στοιχείων";
@@ -733,11 +731,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 /* Filter catalog additions */
 "Online Malicious URL Blocklist" = "Online Malicious URL Blocklist";
-"Adblock Warning Removal List" = "Adblock Warning Removal List";
 "AdGuard Mail Tracking Protection Filter" = "AdGuard Mail Tracking Protection Filter";
 "Block Outsider Intrusion into LAN" = "Block Outsider Intrusion into LAN";
 "Stevo's AI Blocklist" = "Stevo's AI Blocklist";
-"AdGuard Allowlist" = "AdGuard Allowlist";
 
 
 /* Auto-update controls */
@@ -750,8 +746,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Choose File" = "Επιλογή αρχείου";
 "Change File" = "Αλλαγή αρχείου";
 "Local imports won't auto-update; re-import to replace." = "Οι τοπικές εισαγωγές δεν ενημερώνονται αυτόματα· εισαγάγετε ξανά για αντικατάσταση.";
-"AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "Το AdGuard Extra αποκλείει διαφημίσεις στο Twitch και αντιμετωπίζει σύνθετες περιπτώσεις anti-adblock.";
 "Blocks Twitch ads with the vaft script from TwitchAdSolutions." = "Αποκλείει τις διαφημίσεις του Twitch με τον κώδικα vaft από το TwitchAdSolutions.";
+"Optional. Blocks Twitch ads and handles complicated anti-adblock cases, but it slows page loads." = "Προαιρετικό. Αποκλείει τις διαφημίσεις του Twitch και τις πολύπλοκες περιπτώσεις κατά των αποκλεισμών, αλλά επιβραδύνει τη φόρτωση σελίδων.";
 
 /* Issue 508 UI */
 "Disable Essential Filter?" = "Απενεργοποίηση απαραίτητου φίλτρου;";
@@ -984,21 +980,12 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Prevents public Internet sites from digging into your LAN files." = "Αποτρέπει τους δημόσιους ιστότοπους του Διαδικτύου από το να ερευνούν τα αρχεία του LAN σας.";
 "Blocks more malware than most other major anti-malware lists - domains and URL patterns used in malware redirection chains, IP addresses that are solely used by malware, PUP nags, and a few scammers. Already included in Dandelion Sprout's Annoyances List." = "Αποκλείει περισσότερο κακόβουλο λογισμικό από τις περισσότερες άλλες μεγάλες λίστες κατά του κακόβουλου λογισμικού - τομείς και μοτίβα URL που χρησιμοποιούνται σε αλυσίδες ανακατεύθυνσης κακόβουλου λογισμικού, διευθύνσεις IP που χρησιμοποιούνται αποκλειστικά από κακόβουλο λογισμικό, ενοχλητικά από PUP, και μερικούς απατεώνες. Περιλαμβάνεται ήδη στη Dandelion Sprout's Annoyances List.";
 "Filter that blocks ads, trackers, and other nasty things." = "Φίλτρο που αποκλείει διαφημίσεις, προγράμματα παρακολούθησης και άλλα επικίνδυνα πράγματα.";
-"Removes anti-adblock warnings and other obtrusive messages." = "Καταργεί τις προειδοποιήσεις κατά του adblock και άλλα ενοχλητικά μηνύματα.";
-"Filter that unblocks search ads in Google, DuckDuckGo, Bing, or Yahoo and self-promotion on websites." = "Φίλτρο που ξεμπλοκάρει τις διαφημίσεις αναζήτησης στο Google, DuckDuckGo, Bing ή Yahoo και αυτοπροβολή σε ιστότοπους.";
 "Filter designed to test certain hazardous filtering rules before they are added to the basic filters." = "Φίλτρο σχεδιασμένο για να δοκιμάζει ορισμένους επικίνδυνους κανόνες φιλτραρίσματος προτού προστεθούν στα βασικά φίλτρα.";
 "Additional filter list for websites in Indonesian and Malay." = "Πρόσθετη λίστα φίλτρων για ιστότοπους στα ινδονησιακά και τα μαλαισιανά.";
 "Hufilter. Filter list that specifically removes ads, privacy threats, and security risks on websites in the Hungarian language." = "Hufilter. Λίστα φίλτρων που αφαιρεί ειδικά διαφημίσεις, απειλές απορρήτου και κινδύνους ασφάλειας σε ιστότοπους στην ουγγρική γλώσσα.";
 "Privacy protection supplement for EasyList." = "Συμπλήρωμα προστασίας απορρήτου για το EasyList.";
 
 /* Add Filter List: Find */
-"Name, language, or topic" = "Όνομα, γλώσσα ή θέμα";
-"Searches wBlock’s lists and AdGuard’s filter registry for Safari." = "Αναζητεί στις λίστες του wBlock και στο μητρώο φίλτρων του AdGuard για το Safari.";
-"In wBlock" = "Στο wBlock";
-"AdGuard Filter Registry" = "Μητρώο φίλτρων AdGuard";
-"wBlock already includes every list in the registry." = "Το wBlock περιλαμβάνει ήδη κάθε λίστα του μητρώου.";
-"No matching lists." = "Δεν υπάρχουν λίστες που ταιριάζουν.";
-"No longer built into wBlock" = "Δεν περιλαμβάνεται πλέον στο wBlock";
 "wBlock Ad and Tracking Hosts" = "Διακομιστές διαφημίσεων και παρακολούθησης wBlock";
 "Blocks ad and tracking hosts that the other lists only block in part." = "Αποκλείει διακομιστές διαφημίσεων και παρακολούθησης που οι άλλες λίστες αποκλείουν μόνο εν μέρει.";
 
@@ -1008,7 +995,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Clear Logs?" = "Εκκαθάριση αρχείων καταγραφής;";
 "This deletes every log entry." = "Αυτό διαγράφει όλες τις καταχωρίσεις καταγραφής.";
 "Settings…" = "Ρυθμίσεις…";
-"Browse" = "Περιήγηση";
 "Global Privacy Control" = "Global Privacy Control";
 "Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it. Enabling GPC may make your browser easier to fingerprint." = "Το Global Privacy Control ζητά από τους ιστότοπους να μην πωλούν ή κοινοποιούν τα προσωπικά σας δεδομένα. Ορισμένες περιοχές υποχρεώνουν τους ιστότοπους να το σέβονται. Η ενεργοποίηση του GPC ενδέχεται να διευκολύνει την αναγνώριση του προγράμματος περιήγησής σας μέσω ψηφιακού αποτυπώματος.";
 "Learn More" = "Μάθετε περισσότερα";
@@ -1034,7 +1020,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "uBlock filters – Cookie Notices" = "uBlock filters – Cookie Notices";
 "EasyList" = "EasyList";
 "EasyList – Cookie Notices" = "EasyList – Cookie Notices";
-"EasyList – Annoyances" = "EasyList – Annoyances";
+"EasyList – Other Annoyances" = "EasyList – Other Annoyances";
+"EasyList – Social Widgets" = "EasyList – Social Widgets";
+"EasyList – Chat Widgets" = "EasyList – Chat Widgets";
+"EasyList – Newsletter Notices" = "EasyList – Newsletter Notices";
+"EasyList – Notifications" = "EasyList – Notifications";
 "Ad blocking rules from the uBlock Origin project. Meant to be used alongside EasyList." = "Κανόνες αποκλεισμού διαφημίσεων από το έργο uBlock Origin. Προορίζονται για χρήση μαζί με το EasyList.";
 "Additional filter list for websites in German." = "Πρόσθετη λίστα φίλτρων για ιστότοπους στα γερμανικά.";
 "Additional filter list for websites in Italian." = "Πρόσθετη λίστα φίλτρων για ιστότοπους στα ιταλικά.";
@@ -1056,6 +1046,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 "EasyList Italy" = "EasyList Italy";
 "EasyList Spanish" = "EasyList Spanish";
 "Hides miscellaneous annoyances on websites, from the EasyList project." = "Αποκρύπτει διάφορες ενοχλήσεις στους ιστότοπους. Από το έργο EasyList.";
+"Hides live chat and support widgets on websites, from the EasyList project." = "Αποκρύπτει τα widget ζωντανής συνομιλίας και υποστήριξης σε ιστότοπους. Από το έργο EasyList.";
+"Hides newsletter sign-up prompts on websites, from the EasyList project." = "Αποκρύπτει προτροπές εγγραφής σε ενημερωτικά δελτία σε ιστότοπους. Από το έργο EasyList.";
+"Hides prompts that ask you to allow notifications, from the EasyList project." = "Αποκρύπτει προτροπές που ζητούν άδεια για ειδοποιήσεις. Από το έργο EasyList.";
 "Official Polish filters for AdBlock, uBlock Origin & AdGuard" = "Official Polish filters for AdBlock, uBlock Origin & AdGuard";
 "PersianBlockerNG" = "PersianBlockerNG";
 "RU AdList" = "RU AdList";

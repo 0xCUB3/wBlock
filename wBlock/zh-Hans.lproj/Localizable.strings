@@ -102,6 +102,7 @@
 "Additional filter list for websites in Slovenian." = "斯洛文尼亚语网站的附加过滤器列表。";
 "AdGuard Chinese filter" = "AdGuard Chinese filter";
 "AdGuard Dutch filter" = "AdGuard Dutch filter";
+"EasyDutch" = "EasyDutch";
 "AdGuard Experimental Filter" = "AdGuard Experimental Filter";
 "AdGuard French filter" = "AdGuard French filter";
 "AdGuard Japanese filter" = "AdGuard Japanese filter";
@@ -117,7 +118,6 @@
 "All Levels" = "所有级别";
 "All of these filter lists are already in wBlock." = "所有这些过滤器列表已存在于 wBlock 中。";
 "All websites" = "所有网站";
-"Allowlists" = "允许列表";
 "Already done this? Just check the boxes above." = "已经完成这一步？勾选上方复选框即可。";
 "An existing wBlock configuration was found in iCloud (%@). Would you like to adopt it, or start fresh and upload your current setup?" = "在 iCloud 中发现了现有的 wBlock 配置（%@）。你想采用它，还是重新开始并上传当前设置？";
 "An existing wBlock configuration was found in iCloud. Would you like to adopt it, or start fresh and upload your current setup?" = "在 iCloud 中发现了现有的 wBlock 配置。你想采用它，还是重新开始并上传当前设置？";
@@ -246,6 +246,7 @@
 "EasyList China + AdGuard Chinese filter. Filter list that specifically removes ads on websites in Chinese language." = "EasyList China + AdGuard Chinese filter。专门移除中文网站上广告的过滤器列表。";
 "EasyList Czech and Slovak" = "EasyList Czech and Slovak";
 "EasyList Dutch + AdGuard Dutch filter. Filter list that specifically removes ads on websites in Dutch language." = "EasyList Dutch + AdGuard Dutch filter。专门移除荷兰语网站上广告的过滤器列表。";
+"Blocks ads and anti-adblock messages on Dutch and Afrikaans websites, from the EasyDutch project." = "屏蔽荷兰语和南非荷兰语网站上的广告和反广告拦截提示。来自 EasyDutch 项目。";
 "EasyList Hebrew" = "EasyList Hebrew";
 "EasyList Lithuania" = "EasyList Lithuania";
 "EasyList Thailand" = "EasyList Thailand";
@@ -319,7 +320,6 @@
 "Failed to update script" = "更新脚本失败";
 "Fanboy's Annoyances Filter" = "Fanboy's Annoyances Filter";
 "Fanboy's Anti-AI Suggestions" = "Fanboy's Anti-AI Suggestions";
-"Fanboy's Social Blocking List" = "Fanboy's Social Blocking List";
 "Fast applying disabled sites changes without full conversion" = "快速应用停用网站的更改，无需完整转换";
 "Fast disabled sites update completed" = "停用网站快速更新已完成";
 "File" = "文件";
@@ -358,7 +358,6 @@
 "Go to line" = "跳转到行";
 "Greek AdBlock Filter" = "Greek AdBlock Filter";
 "HaGeZi Multi Pro Mini" = "HaGeZi Multi Pro Mini";
-"HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Handles advanced anti-adblock cases that filter rules miss." = "处理过滤规则遗漏的高级反广告拦截案例。";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "隐藏页内弹出窗口、横幅和其他不需要的页面元素。";
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
@@ -625,7 +624,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Unable to access shared container" = "无法访问共享容器";
 "Unapplied Filter Changes" = "未应用的过滤器更改";
 "Unavailable" = "不可用";
-"Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "解除对联盟推广和跟踪推荐链接的拦截，否则这些链接会在邮件、搜索结果和重定向中失效。";
 "Undo" = "撤销";
 "Redo" = "重做";
 "Element Zapper" = "元素清除器";
@@ -731,11 +729,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 /* Filter catalog additions */
 "Online Malicious URL Blocklist" = "Online Malicious URL Blocklist";
-"Adblock Warning Removal List" = "Adblock Warning Removal List";
 "AdGuard Mail Tracking Protection Filter" = "AdGuard Mail Tracking Protection Filter";
 "Block Outsider Intrusion into LAN" = "Block Outsider Intrusion into LAN";
 "Stevo's AI Blocklist" = "Stevo's AI Blocklist";
-"AdGuard Allowlist" = "AdGuard Allowlist";
 
 
 /* Auto-update controls */
@@ -748,8 +744,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Choose File" = "选择文件";
 "Change File" = "更改文件";
 "Local imports won't auto-update; re-import to replace." = "本地导入不会自动更新；请重新导入以替换。";
-"AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard Extra 可拦截 Twitch 广告，并处理复杂的反广告拦截情况。";
 "Blocks Twitch ads with the vaft script from TwitchAdSolutions." = "使用 TwitchAdSolutions 的 vaft 脚本拦截 Twitch 广告。";
+"Optional. Blocks Twitch ads and handles complicated anti-adblock cases, but it slows page loads." = "可选。屏蔽 Twitch 广告并处理复杂的反广告拦截情况，但会降低页面加载速度。";
 
 /* Issue 508 UI */
 "Disable Essential Filter?" = "要停用必要过滤器吗？";
@@ -984,21 +980,12 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Prevents public Internet sites from digging into your LAN files." = "防止公共互联网网站窃取局域网文件。";
 "Blocks more malware than most other major anti-malware lists - domains and URL patterns used in malware redirection chains, IP addresses that are solely used by malware, PUP nags, and a few scammers. Already included in Dandelion Sprout's Annoyances List." = "比大多数主流反恶意软件列表拦截更多恶意软件：包括恶意软件重定向链中使用的域名和 URL 模式、仅被恶意软件使用的 IP 地址、潜在有害程序（PUP）弹窗以及少数诈骗者。已包含在 Dandelion Sprout's Annoyances List 中。";
 "Filter that blocks ads, trackers, and other nasty things." = "拦截广告、跟踪器及其他讨厌内容的过滤器。";
-"Removes anti-adblock warnings and other obtrusive messages." = "移除反广告拦截警告和其他突兀的消息。";
-"Filter that unblocks search ads in Google, DuckDuckGo, Bing, or Yahoo and self-promotion on websites." = "用于解除拦截 Google、DuckDuckGo、Bing 或 Yahoo 中的搜索广告以及网站自我推广内容的过滤器。";
 "Filter designed to test certain hazardous filtering rules before they are added to the basic filters." = "此过滤器设计用于在将某些有风险的过滤规则添加到基本过滤器之前对其进行测试。";
 "Additional filter list for websites in Indonesian and Malay." = "印度尼西亚语和马来语网站的附加过滤器列表。";
 "Hufilter. Filter list that specifically removes ads, privacy threats, and security risks on websites in the Hungarian language." = "Hufilter。专门移除匈牙利语网站上广告、隐私威胁和安全风险的过滤器列表。";
 "Privacy protection supplement for EasyList." = "EasyList 的隐私保护补充。";
 
 /* Add Filter List: Find */
-"Name, language, or topic" = "名称、语言或主题";
-"Searches wBlock’s lists and AdGuard’s filter registry for Safari." = "搜索 wBlock 的列表和 AdGuard 的 Safari 过滤器注册表。";
-"In wBlock" = "在 wBlock 中";
-"AdGuard Filter Registry" = "AdGuard 过滤器注册表";
-"wBlock already includes every list in the registry." = "wBlock 已包含注册表中的所有列表。";
-"No matching lists." = "没有匹配的列表。";
-"No longer built into wBlock" = "已不再内置于 wBlock";
 "wBlock Ad and Tracking Hosts" = "wBlock 广告与跟踪主机";
 "Blocks ad and tracking hosts that the other lists only block in part." = "拦截其他列表只部分拦截的广告和跟踪主机。";
 
@@ -1008,7 +995,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Clear Logs?" = "清除日志？";
 "This deletes every log entry." = "这会删除所有日志条目。";
 "Settings…" = "设置…";
-"Browse" = "浏览";
 "Global Privacy Control" = "全球隐私控制";
 "Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it. Enabling GPC may make your browser easier to fingerprint." = "全球隐私控制（GPC）会要求网站不要出售或共享你的个人信息。部分地区要求网站遵守这一信号。启用 GPC 可能会让网站更容易通过浏览器指纹识别你的浏览器。";
 "Learn More" = "了解更多";
@@ -1034,7 +1020,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "uBlock filters – Cookie Notices" = "uBlock filters – Cookie Notices";
 "EasyList" = "EasyList";
 "EasyList – Cookie Notices" = "EasyList – Cookie Notices";
-"EasyList – Annoyances" = "EasyList – Annoyances";
+"EasyList – Other Annoyances" = "EasyList – Other Annoyances";
+"EasyList – Social Widgets" = "EasyList – Social Widgets";
+"EasyList – Chat Widgets" = "EasyList – Chat Widgets";
+"EasyList – Newsletter Notices" = "EasyList – Newsletter Notices";
+"EasyList – Notifications" = "EasyList – Notifications";
 "Ad blocking rules from the uBlock Origin project. Meant to be used alongside EasyList." = "来自 uBlock Origin 项目的广告拦截规则，建议与 EasyList 一起使用。";
 "Additional filter list for websites in German." = "德语网站的附加过滤器列表。";
 "Additional filter list for websites in Italian." = "意大利语网站的附加过滤器列表。";
@@ -1056,6 +1046,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 "EasyList Italy" = "EasyList Italy";
 "EasyList Spanish" = "EasyList Spanish";
 "Hides miscellaneous annoyances on websites, from the EasyList project." = "隐藏网站上各种令人烦扰的内容。来自 EasyList 项目。";
+"Hides live chat and support widgets on websites, from the EasyList project." = "隐藏网站上的在线聊天和客服小部件。来自 EasyList 项目。";
+"Hides newsletter sign-up prompts on websites, from the EasyList project." = "隐藏网站上的订阅通讯邮件提示。来自 EasyList 项目。";
+"Hides prompts that ask you to allow notifications, from the EasyList project." = "隐藏请求允许通知的提示。来自 EasyList 项目。";
 "Official Polish filters for AdBlock, uBlock Origin & AdGuard" = "Official Polish filters for AdBlock, uBlock Origin & AdGuard";
 "PersianBlockerNG" = "PersianBlockerNG";
 "RU AdList" = "RU AdList";

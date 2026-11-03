@@ -242,7 +242,8 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
             let suffix: String
             if host == "filters.adtidy.org", components.count == 4,
                components[0] == "extension", components[2] == "filters" {
-                suffix = ".txt"
+                // AdGuard Base is published without EasyList as 2_without_easylist.txt.
+                suffix = filename.hasSuffix("_without_easylist.txt") ? "_without_easylist.txt" : ".txt"
             } else if host == "raw.githubusercontent.com", components.count >= 7,
                       Array(components.prefix(4)) == ["AdguardTeam", "FiltersRegistry", "master", "platforms"],
                       components[components.count - 2] == "filters" {

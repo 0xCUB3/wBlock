@@ -102,6 +102,7 @@
 "Additional filter list for websites in Slovenian." = "スロベニア語のウェブサイト用の追加フィルターリスト。";
 "AdGuard Chinese filter" = "AdGuard Chinese filter";
 "AdGuard Dutch filter" = "AdGuard Dutch filter";
+"EasyDutch" = "EasyDutch";
 "AdGuard Experimental Filter" = "AdGuard Experimental Filter";
 "AdGuard French filter" = "AdGuard French filter";
 "AdGuard Japanese filter" = "AdGuard Japanese filter";
@@ -117,7 +118,6 @@
 "All Levels" = "全てのレベル";
 "All of these filter lists are already in wBlock." = "これらのフィルターリストは全て既にwBlock内に存在します。";
 "All websites" = "全てのウェブサイト";
-"Allowlists" = "許可リスト";
 "Already done this? Just check the boxes above." = "既に完了していますか？上のチェックボックスを確認してください。";
 "An existing wBlock configuration was found in iCloud (%@). Would you like to adopt it, or start fresh and upload your current setup?" = "iCloudに既存のwBlock設定が見つかりました（%@）。これを採用しますか、それとも最初から始めて現在の設定をアップロードしますか？";
 "An existing wBlock configuration was found in iCloud. Would you like to adopt it, or start fresh and upload your current setup?" = "iCloudに既存のwBlock設定が見つかりました。これを採用しますか、それとも最初から始めて現在の設定をアップロードしますか？";
@@ -246,6 +246,7 @@
 "EasyList China + AdGuard Chinese filter. Filter list that specifically removes ads on websites in Chinese language." = "EasyList China + AdGuard 中国語フィルター。中国語のウェブサイト上の広告を特に削除するフィルターリスト。";
 "EasyList Czech and Slovak" = "EasyList Czech and Slovak";
 "EasyList Dutch + AdGuard Dutch filter. Filter list that specifically removes ads on websites in Dutch language." = "EasyList Dutch + AdGuard オランダ語フィルター。オランダ語のウェブサイト上の広告を特に削除するフィルターリスト。";
+"Blocks ads and anti-adblock messages on Dutch and Afrikaans websites, from the EasyDutch project." = "オランダ語とアフリカーンス語のウェブサイトで、広告とアドブロック対策のメッセージをブロックします。EasyDutch プロジェクトのリストです。";
 "EasyList Hebrew" = "EasyList Hebrew";
 "EasyList Lithuania" = "EasyList Lithuania";
 "EasyList Thailand" = "EasyList Thailand";
@@ -319,7 +320,6 @@
 "Failed to update script" = "スクリプトのアップデートに失敗しました";
 "Fanboy's Annoyances Filter" = "Fanboy's Annoyances Filter";
 "Fanboy's Anti-AI Suggestions" = "Fanboy's Anti-AI Suggestions";
-"Fanboy's Social Blocking List" = "Fanboy's Social Blocking List";
 "Fast applying disabled sites changes without full conversion" = "完全な変換を行わずに無効化サイトの変更を高速適用中";
 "Fast disabled sites update completed" = "無効化サイトの高速アップデートが完了しました";
 "File" = "ファイル";
@@ -358,7 +358,6 @@
 "Go to line" = "行へ移動";
 "Greek AdBlock Filter" = "Greek AdBlock Filter";
 "HaGeZi Multi Pro Mini" = "HaGeZi Multi Pro Mini";
-"HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Handles advanced anti-adblock cases that filter rules miss." = "フィルタールールが見逃す高度な広告ブロック対策ケースを処理します。";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "ページ内のポップアップ、バナー、その他の不要なページ要素を非表示にします。";
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
@@ -627,7 +626,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Unable to access shared container" = "共有コンテナにアクセスできません";
 "Unapplied Filter Changes" = "適用されていないフィルターの変更";
 "Unavailable" = "利用できません";
-"Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "メール、検索結果、リダイレクトで正常に機能しなくなるアフィリエイトリンクやトラッキング用のリファラルリンクのブロックを解除します。";
 "Undo" = "元に戻す";
 "Redo" = "やり直す";
 "Element Zapper" = "要素ブロック";
@@ -730,11 +728,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Built-in" = "内蔵";
 /* Filter catalog additions */
 "Online Malicious URL Blocklist" = "Online Malicious URL Blocklist";
-"Adblock Warning Removal List" = "Adblock Warning Removal List";
 "AdGuard Mail Tracking Protection Filter" = "AdGuard Mail Tracking Protection Filter";
 "Block Outsider Intrusion into LAN" = "Block Outsider Intrusion into LAN";
 "Stevo's AI Blocklist" = "Stevo's AI Blocklist";
-"AdGuard Allowlist" = "AdGuard Allowlist";
 
 /* Auto-update controls */
 "Auto-Update" = "自動アップデート";
@@ -746,8 +742,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Choose File" = "ファイルを選択";
 "Change File" = "ファイルを変更";
 "Local imports won't auto-update; re-import to replace." = "ローカルインポートは自動アップデートされません。置き換えるには再インポートしてください。";
-"AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard ExtraはTwitchの広告をブロックし、複雑な広告ブロック対策に対応します。";
 "Blocks Twitch ads with the vaft script from TwitchAdSolutions." = "TwitchAdSolutions の vaft スクリプトで Twitch の広告をブロックします。";
+"Optional. Blocks Twitch ads and handles complicated anti-adblock cases, but it slows page loads." = "任意。Twitch の広告をブロックし、複雑なアドブロック対策にも対応しますが、ページの読み込みが遅くなります。";
 
 /* Issue 508 UI */
 "Disable Essential Filter?" = "必須フィルターを無効にしますか？";
@@ -953,21 +949,12 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Prevents public Internet sites from digging into your LAN files." = "パブリックインターネットサイトが LAN ファイルにアクセスするのを防ぎます。";
 "Blocks more malware than most other major anti-malware lists - domains and URL patterns used in malware redirection chains, IP addresses that are solely used by malware, PUP nags, and a few scammers. Already included in Dandelion Sprout's Annoyances List." = "他の主要なマルウェア対策リストよりも多くのマルウェアをブロックします。マルウェアのリダイレクトチェーンで使用されるドメインやURLパターン、マルウェアによってのみ使用されるIPアドレス、PUPの迷惑要素、そしていくつかの詐欺師もブロック対象に入っています。※このリストは、既に「Dandelion Sprout\\'s Annoyances List」に含まれています。";
 "Filter that blocks ads, trackers, and other nasty things." = "広告やトラッカー（追跡ソフト）などのような嫌なものをブロックするフィルター。";
-"Removes anti-adblock warnings and other obtrusive messages." = "アンチアドブロック警告（「広告ブロックをオフにしないとこのサイトは見れません」など）やその他の妨害メッセージを削除します。";
-"Filter that unblocks search ads in Google, DuckDuckGo, Bing, or Yahoo and self-promotion on websites." = "Google、DuckDuckGo、Bing、Yahooの検索広告とサイトの自己宣伝広告をブロック解除するフィルター。";
 "Filter designed to test certain hazardous filtering rules before they are added to the basic filters." = "特定の危険なフィルタリングルールを基本フィルターに追加する前にテストするように設計されたフィルターです。";
 "Additional filter list for websites in Indonesian and Malay." = "インドネシア語およびマレー語サイト用、補足フィルターリストです。";
 "Hufilter. Filter list that specifically removes ads, privacy threats, and security risks on websites in the Hungarian language." = "Hufilter。ハンガリー語ウェブサイト上の広告・プライバシー脅威・セキュリティリスクをするための専用フィルターリスト。";
 "Privacy protection supplement for EasyList." = "EasyList用のプライバシー保護補足フィルター。";
 
 /* Add Filter List: Find */
-"Name, language, or topic" = "名前、言語、またはトピック";
-"Searches wBlock’s lists and AdGuard’s filter registry for Safari." = "wBlockのリストとAdGuardのSafari向けフィルターレジストリを検索します。";
-"In wBlock" = "wBlock内";
-"AdGuard Filter Registry" = "AdGuardフィルターレジストリ";
-"wBlock already includes every list in the registry." = "wBlockにはレジストリのすべてのリストがすでに含まれています。";
-"No matching lists." = "一致するリストはありません。";
-"No longer built into wBlock" = "wBlockには内蔵されなくなりました";
 "wBlock Ad and Tracking Hosts" = "wBlock 広告・トラッキングホスト";
 "Blocks ad and tracking hosts that the other lists only block in part." = "他のリストでは一部しかブロックされない広告・トラッキングのホストをブロックします。";
 
@@ -977,7 +964,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Clear Logs?" = "ログを消去しますか？";
 "This deletes every log entry." = "すべてのログ項目が削除されます。";
 "Settings…" = "設定…";
-"Browse" = "ブラウズ";
 "Global Privacy Control" = "グローバル・プライバシー・コントロール";
 "Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it. Enabling GPC may make your browser easier to fingerprint." = "グローバル・プライバシー・コントロール（GPC）は、個人情報を販売・共有しないようWebサイトに求めます。一部の地域では、サイトはこれに従う義務があります。GPCを有効にすると、フィンガープリントによってブラウザを識別されやすくなる可能性があります。";
 "Learn More" = "詳しく見る";
@@ -1003,7 +989,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "uBlock filters – Cookie Notices" = "uBlock filters – Cookie Notices";
 "EasyList" = "EasyList";
 "EasyList – Cookie Notices" = "EasyList – Cookie Notices";
-"EasyList – Annoyances" = "EasyList – Annoyances";
+"EasyList – Other Annoyances" = "EasyList – Other Annoyances";
+"EasyList – Social Widgets" = "EasyList – Social Widgets";
+"EasyList – Chat Widgets" = "EasyList – Chat Widgets";
+"EasyList – Newsletter Notices" = "EasyList – Newsletter Notices";
+"EasyList – Notifications" = "EasyList – Notifications";
 "Ad blocking rules from the uBlock Origin project. Meant to be used alongside EasyList." = "uBlock Origin プロジェクトの広告ブロックルール。EasyList と併用することを想定しています。";
 "Additional filter list for websites in German." = "ドイツ語のウェブサイト用の追加フィルターリスト。";
 "Additional filter list for websites in Italian." = "イタリア語のウェブサイト用の追加フィルターリスト。";
@@ -1025,6 +1015,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 "EasyList Italy" = "EasyList Italy";
 "EasyList Spanish" = "EasyList Spanish";
 "Hides miscellaneous annoyances on websites, from the EasyList project." = "ウェブサイト上のさまざまな煩わしい要素を非表示にします。EasyList プロジェクトのリストです。";
+"Hides live chat and support widgets on websites, from the EasyList project." = "ウェブサイト上のライブチャットやサポートのウィジェットを非表示にします。EasyList プロジェクトのリストです。";
+"Hides newsletter sign-up prompts on websites, from the EasyList project." = "ウェブサイト上のニュースレター登録の案内を非表示にします。EasyList プロジェクトのリストです。";
+"Hides prompts that ask you to allow notifications, from the EasyList project." = "通知を許可するよう求める表示を非表示にします。EasyList プロジェクトのリストです。";
 "Official Polish filters for AdBlock, uBlock Origin & AdGuard" = "Official Polish filters for AdBlock, uBlock Origin & AdGuard";
 "PersianBlockerNG" = "PersianBlockerNG";
 "RU AdList" = "RU AdList";

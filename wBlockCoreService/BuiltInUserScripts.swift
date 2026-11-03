@@ -101,8 +101,8 @@ enum BuiltInUserScripts {
             name: "AdGuard Extra",
             url: "https://userscripts.adtidy.org/release/adguard-extra/1.0/adguard-extra.user.js",
             isEnabledByDefault: false,
-            description: "AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases.",
-            displayRole: .blocking
+            description: "Optional. Blocks Twitch ads and handles complicated anti-adblock cases, but it slows page loads.",
+            displayRole: .functionality
         ),
         BuiltInUserScriptDefinition(
             name: "TwitchAdSolutions (vaft)",

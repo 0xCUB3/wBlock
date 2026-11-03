@@ -102,6 +102,7 @@
 "Additional filter list for websites in Slovenian." = "슬로베니아어 웹사이트에 대한 추가 필터 목록입니다.";
 "AdGuard Chinese filter" = "AdGuard Chinese filter";
 "AdGuard Dutch filter" = "AdGuard Dutch filter";
+"EasyDutch" = "EasyDutch";
 "AdGuard Experimental Filter" = "AdGuard Experimental Filter";
 "AdGuard French filter" = "AdGuard French filter";
 "AdGuard Japanese filter" = "AdGuard Japanese filter";
@@ -117,7 +118,6 @@
 "All Levels" = "모든 단계";
 "All of these filter lists are already in wBlock." = "이 모든 필터 목록은 이미 wBlock에 있습니다.";
 "All websites" = "모든 웹사이트";
-"Allowlists" = "허용 목록";
 "Already done this? Just check the boxes above." = "이미 완료하셨나요? 위 체크박스를 선택하세요.";
 "An existing wBlock configuration was found in iCloud (%@). Would you like to adopt it, or start fresh and upload your current setup?" = "iCloud에서 기존 wBlock 구성이 발견되었습니다(%@). 이를 적용하시겠습니까, 아니면 새로 시작해서 현재 설정을 업로드하시겠습니까?";
 "An existing wBlock configuration was found in iCloud. Would you like to adopt it, or start fresh and upload your current setup?" = "iCloud에서 기존 wBlock 구성이 발견되었습니다. 이를 적용하시겠습니까, 아니면 새로 시작해서 현재 설정을 업로드하시겠습니까?";
@@ -246,6 +246,7 @@
 "EasyList China + AdGuard Chinese filter. Filter list that specifically removes ads on websites in Chinese language." = "EasyList China + AdGuard Chinese filter. 중국어로 된 웹사이트의 광고를 구체적으로 제거하는 필터 목록입니다.";
 "EasyList Czech and Slovak" = "EasyList Czech and Slovak";
 "EasyList Dutch + AdGuard Dutch filter. Filter list that specifically removes ads on websites in Dutch language." = "EasyList Dutch + AdGuard Dutch filter. 네덜란드어로 된 웹사이트의 광고를 구체적으로 제거하는 필터 목록입니다.";
+"Blocks ads and anti-adblock messages on Dutch and Afrikaans websites, from the EasyDutch project." = "네덜란드어와 아프리칸스어 웹사이트의 광고와 광고 차단 방지 메시지를 차단합니다. EasyDutch 프로젝트에서 제공합니다.";
 "EasyList Hebrew" = "EasyList Hebrew";
 "EasyList Lithuania" = "EasyList Lithuania";
 "EasyList Thailand" = "EasyList Thailand";
@@ -319,7 +320,6 @@
 "Failed to update script" = "스크립트 업데이트에 실패했습니다";
 "Fanboy's Annoyances Filter" = "Fanboy's Annoyances Filter";
 "Fanboy's Anti-AI Suggestions" = "Fanboy's Anti-AI Suggestions";
-"Fanboy's Social Blocking List" = "Fanboy's Social Blocking List";
 "Fast applying disabled sites changes without full conversion" = "전체 변환 없이 비활성화된 사이트 변경 사항을 빠르게 적용합니다";
 "Fast disabled sites update completed" = "비활성화된 사이트 빠른 업데이트가 완료되었습니다";
 "File" = "파일";
@@ -358,7 +358,6 @@
 "Go to line" = "줄로 이동";
 "Greek AdBlock Filter" = "Greek AdBlock Filter";
 "HaGeZi Multi Pro Mini" = "HaGeZi Multi Pro Mini";
-"HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Handles advanced anti-adblock cases that filter rules miss." = "필터 규칙이 놓친 고급 광고 차단 방지 사례를 처리합니다.";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "페이지 내 팝업, 배너 및 기타 원치 않는 페이지 요소를 숨깁니다.";
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
@@ -627,7 +626,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Unable to access shared container" = "공유 컨테이너에 접근할 수 없습니다";
 "Unapplied Filter Changes" = "적용되지 않은 필터 변경 사항";
 "Unavailable" = "사용할 수 없음";
-"Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "이메일, 검색 결과, 리디렉션에서 깨지는 제휴 및 추적 리퍼럴 링크의 차단을 해제합니다.";
 "Undo" = "실행 취소";
 "Redo" = "다시 실행";
 "Element Zapper" = "요소 제거기";
@@ -733,11 +731,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 /* Filter catalog additions */
 "Online Malicious URL Blocklist" = "Online Malicious URL Blocklist";
-"Adblock Warning Removal List" = "Adblock Warning Removal List";
 "AdGuard Mail Tracking Protection Filter" = "AdGuard Mail Tracking Protection Filter";
 "Block Outsider Intrusion into LAN" = "Block Outsider Intrusion into LAN";
 "Stevo's AI Blocklist" = "Stevo's AI Blocklist";
-"AdGuard Allowlist" = "AdGuard Allowlist";
 
 
 /* Auto-update controls */
@@ -750,8 +746,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Choose File" = "파일 선택";
 "Change File" = "파일 변경";
 "Local imports won't auto-update; re-import to replace." = "로컬 가져오기는 자동으로 업데이트되지 않습니다. 교체하려면 다시 가져오세요.";
-"AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard Extra는 Twitch 광고를 차단하고 복잡한 광고 차단 방지 사례를 처리합니다.";
 "Blocks Twitch ads with the vaft script from TwitchAdSolutions." = "TwitchAdSolutions의 vaft 스크립트로 Twitch 광고를 차단합니다.";
+"Optional. Blocks Twitch ads and handles complicated anti-adblock cases, but it slows page loads." = "선택 사항입니다. Twitch 광고를 차단하고 복잡한 광고 차단 방지 사례를 처리하지만, 페이지 로딩이 느려집니다.";
 
 /* Issue 508 UI */
 "Disable Essential Filter?" = "필수 필터를 비활성화할까요?";
@@ -984,21 +980,12 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Prevents public Internet sites from digging into your LAN files." = "공용 인터넷 사이트가 LAN의 파일을 들여다보지 못하도록 방지합니다.";
 "Blocks more malware than most other major anti-malware lists - domains and URL patterns used in malware redirection chains, IP addresses that are solely used by malware, PUP nags, and a few scammers. Already included in Dandelion Sprout's Annoyances List." = "대부분의 주요 악성코드 차단 목록보다 더 많은 악성코드를 차단합니다. 악성코드 리디렉션 체인에 사용되는 도메인 및 URL 패턴, 악성코드 전용 IP 주소, PUP(잠재적으로 원하지 않는 프로그램) 알림, 그리고 일부 사기꾼을 차단합니다. 이미 Dandelion Sprout's Annoyances List에 포함되어 있습니다.";
 "Filter that blocks ads, trackers, and other nasty things." = "광고, 추적기 및 기타 유해한 요소를 차단하는 필터입니다.";
-"Removes anti-adblock warnings and other obtrusive messages." = "광고 차단 경고 및 기타 거슬리는 메시지를 제거합니다.";
-"Filter that unblocks search ads in Google, DuckDuckGo, Bing, or Yahoo and self-promotion on websites." = "Google, DuckDuckGo, Bing 또는 Yahoo의 검색 광고와 웹사이트의 자체 홍보를 차단 해제하는 필터입니다.";
 "Filter designed to test certain hazardous filtering rules before they are added to the basic filters." = "위험할 수 있는 필터링 규칙을 기본 필터에 추가하기 전 실험하기 위한 필터입니다.";
 "Additional filter list for websites in Indonesian and Malay." = "인도네시아어 및 말레이어 웹사이트를 위한 추가 필터 목록입니다.";
 "Hufilter. Filter list that specifically removes ads, privacy threats, and security risks on websites in the Hungarian language." = "Hufilter. 헝가리어로 된 웹사이트의 광고, 개인정보 위협, 보안 위험을 구체적으로 제거하는 필터 목록입니다.";
 "Privacy protection supplement for EasyList." = "EasyList의 개인정보 보호 보완 필터입니다.";
 
 /* Add Filter List: Find */
-"Name, language, or topic" = "이름, 언어 또는 주제";
-"Searches wBlock’s lists and AdGuard’s filter registry for Safari." = "wBlock의 목록과 AdGuard의 Safari용 필터 레지스트리를 검색합니다.";
-"In wBlock" = "wBlock에 있음";
-"AdGuard Filter Registry" = "AdGuard 필터 레지스트리";
-"wBlock already includes every list in the registry." = "wBlock에 레지스트리의 모든 목록이 이미 포함되어 있습니다.";
-"No matching lists." = "일치하는 목록이 없습니다.";
-"No longer built into wBlock" = "더 이상 wBlock에 내장되지 않음";
 "wBlock Ad and Tracking Hosts" = "wBlock 광고 및 추적 호스트";
 "Blocks ad and tracking hosts that the other lists only block in part." = "다른 목록이 일부만 차단하는 광고 및 추적 호스트를 차단합니다.";
 
@@ -1008,7 +995,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Clear Logs?" = "로그를 지우시겠습니까?";
 "This deletes every log entry." = "모든 로그 항목이 삭제됩니다.";
 "Settings…" = "설정…";
-"Browse" = "둘러보기";
 "Global Privacy Control" = "글로벌 개인정보 보호 제어";
 "Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it. Enabling GPC may make your browser easier to fingerprint." = "글로벌 개인정보 보호 제어(GPC)는 웹사이트에 개인 정보를 판매하거나 공유하지 말라고 요청합니다. 일부 지역에서는 사이트가 이를 따라야 합니다. GPC를 활성화하면 브라우저 핑거프린팅을 통한 식별이 더 쉬워질 수 있습니다.";
 "Learn More" = "자세히 알아보기";
@@ -1034,7 +1020,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "uBlock filters – Cookie Notices" = "uBlock filters – Cookie Notices";
 "EasyList" = "EasyList";
 "EasyList – Cookie Notices" = "EasyList – Cookie Notices";
-"EasyList – Annoyances" = "EasyList – Annoyances";
+"EasyList – Other Annoyances" = "EasyList – Other Annoyances";
+"EasyList – Social Widgets" = "EasyList – Social Widgets";
+"EasyList – Chat Widgets" = "EasyList – Chat Widgets";
+"EasyList – Newsletter Notices" = "EasyList – Newsletter Notices";
+"EasyList – Notifications" = "EasyList – Notifications";
 "Ad blocking rules from the uBlock Origin project. Meant to be used alongside EasyList." = "uBlock Origin 프로젝트의 광고 차단 규칙입니다. EasyList와 함께 사용하도록 만들어졌습니다.";
 "Additional filter list for websites in German." = "독일어 웹사이트에 대한 추가 필터 목록입니다.";
 "Additional filter list for websites in Italian." = "이탈리아어 웹사이트에 대한 추가 필터 목록입니다.";
@@ -1056,6 +1046,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 "EasyList Italy" = "EasyList Italy";
 "EasyList Spanish" = "EasyList Spanish";
 "Hides miscellaneous annoyances on websites, from the EasyList project." = "웹사이트의 여러 성가신 요소를 숨깁니다. EasyList 프로젝트의 목록입니다.";
+"Hides live chat and support widgets on websites, from the EasyList project." = "웹사이트의 실시간 채팅 및 고객 지원 위젯을 숨깁니다. EasyList 프로젝트에서 제공합니다.";
+"Hides newsletter sign-up prompts on websites, from the EasyList project." = "웹사이트의 뉴스레터 구독 안내를 숨깁니다. EasyList 프로젝트에서 제공합니다.";
+"Hides prompts that ask you to allow notifications, from the EasyList project." = "알림 허용을 요청하는 안내를 숨깁니다. EasyList 프로젝트에서 제공합니다.";
 "Official Polish filters for AdBlock, uBlock Origin & AdGuard" = "Official Polish filters for AdBlock, uBlock Origin & AdGuard";
 "PersianBlockerNG" = "PersianBlockerNG";
 "RU AdList" = "RU AdList";

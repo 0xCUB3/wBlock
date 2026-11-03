@@ -16,8 +16,6 @@ enum FilterCategorySupport {
             "Removes cookie notices, pop-ups, banners, and other distracting elements. Enable all five AdGuard Annoyances lists for the full set."
         case .experimental:
             "Provides newer rules and fixes that are still being tested."
-        case .allowlists:
-            "Allows trusted sites and resources that should not be blocked."
         case .custom:
             "Contains filter lists that you added or imported yourself."
         case .foreign:

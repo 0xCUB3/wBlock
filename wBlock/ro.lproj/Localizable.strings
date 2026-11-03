@@ -102,6 +102,7 @@
 "Additional filter list for websites in Slovenian." = "Listă suplimentară de filtre pentru site-urile web în limba slovenă.";
 "AdGuard Chinese filter" = "AdGuard Chinese filter";
 "AdGuard Dutch filter" = "AdGuard Dutch filter";
+"EasyDutch" = "EasyDutch";
 "AdGuard Experimental Filter" = "AdGuard Experimental Filter";
 "AdGuard French filter" = "AdGuard French filter";
 "AdGuard Japanese filter" = "AdGuard Japanese filter";
@@ -117,7 +118,6 @@
 "All Levels" = "Toate nivelurile";
 "All of these filter lists are already in wBlock." = "Toate aceste liste de filtre există deja în wBlock.";
 "All websites" = "Toate site-urile web";
-"Allowlists" = "Liste albe";
 "Already done this? Just check the boxes above." = "Ai făcut deja asta? Bifează doar căsuțele de mai sus.";
 "An existing wBlock configuration was found in iCloud (%@). Would you like to adopt it, or start fresh and upload your current setup?" = "A fost găsită o configurație wBlock existentă în iCloud (%@). Vrei să o adopți sau să pornești de la zero și să încarci configurarea actuală?";
 "An existing wBlock configuration was found in iCloud. Would you like to adopt it, or start fresh and upload your current setup?" = "A fost găsită o configurație wBlock existentă în iCloud. Vrei să o adopți sau să pornești de la zero și să încarci configurarea actuală?";
@@ -246,6 +246,7 @@
 "EasyList China + AdGuard Chinese filter. Filter list that specifically removes ads on websites in Chinese language." = "EasyList China + AdGuard Chinese filter. Listă de filtre care elimină în mod specific reclamele de pe site-urile web în limba chineză.";
 "EasyList Czech and Slovak" = "EasyList Czech and Slovak";
 "EasyList Dutch + AdGuard Dutch filter. Filter list that specifically removes ads on websites in Dutch language." = "EasyList Dutch + AdGuard Dutch filter. Listă de filtre care elimină în mod specific reclamele de pe site-urile web în limba olandeză.";
+"Blocks ads and anti-adblock messages on Dutch and Afrikaans websites, from the EasyDutch project." = "Blochează reclamele și mesajele împotriva blocajelor de reclame de pe site-urile în neerlandeză și afrikaans. Din proiectul EasyDutch.";
 "EasyList Hebrew" = "EasyList Hebrew";
 "EasyList Lithuania" = "EasyList Lithuania";
 "EasyList Thailand" = "EasyList Thailand";
@@ -319,7 +320,6 @@
 "Failed to update script" = "Actualizarea scriptului a eșuat";
 "Fanboy's Annoyances Filter" = "Fanboy's Annoyances Filter";
 "Fanboy's Anti-AI Suggestions" = "Fanboy's Anti-AI Suggestions";
-"Fanboy's Social Blocking List" = "Fanboy's Social Blocking List";
 "Fast applying disabled sites changes without full conversion" = "Aplicare rapidă a modificărilor site-urilor dezactivate fără conversie completă";
 "Fast disabled sites update completed" = "Actualizarea rapidă a site-urilor dezactivate s-a încheiat";
 "File" = "Fișier";
@@ -358,7 +358,6 @@
 "Go to line" = "Salt la linia";
 "Greek AdBlock Filter" = "Greek AdBlock Filter";
 "HaGeZi Multi Pro Mini" = "HaGeZi Multi Pro Mini";
-"HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Handles advanced anti-adblock cases that filter rules miss." = "Gestionează cazurile avansate anti-adblock pe care regulile de filtrare le ratează.";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "Ascunde ferestrele pop-up din pagină, bannere și alte elemente nedorite ale paginii.";
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
@@ -625,7 +624,6 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Unable to access shared container" = "Nu se poate accesa containerul partajat";
 "Unapplied Filter Changes" = "Modificări neaplicate ale filtrelor";
 "Unavailable" = "Indisponibil";
-"Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "Deblochează linkurile de afiliere și de urmărire care altfel se strică în e-mailuri, rezultate de căutare și redirecționări.";
 "Undo" = "Anulează";
 "Redo" = "Refă";
 "Element Zapper" = "Eliminator de elemente";
@@ -731,11 +729,9 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 
 /* Filter catalog additions */
 "Online Malicious URL Blocklist" = "Online Malicious URL Blocklist";
-"Adblock Warning Removal List" = "Adblock Warning Removal List";
 "AdGuard Mail Tracking Protection Filter" = "AdGuard Mail Tracking Protection Filter";
 "Block Outsider Intrusion into LAN" = "Block Outsider Intrusion into LAN";
 "Stevo's AI Blocklist" = "Stevo's AI Blocklist";
-"AdGuard Allowlist" = "AdGuard Allowlist";
 
 
 /* Auto-update controls */
@@ -748,8 +744,8 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Choose File" = "Alege fișier";
 "Change File" = "Schimbă fișierul";
 "Local imports won't auto-update; re-import to replace." = "Importurile locale nu se actualizează automat; importă din nou pentru înlocuire.";
-"AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "AdGuard Extra blochează reclamele Twitch și gestionează cazuri complicate de anti-adblock.";
 "Blocks Twitch ads with the vaft script from TwitchAdSolutions." = "Blochează reclamele Twitch cu scriptul vaft din TwitchAdSolutions.";
+"Optional. Blocks Twitch ads and handles complicated anti-adblock cases, but it slows page loads." = "Opțional. Blochează reclamele Twitch și tratează cazurile complicate de blocare a reclamelor, dar încetinește încărcarea paginilor.";
 
 /* Issue 508 UI */
 "Disable Essential Filter?" = "Dezactivezi filtrul esențial?";
@@ -984,21 +980,12 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Prevents public Internet sites from digging into your LAN files." = "Împiedică site-urile publice de Internet să acceseze fișierele tale din LAN.";
 "Blocks more malware than most other major anti-malware lists - domains and URL patterns used in malware redirection chains, IP addresses that are solely used by malware, PUP nags, and a few scammers. Already included in Dandelion Sprout's Annoyances List." = "Blochează mai mult malware decât majoritatea celorlalte liste anti-malware majore - domenii și tipare de URL folosite în lanțuri de redirecționare de malware, adrese IP folosite exclusiv de malware, notificări PUP și câțiva escroci. Deja inclusă în Dandelion Sprout's Annoyances List.";
 "Filter that blocks ads, trackers, and other nasty things." = "Filtru care blochează reclame, instrumente de urmărire și alte lucruri neplăcute.";
-"Removes anti-adblock warnings and other obtrusive messages." = "Elimină avertismentele anti-adblock și alte mesaje intruzive.";
-"Filter that unblocks search ads in Google, DuckDuckGo, Bing, or Yahoo and self-promotion on websites." = "Filtru care deblochează reclamele din căutările Google, DuckDuckGo, Bing sau Yahoo și autopromovarea pe site-uri web.";
 "Filter designed to test certain hazardous filtering rules before they are added to the basic filters." = "Filtru conceput pentru a testa anumite reguli de filtrare periculoase înainte de a fi adăugate la filtrele de bază.";
 "Additional filter list for websites in Indonesian and Malay." = "Listă suplimentară de filtre pentru site-urile web în limbile indoneziană și malaeză.";
 "Hufilter. Filter list that specifically removes ads, privacy threats, and security risks on websites in the Hungarian language." = "Hufilter. Listă de filtre care elimină în mod specific reclamele, amenințările la adresa confidențialității și riscurile de securitate de pe site-urile web în limba maghiară.";
 "Privacy protection supplement for EasyList." = "Supliment de protecție a confidențialității pentru EasyList.";
 
 /* Add Filter List: Find */
-"Name, language, or topic" = "Nume, limbă sau subiect";
-"Searches wBlock’s lists and AdGuard’s filter registry for Safari." = "Caută în listele wBlock și în registrul de filtre AdGuard pentru Safari.";
-"In wBlock" = "În wBlock";
-"AdGuard Filter Registry" = "Registrul de filtre AdGuard";
-"wBlock already includes every list in the registry." = "wBlock include deja toate listele din registru.";
-"No matching lists." = "Nicio listă potrivită.";
-"No longer built into wBlock" = "Nu mai este inclusă în wBlock";
 "wBlock Ad and Tracking Hosts" = "Gazde de reclame și urmărire wBlock";
 "Blocks ad and tracking hosts that the other lists only block in part." = "Blochează gazdele de reclame și urmărire pe care celelalte liste le blochează doar parțial.";
 
@@ -1008,7 +995,6 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Clear Logs?" = "Ștergi jurnalele?";
 "This deletes every log entry." = "Aceasta șterge toate intrările din jurnal.";
 "Settings…" = "Setări…";
-"Browse" = "Răsfoiește";
 "Global Privacy Control" = "Global Privacy Control";
 "Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it. Enabling GPC may make your browser easier to fingerprint." = "Global Privacy Control le cere site-urilor să nu vândă și să nu partajeze informațiile tale personale. În unele locuri, site-urile sunt obligate să îl respecte. Activarea GPC poate face browserul mai ușor de identificat prin amprenta sa digitală.";
 "Learn More" = "Află mai multe";
@@ -1034,7 +1020,11 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "uBlock filters – Cookie Notices" = "uBlock filters – Cookie Notices";
 "EasyList" = "EasyList";
 "EasyList – Cookie Notices" = "EasyList – Cookie Notices";
-"EasyList – Annoyances" = "EasyList – Annoyances";
+"EasyList – Other Annoyances" = "EasyList – Other Annoyances";
+"EasyList – Social Widgets" = "EasyList – Social Widgets";
+"EasyList – Chat Widgets" = "EasyList – Chat Widgets";
+"EasyList – Newsletter Notices" = "EasyList – Newsletter Notices";
+"EasyList – Notifications" = "EasyList – Notifications";
 "Ad blocking rules from the uBlock Origin project. Meant to be used alongside EasyList." = "Reguli de blocare a reclamelor din proiectul uBlock Origin. Destinate utilizării împreună cu EasyList.";
 "Additional filter list for websites in German." = "Listă suplimentară de filtre pentru site-urile web în limba germană.";
 "Additional filter list for websites in Italian." = "Listă suplimentară de filtre pentru site-urile web în limba italiană.";
@@ -1056,6 +1046,9 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "EasyList Italy" = "EasyList Italy";
 "EasyList Spanish" = "EasyList Spanish";
 "Hides miscellaneous annoyances on websites, from the EasyList project." = "Ascunde diverse neplăceri de pe site-uri. Listă din proiectul EasyList.";
+"Hides live chat and support widgets on websites, from the EasyList project." = "Ascunde widgeturile de chat live și de asistență de pe site-uri. Din proiectul EasyList.";
+"Hides newsletter sign-up prompts on websites, from the EasyList project." = "Ascunde solicitările de abonare la newslettere de pe site-uri. Din proiectul EasyList.";
+"Hides prompts that ask you to allow notifications, from the EasyList project." = "Ascunde solicitările de a permite notificările. Din proiectul EasyList.";
 "Official Polish filters for AdBlock, uBlock Origin & AdGuard" = "Official Polish filters for AdBlock, uBlock Origin & AdGuard";
 "PersianBlockerNG" = "PersianBlockerNG";
 "RU AdList" = "RU AdList";

@@ -1252,9 +1252,6 @@ struct AddFilterListView: View {
     @State private var isStagingFile = false
     @State private var stagingGeneration = 0
     @State private var importsURLList = false
-    /// Set when Find hands over a registry list: the URL change it makes goes
-    /// straight to review instead of resetting it.
-    @State private var reviewsNextURLInput = false
 
     private struct StagedFilterFile {
         let filename: String
@@ -1272,7 +1269,6 @@ struct AddFilterListView: View {
         case url = "URL"
         case paste = "Text"
         case file = "File"
-        case find = "Browse"
 
         var id: String { rawValue }
         var localizedTitle: LocalizedStringKey { LocalizedStringKey(rawValue) }
@@ -1281,17 +1277,11 @@ struct AddFilterListView: View {
             case .url: return "link"
             case .paste: return "text.alignleft"
             case .file: return "doc"
-            case .find: return "magnifyingglass"
             }
         }
     }
 
     @State private var addMode: AddMode = .url
-    @State private var findQuery = ""
-    /// The URL review was opened from Find, so Back returns there (#987).
-    @State private var isReviewingFromFind = false
-    /// URL tab text from before Find staged a list, restored on the way back.
-    @State private var urlInputBeforeFind = ""
 
 
     private var parsedURLInput: FilterListURLParseResult {
@@ -1325,15 +1315,12 @@ struct AddFilterListView: View {
             isSubmitDisabled: !canSubmit || isSaving || urlReview.isImportingFile || (isReviewingURLs && urlReview.isFetchingMetadata),
             onDismiss: { dismiss() },
             onSubmit: submit,
-            // Find adds each list as you tap it, so Done is the only way out.
-            showsCancel: addMode != .find,
             onBack: backAction
         ) { mode in
             modeContent(mode)
         }
         .onChangeCompat(of: urlInput) { oldValue, newValue in
-            isReviewingURLs = reviewsNextURLInput
-            reviewsNextURLInput = false
+            isReviewingURLs = false
             let normalized: String
             if urlEntryMode == .single {
                 normalized = FilterListURLSupport.normalizeSingleURLInput(from: oldValue, to: newValue)
@@ -1359,11 +1346,6 @@ struct AddFilterListView: View {
             fetchMetadataForCurrentURLs()
         }
         .onChangeCompat(of: addMode) { _, mode in
-            if mode != .url && isReviewingFromFind {
-                isReviewingFromFind = false
-                isReviewingURLs = false
-                urlInput = urlInputBeforeFind
-            }
             cancelURLListImport()
             if mode == .url { fetchMetadataForCurrentURLs() } else {
                 urlReview.cancelMetadata()
@@ -1424,7 +1406,6 @@ struct AddFilterListView: View {
             return {
                 isReviewingURLs = false
                 urlReview.cancelMetadata()
-                if isReviewingFromFind { addMode = .find }
             }
         case .paste where isReviewingText:
             return { isReviewingText = false }
@@ -1483,30 +1464,6 @@ struct AddFilterListView: View {
                 AddContentNote(text: "Local imports won't auto-update; re-import to replace.", error: importErrorMessage)
                 if stagedFile != nil { duplicateNameNote(for: userListTitle) }
             }
-        case .find:
-            FilterRegistrySearchSections(filterManager: filterManager, query: $findQuery, onAdd: review)
-        }
-    }
-
-    /// Opens a registry list in URL review with the registry's name,
-    /// description, category, and languages as the automatic values.
-    private func review(_ list: AdGuardRegistryList) {
-        let url = list.filter.url
-        urlReview.metadata[FilterListURLSupport.identityKey(for: url)] =
-            .init(title: list.filter.name, description: list.filter.description)
-        urlCategories[url.absoluteString] = list.filter.category
-        urlLanguages[url.absoluteString] = Set(list.filter.languages)
-        if !isReviewingFromFind { urlInputBeforeFind = urlInput }
-        addMode = .url
-        isReviewingFromFind = true
-        let input = urlEntryMode == .single
-            ? url.absoluteString
-            : UserScriptURLSupport.appendingPastedURLs(url.absoluteString, to: urlInput)
-        if input == urlInput {
-            isReviewingURLs = true
-        } else {
-            reviewsNextURLInput = true
-            urlInput = input
         }
     }
 
@@ -1613,15 +1570,11 @@ struct AddFilterListView: View {
             return !isStagingFile
                 && stagedFile != nil
                 && !userListTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        case .find:
-            return true
         }
     }
 
     private func submit() {
         switch addMode {
-        case .find:
-            dismiss()
         case .url:
             guard case .valid(let urls) = validationState else { return }
             if !isReviewingURLs {
@@ -1728,7 +1681,6 @@ struct AddFilterListView: View {
             }
             return "Add"
         case .paste, .file: return "Add"
-        case .find: return "Done"
         }
     }
 
@@ -1933,7 +1885,6 @@ struct AddFilterListView: View {
         case .url: return isReviewingURLs ? newURLs.map { nameBinding(for: $0).wrappedValue } : []
         case .paste: return isReviewingText ? [userListTitle] : []
         case .file: return stagedFile != nil ? [userListTitle] : []
-        case .find: return []
         }
     }
 

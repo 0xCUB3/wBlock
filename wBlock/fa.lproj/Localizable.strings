@@ -102,6 +102,7 @@
 "Additional filter list for websites in Slovenian." = "فهرست فیلتر اضافی برای وب‌سایت‌های اسلوونیایی.";
 "AdGuard Chinese filter" = "AdGuard Chinese filter";
 "AdGuard Dutch filter" = "AdGuard Dutch filter";
+"EasyDutch" = "EasyDutch";
 "AdGuard Experimental Filter" = "AdGuard Experimental Filter";
 "AdGuard French filter" = "AdGuard French filter";
 "AdGuard Japanese filter" = "AdGuard Japanese filter";
@@ -117,7 +118,6 @@
 "All Levels" = "همهٔ سطوح";
 "All of these filter lists are already in wBlock." = "همهٔ این فهرست‌های فیلتر از قبل در wBlock وجود دارند.";
 "All websites" = "همهٔ وب‌سایت‌ها";
-"Allowlists" = "فهرست‌های مجاز";
 "Already done this? Just check the boxes above." = "قبلاً این کار را انجام داده‌اید؟ کافی است کادرهای بالا را علامت بزنید.";
 "An existing wBlock configuration was found in iCloud (%@). Would you like to adopt it, or start fresh and upload your current setup?" = "یک پیکربندی موجود از wBlock در iCloud پیدا شد (%@). آیا مایلید از آن استفاده کنید یا از نو شروع کرده و تنظیمات فعلی خود را بارگذاری کنید؟";
 "An existing wBlock configuration was found in iCloud. Would you like to adopt it, or start fresh and upload your current setup?" = "یک پیکربندی موجود از wBlock در iCloud پیدا شد. آیا مایلید از آن استفاده کنید یا از نو شروع کرده و تنظیمات فعلی خود را بارگذاری کنید؟";
@@ -246,6 +246,7 @@
 "EasyList China + AdGuard Chinese filter. Filter list that specifically removes ads on websites in Chinese language." = "\U200FEasyList China + AdGuard Chinese filter. فهرست فیلتری که به‌طور خاص تبلیغات را در وب‌سایت‌های به زبان چینی حذف می‌کند.";
 "EasyList Czech and Slovak" = "EasyList Czech and Slovak";
 "EasyList Dutch + AdGuard Dutch filter. Filter list that specifically removes ads on websites in Dutch language." = "\U200FEasyList Dutch + AdGuard Dutch filter. فهرست فیلتری که به‌طور خاص تبلیغات را در وب‌سایت‌های به زبان هلندی حذف می‌کند.";
+"Blocks ads and anti-adblock messages on Dutch and Afrikaans websites, from the EasyDutch project." = "تبلیغات و پیام‌های ضد مسدودکننده تبلیغات را در وب‌سایت‌های هلندی و آفریقایی مسدود می‌کند. از پروژه EasyDutch.";
 "EasyList Hebrew" = "EasyList Hebrew";
 "EasyList Lithuania" = "EasyList Lithuania";
 "EasyList Thailand" = "EasyList Thailand";
@@ -319,7 +320,6 @@
 "Failed to update script" = "به‌روزرسانی اسکریپت ناموفق بود";
 "Fanboy's Annoyances Filter" = "Fanboy's Annoyances Filter";
 "Fanboy's Anti-AI Suggestions" = "Fanboy's Anti-AI Suggestions";
-"Fanboy's Social Blocking List" = "Fanboy's Social Blocking List";
 "Fast applying disabled sites changes without full conversion" = "اعمال سریع تغییرات سایت‌های غیرفعال بدون تبدیل کامل";
 "Fast disabled sites update completed" = "به‌روزرسانی سریع سایت‌های غیرفعال تکمیل شد";
 "File" = "پرونده";
@@ -358,7 +358,6 @@
 "Go to line" = "رفتن به سطر";
 "Greek AdBlock Filter" = "Greek AdBlock Filter";
 "HaGeZi Multi Pro Mini" = "HaGeZi Multi Pro Mini";
-"HaGeZi Referral Allowlist" = "HaGeZi Referral Allowlist";
 "Handles advanced anti-adblock cases that filter rules miss." = "موارد پیشرفتهٔ ضد مسدودکنندهٔ تبلیغات را که قوانین فیلتر نادیده می‌گیرند مدیریت می‌کند.";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "پنجره‌های بازشو درون‌صفحه‌ای، بنرها و سایر عناصر ناخواستهٔ صفحه را پنهان می‌کند.";
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
@@ -625,7 +624,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Unable to access shared container" = "دسترسی به محفظهٔ مشترک امکان‌پذیر نیست";
 "Unapplied Filter Changes" = "تغییرات اعمال‌نشدهٔ فیلتر";
 "Unavailable" = "در دسترس نیست";
-"Unblocks affiliate and tracking referral links that otherwise break in emails, search results, and redirects." = "پیوندهای ارجاعی و ردیابی وابسته را که در غیر این صورت در ایمیل‌ها، نتایج جستجو و تغییر مسیرها از کار می‌افتند، رفع مسدودیت می‌کند.";
 "Undo" = "واگرد";
 "Redo" = "بازانجام";
 "Element Zapper" = "حذف‌کنندهٔ عنصر";
@@ -731,11 +729,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 /* Filter catalog additions */
 "Online Malicious URL Blocklist" = "Online Malicious URL Blocklist";
-"Adblock Warning Removal List" = "Adblock Warning Removal List";
 "AdGuard Mail Tracking Protection Filter" = "AdGuard Mail Tracking Protection Filter";
 "Block Outsider Intrusion into LAN" = "Block Outsider Intrusion into LAN";
 "Stevo's AI Blocklist" = "Stevo's AI Blocklist";
-"AdGuard Allowlist" = "AdGuard Allowlist";
 
 
 /* Auto-update controls */
@@ -748,8 +744,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Choose File" = "انتخاب فایل";
 "Change File" = "تغییر فایل";
 "Local imports won't auto-update; re-import to replace." = "موارد واردشدهٔ محلی به‌طور خودکار به‌روزرسانی نمی‌شوند؛ برای جایگزینی دوباره وارد کنید.";
-"AdGuard Extra blocks Twitch ads and handles complicated anti-adblock cases." = "تبلیغات Twitch را AdGuard Extra مسدود می‌کند و موارد پیچیدهٔ ضد مسدودکنندهٔ تبلیغات را مدیریت می‌نماید.";
 "Blocks Twitch ads with the vaft script from TwitchAdSolutions." = "تبلیغات Twitch را با اسکریپت vaft از TwitchAdSolutions مسدود می‌کند.";
+"Optional. Blocks Twitch ads and handles complicated anti-adblock cases, but it slows page loads." = "اختیاری. تبلیغات توییچ را مسدود می‌کند و موارد پیچیدهٔ ضد مسدودکننده را مدیریت می‌کند، اما بارگذاری صفحه‌ها را کند می‌کند.";
 
 /* Issue 508 UI */
 "Disable Essential Filter?" = "غیرفعال کردن فیلتر ضروری؟";
@@ -993,21 +989,12 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Prevents public Internet sites from digging into your LAN files." = "از کاوش سایت‌های اینترنت عمومی در فایل‌های LAN شما جلوگیری می‌کند.";
 "Blocks more malware than most other major anti-malware lists - domains and URL patterns used in malware redirection chains, IP addresses that are solely used by malware, PUP nags, and a few scammers. Already included in Dandelion Sprout's Annoyances List." = "بدافزارهای بیشتری را نسبت به بیشتر فهرست‌های اصلی ضدبدافزار مسدود می‌کند - دامنه‌ها و الگوهای URL استفاده‌شده در زنجیره‌های تغییر مسیر بدافزار، نشانی‌های IP که منحصراً توسط بدافزار استفاده می‌شوند، هشدارهای PUP و برخی کلاهبرداران. از قبل در Dandelion Sprout's Annoyances List گنجانده شده است.";
 "Filter that blocks ads, trackers, and other nasty things." = "فیلتری که تبلیغات، ردیاب‌ها و سایر موارد نامطلوب را مسدود می‌کند.";
-"Removes anti-adblock warnings and other obtrusive messages." = "هشدارهای ضد مسدودکنندهٔ تبلیغات و سایر پیام‌های مزاحم را حذف می‌کند.";
-"Filter that unblocks search ads in Google, DuckDuckGo, Bing, or Yahoo and self-promotion on websites." = "فیلتری که تبلیغات جستجو در Google،‏ DuckDuckGo،‏ Bing یا Yahoo و خودتبلیغی در وب‌سایت‌ها را رفع انسداد می‌کند.";
 "Filter designed to test certain hazardous filtering rules before they are added to the basic filters." = "فیلتری که برای آزمایش برخی قوانین فیلتر کردن پرخطر قبل از افزودن آن‌ها به فیلترهای پایه طراحی شده است.";
 "Additional filter list for websites in Indonesian and Malay." = "فهرست فیلتر اضافی برای وب‌سایت‌ها به زبان‌های اندونزیایی و مالایی.";
 "Hufilter. Filter list that specifically removes ads, privacy threats, and security risks on websites in the Hungarian language." = "فیلتر Hufilter. فهرست فیلتری که به‌طور خاص تبلیغات، تهدیدهای حریم خصوصی و خطرات امنیتی را در وب‌سایت‌های به زبان مجاری حذف می‌کند.";
 "Privacy protection supplement for EasyList." = "مکمل محافظت از حریم خصوصی برای EasyList.";
 
 /* Add Filter List: Find */
-"Name, language, or topic" = "نام، زبان یا موضوع";
-"Searches wBlock’s lists and AdGuard’s filter registry for Safari." = "فهرست‌های wBlock و ثبت فیلتر AdGuard برای Safari را جستجو می‌کند.";
-"In wBlock" = "در wBlock";
-"AdGuard Filter Registry" = "ثبت فیلتر AdGuard";
-"wBlock already includes every list in the registry." = "در حال حاضر wBlock شامل همهٔ فهرست‌های موجود در ثبت است.";
-"No matching lists." = "فهرست منطبقی یافت نشد.";
-"No longer built into wBlock" = "دیگر در wBlock گنجانده نشده است";
 "wBlock Ad and Tracking Hosts" = "میزبان‌های تبلیغات و ردیابی wBlock";
 "Blocks ad and tracking hosts that the other lists only block in part." = "میزبان‌های تبلیغات و ردیابی را که فهرست‌های دیگر فقط تا حدی مسدود می‌کنند، مسدود می‌کند.";
 
@@ -1017,7 +1004,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Clear Logs?" = "گزارش‌ها پاک شوند؟";
 "This deletes every log entry." = "این کار همهٔ ورودی‌های گزارش را حذف می‌کند.";
 "Settings…" = "تنظیمات…";
-"Browse" = "مرور";
 "Global Privacy Control" = "کنترل جهانی حریم خصوصی";
 "Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it. Enabling GPC may make your browser easier to fingerprint." = "کنترل جهانی حریم خصوصی از وب‌سایت‌ها می‌خواهد اطلاعات شخصی شما را نفروشند یا به اشتراک نگذارند. در برخی مناطق، وب‌سایت‌ها موظف به رعایت آن هستند. فعال کردن GPC ممکن است شناسایی مرورگر شما از طریق اثر انگشت دیجیتال را آسان‌تر کند.";
 "Learn More" = "بیشتر بدانید";
@@ -1043,7 +1029,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "uBlock filters – Cookie Notices" = "uBlock filters – Cookie Notices";
 "EasyList" = "EasyList";
 "EasyList – Cookie Notices" = "EasyList – Cookie Notices";
-"EasyList – Annoyances" = "EasyList – Annoyances";
+"EasyList – Other Annoyances" = "EasyList – Other Annoyances";
+"EasyList – Social Widgets" = "EasyList – Social Widgets";
+"EasyList – Chat Widgets" = "EasyList – Chat Widgets";
+"EasyList – Newsletter Notices" = "EasyList – Newsletter Notices";
+"EasyList – Notifications" = "EasyList – Notifications";
 "Ad blocking rules from the uBlock Origin project. Meant to be used alongside EasyList." = "قوانین مسدودسازی تبلیغات از پروژه uBlock Origin. برای استفاده همراه با EasyList طراحی شده‌اند.";
 "Additional filter list for websites in German." = "فهرست فیلتر اضافی برای وب‌سایت‌های آلمانی.";
 "Additional filter list for websites in Italian." = "فهرست فیلتر اضافی برای وب‌سایت‌های ایتالیایی.";
@@ -1065,6 +1055,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 "EasyList Italy" = "EasyList Italy";
 "EasyList Spanish" = "EasyList Spanish";
 "Hides miscellaneous annoyances on websites, from the EasyList project." = "انواع مزاحمت‌های وب‌سایت‌ها را پنهان می‌کند. از پروژه EasyList.";
+"Hides live chat and support widgets on websites, from the EasyList project." = "ویجت‌های چت زنده و پشتیبانی را در وب‌سایت‌ها پنهان می‌کند. از پروژه EasyList.";
+"Hides newsletter sign-up prompts on websites, from the EasyList project." = "درخواست‌های عضویت در خبرنامه را در وب‌سایت‌ها پنهان می‌کند. از پروژه EasyList.";
+"Hides prompts that ask you to allow notifications, from the EasyList project." = "درخواست‌هایی را که اجازه اعلان می‌خواهند پنهان می‌کند. از پروژه EasyList.";
 "Official Polish filters for AdBlock, uBlock Origin & AdGuard" = "Official Polish filters for AdBlock, uBlock Origin & AdGuard";
 "PersianBlockerNG" = "PersianBlockerNG";
 "RU AdList" = "RU AdList";

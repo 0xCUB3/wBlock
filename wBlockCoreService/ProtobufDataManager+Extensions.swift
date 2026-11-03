@@ -455,7 +455,7 @@ extension ProtobufDataManager {
         case .custom: return .custom
         case .foreign: return .foreign
         case .scripts: return .scripts
-        case .allowlists: return .allowlists
+        case .allowlists: return .custom  // Retired category; its lists are now custom.
         case .scriptBlocking: return .scriptBlocking
         case .scriptFunctionality: return .scriptFunctionality
         case .scriptExperimental: return .scriptExperimental
@@ -477,7 +477,6 @@ extension ProtobufDataManager {
         case .custom: return .custom
         case .foreign: return .foreign
         case .scripts: return .scripts
-        case .allowlists: return .allowlists
         case .scriptBlocking: return .scriptBlocking
         case .scriptFunctionality: return .scriptFunctionality
         case .scriptExperimental: return .scriptExperimental

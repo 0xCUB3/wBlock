@@ -18,8 +18,6 @@ struct AddContentSheet<Mode: AddContentMode, Content: View>: View {
     let isSubmitDisabled: Bool
     let onDismiss: () -> Void
     let onSubmit: () -> Void
-    /// Off when the primary action only closes the sheet, as Cancel would.
-    var showsCancel = true
     /// Set while reviewing, to return to the entry step: bottom left on
     /// macOS, in place of Cancel on iOS.
     var onBack: (() -> Void)? = nil
@@ -46,7 +44,7 @@ struct AddContentSheet<Mode: AddContentMode, Content: View>: View {
             HStack {
                 if let onBack { backButton(onBack) }
                 Spacer()
-                if showsCancel { cancelButton.keyboardShortcut(.cancelAction) }
+                cancelButton.keyboardShortcut(.cancelAction)
                 submitButton
                     .buttonStyle(.borderedProminent)
                     .keyboardShortcut(.defaultAction)
@@ -84,7 +82,7 @@ struct AddContentSheet<Mode: AddContentMode, Content: View>: View {
                 .toolbar {
                     // Branch inside the item: ToolbarContentBuilder can't before iOS 16.
                     ToolbarItem(placement: .cancellationAction) {
-                        if let onBack { backButton(onBack) } else if showsCancel { cancelButton }
+                        if let onBack { backButton(onBack) } else { cancelButton }
                     }
                     ToolbarItem(placement: .confirmationAction) { submitButton }
                 }

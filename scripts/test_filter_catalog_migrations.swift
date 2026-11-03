@@ -16,6 +16,8 @@ private final class TestLoader: FilterListLoader {
         let loader = TestLoader(container: container)
         for (url, trusted) in [
             ("https://filters.adtidy.org/extension/chromium/filters/2.txt", true),
+            ("https://filters.adtidy.org/extension/ublock/filters/2_without_easylist.txt", true),
+            ("https://filters.adtidy.org/extension/ublock/filters/4.txt", true),
             ("https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/17_optimized.txt", true),
             ("https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/general.txt", true),
             ("https://filters.adtidy.org/extension/chromium/filters/101.txt", false),
@@ -153,22 +155,93 @@ private final class TestLoader: FilterListLoader {
         for names in [FilterListLoader.recommendedFilterNames, FilterListLoader.minimalFilterNames, FilterListLoader.essentialFilterNames] {
             precondition(names.isSubset(of: catalogNames), "default names missing from catalog: \(names.subtracting(catalogNames))")
         }
-        // Lists whose source moved to uBlock Origin's copy keep the selection their users already have.
+        // Lists whose source moved to uBlock Origin's copy, or that were renamed, keep their users' selection.
+        let registry = "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms"
         let moved = [
-            ("https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/118_optimized.txt", "EasyPrivacy"),
-            ("https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/204_optimized.txt", "Peter Lowe's Blocklist"),
+            ("\(registry)/extension/safari/filters/118_optimized.txt", "EasyPrivacy", "EasyPrivacy"),
+            ("\(registry)/extension/safari/filters/204_optimized.txt", "Peter Lowe's Blocklist", "Peter Lowe's Blocklist"),
             // Regional lists that now come from uBlock Origin's sources: the AdGuard copy and the old upstream URL.
-            ("https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/112_optimized.txt", "Liste AR"),
-            ("https://adblock.ee/list.txt", "Estonian List"),
+            ("\(registry)/extension/safari/filters/112_optimized.txt", "Liste AR", "Liste AR"),
+            ("https://adblock.ee/list.txt", "Estonian List", "Estonian List"),
+            ("\(registry)/extension/safari/filters/258_optimized.txt", "Block Outsider Intrusion into LAN", "Block Outsider Intrusion into LAN"),
+            ("\(registry)/extension/safari/filters/123_optimized.txt", "Fanboy's Social Blocking List", "EasyList – Social Widgets"),
+            ("https://easylist.to/easylist/fanboy-social.txt", "Fanboy's Social Blocking List", "EasyList – Social Widgets"),
+            ("\(registry)/extension/safari/filters/2_optimized.txt", "AdGuard Base Filter", "AdGuard Base Filter"),
+            ("\(registry)/extension/safari/filters/4_optimized.txt", "AdGuard Social Media Filter", "AdGuard Social Media Filter"),
+            ("\(registry)/ios/filters/11_optimized.txt", "AdGuard Mobile Filter", "AdGuard Mobile Filter"),
+            ("\(registry)/mac_v3/filters/17_optimized.txt", "AdGuard URL Tracking Protection Filter", "AdGuard URL Tracking Protection Filter"),
+            ("\(registry)/extension/safari/filters/25.txt", "AdGuard Mail Tracking Protection Filter", "AdGuard Mail Tracking Protection Filter"),
+            ("https://ublockorigin.github.io/uAssetsCDN/thirdparties/easylist-annoyances.txt", "EasyList – Annoyances", "EasyList – Other Annoyances"),
         ]
-        for (oldURL, name) in moved {
+        for (oldURL, oldName, name) in moved {
             let current = defaults.first { $0.name == name }!
             for selected in [false, true] {
-                let old = FilterList(name: name, url: URL(string: oldURL)!, category: .privacy, isSelected: selected)
+                let old = FilterList(name: oldName, url: URL(string: oldURL)!, category: .privacy, isSelected: selected)
                 let hydrated = FilterListSetup.hydrate(loader.migrateFilterURLs(in: [old]), defaults: defaults)[0]
-                precondition(hydrated.url == current.url && hydrated.isSelected == selected, "moved list \(name) lost its URL or selection")
+                precondition(hydrated.url == current.url && hydrated.name == name && hydrated.isSelected == selected,
+                             "moved list \(name) lost its URL, name, or selection")
             }
         }
+        // A renamed list keeps its cached copy under the new name. A list whose source moved drops the old copy.
+        let annoyances = defaults.first { $0.name == "EasyList – Other Annoyances" }!
+        let annoyancesOld = container.appendingPathComponent("EasyList – Annoyances.txt")
+        try "! Title: EasyList – Annoyances\n||old.example^".write(to: annoyancesOld, atomically: true, encoding: .utf8)
+        loader.migrateBuiltInFilterFilesIfNeeded(annoyances)
+        precondition(fm.fileExists(atPath: container.appendingPathComponent(ContentBlockerIncrementalCache.localFilename(for: annoyances)).path)
+                     && !fm.fileExists(atPath: annoyancesOld.path), "renamed cache was not carried over")
+        let social = defaults.first { $0.name == "EasyList – Social Widgets" }!
+        let socialOld = container.appendingPathComponent("Fanboy's Social Blocking List.txt")
+        try "! Title: Fanboy's Social Blocking List\n||old.example^".write(to: socialOld, atomically: true, encoding: .utf8)
+        loader.migrateBuiltInFilterFilesIfNeeded(social)
+        precondition(!fm.fileExists(atPath: socialOld.path)
+                     && !fm.fileExists(atPath: container.appendingPathComponent(ContentBlockerIncrementalCache.localFilename(for: social)).path),
+                     "a list whose source moved must not carry its old copy")
+
+        // Every registry address of a kept AdGuard list moves to uBlock Origin's copy, which the catalog uses.
+        let catalogURLs = Set(defaults.map(\.url))
+        for id in [1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 13, 16, 17, 18, 19, 20, 21, 22, 23, 25, 26, 27, 224] {
+            let migrated = FilterListLoader.migratedURL(for: "\(registry)/extension/safari/filters/\(id)_optimized.txt")
+            precondition(migrated.map(catalogURLs.contains) == true, "AdGuard \(id) does not migrate to a catalog URL")
+        }
+        for list in defaults where list.name.hasPrefix("AdGuard ") {
+            precondition(list.url.host == "filters.adtidy.org" && list.url.path.contains("/extension/ublock/filters/"),
+                         "\(list.name) should load uBlock Origin's copy")
+        }
+        // Lists added from the old registry browser are custom: their address and name stay as the user saved them.
+        let registryCustom = FilterList(name: "AdGuard Social Media Filter", url: URL(string: "\(registry)/extension/safari/filters/4_optimized.txt")!,
+                                        category: .annoyances, isCustom: true, isSelected: true)
+        precondition(loader.migrateFilterURLs(in: [registryCustom])[0].url == registryCustom.url, "custom registry list was migrated")
+        precondition(FilterListSetup.hydrate([registryCustom], defaults: defaults)[0].name == registryCustom.name, "custom registry list was renamed")
+
+        // Retired built-ins leave the catalog and are recognized by address, so they go without errors.
+        let retired = [
+            ("\(registry)/extension/safari/filters/207_optimized.txt", "Adblock Warning Removal List"),
+            ("\(registry)/extension/safari/filters/10_optimized.txt", "AdGuard Allowlist"),
+            ("\(registry)/extension/safari/filters/10.txt", "AdGuard Allowlist"),
+            ("https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/whitelist-referral.txt", "HaGeZi Referral Allowlist"),
+        ]
+        for (url, name) in retired {
+            precondition(!defaults.contains { $0.name == name }, "\(name) is still in the catalog")
+            for selected in [false, true] {
+                let filter = FilterList(name: name, url: URL(string: url)!, category: .annoyances, isSelected: selected)
+                precondition(FilterListLoader.isRetiredBuiltIn(filter), "\(name) is not retired")
+            }
+            let custom = FilterList(name: name, url: URL(string: url)!, category: .custom, isCustom: true, isSelected: true)
+            precondition(!FilterListLoader.isRetiredBuiltIn(custom), "a custom copy of \(name) must stay")
+        }
+
+        // Quick fixes and Unbreak moved to Ads. A user's stored copy takes the catalog category and keeps its selection.
+        for name in ["uBlock filters – Quick fixes", "uBlock filters – Unbreak"] {
+            let storedList = FilterList(name: name, url: defaults.first { $0.name == name }!.url, category: .custom, isSelected: true)
+            let hydrated = FilterListSetup.hydrate([storedList], defaults: defaults)[0]
+            precondition(hydrated.category == .ads && hydrated.isSelected, "\(name) did not move to Ads")
+        }
+        precondition(!defaults.contains { $0.name.contains("AI Widgets") }, "EasyList AI Widgets must not be added")
+        // New lists are off by default, and EasyDutch sits with the other regional lists.
+        for name in ["EasyList – Chat Widgets", "EasyList – Newsletter Notices", "EasyList – Notifications", "EasyDutch"] {
+            precondition(byName[name]?.isSelected == false, "\(name) must default to off")
+        }
+        precondition(byName["EasyDutch"]?.category == .foreign && byName["EasyList – Chat Widgets"]?.category == .annoyances)
         print("PASS: replacement migrations preserve selection and discard legacy content")
     }
 }

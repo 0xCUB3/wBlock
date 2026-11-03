@@ -15,6 +15,9 @@ enum FilterListSetup {
                 }
                 if let catalog = defaultsByURL[filter.url] {
                     filter.name = catalog.name
+                    // Built-in lists keep their stored category, except one stored under Custom
+                    // (the retired Allowlists category maps there), which takes its catalog category.
+                    if filter.category == .custom { filter.category = catalog.category }
                     filter.description = catalog.description
                     filter.languages = catalog.languages
                     filter.trustLevel = catalog.trustLevel
