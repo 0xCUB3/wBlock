@@ -176,6 +176,16 @@ private final class TestLoader: FilterListLoader {
         precondition(FilterListLoader.handingOverReplacedAdGuardLists(reenabled, pending: [], catalogURLs: catalogURLs, hasContent: { _ in true }).lists == reenabled,
                      "an AdGuard list turned back on stays on")
 
+        // Existing installs get the defaults 4.0 changed; custom lists and other lists are untouched.
+        precondition(FilterListLoader.defaultsTurnedOn.union(FilterListLoader.defaultsTurnedOff).isSubset(of: Set(defaults.map(\.name))))
+        let before = defaults.map { list -> FilterList in var list = list; list.isSelected = list.name == "Online Malicious URL Blocklist" || list.name == "EasyList"; return list }
+            + [FilterList(name: "Online Malicious URL Blocklist", url: URL(string: "https://example.com/mine")!, category: .security, isCustom: true, isSelected: true)]
+        let after = FilterListLoader.applyingChangedDefaults(before)
+        precondition(Set(after.filter { $0.isSelected && !$0.isCustom }.map(\.name)) == ["EasyList", "AdGuard URL Tracking Protection Filter"], "changed defaults")
+        precondition(after.last!.isSelected, "a custom list keeps its selection")
+        precondition(FilterListLoader.recommendedFilterNames.isSuperset(of: FilterListLoader.defaultsTurnedOn)
+                     && FilterListLoader.recommendedFilterNames.isDisjoint(with: FilterListLoader.defaultsTurnedOff), "changed defaults match the defaults")
+
         // A renamed annoyance list would silently fall into Other.
         let topical = defaults.filter { $0.category == .annoyances && AnnoyanceTopic.topic(for: $0) != .other }
         precondition(topical.count == 15, "annoyance topics lost a list: \(topical.map(\.name))")

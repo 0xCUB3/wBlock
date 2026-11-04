@@ -40,6 +40,21 @@ class FilterListLoader {
         "wBlock Ad and Tracking Hosts",
     ]
 
+    /// Defaults wBlock 4.0 changed after its first builds, applied once to
+    /// existing installs (AppFilterManager.applyChangedDefaultsOnce).
+    static let defaultsTurnedOn: Set<String> = ["AdGuard URL Tracking Protection Filter"]
+    static let defaultsTurnedOff: Set<String> = ["Online Malicious URL Blocklist"]
+
+    static func applyingChangedDefaults(_ lists: [FilterList]) -> [FilterList] {
+        lists.map { list in
+            var list = list
+            guard !list.isCustom else { return list }
+            if defaultsTurnedOn.contains(list.name) { list.isSelected = true }
+            if defaultsTurnedOff.contains(list.name) { list.isSelected = false }
+            return list
+        }
+    }
+
     // Lists that prompt an "essential protection" warning before they are disabled.
     // Compatibility fixes and the hosts list are convenience, not protection.
     static let essentialFilterNames: Set<String> = recommendedFilterNames.subtracting([

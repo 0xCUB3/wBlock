@@ -238,6 +238,22 @@ class AppFilterManager: ObservableObject {
         adGuardHandoverPending = Set(lists.filter { $0.isSelected && FilterListLoader.isReplacedAdGuardList($0) }.map(\.id))
     }
 
+    private static let changedDefaultsKey = "wBlock.changedDefaults.4.0"
+
+    /// Gives an existing install the defaults 4.0 changed after its first
+    /// builds, once per device. New installs start from the current defaults.
+    /// Returns whether the selection changed.
+    private func applyChangedDefaultsOnce(_ lists: inout [FilterList]) -> Bool {
+        let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
+        guard !defaults.bool(forKey: Self.changedDefaultsKey) else { return false }
+        defaults.set(true, forKey: Self.changedDefaultsKey)
+        guard dataManager.hasCompletedOnboarding else { return false }
+        let updated = FilterListLoader.applyingChangedDefaults(lists)
+        guard updated != lists else { return false }
+        lists = updated
+        return true
+    }
+
     private var catalogURLs: Set<URL> { Set(loader.getDefaultFilterLists().map(\.url)) }
 
     func persistUpgradeRebuildSignature() {
@@ -780,6 +796,7 @@ class AppFilterManager: ObservableObject {
             migratedFilterLists, pending: adGuardHandoverPending, catalogURLs: defaultURLs).isEmpty
         let customCountBeforeHydrate = migratedFilterLists.filter(\.isCustom).count
         migratedFilterLists = FilterListSetup.hydrate(migratedFilterLists, defaults: defaultLists)
+        let changedDefaults = applyChangedDefaultsOnce(&migratedFilterLists)
         let foldedCustomCopies = migratedFilterLists.filter(\.isCustom).count < customCountBeforeHydrate
         migratedFilterLists = deduplicateFilterIDs(migratedFilterLists)
         validatorClearIDs = migratedFilterLists.compactMap { filter in
@@ -796,7 +813,8 @@ class AppFilterManager: ObservableObject {
             guard let originalURL = originalURLsByID[filter.id] else { return false }
             return originalURL != filter.url
         }
-        if hasURLMigrations || addedDefaultFilters || selectedDeprecatedListWasRemoved || foldedCustomCopies || !offAdGuard.removed.isEmpty {
+        if hasURLMigrations || addedDefaultFilters || selectedDeprecatedListWasRemoved || foldedCustomCopies || !offAdGuard.removed.isEmpty
+            || changedDefaults {
             Task { await self.saveFilterLists() }
         }
 
@@ -817,7 +835,8 @@ class AppFilterManager: ObservableObject {
         let storedSignature = storedUpgradeSignature()
         let signatureMismatch = storedSignature != currentSignature
         let needsRebuild = dataManager.hasCompletedOnboarding
-            && (hasURLMigrations || selectedDeprecatedListWasRemoved || foldedCustomCopies || handedOverSelections || signatureMismatch)
+            && (hasURLMigrations || selectedDeprecatedListWasRemoved || foldedCustomCopies || handedOverSelections || changedDefaults
+                || signatureMismatch)
         if needsRebuild {
             markNonSelectionChangesPending()
             if let delay = ContentBlockerService.automaticRebuildDelay(
