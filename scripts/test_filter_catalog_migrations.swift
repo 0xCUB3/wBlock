@@ -109,11 +109,11 @@ private final class TestLoader: FilterListLoader {
         var tracking = adGuard("AdGuard Tracking Protection Filter", selected: true)
         tracking.excludedSites = ["b.com"]
         let popups = catalogList("AdGuard Popups", selected: false)
-        let german = adGuard("AdGuard Russian filter", selected: false)
+        let russian = adGuard("AdGuard Russian filter", selected: false)
         let widgets = catalogList("AdGuard Widgets", selected: true)
         var stored = defaults.filter { !$0.name.hasPrefix("AdGuard ") || !uBOOffered.contains($0.name) }
             .map { list -> FilterList in var list = list; list.isSelected = false; return list } + [
-            base, tracking, popups, german, widgets, adGuard("AdGuard Cookie Notices", selected: true, custom: true),
+            base, tracking, popups, russian, widgets, adGuard("AdGuard Cookie Notices", selected: true, custom: true),
         ]
         // The user already runs EasyPrivacy with their own settings.
         let easyPrivacy = stored.firstIndex { $0.name == "EasyPrivacy" }!
@@ -126,7 +126,7 @@ private final class TestLoader: FilterListLoader {
         // Offline: no replacement has content, so only the withdrawn list that is off goes.
         let offline = FilterListLoader.handingOverReplacedAdGuardLists(stored, pending: pending, catalogURLs: catalogURLs, hasContent: { _ in false })
         precondition(offline.handedOver.isEmpty, "offline: \(offline.handedOver.map(\.name))")
-        precondition(offline.removed.map(\.id) == [german.id], "a withdrawn list that is off goes at once: \(offline.removed.map(\.name))")
+        precondition(offline.removed.map(\.id) == [russian.id], "a withdrawn list that is off goes at once: \(offline.removed.map(\.name))")
         precondition(offline.lists.contains { $0.id == popups.id && !$0.isSelected }, "a uBO-offered list stays in the catalog")
         precondition(offline.settled == [popups.id], "a list turned off leaves the handover: \(offline.settled)")
         precondition(offline.lists.contains { $0.id == base.id && $0.isSelected }, "a list keeps protecting until it can hand over")
