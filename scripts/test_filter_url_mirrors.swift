@@ -45,6 +45,21 @@ import wBlockCoreService
         let wrongList = URL(string: "https://cdn.jsdelivr.net/gh/AdguardTeam/FiltersRegistry@master/platforms/extension/safari/filters/3_optimized.txt")!
         check(!FilterListURLMirror.allowsFallback(primary: safari, fallback: wrongList), "mirror keeps list identity")
         check(FilterListURLMirror.fallbackURLs(for: URL(string: "https://filters.adtidy.org/unknown.txt")!).isEmpty, "unknown CDN path has no inferred mirror")
+        // AdGuard's uBlock Origin builds fall back to the registry, and uAssets lists to uBO's mirrors (#1079).
+        let ublockGerman = URL(string: "https://filters.adtidy.org/extension/ublock/filters/6.txt")!
+        check(FilterListURLMirror.fallbackURLs(for: ublockGerman).map(\.absoluteString) == [
+            "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/ublock/filters/6.txt",
+            "https://cdn.jsdelivr.net/gh/AdguardTeam/FiltersRegistry@master/platforms/extension/ublock/filters/6.txt",
+        ], "AdGuard uBO build mirrors")
+        let easyList = URL(string: "https://ublockorigin.github.io/uAssetsCDN/thirdparties/easylist.txt")!
+        check(FilterListURLMirror.fallbackURLs(for: easyList).map(\.absoluteString) == [
+            "https://ublockorigin.pages.dev/thirdparties/easylist.txt",
+            "https://cdn.jsdelivr.net/gh/uBlockOrigin/uAssetsCDN@main/thirdparties/easylist.txt",
+            "https://raw.githubusercontent.com/uBlockOrigin/uAssetsCDN/main/thirdparties/easylist.txt",
+        ], "uAssets mirrors")
+        let easyPrivacy = URL(string: "https://cdn.jsdelivr.net/gh/uBlockOrigin/uAssetsCDN@main/thirdparties/easyprivacy.txt")!
+        check(FilterListURLMirror.fallbackURLs(for: easyPrivacy).first?.absoluteString == "https://ublockorigin.github.io/uAssetsCDN/thirdparties/easyprivacy.txt",
+              "a jsDelivr uAssets primary falls back to uBO's other mirrors")
         print("PASS")
     }
 }

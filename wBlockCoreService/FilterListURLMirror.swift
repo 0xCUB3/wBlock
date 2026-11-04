@@ -23,7 +23,8 @@ public enum FilterListURLMirror {
         let host = url.host?.lowercased()
         let path = url.path.lowercased()
         if host == "filters.adtidy.org" {
-            return ["/extension/safari/filters/", "/ios/filters/", "/mac_v3/filters/"].contains { path.hasPrefix($0) } ? path : nil
+            return ["/extension/safari/filters/", "/extension/ublock/filters/", "/ios/filters/", "/mac_v3/filters/"]
+                .contains { path.hasPrefix($0) } ? path : nil
         }
         guard (host == "raw.githubusercontent.com" && path.hasPrefix("/adguardteam/filtersregistry/"))
             || (host == "cdn.jsdelivr.net" && path.hasPrefix("/gh/adguardteam/filtersregistry@")),
@@ -44,6 +45,24 @@ public enum FilterListURLMirror {
     static let bpcBucketURL = URL(string: "https://pub-d303b9085c0b41b5aa749fc74609d4d9.r2.dev/bpc-paywall-filter.txt")!
     static let bpcWorkerURL = URL(string: "https://bpc-filter-proxy.wmailrelayb8d890.workers.dev")!
 
+    /// uBlock Origin's mirrors of uAssetsCDN, in the order uBO tries them
+    /// (assets.json `cdnURLs`), for a list at any of them.
+    private static func uAssetsMirrors(for url: URL) -> [URL]? {
+        let host = url.host?.lowercased() ?? "", path = url.path
+        let bases = ["https://ublockorigin.github.io/uAssetsCDN/", "https://ublockorigin.pages.dev/",
+                     "https://cdn.jsdelivr.net/gh/uBlockOrigin/uAssetsCDN@main/",
+                     "https://raw.githubusercontent.com/uBlockOrigin/uAssetsCDN/main/"]
+        let file: String
+        if host == "ublockorigin.github.io", path.hasPrefix("/uAssetsCDN/") { file = String(path.dropFirst("/uAssetsCDN/".count)) }
+        else if host == "ublockorigin.pages.dev" { file = String(path.dropFirst()) }
+        else if host == "cdn.jsdelivr.net", path.hasPrefix("/gh/uBlockOrigin/uAssetsCDN@main/") {
+            file = String(path.dropFirst("/gh/uBlockOrigin/uAssetsCDN@main/".count))
+        } else if host == "raw.githubusercontent.com", path.hasPrefix("/uBlockOrigin/uAssetsCDN/main/") {
+            file = String(path.dropFirst("/uBlockOrigin/uAssetsCDN/main/".count))
+        } else { return nil }
+        return bases.compactMap { URL(string: $0 + file) }.filter { $0 != url }
+    }
+
     public static func fallbackURLs(for primary: URL) -> [URL] {
         guard primary.scheme?.lowercased() == "https",
               let host = primary.host?.lowercased() else { return [] }
@@ -55,6 +74,7 @@ public enum FilterListURLMirror {
                 $0 != primary && allowsFallback(primary: primary, fallback: $0)
             }
         }
+        if let uAssets = uAssetsMirrors(for: primary) { return uAssets }
         if host == "cdn.jsdelivr.net" { return [] }
         guard host == "raw.githubusercontent.com" else { return [] }
         // Use the encoded path: URL.path decodes spaces and other characters, which
@@ -78,6 +98,7 @@ public enum FilterListURLMirror {
         var result = [jsDelivr]
         // AdGuard publishes each registry platform at the same path on its own CDN.
         let platforms = ["platforms/extension/safari/filters/": "extension/safari/filters/",
+                         "platforms/extension/ublock/filters/": "extension/ublock/filters/",
                          "platforms/ios/filters/": "ios/filters/",
                          "platforms/mac_v3/filters/": "mac_v3/filters/"]
         if user == "AdguardTeam" && repo == "FiltersRegistry",

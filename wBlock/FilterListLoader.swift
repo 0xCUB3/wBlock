@@ -416,6 +416,11 @@ class FilterListLoader {
 
     /// The current address of a built-in list whose source moved, or nil when `urlString` is current.
     static func migratedURL(for urlString: String) -> URL? {
+        // A list already at its catalog address has nothing to migrate.
+        resolvedURL(for: urlString).flatMap { $0.absoluteString == urlString ? nil : $0 }
+    }
+
+    private static func resolvedURL(for urlString: String) -> URL? {
         if let url = URL(string: urlString), let id = FilterListURLMirror.adGuardFilterID(for: url) {
             if adGuardUBlockIDs.contains(id) { return adGuardUBlockURL(id) }
             // Any platform's address for an AdGuard list resolves through its ID to the safari entry.
