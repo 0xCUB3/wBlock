@@ -78,10 +78,13 @@ struct ListActionsToolbar<Primary: View, Apply: View, Leading: View>: ViewModifi
                 // One item, so the pause menu shares update's capsule. A
                 // ControlGroup here moved both to the trailing edge.
                 ToolbarItem(placement: .navigation) {
-                    HStack(spacing: 0) {
+                    // Spaced like the ControlGroup on the trailing side, which
+                    // this can't be: a ControlGroup moves to the trailing edge.
+                    HStack(spacing: 7) {
                         leading()
                         apply()
                     }
+                    .padding(.horizontal, 2)
                     .fixedSize()
                 }
                 .toolbarVisibilityPriorityCompat(.high)
