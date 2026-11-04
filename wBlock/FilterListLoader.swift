@@ -605,11 +605,11 @@ class FilterListLoader {
             FilterList(
                 id: UUID(), name: "AdGuard Base Filter",
                 url: Self.adGuardUBlockURL(2), category: FilterListCategory.ads,
-                description: "EasyList + AdGuard English filter. This filter is necessary for quality ad blocking."),
+                description: "Blocks ads on English-language websites, from the AdGuard project. Meant to be used alongside EasyList."),
             FilterList(
                 id: UUID(), name: "AdGuard Mobile Filter",
                 url: Self.adGuardUBlockURL(11), category: FilterListCategory.ads,
-                description: "Filter for all known mobile ad networks. Useful for mobile devices."),
+                description: "Blocks ads from mobile ad networks, from the AdGuard project."),
             FilterList(
                 id: UUID(), name: "AdGuard URL Tracking Protection Filter",
                 url: Self.adGuardUBlockURL(17), category: FilterListCategory.privacy,
