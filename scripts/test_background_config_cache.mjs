@@ -548,11 +548,14 @@ const runScriptInjectionScenario = async executeScript => {
   check("empty executeScript results are skipped without an error", !outcome.rejected && outcome.errors.length === 0);
 }
 
-{
+for (const message of [
+  "The extension does not have permission to access this page",
+  "Invalid call to scripting.executeScript(). Tab not found."
+]) {
   const outcome = await runScriptInjectionScenario(async () => {
-    throw new Error("The extension does not have permission to access this page");
+    throw new Error(message);
   });
-  check("permission-denied executeScript rejection is skipped without an error", !outcome.rejected && outcome.errors.length === 0);
+  check(`executeScript rejection "${message}" is skipped without an error`, !outcome.rejected && outcome.errors.length === 0);
 }
 
 {

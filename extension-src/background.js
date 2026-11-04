@@ -98,15 +98,19 @@
     }
   };
   const logError = (...args) => console.error(args.map(formatLogValue).join(' '));
-  const PERMISSION_FAILURE_PATTERNS = ['permission', 'not allowed', 'denied', 'cannot access', 'not granted', 'not permitted', 'does not have access'];
-  // Frames without website access, or already gone, are skipped quietly.
+  // Frames without website access, or whose tab closed or navigated away
+  // ("Tab not found"), are skipped quietly.
+  const SKIPPED_TARGET_PATTERNS = ['permission', 'not allowed', 'denied', 'cannot access', 'not granted', 'not permitted', 'does not have access', 'not found'];
+  const isSkippedTarget = error => {
+    const message = String((error && error.message) || error || '').toLowerCase();
+    return SKIPPED_TARGET_PATTERNS.some(pattern => message.includes(pattern));
+  };
   const executeInFrame = async injection => {
     let results;
     try {
       results = await browser.scripting.executeScript(injection);
     } catch (error) {
-      const message = String((error && error.message) || error || '').toLowerCase();
-      if (!PERMISSION_FAILURE_PATTERNS.some(pattern => message.includes(pattern))) {
+      if (!isSkippedTarget(error)) {
         logError('[wBlock] Failed to execute script in target', injection.target, 'error', error);
       }
       return;
@@ -1475,7 +1479,9 @@
         try {
           await applyConfiguration(tabId, frameId, configuration);
         } catch (error) {
-          logError('[wBlock] Failed to apply configuration for ', url, String(error && error.message ? error.message : error));
+          if (!isSkippedTarget(error)) {
+            logError('[wBlock] Failed to apply configuration for ', url, String(error && error.message ? error.message : error));
+          }
         }
       }
     } else {
