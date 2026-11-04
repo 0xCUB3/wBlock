@@ -1052,7 +1052,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "自訂 URL";
 
-"Content blocker JSON exceeds the %@ MB size limit on iOS. Disable some filter lists and try again." = "內容阻擋器 JSON 超過了 iOS 上 %@ MB 的大小限制。請停用部分過濾器清單後重試。";
+"%1$@ needs %2$@ MB, and Safari allows %3$@ MB in one content blocker. Its lists: %4$@. Turn some of them off and try again." = "%1$@ 需要 %2$@ MB，而 Safari 每個內容阻擋器最多允許 %3$@ MB。其中的列表：%4$@。請關閉其中一些後再試一次。";
+"%1$@ needs %2$@ rules, and Safari allows %3$@ in one content blocker. Its lists: %4$@. Turn some of them off and try again." = "%1$@ 需要 %2$@ 條規則，而 Safari 每個內容阻擋器最多允許 %3$@ 條。其中的列表：%4$@。請關閉其中一些後再試一次。";
 
 "uBlock filters – Experimental" = "uBlock filters – Experimental";
 "Phishing URL Blocklist" = "Phishing URL Blocklist";

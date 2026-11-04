@@ -1052,7 +1052,8 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "URL personalizat";
 
-"Content blocker JSON exceeds the %@ MB size limit on iOS. Disable some filter lists and try again." = "Fișierul JSON al blocatorului de conținut depășește limita de dimensiune de %@ MB pe iOS. Dezactivează unele liste de filtre și încearcă din nou.";
+"%1$@ needs %2$@ MB, and Safari allows %3$@ MB in one content blocker. Its lists: %4$@. Turn some of them off and try again." = "%1$@ are nevoie de %2$@ MB, iar Safari permite %3$@ MB per blocant de conținut. Listele sale: %4$@. Dezactivează câteva și încearcă din nou.";
+"%1$@ needs %2$@ rules, and Safari allows %3$@ in one content blocker. Its lists: %4$@. Turn some of them off and try again." = "%1$@ are nevoie de %2$@ reguli, iar Safari permite %3$@ per blocant de conținut. Listele sale: %4$@. Dezactivează câteva și încearcă din nou.";
 
 "uBlock filters – Experimental" = "uBlock filters – Experimental";
 "Phishing URL Blocklist" = "Phishing URL Blocklist";

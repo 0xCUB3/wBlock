@@ -1021,7 +1021,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "カスタムURL";
 
-"Content blocker JSON exceeds the %@ MB size limit on iOS. Disable some filter lists and try again." = "コンテンツブロッカーのJSONがiOSのサイズ上限（%@ MB）を超えています。一部のフィルターリストを無効にして、もう一度お試しください。";
+"%1$@ needs %2$@ MB, and Safari allows %3$@ MB in one content blocker. Its lists: %4$@. Turn some of them off and try again." = "%1$@ には %2$@ MB が必要ですが、Safari が 1 つのコンテンツブロッカーに許可するのは %3$@ MB までです。含まれるリスト: %4$@。いくつかをオフにしてもう一度お試しください。";
+"%1$@ needs %2$@ rules, and Safari allows %3$@ in one content blocker. Its lists: %4$@. Turn some of them off and try again." = "%1$@ には %2$@ 件のルールが必要ですが、Safari が 1 つのコンテンツブロッカーに許可するのは %3$@ 件までです。含まれるリスト: %4$@。いくつかをオフにしてもう一度お試しください。";
 
 "uBlock filters – Experimental" = "uBlock filters – Experimental";
 "Phishing URL Blocklist" = "Phishing URL Blocklist";

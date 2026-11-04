@@ -1052,7 +1052,8 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "Własny URL";
 
-"Content blocker JSON exceeds the %@ MB size limit on iOS. Disable some filter lists and try again." = "Plik JSON blokera treści przekracza limit rozmiaru %@ MB w iOS. Wyłącz niektóre listy filtrów i spróbuj ponownie.";
+"%1$@ needs %2$@ MB, and Safari allows %3$@ MB in one content blocker. Its lists: %4$@. Turn some of them off and try again." = "%1$@ potrzebuje %2$@ MB, a Safari pozwala na %3$@ MB w jednym blokerze treści. Jego listy: %4$@. Wyłącz część z nich i spróbuj ponownie.";
+"%1$@ needs %2$@ rules, and Safari allows %3$@ in one content blocker. Its lists: %4$@. Turn some of them off and try again." = "%1$@ potrzebuje %2$@ reguł, a Safari pozwala na %3$@ w jednym blokerze treści. Jego listy: %4$@. Wyłącz część z nich i spróbuj ponownie.";
 
 "uBlock filters – Experimental" = "uBlock filters – Experimental";
 "Phishing URL Blocklist" = "Phishing URL Blocklist";

@@ -1052,7 +1052,8 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "Egyéni URL";
 
-"Content blocker JSON exceeds the %@ MB size limit on iOS. Disable some filter lists and try again." = "A tartalomblokkoló JSON-fájlja meghaladja az iOS %@ MB-os méretkorlátját. Kapcsoljon ki néhány szűrőlistát, majd próbálja újra.";
+"%1$@ needs %2$@ MB, and Safari allows %3$@ MB in one content blocker. Its lists: %4$@. Turn some of them off and try again." = "A(z) %1$@ %2$@ MB-ot igényel, a Safari tartalomblokkolónként %3$@ MB-ot enged. Listái: %4$@. Kapcsolj ki néhányat, és próbáld újra.";
+"%1$@ needs %2$@ rules, and Safari allows %3$@ in one content blocker. Its lists: %4$@. Turn some of them off and try again." = "A(z) %1$@ %2$@ szabályt igényel, a Safari tartalomblokkolónként %3$@ szabályt enged. Listái: %4$@. Kapcsolj ki néhányat, és próbáld újra.";
 
 "uBlock filters – Experimental" = "uBlock filters – Experimental";
 "Phishing URL Blocklist" = "Phishing URL Blocklist";

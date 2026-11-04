@@ -1052,7 +1052,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "Προσαρμοσμένο URL";
 
-"Content blocker JSON exceeds the %@ MB size limit on iOS. Disable some filter lists and try again." = "Το αρχείο JSON του αποκλεισμού περιεχομένου υπερβαίνει το όριο μεγέθους των %@ MB στο iOS. Απενεργοποιήστε ορισμένες λίστες φίλτρων και δοκιμάστε ξανά.";
+"%1$@ needs %2$@ MB, and Safari allows %3$@ MB in one content blocker. Its lists: %4$@. Turn some of them off and try again." = "Το %1$@ χρειάζεται %2$@ MB, ενώ το Safari επιτρέπει %3$@ MB ανά αποκλεισμό περιεχομένου. Λίστες: %4$@. Απενεργοποιήστε μερικές και δοκιμάστε ξανά.";
+"%1$@ needs %2$@ rules, and Safari allows %3$@ in one content blocker. Its lists: %4$@. Turn some of them off and try again." = "Το %1$@ χρειάζεται %2$@ κανόνες, ενώ το Safari επιτρέπει %3$@ ανά αποκλεισμό περιεχομένου. Λίστες: %4$@. Απενεργοποιήστε μερικές και δοκιμάστε ξανά.";
 
 "uBlock filters – Experimental" = "uBlock filters – Experimental";
 "Phishing URL Blocklist" = "Phishing URL Blocklist";

@@ -1061,7 +1061,8 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "Özel URL";
 
-"Content blocker JSON exceeds the %@ MB size limit on iOS. Disable some filter lists and try again." = "İçerik engelleyici JSON dosyası, iOS üzerindeki %@ MB boyut sınırını aşıyor. Bazı filtre listelerini devre dışı bırakıp tekrar deneyin.";
+"%1$@ needs %2$@ MB, and Safari allows %3$@ MB in one content blocker. Its lists: %4$@. Turn some of them off and try again." = "%1$@ için %2$@ MB gerekiyor, Safari ise içerik engelleyici başına %3$@ MB izin veriyor. Listeleri: %4$@. Bazılarını kapatıp yeniden deneyin.";
+"%1$@ needs %2$@ rules, and Safari allows %3$@ in one content blocker. Its lists: %4$@. Turn some of them off and try again." = "%1$@ için %2$@ kural gerekiyor, Safari ise içerik engelleyici başına %3$@ kurala izin veriyor. Listeleri: %4$@. Bazılarını kapatıp yeniden deneyin.";
 
 "uBlock filters – Experimental" = "uBlock filters – Experimental";
 "Phishing URL Blocklist" = "Phishing URL Blocklist";

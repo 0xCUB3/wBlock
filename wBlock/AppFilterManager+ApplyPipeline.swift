@@ -122,6 +122,28 @@ extension AppFilterManager {
         }
     }
 
+    /// Safari refuses a content blocker past its rule or size limit. The counts
+    /// are the compiled blocker's own, so the message names what is really full.
+    private static func overLimitStatus(
+        _ target: ContentBlockerTargetInfo, lists: [FilterList],
+        needed: String, allowed: String, inMegabytes: Bool
+    ) -> String {
+        let names = lists.map(\.name).formatted(.list(type: .and).locale(.appCurrent))
+        return inMegabytes
+            ? LocalizedStrings.format(
+                "%1$@ needs %2$@ MB, and Safari allows %3$@ MB in one content blocker. Its lists: %4$@. Turn some of them off and try again.",
+                comment: "Apply failed: a content blocker is over Safari's size limit",
+                target.displayName, needed, allowed, names)
+            : LocalizedStrings.format(
+                "%1$@ needs %2$@ rules, and Safari allows %3$@ in one content blocker. Its lists: %4$@. Turn some of them off and try again.",
+                comment: "Apply failed: a content blocker is over Safari's rule limit",
+                target.displayName, needed, allowed, names)
+    }
+
+    private static func megabytes(_ bytes: Int) -> String {
+        (Double(bytes) / 1_000_000).formatted(.number.precision(.fractionLength(0...1)).locale(.appCurrent))
+    }
+
     /// Fails the in-flight apply when cancelled for iOS suspension.
     private func failApplyIfCancelled() async -> Bool {
         guard ApplyCancellation.isCancelled || Task.isCancelled else {
@@ -664,6 +686,7 @@ extension AppFilterManager {
             )
         }
         var conversionCompletions: [ContentBlockerTargetInfo: SharedAutoUpdateManager.TargetCompilationResult] = [:]
+        var overLimitStatus: String?
         var appliedSourceRuleCountsByFilterID: [UUID: Int] = [:]
 
         _ = await SharedAutoUpdateManager.compileTargets(compilationRequests, interactive: true) { completion in
@@ -690,7 +713,13 @@ extension AppFilterManager {
                 if truncatedRuleCount > 0 {
                     self.extensionsApproachingLimit.remove(targetInfo.bundleIdentifier)
                     self.hasError = true
-                    self.statusDescription = "One or more content blockers exceeded Safari's \(ruleLimit.formatted()) rule limit. Disable some filter lists and try again."
+                    let status = Self.overLimitStatus(
+                        targetInfo, lists: filtersByTargetInfo[targetInfo] ?? [],
+                        needed: (ruleCountForThisTarget + truncatedRuleCount).formatted(),
+                        allowed: ruleLimit.formatted(), inMegabytes: false
+                    )
+                    overLimitStatus = overLimitStatus ?? status
+                    self.statusDescription = status
                 } else if ruleCountForThisTarget >= warningThreshold {
                     self.extensionsApproachingLimit.insert(targetInfo.bundleIdentifier)
                 } else {
@@ -735,9 +764,9 @@ extension AppFilterManager {
                     "error": failureDescription,
                 ],
                 statusMessage: sizeLimitError.map {
-                    LocalizedStrings.format(
-                        "Content blocker JSON exceeds the %@ MB size limit on iOS. Disable some filter lists and try again.",
-                        String($0.limit / 1_000_000)
+                    Self.overLimitStatus(
+                        failedTarget, lists: filtersByTargetInfo[failedTarget] ?? [],
+                        needed: Self.megabytes($0.byteCount), allowed: Self.megabytes($0.limit), inMegabytes: true
                     )
                 }
             )
@@ -814,12 +843,10 @@ extension AppFilterManager {
 
         let totalTruncatedRules = conversionMetrics.reduce(0) { $0 + $1.truncatedRules }
         if totalTruncatedRules > 0 {
-            let limitStatus =
-                "One or more content blockers exceeded Safari's \(ruleLimit.formatted()) rule limit. Disable some filter lists and try again."
             await failApplyRun(
                 logMessage: LocalizedStrings.text("Rule limit exceeded for blocker"),
                 metadata: ["truncatedRules": "\(totalTruncatedRules)", "ruleLimit": "\(ruleLimit)"],
-                statusMessage: limitStatus
+                statusMessage: overLimitStatus
             )
             return
         }

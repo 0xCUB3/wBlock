@@ -1052,7 +1052,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "사용자 지정 URL";
 
-"Content blocker JSON exceeds the %@ MB size limit on iOS. Disable some filter lists and try again." = "콘텐츠 차단기 JSON이 iOS의 크기 제한인 %@ MB를 초과합니다. 일부 필터 목록을 비활성화한 후 다시 시도하세요.";
+"%1$@ needs %2$@ MB, and Safari allows %3$@ MB in one content blocker. Its lists: %4$@. Turn some of them off and try again." = "%1$@에 %2$@MB가 필요하지만 Safari는 콘텐츠 차단기 하나에 %3$@MB까지 허용합니다. 포함된 목록: %4$@. 일부를 끄고 다시 시도하세요.";
+"%1$@ needs %2$@ rules, and Safari allows %3$@ in one content blocker. Its lists: %4$@. Turn some of them off and try again." = "%1$@에 규칙 %2$@개가 필요하지만 Safari는 콘텐츠 차단기 하나에 %3$@개까지 허용합니다. 포함된 목록: %4$@. 일부를 끄고 다시 시도하세요.";
 
 "uBlock filters – Experimental" = "uBlock filters – Experimental";
 "Phishing URL Blocklist" = "Phishing URL Blocklist";

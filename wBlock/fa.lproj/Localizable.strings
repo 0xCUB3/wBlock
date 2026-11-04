@@ -1061,7 +1061,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "نشانی سفارشی";
 
-"Content blocker JSON exceeds the %@ MB size limit on iOS. Disable some filter lists and try again." = "فایل JSON مسدودکنندهٔ محتوا از محدودیت حجم %@ مگابایت در iOS بیشتر است. برخی فهرست‌های فیلتر را غیرفعال کنید و دوباره تلاش کنید.";
+"%1$@ needs %2$@ MB, and Safari allows %3$@ MB in one content blocker. Its lists: %4$@. Turn some of them off and try again." = "%1$@ به %2$@ مگابایت نیاز دارد، اما Safari برای هر مسدودکننده محتوا %3$@ مگابایت اجازه می‌دهد. فهرست‌های آن: %4$@. برخی را خاموش کنید و دوباره امتحان کنید.";
+"%1$@ needs %2$@ rules, and Safari allows %3$@ in one content blocker. Its lists: %4$@. Turn some of them off and try again." = "%1$@ به %2$@ قانون نیاز دارد، اما Safari برای هر مسدودکننده محتوا %3$@ قانون اجازه می‌دهد. فهرست‌های آن: %4$@. برخی را خاموش کنید و دوباره امتحان کنید.";
 
 "uBlock filters – Experimental" = "uBlock filters – Experimental";
 "Phishing URL Blocklist" = "Phishing URL Blocklist";
