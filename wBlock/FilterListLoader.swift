@@ -176,13 +176,18 @@ class FilterListLoader {
     ]
 
     /// uBlock Origin's copy of an AdGuard list. AdGuard Base uses the copy
-    /// without EasyList, as uBO does.
+    /// without EasyList, as uBO does. URL Tracking Protection (17) is uBO's
+    /// own fork, which scopes per-site rules to the link's destination (`to=`).
     private static func adGuardUBlockURL(_ id: Int) -> URL {
+        if id == 17 { return urlTrackingURL }
         let file = id == 2 ? "2_without_easylist.txt" : "\(id).txt"
         return URL(string: "https://filters.adtidy.org/extension/ublock/filters/\(file)")!
     }
 
+    private static let urlTrackingURL = URL(string: "https://ublockorigin.github.io/uAssetsCDN/filters/privacy-removeparam.txt")!
+
     private static let filterURLMigrations: [String: URL] = [
+        "https://filters.adtidy.org/extension/ublock/filters/17.txt": urlTrackingURL,
         // EasyPrivacy and Peter Lowe's Blocklist now come from uBlock Origin's sources.
         registryURL(118):
             URL(string: "https://cdn.jsdelivr.net/gh/uBlockOrigin/uAssetsCDN@main/thirdparties/easyprivacy.txt")!,

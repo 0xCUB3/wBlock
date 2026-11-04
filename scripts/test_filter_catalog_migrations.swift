@@ -263,10 +263,14 @@ private final class TestLoader: FilterListLoader {
             let migrated = FilterListLoader.migratedURL(for: "\(registry)/extension/safari/filters/\(id)_optimized.txt")
             precondition(migrated?.path.contains("/extension/ublock/filters/") == true, "replaced AdGuard \(id) must still load uBlock Origin's copy")
         }
-        for list in defaults where list.name.hasPrefix("AdGuard ") {
+        let urlTracking = URL(string: "https://ublockorigin.github.io/uAssetsCDN/filters/privacy-removeparam.txt")!
+        for list in defaults where list.name.hasPrefix("AdGuard ") && list.name != "AdGuard URL Tracking Protection Filter" {
             precondition(list.url.host == "filters.adtidy.org" && list.url.path.contains("/extension/ublock/filters/"),
                          "\(list.name) should load uBlock Origin's copy")
         }
+        // URL Tracking Protection is uBO's own fork, and the AdGuard copy moves to it.
+        precondition(byName["AdGuard URL Tracking Protection Filter"]?.url == urlTracking)
+        precondition(FilterListLoader.migratedURL(for: "https://filters.adtidy.org/extension/ublock/filters/17.txt") == urlTracking)
         // A custom copy of a catalog list folds into the catalog entry, whatever registry address it was saved with.
         let registryCustom = FilterList(name: "AdGuard Social Media Filter", url: URL(string: "\(registry)/extension/safari/filters/4_optimized.txt")!,
                                         category: .annoyances, isCustom: true, isSelected: true)
