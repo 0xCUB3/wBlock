@@ -1062,3 +1062,8 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Blocks URLs that host phishing pages, based on OpenPhish, IPThreat and PhishTank data." = "Blochează adresele URL care găzduiesc pagini de phishing, pe baza datelor OpenPhish, IPThreat și PhishTank.";
 "Blocks Facebook social plugins and login widgets on other websites. May break sites that rely on them." = "Blochează modulele sociale și widgeturile de autentificare Facebook de pe alte site-uri. Poate defecta site-urile care se bazează pe ele.";
 "Hosts file that blocks ads, trackers, and other unwanted sites, from Dan Pollock's project." = "Fișier hosts care blochează reclamele, trackerele și alte site-uri nedorite. Din proiectul lui Dan Pollock.";
+
+/* Annoyances topic headings */
+"Cookie Notices" = "Notificări cookie";
+"Pop-ups & Banners" = "Ferestre pop-up și bannere";
+"Social & Chat" = "Rețele sociale și chat";

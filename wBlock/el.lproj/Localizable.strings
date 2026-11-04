@@ -1062,3 +1062,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Blocks URLs that host phishing pages, based on OpenPhish, IPThreat and PhishTank data." = "Αποκλείει τα URL που φιλοξενούν σελίδες phishing, με βάση δεδομένα των OpenPhish, IPThreat και PhishTank.";
 "Blocks Facebook social plugins and login widgets on other websites. May break sites that rely on them." = "Αποκλείει τα κοινωνικά plugin και τα widget σύνδεσης του Facebook σε άλλους ιστότοπους. Ενδέχεται να προκαλέσει προβλήματα σε ιστότοπους που τα χρησιμοποιούν.";
 "Hosts file that blocks ads, trackers, and other unwanted sites, from Dan Pollock's project." = "Αρχείο hosts που αποκλείει διαφημίσεις, trackers και άλλους ανεπιθύμητους ιστότοπους. Από το έργο του Dan Pollock.";
+
+/* Annoyances topic headings */
+"Cookie Notices" = "Ειδοποιήσεις cookie";
+"Pop-ups & Banners" = "Αναδυόμενα και banner";
+"Social & Chat" = "Κοινωνικά δίκτυα και συνομιλία";

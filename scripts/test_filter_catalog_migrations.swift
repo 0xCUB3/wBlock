@@ -167,6 +167,10 @@ private final class TestLoader: FilterListLoader {
         precondition(FilterListLoader.handingOverReplacedAdGuardLists(reenabled, pending: [], catalogURLs: catalogURLs, hasContent: { _ in true }).lists == reenabled,
                      "an AdGuard list turned back on stays on")
 
+        // A renamed annoyance list would silently fall into Other.
+        let topical = defaults.filter { $0.category == .annoyances && AnnoyanceTopic.topic(for: $0) != .other }
+        precondition(topical.count == 15, "annoyance topics lost a list: \(topical.map(\.name))")
+
         // A default name that matches no catalog entry would silently drop that list from the defaults.
         let catalogNames = Set(defaults.map(\.name))
         for names in [FilterListLoader.recommendedFilterNames, FilterListLoader.minimalFilterNames, FilterListLoader.essentialFilterNames] {

@@ -29,6 +29,20 @@ struct ContentListSection<Header: View, Content: View>: View {
     }
 }
 
+/// A smaller heading inside a category, for a group of its lists.
+struct ListTopicHeader: View {
+    let title: String
+
+    var body: some View {
+        Text(LocalizedStringKey(title))
+            .font(.footnote.weight(.medium))
+            .foregroundStyle(.secondary)
+            .textCase(.none)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityAddTraits(.isHeader)
+    }
+}
+
 struct ListCategoryHeader: View {
     let title: LocalizedStringKey
     let info: () -> Void

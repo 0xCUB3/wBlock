@@ -1031,3 +1031,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Blocks URLs that host phishing pages, based on OpenPhish, IPThreat and PhishTank data." = "OpenPhish、IPThreat、PhishTank のデータに基づき、フィッシングページを配信している URL をブロックします。";
 "Blocks Facebook social plugins and login widgets on other websites. May break sites that rely on them." = "他のウェブサイト上の Facebook のソーシャルプラグインやログインウィジェットをブロックします。これらに依存するサイトが動作しなくなる場合があります。";
 "Hosts file that blocks ads, trackers, and other unwanted sites, from Dan Pollock's project." = "広告、トラッカー、その他の不要なサイトをブロックする hosts ファイルです。Dan Pollock のプロジェクトのリストです。";
+
+/* Annoyances topic headings */
+"Cookie Notices" = "Cookieの通知";
+"Pop-ups & Banners" = "ポップアップとバナー";
+"Social & Chat" = "ソーシャルとチャット";

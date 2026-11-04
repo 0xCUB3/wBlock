@@ -1062,3 +1062,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Blocks URLs that host phishing pages, based on OpenPhish, IPThreat and PhishTank data." = "根据 OpenPhish、IPThreat 和 PhishTank 的数据，拦截托管钓鱼页面的网址。";
 "Blocks Facebook social plugins and login widgets on other websites. May break sites that rely on them." = "拦截其他网站上的 Facebook 社交插件和登录小部件。可能导致依赖这些功能的网站无法正常使用。";
 "Hosts file that blocks ads, trackers, and other unwanted sites, from Dan Pollock's project." = "拦截广告、追踪器和其他不需要的网站的 hosts 文件。来自 Dan Pollock 的项目。";
+
+/* Annoyances topic headings */
+"Cookie Notices" = "Cookie 通知";
+"Pop-ups & Banners" = "弹出窗口和横幅";
+"Social & Chat" = "社交与聊天";

@@ -1062,3 +1062,8 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Blocks URLs that host phishing pages, based on OpenPhish, IPThreat and PhishTank data." = "Bloque les URL qui hébergent des pages de hameçonnage, d’après les données d’OpenPhish, d’IPThreat et de PhishTank.";
 "Blocks Facebook social plugins and login widgets on other websites. May break sites that rely on them." = "Bloque les modules sociaux et les widgets de connexion de Facebook sur les autres sites. Peut perturber les sites qui les utilisent.";
 "Hosts file that blocks ads, trackers, and other unwanted sites, from Dan Pollock's project." = "Fichier hosts qui bloque les publicités, les traceurs et d’autres sites indésirables. Du projet de Dan Pollock.";
+
+/* Annoyances topic headings */
+"Cookie Notices" = "Avis de cookies";
+"Pop-ups & Banners" = "Pop-ups et bannières";
+"Social & Chat" = "Réseaux sociaux et chat";

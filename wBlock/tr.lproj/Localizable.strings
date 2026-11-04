@@ -1071,3 +1071,8 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Blocks URLs that host phishing pages, based on OpenPhish, IPThreat and PhishTank data." = "OpenPhish, IPThreat ve PhishTank verilerine göre oltalama sayfaları barındıran URL'leri engeller.";
 "Blocks Facebook social plugins and login widgets on other websites. May break sites that rely on them." = "Diğer web sitelerindeki Facebook sosyal eklentilerini ve oturum açma widget'larını engeller. Bunlara bağlı siteleri bozabilir.";
 "Hosts file that blocks ads, trackers, and other unwanted sites, from Dan Pollock's project." = "Reklamları, izleyicileri ve diğer istenmeyen siteleri engelleyen bir hosts dosyası. Dan Pollock'un projesinden.";
+
+/* Annoyances topic headings */
+"Cookie Notices" = "Çerez bildirimleri";
+"Pop-ups & Banners" = "Açılır pencereler ve banner'lar";
+"Social & Chat" = "Sosyal medya ve sohbet";

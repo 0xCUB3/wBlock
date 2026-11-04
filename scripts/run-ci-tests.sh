@@ -236,7 +236,7 @@ compile_core_test filter-list-presentation scripts/test_filter_list_presentation
   wBlock/LocalizationHelpers.swift wBlock/FilterListLoader.swift wBlock/ConcurrentLogManager.swift wBlock/LogTimeZone.swift
 compile_core_test filter-url-mirrors scripts/test_filter_url_mirrors.swift
 compile_core_test filter-catalog-migrations scripts/test_filter_catalog_migrations.swift \
-  wBlock/FilterListLoader.swift wBlock/FilterListSetup.swift wBlock/LocalizationHelpers.swift \
+  wBlock/AnnoyanceTopic.swift wBlock/FilterListLoader.swift wBlock/FilterListSetup.swift wBlock/LocalizationHelpers.swift \
   wBlock/ConcurrentLogManager.swift wBlock/LogTimeZone.swift
 compile_core_test filter-list-fetch-chain scripts/test_filter_list_fetch_chain.swift
 compile_core_test filter-download-processor scripts/test_filter_download_processor.swift

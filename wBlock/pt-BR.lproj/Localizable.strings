@@ -1062,3 +1062,8 @@ Para reativá-los, desative outros filtros grandes e aplique as alterações nov
 "Blocks URLs that host phishing pages, based on OpenPhish, IPThreat and PhishTank data." = "Bloqueia URLs que hospedam páginas de phishing, com base em dados do OpenPhish, IPThreat e PhishTank.";
 "Blocks Facebook social plugins and login widgets on other websites. May break sites that rely on them." = "Bloqueia plugins sociais e widgets de login do Facebook em outros sites. Pode quebrar sites que dependem deles.";
 "Hosts file that blocks ads, trackers, and other unwanted sites, from Dan Pollock's project." = "Arquivo hosts que bloqueia anúncios, rastreadores e outros sites indesejados. Do projeto de Dan Pollock.";
+
+/* Annoyances topic headings */
+"Cookie Notices" = "Avisos de cookies";
+"Pop-ups & Banners" = "Pop-ups e banners";
+"Social & Chat" = "Redes sociais e chat";

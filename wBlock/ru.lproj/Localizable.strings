@@ -1062,3 +1062,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Blocks URLs that host phishing pages, based on OpenPhish, IPThreat and PhishTank data." = "Блокирует URL-адреса, на которых размещены фишинговые страницы, по данным OpenPhish, IPThreat и PhishTank.";
 "Blocks Facebook social plugins and login widgets on other websites. May break sites that rely on them." = "Блокирует социальные плагины и виджеты входа Facebook на других сайтах. Может нарушать работу сайтов, которые их используют.";
 "Hosts file that blocks ads, trackers, and other unwanted sites, from Dan Pollock's project." = "Файл hosts, который блокирует рекламу, трекеры и другие нежелательные сайты. Из проекта Dan Pollock.";
+
+/* Annoyances topic headings */
+"Cookie Notices" = "Уведомления о cookie";
+"Pop-ups & Banners" = "Всплывающие окна и баннеры";
+"Social & Chat" = "Соцсети и чаты";

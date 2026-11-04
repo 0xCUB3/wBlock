@@ -1062,3 +1062,8 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Blocks URLs that host phishing pages, based on OpenPhish, IPThreat and PhishTank data." = "Az adathalász oldalakat tartalmazó URL-eket blokkolja az OpenPhish, az IPThreat és a PhishTank adatai alapján.";
 "Blocks Facebook social plugins and login widgets on other websites. May break sites that rely on them." = "Blokkolja a Facebook közösségi beépülő moduljait és bejelentkező widgetjeit más weboldalakon. Megzavarhatja az ezekre épülő oldalakat.";
 "Hosts file that blocks ads, trackers, and other unwanted sites, from Dan Pollock's project." = "Hosts-fájl, amely blokkolja a hirdetéseket, a követőket és más nem kívánt oldalakat. Dan Pollock projektje.";
+
+/* Annoyances topic headings */
+"Cookie Notices" = "Sütiértesítések";
+"Pop-ups & Banners" = "Felugró ablakok és bannerek";
+"Social & Chat" = "Közösségi média és csevegés";

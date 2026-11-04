@@ -464,6 +464,23 @@ struct ContentView: View {
                             filterRows(item.filters)
                         }
                     }
+                } else if item.category == .annoyances {
+                    // One card per topic; the category title heads the first.
+                    let groups = AnnoyanceTopic.groups(item.filters)
+                    ForEach(groups, id: \.topic) { group in
+                        ContentListSection {
+                            if group.topic == groups.first?.topic {
+                                VStack(alignment: .leading, spacing: 14) {
+                                    categoryHeader(item.category)
+                                    ListTopicHeader(title: group.topic.title)
+                                }
+                            } else {
+                                ListTopicHeader(title: group.topic.title)
+                            }
+                        } content: {
+                            filterRows(group.filters)
+                        }
+                    }
                 } else {
                     ContentListSection { categoryHeader(item.category) } content: {
                         filterRows(item.filters)
@@ -780,30 +797,60 @@ struct ContentView: View {
 
     #if os(macOS)
     private var macFilterSections: [MacListSection] {
-        FilterListCategory.allCases.filter { $0 != .all && !$0.isUserScriptOnly }.compactMap { category in
+        FilterListCategory.allCases.filter { $0 != .all && !$0.isUserScriptOnly }.flatMap { category -> [MacListSection] in
             let filters = filterPresentation.sections.first { $0.category == category }?.filters ?? []
-            if category == .foreign {
-                guard !filters.isEmpty else { return nil }
-                // Collapse is owned by the header's disclosure binding; the
-                // section simply carries its rows only while expanded.
-                let rows = shouldExpandForeignFilters ? filters.map { filter in
-                    MacListRow(filter.id) { filterRowView(for: filter) }
-                } : []
-                return MacListSection(id: category.id, header: AnyView(categoryHeader(category)),
-                                      rows: rows, allowsCrossSectionMoves: false)
+            if category == .annoyances {
+                return annoyanceSections(filters)
             }
-            let acceptsMoves = FilterListCategory.moveTargets.contains(category)
-            guard acceptsMoves || !filters.isEmpty else { return nil }
-            return MacListSection(id: category.id, header: AnyView(categoryHeader(category)),
-                                  rows: filters.map { filter in
-                                      MacListRow(filter.id, leavesSection: filter.isCustom) { filterRowView(for: filter) }
-                                  },
-                                  acceptsMoves: acceptsMoves, revealsOnlyWhileDragging: acceptsMoves)
+            return macFilterSection(category, filters).map { [$0] } ?? []
         }
     }
 
+    /// One section per topic. Only Other, where custom lists show, accepts moves.
+    private func annoyanceSections(_ filters: [FilterList]) -> [MacListSection] {
+        var groups = AnnoyanceTopic.groups(filters)
+        if !groups.contains(where: { $0.topic == .other }) { groups.append((.other, [])) }
+        let first = groups.first { !$0.filters.isEmpty }?.topic ?? .other
+        return groups.map { group in
+            let topicHeader = ListTopicHeader(title: group.topic.title)
+            let header = group.topic == first
+                ? AnyView(VStack(alignment: .leading, spacing: 10) { categoryHeader(.annoyances); topicHeader })
+                : AnyView(topicHeader)
+            let isOther = group.topic == .other
+            return MacListSection(
+                id: FilterListCategory.annoyances.rawValue + (isOther ? "" : "#" + group.topic.rawValue),
+                header: header,
+                rows: group.filters.map { filter in
+                    MacListRow(filter.id, leavesSection: filter.isCustom) { filterRowView(for: filter) }
+                },
+                acceptsMoves: isOther, allowsCrossSectionMoves: isOther,
+                revealsOnlyWhileDragging: isOther && group.filters.isEmpty)
+        }
+    }
+
+    private func macFilterSection(_ category: FilterListCategory, _ filters: [FilterList]) -> MacListSection? {
+        if category == .foreign {
+            guard !filters.isEmpty else { return nil }
+            // Collapse is owned by the header's disclosure binding; the
+            // section simply carries its rows only while expanded.
+            let rows = shouldExpandForeignFilters ? filters.map { filter in
+                MacListRow(filter.id) { filterRowView(for: filter) }
+            } : []
+            return MacListSection(id: category.id, header: AnyView(categoryHeader(category)),
+                                  rows: rows, allowsCrossSectionMoves: false)
+        }
+        let acceptsMoves = FilterListCategory.moveTargets.contains(category)
+        guard acceptsMoves || !filters.isEmpty else { return nil }
+        return MacListSection(id: category.id, header: AnyView(categoryHeader(category)),
+                              rows: filters.map { filter in
+                                  MacListRow(filter.id, leavesSection: filter.isCustom) { filterRowView(for: filter) }
+                              },
+                              acceptsMoves: acceptsMoves, revealsOnlyWhileDragging: acceptsMoves)
+    }
+
     private func commitFilterMove(_ move: MacListMove) -> Bool {
-        guard let category = FilterListCategory(rawValue: move.sectionID),
+        // Annoyances topic sections are "Annoyances#topic".
+        guard let category = FilterListCategory(rawValue: String(move.sectionID.prefix { $0 != "#" })),
               let filter = filterManager.filterLists.first(where: { $0.id == move.itemID }),
               // Built-in lists keep the category wBlock gives them (#1028).
               filter.category == category
@@ -819,8 +866,11 @@ struct ContentView: View {
         // Give the native outline the accepted arrangement immediately. The background
         // presentation task subsequently refreshes metadata and search results.
         filterPresentation.sections = FilterListCategory.allCases.compactMap { target in
-            let rows = target == category ? move.orderedIDs.compactMap { live[$0] }
-                : (previous.first { $0.category == target }?.filters.filter { $0.id != move.itemID } ?? [])
+            let others = previous.first { $0.category == target }?.filters.filter { $0.id != move.itemID } ?? []
+            let rows = target != category ? others
+                // A topic section carries only its own rows, so the category is re-sorted whole.
+                : target == .annoyances ? ListDisplayOrder.sorted(others + [live[move.itemID]].compactMap { $0 }, order: filterDisplayOrder)
+                : move.orderedIDs.compactMap { live[$0] }
             return rows.isEmpty ? nil : FilterListPresentation.Section(category: target, filters: rows)
         }
         return true

@@ -1062,3 +1062,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Blocks URLs that host phishing pages, based on OpenPhish, IPThreat and PhishTank data." = "OpenPhish, IPThreat, PhishTank 데이터를 기반으로 피싱 페이지를 호스팅하는 URL을 차단합니다.";
 "Blocks Facebook social plugins and login widgets on other websites. May break sites that rely on them." = "다른 웹사이트의 Facebook 소셜 플러그인과 로그인 위젯을 차단합니다. 이에 의존하는 사이트가 제대로 작동하지 않을 수 있습니다.";
 "Hosts file that blocks ads, trackers, and other unwanted sites, from Dan Pollock's project." = "광고, 추적기, 기타 원치 않는 사이트를 차단하는 hosts 파일입니다. Dan Pollock 프로젝트에서 제공합니다.";
+
+/* Annoyances topic headings */
+"Cookie Notices" = "쿠키 알림";
+"Pop-ups & Banners" = "팝업 및 배너";
+"Social & Chat" = "소셜 및 채팅";
