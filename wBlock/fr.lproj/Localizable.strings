@@ -1052,8 +1052,8 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "URL personnalisée";
 
-"%1$@ needs %2$@ MB, and Safari allows %3$@ MB in one content blocker. Its lists: %4$@. Turn some of them off and try again." = "%1$@ nécessite %2$@ Mo, et Safari autorise %3$@ Mo par bloqueur de contenu. Ses listes : %4$@. Désactivez-en quelques-unes et réessayez.";
-"%1$@ needs %2$@ rules, and Safari allows %3$@ in one content blocker. Its lists: %4$@. Turn some of them off and try again." = "%1$@ nécessite %2$@ règles, et Safari en autorise %3$@ par bloqueur de contenu. Ses listes : %4$@. Désactivez-en quelques-unes et réessayez.";
+"Too many lists are on for %1$@. They need %2$@ MB, and Safari allows %3$@ MB per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of these and try again: %4$@." = "Trop de listes sont activées pour %1$@. Elles nécessitent %2$@ Mo, et Safari autorise %3$@ Mo par bloqueur de contenu. C’est une limite de Safari, pas un bug de wBlock. Désactivez-en quelques-unes et réessayez : %4$@.";
+"Too many lists are on for %1$@. They need %2$@ rules, and Safari allows %3$@ per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of these and try again: %4$@." = "Trop de listes sont activées pour %1$@. Elles nécessitent %2$@ règles, et Safari en autorise %3$@ par bloqueur de contenu. C’est une limite de Safari, pas un bug de wBlock. Désactivez-en quelques-unes et réessayez : %4$@.";
 
 "uBlock filters – Experimental" = "uBlock filters – Experimental";
 "Phishing URL Blocklist" = "Phishing URL Blocklist";

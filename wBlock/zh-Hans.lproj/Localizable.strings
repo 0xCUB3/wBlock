@@ -1052,8 +1052,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "自定义 URL";
 
-"%1$@ needs %2$@ MB, and Safari allows %3$@ MB in one content blocker. Its lists: %4$@. Turn some of them off and try again." = "%1$@ 需要 %2$@ MB，而 Safari 每个内容拦截器最多允许 %3$@ MB。其中的列表：%4$@。请关闭其中一些后重试。";
-"%1$@ needs %2$@ rules, and Safari allows %3$@ in one content blocker. Its lists: %4$@. Turn some of them off and try again." = "%1$@ 需要 %2$@ 条规则，而 Safari 每个内容拦截器最多允许 %3$@ 条。其中的列表：%4$@。请关闭其中一些后重试。";
+"Too many lists are on for %1$@. They need %2$@ MB, and Safari allows %3$@ MB per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of these and try again: %4$@." = "%1$@ 开启的列表太多。它们需要 %2$@ MB，而 Safari 每个内容拦截器最多允许 %3$@ MB。这是 Safari 的限制，不是 wBlock 的错误。请关闭以下部分列表后重试：%4$@。";
+"Too many lists are on for %1$@. They need %2$@ rules, and Safari allows %3$@ per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of these and try again: %4$@." = "%1$@ 开启的列表太多。它们需要 %2$@ 条规则，而 Safari 每个内容拦截器最多允许 %3$@ 条。这是 Safari 的限制，不是 wBlock 的错误。请关闭以下部分列表后重试：%4$@。";
 
 "uBlock filters – Experimental" = "uBlock filters – Experimental";
 "Phishing URL Blocklist" = "Phishing URL Blocklist";

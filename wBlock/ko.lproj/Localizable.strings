@@ -1052,8 +1052,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "사용자 지정 URL";
 
-"%1$@ needs %2$@ MB, and Safari allows %3$@ MB in one content blocker. Its lists: %4$@. Turn some of them off and try again." = "%1$@에 %2$@MB가 필요하지만 Safari는 콘텐츠 차단기 하나에 %3$@MB까지 허용합니다. 포함된 목록: %4$@. 일부를 끄고 다시 시도하세요.";
-"%1$@ needs %2$@ rules, and Safari allows %3$@ in one content blocker. Its lists: %4$@. Turn some of them off and try again." = "%1$@에 규칙 %2$@개가 필요하지만 Safari는 콘텐츠 차단기 하나에 %3$@개까지 허용합니다. 포함된 목록: %4$@. 일부를 끄고 다시 시도하세요.";
+"Too many lists are on for %1$@. They need %2$@ MB, and Safari allows %3$@ MB per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of these and try again: %4$@." = "%1$@에 켜진 목록이 너무 많습니다. %2$@MB가 필요하지만 Safari는 콘텐츠 차단기 하나에 %3$@MB까지 허용합니다. 이는 Safari의 제한이며 wBlock의 버그가 아닙니다. 다음 중 일부를 끄고 다시 시도하세요: %4$@.";
+"Too many lists are on for %1$@. They need %2$@ rules, and Safari allows %3$@ per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of these and try again: %4$@." = "%1$@에 켜진 목록이 너무 많습니다. 규칙 %2$@개가 필요하지만 Safari는 콘텐츠 차단기 하나에 %3$@개까지 허용합니다. 이는 Safari의 제한이며 wBlock의 버그가 아닙니다. 다음 중 일부를 끄고 다시 시도하세요: %4$@.";
 
 "uBlock filters – Experimental" = "uBlock filters – Experimental";
 "Phishing URL Blocklist" = "Phishing URL Blocklist";

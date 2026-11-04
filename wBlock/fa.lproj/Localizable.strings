@@ -1061,8 +1061,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "نشانی سفارشی";
 
-"%1$@ needs %2$@ MB, and Safari allows %3$@ MB in one content blocker. Its lists: %4$@. Turn some of them off and try again." = "%1$@ به %2$@ مگابایت نیاز دارد، اما Safari برای هر مسدودکننده محتوا %3$@ مگابایت اجازه می‌دهد. فهرست‌های آن: %4$@. برخی را خاموش کنید و دوباره امتحان کنید.";
-"%1$@ needs %2$@ rules, and Safari allows %3$@ in one content blocker. Its lists: %4$@. Turn some of them off and try again." = "%1$@ به %2$@ قانون نیاز دارد، اما Safari برای هر مسدودکننده محتوا %3$@ قانون اجازه می‌دهد. فهرست‌های آن: %4$@. برخی را خاموش کنید و دوباره امتحان کنید.";
+"Too many lists are on for %1$@. They need %2$@ MB, and Safari allows %3$@ MB per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of these and try again: %4$@." = "فهرست‌های زیادی برای %1$@ روشن است. آن‌ها به %2$@ مگابایت نیاز دارند، اما Safari برای هر مسدودکننده محتوا %3$@ مگابایت اجازه می‌دهد. این محدودیت Safari است، نه اشکال wBlock. برخی از این‌ها را خاموش کنید و دوباره امتحان کنید: %4$@.";
+"Too many lists are on for %1$@. They need %2$@ rules, and Safari allows %3$@ per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of these and try again: %4$@." = "فهرست‌های زیادی برای %1$@ روشن است. آن‌ها به %2$@ قانون نیاز دارند، اما Safari برای هر مسدودکننده محتوا %3$@ قانون اجازه می‌دهد. این محدودیت Safari است، نه اشکال wBlock. برخی از این‌ها را خاموش کنید و دوباره امتحان کنید: %4$@.";
 
 "uBlock filters – Experimental" = "uBlock filters – Experimental";
 "Phishing URL Blocklist" = "Phishing URL Blocklist";

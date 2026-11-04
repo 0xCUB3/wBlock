@@ -1021,8 +1021,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "カスタムURL";
 
-"%1$@ needs %2$@ MB, and Safari allows %3$@ MB in one content blocker. Its lists: %4$@. Turn some of them off and try again." = "%1$@ には %2$@ MB が必要ですが、Safari が 1 つのコンテンツブロッカーに許可するのは %3$@ MB までです。含まれるリスト: %4$@。いくつかをオフにしてもう一度お試しください。";
-"%1$@ needs %2$@ rules, and Safari allows %3$@ in one content blocker. Its lists: %4$@. Turn some of them off and try again." = "%1$@ には %2$@ 件のルールが必要ですが、Safari が 1 つのコンテンツブロッカーに許可するのは %3$@ 件までです。含まれるリスト: %4$@。いくつかをオフにしてもう一度お試しください。";
+"Too many lists are on for %1$@. They need %2$@ MB, and Safari allows %3$@ MB per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of these and try again: %4$@." = "%1$@ でオンにしているリストが多すぎます。%2$@ MB が必要ですが、Safari が 1 つのコンテンツブロッカーに許可するのは %3$@ MB までです。これは Safari の制限で、wBlock の不具合ではありません。次のうちいくつかをオフにしてもう一度お試しください: %4$@。";
+"Too many lists are on for %1$@. They need %2$@ rules, and Safari allows %3$@ per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of these and try again: %4$@." = "%1$@ でオンにしているリストが多すぎます。%2$@ 件のルールが必要ですが、Safari が 1 つのコンテンツブロッカーに許可するのは %3$@ 件までです。これは Safari の制限で、wBlock の不具合ではありません。次のうちいくつかをオフにしてもう一度お試しください: %4$@。";
 
 "uBlock filters – Experimental" = "uBlock filters – Experimental";
 "Phishing URL Blocklist" = "Phishing URL Blocklist";

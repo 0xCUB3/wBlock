@@ -131,11 +131,11 @@ extension AppFilterManager {
         let names = lists.map(\.name).formatted(.list(type: .and).locale(.appCurrent))
         return inMegabytes
             ? LocalizedStrings.format(
-                "%1$@ needs %2$@ MB, and Safari allows %3$@ MB in one content blocker. Its lists: %4$@. Turn some of them off and try again.",
+                "Too many lists are on for %1$@. They need %2$@ MB, and Safari allows %3$@ MB per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of these and try again: %4$@.",
                 comment: "Apply failed: a content blocker is over Safari's size limit",
                 target.displayName, needed, allowed, names)
             : LocalizedStrings.format(
-                "%1$@ needs %2$@ rules, and Safari allows %3$@ in one content blocker. Its lists: %4$@. Turn some of them off and try again.",
+                "Too many lists are on for %1$@. They need %2$@ rules, and Safari allows %3$@ per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of these and try again: %4$@.",
                 comment: "Apply failed: a content blocker is over Safari's rule limit",
                 target.displayName, needed, allowed, names)
     }

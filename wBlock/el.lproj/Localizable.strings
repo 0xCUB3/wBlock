@@ -1052,8 +1052,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "Προσαρμοσμένο URL";
 
-"%1$@ needs %2$@ MB, and Safari allows %3$@ MB in one content blocker. Its lists: %4$@. Turn some of them off and try again." = "Το %1$@ χρειάζεται %2$@ MB, ενώ το Safari επιτρέπει %3$@ MB ανά αποκλεισμό περιεχομένου. Λίστες: %4$@. Απενεργοποιήστε μερικές και δοκιμάστε ξανά.";
-"%1$@ needs %2$@ rules, and Safari allows %3$@ in one content blocker. Its lists: %4$@. Turn some of them off and try again." = "Το %1$@ χρειάζεται %2$@ κανόνες, ενώ το Safari επιτρέπει %3$@ ανά αποκλεισμό περιεχομένου. Λίστες: %4$@. Απενεργοποιήστε μερικές και δοκιμάστε ξανά.";
+"Too many lists are on for %1$@. They need %2$@ MB, and Safari allows %3$@ MB per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of these and try again: %4$@." = "Υπάρχουν πάρα πολλές ενεργές λίστες για το %1$@. Χρειάζονται %2$@ MB, ενώ το Safari επιτρέπει %3$@ MB ανά αποκλεισμό περιεχομένου. Αυτό είναι όριο του Safari, όχι σφάλμα του wBlock. Απενεργοποιήστε μερικές από αυτές και δοκιμάστε ξανά: %4$@.";
+"Too many lists are on for %1$@. They need %2$@ rules, and Safari allows %3$@ per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of these and try again: %4$@." = "Υπάρχουν πάρα πολλές ενεργές λίστες για το %1$@. Χρειάζονται %2$@ κανόνες, ενώ το Safari επιτρέπει %3$@ ανά αποκλεισμό περιεχομένου. Αυτό είναι όριο του Safari, όχι σφάλμα του wBlock. Απενεργοποιήστε μερικές από αυτές και δοκιμάστε ξανά: %4$@.";
 
 "uBlock filters – Experimental" = "uBlock filters – Experimental";
 "Phishing URL Blocklist" = "Phishing URL Blocklist";

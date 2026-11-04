@@ -1052,8 +1052,8 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "Własny URL";
 
-"%1$@ needs %2$@ MB, and Safari allows %3$@ MB in one content blocker. Its lists: %4$@. Turn some of them off and try again." = "%1$@ potrzebuje %2$@ MB, a Safari pozwala na %3$@ MB w jednym blokerze treści. Jego listy: %4$@. Wyłącz część z nich i spróbuj ponownie.";
-"%1$@ needs %2$@ rules, and Safari allows %3$@ in one content blocker. Its lists: %4$@. Turn some of them off and try again." = "%1$@ potrzebuje %2$@ reguł, a Safari pozwala na %3$@ w jednym blokerze treści. Jego listy: %4$@. Wyłącz część z nich i spróbuj ponownie.";
+"Too many lists are on for %1$@. They need %2$@ MB, and Safari allows %3$@ MB per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of these and try again: %4$@." = "Dla %1$@ włączono zbyt wiele list. Potrzebują %2$@ MB, a Safari pozwala na %3$@ MB w jednym blokerze treści. To limit Safari, a nie błąd wBlock. Wyłącz część z nich i spróbuj ponownie: %4$@.";
+"Too many lists are on for %1$@. They need %2$@ rules, and Safari allows %3$@ per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of these and try again: %4$@." = "Dla %1$@ włączono zbyt wiele list. Potrzebują %2$@ reguł, a Safari pozwala na %3$@ w jednym blokerze treści. To limit Safari, a nie błąd wBlock. Wyłącz część z nich i spróbuj ponownie: %4$@.";
 
 "uBlock filters – Experimental" = "uBlock filters – Experimental";
 "Phishing URL Blocklist" = "Phishing URL Blocklist";
