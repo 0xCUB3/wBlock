@@ -501,6 +501,18 @@
         "a": false
       },
       "hidden": []
+    },
+    {
+      "id": "k90",
+      "pageReached": true,
+      "reached": {
+        "a": true,
+        "b": false
+      },
+      "hidden": [
+        "A",
+        "B"
+      ]
     }
   ]
 }

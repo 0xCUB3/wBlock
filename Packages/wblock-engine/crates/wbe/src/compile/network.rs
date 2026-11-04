@@ -36,13 +36,11 @@ pub(crate) struct Context {
     strict: StrictHosts,
     bad: Vec<NetworkRule>,
     bad_bodies: FxHashSet<String>,
-    generic_exceptions: Vec<NetworkRule>,
 }
 
 impl Context {
     pub(crate) fn add(&mut self, rule: &NetworkRule) {
         self.strict.add(rule);
-        if !rule.badfilter && genericblock_host(rule).is_some() { self.generic_exceptions.push(rule.clone()); }
         if rule.badfilter {
             let bad = unlabeled(rule);
             self.bad_bodies.insert(bad.pattern.body.clone());
@@ -53,15 +51,14 @@ impl Context {
     pub(crate) fn merge(&mut self, other: Context) {
         self.strict.hosts.extend(other.strict.hosts);
         self.strict.parents.extend(other.strict.parents);
-        self.generic_exceptions.extend(other.generic_exceptions);
         self.bad.extend(other.bad);
         self.bad_bodies.extend(other.bad_bodies);
     }
 }
 
-/// Safari has no network-only ignore action. Hostname genericblock exceptions
-/// are represented by exclusions on generic triggers, leaving cosmetic and
-/// specific network rules untouched (including their own exceptions).
+/// The host of a `$genericblock` exception Safari can represent: one
+/// ignore-previous-rules on that host's pages, between the generic and the
+/// specific blocks.
 fn genericblock_host(r: &NetworkRule) -> Option<String> {
     (r.exception && r.scope.contains(ExceptionScope::GENERICBLOCK) && r.types.is_empty()
         && r.negated_types.is_empty() && r.from.is_empty() && r.to.is_empty()
@@ -154,14 +151,7 @@ fn compile_rule(
     }
     let party = party(r.party, exception)?;
     let urls = urls(r, exception)?;
-    let mut from = std::borrow::Cow::Borrowed(&r.from);
-    if !exception && !r.important && r.from.include.is_empty() {
-        for rule in &ctx.generic_exceptions {
-            if ctx.bad.contains(&unlabeled(rule)) { continue; }
-            from.to_mut().exclude.push(DomainMatcher::Hostname(genericblock_host(rule).unwrap()));
-        }
-    }
-    let conds = domain_conds(&from, v, exception)?;
+    let conds = domain_conds(&r.from, v, exception)?;
     let types = effective_types(r);
     // uBO also strict-blocks top-level navigation for an untyped filter whose
     // match ends at the hostname (traffic.js, `shouldStrictBlock`), so such a
@@ -188,6 +178,8 @@ fn compile_rule(
         (true, if r.important { Tier::ImportantException } else { Tier::Exception })
     } else if r.important {
         (false, Tier::ImportantBlock)
+    } else if r.from.include.is_empty() {
+        (false, Tier::GenericBlock)
     } else {
         (false, Tier::Block)
     };
@@ -270,6 +262,30 @@ fn compile_denyallow(
 /// `$specifichide` is widened to `$elemhide`, which also cancels generic
 /// hides.
 fn compile_scope(r: &NetworkRule, v: SafariVersion, out: &mut Emitted) -> Result<(), String> {
+    let generic = r.scope.contains(ExceptionScope::GENERICBLOCK);
+    if let Some(host) = genericblock_host(r).filter(|_| generic) {
+        // Copying the host into every generic block as unless-domain made
+        // WebKit's NFA-to-DFA step crash ContentBlockerLoader (EasyList, uBO
+        // filters and AdGuard Base in one blocker). Documents and frames are
+        // left out: an ignore on the page's document load would also cancel
+        // its hides, so generic blocks of subframes stay.
+        let cond = Cond::IfDomain(vec![format!("*{host}")]);
+        for (types, context) in type_triggers(DEFAULT_TYPES.difference(ResourceTypes::FRAME), v) {
+            emit(
+                out,
+                Tier::GenericBlockException,
+                &Trigger {
+                    url: ".*",
+                    case_sensitive: false,
+                    types: Some(&types),
+                    load_type: None,
+                    load_context: context,
+                    cond: Some(&cond),
+                },
+                true,
+            );
+        }
+    }
     let remaining = r.scope.difference(ExceptionScope::GENERICBLOCK);
     let tier = if remaining.contains(ExceptionScope::DOC) {
         Tier::DocumentException
@@ -278,7 +294,7 @@ fn compile_scope(r: &NetworkRule, v: SafariVersion, out: &mut Emitted) -> Result
     } else if remaining.contains(ExceptionScope::GHIDE) {
         Tier::GenericHideException
     } else {
-        return if genericblock_host(r).is_some() { Ok(()) } else {
+        return if generic && genericblock_host(r).is_some() { Ok(()) } else {
             Err("genericblock: only unconstrained hostname page exceptions can be represented without canceling cosmetics".into())
         };
     };
@@ -976,7 +992,7 @@ mod tests {
         check(
             &[net("||ads.example.com^")],
             V15,
-            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?ads\\.example\\.com[^a-zA-Z0-9_.%-]"},"action":{"type":"block"}}]"#,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?ads\\.example\\.com[/:?#]"},"action":{"type":"block"}}]"#,
         );
     }
 
@@ -985,7 +1001,7 @@ mod tests {
         let lone = check(
             &[exc("@@||cdn.x.com^")],
             V15,
-            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?cdn\\.x\\.com[^a-zA-Z0-9_.%-]","resource-type":["image","style-sheet","script","font","media","ping","fetch","websocket","other"]},"action":{"type":"ignore-previous-rules"}},{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?cdn\\.x\\.com[^a-zA-Z0-9_.%-]","resource-type":["document"],"load-context":["child-frame"]},"action":{"type":"ignore-previous-rules"}}]"#,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?cdn\\.x\\.com[/:?#]","resource-type":["image","style-sheet","script","font","media","ping","fetch","websocket","other"]},"action":{"type":"ignore-previous-rules"}},{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?cdn\\.x\\.com[/:?#]","resource-type":["document"],"load-context":["child-frame"]},"action":{"type":"ignore-previous-rules"}}]"#,
         );
         assert_eq!(lone.len(), 2);
         for block in ["||x.com^", "||cdn.x.com^", "||a.cdn.x.com^"] {
@@ -1036,12 +1052,12 @@ mod tests {
         check(
             std::slice::from_ref(&rule),
             V15,
-            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[^a-zA-Z0-9_.%-]","resource-type":["fetch"]},"action":{"type":"block"}}]"#,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[/:?#]","resource-type":["fetch"]},"action":{"type":"block"}}]"#,
         );
         check(
             std::slice::from_ref(&rule),
             V13,
-            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[^a-zA-Z0-9_.%-]","resource-type":["raw"]},"action":{"type":"block"}}]"#,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[/:?#]","resource-type":["raw"]},"action":{"type":"block"}}]"#,
         );
     }
 
@@ -1054,12 +1070,12 @@ mod tests {
         check(
             std::slice::from_ref(&rule),
             V15,
-            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[^a-zA-Z0-9_.%-]","resource-type":["websocket","other"]},"action":{"type":"block"}}]"#,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[/:?#]","resource-type":["websocket","other"]},"action":{"type":"block"}}]"#,
         );
         check(
             std::slice::from_ref(&rule),
             V14,
-            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[^a-zA-Z0-9_.%-]","resource-type":["raw"]},"action":{"type":"block"}}]"#,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[/:?#]","resource-type":["raw"]},"action":{"type":"block"}}]"#,
         );
     }
 
@@ -1072,7 +1088,7 @@ mod tests {
         check(
             std::slice::from_ref(&rule),
             V14,
-            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[^a-zA-Z0-9_.%-]","resource-type":["ping"]},"action":{"type":"block"}}]"#,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[/:?#]","resource-type":["ping"]},"action":{"type":"block"}}]"#,
         );
         assert_eq!(drop_reason(std::slice::from_ref(&rule), V13), ["dnr:type"]);
     }
@@ -1086,7 +1102,7 @@ mod tests {
         check(
             std::slice::from_ref(&rule),
             V15,
-            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?frames\\.com[^a-zA-Z0-9_.%-]","resource-type":["document"],"load-context":["child-frame"]},"action":{"type":"block"}}]"#,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?frames\\.com[/:?#]","resource-type":["document"],"load-context":["child-frame"]},"action":{"type":"block"}}]"#,
         );
         assert_eq!(
             drop_reason(std::slice::from_ref(&rule), V14),
@@ -1103,7 +1119,7 @@ mod tests {
         check(
             std::slice::from_ref(&rule),
             V15,
-            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?top\\.com[^a-zA-Z0-9_.%-]","resource-type":["document"],"load-context":["top-frame"]},"action":{"type":"block"}}]"#,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?top\\.com[/:?#]","resource-type":["document"],"load-context":["top-frame"]},"action":{"type":"block"}}]"#,
         );
     }
 
@@ -1116,7 +1132,7 @@ mod tests {
         check(
             std::slice::from_ref(&rule),
             V15,
-            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[^a-zA-Z0-9_.%-]","resource-type":["document","script"]},"action":{"type":"block"}}]"#,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[/:?#]","resource-type":["document","script"]},"action":{"type":"block"}}]"#,
         );
     }
 
@@ -1184,7 +1200,7 @@ mod tests {
         check(
             &[third, first],
             V15,
-            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com/x","resource-type":["image","style-sheet","script","font","media","ping","fetch","websocket","other"],"load-type":["third-party"]},"action":{"type":"block"}},{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com/x","resource-type":["document"],"load-type":["third-party"],"load-context":["child-frame"]},"action":{"type":"block"}},{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[^a-zA-Z0-9_.%-]","resource-type":["script"],"load-type":["first-party"]},"action":{"type":"block"}}]"#,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com/x","resource-type":["image","style-sheet","script","font","media","ping","fetch","websocket","other"],"load-type":["third-party"]},"action":{"type":"block"}},{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com/x","resource-type":["document"],"load-type":["third-party"],"load-context":["child-frame"]},"action":{"type":"block"}},{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[/:?#]","resource-type":["script"],"load-type":["first-party"]},"action":{"type":"block"}}]"#,
         );
     }
 
@@ -1207,7 +1223,7 @@ mod tests {
         check(
             std::slice::from_ref(&widened),
             V15,
-            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[^a-zA-Z0-9_.%-]","resource-type":["script"],"load-type":["third-party"]},"action":{"type":"ignore-previous-rules"}}]"#,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[/:?#]","resource-type":["script"],"load-type":["third-party"]},"action":{"type":"ignore-previous-rules"}}]"#,
         );
     }
 
@@ -1234,7 +1250,7 @@ mod tests {
         let out = check(
             std::slice::from_ref(&rule),
             V15,
-            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[^a-zA-Z0-9_.%-]","resource-type":["script"]},"action":{"type":"block"}}]"#,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[/:?#]","resource-type":["script"]},"action":{"type":"block"}}]"#,
         );
         assert_eq!(tiers(&out), [Tier::ImportantBlock]);
     }
@@ -1247,7 +1263,7 @@ mod tests {
                 ..exc("@@||x.com^")
             }],
             V15,
-            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[^a-zA-Z0-9_.%-]","resource-type":["script"]},"action":{"type":"ignore-previous-rules"}}]"#,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[/:?#]","resource-type":["script"]},"action":{"type":"ignore-previous-rules"}}]"#,
         );
         assert_eq!(tiers(&out), [Tier::Exception]);
     }
@@ -1275,7 +1291,7 @@ mod tests {
         check(
             std::slice::from_ref(&native),
             V15,
-            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[^a-zA-Z0-9_.%-]","resource-type":["script"]},"action":{"type":"block"}}]"#,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[/:?#]","resource-type":["script"]},"action":{"type":"block"}}]"#,
         );
         let rule_only = NetworkRule {
             action: NetworkAction::Redirect {
@@ -1336,7 +1352,7 @@ mod tests {
                 ..net("||t.com^")
             }],
             V15,
-            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[^a-zA-Z0-9_.%-]","resource-type":["script"],"if-domain":["*a.com","*b.org"]},"action":{"type":"block"}}]"#,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[/:?#]","resource-type":["script"],"if-domain":["*a.com","*b.org"]},"action":{"type":"block"}}]"#,
         );
     }
 
@@ -1349,7 +1365,7 @@ mod tests {
                 ..net("||t.com^")
             }],
             V15,
-            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[^a-zA-Z0-9_.%-]","resource-type":["script"],"unless-domain":["*a.com"]},"action":{"type":"block"}}]"#,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[/:?#]","resource-type":["script"],"unless-domain":["*a.com"]},"action":{"type":"block"}}]"#,
         );
     }
 
@@ -1372,7 +1388,7 @@ mod tests {
         check(
             std::slice::from_ref(&except),
             V15,
-            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[^a-zA-Z0-9_.%-]","resource-type":["script"],"if-domain":["*a.com"]},"action":{"type":"ignore-previous-rules"}}]"#,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[/:?#]","resource-type":["script"],"if-domain":["*a.com"]},"action":{"type":"ignore-previous-rules"}}]"#,
         );
     }
 
@@ -1389,7 +1405,7 @@ mod tests {
         check(
             std::slice::from_ref(&rule),
             V15,
-            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[^a-zA-Z0-9_.%-]","resource-type":["script"],"if-top-url":["^[^:]+://+([^:/]+\\.)?google\\.(com?\\.)?[^:/.]+[/:?#]"]},"action":{"type":"block"}}]"#,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[/:?#]","resource-type":["script"],"if-top-url":["^[^:]+://+([^:/]+\\.)?google\\.(com?\\.)?[^:/.]+[/:?#]"]},"action":{"type":"block"}}]"#,
         );
     }
 
@@ -1476,7 +1492,7 @@ mod tests {
         check(
             std::slice::from_ref(&rule),
             V15,
-            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[^a-zA-Z0-9_.%-]","resource-type":["script"]},"action":{"type":"ignore-previous-rules"}}]"#,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[/:?#]","resource-type":["script"]},"action":{"type":"ignore-previous-rules"}}]"#,
         );
     }
 
@@ -1493,7 +1509,7 @@ mod tests {
         check(
             std::slice::from_ref(&rule),
             V15,
-            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?tracker\\.com[^a-zA-Z0-9_.%-]","resource-type":["script"]},"action":{"type":"block"}},{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t2\\.net[^a-zA-Z0-9_.%-]","resource-type":["script"]},"action":{"type":"block"}}]"#,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?tracker\\.com[/:?#]","resource-type":["script"]},"action":{"type":"block"}},{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t2\\.net[/:?#]","resource-type":["script"]},"action":{"type":"block"}}]"#,
         );
     }
 
@@ -1685,13 +1701,21 @@ mod tests {
     }
 
     #[test]
-    fn genericblock_cancels_only_generic_network_blocks() {
+    fn genericblock_is_one_ignore_between_generic_and_specific_blocks() {
         let genericblock = NetworkRule {
             scope: ExceptionScope::GENERICBLOCK,
             ..exc("@@||x.com^$genericblock")
         };
-        let out = run(&[genericblock], V15).0;
-        assert!(out.is_empty(), "genericblock narrows generic triggers instead of emitting a broad ignore");
+        let generic = NetworkRule { types: RT::SCRIPT, ..net("/ads.js") };
+        let specific = NetworkRule { types: RT::SCRIPT, from: list(&["y.com"], &[]), ..net("/ads.js") };
+        let (out, _) = run(&[generic, genericblock, specific], V15);
+        // The generic block keeps no unless-domain: that copy on every generic
+        // block crashed WebKit's compiler (Safari ContentBlockerLoader).
+        assert_eq!(
+            json(&out),
+            r#"[{"trigger":{"url-filter":"/ads\\.js","resource-type":["script"]},"action":{"type":"block"}},{"trigger":{"url-filter":".*","resource-type":["image","style-sheet","script","font","media","ping","fetch","websocket","other"],"if-domain":["*x.com"]},"action":{"type":"ignore-previous-rules"}},{"trigger":{"url-filter":"/ads\\.js","resource-type":["script"],"if-domain":["*y.com"]},"action":{"type":"block"}}]"#
+        );
+        assert_eq!(tiers(&out), [Tier::GenericBlock, Tier::GenericBlockException, Tier::Block]);
         let scoped = NetworkRule {
             scope: ExceptionScope::GHIDE,
             ..net("||x.com^$generichide")
@@ -1752,7 +1776,7 @@ mod tests {
         ];
         let (out, _) = run(&rules, V15);
         assert_eq!(out.len(), 1);
-        assert_eq!(tiers(&out), [Tier::Block]);
+        assert_eq!(tiers(&out), [Tier::GenericBlock]);
     }
 
     #[test]
@@ -1780,7 +1804,7 @@ mod tests {
         check(
             &[a, b],
             V15,
-            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[^a-zA-Z0-9_.%-]","resource-type":["script"],"if-domain":["*a.com","*b.com"]},"action":{"type":"block"}}]"#,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[/:?#]","resource-type":["script"],"if-domain":["*a.com","*b.com"]},"action":{"type":"block"}}]"#,
         );
     }
 
@@ -1907,8 +1931,8 @@ mod tests {
         assert_eq!(
             tiers(&out),
             [
-                Tier::Block,
-                Tier::Block,
+                Tier::GenericBlock,
+                Tier::GenericBlock,
                 Tier::ImportantBlock,
                 Tier::ImportantBlock,
                 Tier::Exception,
@@ -1941,7 +1965,7 @@ mod tests {
         check(
             std::slice::from_ref(&rule),
             V15,
-            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[^a-zA-Z0-9_.%-]","resource-type":["script"],"unless-top-url":["^[^:]+://+([^:/]+\\.)?google\\.(com?\\.)?[^:/.]+[/:?#]"]},"action":{"type":"block"}}]"#,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[/:?#]","resource-type":["script"],"unless-top-url":["^[^:]+://+([^:/]+\\.)?google\\.(com?\\.)?[^:/.]+[/:?#]"]},"action":{"type":"block"}}]"#,
         );
     }
 
@@ -1972,7 +1996,7 @@ mod tests {
         check(
             std::slice::from_ref(&rule),
             V15,
-            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[^a-zA-Z0-9_.%-]","resource-type":["script"]},"action":{"type":"ignore-previous-rules"}}]"#,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[/:?#]","resource-type":["script"]},"action":{"type":"ignore-previous-rules"}}]"#,
         );
     }
 
@@ -1986,7 +2010,7 @@ mod tests {
         check(
             std::slice::from_ref(&rule),
             V15,
-            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[^a-zA-Z0-9_.%-]","resource-type":["image"]},"action":{"type":"ignore-previous-rules"}}]"#,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[/:?#]","resource-type":["image"]},"action":{"type":"ignore-previous-rules"}}]"#,
         );
     }
 
@@ -2000,7 +2024,7 @@ mod tests {
         check(
             std::slice::from_ref(&rule),
             V15,
-            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[^a-zA-Z0-9_.%-]","resource-type":["image"],"if-domain":["*a.com"]},"action":{"type":"ignore-previous-rules"}}]"#,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[/:?#]","resource-type":["image"],"if-domain":["*a.com"]},"action":{"type":"ignore-previous-rules"}}]"#,
         );
     }
 
@@ -2024,7 +2048,7 @@ mod tests {
         check(
             std::slice::from_ref(&rule),
             V13,
-            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[^a-zA-Z0-9_.%-]","resource-type":["image"]},"action":{"type":"block"}}]"#,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[/:?#]","resource-type":["image"]},"action":{"type":"block"}}]"#,
         );
     }
 
@@ -2048,11 +2072,11 @@ mod tests {
         let out = check(
             &rules,
             V15,
-            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[^a-zA-Z0-9_.%-]","resource-type":["script"]},"action":{"type":"block"}},{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com/ok[^a-zA-Z0-9_.%-]","resource-type":["script"]},"action":{"type":"ignore-previous-rules"}},{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com/bad[^a-zA-Z0-9_.%-]","resource-type":["script"]},"action":{"type":"block"}}]"#,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[/:?#]","resource-type":["script"]},"action":{"type":"block"}},{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com/ok[^a-zA-Z0-9_.%-]","resource-type":["script"]},"action":{"type":"ignore-previous-rules"}},{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com/bad[^a-zA-Z0-9_.%-]","resource-type":["script"]},"action":{"type":"block"}}]"#,
         );
         assert_eq!(
             tiers(&out),
-            [Tier::Block, Tier::Exception, Tier::ImportantBlock]
+            [Tier::GenericBlock, Tier::Exception, Tier::ImportantBlock]
         );
     }
 
@@ -2078,7 +2102,7 @@ mod tests {
         check(
             std::slice::from_ref(&rule),
             V15,
-            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[^a-zA-Z0-9_.%-]","resource-type":["image"],"load-type":["third-party"]},"action":{"type":"ignore-previous-rules"}}]"#,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[/:?#]","resource-type":["image"],"load-type":["third-party"]},"action":{"type":"ignore-previous-rules"}}]"#,
         );
     }
 
@@ -2091,7 +2115,7 @@ mod tests {
         check(
             std::slice::from_ref(&rule),
             V15,
-            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[^a-zA-Z0-9_.%-]","resource-type":["image","style-sheet","script","font","media","ping","websocket","other"]},"action":{"type":"ignore-previous-rules"}}]"#,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[/:?#]","resource-type":["image","style-sheet","script","font","media","ping","websocket","other"]},"action":{"type":"ignore-previous-rules"}}]"#,
         );
     }
 
@@ -2104,7 +2128,7 @@ mod tests {
         check(
             std::slice::from_ref(&rule),
             V15,
-            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[^a-zA-Z0-9_.%-]","resource-type":["document","image","style-sheet","script","font","media","ping","fetch","websocket","other"]},"action":{"type":"ignore-previous-rules"}}]"#,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[/:?#]","resource-type":["document","image","style-sheet","script","font","media","ping","fetch","websocket","other"]},"action":{"type":"ignore-previous-rules"}}]"#,
         );
     }
 
@@ -2169,7 +2193,7 @@ mod tests {
         check(
             &rules,
             V15,
-            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[^a-zA-Z0-9_.%-]","resource-type":["script"]},"action":{"type":"ignore-previous-rules"}}]"#,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[/:?#]","resource-type":["script"]},"action":{"type":"ignore-previous-rules"}}]"#,
         );
     }
 

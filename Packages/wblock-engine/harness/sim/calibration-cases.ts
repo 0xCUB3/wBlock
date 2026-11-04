@@ -362,4 +362,19 @@ export const CALIBRATION_CASES: CalibrationCase[] = [
         rules: [block('lib', { 'if-frame-url': ['frame/f58'] })],
         resources: [frameDoc('f', 'first', 'frame/f58.html'), script('a', 'first', CHILD_IN_LIB, 'f')],
     },
+    {
+        id: 'k90', what: '$genericblock: a page-scoped ignore over subresource types lifts earlier blocks and keeps the page hides',
+        rules: [
+            css('.*', '.cs-A'),
+            css('.*', '.cs-B', { 'if-domain': ['*app.localtest.me'] }),
+            block('lib/a'),
+            ignorePrevious('.*', {
+                'resource-type': ['image', 'style-sheet', 'script', 'font', 'media', 'ping', 'fetch', 'websocket', 'other'],
+                'if-domain': ['*app.localtest.me'],
+            }),
+            block('lib/b', { 'if-domain': ['*app.localtest.me'] }),
+        ],
+        resources: [script('a', 'third', 'lib/a.js'), script('b', 'third', 'lib/b.js')],
+        hide: ['A', 'B', 'C'],
+    },
 ];
