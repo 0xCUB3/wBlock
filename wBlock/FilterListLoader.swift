@@ -35,7 +35,7 @@ class FilterListLoader {
         "EasyList",
         "EasyPrivacy",
         "Peter Lowe's Blocklist",
-        "Online Malicious URL Blocklist",
+        "AdGuard URL Tracking Protection Filter",
         "Actually Legitimate URL Shortener Tool",
         "wBlock Ad and Tracking Hosts",
     ]
@@ -50,17 +50,13 @@ class FilterListLoader {
     /// hands its selection to the lists it maps to.
     static let adGuardReplacements: [String: [String]] = {
         let ads = ["uBlock filters – Ads", "uBlock filters – Badware risks", "uBlock filters – Quick fixes",
-                   "uBlock filters – Unbreak", "EasyList", "Online Malicious URL Blocklist"]
+                   "uBlock filters – Unbreak", "EasyList"]
         let annoyances = ["uBlock filters – Annoyances", "EasyList – Other Annoyances"]
         var replacements = [
             "AdGuard Base Filter": ads,
             "AdGuard Mobile Filter": ads,
             "AdGuard Tracking Protection Filter": ["uBlock filters – Privacy", "EasyPrivacy"],
-            "AdGuard URL Tracking Protection Filter": ["uBlock filters – Privacy"],
             "AdGuard Cookie Notices": ["uBlock filters – Cookie Notices", "EasyList – Cookie Notices"],
-            "AdGuard German filter": ["EasyList Germany"],
-            "AdGuard Italian filter": ["EasyList Italy"],
-            "AdGuard Polish filter": ["Official Polish filters for AdBlock, uBlock Origin & AdGuard"],
             "AdGuard Russian filter": ["RU AdList"],
             "AdGuard Popups": annoyances,
             "AdGuard Other Annoyances": annoyances,
@@ -303,6 +299,7 @@ class FilterListLoader {
         "raw.githubusercontent.com/yous/YousList/master/youslist.txt",  // YousList (#882)
         "raw.githubusercontent.com/MasterKia/PersianBlocker/main/PersianBlocker.txt",  // Persian Blocker, maintainer passed away (#921)
         "raw.githubusercontent.com/lonum1rus/Raajje-AdList/master/filter.txt",  // Raajje AdList, unmaintained (#921)
+        "hole.cert.pl/domains/",  // CERT.PL's Warning List, almost all in KAD - Anti-Scam
     ]
 
     /// Retired built-ins deleted even when selected, instead of kept as custom lists.
@@ -685,9 +682,15 @@ class FilterListLoader {
                     "Liste FR + AdGuard French filter. Filter list that specifically removes ads on websites in French language.",
                 languages: ["fr"], trustLevel: "full"),
             FilterList(
+                id: UUID(), name: "AdGuard German filter",
+                url: Self.adGuardUBlockURL(6), category: .foreign,
+                description:
+                    "EasyList Germany + AdGuard German filter. Filter list that specifically removes ads on websites in German language.",
+                languages: ["de"], trustLevel: "full"),
+            FilterList(
                 id: UUID(), name: "EasyList Germany",
                 url: URL(string: "https://easylist.to/easylistgermany/easylistgermany.txt")!,
-                category: .foreign, description: "Additional filter list for websites in German.",
+                category: .foreign, description: "Already included in AdGuard German filter.",
                 languages: ["de"], trustLevel: "full"),
             FilterList(
                 id: UUID(), name: "Greek AdBlock Filter",
@@ -735,9 +738,14 @@ class FilterListLoader {
                 description: "Additional filter list for websites in Indonesian and Malay.",
                 languages: ["id"], trustLevel: "high"),
             FilterList(
+                id: UUID(), name: "AdGuard Italian filter",
+                url: Self.adGuardUBlockURL(26),
+                category: .foreign, description: "EasyList Italy + AdGuard Italian filter. Filter list that specifically removes ads on websites in the Italian language.",
+                languages: ["it"], trustLevel: "high"),
+            FilterList(
                 id: UUID(), name: "EasyList Italy",
                 url: URL(string: "https://easylist-downloads.adblockplus.org/easylistitaly.txt")!,
-                category: .foreign, description: "Additional filter list for websites in Italian.",
+                category: .foreign, description: "Already included in AdGuard Italian filter.",
                 languages: ["it"], trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "AdGuard Japanese filter",
@@ -784,9 +792,14 @@ class FilterListLoader {
                 category: .foreign, description: "Additional filter list for websites in Persian.",
                 languages: ["fa"], trustLevel: "high"),
             FilterList(
+                id: UUID(), name: "AdGuard Polish filter",
+                url: Self.adGuardUBlockURL(27), category: .foreign,
+                description: "Official Polish filters for AdBlock, uBlock Origin & AdGuard + AdGuard Polish filter. Filter list that specifically removes ads on websites in the Polish language.", languages: ["pl"],
+                trustLevel: "high"),
+            FilterList(
                 id: UUID(), name: "Official Polish filters for AdBlock, uBlock Origin & AdGuard",
                 url: URL(string: "https://raw.githubusercontent.com/MajkiIT/polish-ads-filter/master/polish-adblock-filters/adblock.txt")!,
-                category: .foreign, description: "Additional filter list for websites in Polish.",
+                category: .foreign, description: "Already included in AdGuard Polish filter.",
                 languages: ["pl"], trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "KAD - Anti-Scam",
@@ -795,11 +808,6 @@ class FilterListLoader {
                 description:
                     "Filter that protects against various types of scams in the Polish network, such as mass text messaging, fake online stores, etc.",
                 languages: ["pl"], trustLevel: "high"),
-            FilterList(
-                id: UUID(), name: "CERT.PL's Warning List",
-                url: URL(string: "https://hole.cert.pl/domains/v2/domains_ublock.txt")!,
-                category: .foreign, description: "Blocks phishing and malware domains flagged by CERT Polska.",
-                languages: ["pl"], trustLevel: "low"),
             FilterList(
                 id: UUID(), name: "road-block light",
                 url: URL(

@@ -76,16 +76,19 @@ private final class TestLoader: FilterListLoader {
             precondition(byName[adGuard]?.isSelected != true, "\(adGuard) is off by default")
             precondition(Set(replacements).isSubset(of: Set(byName.keys)), "unknown list in \(adGuard) handover")
         }
-        // Regional AdGuard lists whose language uBlock Origin covers with a different list hand over to that list.
-        for (adGuard, target) in [
+        // AdGuard German, Italian and Polish contain their EasyList and official counterparts,
+        // so they are the regional pick; AdGuard Russian hands over to the larger RU AdList.
+        for (adGuard, included) in [
             ("AdGuard German filter", "EasyList Germany"),
             ("AdGuard Italian filter", "EasyList Italy"),
             ("AdGuard Polish filter", "Official Polish filters for AdBlock, uBlock Origin & AdGuard"),
-            ("AdGuard Russian filter", "RU AdList"),
         ] {
-            precondition(FilterListLoader.adGuardReplacements[adGuard] == [target], "\(adGuard) must hand over to \(target)")
-            precondition(byName[target] != nil, "\(target) must be in the catalog")
+            precondition(FilterListLoader.adGuardReplacements[adGuard] == nil && byName[adGuard] != nil, "\(adGuard) stays")
+            precondition(ForeignFilterOrganizer.isRecommended(byName[adGuard]!) && !ForeignFilterOrganizer.isRecommended(byName[included]!),
+                         "\(adGuard) is recommended over \(included)")
         }
+        precondition(FilterListLoader.adGuardReplacements["AdGuard Russian filter"] == ["RU AdList"] && byName["RU AdList"] != nil)
+
         // A catalog URL that is also a migration source would reset its validators on every launch.
         for list in defaults {
             var probe = list
@@ -106,7 +109,7 @@ private final class TestLoader: FilterListLoader {
         var tracking = adGuard("AdGuard Tracking Protection Filter", selected: true)
         tracking.excludedSites = ["b.com"]
         let popups = catalogList("AdGuard Popups", selected: false)
-        let german = adGuard("AdGuard German filter", selected: false)
+        let german = adGuard("AdGuard Russian filter", selected: false)
         let widgets = catalogList("AdGuard Widgets", selected: true)
         var stored = defaults.filter { !$0.name.hasPrefix("AdGuard ") || !uBOOffered.contains($0.name) }
             .map { list -> FilterList in var list = list; list.isSelected = false; return list } + [
@@ -129,15 +132,21 @@ private final class TestLoader: FilterListLoader {
         precondition(offline.lists.contains { $0.id == base.id && $0.isSelected }, "a list keeps protecting until it can hand over")
         precondition(offline.lists.contains { $0.name == "AdGuard Cookie Notices" && $0.isCustom }, "a custom list is never touched")
 
-        var urlTracking = catalogList("AdGuard URL Tracking Protection Filter", selected: true)
-        urlTracking.excludedSites = ["url.example"]
+        // Widgets needs everything Popups does plus EasyList – Chat Widgets.
+        var overlapPopups = catalogList("AdGuard Popups", selected: true)
+        overlapPopups.excludedSites = ["b.com"]
+        var overlapWidgets = catalogList("AdGuard Widgets", selected: true)
+        overlapWidgets.excludedSites = ["url.example"]
+        let overlapPending: Set<UUID> = [overlapPopups.id, overlapWidgets.id]
         let overlap = defaults.filter { !uBOOffered.contains($0.name) }
-            .map { list -> FilterList in var list = list; list.isSelected = false; return list } + [tracking, urlTracking]
-        let first = FilterListLoader.handingOverReplacedAdGuardLists(overlap, pending: [urlTracking.id], catalogURLs: catalogURLs,
-                                                                     hasContent: { $0.name == "uBlock filters – Privacy" })
-        let second = FilterListLoader.handingOverReplacedAdGuardLists(first.lists, pending: [urlTracking.id], catalogURLs: catalogURLs,
+            .map { list -> FilterList in var list = list; list.isSelected = false; return list } + [overlapPopups, overlapWidgets]
+        let annoyanceReplacements = Set(FilterListLoader.adGuardReplacements["AdGuard Popups"]!)
+        let first = FilterListLoader.handingOverReplacedAdGuardLists(overlap, pending: overlapPending, catalogURLs: catalogURLs,
+                                                                     hasContent: { annoyanceReplacements.contains($0.name) })
+        precondition(first.handedOver.isEmpty, "a list waits while another sharing its replacements cannot hand over")
+        let second = FilterListLoader.handingOverReplacedAdGuardLists(first.lists, pending: overlapPending, catalogURLs: catalogURLs,
                                                                       hasContent: { _ in true })
-        precondition(second.lists.first { $0.name == "uBlock filters – Privacy" }!.excludedSites == ["b.com", "url.example"], "overlapping handovers must combine settings regardless of download order")
+        precondition(second.lists.first { $0.name == "uBlock filters – Annoyances" }!.excludedSites == ["b.com", "url.example"], "overlapping handovers must combine settings regardless of download order")
 
         // Only Base's replacements arrived: Base hands over, Tracking waits.
         let remaining = pending.subtracting(offline.settled)
@@ -156,7 +165,7 @@ private final class TestLoader: FilterListLoader {
         precondition(remaining.subtracting(partial.settled).subtracting(done.settled).isEmpty, "the handover finishes")
         let selected = Set(done.lists.filter(\.isSelected).map(\.name))
         let expected: Set<String> = ["uBlock filters – Ads", "uBlock filters – Badware risks", "uBlock filters – Quick fixes",
-                                     "uBlock filters – Unbreak", "EasyList", "Online Malicious URL Blocklist",
+                                     "uBlock filters – Unbreak", "EasyList",
                                      "uBlock filters – Privacy", "EasyPrivacy", "AdGuard Cookie Notices", "AdGuard Widgets"]
         precondition(selected == expected, "handover: \(selected)")
         precondition(done.lists.first { $0.name == "uBlock filters – Privacy" }!.excludedSites == ["b.com"])
