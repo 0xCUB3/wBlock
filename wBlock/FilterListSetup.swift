@@ -17,6 +17,9 @@ enum FilterListSetup {
                     filter.serverLastModified = nil
                     filter.isCustom = false
                     filter.hasUserProvidedName = false
+                } else if !filter.hasUserProvidedName, !filter.name.removingEmoji.isEmpty {
+                    // Names taken from list headers before titles dropped emoji.
+                    filter.name = filter.name.removingEmoji
                 }
             }
             if !filter.isCustom {

@@ -38,6 +38,7 @@ public enum FilterListMetadataParser {
 
             if title == nil {
                 title = firstCapturedGroup(in: trimmedLine, regex: titleRegex)
+                    .map(\.removingEmoji).flatMap { $0.isEmpty ? nil : $0 }
             }
             if description == nil {
                 description = firstCapturedGroup(in: trimmedLine, regex: descriptionRegex)

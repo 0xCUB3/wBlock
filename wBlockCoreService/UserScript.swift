@@ -727,43 +727,6 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
         return regex
     }
     
-    /// Strip emoji glyphs from userscript/userstyle display metadata.
-    ///
-    /// Unicode marks ASCII digits, `#`, and `*` as emoji-capable because they can
-    /// form keycap sequences (e.g. `1️⃣`). Filtering on `isEmoji` alone therefore
-    /// deletes ordinary numbers from `@name` / `@description` (issue #484).
-    /// Keep all ASCII, drop non-ASCII emoji bases and presentation forms, and
-    /// scrub the combining marks that only exist to finish an emoji sequence.
-    private func removeEmojis(from string: String) -> String {
-        var result = String.UnicodeScalarView()
-        result.reserveCapacity(string.unicodeScalars.count)
-
-        for scalar in string.unicodeScalars {
-            if scalar.isASCII {
-                result.append(scalar)
-                continue
-            }
-
-            if scalar.properties.isEmojiPresentation || scalar.properties.isEmoji {
-                continue
-            }
-
-            if scalar.properties.isEmojiModifier {
-                continue
-            }
-
-            // Variation Selector-16, Combining Enclosing Keycap, Zero Width Joiner
-            let value = scalar.value
-            if value == 0xFE0F || value == 0x20E3 || value == 0x200D {
-                continue
-            }
-
-            result.append(scalar)
-        }
-
-        return String(result).trimmingCharacters(in: .whitespaces)
-    }
-
     /// True when the content carries a line-anchored userscript metadata block.
     public static func containsUserScriptMetadataBlock(_ content: String) -> Bool {
         var sawStart = false
@@ -875,7 +838,7 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
                 switch directive {
                 case "@name":
                     if !value.isEmpty {
-                        let cleaned = removeEmojis(from: value)
+                        let cleaned = value.removingEmoji
                         if let locale = localeSuffix {
                             nameByLocale[locale] = cleaned
                         } else {
@@ -883,7 +846,7 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
                         }
                     }
                 case "@description":
-                    let cleaned = removeEmojis(from: value)
+                    let cleaned = value.removingEmoji
                     if let locale = localeSuffix {
                         descByLocale[locale] = cleaned
                     } else {
@@ -955,11 +918,11 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
     private mutating func applyUserStyleMetadata(_ style: UserStyleSupport.ParsedStyle) {
         isUserStyle = true
         if let styleName = style.name {
-            let cleaned = removeEmojis(from: styleName)
+            let cleaned = styleName.removingEmoji
             if !cleaned.isEmpty { name = cleaned }
         }
         if let styleDescription = style.description {
-            description = removeEmojis(from: styleDescription)
+            description = styleDescription.removingEmoji
         }
         version = style.version ?? ""
         matches = style.serializedConditions
@@ -1278,5 +1241,45 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
         } else {
             return Self.dateOnlyFormatter.string(from: lastUpdated)
         }
+    }
+}
+
+public extension String {
+    /// The string without emoji glyphs, for names and descriptions taken from
+    /// userscript and filter list headers.
+    ///
+    /// Unicode marks ASCII digits, `#`, and `*` as emoji-capable because they can
+    /// form keycap sequences (e.g. `1️⃣`). Filtering on `isEmoji` alone therefore
+    /// deletes ordinary numbers from `@name` / `@description` (issue #484).
+    /// Keep all ASCII, drop non-ASCII emoji bases and presentation forms, and
+    /// scrub the combining marks that only exist to finish an emoji sequence.
+    var removingEmoji: String {
+        var result = String.UnicodeScalarView()
+        result.reserveCapacity(unicodeScalars.count)
+
+        for scalar in unicodeScalars {
+            if scalar.isASCII {
+                result.append(scalar)
+                continue
+            }
+
+            if scalar.properties.isEmojiPresentation || scalar.properties.isEmoji {
+                continue
+            }
+
+            if scalar.properties.isEmojiModifier {
+                continue
+            }
+
+            // Variation Selector-16, Combining Enclosing Keycap, Zero Width Joiner
+            let value = scalar.value
+            if value == 0xFE0F || value == 0x20E3 || value == 0x200D {
+                continue
+            }
+
+            result.append(scalar)
+        }
+
+        return String(result).trimmingCharacters(in: .whitespaces)
     }
 }

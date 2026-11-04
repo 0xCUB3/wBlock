@@ -36,6 +36,11 @@ import wBlockCoreService
         precondition(upgraded.map(\.id) == [first.id, restored.id, last.id, custom.id, inline.id],
                      "restored defaults follow catalog order rather than their appended storage position")
         precondition(FilterListSetup.hydrate(upgraded, defaults: defaults) == upgraded)
+        let locked = FilterList(name: "🔒 Privacy Essentials", url: URL(string: "https://example.com/pe.txt")!, category: .custom, isCustom: true)
+        let named = FilterList(name: "🔒 Mine", url: URL(string: "https://example.com/mine.txt")!, category: .custom, isCustom: true, hasUserProvidedName: true)
+        let cleaned = FilterListSetup.hydrate([locked, named], defaults: defaults)
+        precondition(cleaned.map(\.name) == ["Privacy Essentials", "🔒 Mine"], "header names drop emoji, user names stay: \(cleaned.map(\.name))")
+        precondition(FilterListContentProcessing.parseMetadata(from: "! Title: 🔒 Privacy Essentials 2\n").title == "Privacy Essentials 2")
         print("PASS setup category, identity, and catalog order round trips")
     }
 }
