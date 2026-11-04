@@ -86,7 +86,6 @@ private final class TestLoader: FilterListLoader {
             ("EasyDutch", "AdGuard Dutch filter"),
             ("AdGuard Russian filter", "RU AdList"),
             ("AdGuard Ukrainian filter", "RU AdList"),
-            ("RU AdList: Counters", "RU AdList"),
         ] {
             precondition(FilterListLoader.listReplacements[included] == [kept] && byName[included] == nil && byName[kept] != nil,
                          "\(included) must hand over to \(kept)")
@@ -341,7 +340,7 @@ private final class TestLoader: FilterListLoader {
         // custom copy the retired-list conversion left behind, it must end as one catalog entry that keeps its selection.
         let registryCopies = [
             (101, "EasyList"), (208, "Online Malicious URL Blocklist"), (255, "Phishing URL Blocklist"),
-            (257, "uBlock filters – Badware risks"),
+            (212, "RU AdList: Counters"), (257, "uBlock filters – Badware risks"),
         ]
         for (id, name) in registryCopies {
             let catalog = defaults.first { $0.name == name }!

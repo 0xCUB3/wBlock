@@ -75,7 +75,6 @@ class FilterListLoader {
             "AdGuard Cookie Notices": ["uBlock filters – Cookie Notices", "EasyList – Cookie Notices"],
             "AdGuard Russian filter": ["RU AdList"],
             "AdGuard Ukrainian filter": ["RU AdList"],
-            "RU AdList: Counters": ["RU AdList"],
             "EasyList Germany": ["AdGuard German filter"],
             "EasyList Italy": ["AdGuard Italian filter"],
             "Official Polish filters for AdBlock, uBlock Origin & AdGuard": ["AdGuard Polish filter"],
@@ -192,6 +191,7 @@ class FilterListLoader {
         return URL(string: "https://filters.adtidy.org/extension/ublock/filters/\(file)")!
     }
 
+    private static let ruAdListCountersURL = URL(string: "https://raw.githubusercontent.com/easylist/ruadlist/master/cntblock.txt")!
     private static let urlTrackingURL = URL(string: "https://ublockorigin.github.io/uAssetsCDN/filters/privacy-removeparam.txt")!
 
     private static let filterURLMigrations: [String: URL] = [
@@ -223,7 +223,8 @@ class FilterListLoader {
         registryURL(107): URL(string: "https://easylist.to/easylistgermany/easylistgermany.txt")!,
         registryURL(109): URL(string: "https://easylist-downloads.adblockplus.org/easylistitaly.txt")!,
         registryURL(208): URL(string: "https://curbengh.github.io/malware-filter/urlhaus-filter-vivaldi-online.txt")!,
-        registryURL(212): URL(string: "https://cdn.jsdelivr.net/gh/easylist/ruadlist@master/cntblock.txt")!,
+        registryURL(212): ruAdListCountersURL,
+        "https://cdn.jsdelivr.net/gh/easylist/ruadlist@master/cntblock.txt": ruAdListCountersURL,
         registryURL(216):
             URL(string: "https://raw.githubusercontent.com/MajkiIT/polish-ads-filter/master/polish-adblock-filters/adblock.txt")!,
         registryURL(225): URL(string: "https://secure.fanboy.co.nz/fanboy-antifacebook.txt")!,
@@ -833,6 +834,11 @@ class FilterListLoader {
                 url: URL(string: "https://cdn.jsdelivr.net/gh/dimisa-RUAdList/RUAdListCDN@main/lists/ruadlist.ubo.min.txt")!,
                 category: .foreign, description: "Filter that enables ad blocking on websites in Russian language.",
                 languages: ["ru", "uk", "kk", "uz"], trustLevel: "full"),
+            FilterList(
+                id: UUID(), name: "RU AdList: Counters",
+                url: Self.ruAdListCountersURL,
+                category: .foreign, description: "Blocks visitor counters on Russian-language websites.",
+                languages: ["ru", "uk", "kk", "uz"], trustLevel: "low"),
             FilterList(
                 id: UUID(), name: "Dandelion Sprout's Serbo-Croatian List",
                 url: URL(string: "https://raw.githubusercontent.com/DandelionSprout/adfilt/master/SerboCroatianList.txt")!,

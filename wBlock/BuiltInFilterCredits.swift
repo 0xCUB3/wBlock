@@ -79,5 +79,6 @@ enum BuiltInFilterCredits {
         "Raajje AdList": credit("lonum1rus", "https://github.com/lonum1rus/Raajje-AdList"),
         "road-block light": credit("mapx-", "https://github.com/tcptomato/ROad-Block"),
         "RU AdList": ruAdList,
+        "RU AdList: Counters": ruAdList,
     ]
 }
