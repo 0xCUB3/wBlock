@@ -80,11 +80,10 @@ struct ListActionsToolbar<Primary: View, Apply: View, Leading: View>: ViewModifi
                 ToolbarItem(placement: .navigation) {
                     // Spaced like the ControlGroup on the trailing side, which
                     // this can't be: a ControlGroup moves to the trailing edge.
-                    HStack(spacing: 7) {
-                        leading()
-                        apply()
+                    HStack(spacing: 3) {
+                        leading().modifier(ToolbarItemHover())
+                        apply().modifier(ToolbarItemHover())
                     }
-                    .padding(.horizontal, 2)
                     .fixedSize()
                 }
                 .toolbarVisibilityPriorityCompat(.high)
@@ -837,3 +836,20 @@ extension View {
         #endif
     }
 }
+
+#if os(macOS)
+/// The highlight a ControlGroup's items show under the pointer, for the
+/// hand-built leading group, which can't be a ControlGroup.
+private struct ToolbarItemHover: ViewModifier {
+    @State private var isHovered = false
+
+    func body(content: Content) -> some View {
+        content
+            .frame(minWidth: 40, minHeight: 28)
+            .background(Capsule().fill(Color.primary.opacity(isHovered ? 0.08 : 0)))
+            .contentShape(Capsule())
+            .onHover { isHovered = $0 }
+            .animation(.easeOut(duration: 0.12), value: isHovered)
+    }
+}
+#endif
