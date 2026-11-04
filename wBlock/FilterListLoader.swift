@@ -634,11 +634,11 @@ class FilterListLoader {
                 id: UUID(), name: "Liste AR",
                 url: URL(string: "https://easylist-downloads.adblockplus.org/Liste_AR.txt")!,
                 category: .foreign, description: "Additional filter list for websites in Arabic.",
-                languages: ["ar", "kab"], trustLevel: "high"),
+                languages: ["ar"], trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "Bulgarian list",
                 url: URL(string: "https://stanev.org/abp/adblock_bg.txt")!, category: .foreign,
-                description: "Additional filter list for websites in Bulgarian.", languages: ["bg", "mk"],
+                description: "Additional filter list for websites in Bulgarian.", languages: ["bg"],
                 trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "AdGuard Chinese filter",
@@ -646,7 +646,7 @@ class FilterListLoader {
                 category: .foreign,
                 description:
                     "EasyList China + AdGuard Chinese filter. Filter list that specifically removes ads on websites in Chinese language.",
-                languages: ["ug", "zh"], trustLevel: "full"),
+                languages: ["zh"], trustLevel: "full"),
             FilterList(
                 id: UUID(), name: "EasyList Czech and Slovak",
                 url: URL(string: "https://raw.githubusercontent.com/tomasko126/easylistczechandslovak/master/filters.txt")!,
@@ -659,13 +659,13 @@ class FilterListLoader {
                 category: .foreign,
                 description:
                     "EasyList Dutch + AdGuard Dutch filter. Filter list that specifically removes ads on websites in Dutch language.",
-                languages: ["af", "fy", "nl"], trustLevel: "full"),
+                languages: ["nl"], trustLevel: "full"),
             FilterList(
                 id: UUID(), name: "EasyDutch",
                 url: URL(string: "https://easydutch-ublockorigin.github.io/EasyDutchCDN/EasyDutch.all.txt")!,
                 category: .foreign,
                 description: "Blocks ads and anti-adblock messages on Dutch and Afrikaans websites, from the EasyDutch project.",
-                languages: ["af", "nl"], trustLevel: "low"),
+                languages: ["nl"], trustLevel: "low"),
             FilterList(
                 id: UUID(), name: "Estonian List", url: URL(string: "https://ubo-et.lepik.io/list.txt")!,
                 category: .foreign, description: "Filter for ad blocking on Estonian sites.",
@@ -683,12 +683,12 @@ class FilterListLoader {
                 category: .foreign,
                 description:
                     "Liste FR + AdGuard French filter. Filter list that specifically removes ads on websites in French language.",
-                languages: ["ar", "br", "ff", "fr", "kab", "lb", "oc", "son"], trustLevel: "full"),
+                languages: ["fr"], trustLevel: "full"),
             FilterList(
                 id: UUID(), name: "EasyList Germany",
                 url: URL(string: "https://easylist.to/easylistgermany/easylistgermany.txt")!,
                 category: .foreign, description: "Additional filter list for websites in German.",
-                languages: ["de", "dsb", "hsb", "lb", "rm"], trustLevel: "full"),
+                languages: ["de"], trustLevel: "full"),
             FilterList(
                 id: UUID(), name: "Greek AdBlock Filter",
                 url: URL(string: "https://www.void.gr/kargig/void-gr-filters.txt")!,
@@ -733,12 +733,12 @@ class FilterListLoader {
                 url: URL(string: "https://raw.githubusercontent.com/realodix/AdBlockID/main/dist/adblockid.adfl.txt")!,
                 category: .foreign,
                 description: "Additional filter list for websites in Indonesian and Malay.",
-                languages: ["id", "ms"], trustLevel: "high"),
+                languages: ["id"], trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "EasyList Italy",
                 url: URL(string: "https://easylist-downloads.adblockplus.org/easylistitaly.txt")!,
                 category: .foreign, description: "Additional filter list for websites in Italian.",
-                languages: ["fur", "it", "lij", "sc"], trustLevel: "high"),
+                languages: ["it"], trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "AdGuard Japanese filter",
                 url: Self.adGuardUBlockURL(7),
@@ -782,12 +782,12 @@ class FilterListLoader {
                 id: UUID(), name: "PersianBlockerNG",
                 url: URL(string: "https://cdn.jsdelivr.net/gh/PersianBlocker/PersianBlocker@main/PersianBlocker.txt")!,
                 category: .foreign, description: "Additional filter list for websites in Persian.",
-                languages: ["fa", "ps", "tg"], trustLevel: "high"),
+                languages: ["fa"], trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "Official Polish filters for AdBlock, uBlock Origin & AdGuard",
                 url: URL(string: "https://raw.githubusercontent.com/MajkiIT/polish-ads-filter/master/polish-adblock-filters/adblock.txt")!,
                 category: .foreign, description: "Additional filter list for websites in Polish.",
-                languages: ["szl", "pl"], trustLevel: "high"),
+                languages: ["pl"], trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "KAD - Anti-Scam",
                 url: URL(string: "https://raw.githubusercontent.com/FiltersHeroes/KAD/master/KAD.txt")!,
@@ -799,7 +799,7 @@ class FilterListLoader {
                 id: UUID(), name: "CERT.PL's Warning List",
                 url: URL(string: "https://hole.cert.pl/domains/v2/domains_ublock.txt")!,
                 category: .foreign, description: "Blocks phishing and malware domains flagged by CERT Polska.",
-                languages: ["szl", "pl"], trustLevel: "low"),
+                languages: ["pl"], trustLevel: "low"),
             FilterList(
                 id: UUID(), name: "road-block light",
                 url: URL(
@@ -811,12 +811,12 @@ class FilterListLoader {
                 id: UUID(), name: "RU AdList",
                 url: URL(string: "https://cdn.jsdelivr.net/gh/dimisa-RUAdList/RUAdListCDN@main/lists/ruadlist.ubo.min.txt")!,
                 category: .foreign, description: "Filter that enables ad blocking on websites in Russian language.",
-                languages: ["be", "kk", "tt", "ru", "uz"], trustLevel: "full"),
+                languages: ["ru"], trustLevel: "full"),
             FilterList(
                 id: UUID(), name: "RU AdList: Counters",
                 url: URL(string: "https://cdn.jsdelivr.net/gh/easylist/ruadlist@master/cntblock.txt")!,
                 category: .foreign, description: "Blocks visitor counters on Russian-language websites.",
-                languages: ["be", "kk", "tt", "ru", "uz"], trustLevel: "low"),
+                languages: ["ru"], trustLevel: "low"),
             FilterList(
                 id: UUID(), name: "Dandelion Sprout's Serbo-Croatian List",
                 url: URL(string: "https://raw.githubusercontent.com/DandelionSprout/adfilt/master/SerboCroatianList.txt")!,
@@ -832,14 +832,14 @@ class FilterListLoader {
                 id: UUID(), name: "EasyList Spanish",
                 url: URL(string: "https://easylist-downloads.adblockplus.org/easylistspanish.txt")!,
                 category: .foreign, description: "Additional filter list for websites in Spanish.",
-                languages: ["an", "ast", "ca", "cak", "es", "eu", "gl", "gn", "trs", "quz"], trustLevel: "low"),
+                languages: ["es"], trustLevel: "low"),
             FilterList(
                 id: UUID(), name: "AdGuard Spanish/Portuguese filter",
                 url: Self.adGuardUBlockURL(9),
                 category: .foreign,
                 description:
                     "Filter list that specifically removes ads on websites in Spanish, Portuguese, and Brazilian Portuguese languages.",
-                languages: ["an", "ast", "ca", "cak", "es", "eu", "gl", "gn", "trs", "pt", "quz"], trustLevel: "full"),
+                languages: ["es", "pt"], trustLevel: "full"),
             FilterList(
                 id: UUID(), name: "Frellwit's Swedish Filter",
                 url: URL(string: "https://raw.githubusercontent.com/lassekongo83/Frellwits-filter-lists/swefilter/swefilter.min.txt")!,
