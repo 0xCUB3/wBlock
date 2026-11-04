@@ -1052,8 +1052,14 @@ To re-enable these filters, disable other large filters and apply changes again.
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "Свой URL";
 
-"Too many lists are on for %1$@. They need %2$@ MB, and Safari allows %3$@ MB per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of these and try again: %4$@." = "Для %1$@ включено слишком много списков. Им нужно %2$@ МБ, а Safari допускает %3$@ МБ на один блокировщик контента. Это ограничение Safari, а не ошибка wBlock. Отключите некоторые из них и повторите попытку: %4$@.";
-"Too many lists are on for %1$@. They need %2$@ rules, and Safari allows %3$@ per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of these and try again: %4$@." = "Для %1$@ включено слишком много списков. Им нужно правил: %2$@, а Safari допускает %3$@ на один блокировщик контента. Это ограничение Safari, а не ошибка wBlock. Отключите некоторые из них и повторите попытку: %4$@.";
+"Too many lists are on for %1$@. They need %2$@ MB, and Safari on iOS fails to load a content blocker over about %3$@ MB. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "Для %1$@ включено слишком много списков. Им нужно %2$@ МБ, а Safari в iOS не может загрузить блокировщик контента больше примерно %3$@ МБ. Это ограничение Safari, а не ошибка wBlock. Отключите некоторые списки ниже и повторите попытку.";
+"Too many lists are on for %1$@. They need %2$@ rules, and Safari allows %3$@ per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "Для %1$@ включено слишком много списков. Им нужно правил: %2$@, а Safari допускает %3$@ на один блокировщик контента. Это ограничение Safari, а не ошибка wBlock. Отключите некоторые списки ниже и повторите попытку.";
+"Enough on its own. The largest blocker would be %@ MB." = "Этого достаточно. Самый большой блокировщик будет %@ МБ.";
+"Not enough on its own. The largest blocker would be %@ MB." = "Этого недостаточно. Самый большой блокировщик будет %@ МБ.";
+"Enough on its own. The largest blocker would have %@ rules." = "Этого достаточно. В самом большом блокировщике будет правил: %@.";
+"Not enough on its own. The largest blocker would have %@ rules." = "Этого недостаточно. В самом большом блокировщике будет правил: %@.";
+"Turn Off" = "Отключить";
+"Turn off %@ and apply" = "Отключить %@ и применить";
 
 "uBlock filters – Experimental" = "uBlock filters – Experimental";
 "Phishing URL Blocklist" = "Phishing URL Blocklist";

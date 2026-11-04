@@ -1052,8 +1052,14 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "Egyéni URL";
 
-"Too many lists are on for %1$@. They need %2$@ MB, and Safari allows %3$@ MB per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of these and try again: %4$@." = "Túl sok lista van bekapcsolva ehhez: %1$@. %2$@ MB-ot igényelnek, a Safari tartalomblokkolónként %3$@ MB-ot enged. Ez a Safari korlátja, nem a wBlock hibája. Kapcsolj ki néhányat ezek közül, és próbáld újra: %4$@.";
-"Too many lists are on for %1$@. They need %2$@ rules, and Safari allows %3$@ per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of these and try again: %4$@." = "Túl sok lista van bekapcsolva ehhez: %1$@. %2$@ szabályt igényelnek, a Safari tartalomblokkolónként %3$@ szabályt enged. Ez a Safari korlátja, nem a wBlock hibája. Kapcsolj ki néhányat ezek közül, és próbáld újra: %4$@.";
+"Too many lists are on for %1$@. They need %2$@ MB, and Safari on iOS fails to load a content blocker over about %3$@ MB. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "Túl sok lista van bekapcsolva ehhez: %1$@. %2$@ MB-ot igényelnek, és az iOS-es Safari nem tud betölteni nagyjából %3$@ MB-nál nagyobb tartalomblokkolót. Ez a Safari korlátja, nem a wBlock hibája. Kapcsolj ki néhányat az alábbi listák közül, és próbáld újra.";
+"Too many lists are on for %1$@. They need %2$@ rules, and Safari allows %3$@ per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "Túl sok lista van bekapcsolva ehhez: %1$@. %2$@ szabályt igényelnek, a Safari tartalomblokkolónként %3$@ szabályt enged. Ez a Safari korlátja, nem a wBlock hibája. Kapcsolj ki néhányat az alábbi listák közül, és próbáld újra.";
+"Enough on its own. The largest blocker would be %@ MB." = "Önmagában elég. A legnagyobb blokkoló %@ MB lenne.";
+"Not enough on its own. The largest blocker would be %@ MB." = "Önmagában nem elég. A legnagyobb blokkoló %@ MB lenne.";
+"Enough on its own. The largest blocker would have %@ rules." = "Önmagában elég. A legnagyobb blokkolóban %@ szabály lenne.";
+"Not enough on its own. The largest blocker would have %@ rules." = "Önmagában nem elég. A legnagyobb blokkolóban %@ szabály lenne.";
+"Turn Off" = "Kikapcsolás";
+"Turn off %@ and apply" = "%@ kikapcsolása és alkalmazás";
 
 "uBlock filters – Experimental" = "uBlock filters – Experimental";
 "Phishing URL Blocklist" = "Phishing URL Blocklist";

@@ -1052,8 +1052,14 @@ To re-enable these filters, disable other large filters and apply changes again.
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "自定义 URL";
 
-"Too many lists are on for %1$@. They need %2$@ MB, and Safari allows %3$@ MB per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of these and try again: %4$@." = "%1$@ 开启的列表太多。它们需要 %2$@ MB，而 Safari 每个内容拦截器最多允许 %3$@ MB。这是 Safari 的限制，不是 wBlock 的错误。请关闭以下部分列表后重试：%4$@。";
-"Too many lists are on for %1$@. They need %2$@ rules, and Safari allows %3$@ per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of these and try again: %4$@." = "%1$@ 开启的列表太多。它们需要 %2$@ 条规则，而 Safari 每个内容拦截器最多允许 %3$@ 条。这是 Safari 的限制，不是 wBlock 的错误。请关闭以下部分列表后重试：%4$@。";
+"Too many lists are on for %1$@. They need %2$@ MB, and Safari on iOS fails to load a content blocker over about %3$@ MB. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "%1$@ 开启的列表太多。它们需要 %2$@ MB，而 iOS 上的 Safari 无法加载超过约 %3$@ MB 的内容拦截器。这是 Safari 的限制，不是 wBlock 的错误。请关闭下面的部分列表后重试。";
+"Too many lists are on for %1$@. They need %2$@ rules, and Safari allows %3$@ per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "%1$@ 开启的列表太多。它们需要 %2$@ 条规则，而 Safari 每个内容拦截器最多允许 %3$@ 条。这是 Safari 的限制，不是 wBlock 的错误。请关闭下面的部分列表后重试。";
+"Enough on its own. The largest blocker would be %@ MB." = "单独关闭即可。最大的拦截器将为 %@ MB。";
+"Not enough on its own. The largest blocker would be %@ MB." = "单独关闭还不够。最大的拦截器将为 %@ MB。";
+"Enough on its own. The largest blocker would have %@ rules." = "单独关闭即可。最大的拦截器将有 %@ 条规则。";
+"Not enough on its own. The largest blocker would have %@ rules." = "单独关闭还不够。最大的拦截器将有 %@ 条规则。";
+"Turn Off" = "关闭";
+"Turn off %@ and apply" = "关闭 %@ 并应用";
 
 "uBlock filters – Experimental" = "uBlock filters – Experimental";
 "Phishing URL Blocklist" = "Phishing URL Blocklist";

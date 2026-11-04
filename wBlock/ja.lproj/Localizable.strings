@@ -1021,8 +1021,14 @@ To re-enable these filters, disable other large filters and apply changes again.
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "カスタムURL";
 
-"Too many lists are on for %1$@. They need %2$@ MB, and Safari allows %3$@ MB per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of these and try again: %4$@." = "%1$@ でオンにしているリストが多すぎます。%2$@ MB が必要ですが、Safari が 1 つのコンテンツブロッカーに許可するのは %3$@ MB までです。これは Safari の制限で、wBlock の不具合ではありません。次のうちいくつかをオフにしてもう一度お試しください: %4$@。";
-"Too many lists are on for %1$@. They need %2$@ rules, and Safari allows %3$@ per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of these and try again: %4$@." = "%1$@ でオンにしているリストが多すぎます。%2$@ 件のルールが必要ですが、Safari が 1 つのコンテンツブロッカーに許可するのは %3$@ 件までです。これは Safari の制限で、wBlock の不具合ではありません。次のうちいくつかをオフにしてもう一度お試しください: %4$@。";
+"Too many lists are on for %1$@. They need %2$@ MB, and Safari on iOS fails to load a content blocker over about %3$@ MB. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "%1$@ でオンにしているリストが多すぎます。%2$@ MB が必要ですが、iOS の Safari は約 %3$@ MB を超えるコンテンツブロッカーを読み込めません。これは Safari の制限で、wBlock の不具合ではありません。下のリストのいくつかをオフにしてもう一度お試しください。";
+"Too many lists are on for %1$@. They need %2$@ rules, and Safari allows %3$@ per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "%1$@ でオンにしているリストが多すぎます。%2$@ 件のルールが必要ですが、Safari が 1 つのコンテンツブロッカーに許可するのは %3$@ 件までです。これは Safari の制限で、wBlock の不具合ではありません。下のリストのいくつかをオフにしてもう一度お試しください。";
+"Enough on its own. The largest blocker would be %@ MB." = "これだけで足ります。最大のブロッカーは %@ MB になります。";
+"Not enough on its own. The largest blocker would be %@ MB." = "これだけでは足りません。最大のブロッカーは %@ MB になります。";
+"Enough on its own. The largest blocker would have %@ rules." = "これだけで足ります。最大のブロッカーは %@ 件のルールになります。";
+"Not enough on its own. The largest blocker would have %@ rules." = "これだけでは足りません。最大のブロッカーは %@ 件のルールになります。";
+"Turn Off" = "オフにする";
+"Turn off %@ and apply" = "%@ をオフにして適用";
 
 "uBlock filters – Experimental" = "uBlock filters – Experimental";
 "Phishing URL Blocklist" = "Phishing URL Blocklist";

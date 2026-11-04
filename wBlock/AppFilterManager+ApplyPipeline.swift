@@ -125,23 +125,66 @@ extension AppFilterManager {
     /// Safari refuses a content blocker past its rule or size limit. The counts
     /// are the compiled blocker's own, so the message names what is really full.
     private static func overLimitStatus(
-        _ target: ContentBlockerTargetInfo, lists: [FilterList],
+        _ target: ContentBlockerTargetInfo,
         needed: String, allowed: String, inMegabytes: Bool
     ) -> String {
-        let names = lists.map(\.name).formatted(.list(type: .and).locale(.appCurrent))
-        return inMegabytes
+        inMegabytes
             ? LocalizedStrings.format(
-                "Too many lists are on for %1$@. They need %2$@ MB, and Safari allows %3$@ MB per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of these and try again: %4$@.",
+                "Too many lists are on for %1$@. They need %2$@ MB, and Safari on iOS fails to load a content blocker over about %3$@ MB. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again.",
                 comment: "Apply failed: a content blocker is over Safari's size limit",
-                target.displayName, needed, allowed, names)
+                target.displayName, needed, allowed)
             : LocalizedStrings.format(
-                "Too many lists are on for %1$@. They need %2$@ rules, and Safari allows %3$@ per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of these and try again: %4$@.",
+                "Too many lists are on for %1$@. They need %2$@ rules, and Safari allows %3$@ per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again.",
                 comment: "Apply failed: a content blocker is over Safari's rule limit",
-                target.displayName, needed, allowed, names)
+                target.displayName, needed, allowed)
     }
 
     private static func megabytes(_ bytes: Int) -> String {
         (Double(bytes) / 1_000_000).formatted(.number.precision(.fractionLength(0...1)).locale(.appCurrent))
+    }
+
+    /// Measures, for each list in the full blocker, what every blocker comes to
+    /// once that list is off, so the failure sheet offers changes known to help.
+    private func showListRemovalPreviews(
+        over target: ContentBlockerTargetInfo, inMegabytes: Bool,
+        filtersByTarget: [ContentBlockerTargetInfo: [FilterList]], selected: [FilterList],
+        targets: [ContentBlockerTargetInfo], disabledSites: [String], zapperRulesText: String?
+    ) async {
+        let candidates = (filtersByTarget[target] ?? []).sorted { ($0.sourceRuleCount ?? 0) > ($1.sourceRuleCount ?? 0) }
+        await MainActor.run { self.applyProgressViewModel.showLimitFixes(candidates.map { .init(id: $0.id, name: $0.name) }) }
+        let previews = await Task.detached(priority: .userInitiated) {
+            ContentBlockerService.previewListRemovals(
+                candidates: candidates, selectedFilters: selected, targets: targets, disabledSites: disabledSites,
+                extraRulesText: { $0.slot == 5 ? zapperRulesText : nil },
+                groupIdentifier: GroupIdentifier.shared.value,
+                deadline: Date().addingTimeInterval(15), isCancelled: { Task.isCancelled }
+            )
+        }.value
+        let measured = Dictionary(uniqueKeysWithValues: previews.map { ($0.filterID, $0) })
+        let fixes = candidates.map { filter -> ApplyLimitFix in
+            guard let preview = measured[filter.id] else { return ApplyLimitFix(id: filter.id, name: filter.name) }
+            let amount = inMegabytes ? Self.megabytes(preview.largestBytes) : preview.largestRules.formatted()
+            let detail: String = switch (preview.fits, inMegabytes) {
+            case (true, true): LocalizedStrings.format("Enough on its own. The largest blocker would be %@ MB.", comment: "Over-limit fix row", amount)
+            case (false, true): LocalizedStrings.format("Not enough on its own. The largest blocker would be %@ MB.", comment: "Over-limit fix row", amount)
+            case (true, false): LocalizedStrings.format("Enough on its own. The largest blocker would have %@ rules.", comment: "Over-limit fix row", amount)
+            case (false, false): LocalizedStrings.format("Not enough on its own. The largest blocker would have %@ rules.", comment: "Over-limit fix row", amount)
+            }
+            return ApplyLimitFix(id: filter.id, name: filter.name, detail: detail, fits: preview.fits,
+                                 largest: inMegabytes ? preview.largestBytes : preview.largestRules)
+        }
+        // Lists that are enough on their own first, then the ones that help most.
+        let ordered = fixes.enumerated().sorted { a, b in
+            let (x, y) = (a.element, b.element)
+            if x.fits != y.fits { return x.fits }
+            switch (x.largest, y.largest) {
+            case let (l?, r?) where l != r: return l < r
+            case (_?, nil): return true
+            case (nil, _?): return false
+            default: return a.offset < b.offset
+            }
+        }.map(\.element)
+        await MainActor.run { self.applyProgressViewModel.showLimitFixes(ordered) }
     }
 
     /// Fails the in-flight apply when cancelled for iOS suspension.
@@ -687,6 +730,7 @@ extension AppFilterManager {
         }
         var conversionCompletions: [ContentBlockerTargetInfo: SharedAutoUpdateManager.TargetCompilationResult] = [:]
         var overLimitStatus: String?
+        var overLimitTarget: ContentBlockerTargetInfo?
         var appliedSourceRuleCountsByFilterID: [UUID: Int] = [:]
 
         _ = await SharedAutoUpdateManager.compileTargets(compilationRequests, interactive: true) { completion in
@@ -714,11 +758,12 @@ extension AppFilterManager {
                     self.extensionsApproachingLimit.remove(targetInfo.bundleIdentifier)
                     self.hasError = true
                     let status = Self.overLimitStatus(
-                        targetInfo, lists: filtersByTargetInfo[targetInfo] ?? [],
+                        targetInfo,
                         needed: (ruleCountForThisTarget + truncatedRuleCount).formatted(),
                         allowed: ruleLimit.formatted(), inMegabytes: false
                     )
                     overLimitStatus = overLimitStatus ?? status
+                    overLimitTarget = overLimitTarget ?? targetInfo
                     self.statusDescription = status
                 } else if ruleCountForThisTarget >= warningThreshold {
                     self.extensionsApproachingLimit.insert(targetInfo.bundleIdentifier)
@@ -765,11 +810,18 @@ extension AppFilterManager {
                 ],
                 statusMessage: sizeLimitError.map {
                     Self.overLimitStatus(
-                        failedTarget, lists: filtersByTargetInfo[failedTarget] ?? [],
+                        failedTarget,
                         needed: Self.megabytes($0.byteCount), allowed: Self.megabytes($0.limit), inMegabytes: true
                     )
                 }
             )
+            if sizeLimitError != nil {
+                await showListRemovalPreviews(
+                    over: failedTarget, inMegabytes: true, filtersByTarget: filtersByTargetInfo,
+                    selected: allSelectedFilters, targets: platformTargets,
+                    disabledSites: disabledSites, zapperRulesText: generatedZapperRulesText
+                )
+            }
             return
         }
 
@@ -848,6 +900,13 @@ extension AppFilterManager {
                 metadata: ["truncatedRules": "\(totalTruncatedRules)", "ruleLimit": "\(ruleLimit)"],
                 statusMessage: overLimitStatus
             )
+            if let overLimitTarget {
+                await showListRemovalPreviews(
+                    over: overLimitTarget, inMegabytes: false, filtersByTarget: filtersByTargetInfo,
+                    selected: allSelectedFilters, targets: platformTargets,
+                    disabledSites: disabledSites, zapperRulesText: generatedZapperRulesText
+                )
+            }
             return
         }
 

@@ -347,6 +347,44 @@ struct ApplyChangesProgressView: View {
     }
 
     private var failureCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            failureSummary
+            ForEach(viewModel.state.limitFixes) { fix in
+                limitFixRow(fix)
+            }
+        }
+    }
+
+    /// One list from a blocker over Safari's limit. Turning it off applies again.
+    private func limitFixRow(_ fix: ApplyLimitFix) -> some View {
+        HStack(alignment: .center, spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(fix.name)
+                    .font(.subheadline.weight(.medium))
+                if let detail = fix.detail {
+                    Text(detail)
+                        .font(.caption)
+                        .foregroundStyle(fix.fits ? .green : .secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else if filterManager.isApplyInFlight {
+                    ProgressView().controlSize(.mini)
+                }
+            }
+            Spacer(minLength: 12)
+            Button(String(localized: "Turn Off")) {
+                filterManager.setFilterListSelection(id: fix.id, selected: false)
+                filterManager.forceApplyChanges()
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+            .disabled(filterManager.isLoading || filterManager.isApplyInFlight)
+            .accessibilityLabel(String.localizedStringWithFormat(
+                NSLocalizedString("Turn off %@ and apply", comment: "Over-limit fix button"), fix.name
+            ))
+        }
+    }
+
+    private var failureSummary: some View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: "xmark.circle.fill")
                 .foregroundStyle(.red)

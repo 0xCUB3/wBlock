@@ -52,12 +52,25 @@ struct ApplyChangesPhaseProgress: Equatable, Identifiable {
     var id: ApplyChangesPhase { phase }
 }
 
+/// A list the over-limit failure offers to turn off. `detail` is nil until
+/// the list has been measured.
+struct ApplyLimitFix: Equatable, Identifiable {
+    let id: UUID
+    let name: String
+    var detail: String?
+    var fits = false
+    var largest: Int?
+}
+
 /// Consolidated state for the apply progress presentation.
 struct ApplyChangesState: Equatable {
     var mode: ApplyChangesSheetMode = .progress
     var isLoading: Bool = false
     var statusMessage: String = ""
     var failureMessage: String = ""
+    /// Lists in a blocker that went over a Safari limit, with what turning
+    /// each one off was measured to give.
+    var limitFixes: [ApplyLimitFix] = []
     /// Non-fatal issues shown on the result screen (reload failures, etc.).
     var resultWarning: String = ""
     var currentFilterName: String = ""
@@ -120,8 +133,13 @@ class ApplyChangesViewModel: ObservableObject {
                 state.mode = .progress
             }
             state.failureMessage = ""
+            state.limitFixes = []
             resetPhases()
         }
+    }
+
+    func showLimitFixes(_ fixes: [ApplyLimitFix]) {
+        state.limitFixes = fixes
     }
 
     func updatePhaseCompletion(

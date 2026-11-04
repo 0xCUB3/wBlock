@@ -1052,8 +1052,14 @@ To re-enable these filters, disable other large filters and apply changes again.
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "رابط مخصص";
 
-"Too many lists are on for %1$@. They need %2$@ MB, and Safari allows %3$@ MB per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of these and try again: %4$@." = "القوائم المفعّلة لـ %1$@ كثيرة جدًا. تحتاج إلى %2$@ ميغابايت، بينما يسمح Safari بـ %3$@ ميغابايت لكل أداة حظر محتوى. هذا حد في Safari وليس خطأ في wBlock. عطّل بعض هذه القوائم وحاول مرة أخرى: %4$@.";
-"Too many lists are on for %1$@. They need %2$@ rules, and Safari allows %3$@ per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of these and try again: %4$@." = "القوائم المفعّلة لـ %1$@ كثيرة جدًا. تحتاج إلى %2$@ قاعدة، بينما يسمح Safari بـ %3$@ قاعدة لكل أداة حظر محتوى. هذا حد في Safari وليس خطأ في wBlock. عطّل بعض هذه القوائم وحاول مرة أخرى: %4$@.";
+"Too many lists are on for %1$@. They need %2$@ MB, and Safari on iOS fails to load a content blocker over about %3$@ MB. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "القوائم المفعّلة لـ %1$@ كثيرة جدًا. تحتاج إلى %2$@ ميغابايت، ولا يستطيع Safari على iOS تحميل أداة حظر محتوى يتجاوز حجمها نحو %3$@ ميغابايت. هذا حد في Safari وليس خطأ في wBlock. عطّل بعض القوائم أدناه وحاول مرة أخرى.";
+"Too many lists are on for %1$@. They need %2$@ rules, and Safari allows %3$@ per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "القوائم المفعّلة لـ %1$@ كثيرة جدًا. تحتاج إلى %2$@ قاعدة، بينما يسمح Safari بـ %3$@ قاعدة لكل أداة حظر محتوى. هذا حد في Safari وليس خطأ في wBlock. عطّل بعض القوائم أدناه وحاول مرة أخرى.";
+"Enough on its own. The largest blocker would be %@ MB." = "يكفي وحده. سيصبح أكبر أداة حظر %@ ميغابايت.";
+"Not enough on its own. The largest blocker would be %@ MB." = "لا يكفي وحده. سيصبح أكبر أداة حظر %@ ميغابايت.";
+"Enough on its own. The largest blocker would have %@ rules." = "يكفي وحده. ستحتوي أكبر أداة حظر على %@ قاعدة.";
+"Not enough on its own. The largest blocker would have %@ rules." = "لا يكفي وحده. ستحتوي أكبر أداة حظر على %@ قاعدة.";
+"Turn Off" = "إيقاف";
+"Turn off %@ and apply" = "إيقاف %@ والتطبيق";
 
 "uBlock filters – Experimental" = "uBlock filters – Experimental";
 "Phishing URL Blocklist" = "Phishing URL Blocklist";

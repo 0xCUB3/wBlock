@@ -1052,8 +1052,14 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "Eigene URL";
 
-"Too many lists are on for %1$@. They need %2$@ MB, and Safari allows %3$@ MB per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of these and try again: %4$@." = "Für %1$@ sind zu viele Listen aktiv. Sie brauchen %2$@ MB, Safari erlaubt %3$@ MB pro Inhaltsblocker. Das ist eine Grenze von Safari, kein Fehler von wBlock. Deaktiviere einige davon und versuche es erneut: %4$@.";
-"Too many lists are on for %1$@. They need %2$@ rules, and Safari allows %3$@ per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of these and try again: %4$@." = "Für %1$@ sind zu viele Listen aktiv. Sie brauchen %2$@ Regeln, Safari erlaubt %3$@ pro Inhaltsblocker. Das ist eine Grenze von Safari, kein Fehler von wBlock. Deaktiviere einige davon und versuche es erneut: %4$@.";
+"Too many lists are on for %1$@. They need %2$@ MB, and Safari on iOS fails to load a content blocker over about %3$@ MB. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "Für %1$@ sind zu viele Listen aktiv. Sie brauchen %2$@ MB, und Safari unter iOS kann einen Inhaltsblocker über etwa %3$@ MB nicht laden. Das ist eine Grenze von Safari, kein Fehler von wBlock. Deaktiviere einige der Listen unten und versuche es erneut.";
+"Too many lists are on for %1$@. They need %2$@ rules, and Safari allows %3$@ per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "Für %1$@ sind zu viele Listen aktiv. Sie brauchen %2$@ Regeln, Safari erlaubt %3$@ pro Inhaltsblocker. Das ist eine Grenze von Safari, kein Fehler von wBlock. Deaktiviere einige der Listen unten und versuche es erneut.";
+"Enough on its own. The largest blocker would be %@ MB." = "Reicht allein. Der größte Blocker hätte dann %@ MB.";
+"Not enough on its own. The largest blocker would be %@ MB." = "Reicht allein nicht. Der größte Blocker hätte dann %@ MB.";
+"Enough on its own. The largest blocker would have %@ rules." = "Reicht allein. Der größte Blocker hätte dann %@ Regeln.";
+"Not enough on its own. The largest blocker would have %@ rules." = "Reicht allein nicht. Der größte Blocker hätte dann %@ Regeln.";
+"Turn Off" = "Deaktivieren";
+"Turn off %@ and apply" = "%@ deaktivieren und anwenden";
 
 "uBlock filters – Experimental" = "uBlock filters – Experimental";
 "Phishing URL Blocklist" = "Phishing URL Blocklist";

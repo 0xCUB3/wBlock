@@ -1496,57 +1496,16 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
 
         guard let containerURL = containerURL ?? FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: groupIdentifier
-        ), let targetIndex = allTargets.firstIndex(of: targetInfo) else {
+        ) else {
             throw CocoaError(.fileNoSuchFile)
         }
-        let distribution = ContentBlockerMappingService.plan(selectedFilters: orderedSelectedFilters, across: allTargets)
-        let followsPlan = Set((distribution.filtersByTarget[targetInfo] ?? []).map(\.id)) == Set(filters.map(\.id))
-        let selectedIDs = Set(orderedSelectedFilters.map(\.id))
-        let planFilters = orderedSelectedFilters + filters.filter { !selectedIDs.contains($0.id) }
-        let available = planFilters.compactMap { filter -> (FilterList, URL)? in
-            ContentBlockerIncrementalCache.existingLocalFileURL(for: filter, containerURL: containerURL).map { (filter, $0) }
-        }
-        let indexes = Dictionary(uniqueKeysWithValues: available.enumerated().map { ($0.element.0.id, $0.offset) })
-        let lists: [[String: Any]] = available.map { filter, url in
-            ["id": filter.id.uuidString, "path": url.path, "trusted": filter.isTrustedSource,
-             "scope": ["exclude": FilterListSiteExclusion.normalizedDomains(from: filter.appliedExcludedSites),
-                       "only": filter.appliedSelectedSites.map { FilterListSiteExclusion.normalizedDomains(from: $0) } as Any? ?? NSNull()]]
-        }
-        let targets: [[String: Any]] = allTargets.map { target in
-            let custom = target == targetInfo && !followsPlan
-            let assigned = custom ? filters : distribution.filtersByTarget[target] ?? []
-            let targetLists: [[String: Any]] = assigned.compactMap { filter in
-                guard let index = indexes[filter.id] else { return nil }
-                var item: [String: Any] = ["list": index]
-                if !custom, let shard = distribution.shardsByTarget[target]?[filter.id] {
-                    item["shard"] = [shard.index, shard.count]
-                }
-                return item
-            }
-            return ["slot": target.slot, "lists": targetLists]
-        }
-        let safari = SafariVersionDetection.current
-        let request: [String: Any] = ["safari": [safari.major, safari.minor], "lists": lists, "targets": targets,
-            "retain": CompilationScope.keepsParsedLists,
-            "cosmetics": ["exclude": cosmeticSites.excludedSites,
-                          "only": cosmeticSites.onlySelectedSites ? (cosmeticSites.selectedSites ?? []) as Any : NSNull(),
-                          "generic": cosmeticSites.includesGeneric]]
-        let requestData = try JSONSerialization.data(withJSONObject: request, options: [.sortedKeys])
-        let requestJSON = String(decoding: requestData, as: UTF8.self)
-        let fingerprints = available.map { _, url -> String in
-            let attributes = try? FileManager.default.attributesOfItem(atPath: url.path)
-            return "\(attributes?[.size] ?? 0)|\((attributes?[.modificationDate] as? Date)?.timeIntervalSince1970 ?? 0)"
-        }.joined(separator: "\n")
-        let planKey = "wbe-plan|\(SafariVersionDetection.compilerIdentity)|\(requestJSON)|\(fingerprints)"
-        let makePlan = { try WBEngine.Plan(requestJSON: requestJSON) }
-        let plan = try CompilationScope.current.map { try $0.memoized(planKey, makePlan) } ?? makePlan()
+        let inputs = try enginePlanInputs(
+            filters: filters, orderedSelectedFilters: orderedSelectedFilters, targetInfo: targetInfo,
+            allTargets: allTargets, extraRulesText: extraRulesText, cosmeticSites: cosmeticSites, containerURL: containerURL
+        )
+        let (plan, targetIndex, requestJSON, extrasJSON, fingerprints) =
+            (inputs.plan, inputs.targetIndex, inputs.requestJSON, inputs.extrasJSON, inputs.fingerprints)
         if Task.isCancelled || isCancelled?() == true { throw CancellationError() }
-        let extras: [[String: Any]] = [
-            ["text": embeddedCompatibilityRules, "trusted": true],
-            ["text": extraRulesText ?? "", "trusted": true],
-            ["text": RemoveParamDNRRuleGenerator.savedRedirectCarveOuts(containerURL: containerURL), "trusted": false]
-        ]
-        let extrasJSON = String(decoding: try JSONSerialization.data(withJSONObject: extras), as: UTF8.self)
         let fingerprintIdentity = "|\(SafariVersionDetection.compilerIdentity)"
         let fingerprintFilename = "\(ContentBlockerIncrementalCache.baseRulesFilename(for: rulesFilename)).plan-fingerprint"
         // Another blocker's list changed but nothing this blocker compiles did:
@@ -1720,6 +1679,165 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         // Without a complete cache this path cannot safely preserve advanced
         // rules. The caller must take the full conversion path instead.
         throw CocoaError(.fileReadCorruptFile)
+    }
+
+    private struct EnginePlanInputs {
+        let plan: WBEngine.Plan
+        let targetIndex: Int
+        let requestJSON: String
+        let extrasJSON: String
+        let fingerprints: String
+    }
+
+    /// The engine plan that builds every blocker for one selection.
+    private static func enginePlanInputs(
+        filters: [FilterList],
+        orderedSelectedFilters: [FilterList],
+        targetInfo: ContentBlockerTargetInfo,
+        allTargets: [ContentBlockerTargetInfo],
+        extraRulesText: String?,
+        cosmeticSites: CosmeticFilteringPreference.Sites,
+        containerURL: URL
+    ) throws -> EnginePlanInputs {
+        guard let targetIndex = allTargets.firstIndex(of: targetInfo) else { throw CocoaError(.fileNoSuchFile) }
+        let distribution = ContentBlockerMappingService.plan(selectedFilters: orderedSelectedFilters, across: allTargets)
+        let followsPlan = Set((distribution.filtersByTarget[targetInfo] ?? []).map(\.id)) == Set(filters.map(\.id))
+        let selectedIDs = Set(orderedSelectedFilters.map(\.id))
+        let planFilters = orderedSelectedFilters + filters.filter { !selectedIDs.contains($0.id) }
+        let available = planFilters.compactMap { filter -> (FilterList, URL)? in
+            ContentBlockerIncrementalCache.existingLocalFileURL(for: filter, containerURL: containerURL).map { (filter, $0) }
+        }
+        let indexes = Dictionary(uniqueKeysWithValues: available.enumerated().map { ($0.element.0.id, $0.offset) })
+        let lists: [[String: Any]] = available.map { filter, url in
+            ["id": filter.id.uuidString, "path": url.path, "trusted": filter.isTrustedSource,
+             "scope": ["exclude": FilterListSiteExclusion.normalizedDomains(from: filter.appliedExcludedSites),
+                       "only": filter.appliedSelectedSites.map { FilterListSiteExclusion.normalizedDomains(from: $0) } as Any? ?? NSNull()]]
+        }
+        let targets: [[String: Any]] = allTargets.map { target in
+            let custom = target == targetInfo && !followsPlan
+            let assigned = custom ? filters : distribution.filtersByTarget[target] ?? []
+            let targetLists: [[String: Any]] = assigned.compactMap { filter in
+                guard let index = indexes[filter.id] else { return nil }
+                var item: [String: Any] = ["list": index]
+                if !custom, let shard = distribution.shardsByTarget[target]?[filter.id] {
+                    item["shard"] = [shard.index, shard.count]
+                }
+                return item
+            }
+            return ["slot": target.slot, "lists": targetLists]
+        }
+        let safari = SafariVersionDetection.current
+        let request: [String: Any] = ["safari": [safari.major, safari.minor], "lists": lists, "targets": targets,
+            "retain": CompilationScope.keepsParsedLists,
+            "cosmetics": ["exclude": cosmeticSites.excludedSites,
+                          "only": cosmeticSites.onlySelectedSites ? (cosmeticSites.selectedSites ?? []) as Any : NSNull(),
+                          "generic": cosmeticSites.includesGeneric]]
+        let requestData = try JSONSerialization.data(withJSONObject: request, options: [.sortedKeys])
+        let requestJSON = String(decoding: requestData, as: UTF8.self)
+        let fingerprints = available.map { _, url -> String in
+            let attributes = try? FileManager.default.attributesOfItem(atPath: url.path)
+            return "\(attributes?[.size] ?? 0)|\((attributes?[.modificationDate] as? Date)?.timeIntervalSince1970 ?? 0)"
+        }.joined(separator: "\n")
+        let planKey = "wbe-plan|\(SafariVersionDetection.compilerIdentity)|\(requestJSON)|\(fingerprints)"
+        let makePlan = { try WBEngine.Plan(requestJSON: requestJSON) }
+        let plan = try CompilationScope.current.map { try $0.memoized(planKey, makePlan) } ?? makePlan()
+        let extras: [[String: Any]] = [
+            ["text": embeddedCompatibilityRules, "trusted": true],
+            ["text": extraRulesText ?? "", "trusted": true],
+            ["text": RemoveParamDNRRuleGenerator.savedRedirectCarveOuts(containerURL: containerURL), "trusted": false]
+        ]
+        let extrasJSON = String(decoding: try JSONSerialization.data(withJSONObject: extras), as: UTF8.self)
+        return EnginePlanInputs(plan: plan, targetIndex: targetIndex, requestJSON: requestJSON,
+                                extrasJSON: extrasJSON, fingerprints: fingerprints)
+    }
+
+    /// What the blockers would come to with one list turned off.
+    public struct ListRemovalPreview: Sendable, Equatable {
+        public let filterID: UUID
+        public let name: String
+        /// The biggest blocker's JSON size and rule count, measured after the
+        /// lists are packed again without this one.
+        public let largestBytes: Int
+        public let largestRules: Int
+        public let fits: Bool
+    }
+
+    /// Builds every blocker for `selectedFilters` and returns each one's final
+    /// JSON size and rule count, untruncated. Nothing is written.
+    static func measureBlockers(
+        selectedFilters: [FilterList],
+        targets: [ContentBlockerTargetInfo],
+        disabledSites: [String],
+        extraRulesText: (ContentBlockerTargetInfo) -> String?,
+        groupIdentifier: String,
+        containerURL: URL,
+        isCancelled: () -> Bool
+    ) throws -> [(bytes: Int, rules: Int)] {
+        let ordered = ContentBlockerMappingService.orderedForCompilation(selectedFilters)
+        let distribution = ContentBlockerMappingService.plan(selectedFilters: ordered, across: targets)
+        let cosmeticSites = CosmeticFilteringPreference.effectiveSites(groupIdentifier: groupIdentifier)
+        return try targets.map { target in
+            if isCancelled() { throw CancellationError() }
+            let inputs = try enginePlanInputs(
+                filters: ContentBlockerIncrementalCache.canonicalFilterOrder(distribution.filtersByTarget[target] ?? []),
+                orderedSelectedFilters: ordered, targetInfo: target, allTargets: targets,
+                extraRulesText: extraRulesText(target), cosmeticSites: cosmeticSites, containerURL: containerURL
+            )
+            guard let compiled = try inputs.plan.compileTarget(inputs.targetIndex, extras: inputs.extrasJSON, knownFingerprint: nil) else {
+                throw CocoaError(.fileReadCorruptFile)
+            }
+            let empty = compiled.stats.nativeRules == 0
+            let finalized = finalizeContentBlockerJSON(
+                baseJSON: empty ? Data(inertContentBlockerRulesJSON.utf8) : compiled.safariRulesJSON,
+                disabledSites: disabledSites,
+                knownBaseCount: empty ? inertContentBlockerRuleCount : compiled.stats.nativeRules,
+                ruleLimit: .max
+            )
+            return (finalized.json.count, finalized.ruleCount)
+        }
+    }
+
+    /// For each candidate, packs the selection again without it and builds
+    /// every blocker, so each preview is what applying that change would give.
+    /// Stops at `deadline`; candidates it didn't reach are left out.
+    public static func previewListRemovals(
+        candidates: [FilterList],
+        selectedFilters: [FilterList],
+        targets: [ContentBlockerTargetInfo],
+        disabledSites: [String],
+        extraRulesText: @escaping (ContentBlockerTargetInfo) -> String?,
+        groupIdentifier: String,
+        deadline: Date,
+        isCancelled: @escaping () -> Bool
+    ) -> [ListRemovalPreview] {
+        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier) else {
+            return []
+        }
+        return CompilationScope.$current.withValue(CompilationScope()) {
+            var previews: [ListRemovalPreview] = []
+            for candidate in candidates {
+                guard Date() < deadline, !isCancelled() else { break }
+                let remaining = selectedFilters.filter { $0.id != candidate.id }
+                guard let sizes = try? measureBlockers(
+                    selectedFilters: remaining, targets: targets, disabledSites: disabledSites,
+                    extraRulesText: extraRulesText, groupIdentifier: groupIdentifier,
+                    containerURL: containerURL, isCancelled: isCancelled
+                ) else { continue }
+                let bytes = sizes.map(\.bytes).max() ?? 0
+                let rules = sizes.map(\.rules).max() ?? 0
+                #if os(iOS)
+                let fitsBytes = bytes <= safariContentBlockerJSONSizeLimit
+                #else
+                let fitsBytes = true
+                #endif
+                previews.append(ListRemovalPreview(
+                    filterID: candidate.id, name: candidate.name, largestBytes: bytes, largestRules: rules,
+                    fits: fitsBytes && rules <= safariContentBlockerRuleLimit
+                ))
+                malloc_zone_pressure_relief(nil, 0)
+            }
+            return previews
+        }
     }
 
     /// Applies disabled-site ignore rules without exceeding Safari's per-extension limit.

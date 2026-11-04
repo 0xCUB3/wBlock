@@ -1061,8 +1061,14 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "Özel URL";
 
-"Too many lists are on for %1$@. They need %2$@ MB, and Safari allows %3$@ MB per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of these and try again: %4$@." = "%1$@ için çok fazla liste açık. %2$@ MB gerekiyor, Safari ise içerik engelleyici başına %3$@ MB izin veriyor. Bu bir Safari sınırıdır, wBlock hatası değildir. Bunlardan bazılarını kapatıp yeniden deneyin: %4$@.";
-"Too many lists are on for %1$@. They need %2$@ rules, and Safari allows %3$@ per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of these and try again: %4$@." = "%1$@ için çok fazla liste açık. %2$@ kural gerekiyor, Safari ise içerik engelleyici başına %3$@ kurala izin veriyor. Bu bir Safari sınırıdır, wBlock hatası değildir. Bunlardan bazılarını kapatıp yeniden deneyin: %4$@.";
+"Too many lists are on for %1$@. They need %2$@ MB, and Safari on iOS fails to load a content blocker over about %3$@ MB. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "%1$@ için çok fazla liste açık. %2$@ MB gerekiyor ve iOS’taki Safari yaklaşık %3$@ MB’ın üzerindeki bir içerik engelleyiciyi yükleyemiyor. Bu bir Safari sınırıdır, wBlock hatası değildir. Aşağıdaki listelerden bazılarını kapatıp yeniden deneyin.";
+"Too many lists are on for %1$@. They need %2$@ rules, and Safari allows %3$@ per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "%1$@ için çok fazla liste açık. %2$@ kural gerekiyor, Safari ise içerik engelleyici başına %3$@ kurala izin veriyor. Bu bir Safari sınırıdır, wBlock hatası değildir. Aşağıdaki listelerden bazılarını kapatıp yeniden deneyin.";
+"Enough on its own. The largest blocker would be %@ MB." = "Tek başına yeterli. En büyük engelleyici %@ MB olur.";
+"Not enough on its own. The largest blocker would be %@ MB." = "Tek başına yeterli değil. En büyük engelleyici %@ MB olur.";
+"Enough on its own. The largest blocker would have %@ rules." = "Tek başına yeterli. En büyük engelleyicide %@ kural olur.";
+"Not enough on its own. The largest blocker would have %@ rules." = "Tek başına yeterli değil. En büyük engelleyicide %@ kural olur.";
+"Turn Off" = "Kapat";
+"Turn off %@ and apply" = "%@ listesini kapat ve uygula";
 
 "uBlock filters – Experimental" = "uBlock filters – Experimental";
 "Phishing URL Blocklist" = "Phishing URL Blocklist";
