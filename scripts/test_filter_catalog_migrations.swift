@@ -71,23 +71,29 @@ private final class TestLoader: FilterListLoader {
         let uBOOffered: Set<String> = ["AdGuard Base Filter", "AdGuard Mobile Filter", "AdGuard URL Tracking Protection Filter",
                                        "AdGuard Cookie Notices", "AdGuard Popups", "AdGuard Other Annoyances",
                                        "AdGuard Mobile App Banners", "AdGuard Widgets"]
-        for (adGuard, replacements) in FilterListLoader.adGuardReplacements {
+        for (adGuard, replacements) in FilterListLoader.listReplacements {
             precondition((byName[adGuard] != nil) == uBOOffered.contains(adGuard), "\(adGuard) catalog presence")
             precondition(byName[adGuard]?.isSelected != true, "\(adGuard) is off by default")
             precondition(Set(replacements).isSubset(of: Set(byName.keys)), "unknown list in \(adGuard) handover")
         }
-        // AdGuard German, Italian and Polish contain their EasyList and official counterparts,
-        // so they are the regional pick; AdGuard Russian hands over to the larger RU AdList.
-        for (adGuard, included) in [
-            ("AdGuard German filter", "EasyList Germany"),
-            ("AdGuard Italian filter", "EasyList Italy"),
-            ("AdGuard Polish filter", "Official Polish filters for AdBlock, uBlock Origin & AdGuard"),
+        // One regional list per language (#1079): a list another list for its language contains
+        // hands over to that list, and the AdGuard lists that contain them stay.
+        for (included, kept) in [
+            ("EasyList Germany", "AdGuard German filter"),
+            ("EasyList Italy", "AdGuard Italian filter"),
+            ("Official Polish filters for AdBlock, uBlock Origin & AdGuard", "AdGuard Polish filter"),
+            ("EasyList Spanish", "AdGuard Spanish/Portuguese filter"),
+            ("EasyDutch", "AdGuard Dutch filter"),
+            ("AdGuard Russian filter", "RU AdList"),
+            ("AdGuard Ukrainian filter", "RU AdList"),
+            ("RU AdList: Counters", "RU AdList"),
         ] {
-            precondition(FilterListLoader.adGuardReplacements[adGuard] == nil && byName[adGuard] != nil, "\(adGuard) stays")
-            precondition(ForeignFilterOrganizer.isRecommended(byName[adGuard]!) && !ForeignFilterOrganizer.isRecommended(byName[included]!),
-                         "\(adGuard) is recommended over \(included)")
+            precondition(FilterListLoader.listReplacements[included] == [kept] && byName[included] == nil && byName[kept] != nil,
+                         "\(included) must hand over to \(kept)")
         }
-        precondition(FilterListLoader.adGuardReplacements["AdGuard Russian filter"] == ["RU AdList"] && byName["RU AdList"] != nil)
+        precondition(byName["Raajje AdList"]?.languages == ["dv"] && !FilterListLoader.isRetiredBuiltIn(byName["Raajje AdList"]!))
+        precondition(byName["Fanboy – Anti-Facebook"] == nil
+                     && FilterListLoader.isRetiredBuiltInURL(URL(string: "https://secure.fanboy.co.nz/fanboy-antifacebook.txt")!))
 
         // A catalog URL that is also a migration source would reset its validators on every launch.
         for list in defaults {
@@ -140,7 +146,7 @@ private final class TestLoader: FilterListLoader {
         let overlapPending: Set<UUID> = [overlapPopups.id, overlapWidgets.id]
         let overlap = defaults.filter { !uBOOffered.contains($0.name) }
             .map { list -> FilterList in var list = list; list.isSelected = false; return list } + [overlapPopups, overlapWidgets]
-        let annoyanceReplacements = Set(FilterListLoader.adGuardReplacements["AdGuard Popups"]!)
+        let annoyanceReplacements = Set(FilterListLoader.listReplacements["AdGuard Popups"]!)
         let first = FilterListLoader.handingOverReplacedAdGuardLists(overlap, pending: overlapPending, catalogURLs: catalogURLs,
                                                                      hasContent: { annoyanceReplacements.contains($0.name) })
         precondition(first.handedOver.isEmpty, "a list waits while another sharing its replacements cannot hand over")
@@ -150,7 +156,7 @@ private final class TestLoader: FilterListLoader {
 
         // Only Base's replacements arrived: Base hands over, Tracking waits.
         let remaining = pending.subtracting(offline.settled)
-        let baseReplacements = Set(FilterListLoader.adGuardReplacements["AdGuard Base Filter"]!)
+        let baseReplacements = Set(FilterListLoader.listReplacements["AdGuard Base Filter"]!)
         let partial = FilterListLoader.handingOverReplacedAdGuardLists(offline.lists, pending: remaining, catalogURLs: catalogURLs,
                                                                        hasContent: { baseReplacements.contains($0.name) })
         precondition(partial.handedOver.map(\.name) == ["AdGuard Base Filter"], "partial: \(partial.handedOver.map(\.name))")
@@ -188,7 +194,7 @@ private final class TestLoader: FilterListLoader {
 
         // A renamed annoyance list would silently fall into Other.
         let topical = defaults.filter { $0.category == .annoyances && AnnoyanceTopic.topic(for: $0) != .other }
-        precondition(topical.count == 15, "annoyance topics lost a list: \(topical.map(\.name))")
+        precondition(topical.count == 14, "annoyance topics lost a list: \(topical.map(\.name))")
 
         // A default name that matches no catalog entry would silently drop that list from the defaults.
         let catalogNames = Set(defaults.map(\.name))
@@ -255,11 +261,11 @@ private final class TestLoader: FilterListLoader {
 
         // Every registry address of a kept AdGuard list moves to uBlock Origin's copy, which the catalog uses.
         // A replaced list moves there too, so it keeps protecting until it hands over.
-        for id in [2, 4, 5, 7, 8, 9, 11, 13, 16, 17, 18, 19, 20, 21, 22, 23, 25, 224] {
+        for id in [2, 4, 5, 6, 7, 8, 9, 11, 13, 16, 17, 18, 19, 20, 21, 22, 25, 26, 27, 224] {
             let migrated = FilterListLoader.migratedURL(for: "\(registry)/extension/safari/filters/\(id)_optimized.txt")
             precondition(migrated.map(catalogURLs.contains) == true, "AdGuard \(id) does not migrate to a catalog URL")
         }
-        for id in [1, 3, 6, 26, 27] {
+        for id in [1, 3, 23] {
             let migrated = FilterListLoader.migratedURL(for: "\(registry)/extension/safari/filters/\(id)_optimized.txt")
             precondition(migrated?.path.contains("/extension/ublock/filters/") == true, "replaced AdGuard \(id) must still load uBlock Origin's copy")
         }
@@ -303,14 +309,14 @@ private final class TestLoader: FilterListLoader {
             precondition(hydrated.category == .ads && hydrated.isSelected, "\(name) did not move to Ads")
         }
         precondition(!defaults.contains { $0.name.contains("AI Widgets") }, "EasyList AI Widgets must not be added")
-        // New lists are off by default, and EasyDutch sits with the other regional lists.
-        for name in ["EasyList – Chat Widgets", "EasyList – Newsletter Notices", "EasyList – Notifications", "EasyDutch",
-                     "uBlock filters – Experimental", "Phishing URL Blocklist", "Fanboy – Anti-Facebook", "Dan Pollock's hosts file"] {
+        // New lists are off by default.
+        for name in ["EasyList – Chat Widgets", "EasyList – Newsletter Notices", "EasyList – Notifications",
+                     "uBlock filters – Experimental", "Phishing URL Blocklist", "Dan Pollock's hosts file"] {
             precondition(byName[name]?.isSelected == false, "\(name) must default to off")
         }
-        precondition(byName["EasyDutch"]?.category == .foreign && byName["EasyList – Chat Widgets"]?.category == .annoyances)
+        precondition(byName["EasyList – Chat Widgets"]?.category == .annoyances)
         precondition(byName["uBlock filters – Experimental"]?.category == .experimental && byName["Phishing URL Blocklist"]?.category == .security
-                     && byName["Dan Pollock's hosts file"]?.category == .multipurpose && byName["Fanboy – Anti-Facebook"]?.category == .annoyances)
+                     && byName["Dan Pollock's hosts file"]?.category == .multipurpose)
         // Albanian and Slovenian lists were retired into custom copies. When uBO's lists come back, a copy folds into the catalog entry.
         for (name, url) in [
             ("Adblock List for Albania", "https://raw.githubusercontent.com/AnXh3L0/blocklist/master/albanian-easylist-addition/Albania.txt"),
@@ -334,9 +340,7 @@ private final class TestLoader: FilterListLoader {
         // A registry address of a list the catalog carries under another URL is that list. Stored as a built-in, or as the
         // custom copy the retired-list conversion left behind, it must end as one catalog entry that keeps its selection.
         let registryCopies = [
-            (101, "EasyList"), (107, "EasyList Germany"), (109, "EasyList Italy"), (208, "Online Malicious URL Blocklist"),
-            (212, "RU AdList: Counters"), (216, "Official Polish filters for AdBlock, uBlock Origin & AdGuard"),
-            (225, "Fanboy – Anti-Facebook"), (231, "EasyList Spanish"), (255, "Phishing URL Blocklist"),
+            (101, "EasyList"), (208, "Online Malicious URL Blocklist"), (255, "Phishing URL Blocklist"),
             (257, "uBlock filters – Badware risks"),
         ]
         for (id, name) in registryCopies {

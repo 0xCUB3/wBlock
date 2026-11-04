@@ -61,9 +61,10 @@ class FilterListLoader {
         "uBlock filters – Quick fixes", "uBlock filters – Unbreak", "wBlock Ad and Tracking Hosts",
     ])
 
-    /// wBlock 4 replaced these AdGuard lists with uBlock Origin's. Each one
-    /// hands its selection to the lists it maps to.
-    static let adGuardReplacements: [String: [String]] = {
+    /// Lists wBlock 4 replaced: AdGuard lists uBlock Origin covers, and
+    /// regional lists another list for the same language contains. Each hands
+    /// its selection to the lists it maps to.
+    static let listReplacements: [String: [String]] = {
         let ads = ["uBlock filters – Ads", "uBlock filters – Badware risks", "uBlock filters – Quick fixes",
                    "uBlock filters – Unbreak", "EasyList"]
         let annoyances = ["uBlock filters – Annoyances", "EasyList – Other Annoyances"]
@@ -73,6 +74,13 @@ class FilterListLoader {
             "AdGuard Tracking Protection Filter": ["uBlock filters – Privacy", "EasyPrivacy"],
             "AdGuard Cookie Notices": ["uBlock filters – Cookie Notices", "EasyList – Cookie Notices"],
             "AdGuard Russian filter": ["RU AdList"],
+            "AdGuard Ukrainian filter": ["RU AdList"],
+            "RU AdList: Counters": ["RU AdList"],
+            "EasyList Germany": ["AdGuard German filter"],
+            "EasyList Italy": ["AdGuard Italian filter"],
+            "Official Polish filters for AdBlock, uBlock Origin & AdGuard": ["AdGuard Polish filter"],
+            "EasyList Spanish": ["AdGuard Spanish/Portuguese filter"],
+            "EasyDutch": ["AdGuard Dutch filter"],
             "AdGuard Popups": annoyances,
             "AdGuard Other Annoyances": annoyances,
             "AdGuard Mobile App Banners": annoyances,
@@ -83,8 +91,8 @@ class FilterListLoader {
         return replacements
     }()
 
-    static func isReplacedAdGuardList(_ list: FilterList) -> Bool {
-        !list.isCustom && adGuardReplacements[list.name] != nil
+    static func isReplacedList(_ list: FilterList) -> Bool {
+        !list.isCustom && listReplacements[list.name] != nil
     }
 
     /// AdGuard lists due to hand over: on, and either withdrawn from the
@@ -94,7 +102,7 @@ class FilterListLoader {
     static func adGuardHandoverCandidates(
         _ lists: [FilterList], pending: Set<UUID>, catalogURLs: Set<URL>
     ) -> [FilterList] {
-        lists.filter { $0.isSelected && isReplacedAdGuardList($0) && (pending.contains($0.id) || !catalogURLs.contains($0.url)) }
+        lists.filter { $0.isSelected && isReplacedList($0) && (pending.contains($0.id) || !catalogURLs.contains($0.url)) }
     }
 
     /// Moves each candidate (adGuardHandoverCandidates) to its uBO
@@ -112,23 +120,23 @@ class FilterListLoader {
         let byName = Dictionary(lists.filter { !$0.isCustom }.map { ($0.name, $0) }, uniquingKeysWith: { a, _ in a })
         let candidates = adGuardHandoverCandidates(lists, pending: pending, catalogURLs: catalogURLs)
         var ready = candidates.filter { list in
-            (adGuardReplacements[list.name] ?? []).allSatisfy { byName[$0].map(hasContent) == true }
+            (listReplacements[list.name] ?? []).allSatisfy { byName[$0].map(hasContent) == true }
         }
         while true {
             let readyIDs = Set(ready.map(\.id))
             let blockedNames = Set(candidates.filter { !readyIDs.contains($0.id) }
-                .flatMap { adGuardReplacements[$0.name] ?? [] })
-            let next = ready.filter { blockedNames.isDisjoint(with: adGuardReplacements[$0.name] ?? []) }
+                .flatMap { listReplacements[$0.name] ?? [] })
+            let next = ready.filter { blockedNames.isDisjoint(with: listReplacements[$0.name] ?? []) }
             if next.count == ready.count { break }
             ready = next
         }
         var predecessors: [String: [FilterList]] = [:]
         for list in ready {
-            for name in adGuardReplacements[list.name] ?? [] { predecessors[name, default: []].append(list) }
+            for name in listReplacements[list.name] ?? [] { predecessors[name, default: []].append(list) }
         }
         let readyIDs = Set(ready.map(\.id))
         let removed = lists.filter {
-            isReplacedAdGuardList($0) && !catalogURLs.contains($0.url) && (!$0.isSelected || readyIDs.contains($0.id))
+            isReplacedList($0) && !catalogURLs.contains($0.url) && (!$0.isSelected || readyIDs.contains($0.id))
         }
         let removedIDs = Set(removed.map(\.id))
         let updated = lists.filter { !removedIDs.contains($0.id) }.map { list -> FilterList in
@@ -158,7 +166,7 @@ class FilterListLoader {
     )!
 
     private static let stevoAIBlocklistURL = URL(
-        string: "https://raw.githubusercontent.com/Stevoisiak/Stevos-AI-Blocklist/refs/heads/main/GenAI-Blocklist.txt"
+        string: "https://raw.githubusercontent.com/Stevoisiak/Stevos-AI-Blocklist/main/GenAI-Blocklist.txt"
     )!
 
     private static func registryURL(_ id: Int) -> String {
@@ -188,6 +196,7 @@ class FilterListLoader {
 
     private static let filterURLMigrations: [String: URL] = [
         "https://filters.adtidy.org/extension/ublock/filters/17.txt": urlTrackingURL,
+        "https://raw.githubusercontent.com/Stevoisiak/Stevos-AI-Blocklist/refs/heads/main/GenAI-Blocklist.txt": stevoAIBlocklistURL,
         // EasyPrivacy and Peter Lowe's Blocklist now come from uBlock Origin's sources.
         registryURL(118):
             URL(string: "https://cdn.jsdelivr.net/gh/uBlockOrigin/uAssetsCDN@main/thirdparties/easyprivacy.txt")!,
@@ -318,7 +327,7 @@ class FilterListLoader {
         "raw.githubusercontent.com/xinggsf/Adblock-Plus-Rule/master/rule.txt",  // xinggsf (#882)
         "raw.githubusercontent.com/yous/YousList/master/youslist.txt",  // YousList (#882)
         "raw.githubusercontent.com/MasterKia/PersianBlocker/main/PersianBlocker.txt",  // Persian Blocker, maintainer passed away (#921)
-        "raw.githubusercontent.com/lonum1rus/Raajje-AdList/master/filter.txt",  // Raajje AdList, unmaintained (#921)
+        "secure.fanboy.co.nz/fanboy-antifacebook.txt",  // Fanboy – Anti-Facebook, unchanged since 2021 and breaks sites (#1079)
         "hole.cert.pl/domains/",  // CERT.PL's Warning List, almost all in KAD - Anti-Scam
     ]
 
@@ -545,10 +554,6 @@ class FilterListLoader {
                 description:
                     "Hides social media content and icons. Blocks social widgets and scripts, including many that AdGuard Social Media Filter misses."),
             FilterList(
-                id: UUID(), name: "Fanboy – Anti-Facebook",
-                url: URL(string: "https://secure.fanboy.co.nz/fanboy-antifacebook.txt")!, category: FilterListCategory.annoyances,
-                description: "Blocks Facebook social plugins and login widgets on other websites. May break sites that rely on them."),
-            FilterList(
                 id: UUID(), name: "Stevo's AI Blocklist",
                 url: Self.stevoAIBlocklistURL, category: FilterListCategory.annoyances,
                 description:
@@ -671,18 +676,18 @@ class FilterListLoader {
                 description: "Additional filter list for websites in Czech and Slovak.",
                 languages: ["cs", "sk"], trustLevel: "high"),
             FilterList(
+                id: UUID(), name: "Raajje AdList",
+                url: URL(string: "https://raw.githubusercontent.com/lonum1rus/Raajje-AdList/master/filter.txt")!,
+                category: .foreign,
+                description: "Community filter list that blocks ads on Dhivehi (Maldivian) websites.",
+                languages: ["dv"], trustLevel: "low"),
+            FilterList(
                 id: UUID(), name: "AdGuard Dutch filter",
                 url: Self.adGuardUBlockURL(8),
                 category: .foreign,
                 description:
                     "EasyList Dutch + AdGuard Dutch filter. Filter list that specifically removes ads on websites in Dutch language.",
                 languages: ["nl"], trustLevel: "full"),
-            FilterList(
-                id: UUID(), name: "EasyDutch",
-                url: URL(string: "https://easydutch-ublockorigin.github.io/EasyDutchCDN/EasyDutch.all.txt")!,
-                category: .foreign,
-                description: "Blocks ads and anti-adblock messages on Dutch and Afrikaans websites, from the EasyDutch project.",
-                languages: ["nl"], trustLevel: "low"),
             FilterList(
                 id: UUID(), name: "Estonian List", url: URL(string: "https://ubo-et.lepik.io/list.txt")!,
                 category: .foreign, description: "Filter for ad blocking on Estonian sites.",
@@ -700,17 +705,12 @@ class FilterListLoader {
                 category: .foreign,
                 description:
                     "Liste FR + AdGuard French filter. Filter list that specifically removes ads on websites in French language.",
-                languages: ["fr"], trustLevel: "full"),
+                languages: ["fr", "ar"], trustLevel: "full"),
             FilterList(
                 id: UUID(), name: "AdGuard German filter",
                 url: Self.adGuardUBlockURL(6), category: .foreign,
                 description:
                     "EasyList Germany + AdGuard German filter. Filter list that specifically removes ads on websites in German language.",
-                languages: ["de"], trustLevel: "full"),
-            FilterList(
-                id: UUID(), name: "EasyList Germany",
-                url: URL(string: "https://easylist.to/easylistgermany/easylistgermany.txt")!,
-                category: .foreign, description: "Already included in AdGuard German filter.",
                 languages: ["de"], trustLevel: "full"),
             FilterList(
                 id: UUID(), name: "Greek AdBlock Filter",
@@ -740,9 +740,7 @@ class FilterListLoader {
                 category: .foreign,
                 description:
                     "Additional filter list for websites in Hindi, Tamil and other Dravidian and Indic languages.",
-                languages: [
-                    "as", "bn", "gu", "hi", "kn", "ml", "mr", "ne", "pa", "sat", "si", "ta", "te"
-                ], trustLevel: "high"),
+                languages: ["hi", "bn", "gu", "pa", "as", "mai", "mr", "ta", "ml", "te", "kn", "or", "ne", "si"], trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "ABPindo",
                 url: URL(
@@ -756,16 +754,11 @@ class FilterListLoader {
                 url: URL(string: "https://raw.githubusercontent.com/realodix/AdBlockID/main/dist/adblockid.adfl.txt")!,
                 category: .foreign,
                 description: "Additional filter list for websites in Indonesian and Malay.",
-                languages: ["id"], trustLevel: "high"),
+                languages: ["id", "ms"], trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "AdGuard Italian filter",
                 url: Self.adGuardUBlockURL(26),
                 category: .foreign, description: "EasyList Italy + AdGuard Italian filter. Filter list that specifically removes ads on websites in the Italian language.",
-                languages: ["it"], trustLevel: "high"),
-            FilterList(
-                id: UUID(), name: "EasyList Italy",
-                url: URL(string: "https://easylist-downloads.adblockplus.org/easylistitaly.txt")!,
-                category: .foreign, description: "Already included in AdGuard Italian filter.",
                 languages: ["it"], trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "AdGuard Japanese filter",
@@ -805,22 +798,17 @@ class FilterListLoader {
                 category: .foreign,
                 description:
                     "This list covers websites for Norway, Denmark, Iceland, Danish territories, and the Sami indigenous population.",
-                languages: ["nb", "nn", "no", "da", "is"], trustLevel: "high"),
+                languages: ["nb", "nn", "da", "is", "fo", "kl", "se", "sjd", "sje", "sju", "sma", "smj", "smn", "sms"], trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "PersianBlockerNG",
                 url: URL(string: "https://cdn.jsdelivr.net/gh/PersianBlocker/PersianBlocker@main/PersianBlocker.txt")!,
                 category: .foreign, description: "Additional filter list for websites in Persian.",
-                languages: ["fa"], trustLevel: "high"),
+                languages: ["fa", "ps", "tg"], trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "AdGuard Polish filter",
                 url: Self.adGuardUBlockURL(27), category: .foreign,
                 description: "Official Polish filters for AdBlock, uBlock Origin & AdGuard + AdGuard Polish filter. Filter list that specifically removes ads on websites in the Polish language.", languages: ["pl"],
                 trustLevel: "high"),
-            FilterList(
-                id: UUID(), name: "Official Polish filters for AdBlock, uBlock Origin & AdGuard",
-                url: URL(string: "https://raw.githubusercontent.com/MajkiIT/polish-ads-filter/master/polish-adblock-filters/adblock.txt")!,
-                category: .foreign, description: "Already included in AdGuard Polish filter.",
-                languages: ["pl"], trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "KAD - Anti-Scam",
                 url: URL(string: "https://raw.githubusercontent.com/FiltersHeroes/KAD/master/KAD.txt")!,
@@ -839,28 +827,18 @@ class FilterListLoader {
                 id: UUID(), name: "RU AdList",
                 url: URL(string: "https://cdn.jsdelivr.net/gh/dimisa-RUAdList/RUAdListCDN@main/lists/ruadlist.ubo.min.txt")!,
                 category: .foreign, description: "Filter that enables ad blocking on websites in Russian language.",
-                languages: ["ru"], trustLevel: "full"),
-            FilterList(
-                id: UUID(), name: "RU AdList: Counters",
-                url: URL(string: "https://cdn.jsdelivr.net/gh/easylist/ruadlist@master/cntblock.txt")!,
-                category: .foreign, description: "Blocks visitor counters on Russian-language websites.",
-                languages: ["ru"], trustLevel: "low"),
+                languages: ["ru", "uk", "kk", "uz"], trustLevel: "full"),
             FilterList(
                 id: UUID(), name: "Dandelion Sprout's Serbo-Croatian List",
                 url: URL(string: "https://raw.githubusercontent.com/DandelionSprout/adfilt/master/SerboCroatianList.txt")!,
                 category: .foreign,
                 description: "A filter list for websites in Serbian, Montenegrin, Croatian, and Bosnian.",
-                languages: ["bs", "hr", "sr"], trustLevel: "high"),
+                languages: ["sr", "cnr", "hr", "bs"], trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "Slovenian List",
                 url: URL(string: "https://raw.githubusercontent.com/betterwebleon/slovenian-list/master/filters.txt")!,
                 category: .foreign, description: "Additional filter list for websites in Slovenian.",
                 languages: ["sl"], trustLevel: "high"),
-            FilterList(
-                id: UUID(), name: "EasyList Spanish",
-                url: URL(string: "https://easylist-downloads.adblockplus.org/easylistspanish.txt")!,
-                category: .foreign, description: "Additional filter list for websites in Spanish.",
-                languages: ["es"], trustLevel: "low"),
             FilterList(
                 id: UUID(), name: "AdGuard Spanish/Portuguese filter",
                 url: Self.adGuardUBlockURL(9),
@@ -889,12 +867,6 @@ class FilterListLoader {
                 description:
                     "Filter list that specifically removes ads on websites in Turkish language.",
                 languages: ["tr"], trustLevel: "full"),
-            FilterList(
-                id: UUID(), name: "AdGuard Ukrainian filter",
-                url: Self.adGuardUBlockURL(23),
-                category: .foreign,
-                description: "Filter that enables ad blocking on websites in Ukrainian language.",
-                languages: ["uk"], trustLevel: "full"),
             FilterList(
                 id: UUID(), name: "ABPVN List",
                 url: URL(string: "https://raw.githubusercontent.com/abpvn/abpvn/master/filter/abpvn_ublock.txt")!,

@@ -235,7 +235,7 @@ class AppFilterManager: ObservableObject {
     private func recordAdGuardHandoverIfNeeded(_ lists: [FilterList]) {
         let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
         guard defaults.object(forKey: Self.adGuardHandoverPendingKey) == nil else { return }
-        adGuardHandoverPending = Set(lists.filter { $0.isSelected && FilterListLoader.isReplacedAdGuardList($0) }.map(\.id))
+        adGuardHandoverPending = Set(lists.filter { $0.isSelected && FilterListLoader.isReplacedList($0) }.map(\.id))
     }
 
     private static let changedDefaultsKey = "wBlock.changedDefaults.4.0"
@@ -903,7 +903,7 @@ class AppFilterManager: ObservableObject {
     func completeAdGuardHandover() async {
         let pending = adGuardHandoverPending, catalogURLs = catalogURLs
         let needed = Set(FilterListLoader.adGuardHandoverCandidates(filterLists, pending: pending, catalogURLs: catalogURLs)
-            .flatMap { FilterListLoader.adGuardReplacements[$0.name] ?? [] })
+            .flatMap { FilterListLoader.listReplacements[$0.name] ?? [] })
         guard !needed.isEmpty else { return }
         for list in filterLists where !list.isCustom && needed.contains(list.name) && !loader.filterFileExists(list) {
             _ = await filterUpdater.fetchAndProcessFilter(list)

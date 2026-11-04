@@ -30,7 +30,6 @@ enum AnnoyanceTopic: String, CaseIterable, Sendable {
         "EasyList – Notifications": .popups,
         "EasyList – Social Widgets": .social,
         "AdGuard Social Media Filter": .social,
-        "Fanboy – Anti-Facebook": .social,
         "EasyList – Chat Widgets": .social,
         "AdGuard Widgets": .social,
     ]
