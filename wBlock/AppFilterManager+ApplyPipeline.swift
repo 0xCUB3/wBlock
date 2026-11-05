@@ -143,48 +143,57 @@ extension AppFilterManager {
         (Double(bytes) / 1_000_000).formatted(.number.precision(.fractionLength(0...1)).locale(.appCurrent))
     }
 
-    /// Measures, for each list in the full blocker, what every blocker comes to
-    /// once that list is off, so the failure sheet offers changes known to help.
+    /// Lists the full blocker's lists in the failure sheet, then measures in
+    /// the background each one's own size and what every blocker comes to once
+    /// it is off. Rows fill in as results arrive; the next apply cancels it.
     private func showListRemovalPreviews(
         over target: ContentBlockerTargetInfo, inMegabytes: Bool,
         filtersByTarget: [ContentBlockerTargetInfo: [FilterList]], selected: [FilterList],
         targets: [ContentBlockerTargetInfo], disabledSites: [String], zapperRulesText: String?
     ) async {
         let candidates = (filtersByTarget[target] ?? []).sorted { ($0.sourceRuleCount ?? 0) > ($1.sourceRuleCount ?? 0) }
-        await MainActor.run { self.applyProgressViewModel.showLimitFixes(candidates.map { .init(id: $0.id, name: $0.name) }) }
-        let previews = await Task.detached(priority: .userInitiated) {
-            ContentBlockerService.previewListRemovals(
-                candidates: candidates, selectedFilters: selected, targets: targets, disabledSites: disabledSites,
-                extraRulesText: { $0.slot == 5 ? zapperRulesText : nil },
-                groupIdentifier: GroupIdentifier.shared.value,
-                deadline: Date().addingTimeInterval(15), isCancelled: { Task.isCancelled }
-            )
-        }.value
-        let measured = Dictionary(uniqueKeysWithValues: previews.map { ($0.filterID, $0) })
-        let fixes = candidates.map { filter -> ApplyLimitFix in
-            guard let preview = measured[filter.id] else { return ApplyLimitFix(id: filter.id, name: filter.name) }
-            let amount = inMegabytes ? Self.megabytes(preview.largestBytes) : preview.largestRules.formatted()
-            let detail: String = switch (preview.fits, inMegabytes) {
-            case (true, true): LocalizedStrings.format("Enough on its own. The largest blocker would be %@ MB.", comment: "Over-limit fix row", amount)
-            case (false, true): LocalizedStrings.format("Not enough on its own. The largest blocker would be %@ MB.", comment: "Over-limit fix row", amount)
-            case (true, false): LocalizedStrings.format("Enough on its own. The largest blocker would have %@ rules.", comment: "Over-limit fix row", amount)
-            case (false, false): LocalizedStrings.format("Not enough on its own. The largest blocker would have %@ rules.", comment: "Over-limit fix row", amount)
+        let model = applyProgressViewModel
+        let amount: (Int, Int) -> String = { bytes, rules in inMegabytes ? Self.megabytes(bytes) : rules.formatted() }
+        await MainActor.run {
+            model.showLimitFixes(candidates.map { ApplyLimitFix(id: $0.id, name: $0.name) })
+            limitPreviewTask?.cancel()
+            limitPreviewTask = Task.detached(priority: .userInitiated) {
+                let group = GroupIdentifier.shared.value
+                let cancelled = { Task.isCancelled }
+                var sizes: [UUID: Int] = [:]
+                ContentBlockerService.measureListSizes(
+                    candidates: candidates, targets: targets, disabledSites: disabledSites,
+                    groupIdentifier: group, isCancelled: cancelled
+                ) { id, bytes, rules in
+                    sizes[id] = inMegabytes ? bytes : rules
+                    let text = inMegabytes
+                        ? LocalizedStrings.format("Size: %@ MB", comment: "Over-limit fix row: the list's own size", amount(bytes, rules))
+                        : LocalizedStrings.format("Size: %@ rules", comment: "Over-limit fix row: the list's own size", amount(bytes, rules))
+                    Task { @MainActor in model.updateLimitFix(id) { $0.size = text } }
+                }
+                // Biggest first, then measure what turning each one off gives.
+                let ordered = candidates.enumerated().sorted { a, b in
+                    let (l, r) = (sizes[a.element.id] ?? -1, sizes[b.element.id] ?? -1)
+                    return l != r ? l > r : a.offset < b.offset
+                }.map(\.element)
+                await MainActor.run { model.orderLimitFixes(ordered.map(\.id)) }
+                ContentBlockerService.previewListRemovals(
+                    candidates: ordered, selectedFilters: selected, targets: targets, disabledSites: disabledSites,
+                    extraRulesText: { $0.slot == 5 ? zapperRulesText : nil },
+                    groupIdentifier: group, isCancelled: cancelled
+                ) { preview in
+                    let value = amount(preview.largestBytes, preview.largestRules)
+                    let detail: String = switch (preview.fits, inMegabytes) {
+                    case (true, true): LocalizedStrings.format("Turning it off is enough. The largest blocker would be %@ MB.", comment: "Over-limit fix row", value)
+                    case (false, true): LocalizedStrings.format("Turning it off isn't enough. The largest blocker would be %@ MB.", comment: "Over-limit fix row", value)
+                    case (true, false): LocalizedStrings.format("Turning it off is enough. The largest blocker would have %@ rules.", comment: "Over-limit fix row", value)
+                    case (false, false): LocalizedStrings.format("Turning it off isn't enough. The largest blocker would have %@ rules.", comment: "Over-limit fix row", value)
+                    }
+                    Task { @MainActor in model.updateLimitFix(preview.filterID) { $0.detail = detail; $0.fits = preview.fits } }
+                }
+                await MainActor.run { model.finishLimitFixes() }
             }
-            return ApplyLimitFix(id: filter.id, name: filter.name, detail: detail, fits: preview.fits,
-                                 largest: inMegabytes ? preview.largestBytes : preview.largestRules)
         }
-        // Lists that are enough on their own first, then the ones that help most.
-        let ordered = fixes.enumerated().sorted { a, b in
-            let (x, y) = (a.element, b.element)
-            if x.fits != y.fits { return x.fits }
-            switch (x.largest, y.largest) {
-            case let (l?, r?) where l != r: return l < r
-            case (_?, nil): return true
-            case (nil, _?): return false
-            default: return a.offset < b.offset
-            }
-        }.map(\.element)
-        await MainActor.run { self.applyProgressViewModel.showLimitFixes(ordered) }
     }
 
     /// Fails the in-flight apply when cancelled for iOS suspension.
@@ -225,6 +234,8 @@ extension AppFilterManager {
             return false
         }
 
+        limitPreviewTask?.cancel()
+        limitPreviewTask = nil
         isApplyInFlight = true
         await SharedAutoUpdateManager.shared.setForegroundApplyInProgress(true)
         #if os(macOS)

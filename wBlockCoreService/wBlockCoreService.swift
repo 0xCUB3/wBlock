@@ -1797,9 +1797,40 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         }
     }
 
+    /// Each candidate's own size: what it adds when it is the only list on,
+    /// over blockers holding just the built-in rules. Reported as it goes.
+    public static func measureListSizes(
+        candidates: [FilterList],
+        targets: [ContentBlockerTargetInfo],
+        disabledSites: [String],
+        groupIdentifier: String,
+        isCancelled: @escaping () -> Bool,
+        onSize: (_ filterID: UUID, _ bytes: Int, _ rules: Int) -> Void
+    ) {
+        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier) else { return }
+        CompilationScope.$current.withValue(CompilationScope()) {
+            func measure(_ selection: [FilterList]) -> (bytes: Int, rules: Int)? {
+                guard let sizes = try? measureBlockers(
+                    selectedFilters: selection, targets: targets, disabledSites: disabledSites,
+                    extraRulesText: { _ in nil }, groupIdentifier: groupIdentifier,
+                    containerURL: containerURL, isCancelled: isCancelled
+                ) else { return nil }
+                return (sizes.map(\.bytes).reduce(0, +), sizes.map(\.rules).reduce(0, +))
+            }
+            guard let empty = measure([]) else { return }
+            for candidate in candidates {
+                guard !isCancelled() else { return }
+                if let alone = measure([candidate]) {
+                    onSize(candidate.id, max(0, alone.bytes - empty.bytes), max(0, alone.rules - empty.rules))
+                }
+                malloc_zone_pressure_relief(nil, 0)
+            }
+        }
+    }
+
     /// For each candidate, packs the selection again without it and builds
     /// every blocker, so each preview is what applying that change would give.
-    /// Stops at `deadline`; candidates it didn't reach are left out.
+    /// Reported as it goes, until done or cancelled.
     public static func previewListRemovals(
         candidates: [FilterList],
         selectedFilters: [FilterList],
@@ -1807,16 +1838,13 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         disabledSites: [String],
         extraRulesText: @escaping (ContentBlockerTargetInfo) -> String?,
         groupIdentifier: String,
-        deadline: Date,
-        isCancelled: @escaping () -> Bool
-    ) -> [ListRemovalPreview] {
-        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier) else {
-            return []
-        }
-        return CompilationScope.$current.withValue(CompilationScope()) {
-            var previews: [ListRemovalPreview] = []
+        isCancelled: @escaping () -> Bool,
+        onPreview: (ListRemovalPreview) -> Void
+    ) {
+        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier) else { return }
+        CompilationScope.$current.withValue(CompilationScope()) {
             for candidate in candidates {
-                guard Date() < deadline, !isCancelled() else { break }
+                guard !isCancelled() else { return }
                 let remaining = selectedFilters.filter { $0.id != candidate.id }
                 guard let sizes = try? measureBlockers(
                     selectedFilters: remaining, targets: targets, disabledSites: disabledSites,
@@ -1830,13 +1858,12 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
                 #else
                 let fitsBytes = true
                 #endif
-                previews.append(ListRemovalPreview(
+                onPreview(ListRemovalPreview(
                     filterID: candidate.id, name: candidate.name, largestBytes: bytes, largestRules: rules,
                     fits: fitsBytes && rules <= safariContentBlockerRuleLimit
                 ))
                 malloc_zone_pressure_relief(nil, 0)
             }
-            return previews
         }
     }
 

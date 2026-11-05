@@ -114,6 +114,14 @@ class AppDelegate: NSObject {
 
 private extension AppDelegate {
     @discardableResult
+    /// A catch-up that comes out over Safari's limit applies nothing. The app is
+    /// open, so run the normal apply, whose failure sheet says what to turn off.
+    @MainActor
+    func showOverLimitFailure(after outcome: SharedAutoUpdateManager.AutoUpdateRunOutcome) {
+        guard case .overLimit = outcome else { return }
+        filterManager?.forceApplyChanges()
+    }
+
     func runForcedAutoUpdate(
         trigger: String,
         policy: SharedAutoUpdateManager.AutoUpdateExecutionPolicy? = nil
@@ -306,11 +314,12 @@ extension AppDelegate: NSApplicationDelegate {
             let isDueSoon = if let remaining = status.remaining { remaining < dueSoonThresholdSeconds } else { false }
 
             // If overdue or due soon, force update
-            if status.isOverdue || (isDueSoon && !status.isRunning) {
+            let outcome = if status.isOverdue || (isDueSoon && !status.isRunning) {
                 await runForcedAutoUpdate(trigger: "BecomeActive")
             } else {
                 await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "BecomeActive")
             }
+            await showOverLimitFailure(after: outcome)
         }
     }
     
@@ -478,10 +487,10 @@ extension AppDelegate: UIApplicationDelegate {
                 let catchUpReason: AutoUpdateDiagnosticResult = status.isOverdue ? .overdue : .dueSoon
                 os_log("App became active with overdue/due update - forcing update", type: .info)
                 await ProtobufDataManager.shared.recordAutoUpdateForegroundCatchUp(reason: catchUpReason)
-                await runForcedAutoUpdate(trigger: "BecomeActive")
+                await showOverLimitFailure(after: runForcedAutoUpdate(trigger: "BecomeActive"))
             } else {
                 // Normal opportunistic update
-                await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "BecomeActive")
+                await showOverLimitFailure(after: SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "BecomeActive"))
             }
 
             await ConcurrentLogManager.shared.info(.autoUpdate, scheduleMessage(from: status), metadata: [:])
@@ -700,7 +709,7 @@ extension AppDelegate: UIApplicationDelegate {
             return .timedOut
         case .deferred(_):
             return .deferred
-        case .failed(_):
+        case .failed(_), .overLimit(_):
             return .failed
         @unknown default:
             return .failed

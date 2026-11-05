@@ -194,6 +194,8 @@ class AppFilterManager: ObservableObject {
     }
 
     var autoApplyTask: Task<Void, Never>?
+    /// Measures what turning off each list gives after an over-limit failure.
+    var limitPreviewTask: Task<Void, Never>?
     /// A rebuild that came due while an auto-update was rebuilding the same
     /// blockers; it runs when that update finishes, in the same sheet.
     private var autoApplyWaitingForAutoUpdate = false

@@ -52,14 +52,14 @@ struct ApplyChangesPhaseProgress: Equatable, Identifiable {
     var id: ApplyChangesPhase { phase }
 }
 
-/// A list the over-limit failure offers to turn off. `detail` is nil until
-/// the list has been measured.
+/// A list the over-limit failure offers to turn off. `size` and `detail`
+/// stay nil until measured.
 struct ApplyLimitFix: Equatable, Identifiable {
     let id: UUID
     let name: String
+    var size: String?
     var detail: String?
     var fits = false
-    var largest: Int?
 }
 
 /// Consolidated state for the apply progress presentation.
@@ -71,6 +71,7 @@ struct ApplyChangesState: Equatable {
     /// Lists in a blocker that went over a Safari limit, with what turning
     /// each one off was measured to give.
     var limitFixes: [ApplyLimitFix] = []
+    var limitFixesMeasuring = false
     /// Non-fatal issues shown on the result screen (reload failures, etc.).
     var resultWarning: String = ""
     var currentFilterName: String = ""
@@ -134,12 +135,28 @@ class ApplyChangesViewModel: ObservableObject {
             }
             state.failureMessage = ""
             state.limitFixes = []
+            state.limitFixesMeasuring = false
             resetPhases()
         }
     }
 
     func showLimitFixes(_ fixes: [ApplyLimitFix]) {
         state.limitFixes = fixes
+        state.limitFixesMeasuring = !fixes.isEmpty
+    }
+
+    func updateLimitFix(_ id: UUID, _ change: (inout ApplyLimitFix) -> Void) {
+        guard let index = state.limitFixes.firstIndex(where: { $0.id == id }) else { return }
+        change(&state.limitFixes[index])
+    }
+
+    func orderLimitFixes(_ ids: [UUID]) {
+        let rank = Dictionary(uniqueKeysWithValues: ids.enumerated().map { ($0.element, $0.offset) })
+        state.limitFixes.sort { rank[$0.id, default: .max] < rank[$1.id, default: .max] }
+    }
+
+    func finishLimitFixes() {
+        state.limitFixesMeasuring = false
     }
 
     func updatePhaseCompletion(

@@ -206,7 +206,7 @@ public enum FilterUpdatePopupStatus {
                 state = completion.result == .noFilterUpdates || completion.result == .noSelectedFilters
                     ? .noChange
                     : .succeeded
-            case .failed(let message):
+            case .failed(let message), .overLimit(let message):
                 state = .failed
                 checkedFilters = 0
                 updatedFilters = 0

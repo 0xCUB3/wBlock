@@ -1054,10 +1054,12 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Too many lists are on for %1$@. They need %2$@ MB, and Safari on iOS fails to load a content blocker over about %3$@ MB. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "Для %1$@ включено слишком много списков. Им нужно %2$@ МБ, а Safari в iOS не может загрузить блокировщик контента больше примерно %3$@ МБ. Это ограничение Safari, а не ошибка wBlock. Отключите некоторые списки ниже и повторите попытку.";
 "Too many lists are on for %1$@. They need %2$@ rules, and Safari allows %3$@ per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "Для %1$@ включено слишком много списков. Им нужно правил: %2$@, а Safari допускает %3$@ на один блокировщик контента. Это ограничение Safari, а не ошибка wBlock. Отключите некоторые списки ниже и повторите попытку.";
-"Enough on its own. The largest blocker would be %@ MB." = "Этого достаточно. Самый большой блокировщик будет %@ МБ.";
-"Not enough on its own. The largest blocker would be %@ MB." = "Этого недостаточно. Самый большой блокировщик будет %@ МБ.";
-"Enough on its own. The largest blocker would have %@ rules." = "Этого достаточно. В самом большом блокировщике будет правил: %@.";
-"Not enough on its own. The largest blocker would have %@ rules." = "Этого недостаточно. В самом большом блокировщике будет правил: %@.";
+"Turning it off is enough. The largest blocker would be %@ MB." = "Отключения хватит. Самый большой блокировщик будет %@ МБ.";
+"Turning it off isn't enough. The largest blocker would be %@ MB." = "Отключения не хватит. Самый большой блокировщик будет %@ МБ.";
+"Turning it off is enough. The largest blocker would have %@ rules." = "Отключения хватит. В самом большом блокировщике будет правил: %@.";
+"Turning it off isn't enough. The largest blocker would have %@ rules." = "Отключения не хватит. В самом большом блокировщике будет правил: %@.";
+"Size: %@ MB" = "Размер: %@ МБ";
+"Size: %@ rules" = "Размер: %@ правил";
 "Turn Off" = "Отключить";
 "Turn off %@ and apply" = "Отключить %@ и применить";
 

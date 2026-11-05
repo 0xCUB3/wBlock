@@ -1054,10 +1054,12 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 
 "Too many lists are on for %1$@. They need %2$@ MB, and Safari on iOS fails to load a content blocker over about %3$@ MB. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "Prea multe liste sunt activate pentru %1$@. Au nevoie de %2$@ MB, iar Safari pe iOS nu poate încărca un blocant de conținut mai mare de aproximativ %3$@ MB. Aceasta este o limită Safari, nu o eroare wBlock. Dezactivează câteva dintre listele de mai jos și încearcă din nou.";
 "Too many lists are on for %1$@. They need %2$@ rules, and Safari allows %3$@ per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "Prea multe liste sunt activate pentru %1$@. Au nevoie de %2$@ reguli, iar Safari permite %3$@ per blocant de conținut. Aceasta este o limită Safari, nu o eroare wBlock. Dezactivează câteva dintre listele de mai jos și încearcă din nou.";
-"Enough on its own. The largest blocker would be %@ MB." = "Ajunge singură. Cel mai mare blocant ar avea %@ MB.";
-"Not enough on its own. The largest blocker would be %@ MB." = "Nu ajunge singură. Cel mai mare blocant ar avea %@ MB.";
-"Enough on its own. The largest blocker would have %@ rules." = "Ajunge singură. Cel mai mare blocant ar avea %@ reguli.";
-"Not enough on its own. The largest blocker would have %@ rules." = "Nu ajunge singură. Cel mai mare blocant ar avea %@ reguli.";
+"Turning it off is enough. The largest blocker would be %@ MB." = "Dezactivarea ei ajunge. Cel mai mare blocant ar avea %@ MB.";
+"Turning it off isn't enough. The largest blocker would be %@ MB." = "Dezactivarea ei nu ajunge. Cel mai mare blocant ar avea %@ MB.";
+"Turning it off is enough. The largest blocker would have %@ rules." = "Dezactivarea ei ajunge. Cel mai mare blocant ar avea %@ reguli.";
+"Turning it off isn't enough. The largest blocker would have %@ rules." = "Dezactivarea ei nu ajunge. Cel mai mare blocant ar avea %@ reguli.";
+"Size: %@ MB" = "Dimensiune: %@ MB";
+"Size: %@ rules" = "Dimensiune: %@ reguli";
 "Turn Off" = "Dezactivează";
 "Turn off %@ and apply" = "Dezactivează %@ și aplică";
 

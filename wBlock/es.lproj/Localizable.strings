@@ -1054,10 +1054,12 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 
 "Too many lists are on for %1$@. They need %2$@ MB, and Safari on iOS fails to load a content blocker over about %3$@ MB. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "Hay demasiadas listas activadas para %1$@. Necesitan %2$@ MB, y Safari en iOS no puede cargar un bloqueador de contenido de más de unos %3$@ MB. Es un límite de Safari, no un error de wBlock. Desactiva algunas de las listas de abajo e inténtalo de nuevo.";
 "Too many lists are on for %1$@. They need %2$@ rules, and Safari allows %3$@ per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "Hay demasiadas listas activadas para %1$@. Necesitan %2$@ reglas y Safari permite %3$@ por bloqueador de contenido. Es un límite de Safari, no un error de wBlock. Desactiva algunas de las listas de abajo e inténtalo de nuevo.";
-"Enough on its own. The largest blocker would be %@ MB." = "Basta por sí sola. El bloqueador más grande quedaría en %@ MB.";
-"Not enough on its own. The largest blocker would be %@ MB." = "No basta por sí sola. El bloqueador más grande quedaría en %@ MB.";
-"Enough on its own. The largest blocker would have %@ rules." = "Basta por sí sola. El bloqueador más grande tendría %@ reglas.";
-"Not enough on its own. The largest blocker would have %@ rules." = "No basta por sí sola. El bloqueador más grande tendría %@ reglas.";
+"Turning it off is enough. The largest blocker would be %@ MB." = "Desactivarla basta. El bloqueador más grande quedaría en %@ MB.";
+"Turning it off isn't enough. The largest blocker would be %@ MB." = "Desactivarla no basta. El bloqueador más grande quedaría en %@ MB.";
+"Turning it off is enough. The largest blocker would have %@ rules." = "Desactivarla basta. El bloqueador más grande tendría %@ reglas.";
+"Turning it off isn't enough. The largest blocker would have %@ rules." = "Desactivarla no basta. El bloqueador más grande tendría %@ reglas.";
+"Size: %@ MB" = "Tamaño: %@ MB";
+"Size: %@ rules" = "Tamaño: %@ reglas";
 "Turn Off" = "Desactivar";
 "Turn off %@ and apply" = "Desactivar %@ y aplicar";
 

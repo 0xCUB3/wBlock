@@ -26,6 +26,12 @@ import SafariServices
 import UIKit
 #endif
 
+/// A blocker came out over Safari's size or rule limit.
+public struct ContentBlockerLimitError: LocalizedError, Sendable {
+    public let message: String
+    public var errorDescription: String? { message }
+}
+
 #if os(iOS)
 /// Defers suspension while a process holds kernel file locks in the app group
 /// container. iOS kills any process that suspends while holding one
@@ -214,12 +220,15 @@ public actor SharedAutoUpdateManager {
         case cancelled
         case deferred(phase: String)
         case failed(message: String)
+        /// A blocker came out over Safari's size or rule limit, so nothing
+        /// was applied until the user turns lists off.
+        case overLimit(message: String)
 
         public var isSuccessfulForBackgroundTask: Bool {
             switch self {
             case .completed(_), .skipped(_):
                 return true
-            case .cancelled, .deferred(_), .failed(_):
+            case .cancelled, .deferred(_), .failed(_), .overLimit(_):
                 return false
             }
         }
@@ -1295,7 +1304,9 @@ public actor SharedAutoUpdateManager {
                     "duration_ms": durationMs
                 ]
             )
-            return await finishStartedRun(.failed(message: error.localizedDescription))
+            return await finishStartedRun(error is ContentBlockerLimitError
+                ? .overLimit(message: error.localizedDescription)
+                : .failed(message: error.localizedDescription))
         }
     }
 
@@ -2218,6 +2229,7 @@ public actor SharedAutoUpdateManager {
                 throw AutoUpdateError.backgroundBudgetExpired(phase: AutoUpdateBudgetPhase.conversionTarget, remainingSeconds: remaining)
             }
             if let description = result.failureDescription {
+                if result.sizeLimitError != nil { throw ContentBlockerLimitError(message: description) }
                 throw NSError(domain: "SharedAutoUpdateManager.Conversion", code: 1, userInfo: [NSLocalizedDescriptionKey: description])
             }
             guard result.outcome != nil else { throw CancellationError() }
@@ -2226,7 +2238,7 @@ public actor SharedAutoUpdateManager {
         for target in targets {
             guard let conversion = results[target.bundleIdentifier]?.outcome else { throw CancellationError() }
             if conversion.truncatedRuleCount > 0 {
-                throw NSError(domain: "SharedAutoUpdateManager.RuleLimit", code: 1, userInfo: [NSLocalizedDescriptionKey: String.localizedStringWithFormat(NSLocalizedString("%@ dropped %d rules at Safari's per-extension limit.", comment: "Truncated Safari rule count"), target.displayName, conversion.truncatedRuleCount)])
+                throw ContentBlockerLimitError(message: String.localizedStringWithFormat(NSLocalizedString("%@ dropped %d rules at Safari's per-extension limit.", comment: "Truncated Safari rule count"), target.displayName, conversion.truncatedRuleCount))
             }
         }
         // The per-page engine goes first, as in the app's apply: a Scripts

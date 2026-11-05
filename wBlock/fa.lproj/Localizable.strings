@@ -1063,10 +1063,12 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Too many lists are on for %1$@. They need %2$@ MB, and Safari on iOS fails to load a content blocker over about %3$@ MB. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "فهرست‌های زیادی برای %1$@ روشن است. آن‌ها به %2$@ مگابایت نیاز دارند، و Safari در iOS نمی‌تواند مسدودکننده محتوای بزرگ‌تر از حدود %3$@ مگابایت را بارگیری کند. این محدودیت Safari است، نه اشکال wBlock. برخی از فهرست‌های زیر را خاموش کنید و دوباره امتحان کنید.";
 "Too many lists are on for %1$@. They need %2$@ rules, and Safari allows %3$@ per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "فهرست‌های زیادی برای %1$@ روشن است. آن‌ها به %2$@ قانون نیاز دارند، اما Safari برای هر مسدودکننده محتوا %3$@ قانون اجازه می‌دهد. این محدودیت Safari است، نه اشکال wBlock. برخی از فهرست‌های زیر را خاموش کنید و دوباره امتحان کنید.";
-"Enough on its own. The largest blocker would be %@ MB." = "به‌تنهایی کافی است. بزرگ‌ترین مسدودکننده %@ مگابایت می‌شود.";
-"Not enough on its own. The largest blocker would be %@ MB." = "به‌تنهایی کافی نیست. بزرگ‌ترین مسدودکننده %@ مگابایت می‌شود.";
-"Enough on its own. The largest blocker would have %@ rules." = "به‌تنهایی کافی است. بزرگ‌ترین مسدودکننده %@ قانون خواهد داشت.";
-"Not enough on its own. The largest blocker would have %@ rules." = "به‌تنهایی کافی نیست. بزرگ‌ترین مسدودکننده %@ قانون خواهد داشت.";
+"Turning it off is enough. The largest blocker would be %@ MB." = "خاموش کردن آن کافی است. بزرگ‌ترین مسدودکننده %@ مگابایت می‌شود.";
+"Turning it off isn't enough. The largest blocker would be %@ MB." = "خاموش کردن آن کافی نیست. بزرگ‌ترین مسدودکننده %@ مگابایت می‌شود.";
+"Turning it off is enough. The largest blocker would have %@ rules." = "خاموش کردن آن کافی است. بزرگ‌ترین مسدودکننده %@ قانون خواهد داشت.";
+"Turning it off isn't enough. The largest blocker would have %@ rules." = "خاموش کردن آن کافی نیست. بزرگ‌ترین مسدودکننده %@ قانون خواهد داشت.";
+"Size: %@ MB" = "اندازه: %@ مگابایت";
+"Size: %@ rules" = "اندازه: %@ قانون";
 "Turn Off" = "خاموش کردن";
 "Turn off %@ and apply" = "خاموش کردن %@ و اعمال";
 

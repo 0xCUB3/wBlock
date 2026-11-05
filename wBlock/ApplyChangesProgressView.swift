@@ -361,12 +361,17 @@ struct ApplyChangesProgressView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(fix.name)
                     .font(.subheadline.weight(.medium))
+                if let size = fix.size {
+                    Text(size)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
                 if let detail = fix.detail {
                     Text(detail)
                         .font(.caption)
                         .foregroundStyle(fix.fits ? .green : .secondary)
                         .fixedSize(horizontal: false, vertical: true)
-                } else if filterManager.isApplyInFlight {
+                } else if viewModel.state.limitFixesMeasuring {
                     ProgressView().controlSize(.mini)
                 }
             }

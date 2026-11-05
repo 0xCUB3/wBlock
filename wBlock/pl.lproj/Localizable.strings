@@ -1054,10 +1054,12 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 
 "Too many lists are on for %1$@. They need %2$@ MB, and Safari on iOS fails to load a content blocker over about %3$@ MB. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "Dla %1$@ włączono zbyt wiele list. Potrzebują %2$@ MB, a Safari w iOS nie potrafi wczytać blokera treści większego niż około %3$@ MB. To limit Safari, a nie błąd wBlock. Wyłącz część list poniżej i spróbuj ponownie.";
 "Too many lists are on for %1$@. They need %2$@ rules, and Safari allows %3$@ per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "Dla %1$@ włączono zbyt wiele list. Potrzebują %2$@ reguł, a Safari pozwala na %3$@ w jednym blokerze treści. To limit Safari, a nie błąd wBlock. Wyłącz część list poniżej i spróbuj ponownie.";
-"Enough on its own. The largest blocker would be %@ MB." = "Wystarczy samo. Największy bloker miałby %@ MB.";
-"Not enough on its own. The largest blocker would be %@ MB." = "Samo nie wystarczy. Największy bloker miałby %@ MB.";
-"Enough on its own. The largest blocker would have %@ rules." = "Wystarczy samo. Największy bloker miałby %@ reguł.";
-"Not enough on its own. The largest blocker would have %@ rules." = "Samo nie wystarczy. Największy bloker miałby %@ reguł.";
+"Turning it off is enough. The largest blocker would be %@ MB." = "Wyłączenie jej wystarczy. Największy bloker miałby %@ MB.";
+"Turning it off isn't enough. The largest blocker would be %@ MB." = "Wyłączenie jej nie wystarczy. Największy bloker miałby %@ MB.";
+"Turning it off is enough. The largest blocker would have %@ rules." = "Wyłączenie jej wystarczy. Największy bloker miałby %@ reguł.";
+"Turning it off isn't enough. The largest blocker would have %@ rules." = "Wyłączenie jej nie wystarczy. Największy bloker miałby %@ reguł.";
+"Size: %@ MB" = "Rozmiar: %@ MB";
+"Size: %@ rules" = "Rozmiar: %@ reguł";
 "Turn Off" = "Wyłącz";
 "Turn off %@ and apply" = "Wyłącz %@ i zastosuj";
 

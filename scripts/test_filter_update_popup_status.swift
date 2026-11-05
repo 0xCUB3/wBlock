@@ -27,6 +27,7 @@ public enum SharedAutoUpdateManager {
         case cancelled
         case deferred(phase: String)
         case failed(message: String)
+        case overLimit(message: String)
     }
 }
 
