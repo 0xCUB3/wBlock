@@ -307,7 +307,7 @@ extension AppFilterManager {
         }))
 
         await saveFilterLists()
-        publishDownloadedFilter()
+        refreshDownloadedFilterIDs()
         return true
     }
 

@@ -23,10 +23,6 @@ struct ContentView: View {
     @StateObject private var dataManager = ProtobufDataManager.shared
     @State private var showingAddFilterSheet = false
     @State private var downloadingFilterIDs: Set<UUID> = []
-    /// Filters with a cached copy on disk. Each row used to stat the app group
-    /// on every body evaluation, which multiplied by 84 rows on every progress
-    /// tick; now the set is rebuilt only when the list or an apply run changes.
-    @State private var downloadedFilterIDs: Set<UUID> = []
     @State private var showingFilterDownloadError = false
     @AppStorage(ListDisplayOrder.filtersEnabledOnlyKey) private var showOnlyEnabledLists = false
     @AppStorage(ListDisplayOrder.filtersKey) private var filterDisplayOrder = Data()
@@ -58,7 +54,7 @@ struct ContentView: View {
     private var filterPresentationInput: FilterListPresentation.Input {
         .init(filters: filterManager.filterLists, order: filterDisplayOrder,
               searchText: filterSearchText, enabledOnly: showOnlyEnabledLists,
-              localeIdentifier: locale.identifier, downloadedIDs: downloadedFilterIDs,
+              localeIdentifier: locale.identifier, downloadedIDs: filterManager.downloadedFilterIDs,
               lastModified: dataManager.filterLastModified)
     }
     @State private var pendingEssentialFilter: FilterList?
@@ -245,16 +241,6 @@ struct ContentView: View {
             selectedCategoryInfo = nil
             filterSearchText = ""
             showFilterSearch = false
-        }
-        .onAppear { refreshDownloadedFilterIDs() }
-        .onChangeCompat(of: filterManager.filterLists.map(\.id)) { _, _ in
-            refreshDownloadedFilterIDs()
-        }
-        .onChangeCompat(of: filterManager.isLoading) { _, isLoading in
-            if !isLoading { refreshDownloadedFilterIDs() }
-        }
-        .onChangeCompat(of: filterManager.downloadedFilterRevision) { _, _ in
-            refreshDownloadedFilterIDs()
         }
         .onReceive(NotificationCenter.default.publisher(for: .wBlockAddFilterListRequest)) { _ in
             selectedTab = 0
@@ -668,11 +654,6 @@ struct ContentView: View {
         filterManager.flushPendingSave()
     }
 
-    private func refreshDownloadedFilterIDs() {
-        let loader = filterManager.loader
-        downloadedFilterIDs = Set(filterManager.filterLists.lazy.filter { loader.filterFileExists($0) }.map(\.id))
-    }
-
     /// Confirm risky built-in lists before enabling or downloading them.
     /// The alert is attached to the info sheet too, because an open sheet blocks alerts from the view underneath.
     /// Returns whether `enable` ran now, so the info sheet stays open for the alert instead of dismissing under it.
@@ -698,7 +679,6 @@ struct ContentView: View {
             withAnimation(.easeInOut(duration: 0.2)) {
                 downloadingFilterIDs.remove(filter.id)
                 if succeeded, let current {
-                    downloadedFilterIDs.insert(filter.id)
                     // The switch enables the list only after its content is persisted.
                     filterManager.setFilterListSelection(id: current.id, selected: true)
                 }
@@ -740,7 +720,7 @@ struct ContentView: View {
         // The presentation snapshot lands after an off-main sort with animations
         // off; reading it here made switches wait for it and then snap.
         let filter = filterManager.filterListIndex(for: snapshot.id).map { filterManager.filterLists[$0] } ?? snapshot
-        let isDownloaded = downloadedFilterIDs.contains(filter.id)
+        let isDownloaded = filterManager.downloadedFilterIDs.contains(filter.id)
         return FilterRowView(
             filter: filter,
             text: filterPresentation.rowText[filter.id] ?? .init(

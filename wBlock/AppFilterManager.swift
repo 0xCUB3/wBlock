@@ -29,8 +29,14 @@ struct ApplyRunSnapshot {
 class AppFilterManager: ObservableObject {
     private static let lastAppliedUpgradeSignatureKey = SharedAutoUpdateManager.lastAppliedUpgradeSignatureKey
     private static let lastFailedUpgradeSignatureKey = "wBlock.lastFailedUpgradeSignature"
-    @Published var filterLists: [FilterList] = []
-    @Published var isLoading: Bool = false
+    @Published var filterLists: [FilterList] = [] {
+        // Updated with the lists, not from a view's onChange, so the list
+        // presentation sees one input change instead of two per frame.
+        didSet { if filterLists.map(\.id) != oldValue.map(\.id) { refreshDownloadedFilterIDs() } }
+    }
+    @Published var isLoading: Bool = false {
+        didSet { if oldValue && !isLoading { refreshDownloadedFilterIDs() } }
+    }
     @Published var statusDescription: String = LocalizedStrings.text("Ready.", comment: "Filter manager idle status")
     @Published var lastConversionTime: String = LocalizedStrings.text("N/A", comment: "Unavailable metric placeholder")
     @Published var lastReloadTime: String = LocalizedStrings.text("N/A", comment: "Unavailable metric placeholder")
@@ -43,8 +49,9 @@ class AppFilterManager: ObservableObject {
     @Published var failedReloadTargets: [ContentBlockerTargetInfo] = []
     @Published var progress: Float = 0
     @Published var updateCheckProgress: FilterListUpdater.FilterRefreshProgress?
-    /// Advances whenever downloaded filter content is successfully written.
-    @Published private(set) var downloadedFilterRevision = 0
+    /// Lists with content on disk, rebuilt only when the lists change, loading
+    /// ends, or a download lands, so rows never stat the app group per render.
+    @Published private(set) var downloadedFilterIDs: Set<UUID> = []
     var missingFilters: [FilterList] = []
     var missingUserScripts: [UserScript] = []
     @Published var availableUpdates: [FilterList] = []
@@ -533,8 +540,9 @@ class AppFilterManager: ObservableObject {
     }
 
     @MainActor
-    func publishDownloadedFilter() {
-        downloadedFilterRevision &+= 1
+    func refreshDownloadedFilterIDs() {
+        let ids = Set(filterLists.lazy.filter { self.loader.filterFileExists($0) }.map(\.id))
+        if ids != downloadedFilterIDs { downloadedFilterIDs = ids }
     }
 
     /// Resets the manager to its initial state so onboarding can run again.
