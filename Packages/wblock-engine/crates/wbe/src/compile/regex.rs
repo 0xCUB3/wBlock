@@ -18,6 +18,11 @@ const HOST_START: &str = "^[^:]+://+([^:/]+\\.)?";
 const HOST_END: &str = "[/:?#]";
 /// Largest repetition count expanded inline.
 const MAX_REPEAT: u32 = 32;
+/// Largest repetition of `.` expanded inline. Each extra any-character step
+/// after a pattern grows WebKit's DFA: one `der-windows-papst.de/.{32}\?ver`
+/// rule took a cookie and annoyance blocker from 335 MB to 1150 MB of compile
+/// memory on macOS, and timed out Safari on an iPad 6; 12 adds about 6 MB.
+const MAX_ANY_REPEAT: u32 = 12;
 
 /// The url-filter for a uBO URL pattern, matched case-insensitively.
 pub fn url_filter(p: &Pattern) -> Option<String> {
@@ -267,7 +272,8 @@ impl Translator<'_> {
             match self.quantifier()? {
                 None => out.push_str(&atom),
                 Some((min, max)) => {
-                    if !quantifiable || min.max(max.unwrap_or(0)) > MAX_REPEAT {
+                    let limit = if atom == "." { MAX_ANY_REPEAT } else { MAX_REPEAT };
+                    if !quantifiable || min.max(max.unwrap_or(0)) > limit {
                         return None;
                     }
                     repeat(&atom, min, max, &mut out);
@@ -567,6 +573,9 @@ mod tests {
         assert_eq!(filter(&regex("a{2,}")).unwrap(), "aa+");
         assert_eq!(filter(&regex("(ab){0,2}c")).unwrap(), "(ab)?(ab)?c");
         assert_eq!(filter(&regex("x{0}y")).unwrap(), "y");
+        assert_eq!(filter(&regex("a/.{12}b")).unwrap(), format!("a/{}b", ".".repeat(12)));
+        assert_eq!(filter(&regex("a/.{13}b")), None);
+        assert_eq!(filter(&regex("a/[a-f0-9]{32}b")).unwrap(), format!("a/{}b", "[a-f0-9]".repeat(32)));
     }
 
     #[test]
