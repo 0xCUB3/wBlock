@@ -408,6 +408,9 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         /// Why the reload failed, in a form that can be shown in the app log.
         /// nil on success or when the reload was skipped.
         public let failureReason: String?
+        /// Safari's WebKit compiled the rules and rejected them, the one
+        /// failure that dropping the offending rules can fix.
+        public let rulesRejected: Bool
 
         public init(
             success: Bool,
@@ -415,9 +418,11 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
             disabledInSafari: Bool = false,
             attempts: Int,
             durationMs: Int,
-            failureReason: String? = nil
+            failureReason: String? = nil,
+            rulesRejected: Bool = false
         ) {
             self.success = success
+            self.rulesRejected = rulesRejected
             self.skipped = skipped
             self.disabledInSafari = disabledInSafari
             self.attempts = attempts
@@ -936,8 +941,10 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
             )
             totalAttempts += reload.attempts
             // A rule this Safari's WebKit rejects fails the whole blocker. Drop
-            // such rules and reload once more before reporting a failure.
-            if !reload.success, enabledInSafari != false, !repairedOutput,
+            // such rules and reload once more before reporting a failure. Only
+            // a rejection: after a timeout, compiling the whole blocker again in
+            // the app ran an iPad 6 out of memory and crashed it.
+            if !reload.success, reload.rulesRejected, enabledInSafari != false, !repairedOutput,
                await repairRejectedRules(outputURL: outputURL, containerURL: containerURL, targetRulesFilename: targetRulesFilename),
                let repaired = try? readReloadSnapshot(markerURL: markerURL, outputURL: outputURL, appGroupURL: containerURL),
                repaired.outputDigest != nil
@@ -1165,6 +1172,14 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         return result
     }
 
+    /// WKErrorDomain 6 with no underlying error is WebKit refusing the rules
+    /// themselves; with one (such as NSPOSIXErrorDomain 2) the file could not
+    /// be read. Timeouts and interrupted loads are neither.
+    static func isRuleRejection(_ error: Error) -> Bool {
+        let error = error as NSError
+        return error.domain == "WKErrorDomain" && error.code == 6 && error.userInfo[NSUnderlyingErrorKey] == nil
+    }
+
     private static func reloadWithRetryRaw(
         identifier: String,
         maxRetries: Int,
@@ -1181,6 +1196,7 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         }
 
         var lastFailureReason: String?
+        var rulesRejected = false
         for attempt in 1...maxRetries {
             if Task.isCancelled {
                 return ReloadAttemptResult(
@@ -1201,6 +1217,7 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
             }
             if case .failure(let error) = result {
                 lastFailureReason = LogErrorDescriber.describe(error)
+                rulesRejected = isRuleRejection(error)
             }
 
             // A timed-out attempt means Safari is not answering reload requests at
@@ -1236,7 +1253,8 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
             success: false,
             attempts: maxRetries,
             durationMs: elapsedMs(),
-            failureReason: lastFailureReason
+            failureReason: lastFailureReason,
+            rulesRejected: rulesRejected
         )
     }
 
