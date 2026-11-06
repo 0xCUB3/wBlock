@@ -36,9 +36,12 @@ struct FilterListPresentation: Sendable {
         }
 
         /// Source rules the last apply handed to the converter (#742), shown
-        /// when rules another list already supplied were left out.
+        /// when rules another list already supplied were left out. Apply
+        /// clears the count of every list it left out, so the text follows
+        /// the last apply rather than the switch, which changes nothing until
+        /// the next one.
         private static func appliedSummary(_ filter: FilterList) -> String? {
-            guard filter.isSelected, let applied = filter.uniqueRuleCount,
+            guard let applied = filter.uniqueRuleCount,
                   applied < filter.sourceRuleCount ?? 0 else { return nil }
             return String.localizedStringWithFormat(
                 NSLocalizedString("%@ applied", comment: "Source rules this list added to the last apply after duplicates in other lists were removed"),
@@ -72,6 +75,14 @@ struct FilterListPresentation: Sendable {
 
     var sections: [Section] = []
     var rowText: [UUID: RowText] = [:]
+
+    /// Whether both lay out the same rows with the same text. Rows read their
+    /// list live, so a change that moves no row and alters no text, such as a
+    /// switch, needs no second pass over the whole list.
+    func showsSameRows(as other: Self) -> Bool {
+        rowText == other.rowText && sections.map(\.category) == other.sections.map(\.category)
+            && zip(sections, other.sections).allSatisfy { $0.filters.map(\.id) == $1.filters.map(\.id) }
+    }
 
     static func ordered(_ filters: [FilterList], order: Data) -> [FilterList] {
         ListDisplayOrder.sorted(

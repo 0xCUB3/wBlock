@@ -20,7 +20,10 @@ import wBlockCoreService
 struct ContentView: View {
     @ObservedObject var filterManager: AppFilterManager
     @StateObject private var userScriptManager = UserScriptManager.shared
-    @StateObject private var dataManager = ProtobufDataManager.shared
+    // Not observed: every save would redraw the whole list. The two values
+    // read here are followed on their own below.
+    private let dataManager = ProtobufDataManager.shared
+    @State private var filterLastModified = ProtobufDataManager.shared.filterLastModified
     @State private var showingAddFilterSheet = false
     @State private var downloadingFilterIDs: Set<UUID> = []
     @State private var showingFilterDownloadError = false
@@ -55,7 +58,7 @@ struct ContentView: View {
         .init(filters: filterManager.filterLists, order: filterDisplayOrder,
               searchText: filterSearchText, enabledOnly: showOnlyEnabledLists,
               localeIdentifier: locale.identifier, downloadedIDs: filterManager.downloadedFilterIDs,
-              lastModified: dataManager.filterLastModified)
+              lastModified: filterLastModified)
     }
     @State private var pendingEssentialFilter: FilterList?
     @State private var pendingRiskyEnable: RiskyFilterEnable?
@@ -199,7 +202,8 @@ struct ContentView: View {
         .task(id: filterPresentationInput) {
             let input = filterPresentationInput
             if let prepared = try? await FilterListPresentation.prepare(input),
-               !Task.isCancelled, input == filterPresentationInput {
+               !Task.isCancelled, input == filterPresentationInput,
+               !prepared.showsSameRows(as: filterPresentation) {
                 var transaction = Transaction(animation: nil)
                 transaction.disablesAnimations = true
                 withTransaction(transaction) { filterPresentation = prepared }
@@ -308,9 +312,13 @@ struct ContentView: View {
         // The info sheet shows its own copy; presenting this one too would
         // dismiss the sheet and then the alert with it.
         .riskyFilterAlert(selectedFilterInfo == nil ? $pendingRiskyEnable : .constant(nil))
-        .onChangeCompat(of: dataManager.isForeignFiltersExpanded) { _, newValue in
+        .onReceive(dataManager.isForeignFiltersExpandedChanges) { newValue in
             guard isForeignFiltersExpanded != newValue else { return }
             isForeignFiltersExpanded = newValue
+        }
+        .onReceive(dataManager.filterLastModifiedChanges) { newValue in
+            guard filterLastModified != newValue else { return }
+            filterLastModified = newValue
         }
         .onChangeCompat(of: isForeignFiltersExpanded) { _, newValue in
             guard dataManager.isForeignFiltersExpanded != newValue else { return }
@@ -725,7 +733,7 @@ struct ContentView: View {
             filter: filter,
             text: filterPresentation.rowText[filter.id] ?? .init(
                 filter, isDownloaded: isDownloaded,
-                lastModified: dataManager.getFilterLastModified(filter.id.uuidString)),
+                lastModified: filterLastModified[filter.id.uuidString]),
             isDownloaded: isDownloaded,
             isDownloading: downloadingFilterIDs.contains(filter.id),
             onDownload: { confirmingExperimental(filter) { downloadFilter(filter) } },
@@ -745,6 +753,7 @@ struct ContentView: View {
                 }
             }
         )
+        .equatable()
         // Lists can't change under an apply the user is watching.
         .disabled(filterManager.showingApplyProgressSheet)
     }
@@ -858,7 +867,14 @@ struct ContentView: View {
     #endif
 }
 
-struct FilterRowView: View {
+/// Equal rows skip their body, so a switch redraws one row instead of every
+/// row on screen. The closures only capture the list, which equal rows share.
+struct FilterRowView: View, Equatable {
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.filter == rhs.filter && lhs.text == rhs.text
+            && lhs.isDownloaded == rhs.isDownloaded && lhs.isDownloading == rhs.isDownloading
+    }
+
     let filter: FilterList
     let text: FilterListPresentation.RowText
     let isDownloaded: Bool

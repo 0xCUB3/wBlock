@@ -881,6 +881,22 @@ public class ProtobufDataManager: ObservableObject {
         appData.settings.isForeignFiltersExpanded
     }
 
+    /// The current value and each change, for a view that should not redraw
+    /// on every save of everything else. Stored, so a view gets the same
+    /// publisher on every redraw.
+    public private(set) lazy var isForeignFiltersExpandedChanges =
+        appDataChanges(\.settings.isForeignFiltersExpanded)
+
+    /// Every stored Last-Modified header and each change to them.
+    public private(set) lazy var filterLastModifiedChanges =
+        appDataChanges(\.autoUpdate.filterLastModified)
+
+    private func appDataChanges<Value: Equatable>(
+        _ keyPath: KeyPath<Wblock_Data_AppData, Value>
+    ) -> AnyPublisher<Value, Never> {
+        $appData.map(keyPath).removeDuplicates().eraseToAnyPublisher()
+    }
+
     @MainActor
     public func setIsForeignFiltersExpanded(_ value: Bool) async {
         await updateData { $0.settings.isForeignFiltersExpanded = value }
