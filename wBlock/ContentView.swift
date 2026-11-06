@@ -2232,6 +2232,11 @@ struct RuleCapacityPopoverView: View {
             .padding(20)
             .frame(maxWidth: 560, alignment: .leading)
             .frame(maxWidth: .infinity)
+            // The column stays readable in landscape, but the X sits in the
+            // sheet's corner like every other sheet's (cameren, Discord).
+            .overlay(alignment: .topTrailing) {
+                SheetDoneButton { dismiss() }.padding(20)
+            }
     }
 
     /// Keep the scroll indicator beside the content and scroll only when
@@ -2263,7 +2268,12 @@ struct RuleCapacityPopoverView: View {
                     .font(.headline)
                     .foregroundStyle(.blue)
                 Spacer()
+                #if os(macOS)
                 SheetDoneButton { dismiss() }
+                #else
+                // Keeps the row as tall as the X drawn over the sheet's corner.
+                SheetDoneButton { dismiss() }.hidden()
+                #endif
             }
 
             VStack(alignment: .leading, spacing: 6) {
