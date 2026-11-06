@@ -20,10 +20,6 @@ struct CosmeticFilteringSitesView: View {
                 }
                 .settingsSwitch()
                 if isEnabled {
-                    // The Mac form draws its own row separator.
-                    #if os(iOS)
-                    Divider()
-                    #endif
                     Toggle(isOn: Binding(
                         get: { sites.includesGeneric },
                         set: { update(sites.selectedSites, sites.excludedSites, includesGeneric: $0) }

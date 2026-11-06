@@ -48,14 +48,15 @@ struct AutomaticUpdatesToggle: View {
 }
 
 extension EnvironmentValues {
-    /// Set by `SettingsPage` on macOS, where a page pushed from Settings is a
-    /// grouped Form like Settings itself (#1084). Groups and site editors
-    /// then draw as form sections and rows instead of their own boxes.
+    /// Set by `SettingsPage`, where a page pushed from Settings is the same
+    /// list or form as Settings itself (#1084). Groups and site editors then
+    /// draw as its sections and rows instead of their own boxes.
     @Entry var isInSettingsForm = false
 }
 
-/// A page pushed from Settings. On macOS it is the same grouped Form as
-/// Settings, with its width and switch size (#1084); iOS keeps the cards.
+/// A page pushed from Settings, drawn like Settings: a grouped Form on macOS
+/// with its width and switch size (#1084), and an inset grouped List on iOS
+/// with its margins and row padding.
 struct SettingsPage<Content: View>: View {
     @ViewBuilder let content: () -> Content
 
@@ -66,10 +67,9 @@ struct SettingsPage<Content: View>: View {
             .toggleStyle(MacTrailingSwitchToggleStyle())
             .environment(\.isInSettingsForm, true)
         #else
-        ScrollView {
-            VStack(alignment: .leading, spacing: 14) { content() }
-                .padding()
-        }
+        List { content() }
+            .unifiedTabListStyle()
+            .environment(\.isInSettingsForm, true)
         #endif
     }
 }

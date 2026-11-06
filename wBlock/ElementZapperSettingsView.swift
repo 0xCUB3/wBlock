@@ -96,8 +96,7 @@ struct ElementZapperSettingsView: View {
 
     @ViewBuilder
     private var page: some View {
-        #if os(macOS)
-        // The same grouped Form as Settings; a site opens into rows below it (#1084).
+        // The same list or form as Settings; a site opens into rows below it (#1084).
         SettingsPage {
             Section {
                 if filteredDomains.isEmpty {
@@ -113,21 +112,6 @@ struct ElementZapperSettingsView: View {
                 }
             }
         }
-        #else
-        ScrollView {
-            VStack(spacing: 16) {
-                if filteredDomains.isEmpty {
-                    emptyState
-                } else {
-                    rulesCard
-                }
-
-                Spacer(minLength: 20)
-            }
-            .padding(.vertical)
-            .padding(.horizontal)
-        }
-        #endif
     }
 
     /// The site and its rule count, the label of a site's row.
@@ -145,24 +129,6 @@ struct ElementZapperSettingsView: View {
         }
     }
 
-    private var rulesCard: some View {
-        VStack(spacing: 0) {
-            ForEach(filteredDomains, id: \.self) { domain in
-                domainHeader(domain)
-                if expandedDomains.contains(domain) {
-                    domainRules(domain)
-                }
-                if domain != filteredDomains.last {
-                    Divider().padding(.leading, 16)
-                }
-            }
-        }
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
-        // Rows opening mid-animation stay inside the card instead of
-        // fading in over the window behind it.
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-    }
-
     private func domainHeader(_ domain: String) -> some View {
         let expanded = expandedDomains.contains(domain)
         return Button {
@@ -177,9 +143,6 @@ struct ElementZapperSettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            #if os(iOS)
-            .padding(16)
-            #endif
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -191,29 +154,8 @@ struct ElementZapperSettingsView: View {
         zapperToggle(domain)
         ForEach(ruleManager.rules(for: domain).indices, id: \.self) { index in
             let rule = ruleManager.rules(for: domain)[index]
-            #if os(macOS)
             ruleRow(rule, domain: domain, index: index)
-            #else
-            VStack(spacing: 0) {
-                Divider().padding(.leading, 16)
-                ruleRow(rule, domain: domain, index: index)
-                    .padding(.vertical, 10)
-                    .padding(.leading, 32)
-                    .padding(.trailing, 16)
-            }
-            #endif
         }
-        #if os(macOS)
-        Button {
-            pendingConfirmation = .clear(domain: domain)
-        } label: {
-            clearRulesLabel
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        #else
-        Divider().padding(.leading, 16)
         // The note sits under the button the way Site Settings captions sit
         // under their titles.
         Button {
@@ -221,14 +163,9 @@ struct ElementZapperSettingsView: View {
         } label: {
             clearRulesLabel
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.vertical, 10)
-                .padding(.leading, 32)
-                .padding(.trailing, 16)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .noFocusRingCompat()
-        #endif
     }
 
     private var clearRulesLabel: some View {
@@ -286,26 +223,8 @@ struct ElementZapperSettingsView: View {
         )
     }
 
-    @ViewBuilder
     private func zapperToggle(_ domain: String) -> some View {
-        #if os(macOS)
-        // A form row; the page's toggle style pins the switch to the trailing edge.
         Toggle("Apply rules on this site", isOn: zapperBinding(domain))
-        #else
-        VStack(spacing: 0) {
-            Divider().padding(.leading, 16)
-            HStack {
-                Text("Apply rules on this site")
-                Spacer()
-                Toggle("", isOn: zapperBinding(domain))
-                    .labelsHidden()
-                    .toggleStyle(.switch)
-            }
-            .padding(.vertical, 10)
-            .padding(.leading, 32)
-            .padding(.trailing, 16)
-        }
-        #endif
     }
 
     private var emptyState: some View {

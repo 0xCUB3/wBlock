@@ -111,11 +111,10 @@ struct SiteSettingsView: View {
 
     @ViewBuilder
     private var page: some View {
-        #if os(macOS)
-        // The same grouped Form as Settings; a site opens into rows below it (#1084).
+        // The same list or form as Settings; a site opens into rows below it (#1084).
         SettingsPage {
             SettingsGroup(footer: [addSiteFooter]) {
-                addSiteRow(TextField("example.com", text: $newDomain).textFieldStyle(.plain).disableAutocorrection(true))
+                addSiteRow(TextField("example.com", text: $newDomain).siteEntryField())
             }
             .disabled(isMutationInFlight)
 
@@ -135,26 +134,6 @@ struct SiteSettingsView: View {
                 Section { emptyStateView }
             }
         }
-        #else
-        ScrollView {
-            VStack(spacing: 20) {
-                addSiteSection
-                    .disabled(isMutationInFlight)
-
-                let sites = filteredSites
-                if !sites.isEmpty {
-                    sitesCard(sites)
-                        .disabled(isMutationInFlight)
-                } else if allSites.isEmpty {
-                    emptyStateView
-                }
-
-                Spacer(minLength: 20)
-            }
-            .padding(.vertical)
-            .padding(.horizontal)
-        }
-        #endif
     }
 
     // MARK: - Add site
@@ -178,17 +157,6 @@ struct SiteSettingsView: View {
                 .focused($isTextFieldFocused)
                 .onSubmit { addDomain() }
             AddItemButton(canAdd: addableDomain != nil, isBusy: isAddingDomain, action: addDomain)
-        }
-    }
-
-    private var addSiteSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            addSiteRow(TextField("example.com", text: $newDomain).listEntryField())
-
-            Text(addSiteFooter)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 4)
         }
     }
 
@@ -234,29 +202,6 @@ struct SiteSettingsView: View {
         return allSites.filter { $0.domain.contains(query) }
     }
 
-    private func sitesCard(_ sites: [SiteSummary]) -> some View {
-        VStack(spacing: 0) {
-            ForEach(sites.indices, id: \.self) { index in
-                let site = sites[index]
-
-                siteHeaderRow(site)
-
-                if expandedDomains.contains(site.domain) {
-                    expansionRows(site)
-                }
-
-                if index < sites.count - 1 {
-                    Divider()
-                        .padding(.leading, 16)
-                }
-            }
-        }
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
-        // Rows opening mid-animation stay inside the card instead of
-        // fading in over the window behind it.
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-    }
-
     private func siteHeaderRow(_ site: SiteSummary) -> some View {
         let isExpanded = expandedDomains.contains(site.domain)
 
@@ -276,9 +221,6 @@ struct SiteSettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            #if os(iOS)
-            .padding(16)
-            #endif
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -352,7 +294,7 @@ struct SiteSettingsView: View {
         // Content filtering is the switch the popup shows too. Turning it
         // off here clears both the filter-only list and any older whole-site
         // whitelist entry (#835).
-        toggleRow(isOn: Binding(
+        Toggle(isOn: Binding(
             get: { contentFilteringRuns(on: site) },
             set: { setContentFiltering($0, domain: site.domain) }
         )) {
@@ -365,7 +307,7 @@ struct SiteSettingsView: View {
             }
         }
 
-        toggleRow(isOn: Binding(
+        Toggle(isOn: Binding(
             get: { dataManager.isAutoplayAllowed(onHost: site.domain) },
             set: { setAutoplayAllowed($0, domain: site.domain) }
         )) {
@@ -380,7 +322,7 @@ struct SiteSettingsView: View {
             }
         }
 
-        toggleRow(isOn: Binding(
+        Toggle(isOn: Binding(
             get: { !site.areUserScriptsDisabled },
             set: { setUserScriptsEnabled($0, domain: site.domain) }
         )) {
@@ -394,7 +336,7 @@ struct SiteSettingsView: View {
         }
 
         ForEach(siteUserScripts(for: site.domain)) { script in
-            toggleRow(isOn: Binding(
+            Toggle(isOn: Binding(
                 get: { !userScriptManager.isUserScript(script, disabledOnHost: site.domain) },
                 set: { runs in
                     mutateSite(site.domain) {
@@ -420,7 +362,6 @@ struct SiteSettingsView: View {
             .disabled(site.areUserScriptsDisabled)
         }
 
-        #if os(macOS)
         Button(role: .destructive) {
             pendingConfirmation = .reset(domain: site.domain)
         } label: {
@@ -429,59 +370,6 @@ struct SiteSettingsView: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        #else
-        VStack(spacing: 0) {
-            Divider()
-                .padding(.leading, 16)
-
-            Button {
-                pendingConfirmation = .reset(domain: site.domain)
-            } label: {
-                HStack {
-                    Text("Reset Site Settings")
-                        .font(.body)
-                        .foregroundStyle(.red)
-
-                    Spacer()
-                }
-                .padding(.vertical, 10)
-                .padding(.leading, 32)
-                .padding(.trailing, 16)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .noFocusRingCompat()
-        }
-        #endif
-    }
-
-    @ViewBuilder
-    private func toggleRow<Label: View>(
-        isOn: Binding<Bool>,
-        @ViewBuilder label: () -> Label
-    ) -> some View {
-        #if os(macOS)
-        // A form row; the page's toggle style pins the switch to the trailing edge.
-        Toggle(isOn: isOn, label: label)
-        #else
-        VStack(spacing: 0) {
-            Divider()
-                .padding(.leading, 16)
-
-            HStack {
-                label()
-
-                Spacer()
-
-                Toggle("", isOn: isOn)
-                    .labelsHidden()
-                    .toggleStyle(.switch)
-            }
-            .padding(.vertical, 10)
-            .padding(.leading, 32)
-            .padding(.trailing, 16)
-        }
-        #endif
     }
 
     // MARK: - Empty state

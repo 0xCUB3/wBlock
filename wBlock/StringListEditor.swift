@@ -19,7 +19,7 @@ struct StringListEditor: View {
     var body: some View {
         if isInSettingsForm {
             // Form rows: the field, then one row per site.
-            entryRow(TextField(placeholder, text: $input).textFieldStyle(.plain).disableAutocorrection(true))
+            entryRow(TextField(placeholder, text: $input).siteEntryField())
             rows
         } else {
             VStack(alignment: .leading, spacing: 8) {
@@ -74,14 +74,20 @@ struct StringListEditor: View {
 extension View {
     /// The site field Site Settings opens with, shared by every site list (#1028).
     func listEntryField() -> some View {
+        siteEntryField()
+            .padding(12)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+    }
+
+    /// A plain field for a site: no autocorrection, and the URL keyboard on iOS.
+    /// Settings pages use it as a row; sheets box it with `listEntryField`.
+    func siteEntryField() -> some View {
         textFieldStyle(.plain)
             .disableAutocorrection(true)
             #if os(iOS)
             .keyboardType(.URL)
             .textInputAutocapitalization(.never)
             #endif
-            .padding(12)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
     }
 }
 
