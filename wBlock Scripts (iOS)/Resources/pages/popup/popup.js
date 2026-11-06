@@ -326,28 +326,11 @@ function shouldFillIosPhoneSheet() {
     return CSS.supports('-webkit-touch-callout', 'none') && !isIpadDevice();
 }
 
-function syncPopupViewportHeight() {
-    if (!shouldFillIosPhoneSheet()) {
-        return;
-    }
-    const height = window.innerHeight;
-    if (!Number.isFinite(height) || height <= 0) {
-        return;
-    }
-    const px = `${height}px`;
-    document.documentElement.style.height = px;
-    if (document.body) {
-        document.body.style.height = px;
-    }
-}
-
 if (shouldFillIosPhoneSheet()) {
     document.documentElement.classList.add('ios-phone-sheet');
 } else if (CSS.supports('-webkit-touch-callout', 'none') && isIpadDevice()) {
     document.documentElement.classList.add('ios-ipad-popover');
 }
-window.addEventListener('resize', syncPopupViewportHeight);
-syncPopupViewportHeight();
 
 function setError(message) {
     const el = document.getElementById('error');
@@ -361,6 +344,7 @@ function setError(message) {
     el.textContent = message;
     const popupBody = document.querySelector('.popup-body');
     if (popupBody) popupBody.scrollTop = 0;
+    if (document.scrollingElement) document.scrollingElement.scrollTop = 0;
 }
 
 function setStatus(text, kind = 'neutral') {
@@ -2057,7 +2041,6 @@ async function refreshUi(options = {}) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    syncPopupViewportHeight();
     localizeStaticPopupText();
     setupListeners();
     refreshUi().catch((error) => {

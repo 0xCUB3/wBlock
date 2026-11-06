@@ -109,44 +109,22 @@ body {
     background: transparent;
   }
 
-  /* iPhone sheets already have their full height; do not stop at 600px. */
-  html.ios-phone-sheet,
-  html.ios-phone-sheet body {
-    height: 100%;
-    max-height: 100%;
-    overflow: hidden;
-  }
-
-  /* The sheet is as wide as the system makes it, so the menus use all of it
-     instead of a 380px column that left most of a landscape sheet empty. */
-  html.ios-phone-sheet .popup {
-    height: 100%;
-    max-height: 100%;
-    max-width: none;
-  }
-
-  /* The page scrolls inside .popup-body, which gets none of the web view's
-     own safe-area inset, so the last row sat under the home indicator. */
-  html.ios-phone-sheet .popup-sticky {
-    padding-left: max(12px, env(safe-area-inset-left));
-    padding-right: max(12px, env(safe-area-inset-right));
-  }
-
-  /* Safari opens the sheet at medium height, where the rows run past its
-     bottom edge and looked sliced off. Fade them out at both scroll edges
-     instead; the paddings cover the fades, so rows at rest stay whole. */
+  /* On iPhone the page itself scrolls, not .popup-body. Safari ends the
+     viewport above the sheet's bottom edge and scrolls the page under the
+     strip below it, so an inner scroller was cut off over a bar while a
+     scrolling page runs to the edge. The sheet is as wide as the system
+     makes it, so the menus use all of it too. */
+  html.ios-phone-sheet .popup,
   html.ios-phone-sheet .popup-body {
-    --edge-fade: 32px;
+    max-height: none;
+    max-width: none;
+    overflow: visible;
+  }
+
+  html.ios-phone-sheet .popup-sticky,
+  html.ios-phone-sheet .popup-body {
     padding-left: max(12px, env(safe-area-inset-left));
     padding-right: max(12px, env(safe-area-inset-right));
-    padding-bottom: calc(var(--edge-fade) + env(safe-area-inset-bottom));
-    -webkit-mask-image: linear-gradient(
-      to bottom,
-      transparent 0,
-      #000 16px,
-      #000 calc(100% - var(--edge-fade) - env(safe-area-inset-bottom)),
-      transparent calc(100% - env(safe-area-inset-bottom))
-    );
   }
 }
 
