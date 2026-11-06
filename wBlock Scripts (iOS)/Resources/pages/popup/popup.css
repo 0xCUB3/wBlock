@@ -117,9 +117,25 @@ body {
     overflow: hidden;
   }
 
+  /* The sheet is as wide as the system makes it, so the menus use all of it
+     instead of a 380px column that left most of a landscape sheet empty. */
   html.ios-phone-sheet .popup {
     height: 100%;
     max-height: 100%;
+    max-width: none;
+  }
+
+  /* The page scrolls inside .popup-body, which gets none of the web view's
+     own safe-area inset, so the last row sat under the home indicator. */
+  html.ios-phone-sheet .popup-sticky {
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+  }
+
+  html.ios-phone-sheet .popup-body {
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
   }
 }
 
