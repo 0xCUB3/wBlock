@@ -167,7 +167,9 @@ extension AppFilterManager {
         await MainActor.run {
             model.showLimitFixes(candidates.map { ApplyLimitFix(id: $0.id, name: $0.name) })
             limitPreviewTask?.cancel()
-            limitPreviewTask = Task.detached(priority: .userInitiated) {
+            // Speculative work that compiles every list again: it yields to the
+            // UI like the catch-up, which a dual-core iPad needs (1558).
+            limitPreviewTask = Task.detached(priority: .utility) {
                 let group = GroupIdentifier.shared.value
                 let cancelled = { Task.isCancelled }
                 var sizes: [UUID: Int] = [:]

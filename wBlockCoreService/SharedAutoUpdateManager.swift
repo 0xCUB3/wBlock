@@ -497,6 +497,11 @@ public actor SharedAutoUpdateManager {
         return await MainActor.run { manager.autoUpdateLastSuccessfulTime }
     }
 
+    /// How long a run that hit errors waits before trying again.
+    static func retryDelaySeconds(intervalHours: Double) -> TimeInterval {
+        min(3600.0, max(900.0, intervalHours * 3600 * 0.25))
+    }
+
     private func getAutoUpdateNextEligibleTime() async -> Int64 {
         let manager = await getDataManager()
         return await MainActor.run { manager.autoUpdateNextEligibleTime }
@@ -884,6 +889,17 @@ public actor SharedAutoUpdateManager {
         invalidateStatusCache()
         os_log("Auto-update started at %.0f (trigger: %{public}@, forced: %d)", log: log, type: .info, startTimestamp, trigger, shouldForce)
 
+        /// A failed run moves the due time forward too. Left in the past, the
+        /// schedule stayed overdue and every activation rebuilt every blocker
+        /// again; an over-limit selection did that on each launch and froze an
+        /// iPad 6 (1558). Over the limit stays over until the selection changes,
+        /// and that change applies on its own, so it waits a full interval.
+        func scheduleAfterFailure(overLimit: Bool) async {
+            let delay = overLimit ? interval * 3600 : Self.retryDelaySeconds(intervalHours: interval)
+            await ProtobufDataManager.shared.setAutoUpdateNextEligibleTime(Int64(Date().timeIntervalSince1970 + delay))
+            invalidateStatusCache()
+        }
+
         func finishStartedRun(_ outcome: AutoUpdateRunOutcome) async -> AutoUpdateRunOutcome {
             await ProtobufDataManager.shared.setAutoUpdateIsRunning(false)
             await reportRunProgress(.finished)
@@ -1077,7 +1093,7 @@ public actor SharedAutoUpdateManager {
                 let nextCheckInSeconds: Int
                 try requireFinalSaveBudget()
                 if hadErrors {
-                    let retryDelaySeconds = min(3600.0, max(900.0, interval * 3600 * 0.25))
+                    let retryDelaySeconds = Self.retryDelaySeconds(intervalHours: interval)
                     let nextEligibleTime = completionTime + retryDelaySeconds
                     await ProtobufDataManager.shared.setAutoUpdateNextEligibleTime(Int64(nextEligibleTime))
                     invalidateStatusCache()
@@ -1197,7 +1213,7 @@ public actor SharedAutoUpdateManager {
             }
             var nextEligibleTime = successTime + interval * 3600
             if hadErrors {
-                let retryDelaySeconds = min(3600.0, max(900.0, interval * 3600 * 0.25))
+                let retryDelaySeconds = Self.retryDelaySeconds(intervalHours: interval)
                 nextEligibleTime = min(nextEligibleTime, successTime + retryDelaySeconds)
                 nextCheckInSeconds = Int(retryDelaySeconds)
             } else {
@@ -1288,6 +1304,8 @@ public actor SharedAutoUpdateManager {
             let outcome: AutoUpdateRunOutcome = isDeferred
                 ? .deferred(phase: phase)
                 : .failed(message: autoUpdateError.localizedDescription)
+            // A deferred run stays due so the foreground can finish it.
+            if !isDeferred { await scheduleAfterFailure(overLimit: false) }
             return await finishStartedRun(outcome)
         } catch {
             os_log("Auto-update failed: %{public}@", log: log, type: .error, String(describing: error))
@@ -1304,6 +1322,7 @@ public actor SharedAutoUpdateManager {
                     "duration_ms": durationMs
                 ]
             )
+            await scheduleAfterFailure(overLimit: error is ContentBlockerLimitError)
             return await finishStartedRun(error is ContentBlockerLimitError
                 ? .overLimit(message: error.localizedDescription)
                 : .failed(message: error.localizedDescription))
@@ -1434,7 +1453,7 @@ public actor SharedAutoUpdateManager {
             return .skipped(reason: "fetch_failed")
         }
 
-        let retryDelay = min(3600.0, max(900.0, interval * 3600 * 0.25))
+        let retryDelay = Self.retryDelaySeconds(intervalHours: interval)
         let completion = Date().timeIntervalSince1970
         let nextCheck = completion + (updateResult.hadErrors ? retryDelay : interval * 3600)
 
