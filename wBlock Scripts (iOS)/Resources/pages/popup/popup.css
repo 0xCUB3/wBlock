@@ -132,10 +132,21 @@ body {
     padding-right: max(12px, env(safe-area-inset-right));
   }
 
+  /* Safari opens the sheet at medium height, where the rows run past its
+     bottom edge and looked sliced off. Fade them out at both scroll edges
+     instead; the paddings cover the fades, so rows at rest stay whole. */
   html.ios-phone-sheet .popup-body {
+    --edge-fade: 32px;
     padding-left: max(12px, env(safe-area-inset-left));
     padding-right: max(12px, env(safe-area-inset-right));
-    padding-bottom: max(12px, env(safe-area-inset-bottom));
+    padding-bottom: calc(var(--edge-fade) + env(safe-area-inset-bottom));
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      transparent 0,
+      #000 16px,
+      #000 calc(100% - var(--edge-fade) - env(safe-area-inset-bottom)),
+      transparent calc(100% - env(safe-area-inset-bottom))
+    );
   }
 }
 
