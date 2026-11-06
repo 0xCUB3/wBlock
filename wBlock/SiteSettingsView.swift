@@ -63,24 +63,7 @@ struct SiteSettingsView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                addSiteSection
-                    .disabled(isMutationInFlight)
-
-                let sites = filteredSites
-                if !sites.isEmpty {
-                    sitesCard(sites)
-                        .disabled(isMutationInFlight)
-                } else if allSites.isEmpty {
-                    emptyStateView
-                }
-
-                Spacer(minLength: 20)
-            }
-            .padding(.vertical)
-            .padding(.horizontal)
-        }
+        page
         .pageTitle("Site Settings")
         #if os(iOS)
         .toolbar {
@@ -126,6 +109,54 @@ struct SiteSettingsView: View {
         }
     }
 
+    @ViewBuilder
+    private var page: some View {
+        #if os(macOS)
+        // The same grouped Form as Settings; a site opens into rows below it (#1084).
+        SettingsPage {
+            SettingsGroup(footer: [addSiteFooter]) {
+                addSiteRow(TextField("example.com", text: $newDomain).textFieldStyle(.plain).disableAutocorrection(true))
+            }
+            .disabled(isMutationInFlight)
+
+            let sites = filteredSites
+            if !sites.isEmpty {
+                Section {
+                    ForEach(sites) { site in
+                        siteHeaderRow(site)
+                        if expandedDomains.contains(site.domain) {
+                            // Form rows, indented under their site.
+                            Group { expansionRows(site) }.padding(.leading, 16)
+                        }
+                    }
+                }
+                .disabled(isMutationInFlight)
+            } else if allSites.isEmpty {
+                Section { emptyStateView }
+            }
+        }
+        #else
+        ScrollView {
+            VStack(spacing: 20) {
+                addSiteSection
+                    .disabled(isMutationInFlight)
+
+                let sites = filteredSites
+                if !sites.isEmpty {
+                    sitesCard(sites)
+                        .disabled(isMutationInFlight)
+                } else if allSites.isEmpty {
+                    emptyStateView
+                }
+
+                Spacer(minLength: 20)
+            }
+            .padding(.vertical)
+            .padding(.horizontal)
+        }
+        #endif
+    }
+
     // MARK: - Add site
 
     private var addableDomain: String? {
@@ -139,20 +170,22 @@ struct SiteSettingsView: View {
         return existing.contains(normalized) ? nil : normalized
     }
 
+    private let addSiteFooter: LocalizedStringKey = "Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches. Each site includes its subdomains."
+
+    private func addSiteRow(_ field: some View) -> some View {
+        HStack(spacing: 12) {
+            field
+                .focused($isTextFieldFocused)
+                .onSubmit { addDomain() }
+            AddItemButton(canAdd: addableDomain != nil, isBusy: isAddingDomain, action: addDomain)
+        }
+    }
+
     private var addSiteSection: some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 12) {
-                TextField("example.com", text: $newDomain)
-                    .focused($isTextFieldFocused)
-                    .onSubmit {
-                        addDomain()
-                    }
-                    .listEntryField()
+            addSiteRow(TextField("example.com", text: $newDomain).listEntryField())
 
-                AddItemButton(canAdd: addableDomain != nil, isBusy: isAddingDomain, action: addDomain)
-            }
-
-            Text("Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches. Each site includes its subdomains.")
+            Text(addSiteFooter)
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 4)
@@ -237,58 +270,69 @@ struct SiteSettingsView: View {
             }
         } label: {
             HStack {
-                Text(site.domain)
-                    .font(.body)
-                    .foregroundStyle(.primary)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-
-                Spacer()
-
-                HStack(spacing: 8) {
-                    if site.isWhitelisted {
-                        summaryBadge(Text("Whitelisted"), systemImage: "shield.slash")
-                    } else if site.isFilterDisabled {
-                        summaryBadge(Text("Filtering off"), systemImage: "line.3.horizontal.decrease.circle")
-                    }
-                    if site.listsOffCount > 0 {
-                        summaryBadge(
-                            Text(localizedCount(site.listsOffCount, one: "%d list off", other: "%d lists off")),
-                            systemImage: "list.bullet"
-                        )
-                    }
-                    if let autoplay = site.autoplayOverride {
-                        summaryBadge(
-                            Text(autoplay ? "Autoplay on" : "Autoplay off"),
-                            systemImage: autoplay ? "play.circle" : "pause.circle"
-                        )
-                    }
-                    if site.areUserScriptsDisabled {
-                        summaryBadge(Text("Userscripts off"), systemImage: "scroll")
-                    } else if site.scriptsOffCount > 0 {
-                        summaryBadge(
-                            Text(localizedCount(site.scriptsOffCount, one: "%d script off", other: "%d scripts off")),
-                            systemImage: "scroll"
-                        )
-                    }
-                }
-                .padding(.trailing, 4)
+                siteSummary(site)
 
                 Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            #if os(iOS)
             .padding(16)
+            #endif
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .noFocusRingCompat()
-        .contextMenu {
-            Button(role: .destructive) {
-                pendingConfirmation = .reset(domain: site.domain)
-            } label: {
-                Label("Reset Site Settings", systemImage: "trash")
+        .contextMenu { resetMenuItem(site) }
+    }
+
+    private func resetMenuItem(_ site: SiteSummary) -> some View {
+        Button(role: .destructive) {
+            pendingConfirmation = .reset(domain: site.domain)
+        } label: {
+            Label("Reset Site Settings", systemImage: "trash")
+        }
+    }
+
+    /// The domain and what is off on it, the label of a site's row.
+    private func siteSummary(_ site: SiteSummary) -> some View {
+        HStack {
+            Text(site.domain)
+                .font(.body)
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+                .truncationMode(.middle)
+
+            Spacer()
+
+            HStack(spacing: 8) {
+                if site.isWhitelisted {
+                    summaryBadge(Text("Whitelisted"), systemImage: "shield.slash")
+                } else if site.isFilterDisabled {
+                    summaryBadge(Text("Filtering off"), systemImage: "line.3.horizontal.decrease.circle")
+                }
+                if site.listsOffCount > 0 {
+                    summaryBadge(
+                        Text(localizedCount(site.listsOffCount, one: "%d list off", other: "%d lists off")),
+                        systemImage: "list.bullet"
+                    )
+                }
+                if let autoplay = site.autoplayOverride {
+                    summaryBadge(
+                        Text(autoplay ? "Autoplay on" : "Autoplay off"),
+                        systemImage: autoplay ? "play.circle" : "pause.circle"
+                    )
+                }
+                if site.areUserScriptsDisabled {
+                    summaryBadge(Text("Userscripts off"), systemImage: "scroll")
+                } else if site.scriptsOffCount > 0 {
+                    summaryBadge(
+                        Text(localizedCount(site.scriptsOffCount, one: "%d script off", other: "%d scripts off")),
+                        systemImage: "scroll"
+                    )
+                }
             }
+            .padding(.trailing, 4)
         }
     }
 
@@ -376,6 +420,16 @@ struct SiteSettingsView: View {
             .disabled(site.areUserScriptsDisabled)
         }
 
+        #if os(macOS)
+        Button(role: .destructive) {
+            pendingConfirmation = .reset(domain: site.domain)
+        } label: {
+            Text("Reset Site Settings").foregroundStyle(.red)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        #else
         VStack(spacing: 0) {
             Divider()
                 .padding(.leading, 16)
@@ -398,12 +452,18 @@ struct SiteSettingsView: View {
             .buttonStyle(.plain)
             .noFocusRingCompat()
         }
+        #endif
     }
 
+    @ViewBuilder
     private func toggleRow<Label: View>(
         isOn: Binding<Bool>,
         @ViewBuilder label: () -> Label
     ) -> some View {
+        #if os(macOS)
+        // A form row; the page's toggle style pins the switch to the trailing edge.
+        Toggle(isOn: isOn, label: label)
+        #else
         VStack(spacing: 0) {
             Divider()
                 .padding(.leading, 16)
@@ -421,6 +481,7 @@ struct SiteSettingsView: View {
             .padding(.leading, 32)
             .padding(.trailing, 16)
         }
+        #endif
     }
 
     // MARK: - Empty state

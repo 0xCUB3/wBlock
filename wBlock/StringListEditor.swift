@@ -9,6 +9,7 @@ struct StringListEditor: View {
     var placeholder: LocalizedStringKey = "example.com"
     var normalize: (String) -> String? = DisabledSitesNormalizer.normalizedDomain
     @State private var input = ""
+    @Environment(\.isInSettingsForm) private var isInSettingsForm
 
     private var candidate: String? {
         guard let item = normalize(input), !items.contains(item) else { return nil }
@@ -16,20 +17,28 @@ struct StringListEditor: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if let title { Text(title).font(.callout.weight(.medium)) }
-            HStack(spacing: 12) {
-                // onSubmit rather than onCommit: on macOS the onCommit closure kept
-                // the list from the first render, so a second Return replaced the
-                // first site instead of adding to it (#948).
-                TextField(placeholder, text: $input)
-                    .onSubmit(addItem)
-                    .listEntryField()
-                AddItemButton(canAdd: candidate != nil && !isSaving, action: addItem)
+        if isInSettingsForm {
+            // Form rows: the field, then one row per site.
+            entryRow(TextField(placeholder, text: $input).textFieldStyle(.plain).disableAutocorrection(true))
+            rows
+        } else {
+            VStack(alignment: .leading, spacing: 8) {
+                if let title { Text(title).font(.callout.weight(.medium)) }
+                entryRow(TextField(placeholder, text: $input).listEntryField())
+                if !items.isEmpty {
+                    VStack(alignment: .leading, spacing: 4) { rows }.settingsGroup()
+                }
             }
-            if !items.isEmpty {
-                VStack(alignment: .leading, spacing: 4) { rows }.settingsGroup()
-            }
+        }
+    }
+
+    private func entryRow(_ field: some View) -> some View {
+        HStack(spacing: 12) {
+            // onSubmit rather than onCommit: on macOS the onCommit closure kept
+            // the list from the first render, so a second Return replaced the
+            // first site instead of adding to it (#948).
+            field.onSubmit(addItem)
+            AddItemButton(canAdd: candidate != nil && !isSaving, action: addItem)
         }
     }
 

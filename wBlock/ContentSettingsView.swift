@@ -47,8 +47,36 @@ struct AutomaticUpdatesToggle: View {
     }
 }
 
+extension EnvironmentValues {
+    /// Set by `SettingsPage` on macOS, where a page pushed from Settings is a
+    /// grouped Form like Settings itself (#1084). Groups and site editors
+    /// then draw as form sections and rows instead of their own boxes.
+    @Entry var isInSettingsForm = false
+}
+
+/// A page pushed from Settings. On macOS it is the same grouped Form as
+/// Settings, with its width and switch size (#1084); iOS keeps the cards.
+struct SettingsPage<Content: View>: View {
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        #if os(macOS)
+        Form { content() }
+            .groupedFormStyleCompat()
+            .toggleStyle(MacTrailingSwitchToggleStyle())
+            .environment(\.isInSettingsForm, true)
+        #else
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) { content() }
+                .padding()
+        }
+        #endif
+    }
+}
+
 /// A titled, rounded group for settings sheets and pages, so every control
 /// sits on the same leading edge with one header and one footer style (#943).
+/// Inside a `SettingsPage` on macOS it is a form section instead.
 struct SettingsGroup<Content: View>: View {
     var header: LocalizedStringKey? = nil
     /// Off for a site field, which draws its own box like Site Settings (#1028).
@@ -56,8 +84,28 @@ struct SettingsGroup<Content: View>: View {
     var footer: [LocalizedStringKey] = []
     var tint: Color? = nil
     @ViewBuilder let content: () -> Content
+    @Environment(\.isInSettingsForm) private var isInSettingsForm
+
+    private var footerText: Text? {
+        // One paragraph: separate lines left gaps between the sentences (#999).
+        footer.first.map { first in footer.dropFirst().reduce(Text(first)) { $0 + Text(verbatim: " ") + Text($1) } }
+    }
 
     var body: some View {
+        if isInSettingsForm {
+            Section {
+                content()
+            } header: {
+                if let header { Text(header) }
+            } footer: {
+                if let footerText { footerText.font(.caption).foregroundStyle(.secondary) }
+            }
+        } else {
+            boxed
+        }
+    }
+
+    private var boxed: some View {
         VStack(alignment: .leading, spacing: 6) {
             if let header {
                 Text(header).font(.footnote.weight(.semibold)).foregroundStyle(.secondary)
@@ -68,9 +116,8 @@ struct SettingsGroup<Content: View>: View {
             } else {
                 VStack(alignment: .leading, spacing: 8, content: content)
             }
-            // One paragraph: separate lines left gaps between the sentences (#999).
-            if let first = footer.first {
-                footer.dropFirst().reduce(Text(first)) { $0 + Text(verbatim: " ") + Text($1) }
+            if let footerText {
+                footerText
                     .font(.caption).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.horizontal, 12)

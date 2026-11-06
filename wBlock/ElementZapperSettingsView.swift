@@ -47,19 +47,7 @@ struct ElementZapperSettingsView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 16) {
-                if filteredDomains.isEmpty {
-                    emptyState
-                } else {
-                    rulesCard
-                }
-
-                Spacer(minLength: 20)
-            }
-            .padding(.vertical)
-            .padding(.horizontal)
-        }
+        page
         .disabled(isMutating || ruleManager.isMutationInFlight)
         #if os(iOS)
         .toolbar {
@@ -106,6 +94,57 @@ struct ElementZapperSettingsView: View {
         #endif
     }
 
+    @ViewBuilder
+    private var page: some View {
+        #if os(macOS)
+        // The same grouped Form as Settings; a site opens into rows below it (#1084).
+        SettingsPage {
+            Section {
+                if filteredDomains.isEmpty {
+                    emptyState
+                } else {
+                    ForEach(filteredDomains, id: \.self) { domain in
+                        domainHeader(domain)
+                        if expandedDomains.contains(domain) {
+                            // Form rows, indented under their site.
+                            Group { domainRules(domain) }.padding(.leading, 16)
+                        }
+                    }
+                }
+            }
+        }
+        #else
+        ScrollView {
+            VStack(spacing: 16) {
+                if filteredDomains.isEmpty {
+                    emptyState
+                } else {
+                    rulesCard
+                }
+
+                Spacer(minLength: 20)
+            }
+            .padding(.vertical)
+            .padding(.horizontal)
+        }
+        #endif
+    }
+
+    /// The site and its rule count, the label of a site's row.
+    private func domainSummary(_ domain: String) -> some View {
+        HStack {
+            Text(domain)
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+                .truncationMode(.middle)
+            Spacer()
+            Text(localizedRuleCount(ruleManager.ruleCount(forDomain: domain)))
+                .strikethrough(ruleManager.isDisabled(domain))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
     private var rulesCard: some View {
         VStack(spacing: 0) {
             ForEach(filteredDomains, id: \.self) { domain in
@@ -133,20 +172,14 @@ struct ElementZapperSettingsView: View {
             }
         } label: {
             HStack {
-                Text(domain)
-                    .foregroundStyle(.primary)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                Spacer()
-                Text(localizedRuleCount(ruleManager.ruleCount(forDomain: domain)))
-                    .strikethrough(ruleManager.isDisabled(domain))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                domainSummary(domain)
                 Image(systemName: expanded ? "chevron.down" : "chevron.right")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            #if os(iOS)
             .padding(16)
+            #endif
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -158,88 +191,121 @@ struct ElementZapperSettingsView: View {
         zapperToggle(domain)
         ForEach(ruleManager.rules(for: domain).indices, id: \.self) { index in
             let rule = ruleManager.rules(for: domain)[index]
+            #if os(macOS)
+            ruleRow(rule, domain: domain, index: index)
+            #else
             VStack(spacing: 0) {
                 Divider().padding(.leading, 16)
-                HStack(spacing: 12) {
-                    Text(rule)
-                        .font(.system(.caption, design: .monospaced))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                    Spacer()
-                    Button {
-                        editingRule = RuleSelection(domain: domain, rule: rule)
-                    } label: {
-                        Image(systemName: "pencil.circle.fill")
-                            .foregroundStyle(Color.accentColor)
-                            .scaledSystemFont(size: 18)
-                    }
-                    .buttonStyle(.plain)
-                    .noFocusRingCompat()
-                    .accessibilityLabel("Edit")
-                    Button {
-                        deleteRule(rule, from: domain, at: index)
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundStyle(.secondary)
-                            .scaledSystemFont(size: 18)
-                    }
-                    .buttonStyle(.plain)
-                    .noFocusRingCompat()
-                }
-                .padding(.vertical, 10)
-                .padding(.leading, 32)
-                .padding(.trailing, 16)
+                ruleRow(rule, domain: domain, index: index)
+                    .padding(.vertical, 10)
+                    .padding(.leading, 32)
+                    .padding(.trailing, 16)
             }
+            #endif
         }
+        #if os(macOS)
+        Button {
+            pendingConfirmation = .clear(domain: domain)
+        } label: {
+            clearRulesLabel
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        #else
         Divider().padding(.leading, 16)
         // The note sits under the button the way Site Settings captions sit
         // under their titles.
         Button {
             pendingConfirmation = .clear(domain: domain)
         } label: {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Clear Element Zapper Rules")
-                    .foregroundStyle(.red)
-                Text("Element Zapper changes take full effect after the next apply.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 10)
-            .padding(.leading, 32)
-            .padding(.trailing, 16)
-            .contentShape(Rectangle())
+            clearRulesLabel
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, 10)
+                .padding(.leading, 32)
+                .padding(.trailing, 16)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .noFocusRingCompat()
+        #endif
     }
 
+    private var clearRulesLabel: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("Clear Element Zapper Rules")
+                .foregroundStyle(.red)
+            Text("Element Zapper changes take full effect after the next apply.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private func ruleRow(_ rule: String, domain: String, index: Int) -> some View {
+        HStack(spacing: 12) {
+            Text(rule)
+                .font(.system(.caption, design: .monospaced))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .truncationMode(.tail)
+            Spacer()
+            Button {
+                editingRule = RuleSelection(domain: domain, rule: rule)
+            } label: {
+                Image(systemName: "pencil.circle.fill")
+                    .foregroundStyle(Color.accentColor)
+                    .scaledSystemFont(size: 18)
+            }
+            .buttonStyle(.plain)
+            .noFocusRingCompat()
+            .accessibilityLabel("Edit")
+            Button {
+                deleteRule(rule, from: domain, at: index)
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .foregroundStyle(.secondary)
+                    .scaledSystemFont(size: 18)
+            }
+            .buttonStyle(.plain)
+            .noFocusRingCompat()
+        }
+    }
+
+    private func zapperBinding(_ domain: String) -> Binding<Bool> {
+        Binding(
+            get: { !ruleManager.isDisabled(domain) },
+            set: { enabled in
+                invalidateUndoAndStartMutation {
+                    await ruleManager.performMutation {
+                        await dataManager.setZapperRulesDisabled(!enabled, forHost: domain)
+                        await ruleManager.refreshNow()
+                        filterManager.markNonSelectionChangesPending()
+                    }
+                }
+            }
+        )
+    }
+
+    @ViewBuilder
     private func zapperToggle(_ domain: String) -> some View {
+        #if os(macOS)
+        // A form row; the page's toggle style pins the switch to the trailing edge.
+        Toggle("Apply rules on this site", isOn: zapperBinding(domain))
+        #else
         VStack(spacing: 0) {
             Divider().padding(.leading, 16)
             HStack {
                 Text("Apply rules on this site")
                 Spacer()
-                Toggle("", isOn: Binding(
-                    get: { !ruleManager.isDisabled(domain) },
-                    set: { enabled in
-                        invalidateUndoAndStartMutation {
-                            await ruleManager.performMutation {
-                                await dataManager.setZapperRulesDisabled(!enabled, forHost: domain)
-                                await ruleManager.refreshNow()
-                                filterManager.markNonSelectionChangesPending()
-                            }
-                        }
-                    }
-                ))
-                .labelsHidden()
-                .toggleStyle(.switch)
+                Toggle("", isOn: zapperBinding(domain))
+                    .labelsHidden()
+                    .toggleStyle(.switch)
             }
             .padding(.vertical, 10)
             .padding(.leading, 32)
             .padding(.trailing, 16)
         }
+        #endif
     }
 
     private var emptyState: some View {

@@ -9,43 +9,43 @@ struct CosmeticFilteringSitesView: View {
     @State private var sites = CosmeticFilteringPreference.sites()
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                // Not locked during an apply (#936): the run snapshots this setting
-                // and a change made meanwhile stays pending for the next one.
-                // Generic Rules shares the box since it only narrows cosmetic
-                // filtering (#999).
-                SettingsGroup {
-                    Toggle(isOn: Binding(get: { isEnabled }, set: setEnabled)) {
-                        toggleLabel("Cosmetic Filtering", detail: "Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU.")
+        SettingsPage {
+            // Not locked during an apply (#936): the run snapshots this setting
+            // and a change made meanwhile stays pending for the next one.
+            // Generic Rules shares the box since it only narrows cosmetic
+            // filtering (#999).
+            SettingsGroup {
+                Toggle(isOn: Binding(get: { isEnabled }, set: setEnabled)) {
+                    toggleLabel("Cosmetic Filtering", detail: "Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU.")
+                }
+                .settingsSwitch()
+                if isEnabled {
+                    // The Mac form draws its own row separator.
+                    #if os(iOS)
+                    Divider()
+                    #endif
+                    Toggle(isOn: Binding(
+                        get: { sites.includesGeneric },
+                        set: { update(sites.selectedSites, sites.excludedSites, includesGeneric: $0) }
+                    )) {
+                        toggleLabel("Generic Rules", detail: "Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps.")
                     }
                     .settingsSwitch()
-                    if isEnabled {
-                        Divider()
-                        Toggle(isOn: Binding(
-                            get: { sites.includesGeneric },
-                            set: { update(sites.selectedSites, sites.excludedSites, includesGeneric: $0) }
-                        )) {
-                            toggleLabel("Generic Rules", detail: "Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps.")
-                        }
-                        .settingsSwitch()
-                    }
-                }
-                if isEnabled {
-                    SiteScopeEditor(
-                        title: "Apply on", onlySelectedSites: sites.onlySelectedSites,
-                        selectedSites: sites.selectedSites ?? [],
-                        excludedSites: sites.onlySelectedSites ? nil : sites.excludedSites,
-                        emptySelectionMessage: "No sites selected. Cosmetic filtering will not apply.",
-                        excludedMessage: "Cosmetic filtering will not apply on these sites. Network blocking still applies.",
-                        footer: "Sites include their subdomains. Use * to match any top-level domain, for example amazon.*. Apply changes to update filtering.",
-                        updateMode: { update(sites.selectedSites, sites.excludedSites, onlySelectedSites: $0) },
-                        updateSelected: { update($0, sites.excludedSites) },
-                        updateExcluded: { update(sites.selectedSites, $0) }
-                    )
                 }
             }
-            .padding()
+            if isEnabled {
+                SiteScopeEditor(
+                    title: "Apply on", onlySelectedSites: sites.onlySelectedSites,
+                    selectedSites: sites.selectedSites ?? [],
+                    excludedSites: sites.onlySelectedSites ? nil : sites.excludedSites,
+                    emptySelectionMessage: "No sites selected. Cosmetic filtering will not apply.",
+                    excludedMessage: "Cosmetic filtering will not apply on these sites. Network blocking still applies.",
+                    footer: "Sites include their subdomains. Use * to match any top-level domain, for example amazon.*. Apply changes to update filtering.",
+                    updateMode: { update(sites.selectedSites, sites.excludedSites, onlySelectedSites: $0) },
+                    updateSelected: { update($0, sites.excludedSites) },
+                    updateExcluded: { update(sites.selectedSites, $0) }
+                )
+            }
         }
         .pageTitle("Cosmetic Filtering")
     }
