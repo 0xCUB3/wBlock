@@ -124,11 +124,21 @@ extension AppFilterManager {
 
     /// Safari refuses a content blocker past its rule or size limit. The counts
     /// are the compiled blocker's own, so the message names what is really full.
+    /// `blockersOver` of `blockerCount` blockers are over the limit and
+    /// `target` is the fullest. With more than one over, the message says so:
+    /// naming one blocker read as if the others had room left.
     private static func overLimitStatus(
         _ target: ContentBlockerTargetInfo,
-        needed: String, allowed: String, inMegabytes: Bool
+        needed: String, allowed: String, inMegabytes: Bool,
+        blockersOver: Int = 1, blockerCount: Int = 1
     ) -> String {
-        inMegabytes
+        if inMegabytes, blockersOver > 1 {
+            return LocalizedStrings.format(
+                "Too many lists are on. %1$@ of wBlock's %2$@ content blockers are over Safari's limit, even with the lists spread across all of them. The fullest, %3$@, needs %4$@ MB, and Safari on iOS fails to load a content blocker over about %5$@ MB. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again.",
+                comment: "Apply failed: several content blockers are over Safari's size limit",
+                blockersOver.formatted(), blockerCount.formatted(), target.displayName, needed, allowed)
+        }
+        return inMegabytes
             ? LocalizedStrings.format(
                 "Too many lists are on for %1$@. They need %2$@ MB, and Safari on iOS fails to load a content blocker over about %3$@ MB. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again.",
                 comment: "Apply failed: a content blocker is over Safari's size limit",
@@ -812,23 +822,28 @@ extension AppFilterManager {
         if let failedTarget = platformTargets.first(where: {
             conversionCompletions[$0]?.failureDescription != nil
         }), let failureDescription = conversionCompletions[failedTarget]?.failureDescription {
-            let sizeLimitError = conversionCompletions[failedTarget]?.sizeLimitError
+            // Every blocker compiles on its own, so this counts all that are over.
+            let oversized = platformTargets.compactMap { target in
+                conversionCompletions[target]?.sizeLimitError.map { (target: target, error: $0) }
+            }
+            let fullest = oversized.max { $0.error.byteCount < $1.error.byteCount }
             await failApplyRun(
                 logMessage: LocalizedStrings.text("Failed to convert rules for blocker"),
                 metadata: [
                     "blocker": failedTarget.displayName,
                     "error": failureDescription,
                 ],
-                statusMessage: sizeLimitError.map {
+                statusMessage: fullest.map {
                     Self.overLimitStatus(
-                        failedTarget,
-                        needed: Self.megabytes($0.byteCount), allowed: Self.megabytes($0.limit), inMegabytes: true
+                        $0.target,
+                        needed: Self.megabytes($0.error.byteCount), allowed: Self.megabytes($0.error.limit),
+                        inMegabytes: true, blockersOver: oversized.count, blockerCount: platformTargets.count
                     )
                 }
             )
-            if sizeLimitError != nil {
+            if let fullest {
                 await showListRemovalPreviews(
-                    over: failedTarget, inMegabytes: true, filtersByTarget: filtersByTargetInfo,
+                    over: fullest.target, inMegabytes: true, filtersByTarget: filtersByTargetInfo,
                     selected: allSelectedFilters, targets: platformTargets,
                     disabledSites: disabledSites, zapperRulesText: generatedZapperRulesText
                 )
