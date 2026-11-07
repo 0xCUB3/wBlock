@@ -19,12 +19,12 @@ struct StringListEditor: View {
     var body: some View {
         if isInSettingsForm {
             // Form rows: the field, then one row per site.
-            entryRow(TextField(placeholder, text: $input).siteEntryField())
+            entryRow(TextField(placeholder, text: $input, prompt: Text(placeholder)).siteEntryField())
             rows
         } else {
             VStack(alignment: .leading, spacing: 8) {
                 if let title { Text(title).font(.callout.weight(.medium)) }
-                entryRow(TextField(placeholder, text: $input).listEntryField())
+                entryRow(TextField(placeholder, text: $input, prompt: Text(placeholder)).siteEntryField())
                 if !items.isEmpty {
                     VStack(alignment: .leading, spacing: 4) { rows }.settingsGroup()
                 }
@@ -72,15 +72,10 @@ struct StringListEditor: View {
 }
 
 extension View {
-    /// The site field Site Settings opens with, shared by every site list (#1028).
-    func listEntryField() -> some View {
-        siteEntryField()
-            .padding(12)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
-    }
-
-    /// A plain field for a site: no autocorrection, and the URL keyboard on iOS.
-    /// Settings pages use it as a row; sheets box it with `listEntryField`.
+    /// The one site field, boxed with its placeholder inside, with the round +
+    /// to its right, in Site Settings, Cosmetic Filtering, and every list's
+    /// site settings alike (#1028, #1088). No autocorrection, and the URL
+    /// keyboard on iOS.
     func siteEntryField() -> some View {
         textFieldStyle(.plain)
             .disableAutocorrection(true)
@@ -88,6 +83,11 @@ extension View {
             .keyboardType(.URL)
             .textInputAutocapitalization(.never)
             #endif
+            // A Form draws a field's title as a label at the leading edge,
+            // so the title only serves as the placeholder.
+            .labelsHidden()
+            .padding(12)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
     }
 }
 

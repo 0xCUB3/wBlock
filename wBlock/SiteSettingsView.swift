@@ -114,7 +114,7 @@ struct SiteSettingsView: View {
         // The same list or form as Settings; a site opens into rows below it (#1084).
         SettingsPage {
             SettingsGroup(footer: [addSiteFooter]) {
-                addSiteRow(TextField("example.com", text: $newDomain).siteEntryField())
+                addSiteRow(TextField("example.com", text: $newDomain, prompt: Text("example.com")).siteEntryField())
             }
             .disabled(isMutationInFlight)
 
