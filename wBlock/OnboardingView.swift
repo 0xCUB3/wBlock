@@ -960,8 +960,10 @@ struct OnboardingView: View {
         guard await dataManager.setHasCompletedOnboarding(true) else { return }
         restoredFromBackup = false
 
-        // Dismiss onboarding and let the main view handle download + apply
+        // Dismiss onboarding onto Filters, where the apply runs; a restart
+        // from Settings would otherwise leave the user there (#1087).
         dismiss()
+        NotificationCenter.default.post(name: .wBlockSelectTabRequest, object: 0)
         filterManager.checkAndEnableFilters(forceReload: true)
     }
 
