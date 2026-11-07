@@ -1052,3 +1052,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Choose the annoyances to hide. You can change this later in Annoyances Info." = "非表示にする迷惑要素を選んでください。あとで迷惑要素の情報から変更できます。";
 "Blocks YouTube's ads and web player and plays videos in Safari's native player, with chapters, picture-in-picture, background playback, and audio-only mode. Includes SponsorBlock, which skips sponsored segments." = "YouTube の広告とウェブプレーヤーをブロックし、Safari のネイティブプレーヤーで動画を再生します。チャプター、ピクチャ・イン・ピクチャ、バックグラウンド再生、音声のみモードに対応。スポンサー区間を飛ばす SponsorBlock も含まれます。";
 "Blocks third-party video players on other sites and plays videos with Safari's native controls, adding auto PiP, background playback, subtitles, chapters, and Now Playing info." = "他のサイトのサードパーティ製動画プレーヤーをブロックし、Safari のネイティブコントロールで動画を再生します。自動ピクチャ・イン・ピクチャ、バックグラウンド再生、字幕、チャプター、再生中の情報を追加します。";
+"Blocking Level" = "ブロックレベル";

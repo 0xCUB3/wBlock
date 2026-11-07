@@ -225,23 +225,8 @@ struct ApplyChangesProgressView: View {
     }
 
     /// One update per native toggle: a checkbox on macOS, a switch on iOS.
-    /// Type matches the filter rows on the main list.
     private func updateToggle(_ title: String, subtitle: String, isOn: Bool, toggle: @escaping () -> Void) -> some View {
-        Toggle(isOn: Binding(get: { isOn }, set: { _ in toggle() })) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(verbatim: title)
-                    .fontWeight(.medium)
-                if !subtitle.isEmpty {
-                    Text(verbatim: subtitle)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                }
-            }
-        }
-        #if os(macOS)
-        .toggleStyle(UpdateRowCheckboxStyle())
-        #endif
+        SelectableRow(title: Text(verbatim: title), subtitle: subtitle, isSelected: isOn, action: toggle)
     }
 
     private var reviewToolbar: some View {
@@ -602,20 +587,3 @@ struct FinishedResultDismissal: NSViewRepresentable {
 }
 #endif
 
-#if os(macOS)
-/// A checkbox centered on its two-line label, toggled by a click anywhere on
-/// the row (#1034).
-private struct UpdateRowCheckboxStyle: ToggleStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        HStack(spacing: 8) {
-            Toggle(isOn: configuration.$isOn) { configuration.label }
-                .toggleStyle(.checkbox)
-                .labelsHidden()
-            configuration.label.accessibilityHidden(true)
-            Spacer(minLength: 0)
-        }
-        .contentShape(Rectangle())
-        .onTapGesture { configuration.isOn.toggle() }
-    }
-}
-#endif

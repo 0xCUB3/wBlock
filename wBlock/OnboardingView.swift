@@ -452,26 +452,32 @@ struct OnboardingView: View {
         .padding(.vertical, 36)
     }
 
-    private var blockingLevelStep: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            ForEach(BlockingLevel.allCases) { level in
-                blockingLevelCard(for: level)
-            }
-        }
+    /// The level the stored string names, matched as earlier builds wrote it.
+    private var blockingLevel: Binding<BlockingLevel?> {
+        Binding(
+            get: {
+                let stored = selectedBlockingLevel.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+                return BlockingLevel.allCases.first { $0.rawValue.lowercased() == stored }
+            },
+            set: { selectedBlockingLevel = $0?.rawValue ?? "" }
+        )
     }
 
-    private func blockingLevelCard(for level: BlockingLevel) -> some View {
-        let isSelected =
-            selectedBlockingLevel.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-            == level.rawValue.lowercased()
-
-        return SelectableRow(
-            title: Text(LocalizedStringKey(level.rawValue)),
-            subtitle: blockingLevelDescription(level),
-            isSelected: isSelected,
-            style: .card
-        ) {
-            selectedBlockingLevel = level.rawValue
+    /// A native segmented control, like the system's own pickers (#1088).
+    private var blockingLevelStep: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Picker("Blocking Level", selection: blockingLevel) {
+                ForEach(BlockingLevel.allCases) { level in
+                    Text(LocalizedStringKey(level.rawValue)).tag(Optional(level))
+                }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            if let level = blockingLevel.wrappedValue {
+                Text(blockingLevelDescription(level))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 
@@ -536,7 +542,7 @@ struct OnboardingView: View {
                 VStack(alignment: .leading, spacing: 10) {
                     Text(LocalizedStrings.text("Regional", comment: "Filter list category"))
                         .font(.headline)
-                    ForEach(ForeignFilterOrganizer.sortedFilters(regionalFilters)) { filter in
+                    SelectableRowGroup(data: ForeignFilterOrganizer.sortedFilters(regionalFilters)) { filter in
                         regionalToggle(for: filter)
                     }
                 }
@@ -580,15 +586,7 @@ struct OnboardingView: View {
     }
 
     private func userscriptList(_ scripts: [OnboardingUserScriptItem]) -> some View {
-        VStack(spacing: 0) {
-            ForEach(Array(scripts.enumerated()), id: \.element.id) { index, script in
-                userscriptCard(for: script)
-                if index < scripts.count - 1 {
-                    Divider().padding(.leading, 44)
-                }
-            }
-        }
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+        SelectableRowGroup(data: scripts) { userscriptCard(for: $0) }
     }
 
     private func regionalToggle(for filter: FilterList) -> some View {
@@ -599,8 +597,7 @@ struct OnboardingView: View {
             title: Text(filter.localizedDisplayName),
             caption: languages,
             subtitle: filter.localizedDisplayDescription,
-            isSelected: isSelected,
-            style: .card
+            isSelected: isSelected
         ) {
             if isSelected {
                 selectedRegionalFilters.remove(filter.id)
@@ -874,8 +871,7 @@ struct OnboardingView: View {
             title: Text(script.name),
             subtitle: script.description,
             badge: script.isBeta ? Text("Beta") : nil,
-            isSelected: isSelected,
-            style: .groupedRow
+            isSelected: isSelected
         ) {
             if isSelected {
                 selectedUserscripts.remove(script.id)

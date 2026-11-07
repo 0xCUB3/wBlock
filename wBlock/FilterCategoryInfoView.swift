@@ -115,25 +115,22 @@ struct RecommendedNamesList: View {
     }
 }
 
-/// One card per choice, naming the lists it turns on.
+/// One native toggle per choice, naming the lists it turns on.
 struct AnnoyanceChoicePicker: View {
     @Binding var selection: Set<AnnoyanceChoice>
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            ForEach(AnnoyanceChoice.allCases) { choice in
-                let isSelected = selection.contains(choice)
-                SelectableRow(
-                    title: Text(LocalizedStringKey(choice.title)),
-                    caption: ListFormatter.localizedString(byJoining: choice.filterNames.map {
-                        LocalizedStrings.text($0, comment: "Filter list name")
-                    }),
-                    subtitle: choice.subtitle,
-                    isSelected: isSelected,
-                    style: .card
-                ) {
-                    if isSelected { selection.remove(choice) } else { selection.insert(choice) }
-                }
+        SelectableRowGroup(data: AnnoyanceChoice.allCases) { choice in
+            let isSelected = selection.contains(choice)
+            SelectableRow(
+                title: Text(LocalizedStringKey(choice.title)),
+                caption: ListFormatter.localizedString(byJoining: choice.filterNames.map {
+                    LocalizedStrings.text($0, comment: "Filter list name")
+                }),
+                subtitle: choice.subtitle,
+                isSelected: isSelected
+            ) {
+                if isSelected { selection.remove(choice) } else { selection.insert(choice) }
             }
         }
     }
