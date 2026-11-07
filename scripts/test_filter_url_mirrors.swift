@@ -51,15 +51,21 @@ import wBlockCoreService
             "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/ublock/filters/6.txt",
             "https://cdn.jsdelivr.net/gh/AdguardTeam/FiltersRegistry@master/platforms/extension/ublock/filters/6.txt",
         ], "AdGuard uBO build mirrors")
+        // uAssets lists fall back freshest first, uAssets sources before uAssetsCDN (#1087).
         let easyList = URL(string: "https://ublockorigin.github.io/uAssetsCDN/thirdparties/easylist.txt")!
         check(FilterListURLMirror.fallbackURLs(for: easyList).map(\.absoluteString) == [
-            "https://ublockorigin.pages.dev/thirdparties/easylist.txt",
-            "https://cdn.jsdelivr.net/gh/uBlockOrigin/uAssetsCDN@main/thirdparties/easylist.txt",
+            "https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/thirdparties/easylist/easylist.txt",
+            "https://ublockorigin.github.io/uAssets/thirdparties/easylist.txt",
             "https://raw.githubusercontent.com/uBlockOrigin/uAssetsCDN/main/thirdparties/easylist.txt",
+            "https://ublockorigin.pages.dev/thirdparties/easylist.txt",
+            "https://cdn.jsdelivr.net/gh/uBlockOrigin/uAssets@master/thirdparties/easylist/easylist.txt",
+            "https://cdn.jsdelivr.net/gh/uBlockOrigin/uAssetsCDN@main/thirdparties/easylist.txt",
         ], "uAssets mirrors")
-        let easyPrivacy = URL(string: "https://cdn.jsdelivr.net/gh/uBlockOrigin/uAssetsCDN@main/thirdparties/easyprivacy.txt")!
-        check(FilterListURLMirror.fallbackURLs(for: easyPrivacy).first?.absoluteString == "https://ublockorigin.github.io/uAssetsCDN/thirdparties/easyprivacy.txt",
-              "a jsDelivr uAssets primary falls back to uBO's other mirrors")
+        let ads = URL(string: "https://ublockorigin.github.io/uAssetsCDN/filters/filters.min.txt")!
+        check(FilterListURLMirror.fallbackURLs(for: ads).prefix(2).map(\.absoluteString) == [
+            "https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/filters.txt",
+            "https://ublockorigin.github.io/uAssets/filters/filters.txt",
+        ], "uAssets sources have no .min builds")
         print("PASS")
     }
 }

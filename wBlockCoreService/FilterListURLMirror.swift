@@ -45,22 +45,30 @@ public enum FilterListURLMirror {
     static let bpcBucketURL = URL(string: "https://pub-d303b9085c0b41b5aa749fc74609d4d9.r2.dev/bpc-paywall-filter.txt")!
     static let bpcWorkerURL = URL(string: "https://bpc-filter-proxy.wmailrelayb8d890.workers.dev")!
 
-    /// uBlock Origin's mirrors of uAssetsCDN, in the order uBO tries them
-    /// (assets.json `cdnURLs`), for a list at any of them.
+    /// Every copy of a uAssetsCDN list, freshest first (#1087): the uAssets
+    /// sources, then uAssetsCDN on GitHub, its Pages and Cloudflare mirrors,
+    /// and jsDelivr for each. uAssets has no `.min` builds and keeps EasyList's
+    /// lists under thirdparties/easylist/. Its sources keep their `!#include`
+    /// lines, which resolve against the copy that served them.
     private static func uAssetsMirrors(for url: URL) -> [URL]? {
         let host = url.host?.lowercased() ?? "", path = url.path
-        let bases = ["https://ublockorigin.github.io/uAssetsCDN/", "https://ublockorigin.pages.dev/",
-                     "https://cdn.jsdelivr.net/gh/uBlockOrigin/uAssetsCDN@main/",
-                     "https://raw.githubusercontent.com/uBlockOrigin/uAssetsCDN/main/"]
-        let file: String
-        if host == "ublockorigin.github.io", path.hasPrefix("/uAssetsCDN/") { file = String(path.dropFirst("/uAssetsCDN/".count)) }
-        else if host == "ublockorigin.pages.dev" { file = String(path.dropFirst()) }
-        else if host == "cdn.jsdelivr.net", path.hasPrefix("/gh/uBlockOrigin/uAssetsCDN@main/") {
-            file = String(path.dropFirst("/gh/uBlockOrigin/uAssetsCDN@main/".count))
-        } else if host == "raw.githubusercontent.com", path.hasPrefix("/uBlockOrigin/uAssetsCDN/main/") {
-            file = String(path.dropFirst("/uBlockOrigin/uAssetsCDN/main/".count))
-        } else { return nil }
-        return bases.compactMap { URL(string: $0 + file) }.filter { $0 != url }
+        let cdnPrefixes = [("ublockorigin.github.io", "/uAssetsCDN/"), ("ublockorigin.pages.dev", "/"),
+                           ("cdn.jsdelivr.net", "/gh/uBlockOrigin/uAssetsCDN@main/"),
+                           ("raw.githubusercontent.com", "/uBlockOrigin/uAssetsCDN/main/")]
+        guard let prefix = cdnPrefixes.first(where: { host == $0.0 && path.hasPrefix($0.1) })?.1 else { return nil }
+        let file = String(path.dropFirst(prefix.count))
+        let source = file.replacingOccurrences(of: ".min.txt", with: ".txt")
+        let repoSource = source.hasPrefix("thirdparties/")
+            ? "thirdparties/easylist/" + source.dropFirst("thirdparties/".count) : source
+        return [
+            "https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/" + repoSource,
+            "https://ublockorigin.github.io/uAssets/" + source,
+            "https://raw.githubusercontent.com/uBlockOrigin/uAssetsCDN/main/" + file,
+            "https://ublockorigin.github.io/uAssetsCDN/" + file,
+            "https://ublockorigin.pages.dev/" + file,
+            "https://cdn.jsdelivr.net/gh/uBlockOrigin/uAssets@master/" + repoSource,
+            "https://cdn.jsdelivr.net/gh/uBlockOrigin/uAssetsCDN@main/" + file,
+        ].compactMap(URL.init(string:)).filter { $0 != url }
     }
 
     public static func fallbackURLs(for primary: URL) -> [URL] {
