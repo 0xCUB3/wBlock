@@ -24,8 +24,9 @@ struct SheetDoneButton: View {
 
     @ViewBuilder
     var body: some View {
-        #if os(iOS)
-        if #available(iOS 26.0, *) {
+        // The native glass X on both platforms; macOS drew a filled circle
+        // beside its glass source controls (#1089).
+        if #available(iOS 26.0, macOS 26.0, *) {
             // A bare glyph makes the glass capsule shorter than the neighboring
             // text buttons; sizing the label to a text line and asking for a
             // circle keeps the X round and level with Save (cameren, Discord).
@@ -41,9 +42,6 @@ struct SheetDoneButton: View {
         } else {
             filledCloseButton
         }
-        #else
-        filledCloseButton
-        #endif
     }
 
     private var filledCloseButton: some View {

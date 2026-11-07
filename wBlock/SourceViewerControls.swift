@@ -88,7 +88,30 @@ struct SourceControlButton: View {
         self.action = action
     }
 
+    @ViewBuilder
     var body: some View {
+        #if os(macOS)
+        if #available(macOS 26.0, *) {
+            // Native glass bubbles, like the close button beside them (#1089).
+            Button(action: action) {
+                Image(systemName: systemImage)
+                    .font(.body.weight(.medium))
+                    .frame(width: 20, height: 20)
+                    .foregroundStyle(isOn ? Color.accentColor : Color.primary)
+            }
+            .buttonStyle(.glass)
+            .buttonBorderShape(.circle)
+            .accessibilityLabel(title)
+            .help(title)
+        } else {
+            plainButton
+        }
+        #else
+        plainButton
+        #endif
+    }
+
+    private var plainButton: some View {
         Button(action: action) {
             SourceControlIcon(systemImage: systemImage, isOn: isOn)
         }
@@ -113,12 +136,15 @@ struct SourceControlIcon: View {
 }
 
 /// The capsule behind a source window's menu, darker while pressed so a
-/// click shows (#1088). macOS before 14 can't style a menu as a button and
-/// keeps the plain capsule.
+/// click shows (#1088). macOS 26 uses a glass capsule like its neighbors
+/// (#1089); macOS before 14 can't style a menu as a button and keeps the
+/// plain capsule.
 struct SourceMenuCapsule: ViewModifier {
     func body(content: Content) -> some View {
         #if os(macOS)
-        if #available(macOS 14.0, *) {
+        if #available(macOS 26.0, *) {
+            content.menuStyle(.button).buttonStyle(.glass).buttonBorderShape(.capsule)
+        } else if #available(macOS 14.0, *) {
             content.menuStyle(.button).buttonStyle(CapsulePressStyle())
         } else {
             content.menuStyle(.borderlessButton).buttonStyle(.plain)
