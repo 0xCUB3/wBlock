@@ -160,12 +160,13 @@ struct InfoMetadataRow: View {
     var color: Color = .primary
     var valueStyle: InfoMetadataValueStyle = .plain
 
-    private static let inlineValueLimit = 40
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.openURL) private var openURL
 
+    /// ViewThatFits drops a value under its title only when it doesn't fit
+    /// beside it. A length cap stacked short credits that fit (#1088).
     private var shouldStack: Bool {
-        value.count > Self.inlineValueLimit || dynamicTypeSize.isAccessibilitySize
+        dynamicTypeSize.isAccessibilitySize
     }
 
     var body: some View {
