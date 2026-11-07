@@ -66,6 +66,14 @@ import wBlockCoreService
             "https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/filters.txt",
             "https://ublockorigin.github.io/uAssets/filters/filters.txt",
         ], "uAssets sources have no .min builds")
+        // Regional lists follow the uBO regional document's mirror order (#1087).
+        check(FilterListURLMirror.fallbackURLs(for: URL(string: "https://ubo-et.lepik.io/list.txt")!).map(\.absoluteString) == [
+            "https://raw.githubusercontent.com/sander85/uBO-et/main/list.txt",
+            "https://cdn.jsdelivr.net/gh/sander85/uBO-et@main/list.txt",
+        ], "Estonian List mirrors")
+        let ruAdList = URL(string: "https://cdn.jsdelivr.net/gh/dimisa-RUAdList/RUAdListCDN@main/lists/ruadlist.ubo.min.txt")!
+        check(FilterListURLMirror.fallbackURLs(for: ruAdList).first?.absoluteString
+              == "https://raw.githubusercontent.com/easylist/ruadlist/master/RuAdList-uBO.txt", "RU AdList falls back to its source first")
         print("PASS")
     }
 }
