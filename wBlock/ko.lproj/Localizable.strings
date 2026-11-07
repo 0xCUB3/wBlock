@@ -1068,3 +1068,16 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Pop-ups & Banners" = "팝업 및 배너";
 "Social & Chat" = "소셜 및 채팅";
 "Enable Recommended" = "권장 항목 켜기";
+"Pop-ups" = "팝업";
+"Banners" = "배너";
+"Social" = "소셜";
+"Chat" = "채팅";
+"Anti-AI" = "AI 차단";
+"Hides cookie consent banners and pop-ups." = "쿠키 동의 배너와 팝업을 숨깁니다.";
+"Hides newsletter sign-ups and requests to show notifications." = "뉴스레터 가입 창과 알림 허용 요청을 숨깁니다.";
+"Hides banners that push a site's mobile app." = "사이트 모바일 앱을 권하는 배너를 숨깁니다.";
+"Hides share buttons and social media widgets." = "공유 버튼과 소셜 미디어 위젯을 숨깁니다.";
+"Hides live chat and support widgets." = "실시간 채팅과 고객 지원 위젯을 숨깁니다.";
+"Hides overlays, promotions, and other distractions." = "오버레이, 프로모션 및 기타 방해 요소를 숨깁니다.";
+"Hides AI features and AI-generated content." = "AI 기능과 AI 생성 콘텐츠를 숨깁니다.";
+"Choose the annoyances to hide. You can change this later in Annoyances Info." = "숨길 방해 요소를 선택하세요. 나중에 방해 요소 정보에서 바꿀 수 있습니다.";

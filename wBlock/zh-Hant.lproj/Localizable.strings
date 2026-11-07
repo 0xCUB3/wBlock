@@ -1068,3 +1068,16 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Pop-ups & Banners" = "彈出視窗與橫幅";
 "Social & Chat" = "社群與聊天";
 "Enable Recommended" = "啟用建議項目";
+"Pop-ups" = "彈出式視窗";
+"Banners" = "橫幅";
+"Social" = "社群";
+"Chat" = "聊天";
+"Anti-AI" = "反 AI";
+"Hides cookie consent banners and pop-ups." = "隱藏 Cookie 同意橫幅和彈出式視窗。";
+"Hides newsletter sign-ups and requests to show notifications." = "隱藏電子報訂閱和通知權限要求。";
+"Hides banners that push a site's mobile app." = "隱藏推銷網站行動 App 的橫幅。";
+"Hides share buttons and social media widgets." = "隱藏分享按鈕和社群媒體小工具。";
+"Hides live chat and support widgets." = "隱藏即時聊天和客服小工具。";
+"Hides overlays, promotions, and other distractions." = "隱藏覆蓋層、推廣內容和其他干擾。";
+"Hides AI features and AI-generated content." = "隱藏 AI 功能和 AI 生成的內容。";
+"Choose the annoyances to hide. You can change this later in Annoyances Info." = "選擇要隱藏的惱人內容。之後可在「惱人內容」資訊中更改。";

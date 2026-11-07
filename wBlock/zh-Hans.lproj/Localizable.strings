@@ -1068,3 +1068,16 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Pop-ups & Banners" = "弹出窗口和横幅";
 "Social & Chat" = "社交与聊天";
 "Enable Recommended" = "启用推荐项";
+"Pop-ups" = "弹窗";
+"Banners" = "横幅";
+"Social" = "社交";
+"Chat" = "聊天";
+"Anti-AI" = "反 AI";
+"Hides cookie consent banners and pop-ups." = "隐藏 Cookie 同意横幅和弹窗。";
+"Hides newsletter sign-ups and requests to show notifications." = "隐藏新闻通讯订阅和通知权限请求。";
+"Hides banners that push a site's mobile app." = "隐藏推销网站移动应用的横幅。";
+"Hides share buttons and social media widgets." = "隐藏分享按钮和社交媒体小组件。";
+"Hides live chat and support widgets." = "隐藏在线聊天和客服小组件。";
+"Hides overlays, promotions, and other distractions." = "隐藏遮罩层、推广内容和其他干扰。";
+"Hides AI features and AI-generated content." = "隐藏 AI 功能和 AI 生成的内容。";
+"Choose the annoyances to hide. You can change this later in Annoyances Info." = "选择要隐藏的烦人元素。之后可在“烦人元素”信息中更改。";

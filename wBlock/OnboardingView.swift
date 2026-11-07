@@ -18,6 +18,7 @@ struct OnboardingView: View {
         case welcome
         case protection
         case regional
+        case annoyances
         case userscripts
         case sync
         case setup
@@ -39,6 +40,7 @@ struct OnboardingView: View {
     @State private var selectedRegionalFilters: Set<UUID> = []
     @State private var regionalFilters: [FilterList] = []
     @State private var hasManuallyEditedRegionalSelection = false
+    @State private var selectedAnnoyances = AnnoyanceChoice.recommended
     @State private var wantsCloudSync: Bool = false
     @State private var hasProbedRemoteConfig: Bool = false
     @State private var remoteConfigUpdatedAtText: String?
@@ -300,7 +302,7 @@ struct OnboardingView: View {
     }
 
     private var activeOnboardingSteps: [OnboardingStep] {
-        [.welcome, .protection, .regional, .userscripts, .sync, .setup]
+        [.welcome, .protection, .regional, .annoyances, .userscripts, .sync, .setup]
     }
 
     private var currentStepIndex: Int {
@@ -346,6 +348,8 @@ struct OnboardingView: View {
             blockingLevelStep
         case .regional:
             regionalStep
+        case .annoyances:
+            annoyancesStep
         case .userscripts:
             userscriptsStep
         case .sync:
@@ -538,6 +542,15 @@ struct OnboardingView: View {
                 }
             }
 
+        }
+    }
+
+    private var annoyancesStep: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Text("Choose the annoyances to hide. You can change this later in Annoyances Info.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            AnnoyanceChoicePicker(selection: $selectedAnnoyances)
         }
     }
 
@@ -983,6 +996,7 @@ struct OnboardingView: View {
             selectedFilterIDs.insert(filter.id)
         }
         selectedFilterIDs.formUnion(selectedRegionalFilters)
+        selectedFilterIDs.formUnion(AnnoyanceChoice.filters(for: selectedAnnoyances, in: currentFilters).map(\.id))
 
         await dataManager.setSelectedBlockingLevel(selectedBlockingLevel)
         sharedDefaults.set(Array(selectedLanguages), forKey: Self.selectedLanguagesDefaultsKey)

@@ -1068,3 +1068,16 @@ Para reativá-los, desative outros filtros grandes e aplique as alterações nov
 "Pop-ups & Banners" = "Pop-ups e banners";
 "Social & Chat" = "Redes sociais e chat";
 "Enable Recommended" = "Ativar recomendadas";
+"Pop-ups" = "Pop-ups";
+"Banners" = "Banners";
+"Social" = "Redes sociais";
+"Chat" = "Chat";
+"Anti-AI" = "Anti-IA";
+"Hides cookie consent banners and pop-ups." = "Oculta banners e pop-ups de consentimento de cookies.";
+"Hides newsletter sign-ups and requests to show notifications." = "Oculta inscrições em newsletters e pedidos para mostrar notificações.";
+"Hides banners that push a site's mobile app." = "Oculta banners que promovem o app de um site.";
+"Hides share buttons and social media widgets." = "Oculta botões de compartilhar e widgets de redes sociais.";
+"Hides live chat and support widgets." = "Oculta widgets de chat ao vivo e suporte.";
+"Hides overlays, promotions, and other distractions." = "Oculta sobreposições, promoções e outras distrações.";
+"Hides AI features and AI-generated content." = "Oculta recursos de IA e conteúdo gerado por IA.";
+"Choose the annoyances to hide. You can change this later in Annoyances Info." = "Escolha quais incômodos ocultar. Você pode mudar isso depois nas informações de Incômodos.";

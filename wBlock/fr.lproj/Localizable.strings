@@ -1068,3 +1068,16 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Pop-ups & Banners" = "Pop-ups et bannières";
 "Social & Chat" = "Réseaux sociaux et chat";
 "Enable Recommended" = "Activer les recommandées";
+"Pop-ups" = "Pop-ups";
+"Banners" = "Bannières";
+"Social" = "Réseaux sociaux";
+"Chat" = "Chat";
+"Anti-AI" = "Anti-IA";
+"Hides cookie consent banners and pop-ups." = "Masque les bannières et fenêtres de consentement aux cookies.";
+"Hides newsletter sign-ups and requests to show notifications." = "Masque les inscriptions aux newsletters et les demandes d’afficher des notifications.";
+"Hides banners that push a site's mobile app." = "Masque les bannières qui poussent l’app mobile d’un site.";
+"Hides share buttons and social media widgets." = "Masque les boutons de partage et les widgets de réseaux sociaux.";
+"Hides live chat and support widgets." = "Masque les widgets de chat en direct et d’assistance.";
+"Hides overlays, promotions, and other distractions." = "Masque les superpositions, promotions et autres distractions.";
+"Hides AI features and AI-generated content." = "Masque les fonctions d’IA et le contenu généré par IA.";
+"Choose the annoyances to hide. You can change this later in Annoyances Info." = "Choisissez les nuisances à masquer. Vous pourrez changer cela plus tard dans les infos Nuisances.";

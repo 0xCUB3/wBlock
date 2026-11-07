@@ -1068,3 +1068,16 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Pop-ups & Banners" = "النوافذ المنبثقة واللافتات";
 "Social & Chat" = "التواصل الاجتماعي والدردشة";
 "Enable Recommended" = "تفعيل الموصى بها";
+"Pop-ups" = "النوافذ المنبثقة";
+"Banners" = "اللافتات";
+"Social" = "التواصل الاجتماعي";
+"Chat" = "الدردشة";
+"Anti-AI" = "مكافحة الذكاء الاصطناعي";
+"Hides cookie consent banners and pop-ups." = "يخفي لافتات ونوافذ الموافقة على ملفات تعريف الارتباط.";
+"Hides newsletter sign-ups and requests to show notifications." = "يخفي نماذج الاشتراك في النشرات وطلبات عرض الإشعارات.";
+"Hides banners that push a site's mobile app." = "يخفي اللافتات التي تروّج لتطبيق الموقع على الجوال.";
+"Hides share buttons and social media widgets." = "يخفي أزرار المشاركة وأدوات وسائل التواصل الاجتماعي.";
+"Hides live chat and support widgets." = "يخفي أدوات الدردشة المباشرة والدعم.";
+"Hides overlays, promotions, and other distractions." = "يخفي الطبقات المتراكبة والعروض الترويجية وغيرها من المشتتات.";
+"Hides AI features and AI-generated content." = "يخفي ميزات الذكاء الاصطناعي والمحتوى المُنشأ به.";
+"Choose the annoyances to hide. You can change this later in Annoyances Info." = "اختر الإزعاجات التي تريد إخفاءها. يمكنك تغيير ذلك لاحقًا من معلومات الإزعاجات.";

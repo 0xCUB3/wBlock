@@ -1077,3 +1077,16 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Pop-ups & Banners" = "پنجره‌های بازشو و بنرها";
 "Social & Chat" = "شبکه‌های اجتماعی و گفتگو";
 "Enable Recommended" = "فعال‌سازی موارد پیشنهادی";
+"Pop-ups" = "پاپ‌آپ‌ها";
+"Banners" = "بنرها";
+"Social" = "شبکه‌های اجتماعی";
+"Chat" = "گفت‌وگو";
+"Anti-AI" = "ضد هوش مصنوعی";
+"Hides cookie consent banners and pop-ups." = "بنرها و پنجره‌های رضایت کوکی را پنهان می‌کند.";
+"Hides newsletter sign-ups and requests to show notifications." = "فرم‌های عضویت در خبرنامه و درخواست‌های نمایش اعلان را پنهان می‌کند.";
+"Hides banners that push a site's mobile app." = "بنرهایی را که برنامهٔ موبایل سایت را تبلیغ می‌کنند پنهان می‌کند.";
+"Hides share buttons and social media widgets." = "دکمه‌های اشتراک‌گذاری و ابزارک‌های شبکه‌های اجتماعی را پنهان می‌کند.";
+"Hides live chat and support widgets." = "ابزارک‌های گفت‌وگوی زنده و پشتیبانی را پنهان می‌کند.";
+"Hides overlays, promotions, and other distractions." = "لایه‌های روی صفحه، تبلیغات ویژه و دیگر مزاحمت‌ها را پنهان می‌کند.";
+"Hides AI features and AI-generated content." = "قابلیت‌های هوش مصنوعی و محتوای ساخته‌شده با آن را پنهان می‌کند.";
+"Choose the annoyances to hide. You can change this later in Annoyances Info." = "عناصر آزاردهنده‌ای را که باید پنهان شوند انتخاب کنید. بعداً می‌توانید این را در اطلاعات عناصر آزاردهنده تغییر دهید.";

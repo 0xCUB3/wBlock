@@ -14,13 +14,29 @@ struct FilterCategoryInfoView: View {
         ((UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard)
             .stringArray(forKey: OnboardingView.selectedLanguagesDefaultsKey) ?? []).map { $0.lowercased() }
     )
+    /// Untouched, the picker shows the choices already on, or Cookie Notices
+    /// when none is.
+    @State private var pickedChoices: Set<AnnoyanceChoice>?
     @Environment(\.dismiss) private var dismiss
+
+    private var annoyanceChoices: Binding<Set<AnnoyanceChoice>> {
+        Binding(
+            get: {
+                let enabled = AnnoyanceChoice.choices(enabledIn: filterLists)
+                return pickedChoices ?? (enabled.isEmpty ? AnnoyanceChoice.recommended : enabled)
+            },
+            set: { pickedChoices = $0 }
+        )
+    }
 
     private var languageOptions: [RegionalLanguageOption] {
         RegionalLanguageOption.fromForeignFilters(filterLists)
     }
 
     private var recommendedFilters: [FilterList] {
+        if category == .annoyances {
+            return AnnoyanceChoice.filters(for: annoyanceChoices.wrappedValue, in: filterLists)
+        }
         let matching = filterLists.filter {
             $0.category == .foreign
                 && !Set($0.languages.map { $0.lowercased() }).isDisjoint(with: selectedLanguages)
@@ -58,6 +74,10 @@ struct FilterCategoryInfoView: View {
                 }
             }
 
+            if category == .annoyances {
+                AnnoyanceChoicePicker(selection: annoyanceChoices)
+            }
+
             Button("Enable Recommended") {
                 enableRecommended()
                 dismiss()
@@ -71,8 +91,10 @@ struct FilterCategoryInfoView: View {
     }
 
     private func enableRecommended() {
-        (UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard)
-            .set(Array(selectedLanguages).sorted(), forKey: OnboardingView.selectedLanguagesDefaultsKey)
+        if category == .foreign {
+            (UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard)
+                .set(Array(selectedLanguages).sorted(), forKey: OnboardingView.selectedLanguagesDefaultsKey)
+        }
         onEnableRecommended(Set(recommendedFilters.map(\.id)))
     }
 }
@@ -89,6 +111,30 @@ struct RecommendedNamesList: View {
                 Text(LocalizedStringKey(name))
             }
             .foregroundStyle(.secondary)
+        }
+    }
+}
+
+/// One card per choice, naming the lists it turns on.
+struct AnnoyanceChoicePicker: View {
+    @Binding var selection: Set<AnnoyanceChoice>
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ForEach(AnnoyanceChoice.allCases) { choice in
+                let isSelected = selection.contains(choice)
+                SelectableRow(
+                    title: Text(LocalizedStringKey(choice.title)),
+                    caption: ListFormatter.localizedString(byJoining: choice.filterNames.map {
+                        LocalizedStrings.text($0, comment: "Filter list name")
+                    }),
+                    subtitle: choice.subtitle,
+                    isSelected: isSelected,
+                    style: .card
+                ) {
+                    if isSelected { selection.remove(choice) } else { selection.insert(choice) }
+                }
+            }
         }
     }
 }

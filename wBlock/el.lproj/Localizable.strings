@@ -1068,3 +1068,16 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Pop-ups & Banners" = "Αναδυόμενα και banner";
 "Social & Chat" = "Κοινωνικά δίκτυα και συνομιλία";
 "Enable Recommended" = "Ενεργοποίηση προτεινόμενων";
+"Pop-ups" = "Αναδυόμενα";
+"Banners" = "Banner";
+"Social" = "Κοινωνικά δίκτυα";
+"Chat" = "Συνομιλία";
+"Anti-AI" = "Κατά της ΤΝ";
+"Hides cookie consent banners and pop-ups." = "Κρύβει μπάνερ και αναδυόμενα παράθυρα συναίνεσης για cookie.";
+"Hides newsletter sign-ups and requests to show notifications." = "Κρύβει εγγραφές σε ενημερωτικά δελτία και αιτήματα για ειδοποιήσεις.";
+"Hides banners that push a site's mobile app." = "Κρύβει μπάνερ που προωθούν την εφαρμογή ενός ιστότοπου.";
+"Hides share buttons and social media widgets." = "Κρύβει κουμπιά κοινοποίησης και widget κοινωνικών δικτύων.";
+"Hides live chat and support widgets." = "Κρύβει widget ζωντανής συνομιλίας και υποστήριξης.";
+"Hides overlays, promotions, and other distractions." = "Κρύβει επικαλύψεις, προωθήσεις και άλλους περισπασμούς.";
+"Hides AI features and AI-generated content." = "Κρύβει λειτουργίες ΤΝ και περιεχόμενο που δημιουργήθηκε από ΤΝ.";
+"Choose the annoyances to hide. You can change this later in Annoyances Info." = "Επιλέξτε ποιες ενοχλήσεις θα κρύβονται. Μπορείτε να το αλλάξετε αργότερα στις πληροφορίες της κατηγορίας Ενοχλήσεις.";

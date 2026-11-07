@@ -1077,3 +1077,16 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Pop-ups & Banners" = "Pop-ups & Banners";
 "Social & Chat" = "Social & Chat";
 "Enable Recommended" = "Enable Recommended";
+"Pop-ups" = "Pop-ups";
+"Banners" = "Banners";
+"Social" = "Social";
+"Chat" = "Chat";
+"Anti-AI" = "Anti-AI";
+"Hides cookie consent banners and pop-ups." = "Hides cookie consent banners and pop-ups.";
+"Hides newsletter sign-ups and requests to show notifications." = "Hides newsletter sign-ups and requests to show notifications.";
+"Hides banners that push a site's mobile app." = "Hides banners that push a site's mobile app.";
+"Hides share buttons and social media widgets." = "Hides share buttons and social media widgets.";
+"Hides live chat and support widgets." = "Hides live chat and support widgets.";
+"Hides overlays, promotions, and other distractions." = "Hides overlays, promotions, and other distractions.";
+"Hides AI features and AI-generated content." = "Hides AI features and AI-generated content.";
+"Choose the annoyances to hide. You can change this later in Annoyances Info." = "Choose the annoyances to hide. You can change this later in Annoyances Info.";
