@@ -42,6 +42,7 @@ struct ListActionsToolbar<Primary: View, Apply: View, Leading: View>: ViewModifi
     @Binding var focusRequest: Bool
     @Binding var showEnabledOnly: Bool
     let searchPrompt: LocalizedStringKey
+    let showsApply: Bool
     @ViewBuilder let primary: () -> Primary
     @ViewBuilder let apply: () -> Apply
     /// Pause Blocking. It lives here so iPhone search can clear it with the
@@ -75,18 +76,21 @@ struct ListActionsToolbar<Primary: View, Apply: View, Leading: View>: ViewModifi
         // spacing between them (#999).
         if #available(macOS 26.0, *) {
             content.toolbar {
-                // One item, so the pause menu shares update's capsule. A
-                // ControlGroup here moved both to the trailing edge.
-                ToolbarItem(placement: .navigation) {
-                    // Spaced like the ControlGroup on the trailing side, which
-                    // this can't be: a ControlGroup moves to the trailing edge.
-                    HStack(spacing: 3) {
-                        leading().modifier(ToolbarItemHover())
-                        apply().modifier(ToolbarItemHover())
+                // Pause and Update share a ControlGroup, so they get the
+                // system's hover like Show Enabled Only and Add. Alone in its
+                // item a ControlGroup moves to the trailing edge; the stack
+                // keeps it leading. Apply takes its own capsule (#1087).
+                if showsApply {
+                    ToolbarItem(placement: .navigation) { leading() }
+                        .toolbarVisibilityPriorityCompat(.high)
+                    ToolbarItem(placement: .navigation) { apply() }
+                        .toolbarVisibilityPriorityCompat(.high)
+                } else {
+                    ToolbarItem(placement: .navigation) {
+                        HStack { ControlGroup { leading(); apply() } }.fixedSize()
                     }
-                    .fixedSize()
+                    .toolbarVisibilityPriorityCompat(.high)
                 }
-                .toolbarVisibilityPriorityCompat(.high)
                 ToolbarItem(placement: .primaryAction) {
                     InlineGlassSearchField(text: $searchText, focusRequest: $focusRequest, isOpen: $isSearchOpen, prompt: searchPrompt)
                 }
@@ -836,20 +840,3 @@ extension View {
         #endif
     }
 }
-
-#if os(macOS)
-/// The highlight a ControlGroup's items show under the pointer, for the
-/// hand-built leading group, which can't be a ControlGroup.
-private struct ToolbarItemHover: ViewModifier {
-    @State private var isHovered = false
-
-    func body(content: Content) -> some View {
-        content
-            .frame(minWidth: 40, minHeight: 28)
-            .background(Capsule().fill(Color.primary.opacity(isHovered ? 0.08 : 0)))
-            .contentShape(Capsule())
-            .onHover { isHovered = $0 }
-            .animation(.easeOut(duration: 0.12), value: isHovered)
-    }
-}
-#endif

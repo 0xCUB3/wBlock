@@ -99,6 +99,10 @@ struct ContentView: View {
         filterManager.hasUnappliedChanges
     }
 
+    private var showsApply: Bool {
+        hasPendingChanges && !filterManager.isLoading && !filterManager.isAutoUpdateRunning
+    }
+
     private var shouldShowRuleLimitIndicator: Bool {
         hasAppliedFilters && appliedSafariRulesCount >= filterManager.safariRuleCapacity
     }
@@ -345,7 +349,6 @@ struct ContentView: View {
         // The spinner sits in the round icon's frame. Sizing it to the hidden
         // Apply word stretched the button into an empty pill during a run
         // that started with changes pending, such as the post-upgrade rebuild.
-        let showsApply = hasPendingChanges && !isBusy
         return ApplyChangesButton(
             isDisabled: isBusy,
             hasPendingChanges: hasPendingChanges,
@@ -425,7 +428,8 @@ struct ContentView: View {
             searchText: $filterSearchText,
             focusRequest: $showFilterSearch,
             showEnabledOnly: $showOnlyEnabledLists,
-            searchPrompt: "Search filters"
+            searchPrompt: "Search filters",
+            showsApply: showsApply
         ) {
             Button {
                 showingAddFilterSheet = true
@@ -510,6 +514,7 @@ struct ContentView: View {
                 },
                 applyButton: AnyView(applyChangesToolbarButton),
                 pauseButton: AnyView(PauseBlockingButton(filterManager: filterManager)),
+                showsApply: showsApply,
                 isApplying: filterManager.showingApplyProgressSheet
             )
                 .modifier(topBanners)
