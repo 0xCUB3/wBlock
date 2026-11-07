@@ -696,7 +696,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Provides newer rules and fixes that are still being tested." = "قوانین و اصلاحات جدیدتری را ارائه می‌دهد که هنوز در حال آزمایش هستند.";
 "Recommended Filters" = "فیلترهای توصیه‌شده";
 "Recommended Scripts" = "اسکریپت‌های توصیه‌شده";
-"Removes cookie notices, pop-ups, banners, and other distracting elements. Enable all five AdGuard Annoyances lists for the full set." = "اعلان‌های کوکی، پنجره‌های پاپ‌آپ، بنرها و سایر عناصر مزاحم را حذف می‌کند. برای مجموعهٔ کامل، هر پنج فهرست AdGuard Annoyances را فعال کنید.";
+"Removes cookie notices, pop-ups, banners, and other distracting elements." = "اعلان‌های کوکی، پنجره‌های پاپ‌آپ، بنرها و سایر عناصر مزاحم را حذف می‌کند.";
 "Reset to Default" = "بازنشانی به پیش‌فرض";
 "Shows all filter lists across every category." = "همهٔ فهرست‌های فیلتر را در تمام دسته‌ها نشان می‌دهد.";
 "Adds rules tailored to websites and languages from specific regions." = "قوانینی متناسب با وب‌سایت‌ها و زبان‌های مناطق خاص اضافه می‌کند. انتخاب زبان‌های شما، هر فهرستی را که آن‌ها را پوشش می‌دهد روشن می‌کند. فهرست‌هایی که از قبل در فهرست منطقه‌ای AdGuard گنجانده شده‌اند، از کاتالوگ حذف می‌شوند.";

@@ -696,7 +696,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Provides newer rules and fixes that are still being tested." = "Provides newer rules and fixes that are still being tested.";
 "Recommended Filters" = "Recommended Filters";
 "Recommended Scripts" = "Recommended Scripts";
-"Removes cookie notices, pop-ups, banners, and other distracting elements. Enable all five AdGuard Annoyances lists for the full set." = "Removes cookie notices, pop-ups, banners, and other distractions. Turn on all five AdGuard Annoyances lists for full coverage.";
+"Removes cookie notices, pop-ups, banners, and other distracting elements." = "Removes cookie notices, pop-ups, banners, and other distracting elements.";
 "Reset to Default" = "Reset to Default";
 "Shows all filter lists across every category." = "Shows all filter lists across every category.";
 "Adds rules tailored to websites and languages from specific regions." = "Lists for websites and languages of specific regions. Choosing your languages turns on every list that covers them. Lists already part of an AdGuard regional list aren't shown separately.";
