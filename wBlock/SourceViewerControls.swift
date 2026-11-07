@@ -111,3 +111,40 @@ struct SourceControlIcon: View {
             .foregroundStyle(isOn ? Color.accentColor : (isEnabled ? Color.primary : Color.secondary.opacity(0.5)))
     }
 }
+
+/// The capsule behind a source window's menu, darker while pressed so a
+/// click shows (#1088). macOS before 14 can't style a menu as a button and
+/// keeps the plain capsule.
+struct SourceMenuCapsule: ViewModifier {
+    func body(content: Content) -> some View {
+        #if os(macOS)
+        if #available(macOS 14.0, *) {
+            content.menuStyle(.button).buttonStyle(CapsulePressStyle())
+        } else {
+            content.menuStyle(.borderlessButton).buttonStyle(.plain)
+                .modifier(CapsuleChrome(isPressed: false))
+        }
+        #else
+        content.buttonStyle(CapsulePressStyle())
+        #endif
+    }
+}
+
+private struct CapsulePressStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label.modifier(CapsuleChrome(isPressed: configuration.isPressed))
+    }
+}
+
+private struct CapsuleChrome: ViewModifier {
+    let isPressed: Bool
+
+    func body(content: Content) -> some View {
+        content
+            .padding(.horizontal, 8)
+            .frame(height: SourceControlMetrics.size)
+            .background(Capsule().fill(Color.secondary.opacity(isPressed ? 0.3 : 0.15)))
+            .contentShape(Capsule())
+            .animation(.easeOut(duration: 0.1), value: isPressed)
+    }
+}

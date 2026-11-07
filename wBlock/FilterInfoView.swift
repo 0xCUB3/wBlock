@@ -327,14 +327,10 @@ struct FilterRulesView: View {
             .contentShape(Rectangle())
             .foregroundStyle(shownKinds.count == FilterRuleKind.allCases.count ? Color.primary : Color.accentColor)
         }
-        .menuStyle(.borderlessButton)
+        .modifier(SourceMenuCapsule())
         .menuIndicator(.visible)
         .menuStaysOpenCompat()
-        .buttonStyle(.plain)
         .fixedSize()
-        .padding(.horizontal, 8)
-        .frame(height: SourceControlMetrics.size)
-        .background(Capsule().fill(Color.secondary.opacity(0.15)))
         .accessibilityLabel("View")
         .help("View")
     }
