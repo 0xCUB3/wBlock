@@ -685,13 +685,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead.";
 "Web extension %@" = "Web extension %@";
 "Get Started" = "Get Started";
-"No default filters" = "No default filters";
 "No default scripts" = "No default scripts";
-"Recommended Filters" = "Recommended Filters";
 "Recommended Scripts" = "Recommended Scripts";
 "Removes cookie notices, pop-ups, banners, and other distracting elements." = "Removes cookie notices, pop-ups, banners, and other distracting elements.";
 "Reset to Default" = "Reset to Default";
-"Adds rules tailored to websites and languages from specific regions." = "Lists for websites and languages of specific regions. Choosing your languages turns on every list that covers them. Lists already part of an AdGuard regional list aren't shown separately.";
+"Lists for websites and languages of specific regions." = "Lists for websites and languages of specific regions.";
 "The end of Safari ad-blocking B.S." = "The end of Safari ad-blocking B.S.";
 "Welcome to wBlock!" = "Welcome to wBlock!";
 "Whitelist" = "Allowlist";
@@ -1078,3 +1076,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Cookie Notices" = "Cookie Notices";
 "Pop-ups & Banners" = "Pop-ups & Banners";
 "Social & Chat" = "Social & Chat";
+"Enable Recommended" = "Enable Recommended";

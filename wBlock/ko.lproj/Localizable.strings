@@ -687,13 +687,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "iCloud에서 기존 wBlock 구성(\\(remoteConfigUpdatedAtText))을 찾았습니다. 온보딩을 건너뛰고 해당 구성을 사용할 수 있습니다.";
 "Web extension %@" = "웹 확장 프로그램 %@";
 "Get Started" = "시작하기";
-"No default filters" = "기본 필터 없음";
 "No default scripts" = "기본 스크립트 없음";
-"Recommended Filters" = "추천 필터";
 "Recommended Scripts" = "추천 스크립트";
 "Removes cookie notices, pop-ups, banners, and other distracting elements." = "쿠키 알림, 팝업, 배너 및 기타 방해 요소를 제거합니다.";
 "Reset to Default" = "기본값으로 재설정";
-"Adds rules tailored to websites and languages from specific regions." = "특정 지역의 웹사이트와 언어에 맞춘 규칙을 추가합니다. 언어를 선택하면 해당 언어를 다루는 모든 목록이 켜집니다. AdGuard 지역 목록에 이미 포함된 목록은 카탈로그에 없습니다.";
+"Lists for websites and languages of specific regions." = "특정 지역의 웹사이트와 언어를 위한 목록입니다.";
 "The end of Safari ad-blocking B.S." = "Safari 광고 차단의 말도 안 되는 문제는 이제 끝입니다.";
 "Welcome to wBlock!" = "wBlock에 오신 것을 환영합니다!";
 "Whitelist" = "허용 목록";
@@ -1069,3 +1067,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Cookie Notices" = "쿠키 알림";
 "Pop-ups & Banners" = "팝업 및 배너";
 "Social & Chat" = "소셜 및 채팅";
+"Enable Recommended" = "권장 항목 켜기";

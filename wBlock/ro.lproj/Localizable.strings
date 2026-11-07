@@ -685,13 +685,11 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "Am găsit o configurație wBlock existentă în iCloud (\\(remoteConfigUpdatedAtText)). Poți sări peste configurarea inițială și să o folosești pe aceea.";
 "Web extension %@" = "Extensie web %@";
 "Get Started" = "Începe";
-"No default filters" = "Nu există filtre implicite";
 "No default scripts" = "Nu există scripturi implicite";
-"Recommended Filters" = "Filtre recomandate";
 "Recommended Scripts" = "Scripturi recomandate";
 "Removes cookie notices, pop-ups, banners, and other distracting elements." = "Elimină notificările despre cookie-uri, ferestrele pop-up, bannerele și alte elemente deranjante.";
 "Reset to Default" = "Resetează la valorile implicite";
-"Adds rules tailored to websites and languages from specific regions." = "Adaugă reguli adaptate site-urilor și limbilor din anumite regiuni. Când alegi limbile, se activează toate listele care le acoperă. Listele incluse deja într-o listă regională AdGuard nu apar în catalog.";
+"Lists for websites and languages of specific regions." = "Liste pentru site-urile și limbile anumitor regiuni.";
 "The end of Safari ad-blocking B.S." = "Sfârșitul prostiilor blocării reclamelor în Safari.";
 "Welcome to wBlock!" = "Bine ai venit în wBlock!";
 "Whitelist" = "Listă de permisiuni";
@@ -1069,3 +1067,4 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Cookie Notices" = "Notificări cookie";
 "Pop-ups & Banners" = "Ferestre pop-up și bannere";
 "Social & Chat" = "Rețele sociale și chat";
+"Enable Recommended" = "Activează recomandările";

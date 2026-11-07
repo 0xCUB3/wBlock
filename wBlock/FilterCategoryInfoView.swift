@@ -3,14 +3,16 @@ import wBlockCoreService
 
 struct FilterCategoryInfoView: View {
     let category: FilterListCategory
-    let defaultFilterNames: [String]
     let filterLists: [FilterList]
-    let onLanguagesChange: (Set<String>) -> Void
-    let onReset: () -> Void
+    /// Enable Recommended: exactly these lists stay on in the category, and the
+    /// rest, custom ones included, go off.
+    let onEnableRecommended: (Set<UUID>) -> Void
 
+    // Picking languages only previews their lists; Enable Recommended applies
+    // them, so a tap in the picker can't switch lists on behind the sheet (#1087).
     @State private var selectedLanguages = Set(
         ((UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard)
-            .stringArray(forKey: "onboardingSelectedLanguages") ?? []).map { $0.lowercased() }
+            .stringArray(forKey: OnboardingView.selectedLanguagesDefaultsKey) ?? []).map { $0.lowercased() }
     )
     @Environment(\.dismiss) private var dismiss
 
@@ -18,13 +20,12 @@ struct FilterCategoryInfoView: View {
         RegionalLanguageOption.fromForeignFilters(filterLists)
     }
 
-    private var recommendedFilterNames: [String] {
-        guard category == .foreign else { return defaultFilterNames }
+    private var recommendedFilters: [FilterList] {
         let matching = filterLists.filter {
             $0.category == .foreign
                 && !Set($0.languages.map { $0.lowercased() }).isDisjoint(with: selectedLanguages)
         }
-        return ForeignFilterOrganizer.recommendationBuckets(from: matching).recommended.map(\.name)
+        return ForeignFilterOrganizer.recommendationBuckets(from: matching).recommended
     }
 
     var body: some View {
@@ -45,24 +46,20 @@ struct FilterCategoryInfoView: View {
                     selectedLanguages: $selectedLanguages,
                     options: languageOptions
                 )
-                .onChangeCompat(of: selectedLanguages) { _, newValue in
-                    onLanguagesChange(newValue)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Lists for Your Languages")
+                        .font(.headline)
+                    if recommendedFilters.isEmpty {
+                        Text("Choose a language to see its lists.")
+                            .foregroundStyle(.secondary)
+                    } else {
+                        RecommendedNamesList(names: recommendedFilters.map(\.name))
+                    }
                 }
             }
 
-            VStack(alignment: .leading, spacing: 8) {
-                Text(category == .foreign ? "Lists for Your Languages" : "Recommended Filters")
-                    .font(.headline)
-                if recommendedFilterNames.isEmpty {
-                    Text(category == .foreign ? "Choose a language to see its lists." : "No default filters")
-                        .foregroundStyle(.secondary)
-                } else {
-                    RecommendedNamesList(names: recommendedFilterNames)
-                }
-            }
-
-            Button("Reset to Default") {
-                onReset()
+            Button("Enable Recommended") {
+                enableRecommended()
                 dismiss()
             }
             .buttonStyle(.borderedProminent)
@@ -73,6 +70,11 @@ struct FilterCategoryInfoView: View {
         #endif
     }
 
+    private func enableRecommended() {
+        (UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard)
+            .set(Array(selectedLanguages).sorted(), forKey: OnboardingView.selectedLanguagesDefaultsKey)
+        onEnableRecommended(Set(recommendedFilters.map(\.id)))
+    }
 }
 
 /// Plain bullets: a checkmark beside each name read as "enabled", which these

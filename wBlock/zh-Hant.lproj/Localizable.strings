@@ -687,13 +687,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "我們在 iCloud（\\(remoteConfigUpdatedAtText)）找到既有的 wBlock 設定。你可以略過新手導覽並改用它。";
 "Web extension %@" = "網頁延伸功能 %@";
 "Get Started" = "開始使用";
-"No default filters" = "沒有預設過濾器";
 "No default scripts" = "沒有預設腳本";
-"Recommended Filters" = "推薦過濾器";
 "Recommended Scripts" = "推薦腳本";
 "Removes cookie notices, pop-ups, banners, and other distracting elements." = "移除 Cookie 通知、彈出式視窗、橫幅和其他干擾元素。";
 "Reset to Default" = "重設為預設值";
-"Adds rules tailored to websites and languages from specific regions." = "為特定地區的網站和語言新增適用規則。選擇語言後，會開啟所有涵蓋這些語言的清單。已包含在 AdGuard 區域清單中的清單不在目錄中。";
+"Lists for websites and languages of specific regions." = "適用於特定地區網站和語言的清單。";
 "The end of Safari ad-blocking B.S." = "告別 Safari 廣告封鎖的糟心事";
 "Welcome to wBlock!" = "歡迎使用 wBlock！";
 "Whitelist" = "允許清單";
@@ -1069,3 +1067,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Cookie Notices" = "Cookie 通知";
 "Pop-ups & Banners" = "彈出視窗與橫幅";
 "Social & Chat" = "社群與聊天";
+"Enable Recommended" = "啟用建議項目";

@@ -64,7 +64,7 @@ struct OnboardingView: View {
 
     @ObservedObject var filterManager: AppFilterManager
     
-    private static let selectedLanguagesDefaultsKey = "onboardingSelectedLanguages"
+    static let selectedLanguagesDefaultsKey = "onboardingSelectedLanguages"
     private static let cloudSyncEnabledDefaultsKey = "cloudSyncEnabled"
     private static let englishLanguageCode = "en"
     private static let otherLanguagesCode = "other"

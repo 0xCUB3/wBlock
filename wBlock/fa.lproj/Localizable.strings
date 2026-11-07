@@ -685,13 +685,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "ما یک پیکربندی موجود wBlock در iCloud (\\(remoteConfigUpdatedAtText)) پیدا کردیم. می‌توانید از آشنایی اولیه صرف‌نظر کرده و در عوض از آن استفاده کنید.";
 "Web extension %@" = "افزونهٔ وب %@";
 "Get Started" = "شروع کنید";
-"No default filters" = "هیچ فیلتر پیش‌فرضی وجود ندارد";
 "No default scripts" = "هیچ اسکریپت پیش‌فرضی وجود ندارد";
-"Recommended Filters" = "فیلترهای توصیه‌شده";
 "Recommended Scripts" = "اسکریپت‌های توصیه‌شده";
 "Removes cookie notices, pop-ups, banners, and other distracting elements." = "اعلان‌های کوکی، پنجره‌های پاپ‌آپ، بنرها و سایر عناصر مزاحم را حذف می‌کند.";
 "Reset to Default" = "بازنشانی به پیش‌فرض";
-"Adds rules tailored to websites and languages from specific regions." = "قوانینی متناسب با وب‌سایت‌ها و زبان‌های مناطق خاص اضافه می‌کند. انتخاب زبان‌های شما، هر فهرستی را که آن‌ها را پوشش می‌دهد روشن می‌کند. فهرست‌هایی که از قبل در فهرست منطقه‌ای AdGuard گنجانده شده‌اند، از کاتالوگ حذف می‌شوند.";
+"Lists for websites and languages of specific regions." = "فهرست‌هایی برای وب‌سایت‌ها و زبان‌های مناطق خاص.";
 "The end of Safari ad-blocking B.S." = "پایان دردسرهای مسدودسازی تبلیغات در Safari.";
 "Welcome to wBlock!" = "به wBlock خوش آمدید!";
 "Whitelist" = "فهرست مجاز";
@@ -1078,3 +1076,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Cookie Notices" = "اعلان‌های کوکی";
 "Pop-ups & Banners" = "پنجره‌های بازشو و بنرها";
 "Social & Chat" = "شبکه‌های اجتماعی و گفتگو";
+"Enable Recommended" = "فعال‌سازی موارد پیشنهادی";

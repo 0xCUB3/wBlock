@@ -687,13 +687,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "Мы нашли существующую конфигурацию wBlock в iCloud (\\(remoteConfigUpdatedAtText)). Можно пропустить начальную настройку и использовать ее.";
 "Web extension %@" = "Веб-расширение %@";
 "Get Started" = "Начать";
-"No default filters" = "Нет фильтров по умолчанию";
 "No default scripts" = "Нет скриптов по умолчанию";
-"Recommended Filters" = "Рекомендуемые фильтры";
 "Recommended Scripts" = "Рекомендуемые скрипты";
 "Removes cookie notices, pop-ups, banners, and other distracting elements." = "Удаляет уведомления о cookie, всплывающие окна, баннеры и другие отвлекающие элементы.";
 "Reset to Default" = "Сбросить по умолчанию";
-"Adds rules tailored to websites and languages from specific regions." = "Добавляет правила для сайтов и языков определённых регионов. При выборе языков включаются все списки, которые их охватывают. Списков, уже входящих в региональные списки AdGuard, в каталоге нет.";
+"Lists for websites and languages of specific regions." = "Списки для сайтов и языков отдельных регионов.";
 "The end of Safari ad-blocking B.S." = "Конец ерунде с блокировкой рекламы в Safari";
 "Welcome to wBlock!" = "Добро пожаловать в wBlock!";
 "Whitelist" = "Список разрешённых";
@@ -1069,3 +1067,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Cookie Notices" = "Уведомления о cookie";
 "Pop-ups & Banners" = "Всплывающие окна и баннеры";
 "Social & Chat" = "Соцсети и чаты";
+"Enable Recommended" = "Включить рекомендуемые";

@@ -687,13 +687,11 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "Találtunk egy meglévő wBlock konfigurációt az iCloudban (\\(remoteConfigUpdatedAtText)). Kihagyhatod a kezdő beállítást, és ezt használhatod.";
 "Web extension %@" = "Webes kiterjesztés %@";
 "Get Started" = "Kezdés";
-"No default filters" = "Nincsenek alapértelmezett szűrők";
 "No default scripts" = "Nincsenek alapértelmezett szkriptek";
-"Recommended Filters" = "Ajánlott szűrők";
 "Recommended Scripts" = "Ajánlott szkriptek";
 "Removes cookie notices, pop-ups, banners, and other distracting elements." = "Eltávolítja a cookie-értesítéseket, felugró ablakokat, bannereket és más zavaró elemeket.";
 "Reset to Default" = "Alapértékek visszaállítása";
-"Adds rules tailored to websites and languages from specific regions." = "Bizonyos régiók webhelyeihez és nyelveihez igazított szabályokat ad hozzá. A nyelvek kiválasztásakor minden őket lefedő lista bekapcsol. Az AdGuard regionális listáiban már szereplő listák nincsenek a katalógusban.";
+"Lists for websites and languages of specific regions." = "Listák adott régiók webhelyeihez és nyelveihez.";
 "The end of Safari ad-blocking B.S." = "Vége a Safari reklámblokkolási ostobaságainak";
 "Welcome to wBlock!" = "Üdvözli a wBlock!";
 "Whitelist" = "Engedélyezőlista";
@@ -1069,3 +1067,4 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Cookie Notices" = "Sütiértesítések";
 "Pop-ups & Banners" = "Felugró ablakok és bannerek";
 "Social & Chat" = "Közösségi média és csevegés";
+"Enable Recommended" = "Ajánlottak bekapcsolása";

@@ -687,13 +687,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "Βρήκαμε μια υπάρχουσα διαμόρφωση wBlock στο iCloud (\\(remoteConfigUpdatedAtText)). Μπορείτε να παραλείψετε την αρχική ρύθμιση και να χρησιμοποιήσετε αυτήν.";
 "Web extension %@" = "Επέκταση web %@";
 "Get Started" = "Έναρξη";
-"No default filters" = "Δεν υπάρχουν προεπιλεγμένα φίλτρα";
 "No default scripts" = "Δεν υπάρχουν προεπιλεγμένοι κώδικες";
-"Recommended Filters" = "Προτεινόμενα Φίλτρα";
 "Recommended Scripts" = "Προτεινόμενοι Κώδικες";
 "Removes cookie notices, pop-ups, banners, and other distracting elements." = "Αφαιρεί ειδοποιήσεις cookie, αναδυόμενα παράθυρα, banner και άλλα ενοχλητικά στοιχεία.";
 "Reset to Default" = "Επαναφορά στις προεπιλογές";
-"Adds rules tailored to websites and languages from specific regions." = "Προσθέτει κανόνες για ιστοτόπους και γλώσσες συγκεκριμένων περιοχών. Όταν επιλέγετε τις γλώσσες σας, ενεργοποιούνται όλες οι λίστες που τις καλύπτουν. Οι λίστες που περιλαμβάνονται ήδη σε τοπική λίστα του AdGuard παραλείπονται από τον κατάλογο.";
+"Lists for websites and languages of specific regions." = "Λίστες για ιστότοπους και γλώσσες συγκεκριμένων περιοχών.";
 "The end of Safari ad-blocking B.S." = "Το τέλος της ανοησίας με τον αποκλεισμό διαφημίσεων στο Safari";
 "Welcome to wBlock!" = "Καλώς ορίσατε στο wBlock!";
 "Whitelist" = "Λίστα επιτρεπόμενων";
@@ -1069,3 +1067,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Cookie Notices" = "Ειδοποιήσεις cookie";
 "Pop-ups & Banners" = "Αναδυόμενα και banner";
 "Social & Chat" = "Κοινωνικά δίκτυα και συνομιλία";
+"Enable Recommended" = "Ενεργοποίηση προτεινόμενων";

@@ -685,13 +685,11 @@ Para reativá-los, desative outros filtros grandes e aplique as alterações nov
 "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "Encontramos uma configuração existente do wBlock no iCloud (\\(remoteConfigUpdatedAtText)). Você pode pular a configuração inicial e usar essa configuração.";
 "Web extension %@" = "Extensão web %@";
 "Get Started" = "Começar";
-"No default filters" = "Nenhum filtro padrão";
 "No default scripts" = "Nenhum script padrão";
-"Recommended Filters" = "Filtros recomendados";
 "Recommended Scripts" = "Scripts recomendados";
 "Removes cookie notices, pop-ups, banners, and other distracting elements." = "Remove avisos de cookies, pop-ups, banners e outros elementos que distraem.";
 "Reset to Default" = "Redefinir para o padrão";
-"Adds rules tailored to websites and languages from specific regions." = "Adiciona regras adaptadas a sites e idiomas de regiões específicas. Escolher seus idiomas ativa todas as listas que os cobrem. Listas já incluídas em uma lista regional do AdGuard não estão no catálogo.";
+"Lists for websites and languages of specific regions." = "Listas para sites e idiomas de regiões específicas.";
 "The end of Safari ad-blocking B.S." = "Chega de bobagens no bloqueio de anúncios do Safari.";
 "Welcome to wBlock!" = "Bem-vindo ao wBlock!";
 "Whitelist" = "Lista de permissões";
@@ -1069,3 +1067,4 @@ Para reativá-los, desative outros filtros grandes e aplique as alterações nov
 "Cookie Notices" = "Avisos de cookies";
 "Pop-ups & Banners" = "Pop-ups e banners";
 "Social & Chat" = "Redes sociais e chat";
+"Enable Recommended" = "Ativar recomendadas";
