@@ -845,7 +845,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 
 "Pause All Components" = "Összes összetevő szüneteltetése";
 
-"Replaces YouTube titles and thumbnails with community-submitted DeArrow alternatives." = "A YouTube-címeket és bélyegképeket a DeArrow közössége által beküldött alternatívákra cseréli.";
+"Blocks clickbait titles and thumbnails on YouTube and replaces them with accurate ones from the DeArrow community." = "Letiltja a kattintásvadász címeket és bélyegképeket a YouTube-on, és a DeArrow közösség pontos változataira cseréli őket.";
 
 "DeArrow" = "DeArrow";
 
@@ -1077,3 +1077,5 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Hides overlays, promotions, and other distractions." = "Elrejti a rátett rétegeket, promóciókat és más zavaró elemeket.";
 "Hides AI features and AI-generated content." = "Elrejti az MI-funkciókat és az MI által készített tartalmat.";
 "Choose the annoyances to hide. You can change this later in Annoyances Info." = "Válaszd ki, mely zavaró elemek legyenek elrejtve. Ezt később a Zavaró elemek információinál módosíthatod.";
+"Blocks YouTube's ads and web player and plays videos in Safari's native player, with chapters, picture-in-picture, background playback, and audio-only mode. Includes SponsorBlock, which skips sponsored segments." = "Letiltja a YouTube hirdetéseit és webes lejátszóját, és a Safari natív lejátszójában játssza le a videókat fejezetekkel, kép a képben módban, háttérlejátszással és csak hang móddal. Tartalmazza a SponsorBlockot, amely átugorja a szponzorált részeket.";
+"Blocks third-party video players on other sites and plays videos with Safari's native controls, adding auto PiP, background playback, subtitles, chapters, and Now Playing info." = "Letiltja a külső videólejátszókat más webhelyeken, és a Safari natív vezérlőivel játssza le a videókat, automatikus kép a képben móddal, háttérlejátszással, feliratokkal, fejezetekkel és Most játszott adatokkal.";

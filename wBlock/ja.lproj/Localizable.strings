@@ -832,7 +832,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Last Update Check" = "最終アップデートチェック";
 "Last Successful Update" = "最後に成功したアップデート";
 "Pause All Components" = "全ての機能を一時停止";
-"Replaces YouTube titles and thumbnails with community-submitted DeArrow alternatives." = "YouTubeのタイトルとサムネイルをDeArrowコミュニティが投稿した代替案に置き換えます。";
+"Blocks clickbait titles and thumbnails on YouTube and replaces them with accurate ones from the DeArrow community." = "YouTube の釣りタイトルとサムネイルをブロックし、DeArrow コミュニティによる正確なものに置き換えます。";
 "DeArrow" = "DeArrow";
 "Original Thumbnail Channels" = "元のサムネイルを使うチャンネル";
 "Keep original thumbnails for these YouTube channels." = "これらのYouTubeチャンネルでは元のサムネイルを使用します。";
@@ -1046,3 +1046,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides overlays, promotions, and other distractions." = "オーバーレイ、宣伝、その他の邪魔な表示を非表示にします。";
 "Hides AI features and AI-generated content." = "AI機能とAI生成コンテンツを非表示にします。";
 "Choose the annoyances to hide. You can change this later in Annoyances Info." = "非表示にする迷惑要素を選んでください。あとで迷惑要素の情報から変更できます。";
+"Blocks YouTube's ads and web player and plays videos in Safari's native player, with chapters, picture-in-picture, background playback, and audio-only mode. Includes SponsorBlock, which skips sponsored segments." = "YouTube の広告とウェブプレーヤーをブロックし、Safari のネイティブプレーヤーで動画を再生します。チャプター、ピクチャ・イン・ピクチャ、バックグラウンド再生、音声のみモードに対応。スポンサー区間を飛ばす SponsorBlock も含まれます。";
+"Blocks third-party video players on other sites and plays videos with Safari's native controls, adding auto PiP, background playback, subtitles, chapters, and Now Playing info." = "他のサイトのサードパーティ製動画プレーヤーをブロックし、Safari のネイティブコントロールで動画を再生します。自動ピクチャ・イン・ピクチャ、バックグラウンド再生、字幕、チャプター、再生中の情報を追加します。";

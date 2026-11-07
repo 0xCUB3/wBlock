@@ -845,7 +845,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Pause All Components" = "暂停所有组件";
 
-"Replaces YouTube titles and thumbnails with community-submitted DeArrow alternatives." = "使用 DeArrow 社区提交的替代内容更换 YouTube 标题和缩略图。";
+"Blocks clickbait titles and thumbnails on YouTube and replaces them with accurate ones from the DeArrow community." = "屏蔽 YouTube 上的标题党标题和缩略图，并换成 DeArrow 社区提供的准确版本。";
 
 "DeArrow" = "DeArrow";
 
@@ -1077,3 +1077,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides overlays, promotions, and other distractions." = "隐藏遮罩层、推广内容和其他干扰。";
 "Hides AI features and AI-generated content." = "隐藏 AI 功能和 AI 生成的内容。";
 "Choose the annoyances to hide. You can change this later in Annoyances Info." = "选择要隐藏的烦人元素。之后可在“烦人元素”信息中更改。";
+"Blocks YouTube's ads and web player and plays videos in Safari's native player, with chapters, picture-in-picture, background playback, and audio-only mode. Includes SponsorBlock, which skips sponsored segments." = "屏蔽 YouTube 的广告和网页播放器，改用 Safari 原生播放器播放视频，支持章节、画中画、后台播放和纯音频模式。内含 SponsorBlock，可跳过赞助片段。";
+"Blocks third-party video players on other sites and plays videos with Safari's native controls, adding auto PiP, background playback, subtitles, chapters, and Now Playing info." = "屏蔽其他网站上的第三方视频播放器，改用 Safari 原生控件播放视频，并加入自动画中画、后台播放、字幕、章节和“正在播放”信息。";

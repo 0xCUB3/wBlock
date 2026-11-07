@@ -845,7 +845,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Pause All Components" = "Παύση όλων των στοιχείων";
 
-"Replaces YouTube titles and thumbnails with community-submitted DeArrow alternatives." = "Αντικαθιστά τίτλους και μικρογραφίες του YouTube με εναλλακτικές από την κοινότητα DeArrow.";
+"Blocks clickbait titles and thumbnails on YouTube and replaces them with accurate ones from the DeArrow community." = "Αποκλείει παραπλανητικούς τίτλους και μικρογραφίες στο YouTube και τα αντικαθιστά με ακριβή από την κοινότητα του DeArrow.";
 
 "DeArrow" = "DeArrow";
 
@@ -1077,3 +1077,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides overlays, promotions, and other distractions." = "Κρύβει επικαλύψεις, προωθήσεις και άλλους περισπασμούς.";
 "Hides AI features and AI-generated content." = "Κρύβει λειτουργίες ΤΝ και περιεχόμενο που δημιουργήθηκε από ΤΝ.";
 "Choose the annoyances to hide. You can change this later in Annoyances Info." = "Επιλέξτε ποιες ενοχλήσεις θα κρύβονται. Μπορείτε να το αλλάξετε αργότερα στις πληροφορίες της κατηγορίας Ενοχλήσεις.";
+"Blocks YouTube's ads and web player and plays videos in Safari's native player, with chapters, picture-in-picture, background playback, and audio-only mode. Includes SponsorBlock, which skips sponsored segments." = "Αποκλείει τις διαφημίσεις και το web player του YouTube και παίζει τα βίντεο στο εγγενές player του Safari, με κεφάλαια, εικόνα σε εικόνα, αναπαραγωγή στο παρασκήνιο και λειτουργία μόνο ήχου. Περιλαμβάνει το SponsorBlock, που παραλείπει τα χορηγούμενα τμήματα.";
+"Blocks third-party video players on other sites and plays videos with Safari's native controls, adding auto PiP, background playback, subtitles, chapters, and Now Playing info." = "Αποκλείει players βίντεο τρίτων σε άλλους ιστότοπους και παίζει τα βίντεο με τα εγγενή χειριστήρια του Safari, προσθέτοντας αυτόματη εικόνα σε εικόνα, αναπαραγωγή στο παρασκήνιο, υπότιτλους, κεφάλαια και πληροφορίες «Τώρα παίζει».";

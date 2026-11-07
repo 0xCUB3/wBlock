@@ -39,12 +39,12 @@ enum BuiltInUserScripts {
 
     static let tubeCleanerURL = "https://raw.githubusercontent.com/0xCUB3/wBlock-userscripts/main/packages/tube-cleaner/dist/tube-cleaner.user.js"
     static let deArrowURL = DeArrowPreference.scriptURL
-    static let deArrowDescription = "Replaces YouTube titles and thumbnails with community-submitted DeArrow alternatives."
+    static let deArrowDescription = "Blocks clickbait titles and thumbnails on YouTube and replaces them with accurate ones from the DeArrow community."
     static let playerCleanerURL = "https://raw.githubusercontent.com/0xCUB3/wBlock-userscripts/main/packages/player-cleaner/dist/player-cleaner.user.js"
     static let tubeCleanerDescription =
-        "Gives YouTube Safari-native controls, chapters, SponsorBlock skipping, picture-in-picture, background playback, quality selection, and audio-only mode."
+        "Blocks YouTube's ads and web player and plays videos in Safari's native player, with chapters, picture-in-picture, background playback, and audio-only mode. Includes SponsorBlock, which skips sponsored segments."
     static let playerCleanerDescription =
-        "Gives custom web players native controls, auto PiP, background playback, restored subtitle and chapter tracks, Now Playing metadata, and remembered playback preferences."
+        "Blocks third-party video players on other sites and plays videos with Safari's native controls, adding auto PiP, background playback, subtitles, chapters, and Now Playing info."
 
     static let definitions: [BuiltInUserScriptDefinition] = [
         BuiltInUserScriptDefinition(

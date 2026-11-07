@@ -845,7 +845,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Pause All Components" = "모든 구성 요소 일시정지";
 
-"Replaces YouTube titles and thumbnails with community-submitted DeArrow alternatives." = "YouTube 제목과 썸네일을 DeArrow 커뮤니티가 제안한 대안으로 바꿉니다.";
+"Blocks clickbait titles and thumbnails on YouTube and replaces them with accurate ones from the DeArrow community." = "YouTube의 낚시성 제목과 썸네일을 차단하고 DeArrow 커뮤니티가 제공하는 정확한 것으로 바꿉니다.";
 
 "DeArrow" = "DeArrow";
 
@@ -1077,3 +1077,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides overlays, promotions, and other distractions." = "오버레이, 프로모션 및 기타 방해 요소를 숨깁니다.";
 "Hides AI features and AI-generated content." = "AI 기능과 AI 생성 콘텐츠를 숨깁니다.";
 "Choose the annoyances to hide. You can change this later in Annoyances Info." = "숨길 방해 요소를 선택하세요. 나중에 방해 요소 정보에서 바꿀 수 있습니다.";
+"Blocks YouTube's ads and web player and plays videos in Safari's native player, with chapters, picture-in-picture, background playback, and audio-only mode. Includes SponsorBlock, which skips sponsored segments." = "YouTube 광고와 웹 플레이어를 차단하고 Safari 기본 플레이어로 동영상을 재생하며, 챕터, PIP, 백그라운드 재생, 오디오 전용 모드를 지원합니다. 스폰서 구간을 건너뛰는 SponsorBlock이 포함되어 있습니다.";
+"Blocks third-party video players on other sites and plays videos with Safari's native controls, adding auto PiP, background playback, subtitles, chapters, and Now Playing info." = "다른 사이트의 타사 동영상 플레이어를 차단하고 Safari 기본 컨트롤로 동영상을 재생하며, 자동 PIP, 백그라운드 재생, 자막, 챕터, 지금 재생 중 정보를 더합니다.";

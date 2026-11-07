@@ -845,7 +845,7 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 
 "Pause All Components" = "Alle Komponenten pausieren";
 
-"Replaces YouTube titles and thumbnails with community-submitted DeArrow alternatives." = "Ersetzt YouTube-Titel und Vorschaubilder durch Alternativen aus der DeArrow-Community.";
+"Blocks clickbait titles and thumbnails on YouTube and replaces them with accurate ones from the DeArrow community." = "Blockiert Clickbait-Titel und -Vorschaubilder auf YouTube und ersetzt sie durch zutreffende aus der DeArrow-Community.";
 
 "DeArrow" = "DeArrow";
 
@@ -1077,3 +1077,5 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Hides overlays, promotions, and other distractions." = "Blendet Overlays, Werbeaktionen und andere Ablenkungen aus.";
 "Hides AI features and AI-generated content." = "Blendet KI-Funktionen und KI-generierte Inhalte aus.";
 "Choose the annoyances to hide. You can change this later in Annoyances Info." = "Wähle, welche Belästigungen ausgeblendet werden. Du kannst das später in den Infos zu Belästigungen ändern.";
+"Blocks YouTube's ads and web player and plays videos in Safari's native player, with chapters, picture-in-picture, background playback, and audio-only mode. Includes SponsorBlock, which skips sponsored segments." = "Blockiert YouTubes Werbung und Web-Player und spielt Videos im nativen Player von Safari ab, mit Kapiteln, Bild-in-Bild, Wiedergabe im Hintergrund und Nur-Audio-Modus. Enthält SponsorBlock, das gesponserte Abschnitte überspringt.";
+"Blocks third-party video players on other sites and plays videos with Safari's native controls, adding auto PiP, background playback, subtitles, chapters, and Now Playing info." = "Blockiert Video-Player von Drittanbietern auf anderen Websites und spielt Videos mit den nativen Steuerelementen von Safari ab, inklusive automatischem Bild-in-Bild, Wiedergabe im Hintergrund, Untertiteln, Kapiteln und Infos unter „Jetzt läuft“.";

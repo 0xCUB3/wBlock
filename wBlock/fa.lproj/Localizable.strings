@@ -844,7 +844,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Pause All Components" = "توقف موقت همهٔ بخش‌ها";
 
-"Replaces YouTube titles and thumbnails with community-submitted DeArrow alternatives." = "عنوان‌ها و تصاویر بندانگشتی YouTube را با جایگزین‌های ارسال‌شده توسط جامعه در DeArrow عوض می‌کند.";
+"Blocks clickbait titles and thumbnails on YouTube and replaces them with accurate ones from the DeArrow community." = "عنوان‌ها و تصاویر بندانگشتی فریبنده را در YouTube مسدود می‌کند و آن‌ها را با نمونه‌های دقیق از جامعهٔ DeArrow جایگزین می‌کند.";
 
 "DeArrow" = "DeArrow";
 
@@ -1086,3 +1086,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides overlays, promotions, and other distractions." = "لایه‌های روی صفحه، تبلیغات ویژه و دیگر مزاحمت‌ها را پنهان می‌کند.";
 "Hides AI features and AI-generated content." = "قابلیت‌های هوش مصنوعی و محتوای ساخته‌شده با آن را پنهان می‌کند.";
 "Choose the annoyances to hide. You can change this later in Annoyances Info." = "عناصر آزاردهنده‌ای را که باید پنهان شوند انتخاب کنید. بعداً می‌توانید این را در اطلاعات عناصر آزاردهنده تغییر دهید.";
+"Blocks YouTube's ads and web player and plays videos in Safari's native player, with chapters, picture-in-picture, background playback, and audio-only mode. Includes SponsorBlock, which skips sponsored segments." = "تبلیغات و پخش‌کنندهٔ وب YouTube را مسدود می‌کند و ویدیوها را در پخش‌کنندهٔ بومی Safari پخش می‌کند، همراه با فصل‌ها، تصویر در تصویر، پخش در پس‌زمینه و حالت فقط صدا. شامل SponsorBlock است که بخش‌های اسپانسری را رد می‌کند.";
+"Blocks third-party video players on other sites and plays videos with Safari's native controls, adding auto PiP, background playback, subtitles, chapters, and Now Playing info." = "پخش‌کننده‌های ویدیوی شخص ثالث را در سایت‌های دیگر مسدود می‌کند و ویدیوها را با کنترل‌های بومی Safari پخش می‌کند، همراه با تصویر در تصویر خودکار، پخش در پس‌زمینه، زیرنویس، فصل‌ها و اطلاعات «در حال پخش».";

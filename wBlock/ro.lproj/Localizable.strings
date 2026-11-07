@@ -845,7 +845,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 
 "Pause All Components" = "Întrerupe toate componentele";
 
-"Replaces YouTube titles and thumbnails with community-submitted DeArrow alternatives." = "Înlocuiește titlurile și miniaturile YouTube cu alternative propuse de comunitatea DeArrow.";
+"Blocks clickbait titles and thumbnails on YouTube and replaces them with accurate ones from the DeArrow community." = "Blochează titlurile și miniaturile clickbait de pe YouTube și le înlocuiește cu variante corecte de la comunitatea DeArrow.";
 
 "DeArrow" = "DeArrow";
 
@@ -1077,3 +1077,5 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Hides overlays, promotions, and other distractions." = "Ascunde suprapunerile, promoțiile și alte distrageri.";
 "Hides AI features and AI-generated content." = "Ascunde funcțiile IA și conținutul generat de IA.";
 "Choose the annoyances to hide. You can change this later in Annoyances Info." = "Alege ce elemente enervante să fie ascunse. Poți schimba asta mai târziu în informațiile despre Elemente enervante.";
+"Blocks YouTube's ads and web player and plays videos in Safari's native player, with chapters, picture-in-picture, background playback, and audio-only mode. Includes SponsorBlock, which skips sponsored segments." = "Blochează reclamele și playerul web YouTube și redă videoclipurile în playerul nativ Safari, cu capitole, imagine în imagine, redare în fundal și mod doar audio. Include SponsorBlock, care sare peste segmentele sponsorizate.";
+"Blocks third-party video players on other sites and plays videos with Safari's native controls, adding auto PiP, background playback, subtitles, chapters, and Now Playing info." = "Blochează playerele video terțe de pe alte site-uri și redă videoclipurile cu comenzile native Safari, adăugând imagine în imagine automată, redare în fundal, subtitrări, capitole și informații În redare.";

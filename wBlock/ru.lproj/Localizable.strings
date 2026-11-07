@@ -845,7 +845,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 "Pause All Components" = "Приостановить все компоненты";
 
-"Replaces YouTube titles and thumbnails with community-submitted DeArrow alternatives." = "Заменяет заголовки и миниатюры YouTube вариантами, предложенными сообществом DeArrow.";
+"Blocks clickbait titles and thumbnails on YouTube and replaces them with accurate ones from the DeArrow community." = "Блокирует кликбейтные заголовки и превью на YouTube и заменяет их точными от сообщества DeArrow.";
 
 "DeArrow" = "DeArrow";
 
@@ -1077,3 +1077,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides overlays, promotions, and other distractions." = "Скрывает оверлеи, промоакции и прочие отвлекающие элементы.";
 "Hides AI features and AI-generated content." = "Скрывает функции ИИ и созданный ИИ контент.";
 "Choose the annoyances to hide. You can change this later in Annoyances Info." = "Выберите, какие раздражители скрывать. Это можно изменить позже в сведениях о категории «Раздражители».";
+"Blocks YouTube's ads and web player and plays videos in Safari's native player, with chapters, picture-in-picture, background playback, and audio-only mode. Includes SponsorBlock, which skips sponsored segments." = "Блокирует рекламу и веб-плеер YouTube и воспроизводит видео во встроенном плеере Safari с главами, картинкой в картинке, фоновым воспроизведением и режимом «только звук». Включает SponsorBlock, который пропускает спонсорские фрагменты.";
+"Blocks third-party video players on other sites and plays videos with Safari's native controls, adding auto PiP, background playback, subtitles, chapters, and Now Playing info." = "Блокирует сторонние видеоплееры на других сайтах и воспроизводит видео со встроенными элементами управления Safari, добавляя автоматическую картинку в картинке, фоновое воспроизведение, субтитры, главы и сведения «Исполняется».";
