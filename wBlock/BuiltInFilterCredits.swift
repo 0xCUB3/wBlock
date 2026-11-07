@@ -44,7 +44,6 @@ enum BuiltInFilterCredits {
         "EasyList – Newsletter Notices": easyList,
         "EasyList – Notifications": easyList,
         "wBlock Ad and Tracking Hosts": credit("wBlock", "https://github.com/0xCUB3/wBlock"),
-        "Online Malicious URL Blocklist": credit("curbengh", "https://gitlab.com/malware-filter/urlhaus-filter"),
         "Phishing URL Blocklist": credit("curbengh", "https://gitlab.com/malware-filter/phishing-filter"),
         "Actually Legitimate URL Shortener Tool": credit("iam-py-test, DandelionSprout", "https://github.com/DandelionSprout/adfilt"),
         "Dandelion Sprout's Anti-Malware List": dandelionSprout,

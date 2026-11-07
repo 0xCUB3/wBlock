@@ -182,14 +182,13 @@ private final class TestLoader: FilterListLoader {
                      "an AdGuard list turned back on stays on")
 
         // Existing installs get the defaults 4.0 changed; custom lists and other lists are untouched.
-        precondition(FilterListLoader.defaultsTurnedOn.union(FilterListLoader.defaultsTurnedOff).isSubset(of: Set(defaults.map(\.name))))
-        let before = defaults.map { list -> FilterList in var list = list; list.isSelected = list.name == "Online Malicious URL Blocklist" || list.name == "EasyList"; return list }
-            + [FilterList(name: "Online Malicious URL Blocklist", url: URL(string: "https://example.com/mine")!, category: .security, isCustom: true, isSelected: true)]
+        precondition(FilterListLoader.defaultsTurnedOn.isSubset(of: Set(defaults.map(\.name))))
+        let before = defaults.map { list -> FilterList in var list = list; list.isSelected = list.name == "EasyList"; return list }
+            + [FilterList(name: "AdGuard URL Tracking Protection Filter", url: URL(string: "https://example.com/mine")!, category: .privacy, isCustom: true, isSelected: false)]
         let after = FilterListLoader.applyingChangedDefaults(before)
         precondition(Set(after.filter { $0.isSelected && !$0.isCustom }.map(\.name)) == ["EasyList", "AdGuard URL Tracking Protection Filter"], "changed defaults")
-        precondition(after.last!.isSelected, "a custom list keeps its selection")
-        precondition(FilterListLoader.recommendedFilterNames.isSuperset(of: FilterListLoader.defaultsTurnedOn)
-                     && FilterListLoader.recommendedFilterNames.isDisjoint(with: FilterListLoader.defaultsTurnedOff), "changed defaults match the defaults")
+        precondition(!after.last!.isSelected, "a custom list keeps its selection")
+        precondition(FilterListLoader.recommendedFilterNames.isSuperset(of: FilterListLoader.defaultsTurnedOn), "changed defaults match the defaults")
 
         // A renamed annoyance list would silently fall into Other.
         let topical = defaults.filter { $0.category == .annoyances && AnnoyanceTopic.topic(for: $0) != .other }
@@ -212,7 +211,6 @@ private final class TestLoader: FilterListLoader {
             ("\(registry)/extension/safari/filters/123_optimized.txt", "Fanboy's Social Blocking List", "EasyList – Social Widgets"),
             ("https://easylist.to/easylist/fanboy-social.txt", "Fanboy's Social Blocking List", "EasyList – Social Widgets"),
             ("\(registry)/extension/safari/filters/4_optimized.txt", "AdGuard Social Media Filter", "AdGuard Social Media Filter"),
-            ("\(registry)/extension/safari/filters/25.txt", "AdGuard Mail Tracking Protection Filter", "AdGuard Mail Tracking Protection Filter"),
             ("https://ublockorigin.github.io/uAssetsCDN/thirdparties/easylist-annoyances.txt", "EasyList – Annoyances", "EasyList – Other Annoyances"),
             ("\(registry)/mac_v3/filters/251_optimized.txt", "Actually Legitimate URL Shortener Tool", "Actually Legitimate URL Shortener Tool"),
             ("\(registry)/extension/safari/filters/259_optimized.txt", "Dandelion Sprout's Anti-Malware List", "Dandelion Sprout's Anti-Malware List"),
@@ -260,7 +258,7 @@ private final class TestLoader: FilterListLoader {
 
         // Every registry address of a kept AdGuard list moves to uBlock Origin's copy, which the catalog uses.
         // A replaced list moves there too, so it keeps protecting until it hands over.
-        for id in [2, 4, 5, 6, 7, 8, 9, 11, 13, 16, 17, 18, 19, 20, 21, 22, 25, 26, 27, 224] {
+        for id in [2, 4, 5, 6, 7, 8, 9, 11, 13, 16, 17, 18, 19, 20, 21, 22, 26, 27, 224] {
             let migrated = FilterListLoader.migratedURL(for: "\(registry)/extension/safari/filters/\(id)_optimized.txt")
             precondition(migrated.map(catalogURLs.contains) == true, "AdGuard \(id) does not migrate to a catalog URL")
         }
@@ -290,6 +288,12 @@ private final class TestLoader: FilterListLoader {
             ("\(registry)/extension/safari/filters/10_optimized.txt", "AdGuard Allowlist"),
             ("\(registry)/extension/safari/filters/10.txt", "AdGuard Allowlist"),
             ("https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/whitelist-referral.txt", "HaGeZi Referral Allowlist"),
+            // #1088: every address either list was ever stored under.
+            ("https://curbengh.github.io/malware-filter/urlhaus-filter-vivaldi-online.txt", "Online Malicious URL Blocklist"),
+            ("\(registry)/extension/safari/filters/208_optimized.txt", "Online Malicious URL Blocklist"),
+            ("https://filters.adtidy.org/extension/ublock/filters/25.txt", "AdGuard Mail Tracking Protection Filter"),
+            ("\(registry)/extension/safari/filters/25_optimized.txt", "AdGuard Mail Tracking Protection Filter"),
+            ("\(registry)/extension/safari/filters/25.txt", "AdGuard Mail Tracking Protection Filter"),
         ]
         for (url, name) in retired {
             precondition(!defaults.contains { $0.name == name }, "\(name) is still in the catalog")
@@ -339,7 +343,7 @@ private final class TestLoader: FilterListLoader {
         // A registry address of a list the catalog carries under another URL is that list. Stored as a built-in, or as the
         // custom copy the retired-list conversion left behind, it must end as one catalog entry that keeps its selection.
         let registryCopies = [
-            (101, "EasyList"), (208, "Online Malicious URL Blocklist"), (255, "Phishing URL Blocklist"),
+            (101, "EasyList"), (255, "Phishing URL Blocklist"),
             (212, "RU AdList: Counters"), (257, "uBlock filters – Badware risks"),
         ]
         for (id, name) in registryCopies {

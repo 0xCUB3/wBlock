@@ -43,14 +43,12 @@ class FilterListLoader {
     /// Defaults wBlock 4.0 changed after its first builds, applied once to
     /// existing installs (AppFilterManager.applyChangedDefaultsOnce).
     static let defaultsTurnedOn: Set<String> = ["AdGuard URL Tracking Protection Filter"]
-    static let defaultsTurnedOff: Set<String> = ["Online Malicious URL Blocklist"]
 
     static func applyingChangedDefaults(_ lists: [FilterList]) -> [FilterList] {
         lists.map { list in
             var list = list
             guard !list.isCustom else { return list }
             if defaultsTurnedOn.contains(list.name) { list.isSelected = true }
-            if defaultsTurnedOff.contains(list.name) { list.isSelected = false }
             return list
         }
     }
@@ -179,7 +177,7 @@ class FilterListLoader {
     /// filters.adtidy.org instead of the registry, and any registry address of
     /// one migrates there (migratedURL).
     private static let adGuardUBlockIDs: Set<Int> = [
-        1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 13, 16, 17, 18, 19, 20, 21, 22, 23, 25, 26, 27, 224,
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 13, 16, 17, 18, 19, 20, 21, 22, 23, 26, 27, 224,
     ]
 
     /// uBlock Origin's copy of an AdGuard list. AdGuard Base uses the copy
@@ -222,7 +220,6 @@ class FilterListLoader {
         registryURL(101): URL(string: "https://cdn.jsdelivr.net/gh/uBlockOrigin/uAssetsCDN@main/thirdparties/easylist.txt")!,
         registryURL(107): URL(string: "https://easylist.to/easylistgermany/easylistgermany.txt")!,
         registryURL(109): URL(string: "https://easylist-downloads.adblockplus.org/easylistitaly.txt")!,
-        registryURL(208): URL(string: "https://curbengh.github.io/malware-filter/urlhaus-filter-vivaldi-online.txt")!,
         registryURL(212): ruAdListCountersURL,
         "https://cdn.jsdelivr.net/gh/easylist/ruadlist@master/cntblock.txt": ruAdListCountersURL,
         registryURL(216):
@@ -330,6 +327,11 @@ class FilterListLoader {
         "raw.githubusercontent.com/MasterKia/PersianBlocker/main/PersianBlocker.txt",  // Persian Blocker, maintainer passed away (#921)
         "secure.fanboy.co.nz/fanboy-antifacebook.txt",  // Fanboy – Anti-Facebook, unchanged since 2021 and breaks sites (#1079)
         "hole.cert.pl/domains/",  // CERT.PL's Warning List, almost all in KAD - Anti-Scam
+        "malware-filter/urlhaus-filter-vivaldi-online.txt",  // Online Malicious URL Blocklist, Safe Browsing covers it (#864, #1088)
+        "filters/208_optimized.txt",  // Online Malicious URL Blocklist, registry copy
+        "extension/ublock/filters/25.txt",  // AdGuard Mail Tracking Protection Filter, uBlock filters – Privacy covers it (#1088)
+        "filters/25_optimized.txt",  // AdGuard Mail Tracking Protection Filter, registry copy
+        "extension/safari/filters/25.txt",  // AdGuard Mail Tracking Protection Filter, older address
     ]
 
     /// Retired built-ins deleted even when selected, instead of kept as custom lists.
@@ -469,6 +471,20 @@ class FilterListLoader {
                 category: FilterListCategory.privacy,
                 description: "Blocks trackers and removes tracking parameters from URLs, from the uBlock Origin project.",
                 trustLevel: "high"),
+            // Privacy reads uBlock Privacy, EasyPrivacy, AdGuard URL Tracking, then the rest (#1088).
+            FilterList(
+                id: UUID(), name: "EasyPrivacy",
+                url: URL(
+                    string:
+                        "https://cdn.jsdelivr.net/gh/uBlockOrigin/uAssetsCDN@main/thirdparties/easyprivacy.txt"
+                )!, category: FilterListCategory.privacy,
+                description:
+                    "Privacy protection supplement for EasyList."),
+            FilterList(
+                id: UUID(), name: "AdGuard URL Tracking Protection Filter",
+                url: Self.adGuardUBlockURL(17), category: FilterListCategory.privacy,
+                description: "Filter that enhances privacy by removing tracking parameters from URLs.",
+                trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "uBlock filters – Badware risks",
                 url: URL(string: "https://ublockorigin.github.io/uAssetsCDN/filters/badware.min.txt")!,
@@ -492,11 +508,6 @@ class FilterListLoader {
                 url: URL(string: "https://cdn.jsdelivr.net/gh/uBlockOrigin/uAssetsCDN@main/thirdparties/easylist.txt")!,
                 category: FilterListCategory.ads,
                 description: "Blocks ads on websites, from the EasyList project."),
-            FilterList(
-                id: UUID(), name: "Online Malicious URL Blocklist",
-                url: URL(string: "https://curbengh.github.io/malware-filter/urlhaus-filter-vivaldi-online.txt")!,
-                category: FilterListCategory.security,
-                description: "Blocks URLs that distribute malware, based on URLhaus data."),
             FilterList(
                 id: UUID(), name: "Phishing URL Blocklist",
                 url: URL(string: "https://curbengh.github.io/phishing-filter/phishing-filter.txt")!,
@@ -546,15 +557,15 @@ class FilterListLoader {
                 category: FilterListCategory.annoyances,
                 description: "Hides prompts that ask you to allow notifications, from the EasyList project."),
             FilterList(
-                id: UUID(), name: "wBlock Ad and Tracking Hosts",
-                url: Self.adTrackingHostsURL, category: FilterListCategory.privacy,
-                description: "Blocks ad and tracking hosts that the other lists only block in part.",
-                trustLevel: "high"),
-            FilterList(
                 id: UUID(), name: "Actually Legitimate URL Shortener Tool",
                 url: URL(string: "https://raw.githubusercontent.com/DandelionSprout/adfilt/master/LegitimateURLShortener.txt")!,
                 category: FilterListCategory.privacy,
                 description: "Automatically removes unnecessary '$' and '&' values from URLs, making them easier to copy from the URL bar and pasting elsewhere as links. Already included in Dandelion Sprout's Annoyances List.",
+                trustLevel: "high"),
+            FilterList(
+                id: UUID(), name: "wBlock Ad and Tracking Hosts",
+                url: Self.adTrackingHostsURL, category: FilterListCategory.privacy,
+                description: "Blocks ad and tracking hosts that the other lists only block in part.",
                 trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "AdGuard Social Media Filter",
@@ -566,10 +577,6 @@ class FilterListLoader {
                 description:
                     "Hides website features that use generative AI and AI-generated content."
             ),
-            FilterList(
-                id: UUID(), name: "AdGuard Mail Tracking Protection Filter",
-                url: Self.adGuardUBlockURL(25), category: FilterListCategory.privacy,
-                description: "This filter blocks tracking pixels in email clients."),
             FilterList(
                 id: UUID(), name: "Block Outsider Intrusion into LAN",
                 url: Self.lanBlockURL, category: FilterListCategory.privacy,
@@ -611,11 +618,6 @@ class FilterListLoader {
                 id: UUID(), name: "AdGuard Mobile Filter",
                 url: Self.adGuardUBlockURL(11), category: FilterListCategory.ads,
                 description: "Blocks ads from mobile ad networks, from the AdGuard project."),
-            FilterList(
-                id: UUID(), name: "AdGuard URL Tracking Protection Filter",
-                url: Self.adGuardUBlockURL(17), category: FilterListCategory.privacy,
-                description: "Filter that enhances privacy by removing tracking parameters from URLs.",
-                trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "AdGuard Cookie Notices",
                 url: Self.adGuardUBlockURL(18), category: FilterListCategory.annoyances,
@@ -886,16 +888,6 @@ class FilterListLoader {
                 languages: ["vi"], trustLevel: "high"),
             // Low trust keeps it out of onboarding's preselection; it stays opt-in.
         ])
-        filterLists.append(
-            FilterList(
-                id: UUID(), name: "EasyPrivacy",
-                url: URL(
-                    string:
-                        "https://cdn.jsdelivr.net/gh/uBlockOrigin/uAssetsCDN@main/thirdparties/easyprivacy.txt"
-                )!, category: FilterListCategory.privacy,
-                description:
-                    "Privacy protection supplement for EasyList."))
-
         for index in filterLists.indices {
             filterLists[index].isSelected = Self.recommendedFilterNames.contains(filterLists[index].name)
         }
