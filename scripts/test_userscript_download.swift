@@ -45,7 +45,7 @@ struct UserScriptDownloadTests {
     @MainActor
     static func main() async throws {
         let twitch = URL(string: "https://raw.githubusercontent.com/ryanbr/TwitchAdSolutions/master/vaft/vaft.user.js")!
-        let allowed = [twitch,
+        let allowed = [twitch, URL(string: BuiltInUserScripts.darkReaderURL)!,
                        URL(string: BuiltInUserScripts.deArrowURL)!, URL(string: BuiltInUserScripts.playerCleanerURL)!,
                        URL(string: BuiltInUserScripts.tubeCleanerURL)!]
         for primary in allowed {

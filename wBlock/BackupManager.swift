@@ -32,6 +32,7 @@ struct WBlockBackup: Codable, Sendable {
     var tubeCleanerFeatures: TubeCleanerDeArrowPreference.Features?
     var tubeCleanerDeArrow: TubeCleanerDeArrowPreference.Settings?
     var playerCleanerFeatures: PlayerCleanerPreference.Features?
+    var darkReaderFollowsSystemAppearance: Bool?
     var globalPrivacyControlEnabled: Bool?
     var filtersShowEnabledOnly: Bool?
     var userScriptsShowEnabledOnly: Bool?
@@ -229,6 +230,7 @@ struct WBlockBackup: Codable, Sendable {
         tubeCleanerFeatures: TubeCleanerDeArrowPreference.Features? = nil,
         tubeCleanerDeArrow: TubeCleanerDeArrowPreference.Settings? = nil,
         playerCleanerFeatures: PlayerCleanerPreference.Features? = nil,
+        darkReaderFollowsSystemAppearance: Bool? = nil,
         globalPrivacyControlEnabled: Bool? = nil,
         filtersShowEnabledOnly: Bool? = nil,
         userScriptsShowEnabledOnly: Bool? = nil
@@ -256,6 +258,7 @@ struct WBlockBackup: Codable, Sendable {
         self.tubeCleanerFeatures = tubeCleanerFeatures
         self.tubeCleanerDeArrow = tubeCleanerDeArrow
         self.playerCleanerFeatures = playerCleanerFeatures
+        self.darkReaderFollowsSystemAppearance = darkReaderFollowsSystemAppearance
         self.globalPrivacyControlEnabled = globalPrivacyControlEnabled
         self.filtersShowEnabledOnly = filtersShowEnabledOnly
         self.userScriptsShowEnabledOnly = userScriptsShowEnabledOnly
@@ -281,7 +284,7 @@ struct WBlockBackup: Codable, Sendable {
         case lockPortraitOrientation
         case appearance
         case cosmeticFilteringEnabled, cosmeticFilteringSites, tubeCleanerFeatures, tubeCleanerDeArrow, playerCleanerFeatures
-        case globalPrivacyControlEnabled
+        case darkReaderFollowsSystemAppearance, globalPrivacyControlEnabled
         case filtersShowEnabledOnly, userScriptsShowEnabledOnly
     }
 
@@ -310,6 +313,7 @@ struct WBlockBackup: Codable, Sendable {
         tubeCleanerFeatures = try container.decodeIfPresent(TubeCleanerDeArrowPreference.Features.self, forKey: .tubeCleanerFeatures)
         tubeCleanerDeArrow = try container.decodeIfPresent(TubeCleanerDeArrowPreference.Settings.self, forKey: .tubeCleanerDeArrow)
         playerCleanerFeatures = try container.decodeIfPresent(PlayerCleanerPreference.Features.self, forKey: .playerCleanerFeatures)
+        darkReaderFollowsSystemAppearance = try container.decodeIfPresent(Bool.self, forKey: .darkReaderFollowsSystemAppearance)
         globalPrivacyControlEnabled = try container.decodeIfPresent(Bool.self, forKey: .globalPrivacyControlEnabled)
         filtersShowEnabledOnly = try container.decodeIfPresent(Bool.self, forKey: .filtersShowEnabledOnly)
         userScriptsShowEnabledOnly = try container.decodeIfPresent(Bool.self, forKey: .userScriptsShowEnabledOnly)
@@ -614,6 +618,7 @@ enum BackupManager {
             tubeCleanerFeatures: TubeCleanerDeArrowPreference.features(),
             tubeCleanerDeArrow: TubeCleanerDeArrowPreference.settings(),
             playerCleanerFeatures: PlayerCleanerPreference.features(),
+            darkReaderFollowsSystemAppearance: DarkReaderAppearancePreference.followsSystemAppearance(),
             globalPrivacyControlEnabled: filterManager.dataManager.isGlobalPrivacyControlEnabled,
             filtersShowEnabledOnly: UserDefaults.standard.bool(forKey: ListDisplayOrder.filtersEnabledOnlyKey),
             userScriptsShowEnabledOnly: ProtobufDataManager.shared.getUserScriptShowEnabledOnly()
@@ -749,6 +754,9 @@ enum BackupManager {
         if let features = backup.tubeCleanerFeatures { UserScriptManager.shared.setTubeCleanerFeatures(features) }
         if let settings = backup.tubeCleanerDeArrow { UserScriptManager.shared.setTubeCleanerDeArrow(settings) }
         if let features = backup.playerCleanerFeatures { UserScriptManager.shared.setPlayerCleanerFeatures(features) }
+        if let follows = backup.darkReaderFollowsSystemAppearance {
+            UserScriptManager.shared.setDarkReaderFollowsSystemAppearance(follows)
+        }
         if let enabledOnly = backup.filtersShowEnabledOnly {
             UserDefaults.standard.set(enabledOnly, forKey: ListDisplayOrder.filtersEnabledOnlyKey)
         }

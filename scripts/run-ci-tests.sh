@@ -206,6 +206,7 @@ SWIFT
 compile_direct_test cloud-timestamp-formatter \
   "$TMP/localization-formatting-shim.swift" \
   wBlock/CloudSyncTimestampFormatter.swift scripts/test_cloud_sync_timestamp_formatter.swift
+compile_core_test dark-reader-appearance scripts/test_dark_reader_appearance_preference.swift
 compile_core_test tube-cleaner-dearrow scripts/test_tube_cleaner_dearrow_preference.swift
 compile_core_test sponsorblock-settings-transfer scripts/test_sponsorblock_settings_transfer.swift
 compile_core_test disabled-sites-normalization scripts/test_disabled_sites_normalization.swift
@@ -277,6 +278,7 @@ compile_direct_test userscript-matching-payload \
   wBlockCoreService/UserScriptDisplayCategory.swift \
   wBlockCoreService/DeArrowPreference.swift \
   wBlockCoreService/TubeCleanerDeArrowPreference.swift \
+  wBlockCoreService/DarkReaderAppearancePreference.swift \
   wBlockCoreService/UserStyle.swift \
   wBlockCoreService/UserStyleCompiler.swift \
   wBlockCoreService/UserStyleCompilerExecutionHost.swift \
@@ -288,6 +290,7 @@ compile_direct_test userscript-metadata-emoji \
   wBlockCoreService/UserScriptDisplayCategory.swift \
   wBlockCoreService/DeArrowPreference.swift \
   wBlockCoreService/TubeCleanerDeArrowPreference.swift \
+  wBlockCoreService/DarkReaderAppearancePreference.swift \
   wBlockCoreService/UserStyle.swift \
   wBlockCoreService/UserStyleCompiler.swift \
   wBlockCoreService/UserStyleCompilerExecutionHost.swift \
@@ -299,6 +302,7 @@ compile_direct_test userscript-display-metadata \
   wBlockCoreService/UserScriptDisplayCategory.swift \
   wBlockCoreService/DeArrowPreference.swift \
   wBlockCoreService/TubeCleanerDeArrowPreference.swift \
+  wBlockCoreService/DarkReaderAppearancePreference.swift \
   wBlockCoreService/UserStyle.swift \
   wBlockCoreService/UserStyleCompiler.swift \
   wBlockCoreService/UserStyleCompilerExecutionHost.swift \
@@ -310,6 +314,7 @@ compile_direct_test userscript-download \
   wBlockCoreService/UserScriptDisplayCategory.swift \
   wBlockCoreService/DeArrowPreference.swift \
   wBlockCoreService/TubeCleanerDeArrowPreference.swift \
+  wBlockCoreService/DarkReaderAppearancePreference.swift \
   wBlockCoreService/UserStyle.swift \
   wBlockCoreService/UserStyleCompiler.swift \
   wBlockCoreService/UserStyleCompilerExecutionHost.swift \
@@ -325,6 +330,7 @@ compile_direct_test compiler-timeout -D DEBUG \
   wBlockCoreService/UserScriptDisplayCategory.swift \
   wBlockCoreService/DeArrowPreference.swift \
   wBlockCoreService/TubeCleanerDeArrowPreference.swift \
+  wBlockCoreService/DarkReaderAppearancePreference.swift \
   wBlockCoreService/UserStyle.swift \
   wBlockCoreService/UserStyleCompiler.swift \
   wBlockCoreService/UserStyleCompilerExecutionHost.swift \
@@ -337,6 +343,7 @@ step swiftc -parse-as-library -D DEBUG \
   wBlockCoreService/UserScriptDisplayCategory.swift \
   wBlockCoreService/DeArrowPreference.swift \
   wBlockCoreService/TubeCleanerDeArrowPreference.swift \
+  wBlockCoreService/DarkReaderAppearancePreference.swift \
   wBlockCoreService/UserStyle.swift \
   wBlockCoreService/UserStyleCompiler.swift \
   wBlockCoreService/UserStyleCompilerExecutionHost.swift \

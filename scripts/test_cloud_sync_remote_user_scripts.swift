@@ -17,8 +17,6 @@ import wBlockCoreService
     for url in [
       "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/grouped/a/tinyShield-ar.user.js",
       "https://raw.githubusercontent.com/SysAdminDoc/YoutubeAdblock/main/YoutubeAdblock.user.js",
-      RetiredUserScriptSources.darkReaderURL,
-      "https://bundled.wblock.invalid/dark-reader.user.js",
       "https://cdn.jsdelivr.net/gh/adamlui/youtube-classic/greasemonkey/youtube-classic.user.js",
       "https://cdn.jsdelivr.net/gh/adamlui/youtube-classic/dist/youtube-classic.user.js",
     ] {
@@ -35,7 +33,7 @@ import wBlockCoreService
       precondition(CloudSyncRemoteUserScriptReconciler.normalizedURL(" \(url) ") == url)
       precondition(CloudSyncRemoteUserScriptReconciler.canonicalURL(url)?.absoluteString == url)
     }
-    for name in ["tube-cleaner", "player-cleaner"] {
+    for name in ["tube-cleaner", "player-cleaner", "dark-reader"] {
       let old = "https://bundled.wblock.invalid/\(name).user.js"
       let canonical =
         "https://raw.githubusercontent.com/0xCUB3/wBlock-userscripts/main/packages/\(name)/dist/\(name).user.js"

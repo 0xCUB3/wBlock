@@ -436,23 +436,108 @@ try {
 check("cached page-world script executes after permission, before the full payload arrives", warmPageExecutionSucceeded && warmSandbox.__warmPageExecuted === true);
 check("large warm-start payload executes only once", appendedScripts.slice(warmWrapperIndex).length === 1);
 
-// No content-world script warm-starts, digest or not: the cache is
-// page-writable, so only page-world entries may run from it (#1087).
-const contentContent = "globalThis.__contentWarmExecuted = true;";
-const contentDigest = Buffer.from(await webcrypto.subtle.digest("SHA-256", new TextEncoder().encode(contentContent))).toString("hex");
-const contentWarmSandbox = buildContentScriptSandbox(
+// Dark Reader is the sole content-world warm path. Its descriptor carries the
+// native-generated digest, so the page-controlled cache cannot authorize altered
+// content before native validation.
+const darkReaderSourceURL = "https://raw.githubusercontent.com/0xCUB3/wBlock-userscripts/main/packages/dark-reader/dist/dark-reader.user.js";
+const darkReaderContent = "globalThis.__darkReaderContentExecuted = true;";
+const darkReaderDigestBytes = await webcrypto.subtle.digest("SHA-256", new TextEncoder().encode(darkReaderContent));
+const darkReaderDigest = Buffer.from(darkReaderDigestBytes).toString("hex");
+const darkReaderScript = {
+  ...fakeScript,
+  id: "dark-reader-content",
+  name: "Dark Reader",
+  content: darkReaderContent,
+  sourceURL: darkReaderSourceURL,
+  injectInto: "content",
+  grant: ["GM_xmlhttpRequest"],
+  contentDigest: darkReaderDigest,
+};
+const malformedContentCache = JSON.stringify({ version: 1, savedAt: Date.now(), scripts: [{ ...darkReaderScript, contentDigest: "" }] });
+const malformedContentSandbox = buildContentScriptSandbox(
+  malformedContentCache, [], "https://example.com/page", [], false,
+  (msg) => msg.action === "getUserScripts" ? new Promise(() => {}) : { ok: true },
+);
+vm.createContext(malformedContentSandbox);
+vm.runInContext(source, malformedContentSandbox, { filename: "userscript-injector-dark-reader-malformed.js" });
+await tick();
+check("malformed Dark Reader content cache is rejected", !malformedContentSandbox.__sentMessages.some((m) => m.action === "validateUserScriptExecutions"));
+
+const tamperedContentSandbox = buildContentScriptSandbox(
   JSON.stringify({ version: 1, savedAt: Date.now(), scripts: [{
-    ...fakeScript, id: "content-warm", content: contentContent,
-    sourceURL: "https://example.com/content.user.js", injectInto: "content", contentDigest,
+    ...darkReaderScript,
+    content: "globalThis.__darkReaderTamperedExecuted = true;",
   }] }),
   [], "https://example.com/page", [], false,
   (msg) => msg.action === "getUserScripts" ? new Promise(() => {}) : { ok: true },
 );
-vm.createContext(contentWarmSandbox);
-vm.runInContext(source, contentWarmSandbox, { filename: "userscript-injector-content-warm.js" });
-for (let i = 0; i < 4; i++) await tick();
-check("a cached content-world script never asks to warm-start", !contentWarmSandbox.__sentMessages.some((m) => m.action === "validateUserScriptExecutions"));
-check("a cached content-world script never runs from the cache", contentWarmSandbox.__contentWarmExecuted !== true);
+vm.createContext(tamperedContentSandbox);
+vm.runInContext(source, tamperedContentSandbox, { filename: "userscript-injector-dark-reader-tampered.js" });
+await tick();
+await tick();
+check("altered cached bytes fail before native validation", !tamperedContentSandbox.__sentMessages.some((m) => m.action === "validateUserScriptExecutions"));
+check("altered cached bytes never execute in the content world", tamperedContentSandbox.__darkReaderTamperedExecuted !== true);
+
+let resolveDarkReaderValidation;
+const darkReaderValidation = new Promise((resolve) => { resolveDarkReaderValidation = resolve; });
+const darkReaderSandbox = buildContentScriptSandbox(
+  JSON.stringify({ version: 1, savedAt: Date.now(), scripts: [darkReaderScript] }),
+  [], "https://example.com/page", [], false,
+  (msg) => {
+    if (msg.action === "validateUserScriptExecutions") return darkReaderValidation;
+    if (msg.action === "getUserScripts") return new Promise(() => {});
+    return { ok: true };
+  },
+);
+darkReaderSandbox.matchMedia = () => ({ matches: true });
+vm.createContext(darkReaderSandbox);
+vm.runInContext(source, darkReaderSandbox, { filename: "userscript-injector-dark-reader-content.js" });
+await tick();
+const darkReaderGuard = darkReaderSandbox.document.head.children.find((c) => c.textContent.includes("#181a1b"));
+check("dark root is painted while Dark Reader awaits validation", !!darkReaderGuard?.parentNode);
+const darkReaderActions = darkReaderSandbox.__sentMessages.map((m) => m.action);
+check("exact Dark Reader content candidate validates before getUserScripts", darkReaderActions[0] === "validateUserScriptExecutions" && darkReaderActions[1] === "getUserScripts");
+check("Dark Reader validation includes the digest of its exact cached bytes", darkReaderSandbox.__sentMessages[0]?.scripts?.[0]?.contentDigest === darkReaderDigest);
+check("content warm start does not execute before validation", darkReaderSandbox.__darkReaderContentExecuted !== true);
+resolveDarkReaderValidation({ ok: true });
+for (let i = 0; i < 10; i++) await tick();
+check("content warm start executes after validation succeeds", darkReaderSandbox.__darkReaderContentExecuted === true);
+check("dark root guard is gone once Dark Reader runs", darkReaderGuard?.parentNode === null);
+check("content warm start has no released XHR privilege before reconciliation", !darkReaderSandbox.__sentMessages.some((m) => m.action === "gmXmlhttpRequest"));
+
+let resolveRejectedValidation;
+const rejectedValidation = new Promise((resolve) => { resolveRejectedValidation = resolve; });
+const rejectedDarkReaderSandbox = buildContentScriptSandbox(
+  JSON.stringify({ version: 1, savedAt: Date.now(), scripts: [darkReaderScript] }),
+  [], "https://example.com/page", [], false,
+  (msg) => msg.action === "validateUserScriptExecutions" ? rejectedValidation
+    : msg.action === "getUserScripts" ? { userScripts: [] } : new Promise(() => {}),
+);
+rejectedDarkReaderSandbox.matchMedia = () => ({ matches: true });
+vm.createContext(rejectedDarkReaderSandbox);
+vm.runInContext(source, rejectedDarkReaderSandbox, { filename: "userscript-injector-dark-reader-rejected.js" });
+await tick();
+resolveRejectedValidation({ ok: false, error: "userscript-integrity-mismatch" });
+await tick();
+await tick();
+check("digest rejection prevents content warm execution", rejectedDarkReaderSandbox.__darkReaderContentExecuted !== true);
+check("dark root guard is gone once the reply has no Dark Reader", !rejectedDarkReaderSandbox.document.head.children.some((c) => c.textContent.includes("#181a1b") && c.parentNode));
+
+let resolveStaleValidation;
+const staleValidation = new Promise((resolve) => { resolveStaleValidation = resolve; });
+const staleValidatedSandbox = buildContentScriptSandbox(
+  JSON.stringify({ version: 1, savedAt: Date.now(), scripts: [darkReaderScript] }),
+  [], "https://example.com/page", [], false,
+  (msg) => msg.action === "validateUserScriptExecutions" ? staleValidation : new Promise(() => {}),
+);
+vm.createContext(staleValidatedSandbox);
+vm.runInContext(source, staleValidatedSandbox, { filename: "userscript-injector-dark-reader-stale-validation.js" });
+await tick();
+await staleValidatedSandbox.__onMessage({ type: "wblock:clearDocumentStartSessionCache" });
+resolveStaleValidation({ ok: true });
+await tick();
+await tick();
+check("invalidation prevents an older successful validation from executing", staleValidatedSandbox.__darkReaderContentExecuted !== true);
 const warmToken = (warmWrapper.match(/const xhrBridgeId = '([^']*)';/) || [])[1] || "";
 const warmPortMatch = warmWrapper.match(/const portBridgeId = '([^']*)';/);
 check("quarantined warm start receives no runtime-port token", !!warmPortMatch && warmPortMatch[1] === "");

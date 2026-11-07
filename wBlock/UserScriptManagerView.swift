@@ -58,6 +58,7 @@ private struct UserScriptListItem: Identifiable, Hashable {
     let isBuiltIn: Bool
     let isCustom: Bool
     let isBeta: Bool
+    let isDarkReader: Bool
     let isTubeCleaner: Bool
     let isDeArrow: Bool
     let isPlayerCleaner: Bool
@@ -68,6 +69,7 @@ private struct UserScriptListItem: Identifiable, Hashable {
         isBuiltIn: Bool,
         builtInDisplayRole: BuiltInUserScriptDisplayRole?,
         isBeta: Bool = false,
+        isDarkReader: Bool = false,
         isTubeCleaner: Bool = false,
         isDeArrow: Bool = false,
         isPlayerCleaner: Bool = false
@@ -102,6 +104,7 @@ private struct UserScriptListItem: Identifiable, Hashable {
         self.isBuiltIn = isBuiltIn
         isCustom = !isBuiltIn
         self.isBeta = isBeta
+        self.isDarkReader = isDarkReader
         self.isTubeCleaner = isTubeCleaner
         self.isDeArrow = isDeArrow
         self.isPlayerCleaner = isPlayerCleaner
@@ -477,6 +480,7 @@ struct UserScriptManagerView: View {
                 isBuiltIn: userScriptManager.isDefaultUserScript(script),
                 builtInDisplayRole: userScriptManager.builtInDisplayRole(for: script),
                 isBeta: userScriptManager.isBeta(for: script),
+                isDarkReader: userScriptManager.isDarkReader(script),
                 isTubeCleaner: userScriptManager.isTubeCleaner(script),
                 isDeArrow: userScriptManager.isDeArrow(script),
                 isPlayerCleaner: userScriptManager.isPlayerCleaner(script)
@@ -741,6 +745,19 @@ struct UserScriptManagerView: View {
                         .background(Color.red.opacity(0.15))
                         .foregroundStyle(.red)
                         .cornerRadius(4)
+                }
+
+                if script.isDarkReader {
+                    DarkReaderAppearancePicker(
+                        followsSystemAppearance: Binding(
+                            get: { userScriptManager.darkReaderFollowsSystemAppearance },
+                            set: { userScriptManager.setDarkReaderFollowsSystemAppearance($0) }
+                        ),
+                        pureBlack: Binding(
+                            get: { userScriptManager.darkReaderPureBlack },
+                            set: { userScriptManager.setDarkReaderPureBlack($0) }
+                        )
+                    )
                 }
 
                 if script.isTubeCleaner {
@@ -1499,6 +1516,47 @@ struct Badge: View {
         Text(LocalizedStringKey(text)).font(.caption2).fontWeight(.medium)
             .padding(.horizontal, 6).padding(.vertical, 2)
             .background(color.opacity(0.15)).foregroundStyle(color).cornerRadius(4)
+    }
+}
+
+private struct DarkReaderAppearancePicker: View {
+    @Binding var followsSystemAppearance: Bool
+    @Binding var pureBlack: Bool
+
+    var body: some View {
+        Menu {
+            Button {
+                followsSystemAppearance = true
+            } label: {
+                appearanceMenuItem(title: "Follow System", selected: followsSystemAppearance)
+            }
+            Button {
+                followsSystemAppearance = false
+            } label: {
+                appearanceMenuItem(title: "Always Dark", selected: !followsSystemAppearance)
+            }
+            Divider()
+            Toggle("Pure Black (OLED)", isOn: $pureBlack)
+        } label: {
+            UserScriptSettingsPill(
+                title: Text(followsSystemAppearance ? "Follow System" : "Always Dark"),
+                systemImage: followsSystemAppearance ? "circle.lefthalf.filled" : "moon.fill"
+            )
+        }
+        .buttonStyle(.plain)
+        .noFocusRingCompat()
+        .accessibilityLabel("Appearance")
+        .accessibilityValue(followsSystemAppearance ? "Follow System" : "Always Dark")
+        .padding(.top, 2)
+    }
+
+    @ViewBuilder
+    private func appearanceMenuItem(title: LocalizedStringKey, selected: Bool) -> some View {
+        if selected {
+            Label(title, systemImage: "checkmark")
+        } else {
+            Text(title)
+        }
     }
 }
 

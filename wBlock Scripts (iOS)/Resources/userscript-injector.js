@@ -19,13 +19,15 @@ var WBLOCK_WARM_START_CACHE_KEY = '__wblock_warm_start_v1';
 var WBLOCK_WARM_START_LEASE_MS = 30 * 60 * 1000;
 var WBLOCK_WARM_START_MAX_SCRIPTS = 4;
 var WBLOCK_WARM_START_MAX_BYTES = 2 * 1024 * 1024;
+var WBLOCK_DARK_READER_URL = 'https://raw.githubusercontent.com/0xCUB3/wBlock-userscripts/main/packages/dark-reader/dist/dark-reader.user.js';
 
 // The warm-start cache lives in localStorage so a brand-new tab still gets the
 // before-first-paint injection of eligible document-start scripts; the old
 // sessionStorage cache was per-tab, which left the first navigation of every
 // new tab on the slow native path. The trust model is unchanged: both stores
-// are page-writable, the cache carries no bridge secrets, and page-world entries
-// only ever gain page authority. The legacy
+// are page-writable, the cache carries no bridge secrets, page-world entries
+// only ever gain page authority, and content-world entries (Dark Reader) still
+// require the digest check plus native validation before executing. The legacy
 // sessionStorage entry is read as a fallback once and cleared on write.
 function readWarmStartCache() {
     var raw = null;
@@ -846,7 +848,13 @@ if (window.wBlockUserscriptInjectorHasRun) {
             const isRemote = script.isLocal === false && /^https:\/\//i.test(script.sourceURL || '');
             // Cached page scripts retain page authority only, even after validation.
             const isPageWarmStart = script.injectInto === 'page' && (isRemote || script.isLocal === true);
-            if (!isPageWarmStart || requiresIsolatedGM(script)) return false;
+            const isDarkReaderContentWarmStart = isRemote
+                && script.injectInto === 'content'
+                && script.sourceURL === WBLOCK_DARK_READER_URL
+                && typeof script.contentDigest === 'string'
+                && /^[0-9a-f]{64}$/.test(script.contentDigest);
+            if (!isPageWarmStart && !isDarkReaderContentWarmStart) return false;
+            if (isPageWarmStart && requiresIsolatedGM(script)) return false;
             if (typeof script.content !== 'string' || !script.content) return false;
             if (!this.scriptMatchesCurrentURL(script)) return false;
             if ((script.includes || []).length || (script.excludes || []).length || (script.excludeMatches || []).length) return false;
@@ -855,7 +863,9 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 || Object.prototype.hasOwnProperty.call(script, 'storageSnapshot')) return false;
             if (script.storageBridgeId || script.menuBridgeId || script.xhrBridgeId || script.portBridgeId) return false;
             const safeGrants = new Set(['none', 'unsafewindow', 'gm_info', 'gm.info']);
-            if (usesPageOnlyNetwork(script)) {
+            // Content-world GM_xmlhttpRequest holds no secret; the background
+            // checks each request against native policy for this script and page.
+            if (usesPageOnlyNetwork(script) || isDarkReaderContentWarmStart) {
                 safeGrants.add('gm_xmlhttprequest'); safeGrants.add('gm.xmlhttprequest');
             }
             const grants = Array.isArray(script.grant) ? script.grant : [];
@@ -882,6 +892,10 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 const cache = JSON.parse(raw);
                 const age = cache && Number.isFinite(cache.savedAt) ? Date.now() - cache.savedAt : -1;
                 const readable = cache && cache.version === 1 && Array.isArray(cache.scripts);
+                // The guard is plain CSS, so it needs no trust and outlives the lease.
+                const darkReader = readable && cache.scripts.find(script => script && script.isEnabled === true
+                    && script.sourceURL === WBLOCK_DARK_READER_URL && this.scriptMatchesCurrentURL(script));
+                if (darkReader) this.showDarkReaderGuard(darkReader);
                 if (!readable || age < 0 || age > WBLOCK_WARM_START_LEASE_MS) {
                     removeWarmStartCache();
                     return;
@@ -906,6 +920,30 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 removeWarmStartCache();
             }
             return null;
+        }
+
+        // Dark Reader waits on native validation, which lands well after first
+        // paint. Paint the root dark meanwhile (#973). The guard goes just before
+        // Dark Reader runs, since its adapter installs its own and must not
+        // measure ours, or once this load turns out not to run it.
+        showDarkReaderGuard(script) {
+            if (window !== window.top) return;
+            const followsSystem = !String(script.content).startsWith('const __wblockDarkReaderFollowsSystemAppearance = false;');
+            if (followsSystem && !(typeof matchMedia === 'function' && matchMedia('(prefers-color-scheme: dark)').matches)) return;
+            const guard = document.createElement('style');
+            // Dark Reader's own fallback, so the page looks the same once it takes over.
+            guard.textContent = 'html { color-scheme: dark !important; } html, body, body :not(iframe) { background-color: #181a1b !important; border-color: #776e62 !important; color: #e8e6e3 !important; }';
+            this.darkReaderGuard = guard;
+            this.waitForDocumentRoot().then(root => {
+                if (this.darkReaderGuard === guard) root.appendChild(guard);
+            });
+            setTimeout(() => this.removeDarkReaderGuard(), 3000);
+        }
+
+        removeDarkReaderGuard(script) {
+            if (!this.darkReaderGuard || script && script.sourceURL !== WBLOCK_DARK_READER_URL) return;
+            this.darkReaderGuard.remove();
+            this.darkReaderGuard = null;
         }
 
         async warmStartContentDigest(content) {
@@ -984,6 +1022,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
 
                     const scripts = response && response.userScripts ? response.userScripts : [];
                     this.persistWarmStartScripts(scripts);
+                    if (!scripts.some(script => script && script.sourceURL === WBLOCK_DARK_READER_URL)) this.removeDarkReaderGuard();
                     this.enableReturnYouTubeDislikePrefetch(scripts);
                     if (scripts.length === 0) wBlockLog('[wBlock] No userscripts found in getUserScripts response.');
                     this.injectUserScripts(scripts, generation);
@@ -1389,6 +1428,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
                     this.setupMenuCommandBridge();
                     this.setupStorageBridge();
                 }
+                this.removeDarkReaderGuard(fullScript);
                 if (!warmStart && injectInto !== 'content' && isTubeCleanerPageScript(fullScript)) {
                     this.tubeCleanerSettingsScript = fullScript;
                 }

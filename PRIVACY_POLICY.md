@@ -158,7 +158,7 @@ wBlock allows you to download and use filter lists from third-party sources incl
 wBlock allows you to download and run userscripts from third-party sources. **Important considerations:**
 
 - Userscripts are JavaScript code that runs in the context of web pages
-- wBlock offers built-in userscripts including Tube Cleaner, DeArrow, Player Cleaner, Return YouTube Dislike, Bypass Paywalls Clean, AdGuard Extra, TwitchAdSolutions, tinyShield, and AdGuard Popup Blocker. tinyShield is enabled by default on new installs. The others are off until you enable them
+- wBlock offers built-in userscripts including Tube Cleaner, DeArrow, Player Cleaner, Dark Reader, Return YouTube Dislike, Bypass Paywalls Clean, AdGuard Extra, TwitchAdSolutions, tinyShield, and AdGuard Popup Blocker. tinyShield is enabled by default on new installs. The others are off until you enable them
 - You can add custom userscripts from any source
 - **Privacy Warning:** Userscripts have access to web pages according to their @match patterns. Carefully review userscripts before enabling them
 - wBlock is not responsible for the behavior or privacy practices of third-party userscripts

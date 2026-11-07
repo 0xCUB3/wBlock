@@ -45,7 +45,7 @@ I make wBlock. Weigh this section with that in mind. It runs on macOS, iOS, iPad
 
 The other half is wBlock Scripts, a Web Extension for what rules can't do. It runs AdGuard scriptlets and cosmetic CSS, strips tracking parameters from links, and hosts the userscript engine and UserCSS. The element zapper lives there too. You can walk up and down the DOM with it until you're hiding the ad's container and not some span inside it.
 
-No other Safari blocker runs userscripts. wBlock covers both `GM_*` and `GM.*` for the common APIs, and `GM_xmlhttpRequest` only reaches hosts a script declares. The built-in catalog has Tube Cleaner and Player Cleaner (native Safari video on YouTube and elsewhere, with SponsorBlock), DeArrow, Return YouTube Dislike, Bypass Paywalls Clean, and two Twitch ad scripts. Scripts that depend on odd Tampermonkey behavior might still need fixes.
+No other Safari blocker runs userscripts. wBlock covers both `GM_*` and `GM.*` for the common APIs, and `GM_xmlhttpRequest` only reaches hosts a script declares. The built-in catalog has Tube Cleaner and Player Cleaner (native Safari video on YouTube and elsewhere, with SponsorBlock), DeArrow, Dark Reader, Return YouTube Dislike, Bypass Paywalls Clean, and two Twitch ad scripts. Scripts that depend on odd Tampermonkey behavior might still need fixes.
 
 The toolbar popup has separate switches for filtering, userscripts, and autoplay on the current site, and you can limit lists or scripts to the sites you choose. Lists update on a schedule (hourly to weekly), use diff patches when the list publishes them, and on macOS keep updating with the app closed.
 

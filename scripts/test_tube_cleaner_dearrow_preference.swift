@@ -11,6 +11,10 @@ struct TubeCleanerDeArrowPreferenceTests {
             TubeCleanerDeArrowPreference.matches(scriptURL: URL(string: TubeCleanerDeArrowPreference.scriptURL)),
             "the canonical Tube Cleaner URL must receive runtime configuration"
         )
+        expect(
+            !TubeCleanerDeArrowPreference.matches(scriptURL: URL(string: DarkReaderAppearancePreference.scriptURL)),
+            "Dark Reader must not receive Tube Cleaner configuration"
+        )
 
         let defaultsValue = TubeCleanerDeArrowPreference.settings(groupIdentifier: suite)
         expect(!defaultsValue.enabled, "DeArrow must default to off")
