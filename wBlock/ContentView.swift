@@ -102,6 +102,11 @@ struct ContentView: View {
     private var showsApply: Bool {
         hasPendingChanges && !filterManager.isLoading && !filterManager.isAutoUpdateRunning
     }
+    #if os(macOS)
+    /// showsApply, changed inside an animation so the toolbar glass morphs as
+    /// Apply splits off and rejoins (#1087).
+    @State private var splitsApply = false
+    #endif
 
     private var shouldShowRuleLimitIndicator: Bool {
         hasAppliedFilters && appliedSafariRulesCount >= filterManager.safariRuleCapacity
@@ -345,6 +350,37 @@ struct ContentView: View {
     }
 
     private var applyChangesToolbarButton: some View {
+        #if os(macOS)
+        applyOrUpdateButton
+            .onAppear { splitsApply = showsApply }
+            .onChangeCompat(of: showsApply) { _, splits in
+                withAnimation(.smooth(duration: 0.3)) { splitsApply = splits }
+            }
+        #else
+        updateToolbarButton
+        #endif
+    }
+
+    #if os(macOS)
+    @ViewBuilder
+    private var applyOrUpdateButton: some View {
+        if splitsApply {
+            // A menu, which AppKit draws in a capsule of its own, so Apply
+            // splits off from Pause and Update (#1087). A click applies; a
+            // long press or right-click shows the apply variants (#651).
+            Menu { scopedUpdateMenuItems } label: {
+                Text("Apply").fontWeight(.semibold)
+            } primaryAction: { applyPendingChanges() }
+            .menuIndicator(.hidden)
+            .accessibilityLabel(Text("Apply Changes"))
+            .help(Text("Apply your pending changes"))
+        } else {
+            updateToolbarButton
+        }
+    }
+    #endif
+
+    private var updateToolbarButton: some View {
         let isBusy = filterManager.isLoading || filterManager.isAutoUpdateRunning
         // The spinner sits in the round icon's frame. Sizing it to the hidden
         // Apply word stretched the button into an empty pill during a run
@@ -361,11 +397,7 @@ struct ContentView: View {
                 symbolName: applyChangesSymbolName
             )
             #else
-            if showsApply {
-                Text("Apply").fontWeight(.semibold)
-            } else {
-                Label("Update", systemImage: applyChangesSymbolName)
-            }
+            Label("Update", systemImage: applyChangesSymbolName)
             #endif
         }
         #if os(macOS)
@@ -428,8 +460,7 @@ struct ContentView: View {
             searchText: $filterSearchText,
             focusRequest: $showFilterSearch,
             showEnabledOnly: $showOnlyEnabledLists,
-            searchPrompt: "Search filters",
-            showsApply: showsApply
+            searchPrompt: "Search filters"
         ) {
             Button {
                 showingAddFilterSheet = true
@@ -514,7 +545,6 @@ struct ContentView: View {
                 },
                 applyButton: AnyView(applyChangesToolbarButton),
                 pauseButton: AnyView(PauseBlockingButton(filterManager: filterManager)),
-                showsApply: showsApply,
                 isApplying: filterManager.showingApplyProgressSheet
             )
                 .modifier(topBanners)

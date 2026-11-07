@@ -42,7 +42,6 @@ struct ListActionsToolbar<Primary: View, Apply: View, Leading: View>: ViewModifi
     @Binding var focusRequest: Bool
     @Binding var showEnabledOnly: Bool
     let searchPrompt: LocalizedStringKey
-    let showsApply: Bool
     @ViewBuilder let primary: () -> Primary
     @ViewBuilder let apply: () -> Apply
     /// Pause Blocking. It lives here so iPhone search can clear it with the
@@ -76,21 +75,15 @@ struct ListActionsToolbar<Primary: View, Apply: View, Leading: View>: ViewModifi
         // spacing between them (#999).
         if #available(macOS 26.0, *) {
             content.toolbar {
-                // Pause and Update share a ControlGroup, so they get the
-                // system's hover like Show Enabled Only and Add. Alone in its
-                // item a ControlGroup moves to the trailing edge; the stack
-                // keeps it leading. Apply takes its own capsule (#1087).
-                if showsApply {
-                    ToolbarItem(placement: .navigation) { leading() }
-                        .toolbarVisibilityPriorityCompat(.high)
-                    ToolbarItem(placement: .navigation) { apply() }
-                        .toolbarVisibilityPriorityCompat(.high)
-                } else {
-                    ToolbarItem(placement: .navigation) {
-                        HStack { ControlGroup { leading(); apply() } }.fixedSize()
-                    }
+                // Pause and Update are plain toolbar items, so AppKit draws
+                // them in one capsule with its own per-item hover, like Show
+                // Enabled Only and Add. AppKit gives a menu a capsule of its
+                // own, so Pause is a button here, and Apply, a menu, splits
+                // off while changes are pending (#1087).
+                ToolbarItem(placement: .navigation) { leading() }
                     .toolbarVisibilityPriorityCompat(.high)
-                }
+                ToolbarItem(placement: .navigation) { apply() }
+                    .toolbarVisibilityPriorityCompat(.high)
                 ToolbarItem(placement: .primaryAction) {
                     InlineGlassSearchField(text: $searchText, focusRequest: $focusRequest, isOpen: $isSearchOpen, prompt: searchPrompt)
                 }

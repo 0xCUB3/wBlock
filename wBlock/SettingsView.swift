@@ -1467,6 +1467,18 @@ struct PauseBlockingButton: View {
     var body: some View {
         let isPaused = !filterManager.pausedComponents.isEmpty
         let title: LocalizedStringKey = isPaused ? "Resume Blocking" : "Pause Blocking"
+        #if os(macOS)
+        return Button {
+            Task { await filterManager.setBlockingPaused(!isPaused) }
+        } label: {
+            Label(title, systemImage: isPaused ? "pause.circle.fill" : "pause.circle")
+        }
+        .contextMenu {
+            Section("Pause Blocking") { PauseBlockingControls(filterManager: filterManager) }
+        }
+        .help(title)
+        .disabled(filterManager.isReloadBusy)
+        #else
         return Menu {
             Section("Pause Blocking") { PauseBlockingControls(filterManager: filterManager) }
         } label: {
@@ -1474,10 +1486,11 @@ struct PauseBlockingButton: View {
         } primaryAction: {
             Task { await filterManager.setBlockingPaused(!isPaused) }
         }
-        // A click pauses or resumes; a long press opens the menu, as on iOS.
+        // A tap pauses or resumes; a long press opens the menu.
         .menuIndicator(.hidden)
         .help(title)
         .disabled(filterManager.isReloadBusy)
+        #endif
     }
 }
 

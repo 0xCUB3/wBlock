@@ -148,7 +148,6 @@ struct UserScriptManagerView: View {
     /// The Filters tab's Update/Apply button, shared so both tabs match (#953).
     let applyButton: AnyView
     let pauseButton: AnyView
-    let showsApply: Bool
     /// Rows lock while an apply the user started runs, so nothing changes
     /// under it and is quietly left for the next one.
     var isApplying = false
@@ -441,8 +440,7 @@ struct UserScriptManagerView: View {
                     ProtobufDataManager.shared.setUserScriptShowEnabledOnly($0)
                 }
             ),
-            searchPrompt: "Search scripts",
-            showsApply: showsApply
+            searchPrompt: "Search scripts"
         ) {
             addMenu
         } apply: {
