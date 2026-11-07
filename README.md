@@ -58,7 +58,7 @@ Up to 750,000 Safari rules across five content blockers, with recommended lists,
 
 ### Userscripts
 
-A Greasemonkey-compatible engine, UserCSS themes, and a built-in catalog with Tube Cleaner, DeArrow, Dark Reader, and more.
+A Greasemonkey-compatible engine, UserCSS themes, and a built-in catalog with Tube Cleaner, Player Cleaner, DeArrow, and more.
 
 <details>
 <summary>More about userscripts</summary>
@@ -67,7 +67,7 @@ A Greasemonkey-compatible engine, UserCSS themes, and a built-in catalog with Tu
 - A separate scripts extension supports scriptlets, cosmetic filtering, userscripts, userstyles, and element hiding.
 - A Greasemonkey-compatible engine supporting `GM_*` and `GM.*` APIs. `GM_xmlhttpRequest` is restricted to hosts declared in a script's `@connect` metadata.
 - UserCSS themes (`.user.css`) with Less and Stylus support. See [docs/USERSTYLES.md](docs/USERSTYLES.md).
-- A built-in catalog with Tube Cleaner, Player Cleaner, DeArrow, Dark Reader, Return YouTube Dislike, Bypass Paywalls Clean, AdGuard Extra, AdGuard Popup Blocker, and TwitchAdSolutions. Catalog scripts are off by default except tinyShield, which handles anti-adblock checks.
+- A built-in catalog with Tube Cleaner, Player Cleaner, DeArrow, Return YouTube Dislike, Bypass Paywalls Clean, AdGuard Extra, AdGuard Popup Blocker, and TwitchAdSolutions. Catalog scripts are off by default except tinyShield, which handles anti-adblock checks.
 
 </details>
 

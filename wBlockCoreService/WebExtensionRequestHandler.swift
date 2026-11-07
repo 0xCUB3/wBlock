@@ -1261,17 +1261,10 @@ public enum WebExtensionRequestHandler {
         return response
     }
 
-    /// Built-ins whose behaviour is configured from the app (Dark Reader's
-    /// appearance, DeArrow options and Tube Cleaner features) get the preference
+    /// Built-ins whose behaviour is configured from the app (DeArrow options,
+    /// Player Cleaner and Tube Cleaner features) get the preference
     /// prepended as a constant. Returns nil for every other script.
     private static func runtimeConfiguredExecutableContent(for script: UserScript) -> String? {
-        if DarkReaderAppearancePreference.matches(scriptURL: script.url) {
-            return DarkReaderAppearancePreference.configuredExecutableContent(
-                script.executableContent,
-                followsSystemAppearance: DarkReaderAppearancePreference.followsSystemAppearance(),
-                pureBlack: DarkReaderAppearancePreference.pureBlack()
-            )
-        }
         if DeArrowPreference.matches(scriptURL: script.url) {
             return DeArrowPreference.configuredExecutableContent(
                 script.executableContent,

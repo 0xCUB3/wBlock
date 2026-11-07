@@ -36,16 +36,11 @@ enum BuiltInUserScripts {
         "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/tinyShield.user.js"
     static let tinyShieldDescription =
         "Lets ad blockers quickly resist Ad-Shield, which reinserts ads on matching sites after filter lists hide them."
-    static let retiredYouTubeAdBlockURL =
-        "https://raw.githubusercontent.com/SysAdminDoc/YoutubeAdblock/main/YoutubeAdblock.user.js"
 
     static let tubeCleanerURL = "https://raw.githubusercontent.com/0xCUB3/wBlock-userscripts/main/packages/tube-cleaner/dist/tube-cleaner.user.js"
     static let deArrowURL = DeArrowPreference.scriptURL
     static let deArrowDescription = "Replaces YouTube titles and thumbnails with community-submitted DeArrow alternatives."
     static let playerCleanerURL = "https://raw.githubusercontent.com/0xCUB3/wBlock-userscripts/main/packages/player-cleaner/dist/player-cleaner.user.js"
-    static let darkReaderURL = DarkReaderAppearancePreference.scriptURL
-    static let darkReaderDescription =
-        "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)."
     static let tubeCleanerDescription =
         "Gives YouTube Safari-native controls, chapters, SponsorBlock skipping, picture-in-picture, background playback, quality selection, and audio-only mode."
     static let playerCleanerDescription =
@@ -73,14 +68,6 @@ enum BuiltInUserScripts {
             url: playerCleanerURL,
             isEnabledByDefault: false,
             description: playerCleanerDescription,
-            displayRole: .functionality,
-            isBeta: true
-        ),
-        BuiltInUserScriptDefinition(
-            name: "Dark Reader",
-            url: darkReaderURL,
-            isEnabledByDefault: false,
-            description: darkReaderDescription,
             displayRole: .functionality,
             isBeta: true
         ),

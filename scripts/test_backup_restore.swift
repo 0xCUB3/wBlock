@@ -100,7 +100,6 @@ actor ConcurrentLogManager {
     func setTubeCleanerFeatures(_ value: TubeCleanerDeArrowPreference.Features) {}
     func setTubeCleanerDeArrow(_ value: TubeCleanerDeArrowPreference.Settings) {}
     func setPlayerCleanerFeatures(_ value: PlayerCleanerPreference.Features) {}
-    func setDarkReaderFollowsSystemAppearance(_ value: Bool) {}
 }
 @MainActor final class AppFilterManager {
     var filterLists: [FilterList] = []

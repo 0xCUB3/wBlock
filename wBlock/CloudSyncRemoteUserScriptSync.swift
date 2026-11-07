@@ -4,25 +4,20 @@ import wBlockCoreService
 enum CloudSyncRemoteUserScriptReconciler {
     private static let retiredTinyShieldPrefix =
         "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/grouped/"
-    private static let retiredYouTubeAdBlockURL =
-        "https://raw.githubusercontent.com/SysAdminDoc/YoutubeAdblock/main/YoutubeAdblock.user.js"
     private static let legacyBundledURLs: [String: String] = [
         "https://bundled.wblock.invalid/tube-cleaner.user.js": "https://raw.githubusercontent.com/0xCUB3/wBlock-userscripts/main/packages/tube-cleaner/dist/tube-cleaner.user.js",
         "https://bundled.wblock.invalid/player-cleaner.user.js": "https://raw.githubusercontent.com/0xCUB3/wBlock-userscripts/main/packages/player-cleaner/dist/player-cleaner.user.js",
-        "https://bundled.wblock.invalid/dark-reader.user.js": "https://raw.githubusercontent.com/0xCUB3/wBlock-userscripts/main/packages/dark-reader/dist/dark-reader.user.js",
+        "https://bundled.wblock.invalid/dark-reader.user.js": RetiredUserScriptSources.darkReaderURL,
     ]
 
     static func normalizedURL(_ url: String) -> String {
         let normalized = url.trimmingCharacters(in: .whitespacesAndNewlines)
-        if normalized.hasPrefix(retiredTinyShieldPrefix) || isRetiredYouTubeScript(normalized) {
+        let current = legacyBundledURLs[normalized] ?? normalized
+        if normalized.hasPrefix(retiredTinyShieldPrefix)
+            || URL(string: current).map(RetiredUserScriptSources.isRetired) == true {
             return ""
         }
-        return legacyBundledURLs[normalized] ?? normalized
-    }
-
-    private static func isRetiredYouTubeScript(_ urlString: String) -> Bool {
-        urlString == retiredYouTubeAdBlockURL
-            || URL(string: urlString).map(RetiredUserScriptSources.isYouTubeClassic) == true
+        return current
     }
 
     static func canonicalURL(_ url: String) -> URL? {

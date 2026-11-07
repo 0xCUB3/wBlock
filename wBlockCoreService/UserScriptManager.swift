@@ -157,9 +157,6 @@ public class UserScriptManager: ObservableObject {
     @Published public private(set) var isReady = false
     @Published public private(set) var userScriptToggleStates: [UUID: UserScriptToggleState] = [:]
     @Published public private(set) var isPrefetchingDefaultMetadata = false
-    @Published public private(set) var darkReaderPureBlack = DarkReaderAppearancePreference.pureBlack()
-    @Published public private(set) var darkReaderFollowsSystemAppearance =
-        DarkReaderAppearancePreference.followsSystemAppearance()
     @Published public private(set) var tubeCleanerDeArrow = TubeCleanerDeArrowPreference.settings()
     @Published public private(set) var tubeCleanerFeatures = TubeCleanerDeArrowPreference.features()
     @Published public private(set) var playerCleanerFeatures = PlayerCleanerPreference.features()
@@ -672,10 +669,6 @@ public class UserScriptManager: ObservableObject {
         return BuiltInUserScripts.isBetaByURL[urlString] ?? false
     }
 
-    public func isDarkReader(_ userScript: UserScript) -> Bool {
-        DarkReaderAppearancePreference.matches(scriptURL: userScript.url)
-    }
-
     public func isTubeCleaner(_ userScript: UserScript) -> Bool {
         TubeCleanerDeArrowPreference.matches(scriptURL: userScript.url)
     }
@@ -707,57 +700,6 @@ public class UserScriptManager: ObservableObject {
         TubeCleanerDeArrowPreference.setFeatures(features)
         tubeCleanerFeatures = features
         Self.invalidateDocumentStartExecutionCache()
-    }
-
-    public func setDarkReaderPureBlack(_ pureBlack: Bool) {
-        guard darkReaderPureBlack != pureBlack else { return }
-        DarkReaderAppearancePreference.setPureBlack(pureBlack)
-        darkReaderPureBlack = pureBlack
-        Self.invalidateDocumentStartExecutionCache()
-        Task { await refreshOutdatedDarkReaderContentIfNeeded() }
-    }
-
-    public func setDarkReaderFollowsSystemAppearance(_ followsSystemAppearance: Bool) {
-        guard darkReaderFollowsSystemAppearance != followsSystemAppearance else { return }
-        DarkReaderAppearancePreference.setFollowsSystemAppearance(followsSystemAppearance)
-        darkReaderFollowsSystemAppearance = followsSystemAppearance
-        Self.invalidateDocumentStartExecutionCache()
-        Task { await refreshOutdatedDarkReaderContentIfNeeded() }
-    }
-
-    /// Older installs persist a Dark Reader adapter that misbehaves in ways a
-    /// user cannot fix through settings. Legacy migration intentionally keeps
-    /// persisted content, and auto-update is throttled (and effectively manual
-    /// on iOS), so refresh such content directly whenever we notice it:
-    /// - Content without the prepended preference constant predates the
-    ///   appearance preference and cannot honor it (the first build themed
-    ///   pages unconditionally; later pre-preference builds always followed
-    ///   the system).
-    /// - Content without the built-in dark theme detector re-processes pages
-    ///   that already render dark, washing out their native dark themes.
-    /// - Content without the pure-black flag cannot honor the OLED preference.
-    private func refreshOutdatedDarkReaderContentIfNeeded() async {
-        guard let script = userScripts.first(where: {
-            DarkReaderAppearancePreference.matches(scriptURL: $0.url)
-        }),
-            !script.content.isEmpty
-        else { return }
-        let isOutdated =
-            !script.content.contains(DarkReaderAppearancePreference.appearanceFlagName)
-            || !script.content.contains(DarkReaderAppearancePreference.darkThemeDetectionMarkerName)
-            || !script.content.contains(DarkReaderAppearancePreference.pureBlackFlagName)
-        guard isOutdated else { return }
-
-        logger.info("🔄 Dark Reader content predates appearance settings or dark theme detection; refreshing")
-        do {
-            if try await updateSingleScript(script, checkRemoteVersion: false) {
-                await persistUserScriptsNow()
-                Self.invalidateDocumentStartExecutionCache()
-                logger.info("✅ Refreshed Dark Reader to an appearance-aware adapter")
-            }
-        } catch {
-            logger.error("❌ Dark Reader appearance refresh failed: \(error.localizedDescription)")
-        }
     }
 
     private init(dataManager: ProtobufDataManager = .shared) {
@@ -1380,7 +1322,7 @@ public class UserScriptManager: ObservableObject {
         // protobuf store once per step.
         startupPersistDeferral = StartupPersistDeferral()
         await repairDuplicateBuiltInUserScriptsIfNeeded()
-        await removeRetiredYouTubeAdBlockIfNeeded()
+        await removeRetiredScriptsIfNeeded()
 
         // Always check for missing default scripts first
         await checkAndAddMissingDefaultScripts()
@@ -1431,16 +1373,13 @@ public class UserScriptManager: ObservableObject {
     /// `waitUntilReady()`: extension processes call `getUserScripts` while a page
     /// is loading, and a slow or unreachable download server here used to stall
     /// every userscript injection behind the injector's retry ladder until the
-    /// native request timed out (the "Dark Reader applies after ~15 seconds"
+    /// native request timed out (the "userscripts apply after ~15 seconds"
     /// reports). Run it after readiness so cold starts answer from disk.
     private func startDeferredStartupMaintenance() {
         Task { @MainActor [weak self] in
             guard let self else { return }
             // Only download scripts that are enabled but missing content (e.g., from migration).
             await self.downloadMissingDefaultScripts()
-            // Heal Dark Reader installs whose persisted adapter cannot honor the
-            // appearance preference (pre-preference builds themed pages unconditionally).
-            await self.refreshOutdatedDarkReaderContentIfNeeded()
         }
     }
 
@@ -1612,24 +1551,18 @@ public class UserScriptManager: ObservableObject {
         }
     }
 
-    private func isRetiredYouTubeClassicScript(_ script: UserScript) -> Bool {
-        script.url.map(RetiredUserScriptSources.isYouTubeClassic) ?? false
+    private func isRetiredScript(_ script: UserScript) -> Bool {
+        script.url.map(RetiredUserScriptSources.isRetired) ?? false
     }
 
-    private func removeRetiredYouTubeAdBlockIfNeeded() async {
-        let retiredScripts = userScripts.filter { script in
-            script.url?.absoluteString == BuiltInUserScripts.retiredYouTubeAdBlockURL
-                || isRetiredYouTubeClassicScript(script)
-        }
+    private func removeRetiredScriptsIfNeeded() async {
+        let retiredScripts = userScripts.filter(isRetiredScript)
         guard !retiredScripts.isEmpty else { return }
 
         for script in retiredScripts {
             removeUserScriptFile(script)
         }
-        userScripts.removeAll { script in
-            script.url?.absoluteString == BuiltInUserScripts.retiredYouTubeAdBlockURL
-                || isRetiredYouTubeClassicScript(script)
-        }
+        userScripts.removeAll(where: isRetiredScript)
         await persistUserScriptsNow(authoritative: true)
     }
 
@@ -2245,10 +2178,7 @@ public class UserScriptManager: ObservableObject {
         var mergedScripts = userScripts
 
         for restoredScript in restoredScripts {
-            guard restoredScript.url?.absoluteString != BuiltInUserScripts.retiredYouTubeAdBlockURL,
-                  !isRetiredYouTubeClassicScript(restoredScript) else {
-                continue
-            }
+            guard !isRetiredScript(restoredScript) else { continue }
 
             let existingIndex = UserScriptRestoreMatcher.matchingIndex(
                 for: restoredScript,
@@ -2275,7 +2205,7 @@ public class UserScriptManager: ObservableObject {
 
         userScripts = mergedScripts
         recordLocalMutation()
-        await removeRetiredYouTubeAdBlockIfNeeded()
+        await removeRetiredScriptsIfNeeded()
         await persistUserScriptsNow(authoritative: true)
         // Flush the restored scripts to disk right away instead of relying on the
         // debounced save. The steps that run next (setUserScriptDisabledHosts) and

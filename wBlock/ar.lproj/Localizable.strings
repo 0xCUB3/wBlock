@@ -791,10 +791,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "column %@: %@" = "العمود %@: %@";
 "Userstyle compiler timed out." = "انتهت مهلة مترجم أنماط المستخدم.";
 "Userstyle compiler must not run on the main thread." = "يجب ألا يعمل مترجم أنماط المستخدم على الخيط الرئيسي.";
-"Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "محرك API لـ Dark Reader مرخّص بموجب MIT ومخصص لـ wBlock (إصدار تجريبي؛ من دون قاعدة إصلاحات المواقع الكاملة).";
-"Pure Black (OLED)" = "أسود خالص (OLED)";
-"Follow System" = "اتباع النظام";
-"Always Dark" = "داكن دائماً";
 "Dark" = "داكن";
 "Light" = "فاتح";
 "%@ → %@ Safari rules" = "%@ → %@ قاعدة Safari";
