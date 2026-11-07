@@ -22,7 +22,10 @@ nonisolated struct ContentInfoMetadata: Sendable {
             }
             return Self(
                 author: firstValue(in: fields, keys: ["author"]),
+                // A web @namespace is usually the project page, as for
+                // TwitchAdSolutions, which names no homepage (#1088).
                 homepage: webURL(firstValue(in: fields, keys: ["homepageurl", "homepage", "website", "source", "supporturl"]))
+                    ?? webURL(firstValue(in: fields, keys: ["namespace"]))
             )
         }
         return Self()
