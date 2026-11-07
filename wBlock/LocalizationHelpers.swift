@@ -10,11 +10,13 @@ import wBlockCoreService
 
 extension Locale {
     /// Native names ICU lacks or gets wrong. It has no Montenegrin, Lule, South,
-    /// or Skolt Sámi name (those follow Apple's language list), and calls
-    /// Indonesian "Indonesia", the name of the country.
+    /// or Skolt Sámi name (those follow Apple's language list), calls
+    /// Indonesian "Indonesia", the name of the country, and gives Kazakh as
+    /// "қазақ тілі", whose second word read as another language in a list (#1087).
     private static let nativeNameOverrides = [
         "cnr": "crnogorski",
         "id": "Bahasa Indonesia",
+        "kk": "қазақша",
         "sma": "åarjelsaemien gïele",
         "smj": "julevsámegiella",
         "sms": "nuõrttsääʹmǩiõll",
