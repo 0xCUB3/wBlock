@@ -515,6 +515,10 @@
       #${UI_ROOT_ID} .wblock-step svg { display: block; width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
       #${UI_ROOT_ID} .wblock-overflow { display: flex; flex-direction: column; gap: 4px; position: absolute; right: calc(100% + 8px); bottom: 0; min-width: 170px; padding: 4px; border-radius: 14px; background: var(--wb-menu); border: 1px solid var(--wb-line); box-shadow: 0 8px 24px var(--wb-shadow); opacity: 0; transform: scale(0.97); transition: opacity 0.15s ease, transform 0.15s ease; pointer-events: none; }
       #${UI_ROOT_ID} .wblock-overflow.wblock-open { opacity: 1; transform: scale(1); pointer-events: auto; }
+      /* Its buttons and field reset pointer-events with all: initial, so the
+         closed menu shuts them off too; otherwise its invisible items took
+         taps and opened the selector field. */
+      #${UI_ROOT_ID} .wblock-overflow:not(.wblock-open) * { pointer-events: none; }
       #${UI_ROOT_ID} .wblock-overflow button { width: 100%; justify-content: flex-start; text-align: left; min-height: 36px; padding: 8px 10px; border-radius: 9px; background: var(--wb-fill); border: 1px solid var(--wb-line); font-weight: 500; }
       #${UI_ROOT_ID} .wblock-history { display: flex; gap: 4px; }
       #${UI_ROOT_ID} .wblock-history button { flex: 1 1 0; justify-content: center; text-align: center; }
