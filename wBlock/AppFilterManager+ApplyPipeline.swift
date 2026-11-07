@@ -1078,6 +1078,13 @@ extension AppFilterManager {
             : "\(advancedRulesByTarget.count) targets combined"
         await MainActor.run {
             self.progress = 1.0
+            // The applied state is committed as the run ends, so pending
+            // changes never outlive it and Apply can't flash (#1088). Ending
+            // later showed the raw status line in the update banner (#1087).
+            if allReloadsSuccessful && advancedEngineSucceeded && !self.hasError {
+                self.commitApplySnapshot(runSnapshot)
+            }
+            self.isLoading = false
 
             // Hard failure already presented (e.g. advanced engine). Keep that terminal state.
             if self.applyProgressViewModel.state.mode == .failed {
@@ -1138,20 +1145,16 @@ extension AppFilterManager {
                 appliedFilters: runSnapshot.filters,
                 disabledScriptIDs: disabledScriptIDs
             )
-            if cleanupSucceeded {
-                await MainActor.run {
+            await MainActor.run {
+                if cleanupSucceeded {
                     self.lastApplySucceeded = true
                     self.persistUpgradeRebuildSignature()
                     self.clearFailedUpgradeRebuildSignature()
-                    self.commitApplySnapshot(runSnapshot)
+                } else {
+                    // Leftover downloads of turned-off lists need another apply.
+                    self.markNonSelectionChangesPending()
                 }
             }
-        }
-        // The run ends once the applied state is committed. Ending it at the
-        // result left pending changes set for the cleanup, so the toolbar
-        // flashed Apply before going back to Update (#1088).
-        await MainActor.run { self.isLoading = false }
-        if applySucceeded {
             await refreshAppliedSourceRuleCounts(
                 for: allSelectedFilters,
                 admittedCountsByFilterID: appliedSourceRuleCountsByFilterID
