@@ -335,21 +335,23 @@ struct FilterRulesView: View {
         .help("View")
     }
 
+    /// A button rather than a toggle: a toggle item shows only a plain
+    /// checkmark and drops its icon, so the key's colors never showed. The
+    /// icon is the check itself, in the kind's color (#1079).
     private func kindToggle(_ kind: FilterRuleKind, analysis: FilterRuleAnalysis) -> some View {
-        Toggle(isOn: Binding(
-            get: { shownKinds.contains(kind) },
-            set: { on in
-                if on { shownKinds.insert(kind) } else { shownKinds.remove(kind) }
-            }
-        )) {
+        let isShown = shownKinds.contains(kind)
+        return Button {
+            if isShown { shownKinds.remove(kind) } else { shownKinds.insert(kind) }
+        } label: {
             Label {
                 Text(verbatim: "\(Self.title(for: kind)) (\(analysis.count(of: kind).formatted()))")
             } icon: {
-                Image(systemName: Self.symbol(for: kind))
-                    .symbolRenderingMode(.palette)
-                    .foregroundStyle(Self.color(for: kind))
+                Self.menuIcon(isShown ? "checkmark.circle.fill" : "circle", color: Self.color(for: kind))
             }
         }
+        // macOS menus drop a label's icon unless asked to keep it.
+        .labelStyle(.titleAndIcon)
+        .accessibilityAddTraits(isShown ? .isSelected : [])
     }
 
     /// Joins the lines selected by the View menu off the main thread, then
@@ -403,16 +405,20 @@ struct FilterRulesView: View {
         }
     }
 
-    private static func symbol(for kind: FilterRuleKind) -> String {
-        switch kind {
-        case .comment: return "text.quote"
-        case .network: return "network"
-        case .elementHiding: return "eye.slash"
-        case .advanced: return "curlybraces"
-        case .removeParam: return "link.badge.plus"
-        case .unsupported: return "xmark.circle"
-        case .duplicate: return "doc.on.doc"
-        }
+    /// A symbol baked in a color. Menus draw symbol images as one-color
+    /// templates, so a plain tinted symbol lost its color there.
+    private static func menuIcon(_ name: String, color: Color) -> Image {
+        #if os(macOS)
+        let configuration = NSImage.SymbolConfiguration(paletteColors: [NSColor(color)])
+        guard let image = NSImage(systemSymbolName: name, accessibilityDescription: nil)?
+            .withSymbolConfiguration(configuration) else { return Image(systemName: name) }
+        image.isTemplate = false
+        return Image(nsImage: image)
+        #else
+        guard let image = UIImage(systemName: name)?
+            .withTintColor(UIColor(color), renderingMode: .alwaysOriginal) else { return Image(systemName: name) }
+        return Image(uiImage: image)
+        #endif
     }
 
     static func color(for kind: FilterRuleKind) -> Color {
