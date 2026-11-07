@@ -1078,7 +1078,6 @@ extension AppFilterManager {
             : "\(advancedRulesByTarget.count) targets combined"
         await MainActor.run {
             self.progress = 1.0
-            self.isLoading = false
 
             // Hard failure already presented (e.g. advanced engine). Keep that terminal state.
             if self.applyProgressViewModel.state.mode == .failed {
@@ -1147,6 +1146,12 @@ extension AppFilterManager {
                     self.commitApplySnapshot(runSnapshot)
                 }
             }
+        }
+        // The run ends once the applied state is committed. Ending it at the
+        // result left pending changes set for the cleanup, so the toolbar
+        // flashed Apply before going back to Update (#1088).
+        await MainActor.run { self.isLoading = false }
+        if applySucceeded {
             await refreshAppliedSourceRuleCounts(
                 for: allSelectedFilters,
                 admittedCountsByFilterID: appliedSourceRuleCountsByFilterID
