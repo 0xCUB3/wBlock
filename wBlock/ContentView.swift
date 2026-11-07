@@ -596,7 +596,8 @@ struct ContentView: View {
 
     private func categoryHeader(_ category: FilterListCategory) -> some View {
         ListCategoryHeader(title: LocalizedStringKey(category.localizedName),
-                           info: { selectedCategoryInfo = category },
+                           info: FilterCategorySupport.descriptionKey(for: category) == nil
+                               ? nil : { selectedCategoryInfo = category },
                            anchorID: category.id,
                            isExpanded: foreignExpansion(for: category))
     }

@@ -36,7 +36,7 @@ struct FilterCategoryInfoView: View {
             } onDismiss: { dismiss() }
         } content: {
 
-            Text(LocalizedStringKey(FilterCategorySupport.descriptionKey(for: category)))
+            Text(LocalizedStringKey(FilterCategorySupport.descriptionKey(for: category) ?? ""))
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 

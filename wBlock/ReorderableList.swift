@@ -45,7 +45,7 @@ struct ListTopicHeader: View {
 
 struct ListCategoryHeader: View {
     let title: LocalizedStringKey
-    let info: () -> Void
+    let info: (() -> Void)?
     var anchorID: AnyHashable? = nil
     var isExpanded: Binding<Bool>? = nil
 
@@ -69,10 +69,12 @@ struct ListCategoryHeader: View {
             }
             #endif
             Text(title).foregroundStyle(.primary).textCase(.none)
-            Button(action: info) { Image(systemName: "info.circle") }
-                .buttonStyle(.plain).noFocusRingCompat()
-                .foregroundStyle(.secondary).accessibilityLabel("Info").help("Info")
-                .infoPopoverAnchor(anchorID)
+            if let info {
+                Button(action: info) { Image(systemName: "info.circle") }
+                    .buttonStyle(.plain).noFocusRingCompat()
+                    .foregroundStyle(.secondary).accessibilityLabel("Info").help("Info")
+                    .infoPopoverAnchor(anchorID)
+            }
             #if os(iOS)
             if let isExpanded {
                 Spacer(minLength: 0)
