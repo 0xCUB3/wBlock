@@ -1106,6 +1106,7 @@ public enum WebExtensionRequestHandler {
 
         let includeContent = message["includeContent"] as? Bool == true
         let maxInlineContentBytes = message["maxInlineContentBytes"] as? Int ?? Int.max
+        let cachedContent = message["cachedContent"] as? [String: String] ?? [:]
         // Site disable affects content filtering and scriptlets. Userscripts keep
         // running unless the global userscript pause or per-script site toggle says
         // otherwise, so the popup controls stay available on disabled sites.
@@ -1170,6 +1171,7 @@ public enum WebExtensionRequestHandler {
                         descriptor["contentDigest"] = UserStylePreprocessorService.digest(css)
                     }
                 }
+                omitCachedContent(&descriptor, cachedContent: cachedContent)
                 descriptor["payloadRevision"] = payloadMutationRevision
                 descriptorsByIndex[index] = descriptor
                 continue
@@ -1201,6 +1203,7 @@ public enum WebExtensionRequestHandler {
                     remainingInlineBudget -= inlinePayloadBytes
                 }
             }
+            omitCachedContent(&descriptor, cachedContent: cachedContent)
 
             descriptor["payloadRevision"] = payloadMutationRevision
             descriptorsByIndex[index] = descriptor
@@ -1215,6 +1218,18 @@ public enum WebExtensionRequestHandler {
             userScripts: userScripts.indices.compactMap { descriptorsByIndex[$0] },
             emptySubframes: matchedScripts.allSatisfy(\.noframes)
         )
+    }
+
+    /// The background keeps each inlined payload under its digest and lists the
+    /// digests it holds; a payload it already has is sent as the digest alone.
+    private static func omitCachedContent(_ descriptor: inout [String: Any], cachedContent: [String: String]) {
+        guard let content = descriptor["content"] as? String, descriptor["resources"] == nil,
+              let id = descriptor["id"] as? String else { return }
+        let key = UserStylePreprocessorService.digest(content)
+        descriptor["contentKey"] = key
+        if cachedContent[id] == key {
+            descriptor.removeValue(forKey: "content")
+        }
     }
 
     private static func userScriptsResponse(

@@ -32,18 +32,9 @@ var WBLOCK_DARK_READER_URL = 'https://raw.githubusercontent.com/0xCUB3/wBlock-us
 function readWarmStartCache() {
     var raw = null;
     try { raw = localStorage.getItem(WBLOCK_WARM_START_CACHE_KEY); } catch (_) {}
-    if (raw !== null) return { raw, local: true };
+    if (raw !== null) return raw;
     try { raw = sessionStorage.getItem(WBLOCK_WARM_START_CACHE_KEY); } catch (_) {}
-    return { raw, local: false };
-}
-// The cache is `{"version":1,"savedAt":N,"scripts":[...]}`, written with this prefix.
-function warmStartCachePrefix(savedAt) {
-    return `{"version":1,"savedAt":${savedAt},"scripts":[`;
-}
-// A UTF-16 code unit takes one to three UTF-8 bytes; encode only when that cannot decide.
-function exceedsWarmStartBytes(text) {
-    return text.length > WBLOCK_WARM_START_MAX_BYTES
-        || (text.length * 3 > WBLOCK_WARM_START_MAX_BYTES && new TextEncoder().encode(text).length > WBLOCK_WARM_START_MAX_BYTES);
+    return raw;
 }
 function writeWarmStartCache(serialized) {
     try { localStorage.setItem(WBLOCK_WARM_START_CACHE_KEY, serialized); } catch (_) {}
@@ -892,13 +883,11 @@ if (window.wBlockUserscriptInjectorHasRun) {
 
         loadWarmStartScripts() {
             try {
-                const { raw, local } = readWarmStartCache();
-                // Nothing stored matches persisting no scripts.
-                if (!raw) {
-                    this.storedWarmStart = { savedAt: Date.now(), body: '' };
-                    return null;
-                }
-                if (exceedsWarmStartBytes(raw)) {
+                const raw = readWarmStartCache();
+                if (!raw) return null;
+                // A UTF-16 unit is at most 3 UTF-8 bytes; encode only near the limit.
+                if (raw.length * 3 > WBLOCK_WARM_START_MAX_BYTES
+                    && new TextEncoder().encode(raw).length > WBLOCK_WARM_START_MAX_BYTES) {
                     removeWarmStartCache();
                     return;
                 }
@@ -912,10 +901,6 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 if (!readable || age < 0 || age > WBLOCK_WARM_START_LEASE_MS) {
                     removeWarmStartCache();
                     return;
-                }
-                const prefix = warmStartCachePrefix(cache.savedAt);
-                if (local && raw.startsWith(prefix) && raw.endsWith(']}')) {
-                    this.storedWarmStart = { savedAt: cache.savedAt, body: raw.slice(prefix.length, -2) };
                 }
                 const scripts = cache.scripts
                     .filter(script => this.isWarmStartEligible(script))
@@ -998,34 +983,43 @@ if (window.wBlockUserscriptInjectorHasRun) {
             return validationDispatches.length > 0 ? Promise.all(validationDispatches) : null;
         }
 
-        // Rewrites the page-storage copy only when it changed or half its lease
-        // has passed: it can hold megabytes, and this runs before injection.
         persistWarmStartScripts(scripts) {
             try {
+                // Serialize and measure each script once; the cache is the
+                // JSON of { version, savedAt, scripts } built from these parts.
                 const savedAt = Date.now();
-                const prefix = warmStartCachePrefix(savedAt);
-                const pieces = [];
-                // Prefix and closing `]}`, less the first entry's comma.
-                let bytes = prefix.length + 1;
+                const head = JSON.stringify({ version: 1, savedAt, scripts: [] }).slice(0, -2);
+                const encoder = new TextEncoder();
+                const parts = [];
+                let bytes = encoder.encode(head).length + 2;
                 for (const script of scripts) {
-                    if (pieces.length >= WBLOCK_WARM_START_MAX_SCRIPTS) break;
+                    if (parts.length >= WBLOCK_WARM_START_MAX_SCRIPTS) break;
                     if (!this.isWarmStartEligible(script)) continue;
                     const {
                         storageBridgeId, menuBridgeId, xhrBridgeId, portBridgeId,
                         storageSnapshot, __wblockWarmStart, ...cached
                     } = script;
-                    const piece = JSON.stringify(cached);
-                    const size = new TextEncoder().encode(piece).length + 1;
-                    if (bytes + size <= WBLOCK_WARM_START_MAX_BYTES) {
-                        pieces.push(piece);
-                        bytes += size;
+                    const part = JSON.stringify(cached);
+                    const partBytes = encoder.encode(part).length + (parts.length > 0 ? 1 : 0);
+                    if (bytes + partBytes <= WBLOCK_WARM_START_MAX_BYTES) {
+                        parts.push(part);
+                        bytes += partBytes;
                     }
                 }
-                const body = pieces.join(',');
-                const stored = this.storedWarmStart;
-                if (stored && stored.body === body && savedAt - stored.savedAt < WBLOCK_WARM_START_LEASE_MS / 2) return;
-                writeWarmStartCache(prefix + body + ']}');
-                this.storedWarmStart = { savedAt, body };
+                // Every frame lands here. A page with nothing to cache keeps no
+                // entry, and an unchanged cache is rewritten only to renew its
+                // lease, at most once a minute.
+                const previous = readWarmStartCache();
+                if (parts.length === 0) {
+                    if (previous !== null) removeWarmStartCache();
+                    return;
+                }
+                const scriptsJSON = parts.join(',') + ']}';
+                const previousAt = previous && /^\{"version":1,"savedAt":(\d+),"scripts":\[/.exec(previous);
+                if (previousAt && savedAt - previousAt[1] >= 0 && savedAt - previousAt[1] < 60 * 1000
+                    && previous.length === previousAt[0].length + scriptsJSON.length
+                    && previous.endsWith(scriptsJSON)) return;
+                writeWarmStartCache(head + scriptsJSON);
             } catch (_) { /* page storage is optional */ }
         }
 
@@ -1111,7 +1105,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
             if (typeof browser !== 'undefined' && browser.runtime && browser.runtime.onMessage) {
                 wBlockLog('[wBlock] Using browser.runtime.onMessage for listening.');
                 listenWhileShown(browser.runtime.onMessage, (message, sender, sendResponse) => {
-                    wBlockLog('[wBlock] Received message via browser.runtime.onMessage:', JSON.parse(JSON.stringify(message || {})));
+                    wBlockLog('[wBlock] Received message via browser.runtime.onMessage:', message);
 
                     if (message && message.type === 'wblock:pageSupportProbe') {
                         return Promise.resolve({
@@ -1161,7 +1155,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
             } else if (typeof safari !== 'undefined' && safari.extension && typeof safari.self !== 'undefined' && safari.self.addEventListener) {
                 wBlockLog('[wBlock] Using safari.self.addEventListener for listening.');
                 safari.self.addEventListener('message', (event) => {
-                    wBlockLog('[wBlock] Received message via safari.self.addEventListener:', event.name, JSON.parse(JSON.stringify(event.message || {})));
+                    wBlockLog('[wBlock] Received message via safari.self.addEventListener:', event.name, event.message);
                     const requestId = event.message && event.message.requestId;
                     if (requestId && this.pendingNativeRequests.has(requestId)) {
                         const pending = this.pendingNativeRequests.get(requestId);
