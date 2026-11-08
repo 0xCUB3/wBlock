@@ -842,8 +842,6 @@ impl Plan {
 }
 
 /// Bytes of list text one thread parses at a time. Chunks end at line ends.
-/// A list with an affinity block is parsed in one piece, because the block's
-/// type carries from one line to the next.
 const PARSE_CHUNK: usize = 1 << 20;
 
 /// The records of `list`. Each rule is parsed again from its line when a
@@ -857,16 +855,22 @@ fn parse(list: &ListSpec) -> ParsedList {
 /// line numbers, and stats are the same whatever the chunk size.
 fn parse_chunked(list: &ListSpec, chunk_bytes: usize) -> ParsedList {
     let text = list.text.as_str();
-    let spans = if text.contains(AFFINITY) {
-        vec![(0..text.len(), 0)]
-    } else {
-        line_spans(text, chunk_bytes)
-    };
-    let parts = if spans.len() == 1 {
-        vec![parse_lines(list, spans[0].0.clone(), spans[0].1)]
-    } else {
-        parallel_indices(spans.len(), |i| parse_lines(list, spans[i].0.clone(), spans[i].1))
-    };
+    let spans = line_spans(text, chunk_bytes);
+    // An affinity block's types carry from one line to the next, so each span
+    // starts in the block the lines before it leave open.
+    let mut open = None;
+    let opens: Vec<Option<u8>> = spans
+        .iter()
+        .map(|(range, _)| {
+            let start = open;
+            if text.contains(AFFINITY) {
+                open = text[range.clone()].lines().filter_map(affinity_directive).last().unwrap_or(open);
+            }
+            start
+        })
+        .collect();
+    let parse = |i: usize| parse_lines(list, spans[i].0.clone(), spans[i].1, opens[i]);
+    let parts = if spans.len() == 1 { vec![parse(0)] } else { parallel_indices(spans.len(), parse) };
     let mut merged = ParsedList {
         chunks: Vec::with_capacity(parts.len()),
         has_affinity: false,
@@ -905,27 +909,22 @@ fn line_spans(text: &str, chunk_bytes: usize) -> Vec<(Range<usize>, u32)> {
 }
 
 /// The records of the lines of `list.text` in `span`, whose first line is
-/// number `lines_before + 1`.
-fn parse_lines(list: &ListSpec, span: Range<usize>, lines_before: u32) -> ParsedList {
+/// number `lines_before + 1` and in the affinity block `affinity`.
+fn parse_lines(list: &ListSpec, span: Range<usize>, lines_before: u32, mut affinity: Option<u8>) -> ParsedList {
     let text = &list.text[span];
     let mut stats = Stats::default();
     // Sized up front: growing it would leave the old buffers behind.
     let mut rules = Vec::with_capacity(text.lines().count());
-    let mut affinity: Option<u8> = None;
     let mut has_affinity = false;
     let mut has_directive = false;
     // Lines are parsed one at a time so affinity blocks can be tracked.
     for (n, line) in text.lines().enumerate() {
-        let trimmed = line.trim();
-        if let Some(rest) = trimmed.strip_prefix(AFFINITY) {
+        if let Some(types) = affinity_directive(line) {
             has_affinity = true;
-            affinity = rest
-                .strip_prefix('(')
-                .and_then(|r| r.strip_suffix(')'))
-                .and_then(affinity_mask);
+            affinity = types;
             continue;
         }
-        if trimmed.starts_with("!#") {
+        if line.trim().starts_with("!#") {
             has_directive = true;
         }
         let mut line_stats = Stats::default();
@@ -967,6 +966,12 @@ fn set_line(rule: &mut Rule, line: u32) {
 }
 
 const AFFINITY: &str = "!#safari_cb_affinity";
+
+/// The affinity types a `!#safari_cb_affinity(...)` line opens, when `line` is one.
+fn affinity_directive(line: &str) -> Option<Option<u8>> {
+    let rest = line.trim().strip_prefix(AFFINITY)?;
+    Some(rest.strip_prefix('(').and_then(|r| r.strip_suffix(')')).and_then(affinity_mask))
+}
 
 /// AdGuard's content blocker types: general, privacy, social, other, custom, security.
 fn affinity_mask(names: &str) -> Option<u8> {
@@ -1493,6 +1498,7 @@ mod tests {
     fn chunked_parse_matches_one_piece() {
         let text: String = (0..300)
             .map(|i| match i % 4 {
+                _ if i % 50 == 7 => format!("!#safari_cb_affinity{}\n", ["(privacy)", "", "(general,social)"][i % 3]),
                 0 => format!("||ad{i}.example^$third-party\n"),
                 1 => format!("! comment {i}\n"),
                 2 => format!("@@||ad{}.example^\r\n", i - 2),
@@ -1506,10 +1512,10 @@ mod tests {
             trusted: false,
             scope: SiteScope::default(),
         };
-        let records = |parsed: &ParsedList| -> Vec<(usize, u32, u32, u64, bool, bool)> {
+        let records = |parsed: &ParsedList| -> Vec<(usize, u32, u32, u64, bool, bool, Option<u8>)> {
             parsed
                 .records()
-                .map(|p| (p.offset, p.line, p.index, p.identity, p.shared, p.network))
+                .map(|p| (p.offset, p.line, p.index, p.identity, p.shared, p.network, p.affinity))
                 .collect()
         };
         let whole = parse_chunked(&list, usize::MAX);
@@ -1517,6 +1523,7 @@ mod tests {
             let chunked = parse_chunked(&list, chunk);
             assert!(chunked.chunks.len() > 1, "chunk {chunk} gives one chunk");
             assert_eq!(records(&chunked), records(&whole), "chunk {chunk}");
+            assert_eq!(chunked.has_affinity, whole.has_affinity);
             assert_eq!(chunked.stats.lines, whole.stats.lines);
             assert_eq!(chunked.stats.rules, whole.stats.rules);
         }
