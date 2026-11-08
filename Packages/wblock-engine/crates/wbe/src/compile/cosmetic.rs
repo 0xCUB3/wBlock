@@ -43,61 +43,46 @@ pub(super) fn compile(
         }
         CosmeticBody::Procedural(_) | CosmeticBody::Style(_) => None,
     });
-    let mut hides: BTreeMap<Key, Vec<Entry>> = BTreeMap::new();
-    let mut exceptions: BTreeMap<Key, Vec<Entry>> = BTreeMap::new();
     let mut runtime_lines = BTreeSet::new();
-    for (rule, decided) in rules.iter().zip(decided) {
-        match &rule.body {
-            CosmeticBody::Procedural(_) | CosmeticBody::Style(_) => {
-                runtime_lines.insert(rule.raw.as_str());
-            }
-            CosmeticBody::Hide(selector) => match decided.expect("hide has a verdict") {
-                (Verdict::Invalid, _) => stats.drop("invalid cosmetic selector"),
-                (_, scope) => {
-                    let key = (selector.as_str(), rule.matches_path.as_deref());
-                    let map = if rule.exception {
-                        &mut exceptions
-                    } else {
-                        &mut hides
-                    };
-                    map.entry(key).or_default().push(Entry { rule, scope });
-                }
-            },
-        }
-    }
-
-    let keys: Vec<&Key> = hides
-        .keys()
-        .chain(exceptions.keys())
-        .collect::<BTreeSet<&Key>>()
+    let mut entries: Vec<Entry> = decided
         .into_iter()
+        .zip(rules)
+        .filter_map(|(decided, rule)| match (decided, &rule.body) {
+            (Some((Verdict::Invalid, _)), _) => {
+                stats.drop("invalid cosmetic selector");
+                None
+            }
+            (Some((_, scope)), CosmeticBody::Hide(selector)) => {
+                let key = (selector.as_str(), rule.matches_path.as_deref());
+                Some(Entry { rule, key, scope })
+            }
+            _ => {
+                runtime_lines.insert(rule.raw.as_str());
+                None
+            }
+        })
         .collect();
+    // Each key's hides, then its exceptions, both in rule order.
+    entries.sort_by(|a, b| (a.key, a.rule.exception).cmp(&(b.key, b.rule.exception)));
+    let keys: Vec<&[Entry]> = entries.chunk_by(|a, b| a.key == b.key).collect();
     let resolved_all = super::parallel_indices(keys.len(), |i| {
-        let key = keys[i];
-        let hs = hides.get(key).map(Vec::as_slice).unwrap_or_default();
-        let es = exceptions.get(key).map(Vec::as_slice).unwrap_or_default();
+        let (hs, es) = keys[i].split_at(keys[i].partition_point(|e| !e.rule.exception));
         resolve(hs, es)
     });
-    let mut resolved: Vec<(&Key, Vec<(Tier, Trigger)>)> = Vec::new();
-    for (key, triggers) in keys.into_iter().zip(resolved_all) {
+    let mut resolved: Vec<(&str, Vec<(Tier, Trigger)>)> = Vec::new();
+    for (entries, triggers) in keys.into_iter().zip(resolved_all) {
         match triggers {
-            Some(triggers) => resolved.push((key, triggers)),
-            None => {
-                let hs = hides.get(key).map(Vec::as_slice).unwrap_or_default();
-                let es = exceptions.get(key).map(Vec::as_slice).unwrap_or_default();
-                for entry in hs.iter().chain(es) {
-                    runtime_lines.insert(entry.rule.raw.as_str());
-                }
-            }
+            Some(triggers) => resolved.push((entries[0].key.0, triggers)),
+            None => runtime_lines.extend(entries.iter().map(|e| e.rule.raw.as_str())),
         }
     }
 
     // A specific copy of a generic hide is kept: `$generichide` cancels only
     // the generic one.
     let mut groups: BTreeMap<(Tier, &Trigger), BTreeSet<&str>> = BTreeMap::new();
-    for (key, triggers) in &resolved {
+    for (selector, triggers) in &resolved {
         for (tier, trigger) in triggers {
-            groups.entry((*tier, trigger)).or_default().insert(key.0);
+            groups.entry((*tier, trigger)).or_default().insert(selector);
         }
     }
     let groups: Vec<((Tier, &Trigger), Vec<&str>)> = groups
@@ -128,34 +113,35 @@ pub(super) fn compile(
 /// cannot take).
 struct Entry<'a> {
     rule: &'a CosmeticRule,
-    scope: Option<Scope>,
+    key: Key<'a>,
+    scope: Option<Scope<'a>>,
 }
 
 /// Domain and path conditions of a rule, split by kind.
 #[derive(Clone, Default)]
-struct Scope {
-    hosts: Vec<String>,
-    entities: Vec<String>,
-    excludes: Vec<String>,
-    path: Option<String>,
+struct Scope<'a> {
+    hosts: Vec<&'a str>,
+    entities: Vec<&'a str>,
+    excludes: Vec<&'a str>,
+    path: Option<&'a str>,
 }
 
-impl Scope {
-    fn of(rule: &CosmeticRule) -> Option<Self> {
+impl<'a> Scope<'a> {
+    fn of(rule: &'a CosmeticRule) -> Option<Self> {
         let mut scope = Scope {
-            path: rule.matches_path.clone(),
+            path: rule.matches_path.as_deref(),
             ..Self::default()
         };
         for matcher in &rule.domains.include {
             match matcher {
-                DomainMatcher::Hostname(h) => scope.hosts.push(h.clone()),
-                DomainMatcher::Entity(e) => scope.entities.push(e.clone()),
+                DomainMatcher::Hostname(h) => scope.hosts.push(h),
+                DomainMatcher::Entity(e) => scope.entities.push(e),
                 DomainMatcher::Regex(_) => return None,
             }
         }
         for matcher in &rule.domains.exclude {
             match matcher {
-                DomainMatcher::Hostname(h) => scope.excludes.push(h.clone()),
+                DomainMatcher::Hostname(h) => scope.excludes.push(h),
                 _ => return None,
             }
         }
@@ -202,7 +188,7 @@ impl Trigger {
 /// Resolves the hides and exceptions of one key. Returns the triggers the
 /// hides keep, or `None` when the key must go to the runtime.
 fn resolve(hides: &[Entry], exceptions: &[Entry]) -> Option<Vec<(Tier, Trigger)>> {
-    let mut excepted_hosts: Vec<&str> = Vec::new();
+    let mut excepted_hosts = Vec::new();
     let mut global = false;
     for exception in exceptions {
         let scope = exception.scope.as_ref()?;
@@ -212,7 +198,7 @@ fn resolve(hides: &[Entry], exceptions: &[Entry]) -> Option<Vec<(Tier, Trigger)>
         if scope.hosts.is_empty() {
             global = true;
         }
-        excepted_hosts.extend(scope.hosts.iter().map(String::as_str));
+        excepted_hosts.extend(&scope.hosts);
     }
     if global {
         return Some(Vec::new());
@@ -220,14 +206,14 @@ fn resolve(hides: &[Entry], exceptions: &[Entry]) -> Option<Vec<(Tier, Trigger)>
     // uBO compiles a negated hostname of a hide as an exception on that
     // hostname, so it lifts every hide of the key there.
     for hide in hides {
-        excepted_hosts.extend(hide.scope.as_ref()?.excludes.iter().map(String::as_str));
+        excepted_hosts.extend(&hide.scope.as_ref()?.excludes);
     }
 
     let mut triggers = Vec::new();
     for hide in hides {
         let mut scope = hide.scope.clone()?;
         if scope.is_generic() {
-            scope.excludes = excepted_hosts.iter().map(|h| h.to_string()).collect();
+            scope.excludes = excepted_hosts.clone();
         } else {
             scope.excludes.clear();
             if !excepted_hosts.is_empty() {
@@ -268,7 +254,7 @@ fn within(child: &str, parent: &str) -> bool {
 /// so those go in the url-filter, which a document load tests against its own
 /// URL; `if-top-url` would follow the tab's page instead.
 fn scope_triggers(scope: &Scope) -> Option<Vec<(Tier, Trigger)>> {
-    let path = scope.path.as_deref();
+    let path = scope.path;
     if scope.is_generic() {
         let trigger = match (path, scope.excludes.is_empty()) {
             (None, true) => Trigger::Generic,
@@ -292,7 +278,7 @@ fn scope_triggers(scope: &Scope) -> Option<Vec<(Tier, Trigger)>> {
     Some(out)
 }
 
-fn domains(hosts: &[String]) -> Vec<String> {
+fn domains(hosts: &[&str]) -> Vec<String> {
     let mut out: Vec<String> = hosts.iter().map(|h| format!("*{h}")).collect();
     out.sort();
     out.dedup();
