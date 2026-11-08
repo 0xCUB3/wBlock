@@ -693,6 +693,9 @@ impl Plan {
             }
             stats.merge(&extra_stats);
         }
+        // The rules are held through the compile; spare capacity would be too.
+        others.cosmetic.shrink_to_fit();
+        others.scriptlets.shrink_to_fit();
         let tail = Mutex::new(Some(tail));
         let mut output = compile_blocker(
             &ctx,
