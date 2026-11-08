@@ -93,6 +93,8 @@ pub(crate) struct Tiered {
 pub(crate) struct Emitted {
     arenas: Vec<Vec<u8>>,
     entries: Vec<Entry>,
+    /// The blocks anchored at a hostname, for `network::drop_subsumed`.
+    anchored: Vec<network::Anchored>,
 }
 
 #[derive(Debug)]
@@ -155,6 +157,7 @@ impl Emitted {
         Self {
             arenas: vec![Vec::with_capacity(rules * 512)],
             entries: Vec::with_capacity(rules * 2),
+            anchored: Vec::new(),
         }
     }
 
@@ -172,10 +175,16 @@ impl Emitted {
         let mut out = Emitted {
             arenas: Vec::with_capacity(parts.len()),
             entries: Vec::with_capacity(rules),
+            anchored: Vec::new(),
         };
         for part in parts {
             let base = out.arenas.len() as u32;
+            let first = out.entries.len();
             out.arenas.extend(part.arenas);
+            out.anchored.extend(part.anchored.into_iter().map(|mut a| {
+                a.entry += first;
+                a
+            }));
             out.entries.extend(part.entries.into_iter().map(|mut e| {
                 e.arena += base;
                 e

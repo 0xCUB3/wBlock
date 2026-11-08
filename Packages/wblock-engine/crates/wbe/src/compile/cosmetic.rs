@@ -100,10 +100,28 @@ pub(super) fn compile(
             groups.entry((*tier, trigger)).or_default().insert(key.0);
         }
     }
-    let groups: Vec<((Tier, &Trigger), Vec<&str>)> = groups
+    // Domain-scoped groups with the same selectors are one rule over the
+    // union of their domains.
+    let mut domains: BTreeMap<(Tier, Vec<&str>), Vec<String>> = BTreeMap::new();
+    let mut groups: Vec<((Tier, Trigger), Vec<&str>)> = groups
         .into_iter()
-        .map(|(group, selectors)| (group, selectors.into_iter().collect()))
+        .filter_map(|((tier, trigger), selectors)| {
+            let selectors = selectors.into_iter().collect();
+            match trigger {
+                Trigger::IfDomain(d) => {
+                    domains.entry((tier, selectors)).or_default().extend_from_slice(d);
+                    None
+                }
+                _ => Some(((tier, trigger.clone()), selectors)),
+            }
+        })
         .collect();
+    groups.extend(domains.into_iter().map(|((tier, selectors), mut d)| {
+        d.sort();
+        d.dedup();
+        ((tier, Trigger::IfDomain(d)), selectors)
+    }));
+    groups.sort();
     let emitted = super::parallel_indices(groups.len(), |g| {
         let ((_, trigger), selectors) = &groups[g];
         selectors
@@ -803,12 +821,17 @@ mod tests {
     }
 
     #[test]
-    fn different_domain_sets_get_separate_rules() {
+    fn domains_with_the_same_selectors_share_one_rule() {
         assert_eq!(
-            json(&[hide(".a").on("example.com"), hide(".a").on("example.org")]),
+            json(&[
+                hide(".a").on("example.com"),
+                hide(".a").on("example.org"),
+                hide(".a").on("example.net"),
+                hide(".b").on("example.net"),
+            ]),
             concat!(
-                r#"[{"trigger":{"url-filter":".*","resource-type":["document"],"if-domain":["*example.com"]},"action":{"type":"css-display-none","selector":".a"}},"#,
-                r#"{"trigger":{"url-filter":".*","resource-type":["document"],"if-domain":["*example.org"]},"action":{"type":"css-display-none","selector":".a"}}]"#
+                r#"[{"trigger":{"url-filter":".*","resource-type":["document"],"if-domain":["*example.com","*example.org"]},"action":{"type":"css-display-none","selector":".a"}},"#,
+                r#"{"trigger":{"url-filter":".*","resource-type":["document"],"if-domain":["*example.net"]},"action":{"type":"css-display-none","selector":".a, .b"}}]"#
             )
         );
     }

@@ -278,9 +278,22 @@ fn compile_rule(
         (false, Tier::Block)
     };
     let tier = tier.unwrap_or(default);
+    // A block over every type and page of a host and its subdomains covers
+    // any block whose pattern starts at one of those hosts.
+    let anchor = split_host(&r.pattern)
+        .filter(|(_, rest)| !exception && r.to.is_empty() && rest.starts_with(['^', '/', ':', '?']))
+        .map(|(host, _)| host);
+    let bare = untyped && party.is_none() && !r.match_case && conds.iter().all(Option::is_none);
     for url in &urls {
         for (types, context) in &type_triggers {
             for cond in &conds {
+                if let Some(host) = &anchor {
+                    out.anchored.push(Anchored {
+                        entry: out.entries.len(),
+                        host: host.as_str().into(),
+                        bare,
+                    });
+                }
                 emit(
                     out,
                     tier,
@@ -347,6 +360,7 @@ fn compile_denyallow(
         // The block was emitted before a failing exception: drop it too.
         out.arenas[arena].truncate(mark.0);
         out.entries.truncate(mark.1);
+        out.anchored.retain(|a| a.entry < mark.1);
     }
     result
 }
@@ -497,17 +511,56 @@ fn labels(host: &str) -> impl Iterator<Item = &str> {
 
 /// The lowercase hostname of a `||host^` pattern with nothing after the host.
 fn host_only(p: &Pattern) -> Option<String> {
-    if p.kind != PatternKind::Hostname || p.right_anchored {
+    split_host(p)
+        .filter(|(_, rest)| !p.right_anchored && (rest.is_empty() || *rest == "^"))
+        .map(|(host, _)| host)
+}
+
+/// The lowercase hostname a `||host...` pattern starts with, and the rest of
+/// its body.
+fn split_host(p: &Pattern) -> Option<(String, &str)> {
+    if p.kind != PatternKind::Hostname {
         return None;
     }
-    let body = p.body.to_ascii_lowercase();
-    let end = body
+    let end = p
+        .body
         .find(|c: char| !(c.is_ascii_alphanumeric() || c == '-' || c == '.'))
-        .unwrap_or(body.len());
-    let (host, rest) = body.split_at(end);
+        .unwrap_or(p.body.len());
+    let (host, rest) = p.body.split_at(end);
     // A body cut at `*` (`||google.*^`) leaves a trailing dot: not a host.
-    (!host.is_empty() && !host.ends_with('.') && (rest.is_empty() || rest == "^"))
-        .then(|| host.to_string())
+    (!host.is_empty() && !host.ends_with('.')).then(|| (host.to_ascii_lowercase(), rest))
+}
+
+/// A block whose pattern starts at `host`, then a separator. `bare` when it
+/// is one trigger over every type and page with nothing after the host.
+#[derive(Debug)]
+pub(super) struct Anchored {
+    pub(super) entry: usize,
+    host: Box<str>,
+    bare: bool,
+}
+
+/// Drops the blocks a bare block of the same host or a parent covers. That
+/// block matches every request they match, and it sits in the same tier or a
+/// later one, so every exception that cancels it cancels them too. Blocks of
+/// one tier are interchangeable: no exception sits between them.
+fn drop_subsumed(entries: &[Entry], anchored: &[Anchored], keep: &mut [bool]) {
+    let mut bare: FxHashMap<&str, Tier> = FxHashMap::default();
+    for a in anchored.iter().filter(|a| a.bare) {
+        let tier = entries[a.entry].tier;
+        bare.entry(&a.host).and_modify(|t| *t = (*t).max(tier)).or_insert(tier);
+    }
+    for a in anchored {
+        let tier = entries[a.entry].tier;
+        // A bare block is not covered by itself; its exact duplicates go in
+        // `dedupe_and_merge`.
+        let covered = labels(&a.host).any(|h| {
+            bare.get(h).is_some_and(|&t| t > tier || t == tier && !(a.bare && h == &*a.host))
+        });
+        if covered {
+            keep[a.entry] = false;
+        }
+    }
 }
 
 fn party(p: Party, exception: bool) -> Result<Option<WkLoadType>, String> {
@@ -856,14 +909,16 @@ where
     (emitted, stats, page)
 }
 
-/// Drops exact duplicates (the first of each tier and rule wins), then merges
+/// Drops the blocks `drop_subsumed` finds covered and exact duplicates (the
+/// first of each tier and rule wins), then merges
 /// `if-domain` rules that differ only in their domains into the first of them.
 /// Rules are compared in emission order, and the arenas are compacted once
 /// the dropped ones are gone.
 fn dedupe_and_merge(out: &mut Emitted) {
-    let Emitted { arenas, entries } = out;
+    let Emitted { arenas, entries, anchored } = out;
     let count = entries.len();
     let mut keep = vec![true; count];
+    drop_subsumed(entries, &std::mem::take(anchored), &mut keep);
     let hashes = {
         let (arenas, entries): (&[Vec<u8>], &[Entry]) = (arenas, entries);
         super::parallel_indices(count, |j| {
@@ -878,6 +933,9 @@ fn dedupe_and_merge(out: &mut Emitted) {
     let mut newest: FxHashMap<(Tier, u64), usize> = FxHashMap::default();
     let mut older = vec![usize::MAX; count];
     for j in 0..count {
+        if !keep[j] {
+            continue;
+        }
         let text = &arenas[entries[j].arena as usize][entries[j].start..entries[j].end];
         let key = (entries[j].tier, hashes[j]);
         let mut duplicate = false;
@@ -1972,6 +2030,45 @@ mod tests {
             &[a, b],
             V15,
             r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[/:?#]","resource-type":["script"],"if-domain":["*a.com","*b.com"]},"action":{"type":"block"}}]"#,
+        );
+    }
+
+    #[test]
+    fn blocks_a_later_bare_host_block_covers_are_dropped() {
+        let scoped = |s: &str| NetworkRule { from: list(&["a.com"], &[]), ..net(s) };
+        let rules = [
+            net("||ads.x.com^"),
+            NetworkRule { types: RT::SCRIPT, ..net("||x.com/path") },
+            NetworkRule { party: Party::Third, ..net("||cdn.x.com:8080/") },
+            // An earlier tier than the bare block: a `$genericblock` sits between.
+            scoped("||ads.x.com^"),
+            // Not at a label of x.com, or not ending the host.
+            net("||ads.xx.com^"),
+            net("||ads.x.com.evil.net^"),
+            net("||ads.x.com"),
+            net("||x.com^"),
+            net("||x.com^"),
+            // An important bare block also covers scoped blocks.
+            scoped("||ads.y.com^"),
+            NetworkRule { important: true, ..net("||y.com^") },
+            // Only a bare block covers.
+            net("||ads.z.com^"),
+            NetworkRule { party: Party::Third, ..net("||z.com^") },
+        ];
+        let (out, _) = run(&rules, V15);
+        let kept: Vec<_> = out.iter().map(|t| (t.tier, t.rule.trigger.url_filter.replace("^[^:]+://+([^:/]+\\.)?", ""))).collect();
+        assert_eq!(
+            kept,
+            [
+                (Tier::Block, r"ads\.x\.com[/:?#]".into()),
+                (Tier::GenericBlock, r"ads\.xx\.com[/:?#]".into()),
+                (Tier::GenericBlock, r"ads\.x\.com\.evil\.net[/:?#]".into()),
+                (Tier::GenericBlock, r"ads\.x\.com".into()),
+                (Tier::GenericBlock, r"x\.com[/:?#]".into()),
+                (Tier::ImportantBlock, r"y\.com[/:?#]".into()),
+                (Tier::GenericBlock, r"ads\.z\.com[/:?#]".into()),
+                (Tier::GenericBlock, r"z\.com[/:?#]".into()),
+            ]
         );
     }
 
