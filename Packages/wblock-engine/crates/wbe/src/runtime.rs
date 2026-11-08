@@ -75,6 +75,15 @@ struct ScriptletRules {
 }
 
 impl ScriptletRules {
+    /// A cosmetic or scriptlet filter. As uBO compiles them, its negated
+    /// hostnames are exceptions there, which lift the call of every filter.
+    fn add_filter(&mut self, exception: bool, domains: DomainList, call: Vec<String>) {
+        if !exception && !domains.exclude.is_empty() {
+            self.add(true, DomainList { include: domains.exclude.clone(), exclude: Vec::new() }, call.clone());
+        }
+        self.add(exception, domains, call);
+    }
+
     fn add(&mut self, exception: bool, domains: DomainList, call: Vec<String>) {
         for matcher in domains.include.iter().chain(&domains.exclude) {
             if let DomainMatcher::Regex(pattern) = matcher {
@@ -399,11 +408,11 @@ impl Engine {
                             vec!["wbe:procedural".into(), filter.to_string()]
                         }
                     };
-                    scriptlets.add(r.exception, r.domains, call);
+                    scriptlets.add_filter(r.exception, r.domains, call);
                 }
                 ParsedLine::Rule(Rule::Scriptlet(r)) => {
                     let call = std::iter::once(r.name).chain(r.args).collect();
-                    scriptlets.add(r.exception, r.domains, call);
+                    scriptlets.add_filter(r.exception, r.domains, call);
                 }
                 // `@@...$doc,popup` is both a popup allow and a page exception.
                 ParsedLine::Rule(Rule::Network(r)) if r.types.contains(crate::ast::ResourceTypes::POPUP) || r.exception && !r.scope.is_empty() => {
@@ -1156,6 +1165,20 @@ example.com##+js(set-constant, adsEnabled, false)
         let filters = ["example.com##+js(set, a, 1)", "example.com,~keep.example.com#@#+js(set, a, 1)"];
         assert_eq!(calls(&filters, "https://keep.example.com/"), [set]);
         assert!(calls(&filters, "https://example.com/").is_empty());
+    }
+
+    #[test]
+    fn negated_domains_of_a_filter_except_its_call_there() {
+        // uBO compiles `~foo.example.com` as an exception on that host
+        // (scriptlet-filtering-core.js, cosmetic-filtering.js).
+        let rules = lines("~foo.example.com,example.com##+js(aopr, x)\nfoo.example.com##+js(aopr, x)\nexample.com##+js(aopr, y)\n~foo.example.com,example.com##.a\nfoo.example.com##.a\n");
+        let page = Engine::build(&rules).lookup("https://foo.example.com/");
+        assert_eq!(page.scriptlets, [call(&["abort-on-property-read", "y"])]);
+        assert!(page.hide.is_empty());
+        assert_eq!(Engine::build(&rules).lookup("https://example.com/").hide, [".a"]);
+        // A network filter's negated domain only narrows it.
+        let popups = "||ads.example^$popup,domain=~foo.example.com\n||ads.example^$popup,domain=foo.example.com\n";
+        assert!(popup_blocked(popups, "https://foo.example.com/", "https://ads.example/"));
     }
 
     #[test]
