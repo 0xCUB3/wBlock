@@ -83,8 +83,7 @@ fn lookup_cmd(args: &[String]) {
     };
 
     let start = Instant::now();
-    let bytes = std::fs::read(engine_path).unwrap_or_else(|e| panic!("{engine_path}: {e}"));
-    let engine = Engine::deserialize(&bytes).unwrap_or_else(|e| panic!("{e}"));
+    let engine = Engine::open(engine_path.as_ref(), 0).unwrap_or_else(|e| panic!("{engine_path}: {e}"));
     let load_ms = start.elapsed().as_secs_f64() * 1000.0;
 
     match bench {

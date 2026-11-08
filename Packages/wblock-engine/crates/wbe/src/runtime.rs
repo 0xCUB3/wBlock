@@ -13,6 +13,8 @@ use serde::Serialize;
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::cell::RefCell;
+use std::ops::Range;
+use std::sync::Arc;
 
 pub struct Engine {
     /// Flags the pages with a `$generichide` exception.
@@ -59,7 +61,7 @@ struct Scriptlets {
     exceptions: Table,
     regexes: regex::RegexSet,
     // Global calls are consulted on every page; keep their scopes decoded.
-    generic_rules: Vec<(u32, HashSet<String>)>,
+    generic_rules: Vec<(u32, Box<[String]>)>,
 }
 
 /// Scriptlet rules as `Engine::build` collects them.
@@ -205,10 +207,32 @@ impl<'a> Reader<'a> {
     }
 }
 
+/// The bytes an engine's tables are read from: built or copied in, or a
+/// mapping of the engine file, which stays clean and out of the process's
+/// footprint.
+enum Blob {
+    Owned(Vec<u8>),
+    Mapped(memmap2::Mmap),
+}
+
+impl std::ops::Deref for Blob {
+    type Target = [u8];
+
+    fn deref(&self) -> &[u8] {
+        match self {
+            Blob::Owned(bytes) => bytes,
+            Blob::Mapped(map) => map,
+        }
+    }
+}
+
 /// Read-only map from byte keys to byte values, in sorted key order.
 /// Layout: u32 LE `n`, `n + 1` u32 LE entry ends, then the entries, each a
 /// varint key length, the key, and the value. Lookups binary-search in place.
-struct Table(Vec<u8>);
+struct Table {
+    blob: Arc<Blob>,
+    range: Range<usize>,
+}
 
 impl Table {
     fn encode<'a>(entries: impl Iterator<Item = (&'a str, Vec<u8>)>) -> Self {
@@ -224,10 +248,11 @@ impl Table {
             bytes.extend(end.to_le_bytes());
         }
         bytes.extend(data);
-        Self(bytes)
+        Self { range: 0..bytes.len(), blob: Arc::new(Blob::Owned(bytes)) }
     }
 
-    fn parse(bytes: &[u8]) -> Result<Self, String> {
+    fn parse(blob: &Arc<Blob>, range: Range<usize>) -> Result<Self, String> {
+        let bytes = &blob[range.clone()];
         let malformed = || "engine: malformed scriptlets".to_string();
         let word = |at: usize| {
             bytes
@@ -243,17 +268,22 @@ impl Table {
         if end(0) != 0 || !(1..=n).all(|i| end(i - 1) <= end(i)) || header + end(n) != bytes.len() {
             return Err(malformed());
         }
-        Ok(Self(bytes.to_vec()))
+        Ok(Self { blob: blob.clone(), range })
+    }
+
+    fn bytes(&self) -> &[u8] {
+        &self.blob[self.range.clone()]
     }
 
     fn len(&self) -> usize {
-        u32::from_le_bytes(self.0[..4].try_into().unwrap()) as usize
+        u32::from_le_bytes(self.bytes()[..4].try_into().unwrap()) as usize
     }
 
     fn entry(&self, i: usize) -> Reader<'_> {
+        let bytes = self.bytes();
         let base = 4 + 4 * (self.len() + 1);
-        let end = |i: usize| u32::from_le_bytes(self.0[4 + 4 * i..8 + 4 * i].try_into().unwrap()) as usize;
-        Reader(&self.0[base + end(i)..base + end(i + 1)])
+        let end = |i: usize| u32::from_le_bytes(bytes[4 + 4 * i..8 + 4 * i].try_into().unwrap()) as usize;
+        Reader(&bytes[base + end(i)..base + end(i + 1)])
     }
 
     /// Entry `i`'s key, and a reader at its value.
@@ -328,7 +358,7 @@ impl Scriptlets {
             }
         }
         let mut ids: Vec<u32> = self.generic_rules.iter()
-            .filter(|(id, excluded)| !keys.iter().any(|k| excluded.contains(k))
+            .filter(|(id, excluded)| !keys.iter().any(|k| excluded.binary_search(k).is_ok())
                 && (generic_hides || self.name(*id) != "wbe:hide"))
             .map(|(id, _)| *id).collect();
         for k in keys.iter().filter(|k| !k.is_empty()) {
@@ -423,10 +453,12 @@ fn host_keys(host: &str) -> Vec<String> {
 
 // A global rule can exclude thousands of hosts. Index those scopes once instead
 // of scanning the complete exclusion list on every page.
-fn generic_rules(rules: &Table) -> Vec<(u32, HashSet<String>)> {
-    rules.rules("").into_iter()
-        .map(|(id, exclude)| (id, exclude.into_iter().map(str::to_owned).collect()))
-        .collect()
+fn generic_rules(rules: &Table) -> Vec<(u32, Box<[String]>)> {
+    rules.rules("").into_iter().map(|(id, exclude)| {
+        let mut exclude: Vec<String> = exclude.into_iter().map(str::to_owned).collect();
+        exclude.sort_unstable();
+        (id, exclude.into())
+    }).collect()
 }
 
 fn host_of(url: &str) -> &str {
@@ -552,7 +584,7 @@ impl Engine {
             put(&mut out, &engine.serialize());
         }
         for index in [&self.scriptlets, &self.popups] {
-            for table in [&index.calls, &index.rules, &index.exceptions] { put(&mut out, &table.0); }
+            for table in [&index.calls, &index.rules, &index.exceptions] { put(&mut out, table.bytes()); }
             let patterns: std::collections::BTreeSet<_> = index.regexes.patterns().iter().collect();
             put(&mut out, &serde_json::to_vec(&patterns).expect("regex patterns serialize"));
         }
@@ -560,14 +592,42 @@ impl Engine {
     }
 
     pub fn deserialize(bytes: &[u8]) -> Result<Self, String> {
-        let mut rest = bytes;
-        let generichide = read_engine(take(&mut rest)?)?;
-        let elemhide = read_engine(take(&mut rest)?)?;
-        let document = read_engine(take(&mut rest)?)?;
-        let genericblock = read_engine(take(&mut rest)?)?;
-        let specifichide = read_engine(take(&mut rest)?)?;
-        let scriptlets = read_index(&mut rest)?;
-        let popups = read_index(&mut rest)?;
+        Self::load(Arc::new(Blob::Owned(bytes.to_vec())), 0)
+    }
+
+    /// Maps the engine that starts `offset` bytes into the file at `path`.
+    /// The file must not be written while the engine is open; publishers
+    /// replace it by rename, which leaves the mapping intact.
+    pub fn open(path: &std::path::Path, offset: usize) -> Result<Self, String> {
+        let file = std::fs::File::open(path).map_err(|e| format!("engine: {e}"))?;
+        // SAFETY: the file is never modified in place (see above).
+        let map = unsafe { memmap2::Mmap::map(&file) }.map_err(|e| format!("engine: {e}"))?;
+        Self::load(Arc::new(Blob::Mapped(map)), offset)
+    }
+
+    /// The engine serialized in `blob` from `offset`, reading its tables in place.
+    fn load(blob: Arc<Blob>, offset: usize) -> Result<Self, String> {
+        let bytes = &blob[..];
+        let mut at = offset;
+        let mut take = || -> Result<Range<usize>, String> {
+            let len = bytes
+                .get(at..at + 4)
+                .map(|w| u32::from_le_bytes(w.try_into().unwrap()) as usize)
+                .ok_or("engine: truncated")?;
+            let section = at + 4..at + 4 + len;
+            bytes.get(section.clone()).ok_or("engine: truncated")?;
+            at = section.end;
+            Ok(section)
+        };
+        let mut engine = || read_engine(&bytes[take()?]);
+        let (generichide, elemhide, document, genericblock, specifichide) = (engine()?, engine()?, engine()?, engine()?, engine()?);
+        let mut index = || -> Result<Scriptlets, String> {
+            let (calls, rules, exceptions) = (Table::parse(&blob, take()?)?, Table::parse(&blob, take()?)?, Table::parse(&blob, take()?)?);
+            let patterns = serde_json::from_slice::<Vec<String>>(&bytes[take()?]).map_err(|e| e.to_string())?;
+            let regexes = regex::RegexSet::new(patterns).map_err(|e| e.to_string())?;
+            Ok(Scriptlets { calls, generic_rules: generic_rules(&rules), rules, exceptions, regexes })
+        };
+        let (scriptlets, popups) = (index()?, index()?);
         Ok(Self {
             generichide,
             elemhide,
@@ -756,29 +816,9 @@ pub(crate) fn popup_rule(r: &crate::ast::NetworkRule) -> Result<PopupRule, Strin
         match_case: r.match_case, party: r.party, generic: r.from.include.is_empty() })
 }
 
-fn read_index(rest: &mut &[u8]) -> Result<Scriptlets, String> {
-    let calls = Table::parse(take(rest)?)?;
-    let rules = Table::parse(take(rest)?)?;
-    let exceptions = Table::parse(take(rest)?)?;
-    let patterns = serde_json::from_slice::<Vec<String>>(take(rest)?).map_err(|e| e.to_string())?;
-    let regexes = regex::RegexSet::new(patterns).map_err(|e| e.to_string())?;
-    Ok(Scriptlets { calls, generic_rules: generic_rules(&rules), rules, exceptions, regexes })
-}
-
 fn put(out: &mut Vec<u8>, section: &[u8]) {
     out.extend((section.len() as u32).to_le_bytes());
     out.extend(section);
-}
-
-/// The next length-prefixed section of `rest`.
-fn take<'a>(rest: &mut &'a [u8]) -> Result<&'a [u8], String> {
-    let len = rest
-        .get(..4)
-        .map(|w| u32::from_le_bytes(w.try_into().unwrap()) as usize)
-        .ok_or("engine: truncated")?;
-    let section = rest.get(4..4 + len).ok_or("engine: truncated")?;
-    *rest = &rest[4 + len..];
-    Ok(section)
 }
 
 fn read_engine(section: &[u8]) -> Result<adblock::Engine, String> {

@@ -21,7 +21,6 @@ enum FilterEngineStore {
     private struct Snapshot {
         let fingerprint: String
         let timestamp: Int64
-        let engine: Data
     }
 
     enum PublishError: Error {
@@ -92,13 +91,13 @@ enum FilterEngineStore {
             ) else { throw PublishError.containerNotFound }
             let directory = containerURL.appendingPathComponent(directoryName, isDirectory: true)
             // Each publish atomically replaces the file, so its file number
-            // changes; the snapshot is read and decoded only then.
+            // changes; the snapshot is read and mapped only then.
             let file = directory.appendingPathComponent(engineFileName)
             guard let fileNumber = (try? FileManager.default.attributesOfItem(atPath: file.path))?[.systemFileNumber] as? Int
             else { return nil }
             if cached?.fileNumber != fileNumber {
                 guard let snapshot = readSnapshot(in: directory) else { return nil }
-                cached = (fileNumber, snapshot.timestamp, try WBEngine.Engine(data: snapshot.engine))
+                cached = (fileNumber, snapshot.timestamp, try WBEngine.Engine(path: file.path, offset: headerLength))
             }
             guard let (_, timestamp, engine) = cached,
                   var payload = try JSONSerialization.jsonObject(with: engine.lookup(url: url.absoluteString)) as? [String: Any]
@@ -112,9 +111,8 @@ enum FilterEngineStore {
     /// The engine the extension process last loaded. Guarded by WebExtensionGate.
     nonisolated(unsafe) private static var cached: (fileNumber: Int, timestamp: Int64, engine: WBEngine.Engine)?
 
-    /// Maps the file, so a header read touches one page and the engine is handed
-    /// on without a copy. Publishes replace the file by rename, so a mapping
-    /// stays valid while it is in use.
+    /// Maps the file, so a header read touches one page. Publishes replace the
+    /// file by rename, so the engine's own mapping stays valid while it is in use.
     private static func readSnapshot(in directory: URL) -> Snapshot? {
         guard let data = try? Data(contentsOf: directory.appendingPathComponent(engineFileName), options: .alwaysMapped),
               data.count > headerLength,
@@ -122,7 +120,7 @@ enum FilterEngineStore {
               fingerprint.allSatisfy(\.isHexDigit)
         else { return nil }
         let timestamp = data.dropFirst(64).prefix(8).withUnsafeBytes { $0.loadUnaligned(as: Int64.self) }
-        return Snapshot(fingerprint: fingerprint, timestamp: Int64(littleEndian: timestamp), engine: data.dropFirst(headerLength))
+        return Snapshot(fingerprint: fingerprint, timestamp: Int64(littleEndian: timestamp))
     }
 
     private static func withLock<T>(in directory: URL, _ body: () throws -> T) throws -> T {
