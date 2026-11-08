@@ -76,22 +76,108 @@ pub(crate) fn emit_rule(
     out: &mut Emitted,
     stats: &mut Stats,
 ) {
-    if rule.badfilter {
-        return;
-    }
-    if ctx.bad_bodies.contains(rule.pattern.body.as_str())
-        && ctx.bad.contains(&unlabeled(rule))
-    {
-        return;
-    }
-    if let Err(reason) = compile_rule(rule, safari, ctx, out, None) {
-        stats.drop(&reason);
+    for rule in surviving(ctx, rule) {
+        if let Err(reason) = compile_rule(&rule, safari, ctx, out, None) {
+            stats.drop(&reason);
+        }
     }
 }
 
+/// uBO's network types: a filter with all of them is stored typeless.
+const NETWORK_TYPES: ResourceTypes = ResourceTypes::SCRIPT
+    .union(ResourceTypes::IMAGE)
+    .union(ResourceTypes::CSS)
+    .union(ResourceTypes::OBJECT)
+    .union(ResourceTypes::XHR)
+    .union(ResourceTypes::FRAME)
+    .union(ResourceTypes::FONT)
+    .union(ResourceTypes::MEDIA)
+    .union(ResourceTypes::PING)
+    .union(ResourceTypes::WEBSOCKET)
+    .union(ResourceTypes::OTHER);
+
+/// What `$badfilter` leaves of `rule`. uBO stores a filter as one entry per
+/// type, a typeless one standing for every network type, and a
+/// `*$domain=a|b` filter as one per page hostname; a badfilter removes the
+/// entries identical to its own (static-net-filtering.js,
+/// `compileToAtomicFilter` and `freeze`).
+fn surviving(ctx: &Context, rule: &NetworkRule) -> Vec<NetworkRule> {
+    if rule.badfilter {
+        return Vec::new();
+    }
+    if !ctx.bad_bodies.contains(rule.pattern.body.as_str()) {
+        return vec![rule.clone()];
+    }
+    // (typeless entry, typed entries) of a type set.
+    let split = |t: ResourceTypes| match t {
+        t if t.is_empty() => (true, t),
+        t if t.contains(NETWORK_TYPES) => (true, t.difference(NETWORK_TYPES)),
+        t => (false, t),
+    };
+    let by_origin = just_origin(rule);
+    let shape = |r: &NetworkRule| {
+        let mut r = unlabeled(r);
+        r.types = ResourceTypes::empty();
+        if by_origin {
+            r.from.include.clear();
+        }
+        r
+    };
+    let key = shape(rule);
+    let origins: Vec<Option<&DomainMatcher>> = if by_origin {
+        rule.from.include.iter().map(Some).collect()
+    } else {
+        vec![None]
+    };
+    let mut left = vec![split(rule.types); origins.len()];
+    for bad in ctx.bad.iter().filter(|b| (!by_origin || just_origin(b)) && shape(b) == key) {
+        let (typeless, typed) = split(bad.types);
+        for (origin, left) in origins.iter().zip(&mut left) {
+            if origin.is_none_or(|o| bad.from.include.contains(o)) {
+                left.0 &= !typeless;
+                left.1.remove(typed);
+            }
+        }
+    }
+    if left.iter().all(|&l| l == split(rule.types)) {
+        return vec![rule.clone()];
+    }
+    let network = if rule.types.is_empty() { ResourceTypes::empty() } else { NETWORK_TYPES };
+    origins
+        .into_iter()
+        .zip(left)
+        .filter(|(_, (typeless, typed))| *typeless || !typed.is_empty())
+        .map(|(origin, (typeless, typed))| {
+            let mut r = rule.clone();
+            r.types = if typeless { network.union(typed) } else { typed };
+            if let Some(origin) = origin {
+                r.from.include = vec![origin.clone()];
+            }
+            r
+        })
+        .collect()
+}
+
+/// uBO's "just origin" filter, `*$domain=a|b` with no other option, which it
+/// stores once per page hostname.
+fn just_origin(r: &NetworkRule) -> bool {
+    r.pattern.is_match_all()
+        && !r.from.include.is_empty()
+        && r.from.exclude.is_empty()
+        && !r.from.include.iter().any(|d| matches!(d, DomainMatcher::Regex(_)))
+        && r.to.is_empty()
+        && r.denyallow.is_empty()
+        && r.method.include.is_empty()
+        && r.method.exclude.is_empty()
+        && r.runtime_only_options.is_empty()
+        && r.negated_types.is_empty()
+        && !r.important
+        && !matches!(r.party, Party::StrictFirst | Party::StrictThird)
+        && matches!(r.action, NetworkAction::Block)
+}
+
 /// A rule with its provenance and `$badfilter` flag cleared, for comparing
-/// filters. uBO cancels a filter only when its compiled form is identical
-/// (static-net-filtering.js, `freeze`); there is no domain-subset matching.
+/// filters.
 fn unlabeled(r: &NetworkRule) -> NetworkRule {
     let mut r = r.clone();
     r.source = SourceRef::default();
@@ -731,7 +817,7 @@ where
         let mut out = Emitted::with_capacity(rules.len());
         let mut stats = Stats::default();
         let mut page = Vec::new();
-        for mut rule in rules {
+        for rule in rules {
             if rule.exception
                 && rule
                     .scope
@@ -739,16 +825,21 @@ where
             {
                 page.push(rule.raw.clone());
             }
-            if rule.types.contains(ResourceTypes::POPUP) && !rule.negated_types.contains(ResourceTypes::POPUP)
-                && !rule.badfilter && !ctx.bad.contains(&unlabeled(&rule)) {
-                match crate::runtime::popup_rule(&rule) {
+            let survivors = surviving(ctx, &rule);
+            let popup = |r: &NetworkRule| r.types.contains(ResourceTypes::POPUP) && !r.negated_types.contains(ResourceTypes::POPUP);
+            if let Some(r) = survivors.iter().find(|r| popup(r)) {
+                match crate::runtime::popup_rule(r) {
                     Ok(_) => page.push(rule.raw.clone()),
                     Err(reason) => stats.drop(&reason),
                 }
-                rule.types.remove(ResourceTypes::POPUP);
-                if rule.types.is_empty() { continue; }
             }
-            emit_rule(ctx, safari, &rule, &mut out, &mut stats);
+            for mut r in survivors {
+                if popup(&r) {
+                    r.types.remove(ResourceTypes::POPUP);
+                    if r.types.is_empty() { continue; }
+                }
+                emit_rule(ctx, safari, &r, &mut out, &mut stats);
+            }
         }
         (out, stats, page)
     });
@@ -1736,6 +1827,27 @@ mod tests {
             drop_reason(std::slice::from_ref(&scoped), V15),
             ["dnr:scope-on-block"]
         );
+    }
+
+    /// uBO stores a filter per type and, for `*$domain=a|b`, per page
+    /// hostname; a badfilter removes the pieces it shares and no others.
+    #[test]
+    fn badfilter_cancels_the_types_and_origins_it_names() {
+        let bad = |r: NetworkRule| NetworkRule { badfilter: true, ..r };
+        let typed = |t| NetworkRule { types: t, ..net("||ads.com^") };
+        let (out, _) = run(&[typed(RT::SCRIPT | RT::IMAGE), bad(typed(RT::SCRIPT))], V15);
+        assert_eq!(json(&out), r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?ads\\.com[/:?#]","resource-type":["image"]},"action":{"type":"block"}}]"#);
+        let origin = |d: &[&str]| NetworkRule {
+            types: RT::SCRIPT,
+            party: Party::Third,
+            from: list(d, &[]),
+            ..net("*")
+        };
+        let (out, _) = run(&[origin(&["a.com", "b.com", "c.com"]), bad(origin(&["b.com"]))], V15);
+        assert_eq!(json(&out), r#"[{"trigger":{"url-filter":".*","resource-type":["script"],"load-type":["third-party"],"if-domain":["*a.com","*c.com"]},"action":{"type":"block"}}]"#);
+        // A typeless badfilter cancels a typed filter's network types only.
+        let (out, _) = run(&[typed(RT::all().difference(RT::POPUP | RT::POPUNDER)), bad(typed(RT::empty()))], V15);
+        assert_eq!(json(&out), r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?ads\\.com[/:?#]","resource-type":["document"],"load-context":["top-frame"]},"action":{"type":"block"}}]"#);
     }
 
     #[test]
