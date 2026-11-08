@@ -1056,14 +1056,11 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Pop-ups & Banners" = "Ventanas emergentes y banners";
 "Social & Chat" = "Redes sociales y chat";
 "Enable Recommended" = "Activar recomendadas";
-"Pop-ups" = "Ventanas emergentes";
-"Banners" = "Banners";
 "Social" = "Redes sociales";
 "Chat" = "Chat";
 "Anti-AI" = "Anti-IA";
 "Hides cookie consent banners and pop-ups." = "Oculta los banners y ventanas emergentes de consentimiento de cookies.";
 "Hides newsletter sign-ups and requests to show notifications." = "Oculta suscripciones a boletines y solicitudes para mostrar notificaciones.";
-"Hides banners that push a site's mobile app." = "Oculta los banners que promocionan la app móvil de un sitio.";
 "Hides share buttons and social media widgets." = "Oculta botones de compartir y widgets de redes sociales.";
 "Hides live chat and support widgets." = "Oculta los widgets de chat en vivo y de soporte.";
 "Hides overlays, promotions, and other distractions." = "Oculta superposiciones, promociones y otras distracciones.";

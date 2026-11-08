@@ -1056,14 +1056,11 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Pop-ups & Banners" = "Pop-ups und Banner";
 "Social & Chat" = "Soziale Medien und Chat";
 "Enable Recommended" = "Empfohlene aktivieren";
-"Pop-ups" = "Pop-ups";
-"Banners" = "Banner";
 "Social" = "Soziale Medien";
 "Chat" = "Chat";
 "Anti-AI" = "Anti-KI";
 "Hides cookie consent banners and pop-ups." = "Blendet Cookie-Banner und Einwilligungs-Pop-ups aus.";
 "Hides newsletter sign-ups and requests to show notifications." = "Blendet Newsletter-Anmeldungen und Anfragen für Mitteilungen aus.";
-"Hides banners that push a site's mobile app." = "Blendet Banner aus, die für die App einer Website werben.";
 "Hides share buttons and social media widgets." = "Blendet Teilen-Tasten und Social-Media-Widgets aus.";
 "Hides live chat and support widgets." = "Blendet Live-Chat- und Support-Widgets aus.";
 "Hides overlays, promotions, and other distractions." = "Blendet Overlays, Werbeaktionen und andere Ablenkungen aus.";

@@ -1025,14 +1025,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Pop-ups & Banners" = "ポップアップとバナー";
 "Social & Chat" = "ソーシャルとチャット";
 "Enable Recommended" = "推奨を有効にする";
-"Pop-ups" = "ポップアップ";
-"Banners" = "バナー";
 "Social" = "ソーシャル";
 "Chat" = "チャット";
 "Anti-AI" = "反AI";
 "Hides cookie consent banners and pop-ups." = "Cookieの同意バナーとポップアップを非表示にします。";
 "Hides newsletter sign-ups and requests to show notifications." = "ニュースレター登録と通知の許可を求める表示を非表示にします。";
-"Hides banners that push a site's mobile app." = "サイトのモバイルアプリを勧めるバナーを非表示にします。";
 "Hides share buttons and social media widgets." = "共有ボタンとソーシャルメディアのウィジェットを非表示にします。";
 "Hides live chat and support widgets." = "ライブチャットとサポートのウィジェットを非表示にします。";
 "Hides overlays, promotions, and other distractions." = "オーバーレイ、宣伝、その他の邪魔な表示を非表示にします。";

@@ -48,21 +48,20 @@ enum AnnoyanceTopic: String, CaseIterable, Sendable {
 
 /// What onboarding and Annoyances Info offer in place of the whole list of
 /// annoyance lists, none of which is on by default (#1087). Each choice turns
-/// on the lists it names.
+/// on the lists it names. Pop-ups & Banners turns on EasyList's lists only (#1091).
 enum AnnoyanceChoice: String, CaseIterable, Identifiable, Sendable {
-    case cookies, popups, banners, social, chat, general, ai
+    case cookies, popups, social, chat, general, ai
 
     var id: String { rawValue }
 
-    /// Cookie notices are the one choice onboarding preselects.
-    static let recommended: Set<AnnoyanceChoice> = [.cookies]
+    /// What onboarding preselects (#1091).
+    static let recommended: Set<AnnoyanceChoice> = [.cookies, .general]
 
     /// A localization key.
     var title: String {
         switch self {
         case .cookies: "Cookie Notices"
-        case .popups: "Pop-ups"
-        case .banners: "Banners"
+        case .popups: "Pop-ups & Banners"
         case .social: "Social"
         case .chat: "Chat"
         case .general: "General"
@@ -74,7 +73,6 @@ enum AnnoyanceChoice: String, CaseIterable, Identifiable, Sendable {
         switch self {
         case .cookies: String(localized: "Hides cookie consent banners and pop-ups.")
         case .popups: String(localized: "Hides newsletter sign-ups and requests to show notifications.")
-        case .banners: String(localized: "Hides banners that push a site's mobile app.")
         case .social: String(localized: "Hides share buttons and social media widgets.")
         case .chat: String(localized: "Hides live chat and support widgets.")
         case .general: String(localized: "Hides overlays, promotions, and other distractions.")
@@ -86,7 +84,6 @@ enum AnnoyanceChoice: String, CaseIterable, Identifiable, Sendable {
         switch self {
         case .cookies: ["uBlock filters – Cookie Notices", "EasyList – Cookie Notices"]
         case .popups: ["EasyList – Newsletter Notices", "EasyList – Notifications"]
-        case .banners: ["AdGuard Mobile App Banners"]
         case .social: ["EasyList – Social Widgets"]
         case .chat: ["EasyList – Chat Widgets"]
         case .general: ["uBlock filters – Annoyances", "EasyList – Other Annoyances"]

@@ -1056,14 +1056,11 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Pop-ups & Banners" = "Felugró ablakok és bannerek";
 "Social & Chat" = "Közösségi média és csevegés";
 "Enable Recommended" = "Ajánlottak bekapcsolása";
-"Pop-ups" = "Felugró ablakok";
-"Banners" = "Bannerek";
 "Social" = "Közösségi média";
 "Chat" = "Csevegés";
 "Anti-AI" = "AI-mentes";
 "Hides cookie consent banners and pop-ups." = "Elrejti a cookie-hozzájárulást kérő bannereket és ablakokat.";
 "Hides newsletter sign-ups and requests to show notifications." = "Elrejti a hírlevél-feliratkozásokat és az értesítéskéréseket.";
-"Hides banners that push a site's mobile app." = "Elrejti a webhely mobilappját reklámozó bannereket.";
 "Hides share buttons and social media widgets." = "Elrejti a megosztásgombokat és a közösségimédia-widgeteket.";
 "Hides live chat and support widgets." = "Elrejti az élő csevegő- és ügyfélszolgálati widgeteket.";
 "Hides overlays, promotions, and other distractions." = "Elrejti a rátett rétegeket, promóciókat és más zavaró elemeket.";

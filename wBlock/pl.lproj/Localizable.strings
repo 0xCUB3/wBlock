@@ -1056,14 +1056,11 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Pop-ups & Banners" = "Wyskakujące okna i banery";
 "Social & Chat" = "Media społecznościowe i czat";
 "Enable Recommended" = "Włącz zalecane";
-"Pop-ups" = "Wyskakujące okna";
-"Banners" = "Banery";
 "Social" = "Media społecznościowe";
 "Chat" = "Czat";
 "Anti-AI" = "Anty-AI";
 "Hides cookie consent banners and pop-ups." = "Ukrywa banery i okna zgody na pliki cookie.";
 "Hides newsletter sign-ups and requests to show notifications." = "Ukrywa zapisy do newsletterów i prośby o pokazywanie powiadomień.";
-"Hides banners that push a site's mobile app." = "Ukrywa banery promujące aplikację mobilną strony.";
 "Hides share buttons and social media widgets." = "Ukrywa przyciski udostępniania i widżety mediów społecznościowych.";
 "Hides live chat and support widgets." = "Ukrywa widżety czatu na żywo i pomocy.";
 "Hides overlays, promotions, and other distractions." = "Ukrywa nakładki, promocje i inne rozpraszacze.";

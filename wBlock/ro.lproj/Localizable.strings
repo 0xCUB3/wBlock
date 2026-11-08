@@ -1056,14 +1056,11 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Pop-ups & Banners" = "Ferestre pop-up și bannere";
 "Social & Chat" = "Rețele sociale și chat";
 "Enable Recommended" = "Activează recomandările";
-"Pop-ups" = "Pop-up-uri";
-"Banners" = "Bannere";
 "Social" = "Rețele sociale";
 "Chat" = "Chat";
 "Anti-AI" = "Anti-IA";
 "Hides cookie consent banners and pop-ups." = "Ascunde bannerele și ferestrele de consimțământ pentru cookie-uri.";
 "Hides newsletter sign-ups and requests to show notifications." = "Ascunde abonările la newsletter și cererile de a afișa notificări.";
-"Hides banners that push a site's mobile app." = "Ascunde bannerele care promovează aplicația mobilă a unui site.";
 "Hides share buttons and social media widgets." = "Ascunde butoanele de distribuire și widgeturile rețelelor sociale.";
 "Hides live chat and support widgets." = "Ascunde widgeturile de chat live și asistență.";
 "Hides overlays, promotions, and other distractions." = "Ascunde suprapunerile, promoțiile și alte distrageri.";
