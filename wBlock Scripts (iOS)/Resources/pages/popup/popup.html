@@ -19,6 +19,10 @@
                         <div id="blocking-status" class="pill" data-i18n="popup_status_loading">Loading…</div>
                     </div>
                 </div>
+                <button id="update-filters" class="icon-button" type="button" hidden>
+                    <svg class="icon-refresh" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.25 8a5.25 5.25 0 1 1-1.54-3.71"/><path d="M13.25 2.5v2.75H10.5"/></svg>
+                    <svg class="icon-check" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5 6.5 11.5 12.5 4.75"/></svg>
+                </button>
                 <button id="open-app" class="icon-button" type="button">
                     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.25" y="2.25" width="11.5" height="11.5" rx="3"/><path d="M6.2 9.8 9.8 6.2M6.4 6.2h3.4v3.4"/></svg>
                 </button>
@@ -122,7 +126,6 @@
                 <div id="paused-prompt-message" class="hint" data-i18n="popup_paused_prompt_message">Resume restores all components.</div>
             </div>
             <div class="popup-action-row">
-                <button id="update-filters" class="btn" type="button" data-i18n="popup_button_update_filters" hidden>Update Filters</button>
                 <button id="resume-blocking" class="btn btn-primary" type="button" data-i18n="popup_button_resume_blocking" aria-live="polite" hidden>Resume Blocking</button>
             </div>
             <div id="filter-update-status" class="filter-update-status" role="status" aria-live="polite" hidden></div>

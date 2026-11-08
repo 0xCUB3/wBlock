@@ -361,35 +361,35 @@ function setStatus(text, kind = 'neutral') {
 let filterUpdatePollPromise = null;
 let filterUpdatePollToken = 0;
 
+let filterUpdateDoneTimer = null;
+
+// The button shows progress and success; the line under the actions only
+// explains a failure.
 function renderFilterUpdateStatus(snapshot) {
     const button = document.getElementById('update-filters');
     const statusEl = document.getElementById('filter-update-status');
     if (!button || !statusEl) return;
 
     const state = snapshot && typeof snapshot.state === 'string' ? snapshot.state : 'idle';
-    statusEl.classList.remove('is-running', 'is-success', 'is-error');
-    statusEl.hidden = state === 'idle';
-    button.disabled = state === 'running';
-    if (state === 'running') {
-        button.setAttribute('aria-busy', 'true');
-        statusEl.classList.add('is-running');
-        statusEl.textContent = t('popup_status_updating_filters', undefined, 'Updating filters…');
-        return;
+    const running = state === 'running';
+    // The checkmark marks an update finishing while the popup is open, not
+    // the result of one that finished earlier.
+    const done = (state === 'succeeded' || state === 'no_change') && button.classList.contains('is-running');
+    clearTimeout(filterUpdateDoneTimer);
+    button.disabled = running;
+    button.classList.toggle('is-running', running);
+    button.classList.toggle('is-done', done);
+    if (running) button.setAttribute('aria-busy', 'true');
+    else button.removeAttribute('aria-busy');
+    if (done) {
+        filterUpdateDoneTimer = setTimeout(() => button.classList.remove('is-done'), 2000);
     }
-    button.removeAttribute('aria-busy');
-    if (state === 'succeeded') {
-        statusEl.classList.add('is-success');
-        const count = Number(snapshot.updatedFilters);
-        statusEl.textContent = count > 0
-            ? t('popup_status_filters_updated', [String(count)], `Filters updated (${count}).`)
-            : t('popup_status_filters_updated', undefined, 'Filters updated.');
-    } else if (state === 'no_change') {
-        statusEl.classList.add('is-success');
-        statusEl.textContent = t('popup_status_filters_no_change', undefined, 'Filters are up to date.');
-    } else if (state === 'failed') {
-        statusEl.classList.add('is-error');
-        statusEl.textContent = snapshot.error || t('popup_error_filter_update', undefined, 'Filter update failed.');
-    }
+
+    statusEl.hidden = state !== 'failed';
+    statusEl.classList.toggle('is-error', state === 'failed');
+    statusEl.textContent = state === 'failed'
+        ? snapshot.error || t('popup_error_filter_update', undefined, 'Filter update failed.')
+        : '';
 }
 
 async function getFilterUpdateStatus() {
@@ -1473,6 +1473,9 @@ function setupListeners() {
     const updateFiltersButton = document.getElementById('update-filters');
 
     if (updateFiltersButton) {
+        const updateLabel = t('popup_button_update_filters', undefined, 'Update Filters');
+        updateFiltersButton.title = updateLabel;
+        updateFiltersButton.setAttribute('aria-label', updateLabel);
         updateFiltersButton.addEventListener('click', () => {
             if (updateFiltersButton.dataset.openInApp === 'true') {
                 openWBlockApp('update-filters').catch((error) => {
@@ -1843,7 +1846,6 @@ async function refreshUi(options = {}) {
     if (updateFiltersButton) {
         updateFiltersButton.hidden = false;
         updateFiltersButton.dataset.openInApp = String(!isMac);
-        updateFiltersButton.title = isMac ? '' : t('popup_button_open_short', undefined, 'Open wBlock');
     }
     if (isMac) {
         refreshFilterUpdateStatus().catch((error) => {

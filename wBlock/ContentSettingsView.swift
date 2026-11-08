@@ -74,6 +74,19 @@ struct SettingsPage<Content: View>: View {
     }
 }
 
+/// Opens or closes a site's rows on a Settings page (Site Settings, Element
+/// Zapper). A grouped Form on macOS fades a removed row where it stands while
+/// the rows below slide up over it, so one site's rows ran across the next
+/// site's as they animated (#1096); there the rows change at once. An iOS
+/// list animates its rows cleanly.
+func withSiteRowAnimation(_ body: () -> Void) {
+    #if os(iOS)
+    withAnimation(.easeInOut(duration: 0.2), body)
+    #else
+    body()
+    #endif
+}
+
 /// A titled, rounded group for settings sheets and pages, so every control
 /// sits on the same leading edge with one header and one footer style (#943).
 /// Inside a `SettingsPage` on macOS it is a form section instead.

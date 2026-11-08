@@ -14,9 +14,6 @@ struct ElementZapperSettingsView: View {
     @State private var pendingRedo: UndoEntry?
     @State private var isMutating = false
     @State private var mutationVersion = 0
-    #if os(macOS)
-    @State private var showSearch = false
-    #endif
 
     private enum PendingConfirmation: Identifiable {
         case clear(domain: String)
@@ -49,26 +46,13 @@ struct ElementZapperSettingsView: View {
     var body: some View {
         page
         .disabled(isMutating || ruleManager.isMutationInFlight)
-        #if os(iOS)
-        .toolbar {
-            UndoRedoToolbar(
-                canUndo: pendingUndo != nil && !(isMutating || ruleManager.isMutationInFlight),
-                canRedo: pendingRedo != nil && !(isMutating || ruleManager.isMutationInFlight),
-                undo: restoreDeletedRule,
-                redo: redoDeletedRule
-            )
-        }
-        #else
-        .modifier(MacPushedActionsToolbar() {
-            UndoRedoButtons(
-                canUndo: pendingUndo != nil && !(isMutating || ruleManager.isMutationInFlight),
-                canRedo: pendingRedo != nil && !(isMutating || ruleManager.isMutationInFlight),
-                undo: restoreDeletedRule,
-                redo: redoDeletedRule
-            )
-        })
-        .toolbarSearch(text: $searchText, focusRequest: $showSearch, prompt: "Search")
-        #endif
+        .modifier(SitePageToolbar(
+            canUndo: pendingUndo != nil && !(isMutating || ruleManager.isMutationInFlight),
+            canRedo: pendingRedo != nil && !(isMutating || ruleManager.isMutationInFlight),
+            undo: restoreDeletedRule,
+            redo: redoDeletedRule,
+            searchText: $searchText
+        ))
         .pageTitle("Element Zapper")
         .task { await ruleManager.refreshNow() }
         .sheet(item: $editingRule) { selection in
@@ -89,9 +73,6 @@ struct ElementZapperSettingsView: View {
                 )
             }
         }
-        #if os(iOS)
-        .searchable(text: $searchText, prompt: "Search")
-        #endif
     }
 
     @ViewBuilder
@@ -132,7 +113,7 @@ struct ElementZapperSettingsView: View {
     private func domainHeader(_ domain: String) -> some View {
         let expanded = expandedDomains.contains(domain)
         return Button {
-            withAnimation(.easeInOut(duration: 0.2)) {
+            withSiteRowAnimation {
                 if expanded { expandedDomains.remove(domain) }
                 else { expandedDomains.insert(domain) }
             }

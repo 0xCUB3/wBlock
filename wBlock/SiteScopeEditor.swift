@@ -11,6 +11,8 @@ struct SiteScopeEditor: View {
     let excludedMessage: LocalizedStringKey
     let footer: LocalizedStringKey
     var isSaving = false
+    /// The page's search, applied to both site lists.
+    var query = ""
     let updateMode: (Bool) -> Void
     let updateSelected: ([String]) -> Void
     let updateExcluded: ([String]) -> Void
@@ -58,14 +60,14 @@ struct SiteScopeEditor: View {
                           footer: (selectedSites.isEmpty ? [emptySelectionMessage] : []) + (excludedSites == nil ? [footer] : [])) {
                 StringListEditor(title: nil, items: selectedSites,
                                  update: updateSelected, isSaving: isSaving,
-                                 normalize: FilterListSiteExclusion.normalizedDomain)
+                                 normalize: FilterListSiteExclusion.normalizedDomain, query: query)
             }
         }
         if let excludedSites {
             SettingsGroup(header: "Excluded Sites", isBoxed: false, footer: [excludedMessage, footer]) {
                 StringListEditor(title: nil, items: excludedSites,
                                  update: updateExcluded, isSaving: isSaving,
-                                 normalize: FilterListSiteExclusion.normalizedDomain)
+                                 normalize: FilterListSiteExclusion.normalizedDomain, query: query)
             }
         }
     }

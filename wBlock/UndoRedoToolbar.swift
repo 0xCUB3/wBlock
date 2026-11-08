@@ -45,3 +45,31 @@ func UndoRedoButtons(
     .help("Redo")
     .disabled(!canRedo)
 }
+
+/// Undo, Redo and Search for the site pages opened from Settings (Site
+/// Settings, Element Zapper and Cosmetic Filtering), placed the same way on
+/// each page (#1096).
+struct SitePageToolbar: ViewModifier {
+    let canUndo: Bool
+    let canRedo: Bool
+    let undo: () -> Void
+    let redo: () -> Void
+    @Binding var searchText: String
+    #if os(macOS)
+    @State private var showSearch = false
+    #endif
+
+    func body(content: Content) -> some View {
+        #if os(iOS)
+        content
+            .toolbar { UndoRedoToolbar(canUndo: canUndo, canRedo: canRedo, undo: undo, redo: redo) }
+            .searchable(text: $searchText, prompt: "Search")
+        #else
+        content
+            .modifier(MacPushedActionsToolbar {
+                UndoRedoButtons(canUndo: canUndo, canRedo: canRedo, undo: undo, redo: redo)
+            })
+            .toolbarSearch(text: $searchText, focusRequest: $showSearch, prompt: "Search")
+        #endif
+    }
+}

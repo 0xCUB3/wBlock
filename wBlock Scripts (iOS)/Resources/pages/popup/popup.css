@@ -659,23 +659,31 @@ body {
   color: var(--subtext);
 }
 
-.filter-update-status.is-success {
-  color: var(--success);
-}
-
 .filter-update-status.is-error {
   color: var(--danger);
 }
 
-.filter-update-status.is-running::before {
-  content: "";
-  width: 11px;
-  height: 11px;
-  flex: 0 0 auto;
-  border: 2px solid currentColor;
-  border-right-color: transparent;
-  border-radius: 999px;
+/* Update Filters sits beside Open as the same icon button: its arrow spins
+   while lists update, then a checkmark stands in for a moment. */
+#update-filters .icon-check,
+#update-filters.is-done .icon-refresh {
+  display: none;
+}
+
+#update-filters.is-done .icon-check {
+  display: block;
+}
+
+#update-filters.is-done {
+  color: var(--success);
+}
+
+#update-filters.is-running .icon-refresh {
   animation: filter-update-spin 0.8s linear infinite;
+}
+
+#update-filters:disabled {
+  cursor: default;
 }
 
 @keyframes filter-update-spin {
@@ -683,7 +691,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .filter-update-status.is-running::before {
+  #update-filters.is-running .icon-refresh {
     animation: none;
   }
 }

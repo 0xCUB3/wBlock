@@ -8,6 +8,8 @@ struct StringListEditor: View {
     var isSaving = false
     var placeholder: LocalizedStringKey = "example.com"
     var normalize: (String) -> String? = DisabledSitesNormalizer.normalizedDomain
+    /// Narrows the rows shown; adding and removing still edit every item.
+    var query = ""
     @State private var input = ""
     @Environment(\.isInSettingsForm) private var isInSettingsForm
 
@@ -22,12 +24,19 @@ struct StringListEditor: View {
             entryRow(TextField(placeholder, text: $input, prompt: Text(placeholder)).siteEntryField())
             rows
         } else {
+            // The field and its sites share one box, as the form section on
+            // the Cosmetic Filtering page does, rows split like the form's
+            // (#1096).
             VStack(alignment: .leading, spacing: 8) {
                 if let title { Text(title).font(.callout.weight(.medium)) }
-                entryRow(TextField(placeholder, text: $input, prompt: Text(placeholder)).siteEntryField())
-                if !items.isEmpty {
-                    VStack(alignment: .leading, spacing: 4) { rows }.settingsGroup()
+                VStack(alignment: .leading, spacing: 8) {
+                    entryRow(TextField(placeholder, text: $input, prompt: Text(placeholder)).siteEntryField())
+                    ForEach(shownItems, id: \.self) { item in
+                        Divider()
+                        row(item)
+                    }
                 }
+                .settingsGroup()
             }
         }
     }
@@ -42,25 +51,36 @@ struct StringListEditor: View {
         }
     }
 
+    private var shownItems: [String] {
+        let needle = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        return needle.isEmpty ? items : items.filter { $0.localizedCaseInsensitiveContains(needle) }
+    }
+
     private var rows: some View {
-        ForEach(items, id: \.self) { item in
-            HStack {
-                Text(verbatim: item).font(.callout).textSelection(.enabled)
-                Spacer()
-                Button { update(items.filter { $0 != item }) } label: {
-                    Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
-                        #if os(macOS)
-                        .frame(minWidth: 28, minHeight: 32)
-                        #else
-                        .frame(minWidth: 44, minHeight: 44)
-                        #endif
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Remove")
-                .accessibilityValue(item)
-                .disabled(isSaving)
+        ForEach(shownItems, id: \.self, content: row)
+    }
+
+    /// A site drawn like a Site Settings row: body text on one line.
+    private func row(_ item: String) -> some View {
+        HStack {
+            Text(verbatim: item)
+                .lineLimit(1)
+                .truncationMode(.middle)
+                .textSelection(.enabled)
+            Spacer()
+            Button { update(items.filter { $0 != item }) } label: {
+                Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
+                    #if os(macOS)
+                    .frame(minWidth: 28, minHeight: 32)
+                    #else
+                    .frame(minWidth: 44, minHeight: 44)
+                    #endif
+                    .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Remove")
+            .accessibilityValue(item)
+            .disabled(isSaving)
         }
     }
 
@@ -87,7 +107,9 @@ extension View {
             // so the title only serves as the placeholder.
             .labelsHidden()
             .padding(12)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 8))
+            // A fill relative to what is behind it: a material vanished in a
+            // sheet's group, whose background is material too (#1096).
+            .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
     }
 }
 

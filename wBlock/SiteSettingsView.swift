@@ -9,9 +9,6 @@ struct SiteSettingsView: View {
     @State private var newDomain: String = ""
     @State private var isAddingDomain: Bool = false
     @State private var searchText: String = ""
-    #if os(macOS)
-    @State private var showSearch: Bool = false
-    #endif
     @State private var expandedDomains: Set<String> = []
     private enum PendingConfirmation: Identifiable {
         case reset(domain: String)
@@ -65,27 +62,13 @@ struct SiteSettingsView: View {
     var body: some View {
         page
         .pageTitle("Site Settings")
-        #if os(iOS)
-        .toolbar {
-            UndoRedoToolbar(
-                canUndo: !undoStack.isEmpty && !isMutationInFlight,
-                canRedo: !redoStack.isEmpty && !isMutationInFlight,
-                undo: undoSiteMutation,
-                redo: redoSiteMutation
-            )
-        }
-        .searchable(text: $searchText, prompt: "Search")
-        #else
-        .modifier(MacPushedActionsToolbar() {
-            UndoRedoButtons(
-                canUndo: !undoStack.isEmpty && !isMutationInFlight,
-                canRedo: !redoStack.isEmpty && !isMutationInFlight,
-                undo: undoSiteMutation,
-                redo: redoSiteMutation
-            )
-        })
-        .toolbarSearch(text: $searchText, focusRequest: $showSearch, prompt: "Search")
-        #endif
+        .modifier(SitePageToolbar(
+            canUndo: !undoStack.isEmpty && !isMutationInFlight,
+            canRedo: !redoStack.isEmpty && !isMutationInFlight,
+            undo: undoSiteMutation,
+            redo: redoSiteMutation,
+            searchText: $searchText
+        ))
         .alert(item: $pendingConfirmation) { confirmation in
             switch confirmation {
             case .reset(let domain):
@@ -206,7 +189,7 @@ struct SiteSettingsView: View {
         let isExpanded = expandedDomains.contains(site.domain)
 
         return Button {
-            withAnimation(.easeInOut(duration: 0.2)) {
+            withSiteRowAnimation {
                 if isExpanded {
                     expandedDomains.remove(site.domain)
                 } else {
@@ -512,7 +495,7 @@ struct SiteSettingsView: View {
             newDomain = ""
             isAddingDomain = false
             isTextFieldFocused = true
-            withAnimation(.easeInOut(duration: 0.2)) { _ = expandedDomains.insert(normalizedDomain) }
+            withSiteRowAnimation { _ = expandedDomains.insert(normalizedDomain) }
         }
     }
 

@@ -7,6 +7,23 @@ struct CosmeticFilteringSitesView: View {
     @ObservedObject var filterManager: AppFilterManager
     @State private var isEnabled = CosmeticFilteringPreference.isEnabled()
     @State private var sites = CosmeticFilteringPreference.sites()
+    @State private var searchText = ""
+    /// Every change is kept, as in Site Settings, so several edits can each
+    /// be undone (#1096).
+    @State private var undoStack: [Change] = []
+    @State private var redoStack: [Change] = []
+
+    private struct Snapshot: Equatable {
+        var isEnabled: Bool
+        var sites: CosmeticFilteringPreference.Sites
+    }
+
+    private struct Change {
+        let before: Snapshot
+        let after: Snapshot
+    }
+
+    private var snapshot: Snapshot { Snapshot(isEnabled: isEnabled, sites: sites) }
 
     var body: some View {
         SettingsPage {
@@ -37,6 +54,7 @@ struct CosmeticFilteringSitesView: View {
                     emptySelectionMessage: "No sites selected. Cosmetic filtering will not apply.",
                     excludedMessage: "Cosmetic filtering will not apply on these sites. Network blocking still applies.",
                     footer: "Sites include their subdomains. Use * to match any top-level domain, for example amazon.*. Apply changes to update filtering.",
+                    query: searchText,
                     updateMode: { update(sites.selectedSites, sites.excludedSites, onlySelectedSites: $0) },
                     updateSelected: { update($0, sites.excludedSites) },
                     updateExcluded: { update(sites.selectedSites, $0) }
@@ -44,6 +62,10 @@ struct CosmeticFilteringSitesView: View {
             }
         }
         .pageTitle("Cosmetic Filtering")
+        .modifier(SitePageToolbar(
+            canUndo: !undoStack.isEmpty, canRedo: !redoStack.isEmpty,
+            undo: undo, redo: redo, searchText: $searchText
+        ))
     }
 
     private func toggleLabel(_ title: LocalizedStringKey, detail: LocalizedStringKey) -> some View {
@@ -57,10 +79,7 @@ struct CosmeticFilteringSitesView: View {
     }
 
     private func setEnabled(_ enabled: Bool) {
-        guard enabled != isEnabled else { return }
-        isEnabled = enabled
-        CosmeticFilteringPreference.setEnabled(enabled)
-        filterManager.markNonSelectionChangesPending()
+        commit(Snapshot(isEnabled: enabled, sites: sites))
     }
 
     private func update(_ selected: [String]?, _ excluded: [String], includesGeneric: Bool? = nil, onlySelectedSites: Bool? = nil) {
@@ -69,9 +88,37 @@ struct CosmeticFilteringSitesView: View {
             includesGeneric: includesGeneric ?? sites.includesGeneric
         )
         newSites.onlySelectedSites = onlySelectedSites ?? sites.onlySelectedSites
-        guard newSites != sites else { return }
-        sites = newSites
-        CosmeticFilteringPreference.setSites(newSites)
+        commit(Snapshot(isEnabled: isEnabled, sites: newSites))
+    }
+
+    private func commit(_ next: Snapshot) {
+        guard next != snapshot else { return }
+        undoStack.append(Change(before: snapshot, after: next))
+        redoStack = []
+        apply(next)
+    }
+
+    private func undo() {
+        guard let change = undoStack.popLast() else { return }
+        redoStack.append(change)
+        apply(change.before)
+    }
+
+    private func redo() {
+        guard let change = redoStack.popLast() else { return }
+        undoStack.append(change)
+        apply(change.after)
+    }
+
+    private func apply(_ next: Snapshot) {
+        if next.isEnabled != isEnabled {
+            isEnabled = next.isEnabled
+            CosmeticFilteringPreference.setEnabled(next.isEnabled)
+        }
+        if next.sites != sites {
+            sites = next.sites
+            CosmeticFilteringPreference.setSites(next.sites)
+        }
         filterManager.markNonSelectionChangesPending()
     }
 }
