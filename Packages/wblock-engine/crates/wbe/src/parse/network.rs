@@ -1527,11 +1527,14 @@ fn build(
         ));
     }
 
-    rule.party = match (strict, first, third) {
-        (1, _, _) => Party::StrictFirst,
-        (-1, _, _) => Party::StrictThird,
-        (_, true, false) => Party::First,
-        (_, false, true) => Party::Third,
+    // uBO checks party and strict party separately; both must hold.
+    rule.party = match (strict, first && !third, third && !first) {
+        (1, _, true) => return Err(unsupported("$strict1p with $3p never matches")),
+        (-1, true, _) => return Err(unsupported("$1p with $strict3p is not supported")),
+        (1, ..) => Party::StrictFirst,
+        (_, true, _) => Party::First,
+        (_, _, true) => Party::Third,
+        (-1, ..) => Party::StrictThird,
         _ => Party::Any,
     };
     rule.types = types;
@@ -1814,8 +1817,11 @@ mod tests {
         ("||example.com^$1p,3p", "||example.com^"),
         ("||example.com^$strict1p", "||example.com^ $strict1p"),
         ("||example.com^$strict-third-party", "||example.com^ $strict3p"),
-        ("||example.com^$~1p,strict3p", "||example.com^ $strict3p"),
-        ("||example.com^$strict1p,3p", "||example.com^ $strict1p"),
+        ("||example.com^$~1p,strict3p", "||example.com^ $3p"),
+        ("||example.com^$strict3p,3p", "||example.com^ $3p"),
+        ("||example.com^$1p,strict1p", "||example.com^ $strict1p"),
+        ("||example.com^$strict1p,3p", "unsupported"),
+        ("@@||example.com^$1p,strict3p", "unsupported"),
         ("||example.com^$third-party,3p", "invalid: duplicate option `3p`"),
         // Flags and no-ops
         ("||example.com^$important", "||example.com^ $important"),
@@ -1838,6 +1844,7 @@ mod tests {
         ("||example.com^$domain=google.*|~google.de", "||example.com^ $from=google.*|~google.de"),
         ("||example.com^$to=a.com|~b.com", "||example.com^ $to=a.com"),
         ("||example.com^$to=a.com|~b.a.com", "||example.com^ $to=a.com|~b.a.com"),
+        ("||example.com^$domain=b.a.com|~a.com", "||example.com^ $from=b.a.com|~a.com"),
         ("||example.com^$from=a.com,to=b.com", "||example.com^ $from=a.com,to=b.com"),
         ("||example.com^$domain=*.example.com", "invalid: invalid domain `*.example.com`"),
         ("||example.com^$domain=a.com||b.com", "invalid: empty domain"),
