@@ -76,97 +76,7 @@ struct LogsView: View {
     }
 
     var body: some View {
-        CompatibleNavigationStack {
-            VStack(spacing: 0) {
-                #if os(macOS)
-                filterToolbar
-                Divider()
-                #endif
-
-                if filteredEntries.isEmpty {
-                    emptyStateView
-                } else {
-                    List {
-                        Section {
-                            ForEach(filteredEntries) { entry in
-                                LogEntryRow(entry: entry)
-                                    #if os(macOS)
-                                    .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 16))
-                                    #else
-                                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-                                    #endif
-                            }
-                        } header: {
-                            #if os(iOS)
-                            statsLabel
-                            #endif
-                        }
-                    }
-                    .listStyle(.plain)
-                }
-            }
-            #if os(iOS)
-            .navigationTitle("Logs")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                // A conditional ToolbarItem needs iOS 16; a conditional view inside one doesn't.
-                ToolbarItem(placement: .cancellationAction) {
-                    if let onDismiss {
-                        SheetDoneButton(action: onDismiss)
-                    }
-                }
-                ToolbarItemGroup(placement: .primaryAction) {
-                    Menu {
-                        levelFilterPicker
-                        categoryFilterPicker
-                        timeZoneToggle
-                    } label: {
-                        Label(
-                            "Filter Logs",
-                            systemImage: selectedLevel == nil && selectedCategory == nil
-                                ? "line.3.horizontal.decrease.circle"
-                                : "line.3.horizontal.decrease.circle.fill"
-                        )
-                    }
-
-                    Button {
-                        Task {
-                            let text = await ConcurrentLogManager.shared.exportAsText(
-                                entries: Array(filteredEntries.reversed())
-                            )
-                            exportFile = LogExportFile.write(text)
-                        }
-                    } label: {
-                        Label("Export", systemImage: "square.and.arrow.up")
-                    }
-                    .accessibilityLabel("Export")
-
-                    clearButton
-                        .disabled(hasLoadedLogs && entries.isEmpty)
-                }
-            }
-            #else
-            .modifier(MacPushedActionsToolbar {
-                Button {
-                    exportLogsToFile()
-                } label: {
-                    Label("Export", systemImage: "square.and.arrow.up")
-                }
-                .help("Export")
-                .disabled(entries.isEmpty)
-
-                clearButton
-                    .help("Clear")
-                    .disabled(entries.isEmpty)
-            })
-            // The toolbar field the other pages use; .searchable drew nothing
-            // on a pushed Mac page (#999).
-            .toolbarSearch(text: $searchText, focusRequest: $showSearch, prompt: "Search logs")
-            #endif
-        }
-        #if os(iOS)
-        .searchable(text: $searchText, prompt: "Search logs")
-        #endif
+        navigationContainer
         .alert("Clear Logs?", isPresented: $showingClearConfirmation) {
             Button("Cancel", role: .cancel) {}
             Button("Clear", role: .destructive) {
@@ -202,24 +112,122 @@ struct LogsView: View {
         #endif
     }
 
-    #if os(macOS)
-    private var filterToolbar: some View {
-        HStack(spacing: 12) {
-            levelFilterPicker
-            categoryFilterPicker
-
-            statsLabel
-
-            Spacer(minLength: 0)
-
-            timeZoneToggle
-                .toggleStyle(.checkbox)
-                .controlSize(.small)
+    /// iOS pushes the page onto Settings' stack and only a sheet needs its
+    /// own; a second stack inside the pushed page left a blank band under the
+    /// bar and kept search from showing (#1099).
+    @ViewBuilder
+    private var navigationContainer: some View {
+        #if os(iOS)
+        if onDismiss != nil {
+            CompatibleNavigationStack { content }
+        } else {
+            content
         }
-        .padding(.horizontal)
-        .padding(.vertical, 8)
+        #else
+        CompatibleNavigationStack { content }
+        #endif
     }
-    #endif
+
+    /// The same controls on both platforms (#1099): search, a Filter menu
+    /// holding level, category and time zone, then Export and Clear. The
+    /// count scrolls with the entries instead of sitting under the bar.
+    private var content: some View {
+        Group {
+            if filteredEntries.isEmpty {
+                emptyStateView
+            } else {
+                List {
+                    statsLabel
+                        .listRowInsets(rowInsets(vertical: 6))
+                        .hiddenListRowSeparatorCompat()
+                    ForEach(filteredEntries) { entry in
+                        LogEntryRow(entry: entry)
+                            .listRowInsets(rowInsets(vertical: 8))
+                    }
+                }
+                .listStyle(.plain)
+                .environment(\.defaultMinListRowHeight, 0)
+            }
+        }
+        #if os(iOS)
+        .navigationTitle("Logs")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            // A conditional ToolbarItem needs iOS 16; a conditional view inside one doesn't.
+            ToolbarItem(placement: .cancellationAction) {
+                if let onDismiss {
+                    SheetDoneButton(action: onDismiss)
+                }
+            }
+            ToolbarItemGroup(placement: .primaryAction) {
+                filterMenu
+                Button {
+                    Task {
+                        let text = await ConcurrentLogManager.shared.exportAsText(
+                            entries: Array(filteredEntries.reversed())
+                        )
+                        exportFile = LogExportFile.write(text)
+                    }
+                } label: {
+                    Label("Export", systemImage: "square.and.arrow.up")
+                }
+                .disabled(hasLoadedLogs && entries.isEmpty)
+
+                clearButton
+                    .disabled(hasLoadedLogs && entries.isEmpty)
+            }
+        }
+        .searchable(text: $searchText, prompt: "Search logs")
+        #else
+        .modifier(MacPushedActionsToolbar {
+            filterMenu
+
+            Button {
+                exportLogsToFile()
+            } label: {
+                Label("Export", systemImage: "square.and.arrow.up")
+            }
+            .help("Export")
+            .disabled(entries.isEmpty)
+
+            clearButton
+                .help("Clear")
+                .disabled(entries.isEmpty)
+        })
+        // The toolbar field the other pages use; .searchable drew nothing
+        // on a pushed Mac page (#999).
+        .toolbarSearch(text: $searchText, focusRequest: $showSearch, prompt: "Search logs")
+        #endif
+    }
+
+    private func rowInsets(vertical: CGFloat) -> EdgeInsets {
+        #if os(macOS)
+        EdgeInsets(top: vertical, leading: 8, bottom: vertical, trailing: 16)
+        #else
+        EdgeInsets(top: vertical, leading: 16, bottom: vertical, trailing: 16)
+        #endif
+    }
+
+    private var filterMenu: some View {
+        Menu {
+            // Inline sections with checkmarks, as iOS draws them, on both.
+            Group {
+                levelFilterPicker
+                categoryFilterPicker
+            }
+            .pickerStyle(.inline)
+            .labelsHidden()
+            timeZoneToggle
+        } label: {
+            Label(
+                "Filter Logs",
+                systemImage: selectedLevel == nil && selectedCategory == nil
+                    ? "line.3.horizontal.decrease.circle"
+                    : "line.3.horizontal.decrease.circle.fill"
+            )
+        }
+        .help("Filter Logs")
+    }
 
     private var clearButton: some View {
         Button { showingClearConfirmation = true } label: {
@@ -251,11 +259,6 @@ struct LogsView: View {
                     .tag(level as LogLevel?)
             }
         }
-        .labelsHidden()
-        .accessibilityLabel("All Levels")
-        #if os(macOS)
-        .controlSize(.small)
-        #endif
     }
 
     private var categoryFilterPicker: some View {
@@ -266,11 +269,6 @@ struct LogsView: View {
                     .tag(category as LogCategory?)
             }
         }
-        .labelsHidden()
-        .accessibilityLabel("All Categories")
-        #if os(macOS)
-        .controlSize(.small)
-        #endif
     }
 
     private var statsLabel: some View {
