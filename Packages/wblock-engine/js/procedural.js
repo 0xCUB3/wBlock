@@ -108,7 +108,11 @@
     );
   };
 
-  const matchesCss = (arg, pseudo) => {
+  // uBO compileCSSDeclaration: `[before|after, ]name: value`.
+  const matchesCss = (arg) => {
+    const prefix = /^([a-z-]+),\s*/.exec(arg);
+    const pseudo = prefix ? '::' + prefix[1] : null;
+    if (prefix) arg = arg.slice(prefix[0].length);
     const i = arg.indexOf(':');
     if (i < 0) throw new Error('matches-css: expected name: value');
     const name = arg.slice(0, i).trim();
@@ -219,9 +223,9 @@
     ['watch-attr', () => els => els],
     ...['has', 'if', 'if-not', 'not', 'is', 'where'].map(type => [type, arg => nested(arg, type)]),
     ['matches-attr', matchesAttr],
-    ['matches-css', (a) => matchesCss(a, null)],
-    ['matches-css-after', (a) => matchesCss(a, '::after')],
-    ['matches-css-before', (a) => matchesCss(a, '::before')],
+    ['matches-css', matchesCss],
+    ['matches-css-after', (a) => matchesCss(`after, ${a}`)],
+    ['matches-css-before', (a) => matchesCss(`before, ${a}`)],
     ['matches-path', matchesPath],
     ['min-text-length', minTextLength],
     ['upward', upward],

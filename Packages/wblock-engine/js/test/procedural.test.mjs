@@ -177,9 +177,11 @@ describe('matches-css', () => {
       if (pseudo !== '::before') return real(el, pseudo);
       return { getPropertyValue: (n) => (el.id === 'a' && n === 'content' ? '"Anzeige"' : '') };
     };
-    api.apply([filt([op('css-selector', 'div'), op('matches-css-before', 'content:/Anzeige/i')])]);
-    assert.equal(isMarked(document.getElementById('a')), true);
-    assert.equal(isMarked(document.getElementById('b')), false);
+    for (const [type, arg] of [['matches-css-before', 'content:/Anzeige/i'], ['matches-css', 'before, content:/Anzeige/i']]) {
+      api.apply([filt([op('css-selector', 'div'), op(type, arg)])]);
+      assert.equal(isMarked(document.getElementById('a')), true, arg);
+      assert.equal(isMarked(document.getElementById('b')), false, arg);
+    }
   });
 
   test('matches-css-after reads the ::after pseudo element', () => {
