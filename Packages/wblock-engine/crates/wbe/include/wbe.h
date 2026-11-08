@@ -63,7 +63,9 @@ void wbe_compile_free(WbeCompileResult *result);
 bool wbe_engine_build(const char *runtime_text, uint8_t **out, size_t *out_len);
 void wbe_bytes_free(uint8_t *bytes, size_t len);
 
-WbeEngine *wbe_engine_open(const uint8_t *bytes, size_t len);
+/* The engine in open file fd after offset header bytes, read in place from a
+ * mapping the engine keeps; fd stays the caller's. */
+WbeEngine *wbe_engine_map(int fd, size_t offset);
 /* PagePayload JSON: {"hide":[..],"procedural":[..],"scriptlets":[[name,args..],..],"generichide":bool}. */
 char *wbe_engine_lookup(const WbeEngine *engine, const char *url);
 void wbe_engine_free(WbeEngine *engine);
