@@ -9,7 +9,7 @@
 //! network rule.
 
 pub(crate) mod cosmetic;
-mod network;
+pub(crate) mod network;
 pub mod regex;
 
 use crate::ast::{CosmeticRule, NetworkRule, ParsedLine, Rule, ScriptletRule, SourceRef};

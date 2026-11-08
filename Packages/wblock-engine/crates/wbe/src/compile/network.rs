@@ -542,7 +542,7 @@ fn host_only(p: &Pattern) -> Option<String> {
 
 /// The lowercase hostname a `||host...` pattern starts with, and the rest of
 /// its body.
-fn split_host(p: &Pattern) -> Option<(String, &str)> {
+pub(crate) fn split_host(p: &Pattern) -> Option<(String, &str)> {
     if p.kind != PatternKind::Hostname {
         return None;
     }

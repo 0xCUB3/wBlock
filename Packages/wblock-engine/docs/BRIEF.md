@@ -18,8 +18,8 @@ far as uBO accepts it).
   cost WebKit compile time on every apply; those and the rest (procedural
   cosmetics, `:style`, `:remove`, scriptlets) go to `runtime` for the
   Scripts extension.
-- `runtime.rs` — per-page engine (wraps brave/adblock-rust) for the
-  leftovers. `ffi.rs` — C ABI for Swift.
+- `runtime.rs` — per-page engine for the leftovers and the page
+  exceptions. `ffi.rs` — C ABI for Swift.
 - `harness/` — Node/TypeScript tests and benchmarks. No Swift tests.
 
 Safari facts (verified on macOS 27 / WebKit main): see the header of

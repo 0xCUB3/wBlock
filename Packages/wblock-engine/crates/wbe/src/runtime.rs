@@ -1,14 +1,13 @@
 //! Per-page engine for rules Safari cannot enforce natively: hides,
 //! procedural cosmetics, `:style`/`:remove` actions, and scriptlets. Queried
 //! by the wBlock Scripts extension's native handler for each frame.
-//! brave/adblock-rust matches the page exceptions (`$generichide` and the
-//! like). Cosmetics and scriptlets are matched here; scriptlets are returned
+//! Page exceptions (`$generichide` and the like), cosmetics and scriptlets
+//! are all matched here, by the same host index; scriptlets are returned
 //! as calls, because the extension must inject them as files (a script string
 //! would be subject to the page's CSP). The lines come from `compile`, which
 //! already dropped untrusted `trusted-*` scriptlets.
 
-use crate::ast::{CosmeticBody, DomainList, DomainMatcher, ExceptionScope, ParsedLine, Party, Rule};
-use adblock::lists::{FilterSet, ParseOptions};
+use crate::ast::{CosmeticBody, DomainList, DomainMatcher, ExceptionScope, NetworkAction, NetworkRule, ParsedLine, Party, Rule};
 use serde::Serialize;
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, HashMap, HashSet};
@@ -17,17 +16,13 @@ use std::ops::Range;
 use std::sync::{Arc, OnceLock};
 
 pub struct Engine {
-    /// Flags the pages with a `$generichide` exception.
-    generichide: adblock::Engine,
-    elemhide: adblock::Engine,
-    document: adblock::Engine,
-    genericblock: adblock::Engine,
-    /// Flags the pages with a `$specifichide` exception, via `$generichide`.
-    specifichide: adblock::Engine,
     scriptlets: Scriptlets,
     popups: Scriptlets,
-    /// Popup call regexes, compiled when a target first contains their literal.
+    /// Page exceptions, as `page_exception` writes them.
+    pages: Scriptlets,
+    /// Popup and page call regexes, compiled when a URL first contains their literal.
     popup_regexes: RefCell<HashMap<u32, Option<regex::Regex>>>,
+    page_regexes: RefCell<HashMap<u32, Option<regex::Regex>>>,
 }
 
 /// Cosmetic actions for one page URL.
@@ -88,8 +83,9 @@ impl ScriptletRules {
         self.add(exception, domains, call);
     }
 
-    fn add(&mut self, exception: bool, domains: DomainList, call: Vec<String>) {
-        for matcher in domains.include.iter().chain(&domains.exclude) {
+    /// Makes `matchers`' regex domains host keys a lookup can produce.
+    fn register<'a>(&mut self, matchers: impl IntoIterator<Item = &'a DomainMatcher>) {
+        for matcher in matchers {
             if let DomainMatcher::Regex(pattern) = matcher {
                 if !self.regexes.contains_key(pattern) {
                     if let Ok(regex) = regex::Regex::new(pattern) {
@@ -98,6 +94,10 @@ impl ScriptletRules {
                 }
             }
         }
+    }
+
+    fn add(&mut self, exception: bool, domains: DomainList, call: Vec<String>) {
+        self.register(domains.include.iter().chain(&domains.exclude));
         let id = (!call[0].is_empty()).then(|| {
             *self.index.entry(call.clone()).or_insert_with(|| {
                 self.calls.push(call);
@@ -343,11 +343,20 @@ impl Scriptlets {
     /// cosmetics (`$specifichide`), `generic_hides` false the generic hides
     /// (`$generichide`); all other scriptlets stay.
     fn ids(&self, host: &str, site_cosmetic: bool, generic_hides: bool) -> (Vec<u32>, HashSet<u32>, bool) {
+        self.ids_for(&self.keys(host), site_cosmetic, generic_hides)
+    }
+
+    /// `host_keys`, and `/regex/` for each regex domain `host` matches.
+    fn keys(&self, host: &str) -> Vec<String> {
         let mut keys = host_keys(host);
         keys.extend(self.regexes.matches(host).iter().map(|i| format!("/{}/", self.regexes.patterns()[i])));
+        keys
+    }
+
+    fn ids_for(&self, keys: &[String], site_cosmetic: bool, generic_hides: bool) -> (Vec<u32>, HashSet<u32>, bool) {
         let mut excepted = HashSet::new();
         let mut all_scriptlets_excepted = false;
-        for k in &keys {
+        for k in keys {
             let ids = self.exceptions.get(k).and_then(|mut r| r.list(Reader::varint)).unwrap_or_default();
             for id in ids {
                 match id.checked_sub(1) {
@@ -474,16 +483,9 @@ impl Engine {
     pub fn build(lines: &[String]) -> Self {
         let mut scriptlets = ScriptletRules::default();
         let mut popups = ScriptletRules::default();
-        let mut generichide = Vec::new();
-        let mut elemhide = Vec::new();
-        let mut document = Vec::new();
-        let mut genericblock = Vec::new();
-        let mut specifichide = Vec::new();
+        let mut page_rules = Vec::new();
         for line in lines {
             match crate::parse_line(line, Default::default()) {
-                // Hides are indexed here too: adblock-rust files generic
-                // `.class`/`#id` hides where only a DOM scan finds them, and
-                // drops regex domains.
                 ParsedLine::Rule(Rule::Cosmetic(r)) => {
                     let call = match (r.body, r.matches_path) {
                         (CosmeticBody::Style(css), _) => vec!["wbe:css".into(), css],
@@ -514,74 +516,35 @@ impl Engine {
                         // names the opener tab, so a frame-only allow can miss.
                         popups.add(false, r.from.clone(), rule.into_call());
                     }
-                    if r.scope.intersects(
-                        ExceptionScope::GHIDE
-                            | ExceptionScope::EHIDE
-                            | ExceptionScope::SHIDE
-                            | ExceptionScope::DOC
-                            | ExceptionScope::GENERICBLOCK,
-                    ) {
-                        let (pattern, options) = line.rsplit_once('$').unwrap_or((line, ""));
-                        let options: Vec<&str> = options
-                            .split(',')
-                            .filter(|option| {
-                                !matches!(
-                                    *option,
-                                    "elemhide"
-                                        | "ehide"
-                                        | "specifichide"
-                                        | "shide"
-                                        | "document"
-                                        | "doc"
-                                        | "generichide"
-                                        | "ghide"
-                                        | "genericblock"
-                                        | "popup"
-                                )
-                            })
-                            .collect();
-                        let filter = format!(
-                            "{pattern}$generichide{}",
-                            if options.is_empty() {
-                                String::new()
-                            } else {
-                                format!(",{}", options.join(","))
-                            }
-                        );
-                        if r.scope.contains(ExceptionScope::GHIDE) { generichide.push(filter.clone()); }
-                        if r.scope.contains(ExceptionScope::EHIDE) {
-                            elemhide.push(filter.clone());
-                        }
-                        if r.scope.contains(ExceptionScope::SHIDE) { specifichide.push(filter.clone()); }
-                        if r.scope.contains(ExceptionScope::GENERICBLOCK) { genericblock.push(filter.clone()); }
-                        if r.scope.contains(ExceptionScope::DOC) {
-                            document.push(filter);
-                        }
-                    }
+                    if r.exception && !r.scope.is_empty() { page_rules.push(r); }
                 }
                 _ => {},
             }
         }
+        // As uBO, a `$badfilter` cancels the identical filter (the compiler
+        // routes both here).
+        let mut ctx = crate::compile::network::Context::default();
+        page_rules.iter().for_each(|r| ctx.add(r));
+        let mut pages = ScriptletRules::default();
+        for r in page_rules.into_iter().flat_map(|r| crate::compile::network::surviving(&ctx, *r)) {
+            if let Some((domains, call)) = page_exception(&r) {
+                pages.register(r.to.include.iter().chain(&r.to.exclude));
+                pages.add(false, domains, call);
+            }
+        }
         Self {
-            generichide: exception_engine(&generichide),
-            elemhide: exception_engine(&elemhide),
-            document: exception_engine(&document),
-            genericblock: exception_engine(&genericblock),
-            specifichide: exception_engine(&specifichide),
             scriptlets: scriptlets.finish(),
             popups: popups.finish(),
+            pages: pages.finish(),
             popup_regexes: Default::default(),
+            page_regexes: Default::default(),
         }
     }
 
-    /// Five length-prefixed adblock engines, then the runtime tables, each
-    /// length-prefixed.
+    /// The runtime tables, each length-prefixed.
     pub fn serialize(&self) -> Vec<u8> {
         let mut out = Vec::new();
-        for engine in [&self.generichide, &self.elemhide, &self.document, &self.genericblock, &self.specifichide] {
-            put(&mut out, &engine.serialize());
-        }
-        for index in [&self.scriptlets, &self.popups] {
+        for index in [&self.scriptlets, &self.popups, &self.pages] {
             for table in [&index.calls, &index.rules, &index.exceptions] { put(&mut out, table.bytes()); }
             let patterns: std::collections::BTreeSet<_> = index.regexes.patterns().iter().collect();
             put(&mut out, &serde_json::to_vec(&patterns).expect("regex patterns serialize"));
@@ -617,25 +580,40 @@ impl Engine {
             at = section.end;
             Ok(section)
         };
-        let mut engine = || read_engine(&bytes[take()?]);
-        let (generichide, elemhide, document, genericblock, specifichide) = (engine()?, engine()?, engine()?, engine()?, engine()?);
         let mut index = || -> Result<Scriptlets, String> {
             let (calls, rules, exceptions) = (Table::parse(&blob, take()?)?, Table::parse(&blob, take()?)?, Table::parse(&blob, take()?)?);
             let patterns = serde_json::from_slice::<Vec<String>>(&bytes[take()?]).map_err(|e| e.to_string())?;
             let regexes = regex::RegexSet::new(patterns).map_err(|e| e.to_string())?;
             Ok(Scriptlets { calls, generic_rules: OnceLock::new(), rules, exceptions, regexes })
         };
-        let (scriptlets, popups) = (index()?, index()?);
-        Ok(Self {
-            generichide,
-            elemhide,
-            document,
-            genericblock,
-            specifichide,
-            scriptlets,
-            popups,
-            popup_regexes: Default::default(),
-        })
+        let (scriptlets, popups, pages) = (index()?, index()?, index()?);
+        Ok(Self { scriptlets, popups, pages, popup_regexes: Default::default(), page_regexes: Default::default() })
+    }
+
+    /// The scopes of the page exceptions that apply to the page at `url`.
+    fn page_scope(&self, url: &str) -> ExceptionScope {
+        let host = host_of(url).to_ascii_lowercase();
+        let mut keys = self.pages.keys(&host);
+        keys.extend(host.split('.').map(|label| format!("|{label}")));
+        let lowered = url.to_ascii_lowercase();
+        let mut regexes = self.page_regexes.borrow_mut();
+        let mut scope = ExceptionScope::empty();
+        for id in self.pages.ids_for(&keys, true, true).0 {
+            let mut call = self.pages.reader(id);
+            let (Some(7), Some(_), Some(bits), Some(case), Some(needle), Some(pattern), Some(to), Some(not_to)) =
+                (call.varint(), call.bytes(), call.str(), call.bytes(), call.bytes(), call.str(), call.str(), call.str()) else { continue };
+            let bits = ExceptionScope::from_bits_truncate(bits.parse().unwrap_or(0));
+            if scope.contains(bits) { continue; }
+            let has = |k: &str| keys.iter().any(|key| key == k);
+            if !to.is_empty() && !to.split('\n').any(has) || !not_to.is_empty() && not_to.split('\n').any(has) { continue; }
+            if pattern != ".*" {
+                if !needle.split_first().is_none_or(|(first, rest)| memchr::memchr_iter(*first, lowered.as_bytes()).any(|i| lowered.as_bytes()[i + 1..].starts_with(rest))) { continue; }
+                let regex = regexes.entry(id).or_insert_with(|| regex::RegexBuilder::new(pattern).case_insensitive(case != b"1").build().ok());
+                if !regex.as_ref().is_some_and(|r| r.is_match(url)) { continue; }
+            }
+            scope |= bits;
+        }
+        scope
     }
 
     /// Normal page URLs return cosmetics and scriptlets. Internal
@@ -643,14 +621,16 @@ impl Engine {
     /// for a popup verdict while retaining the opener host for native site state.
     pub fn lookup(&self, url: &str) -> PagePayload {
         if let Some((source, target)) = url.strip_prefix("wbe-popup-").and_then(|query| query.split_once('#')) {
-            let blocked = !self.document.url_cosmetic_resources(source).generichide
-                && self.blocks_popup(source, target);
+            let scope = self.page_scope(source);
+            let blocked = !scope.contains(ExceptionScope::DOC)
+                && self.blocks_popup(source, target, scope.contains(ExceptionScope::GENERICBLOCK));
             return PagePayload { hide: vec![], styles: vec![], procedural: vec![], scriptlets: vec![], generichide: false, popup_blocked: Some(blocked) };
         }
-        let specific_off = self.specifichide.url_cosmetic_resources(url).generichide;
-        let generic_off = self.generichide.url_cosmetic_resources(url).generichide;
-        let document = self.document.url_cosmetic_resources(url).generichide;
-        let elemhide = document || self.elemhide.url_cosmetic_resources(url).generichide;
+        let scope = self.page_scope(url);
+        let specific_off = scope.contains(ExceptionScope::SHIDE);
+        let generic_off = scope.contains(ExceptionScope::GHIDE);
+        let document = scope.contains(ExceptionScope::DOC);
+        let elemhide = scope.intersects(ExceptionScope::DOC | ExceptionScope::EHIDE);
         let calls = if document { Vec::new() } else {
             self.scriptlets.lookup(&host_of(url).to_ascii_lowercase(), !specific_off, !generic_off)
         };
@@ -670,7 +650,7 @@ impl Engine {
         hide.sort_unstable();
         PagePayload { hide, styles, procedural, scriptlets, generichide: elemhide || generic_off, popup_blocked: None }
     }
-    fn blocks_popup(&self, source: &str, target: &str) -> bool {
+    fn blocks_popup(&self, source: &str, target: &str, genericblock: bool) -> bool {
         // As uBO, data: and blob: targets are tested too; about:blank is where
         // every popup starts, before it reaches its URL.
         if !["http://", "https://", "blob:", "data:"].iter().any(|p| target.starts_with(p)) { return false; }
@@ -678,7 +658,6 @@ impl Engine {
         let target_host = host_of(target).to_ascii_lowercase();
         let site = |h: &str| crate::registrable_domain(h).map_or_else(|| h.to_string(), str::to_string);
         let third = site(&host) != site(&target_host);
-        let genericblock = self.genericblock.url_cosmetic_resources(source).generichide;
         let lowered = target.to_ascii_lowercase();
         let mut regexes = self.popup_regexes.borrow_mut();
         let mut block = false;
@@ -821,18 +800,48 @@ fn put(out: &mut Vec<u8>, section: &[u8]) {
     out.extend(section);
 }
 
-fn read_engine(section: &[u8]) -> Result<adblock::Engine, String> {
-    let mut engine = adblock::Engine::new_with_filter_set(FilterSet::new(false));
-    engine
-        .deserialize(section)
-        .map_err(|e| format!("engine: {e}"))?;
-    Ok(engine)
-}
-
-fn exception_engine(lines: &[String]) -> adblock::Engine {
-    let mut set = FilterSet::new(false);
-    set.add_filter_list(lines.join("\n"), ParseOptions::default());
-    adblock::Engine::new_with_filter_set(set)
+/// A page exception (`@@...$ghide` and the like) as the host keys it is
+/// indexed under and its call: `wbe:page`; the scope bits; `1` when the
+/// pattern is case-sensitive; the literal every match contains; the URL
+/// pattern, `.*` when the keys already prove it; then the `to=` hostnames
+/// one of which the page must have, and those it must not, each joined by
+/// newlines.
+///
+/// As uBO's `matchRequestReverse`, the page is the request and its own
+/// context: `domain=` and `to=` both name the page's host, it is first-party
+/// to itself, and request types (`$ghide,xhr`) do not narrow the page
+/// exception. A filter that modifies (`$csp`, `$removeparam`, ...) or needs
+/// a method, DNS or headers never excepts a page.
+fn page_exception(r: &NetworkRule) -> Option<(DomainList, Vec<String>)> {
+    let scope = r.scope & (ExceptionScope::GHIDE | ExceptionScope::EHIDE | ExceptionScope::SHIDE
+        | ExceptionScope::DOC | ExceptionScope::GENERICBLOCK);
+    if scope.is_empty() || !matches!(r.action, NetworkAction::Block)
+        || matches!(r.party, Party::Third | Party::StrictThird)
+        || !r.method.include.is_empty() || !r.method.exclude.is_empty()
+        || !r.runtime_only_options.is_empty()
+    {
+        return None;
+    }
+    let mut pattern = crate::compile::regex::url_filter(&r.pattern)?.join("|");
+    let mut domains = r.from.clone();
+    if domains.include.is_empty() {
+        // `||host^...` pages are the host and its subdomains; `||label.x...`
+        // pages have that label.
+        if let Some((host, rest)) = crate::compile::network::split_host(&r.pattern).filter(|(_, rest)| rest.starts_with(['^', '/'])) {
+            if rest == "^" && !r.pattern.right_anchored { pattern = ".*".into(); }
+            domains.include.push(DomainMatcher::Hostname(host));
+        } else if let Some((label, _)) = (r.pattern.kind == crate::ast::PatternKind::Hostname)
+            .then(|| r.pattern.body.split_once('.')).flatten()
+            .filter(|(l, _)| !l.is_empty() && l.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-'))
+        {
+            domains.include.push(DomainMatcher::Hostname(format!("|{}", label.to_ascii_lowercase())));
+        }
+    }
+    let keys = |list: &[DomainMatcher]| list.iter().map(key).collect::<Vec<_>>().join("\n");
+    let not_to = r.to.exclude.iter().map(key).chain(r.denyallow.iter().cloned()).collect::<Vec<_>>().join("\n");
+    let call = vec!["wbe:page".into(), scope.bits().to_string(), if r.match_case { "1" } else { "0" }.into(),
+        required_literal(&pattern), pattern, keys(&r.to.include), not_to];
+    Some((domains, call))
 }
 
 #[cfg(test)]
@@ -1013,6 +1022,59 @@ example.com##+js(set-constant, adsEnabled, false)
             assert!(!other.generichide, "{option}");
             assert!(other.hide.contains(&"[data-ad]".to_string()), "{option}");
         }
+    }
+
+    fn page(rules: &str, url: &str) -> PagePayload {
+        Engine::deserialize(&Engine::build(&lines(rules)).serialize()).unwrap().lookup(url)
+    }
+
+    #[test]
+    fn page_exception_domains_match_like_hides() {
+        // adblock-rust, which answered these before, never matched an entity
+        // `domain=`; uBO's lists ship `@@*$ghide,domain=streamtape.*|...`.
+        let rules = "##.gen\nexample.*,shop.com##.site\n\
+            @@*$shide,domain=example.*\n@@*$ghide,domain=streamtape.*\n\
+            @@*$ehide,domain=skip.*|~www.skip.*\n@@*$ghide,domain=/^rx\\.(com|net)$/\n";
+        // Entity `$shide`: the site hide goes, the generic one stays.
+        let p = page(rules, "https://www.example.co.uk/");
+        assert_eq!((p.hide.as_slice(), p.generichide), (&[".gen".to_string()][..], false));
+        assert_eq!(page(rules, "https://shop.com/").hide, [".gen", ".site"]);
+        // Entity `$ghide`.
+        let tape = page(rules, "https://www.streamtape.net/e/1");
+        assert!(tape.hide.is_empty() && tape.generichide);
+        // Negated entity.
+        assert!(page(rules, "https://cdn.skip.net/").generichide);
+        let skip = page(rules, "https://www.skip.net/");
+        assert_eq!((skip.hide.as_slice(), skip.generichide), (&[".gen".to_string()][..], false));
+        // Regex domain.
+        assert!(page(rules, "https://rx.com/").generichide && !page(rules, "https://www.rx.com/").generichide);
+    }
+
+    #[test]
+    fn page_exceptions_follow_ubo_options() {
+        let base = "##.gen\nsite.com##.site\nsite.com##+js(set, a, 1)\n";
+        let hit = |rule: &str, url: &str| page(&format!("{base}{rule}\n"), url);
+        let generic_off = |rule: &str, url: &str| hit(rule, url).generichide;
+        // Request types do not narrow a page exception (uBO ORs them with the
+        // page type), and the page is first-party to itself.
+        assert!(generic_off("@@||site.com^$ghide,xhr", "https://site.com/"));
+        assert!(hit("@@||site.com^$doc,subdocument", "https://site.com/").scriptlets.is_empty());
+        assert!(generic_off("@@||site.com^$ghide,1p", "https://site.com/"));
+        assert!(!generic_off("@@||site.com^$ghide,3p", "https://site.com/"));
+        // `$badfilter` cancels the identical filter only.
+        assert!(!generic_off("@@||site.com^$ghide\n@@||site.com^$ghide,badfilter", "https://site.com/"));
+        assert!(generic_off("@@||site.com^$ghide\n@@||site.com^$ehide,badfilter", "https://site.com/"));
+        // A path-scoped `$document`, a pattern with a port, `to=`.
+        let doc = "@@||site.com/app/$document\n@@||site.com:8443/*/x?$document";
+        assert!(hit(doc, "https://www.site.com/app/1").scriptlets.is_empty());
+        assert!(!hit(doc, "https://site.com/other").scriptlets.is_empty());
+        assert!(hit(doc, "https://site.com:8443/a/x?q").scriptlets.is_empty());
+        assert!(generic_off("@@||asd.$ghide,to=asd.homes", "https://asd.homes/"));
+        assert!(!generic_off("@@||asd.$ghide,to=asd.homes", "https://asd.ink/"));
+        // `$genericblock` leaves hides alone; modifier filters never except a page.
+        assert!(!generic_off("@@||site.com^$genericblock", "https://site.com/"));
+        assert!(!hit("@@*$document,csp=worker-src 'none',domain=site.com", "https://site.com/").scriptlets.is_empty());
+        assert!(!hit("@@||site.com^$doc,removeparam", "https://site.com/").scriptlets.is_empty());
     }
 
     #[test]
