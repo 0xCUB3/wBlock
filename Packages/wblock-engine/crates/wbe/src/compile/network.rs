@@ -211,11 +211,19 @@ fn compile_rule(
         NetworkAction::Other { option, .. } => return Err(format!("dnr:{option}")),
     }
     if !r.scope.is_empty() {
-        return if r.exception {
-            compile_scope(r, v, out)
-        } else {
-            Err("dnr:scope-on-block".into())
-        };
+        if !r.exception {
+            return Err("dnr:scope-on-block".into());
+        }
+        // uBO stores the page options as types beside the request types, so
+        // `@@...$elemhide,script` also allows the scripts it matches. The
+        // page exception already covers `$document`'s own request.
+        let types = r.types.difference(ResourceTypes::DOC);
+        let requests = NetworkRule { scope: ExceptionScope::empty(), types, ..r.clone() };
+        let page = compile_scope(r, v, out);
+        if !types.is_empty() {
+            compile_rule(&requests, v, ctx, out, tier)?;
+        }
+        return page;
     }
     let exception = r.exception;
     // `@@...$cname` only exempts a request from CNAME uncloaking; it never
@@ -1781,6 +1789,22 @@ mod tests {
             let (out, _) = run(std::slice::from_ref(&rule), V15);
             assert_eq!(tiers(&out), [Tier::ElemHideException]);
         }
+    }
+
+    #[test]
+    fn page_exception_with_request_types_keeps_both_halves() {
+        // EasyList ships `@@||jokerly.com/Okidak/vastChecker.htm$document,subdocument`.
+        let rule = NetworkRule {
+            scope: ExceptionScope::DOC,
+            types: RT::DOC | RT::FRAME,
+            ..exc("@@||jokerly.com/v.htm$document,subdocument")
+        };
+        let out = check(
+            std::slice::from_ref(&rule),
+            V15,
+            r#"[{"trigger":{"url-filter":".*","if-top-url":["^[^:]+://+([^:/]+\\.)?jokerly\\.com/v\\.htm"]},"action":{"type":"ignore-previous-rules"}},{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?jokerly\\.com/v\\.htm","resource-type":["document"],"load-context":["child-frame"]},"action":{"type":"ignore-previous-rules"}}]"#,
+        );
+        assert_eq!(tiers(&out), [Tier::DocumentException, Tier::Exception]);
     }
 
     #[test]
