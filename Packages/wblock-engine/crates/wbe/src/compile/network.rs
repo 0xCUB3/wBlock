@@ -370,7 +370,7 @@ fn page_cond(p: &Pattern, v: SafariVersion) -> Option<Cond> {
     if !v.at_least(15, 0) {
         return None;
     }
-    Some(Cond::IfTopUrl(vec![url_filter(p)?]))
+    Some(Cond::IfTopUrl(url_filter(p)?))
 }
 
 /// Hosts of untyped `||host^` blocks and all their parents, so an exception
@@ -437,11 +437,11 @@ fn party(p: Party, exception: bool) -> Result<Option<WkLoadType>, String> {
 fn urls(r: &NetworkRule, exception: bool) -> Result<Vec<String>, String> {
     let pattern = match url_filter(&r.pattern) {
         Some(u) => u,
-        None if exception => ".*".into(),
+        None if exception => vec![".*".into()],
         None => return Err("dnr:url-filter".into()),
     };
     if r.to.is_empty() || exception {
-        return Ok(vec![pattern]);
+        return Ok(pattern);
     }
     if !r.to.exclude.is_empty() || !r.pattern.is_match_all() {
         return Err("dnr:to".into());
@@ -457,7 +457,8 @@ fn urls(r: &NetworkRule, exception: bool) -> Result<Vec<String>, String> {
             .ok_or_else(|| "dnr:to".to_string()),
             _ => Err("dnr:to".into()),
         })
-        .collect()
+        .collect::<Result<Vec<_>, _>>()
+        .map(|u| u.concat())
 }
 
 /// One condition per trigger. Each alternative is a separate trigger, which
@@ -1657,7 +1658,7 @@ mod tests {
         check(
             std::slice::from_ref(&rule),
             V15,
-            r#"[{"trigger":{"url-filter":".*","if-top-url":["^[^:]+://+([^:/]+\\.)?example\\.org/news[^a-zA-Z0-9_.%-]"]},"action":{"type":"ignore-previous-rules"}}]"#,
+            r#"[{"trigger":{"url-filter":".*","if-top-url":["^[^:]+://+([^:/]+\\.)?example\\.org/news[^a-zA-Z0-9_.%-]","^[^:]+://+([^:/]+\\.)?example\\.org/news$"]},"action":{"type":"ignore-previous-rules"}}]"#,
         );
     }
 
@@ -1925,7 +1926,7 @@ mod tests {
                 important: true,
                 ..net("||y.com/a")
             },
-            exc("@@||x.com/ok^"),
+            exc("@@||x.com/ok"),
         ];
         let (out, _) = run(&rules, V15);
         assert_eq!(
@@ -2061,18 +2062,18 @@ mod tests {
             },
             NetworkRule {
                 types: RT::SCRIPT,
-                ..exc("@@||x.com/ok^")
+                ..exc("@@||x.com/ok")
             },
             NetworkRule {
                 types: RT::SCRIPT,
                 important: true,
-                ..net("||x.com/bad^")
+                ..net("||x.com/bad")
             },
         ];
         let out = check(
             &rules,
             V15,
-            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[/:?#]","resource-type":["script"]},"action":{"type":"block"}},{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com/ok[^a-zA-Z0-9_.%-]","resource-type":["script"]},"action":{"type":"ignore-previous-rules"}},{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com/bad[^a-zA-Z0-9_.%-]","resource-type":["script"]},"action":{"type":"block"}}]"#,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[/:?#]","resource-type":["script"]},"action":{"type":"block"}},{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com/ok","resource-type":["script"]},"action":{"type":"ignore-previous-rules"}},{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com/bad","resource-type":["script"]},"action":{"type":"block"}}]"#,
         );
         assert_eq!(
             tiers(&out),

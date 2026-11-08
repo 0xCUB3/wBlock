@@ -24,17 +24,20 @@ const MAX_REPEAT: u32 = 32;
 /// memory on macOS, and timed out Safari on an iPad 6; 12 adds about 6 MB.
 const MAX_ANY_REPEAT: u32 = 12;
 
-/// The url-filter for a uBO URL pattern, matched case-insensitively.
-pub fn url_filter(p: &Pattern) -> Option<String> {
+/// The url-filters for a uBO URL pattern, matched case-insensitively; a URL
+/// matches when any of them does. A trailing `^` also matches the end of the
+/// URL in uBO, and WebKit has no alternation, so that end is a second filter.
+pub fn url_filter(p: &Pattern) -> Option<Vec<String>> {
     if p.is_match_all() {
-        return Some(".*".into());
+        return Some(vec![".*".into()]);
     }
     if p.kind == PatternKind::Regex {
         // A regex that reduces to nothing (`/x{0}/`) matches every URL;
         // WebKit rejects an empty url-filter, so say that as `.*`.
         return translate(&p.body)
             .map(|r| if r.is_empty() { ".*".into() } else { r })
-            .filter(|r| webkit_accepts(r));
+            .filter(|r| webkit_accepts(r))
+            .map(|r| vec![r]);
     }
     let mut out = String::new();
     let mut body = p.body.as_str();
@@ -58,10 +61,12 @@ pub fn url_filter(p: &Pattern) -> Option<String> {
         _ => {}
     }
     literal(body, &mut out)?;
+    let at_end = out.strip_suffix(SEPARATOR).map(|head| format!("{head}$"));
     if p.right_anchored {
         out.push('$');
     }
-    webkit_accepts(&out).then_some(out)
+    let out: Vec<String> = std::iter::once(out).chain(at_end).collect();
+    out.iter().all(|f| webkit_accepts(f)).then_some(out)
 }
 
 /// Longest url-filter emitted. Counted repeats expand, so this also bounds
@@ -451,7 +456,7 @@ mod emitted_filter_tests {
 
     #[test]
     fn empty_translation_matches_everything() {
-        assert_eq!(url_filter(&regex("x{0}")).as_deref(), Some(".*"));
+        assert_eq!(url_filter(&regex("x{0}")), Some(vec![".*".into()]));
     }
 
     #[test]
@@ -500,7 +505,7 @@ mod tests {
     }
 
     fn filter(p: &Pattern) -> Option<String> {
-        url_filter(p)
+        url_filter(p).map(|f| f.join(" "))
     }
 
     #[test]
@@ -551,6 +556,24 @@ mod tests {
             .unwrap(),
             ".*"
         );
+    }
+
+    fn matches(p: &Pattern, url: &str) -> bool {
+        url_filter(p).into_iter().flatten().any(|f| {
+            ::regex::RegexBuilder::new(&f).case_insensitive(true).build().unwrap().is_match(url)
+        })
+    }
+
+    #[test]
+    fn trailing_separator_matches_end_of_url() {
+        let host = |body: &str, right_anchored| Pattern { kind: PatternKind::Hostname, body: body.into(), right_anchored };
+        assert!(matches(&host("ads.example/ok^", false), "https://ads.example/ok"));
+        assert!(matches(&host("ads.example/ok^", false), "https://ads.example/ok?x"));
+        assert!(!matches(&host("ads.example/ok^", false), "https://ads.example/okay"));
+        assert!(matches(&host("ads.example/ok^", true), "https://ads.example/ok"));
+        assert!(matches(&host("ads.example/ok^", true), "https://ads.example/ok/"));
+        assert!(!matches(&host("ads.example/ok^", true), "https://ads.example/ok/x"));
+        assert!(matches(&plain("/ws^"), "wss://loader.example.com/ws"));
     }
 
     #[test]
