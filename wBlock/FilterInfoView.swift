@@ -323,14 +323,11 @@ struct FilterRulesView: View {
             HStack(spacing: 2) {
                 Image(systemName: "line.3.horizontal.decrease")
                 #if os(iOS)
+                // macOS draws its own indicator and drops extra label images.
                 Self.menuChevron
-                #else
-                // Older macOS draws its own indicator and drops extra label
-                // images; macOS 26 draws the label as given (#1091).
-                if #available(macOS 26.0, *) { Self.menuChevron }
                 #endif
             }
-            .frame(height: SourceControlMetrics.size)
+            .frame(height: SourceControlMetrics.menuLabelHeight)
             .contentShape(Rectangle())
         }
         .modifier(SourceMenuCapsule(isActive: shownKinds.count != FilterRuleKind.allCases.count))

@@ -22,8 +22,10 @@ struct SourceViewerControls<Extra: View>: View {
 
     var body: some View {
         HStack(spacing: SourceControlMetrics.spacing) {
+            // The View menu keeps a bubble of its own, as a toolbar gives a
+            // menu (#1092).
+            extra().disabled(isLoading)
             SourceControlCluster {
-                extra()
                 SourceControlButton("Search", systemImage: "magnifyingglass", action: onSearch)
                     // Works while focus is outside the editor, which handles it itself (#1090).
                     .keyboardShortcut("f", modifiers: .command)
@@ -48,9 +50,10 @@ extension SourceViewerControls where Extra == EmptyView {
     }
 }
 
-/// Source controls side by side. macOS 26 puts them in one glass capsule,
-/// like a toolbar group (#1091); each control inside is drawn by
-/// `SourceClusterItemStyle`. Glass buttons merged with a glass union came
+/// Source controls side by side. macOS 26 puts them in one glass capsule as
+/// tall as the glass close button, like a toolbar group, and it flashes when
+/// clicked as glass does (#1091, #1092). Each control inside is drawn by
+/// `SourceClusterItemStyle`; glass buttons merged with a glass union came
 /// apart and drew off center.
 struct SourceControlCluster<Content: View>: View {
     @ViewBuilder var content: () -> Content
@@ -59,8 +62,7 @@ struct SourceControlCluster<Content: View>: View {
         #if os(macOS)
         if #available(macOS 26.0, *) {
             HStack(spacing: 0) { content() }
-                .padding(2)
-                .glassEffect(.regular, in: Capsule())
+                .glassEffect(.regular.interactive(), in: Capsule())
         } else {
             HStack(spacing: SourceControlMetrics.spacing) { content() }
         }
@@ -71,6 +73,14 @@ struct SourceControlCluster<Content: View>: View {
 }
 
 enum SourceControlMetrics {
+    /// A menu label's height. macOS 26 glass pads it to the close button's 28pt.
+    static var menuLabelHeight: CGFloat {
+        #if os(macOS)
+        if #available(macOS 26.0, *) { return 20 }
+        #endif
+        return size
+    }
+
     static var size: CGFloat {
         #if os(iOS)
         44
@@ -173,8 +183,8 @@ struct SourceClusterItemStyle: ButtonStyle {
         var body: some View {
             label
                 .font(.body.weight(.medium))
-                .padding(.horizontal, 6)
-                .frame(minWidth: 30, minHeight: 22)
+                .padding(.horizontal, 8)
+                .frame(minWidth: 36, minHeight: 24)
                 .foregroundStyle(isOn ? Color.white : (isEnabled ? Color.primary : Color.secondary.opacity(0.5)))
                 .background {
                     if isOn {
@@ -183,6 +193,7 @@ struct SourceClusterItemStyle: ButtonStyle {
                         Capsule().fill(Color.primary.opacity(0.12))
                     }
                 }
+                .padding(2)
                 .contentShape(Capsule())
         }
     }
@@ -190,17 +201,21 @@ struct SourceClusterItemStyle: ButtonStyle {
 #endif
 
 /// The capsule behind a source window's menu, darker while pressed so a
-/// click shows (#1088). On macOS 26 it's an item in the controls' shared
-/// capsule, filled with the accent color while the menu narrows what shows
-/// (#1091); elsewhere the icon takes the accent color instead. macOS before
-/// 14 can't style a menu as a button and keeps the plain capsule.
+/// click shows (#1088). macOS 26 uses a glass capsule of its own (#1092),
+/// prominent while the menu narrows what shows (#1091); elsewhere the icon
+/// takes the accent color instead. macOS before 14 can't style a menu as a
+/// button and keeps the plain capsule.
 struct SourceMenuCapsule: ViewModifier {
     var isActive = false
 
     func body(content: Content) -> some View {
         #if os(macOS)
         if #available(macOS 26.0, *) {
-            content.menuStyle(.button).buttonStyle(SourceClusterItemStyle(isOn: isActive))
+            if isActive {
+                content.menuStyle(.button).buttonStyle(.glassProminent).buttonBorderShape(.capsule)
+            } else {
+                content.menuStyle(.button).buttonStyle(.glass).buttonBorderShape(.capsule)
+            }
         } else if #available(macOS 14.0, *) {
             content.menuStyle(.button).buttonStyle(CapsulePressStyle()).foregroundStyle(tint)
         } else {
