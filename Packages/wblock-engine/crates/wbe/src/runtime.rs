@@ -606,9 +606,8 @@ pub(crate) fn popup_rule(r: &crate::ast::NetworkRule) -> Result<serde_json::Valu
         || !r.method.include.is_empty() || !r.method.exclude.is_empty()
         || !r.runtime_only_options.is_empty();
     if constrained && !r.exception { return Err("popup: unsupported destination, method or response constraint".into()); }
-    let pattern = crate::compile::regex::url_filter(&r.pattern);
-    let pattern = match pattern {
-        Some(p) if !constrained => p,
+    let pattern = match crate::compile::regex::url_filter(&r.pattern) {
+        Some(p) if !constrained => p.join("|"),
         _ if r.exception => ".*".into(), // conservative allow, never a broader block
         _ => return Err("popup: unsupported URL pattern".into()),
     };

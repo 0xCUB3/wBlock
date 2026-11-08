@@ -460,7 +460,7 @@ fn page_cond(p: &Pattern, v: SafariVersion) -> Option<Cond> {
     if !v.at_least(15, 0) {
         return None;
     }
-    Some(Cond::IfTopUrl(vec![url_filter(p)?]))
+    Some(Cond::IfTopUrl(url_filter(p)?))
 }
 
 /// Hosts of untyped `||host^` blocks and all their parents, so an exception
@@ -530,11 +530,11 @@ fn party(p: Party, exception: bool) -> Result<Option<WkLoadType>, String> {
 fn urls(r: &NetworkRule, exception: bool) -> Result<Vec<String>, String> {
     let pattern = match url_filter(&r.pattern) {
         Some(u) => u,
-        None if exception => ".*".into(),
+        None if exception => vec![".*".into()],
         None => return Err("dnr:url-filter".into()),
     };
     if r.to.is_empty() {
-        return Ok(vec![pattern]);
+        return Ok(pattern);
     }
     let folded = (r.to.exclude.is_empty() && r.pattern.is_match_all())
         .then(|| {
@@ -552,8 +552,8 @@ fn urls(r: &NetworkRule, exception: bool) -> Result<Vec<String>, String> {
         })
         .flatten();
     match folded {
-        Some(urls) => Ok(urls),
-        None if exception => Ok(vec![pattern]),
+        Some(urls) => Ok(urls.concat()),
+        None if exception => Ok(pattern),
         None => Err("dnr:to".into()),
     }
 }
@@ -573,7 +573,7 @@ fn domain_conds(
             match m {
                 DomainMatcher::Hostname(h) => hosts.push(format!("*{h}")),
                 _ => match domain_top_url(m) {
-                    Some(u) if top => tops.push(u),
+                    Some(u) if top => tops.extend(u),
                     _ => all = false,
                 },
             }
@@ -1563,7 +1563,7 @@ mod tests {
     fn regex_domain_that_cannot_translate_drops_the_block() {
         let rule = NetworkRule {
             from: DomainList {
-                include: vec![DomainMatcher::Regex("a|b".into())],
+                include: vec![DomainMatcher::Regex("(?=a)b".into())],
                 exclude: vec![],
             },
             types: RT::SCRIPT,
@@ -1579,7 +1579,7 @@ mod tests {
     fn exception_with_unconvertible_domain_widens_to_no_condition() {
         let rule = NetworkRule {
             from: DomainList {
-                include: vec![DomainMatcher::Regex("a|b".into())],
+                include: vec![DomainMatcher::Regex("(?=a)b".into())],
                 exclude: vec![],
             },
             types: RT::SCRIPT,
@@ -2055,7 +2055,7 @@ mod tests {
     fn untranslatable_regex_drops_block_and_widens_exception() {
         let block = NetworkRule {
             types: RT::SCRIPT,
-            ..net("/a\\d+|b/")
+            ..net("/(?=a)b/")
         };
         assert_eq!(
             drop_reason(std::slice::from_ref(&block), V15),
@@ -2063,7 +2063,7 @@ mod tests {
         );
         let except = NetworkRule {
             types: RT::SCRIPT,
-            ..exc("@@/a\\d+|b/")
+            ..exc("@@/(?=a)b/")
         };
         check(
             std::slice::from_ref(&except),
@@ -2092,7 +2092,7 @@ mod tests {
                 important: true,
                 ..net("||y.com/a")
             },
-            exc("@@||x.com/ok^"),
+            exc("@@||x.com/ok"),
         ];
         let (out, _) = run(&rules, V15);
         assert_eq!(
@@ -2228,18 +2228,18 @@ mod tests {
             },
             NetworkRule {
                 types: RT::SCRIPT,
-                ..exc("@@||x.com/ok^")
+                ..exc("@@||x.com/ok")
             },
             NetworkRule {
                 types: RT::SCRIPT,
                 important: true,
-                ..net("||x.com/bad^")
+                ..net("||x.com/bad")
             },
         ];
         let out = check(
             &rules,
             V15,
-            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[/:?#]","resource-type":["script"]},"action":{"type":"block"}},{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com/ok([^a-zA-Z0-9_.%-].*)?$","resource-type":["script"]},"action":{"type":"ignore-previous-rules"}},{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com/bad([^a-zA-Z0-9_.%-].*)?$","resource-type":["script"]},"action":{"type":"block"}}]"#,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com[/:?#]","resource-type":["script"]},"action":{"type":"block"}},{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com/ok","resource-type":["script"]},"action":{"type":"ignore-previous-rules"}},{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?x\\.com/bad","resource-type":["script"]},"action":{"type":"block"}}]"#,
         );
         assert_eq!(
             tiers(&out),
@@ -2377,7 +2377,7 @@ mod tests {
             "*",
             "||xn--bcher-kva.example^",
             "/a{3}[\\w.-]+(\\/x)?$/",
-            "/a|b/",
+            "/(?=a)b/",
         ];
         let types = [
             RT::empty(),

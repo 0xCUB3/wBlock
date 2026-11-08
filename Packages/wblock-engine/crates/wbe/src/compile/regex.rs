@@ -24,17 +24,19 @@ const MAX_REPEAT: u32 = 32;
 /// memory on macOS, and timed out Safari on an iPad 6; 12 adds about 6 MB.
 const MAX_ANY_REPEAT: u32 = 12;
 
-/// The url-filter for a uBO URL pattern, matched case-insensitively.
-pub fn url_filter(p: &Pattern) -> Option<String> {
+/// The url-filters for a uBO URL pattern, matched case-insensitively; a URL
+/// matches when any of them does. A trailing `^` also matches the end of the
+/// URL in uBO, and WebKit has no alternation, so that end is a second filter.
+pub fn url_filter(p: &Pattern) -> Option<Vec<String>> {
     if p.is_match_all() {
-        return Some(".*".into());
+        return Some(vec![".*".into()]);
     }
     if p.kind == PatternKind::Regex {
         // A regex that reduces to nothing (`/x{0}/`) matches every URL;
         // WebKit rejects an empty url-filter, so say that as `.*`.
-        return translate(&p.body)
-            .map(|r| if r.is_empty() { ".*".into() } else { r })
-            .filter(|r| webkit_accepts(r));
+        return translate(&p.body, "")
+            .map(|alts| if alts.iter().any(String::is_empty) { vec![".*".into()] } else { alts })
+            .and_then(accepted);
     }
     let mut out = String::new();
     let mut body = p.body.as_str();
@@ -74,7 +76,12 @@ pub fn url_filter(p: &Pattern) -> Option<String> {
             }
         }
     }
-    webkit_accepts(&out).then_some(out)
+    accepted(vec![out])
+}
+
+/// The filters when WebKit accepts every one of them.
+fn accepted(filters: Vec<String>) -> Option<Vec<String>> {
+    filters.iter().all(|f| webkit_accepts(f)).then_some(filters)
 }
 
 /// Longest url-filter emitted. Counted repeats expand, so this also bounds
@@ -181,17 +188,17 @@ fn class_end(b: &[u8], start: usize) -> Option<usize> {
 /// suffix list: `google.de` and `google.co.uk` match, `google.evil.com` does
 /// not, and rarer two-label suffixes (`google.ne.jp`) are missed. Regex domains match the host
 /// with the regex, as uBO tests them against the hostname.
-pub fn domain_top_url(m: &DomainMatcher) -> Option<String> {
-    top_url(m).filter(|u| webkit_accepts(u))
+pub fn domain_top_url(m: &DomainMatcher) -> Option<Vec<String>> {
+    accepted(top_url(m)?)
 }
 
-fn top_url(m: &DomainMatcher) -> Option<String> {
+fn top_url(m: &DomainMatcher) -> Option<Vec<String>> {
     match m {
         DomainMatcher::Hostname(h) => {
             let mut out = HOST_START.to_string();
             literal(h, &mut out)?;
             out.push_str(HOST_END);
-            Some(out)
+            Some(vec![out])
         }
         DomainMatcher::Entity(e) => {
             let mut out = HOST_START.to_string();
@@ -199,29 +206,31 @@ fn top_url(m: &DomainMatcher) -> Option<String> {
             // `name.<tld>` or `name.co.<tld>`/`name.com.<tld>`, not `name.evil.com`.
             out.push_str("\\.(com?\\.)?[^:/.]+");
             out.push_str(HOST_END);
-            Some(out)
+            Some(vec![out])
         }
-        DomainMatcher::Regex(src) => {
-            let (anchored, body) = match src.strip_prefix('^') {
-                Some(rest) => (true, rest),
-                None => (false, src.as_str()),
-            };
-            let (body, at_end) = match body.strip_suffix('$') {
-                Some(rest) if !rest.ends_with('\\') => (rest, true),
-                _ => (body, false),
-            };
-            let inner = translate(body)?;
-            let mut out = String::from("^[^:]+://");
-            if !anchored {
-                out.push_str("[^/:?#]*");
-            }
-            out.push_str(&inner);
-            if !at_end {
-                out.push_str("[^/:?#]*");
-            }
-            out.push_str(HOST_END);
-            Some(out)
-        }
+        DomainMatcher::Regex(src) => Some(
+            // uBO tests the regex against the hostname, so no character
+            // class may run past it.
+            translate(src, "/:?#")?
+                .iter()
+                .map(|alt| {
+                    let (anchored, body) = match alt.strip_prefix('^') {
+                        Some(rest) => (true, rest),
+                        None => (false, alt.as_str()),
+                    };
+                    let (body, at_end) = match body.strip_suffix('$') {
+                        Some(rest) if !rest.ends_with('\\') => (rest, true),
+                        _ => (body, false),
+                    };
+                    let any = "[^/:?#]*";
+                    format!(
+                        "^[^:]+://{}{body}{}{HOST_END}",
+                        if anchored { "" } else { any },
+                        if at_end { "" } else { any }
+                    )
+                })
+                .collect(),
+        ),
     }
 }
 
@@ -244,23 +253,73 @@ fn literal(body: &str, out: &mut String) -> Option<()> {
     Some(())
 }
 
-/// Translates a uBO regex body into the WebKit subset. `^` is accepted only
-/// as the first character and `$` only as the last.
-fn translate(src: &str) -> Option<String> {
+/// Most url-filters one regex expands to. WebKit has no alternation, so each
+/// alternative is a filter of its own, and so another rule.
+const MAX_ALTERNATIVES: usize = 16;
+
+/// Translates a uBO regex body into the WebKit subset: one regex per
+/// alternative, with anchors left where they fall for `webkit_accepts` to
+/// judge. URLs never hold whitespace, so `\S` is any character. Negated
+/// classes and `.` never match a character of `exclude`.
+fn translate(src: &str, exclude: &'static str) -> Option<Vec<String>> {
     if src.is_empty() || !src.is_ascii() {
         return None;
     }
     let mut p = Translator {
         src: src.as_bytes(),
         pos: 0,
+        last_word: false,
+        exclude,
     };
     let out = p.seq(0)?;
     (p.pos == src.len()).then_some(out)
 }
 
+/// Every alternative of `a` followed by every one of `b`, or `None` past
+/// MAX_ALTERNATIVES.
+fn product(a: &[String], b: &[String]) -> Option<Vec<String>> {
+    (a.len() * b.len() <= MAX_ALTERNATIVES)
+        .then(|| a.iter().flat_map(|x| b.iter().map(move |y| format!("{x}{y}"))).collect())
+}
+
+/// Whether a translated atom matches only word characters (`\w`).
+fn word_only(atom: &str) -> bool {
+    let b = atom.as_bytes();
+    let word = |c: &u8| c.is_ascii_alphanumeric() || *c == b'_';
+    match b {
+        [c] => word(c),
+        [b'[', inner @ .., b']'] if inner.first() != Some(&b'^') => inner.iter().enumerate().all(|(i, c)| {
+            word(c)
+                || *c == b'-'
+                    && i > 0
+                    && inner.get(i + 1).is_some_and(|n| {
+                        let p = inner[i - 1];
+                        [u8::is_ascii_digit, u8::is_ascii_lowercase, u8::is_ascii_uppercase]
+                            .iter()
+                            .any(|class| class(&p) && class(n))
+                    })
+        }),
+        _ => false,
+    }
+}
+
+#[derive(PartialEq)]
+enum Atom {
+    /// One character or class.
+    Char,
+    /// A group, parenthesized when quantified.
+    Group,
+    /// `^`, `$` or `\b`, which take no quantifier.
+    Assertion,
+}
+
 struct Translator<'a> {
     src: &'a [u8],
     pos: usize,
+    /// The last piece matched at least one word character and nothing else.
+    last_word: bool,
+    /// Characters no wildcard or negated class matches.
+    exclude: &'static str,
 }
 
 impl Translator<'_> {
@@ -274,35 +333,77 @@ impl Translator<'_> {
         Some(c)
     }
 
-    /// Parses atoms and quantifiers up to `)` (inside a group) or the end.
-    fn seq(&mut self, depth: u32) -> Option<String> {
-        let mut out = String::new();
-        while let Some(c) = self.peek() {
-            if c == b')' {
-                return (depth > 0).then_some(out);
-            }
-            let (atom, quantifiable) = self.atom(depth)?;
-            match self.quantifier()? {
-                None => out.push_str(&atom),
-                Some((min, max)) => {
-                    let limit = if atom == "." { MAX_ANY_REPEAT } else { MAX_REPEAT };
-                    if !quantifiable || min.max(max.unwrap_or(0)) > limit {
-                        return None;
-                    }
-                    repeat(&atom, min, max, &mut out);
-                }
-            }
-        }
-        (depth == 0).then_some(out)
+    /// The class of every character but `set` and `exclude`.
+    fn negated(&self, set: &str) -> String {
+        format!("[^{set}{}]", self.exclude)
     }
 
-    /// Returns the translated atom and whether a quantifier may follow it.
-    fn atom(&mut self, depth: u32) -> Option<(String, bool)> {
+    /// Any character but `exclude`.
+    fn any(&self) -> String {
+        if self.exclude.is_empty() { ".".into() } else { self.negated("") }
+    }
+
+    /// Parses alternatives up to `)` (inside a group) or the end.
+    fn seq(&mut self, depth: u32) -> Option<Vec<String>> {
+        let mut done = Vec::new();
+        let mut cur = vec![String::new()];
+        self.last_word = false;
+        while let Some(c) = self.peek() {
+            match c {
+                b')' if depth > 0 => break,
+                b')' => return None,
+                b'|' => {
+                    self.pos += 1;
+                    self.last_word = false;
+                    done.append(&mut cur);
+                    cur.push(String::new());
+                }
+                _ => cur = product(&cur, &self.piece(depth)?)?,
+            }
+        }
+        done.append(&mut cur);
+        (done.len() <= MAX_ALTERNATIVES).then_some(done)
+    }
+
+    /// An atom and its quantifier.
+    fn piece(&mut self, depth: u32) -> Option<Vec<String>> {
+        let (atom, kind) = self.atom(depth)?;
+        let range = self.quantifier()?;
+        let word = kind == Atom::Char && word_only(&atom[0]);
+        self.last_word = word && range.is_none_or(|(min, _)| min > 0);
+        let Some((min, max)) = range else {
+            return Some(atom);
+        };
+        if kind == Atom::Assertion {
+            return None;
+        }
+        if let [one] = atom.as_slice() {
+            let limit = if *one == self.any() { MAX_ANY_REPEAT } else { MAX_REPEAT };
+            if min.max(max.unwrap_or(0)) > limit {
+                return None;
+            }
+            let one = if kind == Atom::Group { format!("({one})") } else { one.clone() };
+            let mut out = String::new();
+            repeat(&one, min, max, &mut out);
+            return Some(vec![out]);
+        }
+        // Several alternatives repeat a bounded number of times, each copy
+        // past `min` optional.
+        let optional: Vec<String> = std::iter::once(String::new()).chain(atom.iter().cloned()).collect();
+        let mut out = vec![String::new()];
+        for i in 0..max? {
+            out = product(&out, if i < min { &atom } else { &optional })?;
+        }
+        Some(out)
+    }
+
+    /// Returns the translated alternatives of an atom and its kind.
+    fn atom(&mut self, depth: u32) -> Option<(Vec<String>, Atom)> {
         let c = self.next()?;
-        Some(match c {
-            b'^' if self.pos == 1 => ("^".into(), false),
-            b'$' if depth == 0 && self.pos == self.src.len() => ("$".into(), false),
-            b'.' => (".".into(), true),
+        let one = |s: String| Some((vec![s], Atom::Char));
+        match c {
+            b'^' | b'$' => Some((vec![(c as char).to_string()], Atom::Assertion)),
+            b'.' => one(self.any()),
             b'(' => {
                 if self.peek() == Some(b'?') {
                     if self.src.get(self.pos + 1) != Some(&b':') {
@@ -314,17 +415,32 @@ impl Translator<'_> {
                 if self.next()? != b')' {
                     return None;
                 }
-                (format!("({inner})"), true)
+                Some((inner, Atom::Group))
             }
-            b'[' => (self.class()?, true),
-            b'\\' => (self.escape()?, true),
-            b'|' | b'^' | b'$' | b'*' | b'+' | b'?' | b'{' | b'}' | b']' => return None,
-            c => ((c as char).to_string(), true),
-        })
+            b'[' => one(self.class()?),
+            // `\b` at the end, after a word character: a non-word character
+            // or the end of the URL. At the start, before one: the start of
+            // the URL or a non-word character.
+            b'\\' if self.peek() == Some(b'b') => {
+                self.pos += 1;
+                let non_word = self.negated("a-zA-Z0-9_");
+                let alts = if depth == 0 && self.pos == self.src.len() && self.last_word {
+                    vec![non_word, "$".into()]
+                } else if self.pos == 2 && self.peek().is_some_and(|n| n.is_ascii_alphanumeric() || n == b'_') {
+                    vec!["^".into(), non_word]
+                } else {
+                    return None;
+                };
+                Some((alts, Atom::Assertion))
+            }
+            b'\\' => one(self.escape()?),
+            b'|' | b'*' | b'+' | b'?' | b'{' | b'}' | b']' | b')' => None,
+            c => one((c as char).to_string()),
+        }
     }
 
-    /// `*`, `+`, `?`, or `{n}`/`{n,}`/`{n,m}`. Lazy and possessive forms are
-    /// rejected.
+    /// `*`, `+`, `?`, or `{n}`/`{n,}`/`{n,m}`. A lazy quantifier matches the
+    /// same URLs as the greedy one; possessive forms are rejected.
     fn quantifier(&mut self) -> Option<Option<(u32, Option<u32>)>> {
         let range = match self.peek() {
             Some(b'*') => {
@@ -345,7 +461,10 @@ impl Translator<'_> {
             }
             _ => return Some(None),
         };
-        if matches!(self.peek(), Some(b'?' | b'+')) {
+        if self.peek() == Some(b'?') {
+            self.pos += 1;
+        }
+        if matches!(self.peek(), Some(b'*' | b'+' | b'?' | b'{')) {
             return None;
         }
         Some(Some(range))
@@ -385,9 +504,10 @@ impl Translator<'_> {
     fn escape(&mut self) -> Option<String> {
         Some(match self.next()? {
             b'd' => "[0-9]".into(),
-            b'D' => "[^0-9]".into(),
+            b'D' => self.negated("0-9"),
             b'w' => "[a-zA-Z0-9_]".into(),
-            b'W' => "[^a-zA-Z0-9_]".into(),
+            b'W' => self.negated("a-zA-Z0-9_"),
+            b'S' => self.any(),
             c @ (b'.' | b'*' | b'+' | b'?' | b'(' | b')' | b'[' | b']' | b'{' | b'}' | b'\\'
             | b'^' | b'$' | b'|') => format!("\\{}", c as char),
             c @ (b'-' | b'/' | b':' | b'=' | b'&' | b'%' | b'_' | b'#' | b',' | b'@' | b'!'
@@ -396,15 +516,17 @@ impl Translator<'_> {
         })
     }
 
-    /// Character class body up to `]`. `\d` and `\w` are expanded and the
+    /// Character class body up to `]`. `\d` and `\w` are expanded, `\s`
+    /// adds nothing a URL holds, `\S` makes the class any character, and the
     /// remaining escapes are passed through.
     fn class(&mut self) -> Option<String> {
         let mut out = String::from("[");
-        if self.peek() == Some(b'^') {
+        let negated = self.peek() == Some(b'^');
+        if negated {
             self.pos += 1;
             out.push('^');
         }
-        let start = self.pos;
+        let (start, mut any) = (self.pos, false);
         loop {
             match self.next()? {
                 b']' if self.pos - 1 > start => break,
@@ -412,6 +534,8 @@ impl Translator<'_> {
                 b'\\' => match self.next()? {
                     b'd' => out.push_str("0-9"),
                     b'w' => out.push_str("a-zA-Z0-9_"),
+                    b's' => {}
+                    b'S' => any = true,
                     c @ (b'.' | b'*' | b'+' | b'?' | b'(' | b')' | b'{' | b'}' | b'\\' | b'^'
                     | b'$' | b'|' | b'-' | b'/' | b'[' | b']') => {
                         out.push('\\');
@@ -423,6 +547,12 @@ impl Translator<'_> {
                 },
                 c => out.push(c as char),
             }
+        }
+        if any {
+            return (!negated).then(|| self.any());
+        }
+        if negated {
+            out.push_str(self.exclude);
         }
         out.push(']');
         Some(out)
@@ -464,7 +594,7 @@ mod emitted_filter_tests {
 
     #[test]
     fn empty_translation_matches_everything() {
-        assert_eq!(url_filter(&regex("x{0}")).as_deref(), Some(".*"));
+        assert_eq!(url_filter(&regex("x{0}")), Some(vec![".*".into()]));
     }
 
     #[test]
@@ -513,7 +643,11 @@ mod tests {
     }
 
     fn filter(p: &Pattern) -> Option<String> {
-        url_filter(p)
+        url_filter(p).map(|f| f.join(" "))
+    }
+
+    fn top(m: DomainMatcher) -> Option<String> {
+        domain_top_url(&m).map(|f| f.join(" "))
     }
 
     #[test]
@@ -583,6 +717,24 @@ mod tests {
         );
     }
 
+    fn matches(p: &Pattern, url: &str) -> bool {
+        url_filter(p).into_iter().flatten().any(|f| {
+            ::regex::RegexBuilder::new(&f).case_insensitive(true).build().unwrap().is_match(url)
+        })
+    }
+
+    #[test]
+    fn trailing_separator_matches_end_of_url() {
+        let host = |body: &str, right_anchored| Pattern { kind: PatternKind::Hostname, body: body.into(), right_anchored };
+        assert!(matches(&host("ads.example/ok^", false), "https://ads.example/ok"));
+        assert!(matches(&host("ads.example/ok^", false), "https://ads.example/ok?x"));
+        assert!(!matches(&host("ads.example/ok^", false), "https://ads.example/okay"));
+        assert!(matches(&host("ads.example/ok^", true), "https://ads.example/ok"));
+        assert!(matches(&host("ads.example/ok^", true), "https://ads.example/ok/"));
+        assert!(!matches(&host("ads.example/ok^", true), "https://ads.example/ok/x"));
+        assert!(matches(&plain("/ws^"), "wss://loader.example.com/ws"));
+    }
+
     #[test]
     fn non_ascii_pattern_is_none() {
         assert_eq!(filter(&plain("ünï")), None);
@@ -619,16 +771,45 @@ mod tests {
 
     #[test]
     fn regex_groups_and_non_capturing() {
-        assert_eq!(filter(&regex("(?:ab)c")).unwrap(), "(ab)c");
+        assert_eq!(filter(&regex("(?:ab)c")).unwrap(), "abc");
         assert_eq!(filter(&regex("(x)?y")).unwrap(), "(x)?y");
-        assert_eq!(filter(&regex("(a(b)c)+")).unwrap(), "(a(b)c)+");
+        assert_eq!(filter(&regex("(a(b)c)+")).unwrap(), "(abc)+");
+    }
+
+    #[test]
+    fn regex_alternation_expands_to_one_filter_each() {
+        assert_eq!(filter(&regex("a|b")).unwrap(), "a b");
+        assert_eq!(filter(&regex("\\/(?:x|y)\\.js$")).unwrap(), "/x\\.js$ /y\\.js$");
+        assert_eq!(filter(&regex("a(?:$|\\?)")).unwrap(), "a$ a\\?");
+        assert_eq!(filter(&regex("(?:a|b)?c")).unwrap(), "c ac bc");
+        assert_eq!(filter(&regex("x(?:a|b)+")), None);
+        assert_eq!(filter(&regex("(a|b)(c|d)(e|f)(g|h)(i|j)")), None);
+        let r = regex("^https?:\\/\\/(?:www\\.)?(?:ads|track)\\.(?:com|net)\\/");
+        assert!(matches(&r, "https://www.track.net/x"));
+        assert!(!matches(&r, "https://www.trackads.net/x"));
+    }
+
+    #[test]
+    fn regex_word_boundary_lazy_and_non_space() {
+        let r = regex("\\/t\\.js\\?site=[a-f0-9]{4}\\b");
+        assert!(matches(&r, "https://x.com/t.js?site=abcd"));
+        assert!(matches(&r, "https://x.com/t.js?site=abcd&x"));
+        assert!(!matches(&r, "https://x.com/t.js?site=abcde"));
+        let r = regex("\\bgamatotv\\.info\\/");
+        assert!(matches(&r, "https://gamatotv.info/a"));
+        assert!(!matches(&r, "https://xgamatotv.info/a"));
+        for body in ["a\\b\\/", "\\/\\b", "a\\b|c", "(a\\b)"] {
+            assert_eq!(filter(&regex(body)), None, "{body}");
+        }
+        assert_eq!(filter(&regex("(.+?\\.)?a+?")).unwrap(), "(.+\\.)?a+");
+        assert_eq!(filter(&regex("\\/[\\S]{3}\\S[^&\\s]")).unwrap(), "/....[^&]");
     }
 
     #[test]
     fn regex_constructs_webkit_rejects_are_none() {
         for body in [
-            "a|b", "(a|b)c", "\\bfoo", "\\sx", "(?=a)b", "(?!a)b", "(?<=a)b", "(a)\\1", "a+?",
-            "a*+", "a{,3}", "a{3,2}", "a{40}", "[a", "a]", "[]a]", "[a[b]", "\\n", "(a", "a)", "{",
+            "\\sx", "(?=a)b", "(?!a)b", "(?<=a)b", "(a)\\1", "[^\\S]",
+            "a*+", "a+??", "a{,3}", "a{3,2}", "a{40}", "[a", "a]", "[]a]", "[a[b]", "\\n", "(a", "a)", "{",
             "",
         ] {
             assert_eq!(filter(&regex(body)), None, "{body}");
@@ -645,7 +826,7 @@ mod tests {
     #[test]
     fn domain_hostname_top_url() {
         assert_eq!(
-            domain_top_url(&DomainMatcher::Hostname("example.com".into())).unwrap(),
+            top(DomainMatcher::Hostname("example.com".into())).unwrap(),
             "^[^:]+://+([^:/]+\\.)?example\\.com[/:?#]"
         );
     }
@@ -653,14 +834,14 @@ mod tests {
     #[test]
     fn domain_entity_top_url() {
         assert_eq!(
-            domain_top_url(&DomainMatcher::Entity("google".into())).unwrap(),
+            top(DomainMatcher::Entity("google".into())).unwrap(),
             "^[^:]+://+([^:/]+\\.)?google\\.(com?\\.)?[^:/.]+[/:?#]"
         );
     }
 
     #[test]
     fn entity_domain_does_not_accept_arbitrary_second_level_suffix() {
-        let filter = domain_top_url(&DomainMatcher::Entity("google".into())).unwrap();
+        let filter = top(DomainMatcher::Entity("google".into())).unwrap();
         assert!(!filter.contains("([^:/.]+\\.)?[^:/.]"));
         assert!(webkit_accepts(&filter));
     }
@@ -668,13 +849,21 @@ mod tests {
     #[test]
     fn domain_regex_top_url_anchoring() {
         assert_eq!(
-            domain_top_url(&DomainMatcher::Regex("^ads\\d+\\.net$".into())).unwrap(),
+            top(DomainMatcher::Regex("^ads\\d+\\.net$".into())).unwrap(),
             "^[^:]+://ads[0-9]+\\.net[/:?#]"
         );
         assert_eq!(
-            domain_top_url(&DomainMatcher::Regex("cdn".into())).unwrap(),
+            top(DomainMatcher::Regex("cdn".into())).unwrap(),
             "^[^:]+://[^/:?#]*cdn[^/:?#]*[/:?#]"
         );
-        assert_eq!(domain_top_url(&DomainMatcher::Regex("a|b".into())), None);
+        // uBO tests the regex against the hostname only.
+        for (rx, page) in [("^ads.+\\.net$", "https://adsfoo.com/x.net/"), ("^ads[^x]+\\.net$", "https://adsfoo.com/a.net/"), ("^ads\\D+\\.net$", "https://ads.com?.net/")] {
+            let filters = domain_top_url(&DomainMatcher::Regex(rx.into())).unwrap();
+            assert!(!filters.iter().any(|f| ::regex::Regex::new(f).unwrap().is_match(page)), "{rx}");
+        }
+        assert_eq!(
+            top(DomainMatcher::Regex("^a$|b".into())).unwrap(),
+            "^[^:]+://a[/:?#] ^[^:]+://[^/:?#]*b[^/:?#]*[/:?#]"
+        );
     }
 }
