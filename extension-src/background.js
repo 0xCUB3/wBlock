@@ -1427,9 +1427,10 @@
       cachedBlockingState = { disabled: false, paused: false };
       configuration = { ...cachedConfiguration, disabled: false, paused: false };
     } else if (fromCache) {
+      // Site state covers the whole tab, as native if-domain rules do.
       let host = "";
       try {
-        host = new URL(url).hostname;
+        host = new URL(topUrl ?? url).hostname;
       } catch {}
       try {
         const state = await requestBlockingState(host);

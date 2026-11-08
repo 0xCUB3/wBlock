@@ -220,6 +220,25 @@ const frameSender = (url, topUrl, frameId = 1) => ({ url, frameId, tab: { id: 7,
   check('native settings invalidation expires empty startup replies', reads === 3);
 }
 
+// Turning wBlock off for a site covers its whole tab, as Safari's if-domain
+// and uBO's per-site switch do, so a cached third-party frame config is not
+// applied inside a disabled site.
+{
+  let disabledSite = "";
+  const state = loadBackground({ nativeHandler: async message => {
+    if (message.action === "getBlockingState") return { disabled: message.host === disabledSite, paused: false };
+    return { payload: makeConfig(["#frame-ad"], 1, [], [], { disabled: false, paused: false }) };
+  } });
+  await sleep(20);
+  const sender = frameSender("https://player.example/embed", "https://news.example/");
+  await state.onMessage({ type: "InitContentScript" }, sender);
+  disabledSite = "news.example";
+  state.nativePortMessage({ action: "wblock:siteDisabledChanged" });
+  const before = state.cssInserted.length;
+  const result = await state.onMessage({ type: "InitContentScript" }, sender);
+  check("cached frame config follows its tab's site state", result.disabled === true && state.cssInserted.length === before);
+}
+
 // Scenario A: persisted cache serves a top-frame config instantly while the
 // native host hangs (cold start after Safari relaunch).
 {
