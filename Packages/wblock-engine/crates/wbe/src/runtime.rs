@@ -68,7 +68,7 @@ struct Scriptlets {
 #[derive(Default)]
 struct ScriptletRules {
     calls: Vec<Vec<String>>,
-    index: HashMap<Vec<String>, u32>,
+    index: rustc_hash::FxHashMap<Vec<String>, u32>,
     rules: BTreeMap<String, Vec<(u32, Vec<DomainMatcher>)>>,
     exceptions: BTreeMap<String, Vec<Option<u32>>>,
     regexes: HashMap<String, regex::Regex>,
@@ -97,11 +97,14 @@ impl ScriptletRules {
                 }
             }
         }
-        let id = (!call[0].is_empty()).then(|| {
-            *self.index.entry(call.clone()).or_insert_with(|| {
+        let id = (!call[0].is_empty()).then(|| match self.index.get(&call) {
+            Some(&id) => id,
+            None => {
+                let id = self.calls.len() as u32;
+                self.index.insert(call.clone(), id);
                 self.calls.push(call);
-                self.calls.len() as u32 - 1
-            })
+                id
+            }
         });
         let mut keys: Vec<String> = domains
             .include
@@ -383,6 +386,9 @@ fn host_of(url: &str) -> &str {
         .map_or(host, |(h, _)| h)
 }
 
+/// Lines `Engine::build` parses at once.
+const BUILD_BLOCK: usize = 1024;
+
 impl Engine {
     /// `lines` are uBO-syntax cosmetic, procedural, and scriptlet rules.
     pub fn build(lines: &[String]) -> Self {
@@ -393,87 +399,91 @@ impl Engine {
         let mut document = Vec::new();
         let mut genericblock = Vec::new();
         let mut specifichide = Vec::new();
-        for line in lines {
-            match crate::parse_line(line, Default::default()) {
-                // Hides are indexed here too: adblock-rust files generic
-                // `.class`/`#id` hides where only a DOM scan finds them, and
-                // drops regex domains.
-                ParsedLine::Rule(Rule::Cosmetic(r)) => {
-                    let call = match (r.body, r.matches_path) {
-                        (CosmeticBody::Style(css), _) => vec!["wbe:css".into(), css],
-                        (CosmeticBody::Hide(selector), None) => vec!["wbe:hide".into(), selector],
-                        (CosmeticBody::Hide(selector) | CosmeticBody::Procedural(selector), path) => {
-                            let Ok(mut filter) = crate::parse::cosmetic::procedural(&selector) else { continue };
-                            if let Some(path) = path {
-                                filter["selector"].as_array_mut().unwrap().insert(0, serde_json::json!({"type":"matches-path", "arg":path}));
+        // Lines are parsed in parallel a block at a time, then indexed in order.
+        for block in lines.chunks(BUILD_BLOCK) {
+            let parsed = crate::compile::parallel_indices(block.len(), |i| crate::parse_line(&block[i], Default::default()));
+            for (line, parsed) in block.iter().zip(parsed) {
+                match parsed {
+                    // Hides are indexed here too: adblock-rust files generic
+                    // `.class`/`#id` hides where only a DOM scan finds them, and
+                    // drops regex domains.
+                    ParsedLine::Rule(Rule::Cosmetic(r)) => {
+                        let call = match (r.body, r.matches_path) {
+                            (CosmeticBody::Style(css), _) => vec!["wbe:css".into(), css],
+                            (CosmeticBody::Hide(selector), None) => vec!["wbe:hide".into(), selector],
+                            (CosmeticBody::Hide(selector) | CosmeticBody::Procedural(selector), path) => {
+                                let Ok(mut filter) = crate::parse::cosmetic::procedural(&selector) else { continue };
+                                if let Some(path) = path {
+                                    filter["selector"].as_array_mut().unwrap().insert(0, serde_json::json!({"type":"matches-path", "arg":path}));
+                                }
+                                vec!["wbe:procedural".into(), filter.to_string()]
                             }
-                            vec!["wbe:procedural".into(), filter.to_string()]
-                        }
-                    };
-                    scriptlets.add_filter(r.exception, r.domains, call);
-                }
-                // uBO drops a scriptlet exception whose hostnames are all negated.
-                ParsedLine::Rule(Rule::Scriptlet(r)) if r.exception && r.domains.include.is_empty() && !r.domains.exclude.is_empty() => {}
-                ParsedLine::Rule(Rule::Scriptlet(r)) => {
-                    let call = std::iter::once(r.name).chain(r.args).collect();
-                    scriptlets.add_filter(r.exception, r.domains, call);
-                }
-                // `@@...$doc,popup` is both a popup allow and a page exception.
-                ParsedLine::Rule(Rule::Network(r)) if r.types.contains(crate::ast::ResourceTypes::POPUP) || r.exception && !r.scope.is_empty() => {
-                    if let Some(rule) = popup_rule(&r).ok().filter(|_| r.types.contains(crate::ast::ResourceTypes::POPUP)) {
-                        // Network allow rules are candidates, not cosmetic exceptions.
-                        // An allow keeps its opener domains: indexed for every
-                        // opener, uBO's `@@$popup,domain=datanodes.to` allowed
-                        // every popup on every site (#1072). Safari's tab event
-                        // names the opener tab, so a frame-only allow can miss.
-                        popups.add(false, r.from.clone(), vec!["wbe:popup".into(), serde_json::to_string(&rule).expect("popup rule serializes")]);
+                        };
+                        scriptlets.add_filter(r.exception, r.domains, call);
                     }
-                    if r.scope.intersects(
-                        ExceptionScope::GHIDE
-                            | ExceptionScope::EHIDE
-                            | ExceptionScope::SHIDE
-                            | ExceptionScope::DOC
-                            | ExceptionScope::GENERICBLOCK,
-                    ) {
-                        let (pattern, options) = line.rsplit_once('$').unwrap_or((line, ""));
-                        let options: Vec<&str> = options
-                            .split(',')
-                            .filter(|option| {
-                                !matches!(
-                                    *option,
-                                    "elemhide"
-                                        | "ehide"
-                                        | "specifichide"
-                                        | "shide"
-                                        | "document"
-                                        | "doc"
-                                        | "generichide"
-                                        | "ghide"
-                                        | "genericblock"
-                                        | "popup"
-                                )
-                            })
-                            .collect();
-                        let filter = format!(
-                            "{pattern}$generichide{}",
-                            if options.is_empty() {
-                                String::new()
-                            } else {
-                                format!(",{}", options.join(","))
+                    // uBO drops a scriptlet exception whose hostnames are all negated.
+                    ParsedLine::Rule(Rule::Scriptlet(r)) if r.exception && r.domains.include.is_empty() && !r.domains.exclude.is_empty() => {}
+                    ParsedLine::Rule(Rule::Scriptlet(r)) => {
+                        let call = std::iter::once(r.name).chain(r.args).collect();
+                        scriptlets.add_filter(r.exception, r.domains, call);
+                    }
+                    // `@@...$doc,popup` is both a popup allow and a page exception.
+                    ParsedLine::Rule(Rule::Network(r)) if r.types.contains(crate::ast::ResourceTypes::POPUP) || r.exception && !r.scope.is_empty() => {
+                        if let Some(rule) = popup_rule(&r).ok().filter(|_| r.types.contains(crate::ast::ResourceTypes::POPUP)) {
+                            // Network allow rules are candidates, not cosmetic exceptions.
+                            // An allow keeps its opener domains: indexed for every
+                            // opener, uBO's `@@$popup,domain=datanodes.to` allowed
+                            // every popup on every site (#1072). Safari's tab event
+                            // names the opener tab, so a frame-only allow can miss.
+                            popups.add(false, r.from.clone(), vec!["wbe:popup".into(), serde_json::to_string(&rule).expect("popup rule serializes")]);
+                        }
+                        if r.scope.intersects(
+                            ExceptionScope::GHIDE
+                                | ExceptionScope::EHIDE
+                                | ExceptionScope::SHIDE
+                                | ExceptionScope::DOC
+                                | ExceptionScope::GENERICBLOCK,
+                        ) {
+                            let (pattern, options) = line.rsplit_once('$').unwrap_or((line, ""));
+                            let options: Vec<&str> = options
+                                .split(',')
+                                .filter(|option| {
+                                    !matches!(
+                                        *option,
+                                        "elemhide"
+                                            | "ehide"
+                                            | "specifichide"
+                                            | "shide"
+                                            | "document"
+                                            | "doc"
+                                            | "generichide"
+                                            | "ghide"
+                                            | "genericblock"
+                                            | "popup"
+                                    )
+                                })
+                                .collect();
+                            let filter = format!(
+                                "{pattern}$generichide{}",
+                                if options.is_empty() {
+                                    String::new()
+                                } else {
+                                    format!(",{}", options.join(","))
+                                }
+                            );
+                            if r.scope.contains(ExceptionScope::GHIDE) { generichide.push(filter.clone()); }
+                            if r.scope.contains(ExceptionScope::EHIDE) {
+                                elemhide.push(filter.clone());
                             }
-                        );
-                        if r.scope.contains(ExceptionScope::GHIDE) { generichide.push(filter.clone()); }
-                        if r.scope.contains(ExceptionScope::EHIDE) {
-                            elemhide.push(filter.clone());
-                        }
-                        if r.scope.contains(ExceptionScope::SHIDE) { specifichide.push(filter.clone()); }
-                        if r.scope.contains(ExceptionScope::GENERICBLOCK) { genericblock.push(filter.clone()); }
-                        if r.scope.contains(ExceptionScope::DOC) {
-                            document.push(filter);
+                            if r.scope.contains(ExceptionScope::SHIDE) { specifichide.push(filter.clone()); }
+                            if r.scope.contains(ExceptionScope::GENERICBLOCK) { genericblock.push(filter.clone()); }
+                            if r.scope.contains(ExceptionScope::DOC) {
+                                document.push(filter);
+                            }
                         }
                     }
+                    _ => {},
                 }
-                _ => {},
             }
         }
         Self {
