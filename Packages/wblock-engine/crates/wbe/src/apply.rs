@@ -16,8 +16,8 @@ use crate::ast::{
     DomainList, DomainMatcher, NetworkAction, NetworkRule, Party, ResourceTypes, Rule,
 };
 use crate::compile::{
-    compile_blocker, compile_rules, parallel_indices, parse_list, CompileOptions, CompileOutput,
-    NetworkContext, Others, RuleSet, Stats,
+    compile_blocker, parallel_indices, parse_list, CompileOptions, CompileOutput,
+    NetworkContext, Others, Stats,
 };
 use crate::parse::cosmetic::with_domains;
 use crate::webkit::{SafariVersion, WebkitJson, WkAction, WkRule, WkTrigger};
@@ -645,15 +645,10 @@ impl Plan {
         }
         let units = self.record_units();
         let mut tail = Vec::new();
-        // The segment's `$badfilter` rules include the replicated ones.
-        let mut replicated_badfilters = Vec::new();
         for rule in replicated {
             match rule {
                 Rule::Network(r) => {
                     ctx.add(&r);
-                    if r.badfilter {
-                        replicated_badfilters.push(Rule::Network(r.clone()));
-                    }
                     tail.push(*r);
                 }
                 Rule::Cosmetic(r) => others.cosmetic.push(r),
@@ -693,12 +688,15 @@ impl Plan {
             stats,
         );
         if let Some(list) = segment_list {
-            let mut segment = RuleSet::default();
+            let mut segment = Vec::new();
             let assignment = self.assigned(target, list).cloned();
             for p in self.parsed[list].records() {
-                // A badfilter is segment-wide, whatever its shard.
+                // Segment blocks compile unscoped, so its badfilters must
+                // too, whatever their shard.
                 if p.badfilter {
-                    segment.push(self.rule(list, p));
+                    if let Rule::Network(r) = self.rule(list, p) {
+                        ctx.add(&r);
+                    }
                     continue;
                 }
                 let keep = assignment.as_ref().is_some_and(|a| {
@@ -706,13 +704,23 @@ impl Plan {
                         .is_none_or(|(i, n)| p.identity % n as u64 == i as u64)
                 });
                 if keep && p.plain && !self.duplicates[target][list].contains(&p.identity) {
-                    segment.push(self.rule(list, p));
+                    if let Rule::Network(r) = self.rule(list, p) {
+                        segment.push(*r);
+                    }
                 }
             }
-            for rule in replicated_badfilters {
-                segment.push(rule);
-            }
-            let front = compile_rules(segment, &self.opts, Stats::default()).webkit;
+            // The blocker's context holds every other `$badfilter` that
+            // reaches it: other lists', replicated ones and the extras'.
+            let segment = Mutex::new(Some(segment));
+            let front = compile_blocker(
+                &ctx,
+                1,
+                |_| segment.lock().expect("segment lock").take().expect("one unit"),
+                Others::default(),
+                &self.opts,
+                Stats::default(),
+            )
+            .webkit;
             let ignores: Vec<WkRule> = self.lists[list]
                 .scope
                 .exclude
@@ -1803,6 +1811,20 @@ mod tests {
         let own = plan.own_patterns(0);
         assert_eq!(plan.replicated(0, own.iter().map(|p| p.as_ref())).len(), 2);
         assert!(!output.contains("other\\\\.test"), "{output}");
+    }
+
+    #[test]
+    fn segment_blocks_honor_badfilters_of_other_lists() {
+        let plan = plan(
+            json!([
+                { "id":"big", "text":"||cdn.example^\n||keep.example^", "scope":{"exclude":["other.org"]}},
+                { "id":"fix", "text":"||cdn.example^$badfilter"}
+            ]),
+            json!([{"slot":1,"lists":[{"list":0},{"list":1}]}]),
+            json!({}),
+        );
+        let out = crate::webkit::to_json(&plan.compile_target(0, &[]).output.webkit);
+        assert!(out.contains("keep") && !out.contains("cdn"), "{out}");
     }
 
     #[test]
