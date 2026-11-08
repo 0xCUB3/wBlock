@@ -344,6 +344,37 @@
       action
     ));
   };
+  // Every frame's userscript reply used to carry each matching script's full
+  // source (580 KB per YouTube frame). Native now sends a payload this page
+  // already holds as its digest alone, and the reply is completed here.
+  const userScriptContents = new Map(); // script id -> { key, content }
+  const USERSCRIPT_CONTENT_CACHE_CHARS = 8 * 1024 * 1024;
+  let userScriptContentChars = 0;
+  const sendUserScriptRequest = async request => {
+    const known = new Map(userScriptContents);
+    const response = await sendPriorityNativeMessage({ ...request,
+      cachedContent: Object.fromEntries([...known].map(([id, entry]) => [id, entry.key])) });
+    for (const script of Array.isArray(response?.userScripts) ? response.userScripts : []) {
+      const key = script && script.contentKey;
+      if (typeof key !== "string") continue;
+      delete script.contentKey;
+      if (typeof script.content !== "string") {
+        // A digest we listed always comes back with its source.
+        if (known.get(script.id)?.key === key) script.content = known.get(script.id).content;
+        continue;
+      }
+      userScriptContentChars -= userScriptContents.get(script.id)?.content.length || 0;
+      userScriptContents.delete(script.id);
+      userScriptContents.set(script.id, { key, content: script.content });
+      userScriptContentChars += script.content.length;
+      for (const [id, entry] of userScriptContents) {
+        if (userScriptContentChars <= USERSCRIPT_CONTENT_CACHE_CHARS) break;
+        userScriptContents.delete(id);
+        userScriptContentChars -= entry.content.length;
+      }
+    }
+    return response;
+  };
   let nativeStatePort = null;
   let nativeStateReconnectTimer = null;
   const connectNativeStatePort = () => {
@@ -407,7 +438,7 @@
     // Page rules must not wait behind maintenance downloads. Same-page
     // requests are still coalesced by requestConfigurationCoalesced.
     const response = await (request.includeUserScripts
-      ? readNativeRecently(request, sendPriorityNativeMessage,
+      ? readNativeRecently(request, sendUserScriptRequest,
           reply => Array.isArray(reply.userScripts) && reply.userScripts.length === 0 && !reply.userScriptsError)
       : sendPriorityNativeMessage(request));
     const message = response;
@@ -1137,7 +1168,7 @@
       try {
         // Only "no scripts here" is shared: script payloads carry revisions and
         // GM storage that must stay current.
-        const response = await readNativeRecently(userScriptRequest, sendPriorityNativeMessage, answer => Array.isArray(answer.userScripts) && answer.userScripts.length === 0);
+        const response = await readNativeRecently(userScriptRequest, sendUserScriptRequest, answer => Array.isArray(answer.userScripts) && answer.userScripts.length === 0);
         // Native matching is authoritative. Only reuse its negative subframe
         // result for this URL, within the existing invalidated freshness window.
         if (epoch === nativeStateEpoch && !response?.error && response?.emptySubframes === true) {

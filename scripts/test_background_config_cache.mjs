@@ -835,6 +835,37 @@ for (const [label, inertState, activeCSS] of [
   check("catalog route is never sent", !state.nativeMessages.some(message => message && message.action === "getDocumentStartUserScriptCatalog"));
 }
 
+// Scenario L2: a payload the background already holds crosses native
+// messaging as its digest alone, on both the direct and the frame-startup path.
+{
+  const source = { live: "window.__live = 1;", other: "window.__other = 1;" };
+  const keyOf = id => `digest-${source[id]}`;
+  const state = loadBackground({
+    nativeHandler: message => {
+      // Mirrors WebExtensionRequestHandler.omitCachedContent.
+      const userScripts = ["live", "other"].map(id => message.cachedContent?.[id] === keyOf(id)
+        ? { id, contentKey: keyOf(id) } : { id, contentKey: keyOf(id), content: source[id] });
+      return message.action === "getUserScripts" ? { userScripts }
+        : { payload: makeConfig([], 1, [], [], { disabled: false, paused: false }), userScripts };
+    }
+  });
+  const read = url => state.onMessage({ action: "getUserScripts", url, includeContent: true }, topFrameSender(url));
+  const first = await read("https://a.example/");
+  source.other = "window.__other = 2;";
+  const second = await read("https://b.example/");
+  const startup = await state.onMessage({ type: "InitContentScript", includeUserScripts: true },
+    frameSender("https://c.example/", "https://top.example/"));
+  const sent = state.nativeMessages.filter(m => m.action === "getUserScripts" || m.includeUserScripts);
+  const full = response => response.userScripts.map(s => `${s.id}:${s.content}:${Object.hasOwn(s, "contentKey")}`).join();
+  check("first lookup advertises no cached payloads", Object.keys(sent[0].cachedContent).length === 0);
+  check("later lookups advertise the payload digests held",
+    sent[1].cachedContent.live === keyOf("live") && sent[2].cachedContent.other === keyOf("other"));
+  check("cached and changed payloads both reach the frame complete",
+    full(first) === "live:window.__live = 1;:false,other:window.__other = 1;:false"
+      && full(second) === "live:window.__live = 1;:false,other:window.__other = 2;:false"
+      && full(startup) === full(second));
+}
+
 // Scenario M: userscript mutation invalidates live document-start sessions by
 // broadcasting the native session-cache clear, without any catalog refresh.
 {
