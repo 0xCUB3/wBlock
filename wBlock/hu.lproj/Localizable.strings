@@ -1112,3 +1112,5 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Bypass Paywalls of English (& other) language news sites" = "Megkerüli a fizetősfal-védelmet az angol nyelvű hírportálokon, és néhányon más nyelveken is.";
 "Multiple solutions for blocking Twitch ads (vaft)" = "Blokkolja a Twitch-hirdetéseket.";
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "Sötétté teszi a webhelyeket a színeik átalakításával. A Dark Reader projektből. Egyes webhelyek furcsán nézhetnek ki, mivel nem tartalmazza a Dark Reader webhelyjavításait.";
+"Opens the publisher's regular page instead of its AMP version." = "A kiadó normál oldalát nyitja meg az AMP-változat helyett.";
+"AMP Redirect" = "AMP Redirect";

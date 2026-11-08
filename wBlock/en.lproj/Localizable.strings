@@ -1121,3 +1121,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Bypass Paywalls of English (& other) language news sites" = "Gets past paywalls on English-language news sites, and some in other languages.";
 "Multiple solutions for blocking Twitch ads (vaft)" = "Blocks Twitch ads.";
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "Makes websites dark by restyling their colors, from the Dark Reader project. Some sites may look off, since it doesn't include Dark Reader's site fixes.";
+"Opens the publisher's regular page instead of its AMP version." = "Opens the publisher's regular page instead of its AMP version.";
+"AMP Redirect" = "AMP Redirect";

@@ -46,6 +46,8 @@ enum BuiltInUserScripts {
     static let darkReaderURL = DarkReaderAppearancePreference.scriptURL
     static let darkReaderDescription =
         "Makes websites dark by restyling their colors, from the Dark Reader project. Some sites may look off, since it doesn't include Dark Reader's site fixes."
+    static let ampRedirectURL = "https://raw.githubusercontent.com/0xCUB3/wBlock-userscripts/main/packages/amp-redirect/dist/amp-redirect.user.js"
+    static let ampRedirectDescription = "Opens the publisher's regular page instead of its AMP version."
     static let tubeCleanerDescription =
         "Blocks YouTube's ads and web player and plays videos in Safari's native player, with chapters, picture-in-picture, background playback, and audio-only mode. Includes SponsorBlock, which skips sponsored segments."
     static let playerCleanerDescription =
@@ -81,6 +83,15 @@ enum BuiltInUserScripts {
             url: darkReaderURL,
             isEnabledByDefault: false,
             description: darkReaderDescription,
+            displayRole: .functionality,
+            isBeta: true
+        ),
+        // Content blockers can't redirect, so AMP pages need a script (#1095).
+        BuiltInUserScriptDefinition(
+            name: "AMP Redirect",
+            url: ampRedirectURL,
+            isEnabledByDefault: false,
+            description: ampRedirectDescription,
             displayRole: .functionality,
             isBeta: true
         ),

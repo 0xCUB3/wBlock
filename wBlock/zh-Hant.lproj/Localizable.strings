@@ -1112,3 +1112,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Bypass Paywalls of English (& other) language news sites" = "繞過英語新聞網站的付費牆，以及部分其他語言網站的付費牆。";
 "Multiple solutions for blocking Twitch ads (vaft)" = "封鎖 Twitch 廣告。";
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "透過重新調整顏色讓網站變暗，來自 Dark Reader 專案。由於不包含 Dark Reader 的網站修正，部分網站可能顯示異常。";
+"Opens the publisher's regular page instead of its AMP version." = "開啟發布者的一般頁面，而不是 AMP 版本。";
+"AMP Redirect" = "AMP Redirect";

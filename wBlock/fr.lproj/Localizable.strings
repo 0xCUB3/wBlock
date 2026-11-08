@@ -1112,3 +1112,5 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Bypass Paywalls of English (& other) language news sites" = "Contourne les paywalls des sites d'information en anglais, et certains dans d'autres langues.";
 "Multiple solutions for blocking Twitch ads (vaft)" = "Bloque les publicités Twitch.";
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "Assombrit les sites en modifiant leurs couleurs. Du projet Dark Reader. Certains sites peuvent paraître étranges, car il n'inclut pas les corrections de sites de Dark Reader.";
+"Opens the publisher's regular page instead of its AMP version." = "Ouvre la page normale de l’éditeur au lieu de sa version AMP.";
+"AMP Redirect" = "AMP Redirect";

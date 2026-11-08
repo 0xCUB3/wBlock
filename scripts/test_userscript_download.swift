@@ -47,7 +47,8 @@ struct UserScriptDownloadTests {
         let twitch = URL(string: "https://raw.githubusercontent.com/ryanbr/TwitchAdSolutions/master/vaft/vaft.user.js")!
         let allowed = [twitch, URL(string: BuiltInUserScripts.darkReaderURL)!,
                        URL(string: BuiltInUserScripts.deArrowURL)!, URL(string: BuiltInUserScripts.playerCleanerURL)!,
-                       URL(string: BuiltInUserScripts.tubeCleanerURL)!]
+                       URL(string: BuiltInUserScripts.tubeCleanerURL)!,
+                       URL(string: BuiltInUserScripts.ampRedirectURL)!]
         for primary in allowed {
             let parts = URLComponents(url: primary, resolvingAgainstBaseURL: false)!.percentEncodedPath.split(separator: "/")
             let expected = URL(string: "https://cdn.jsdelivr.net/gh/\(parts[0])/\(parts[1])@\(parts[2])/\(parts.dropFirst(3).joined(separator: "/"))")!

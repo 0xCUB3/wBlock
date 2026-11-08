@@ -1112,3 +1112,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Bypass Paywalls of English (& other) language news sites" = "Παρακάμπτει τα paywall σε αγγλόφωνους ειδησεογραφικούς ιστότοπους και σε ορισμένους σε άλλες γλώσσες.";
 "Multiple solutions for blocking Twitch ads (vaft)" = "Αποκλείει διαφημίσεις του Twitch.";
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "Κάνει τους ιστότοπους σκούρους αλλάζοντας τα χρώματά τους, από το έργο Dark Reader. Ορισμένοι ιστότοποι μπορεί να φαίνονται περίεργα, καθώς δεν περιλαμβάνει τις διορθώσεις ιστοτόπων του Dark Reader.";
+"Opens the publisher's regular page instead of its AMP version." = "Ανοίγει την κανονική σελίδα του εκδότη αντί για την έκδοση AMP.";
+"AMP Redirect" = "AMP Redirect";
