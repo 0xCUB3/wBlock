@@ -59,9 +59,11 @@ struct Scriptlets {
     /// Keyed like `rules`. Values: call ids, or `null` for `#@#+js()`.
     exceptions: Table,
     regexes: regex::RegexSet,
-    // Global calls are consulted on every page; keep their scopes decoded.
-    generic_rules: Vec<(u32, HashSet<String>)>,
-    generic_calls: HashMap<u32, Vec<String>>,
+    /// Global calls are consulted on every page; their scopes and calls are
+    /// decoded on first use, so loading an engine decodes none of them and
+    /// popup checks, which never read the calls, decode only the scopes.
+    generic_rules: OnceLock<Vec<(u32, HashSet<String>)>>,
+    generic_calls: OnceLock<HashMap<u32, Vec<String>>>,
 }
 
 /// Scriptlet rules as `Engine::build` collects them.
@@ -127,17 +129,13 @@ impl ScriptletRules {
     }
 
     fn finish(self) -> Scriptlets {
-        let rules = Table::encode(self.rules.iter().map(|(k, v)| (k.as_str(), v)));
-        let regexes = regex::RegexSet::new(self.regexes.keys()).expect("validated domain regexes");
-        let generic_rules = generic_rules(&rules, &regexes);
-        let calls = Table::encode(self.calls.iter().map(|call| ("", call)));
         Scriptlets {
-            generic_calls: generic_rules.iter().map(|(id, _)| (*id, calls.decode_at(*id as usize))).collect(),
-            calls,
-            rules,
+            calls: Table::encode(self.calls.iter().map(|call| ("", call))),
+            rules: Table::encode(self.rules.iter().map(|(k, v)| (k.as_str(), v))),
             exceptions: Table::encode(self.exceptions.iter().map(|(k, v)| (k.as_str(), v))),
-            regexes,
-            generic_rules,
+            regexes: regex::RegexSet::new(self.regexes.keys()).expect("validated domain regexes"),
+            generic_rules: OnceLock::new(),
+            generic_calls: OnceLock::new(),
         }
     }
 }
@@ -236,8 +234,15 @@ impl Table {
 }
 
 impl Scriptlets {
+    fn generic_rules(&self) -> &[(u32, HashSet<String>)] {
+        self.generic_rules.get_or_init(|| generic_rules(&self.rules, &self.regexes))
+    }
+
     fn call(&self, id: u32) -> Vec<String> {
-        self.generic_calls.get(&id).cloned().unwrap_or_else(|| self.calls.decode_at(id as usize))
+        let generic = self.generic_calls.get_or_init(|| {
+            self.generic_rules().iter().map(|(id, _)| (*id, self.calls.decode_at(*id as usize))).collect()
+        });
+        generic.get(&id).cloned().unwrap_or_else(|| self.calls.decode_at(id as usize))
     }
 
     fn is_cosmetic(&self, id: u32) -> bool {
@@ -263,7 +268,7 @@ impl Scriptlets {
                 }
             }
         }
-        let mut ids: Vec<u32> = self.generic_rules.iter()
+        let mut ids: Vec<u32> = self.generic_rules().iter()
             .filter(|(id, excluded)| !keys.iter().any(|k| excluded.contains(k))
                 && (generic_hides || self.call(*id)[0] != "wbe:hide"))
             .map(|(id, _)| *id).collect();
@@ -694,9 +699,7 @@ fn read_index(rest: &mut &[u8]) -> Result<Scriptlets, String> {
     let exceptions = Table::parse(take(rest)?)?;
     let patterns = serde_json::from_slice::<Vec<String>>(take(rest)?).map_err(|e| e.to_string())?;
     let regexes = regex::RegexSet::new(patterns).map_err(|e| e.to_string())?;
-    let generic_rules = generic_rules(&rules, &regexes);
-    let generic_calls = generic_rules.iter().map(|(id, _)| (*id, calls.decode_at(*id as usize))).collect();
-    Ok(Scriptlets { calls, generic_rules, generic_calls, rules, exceptions, regexes })
+    Ok(Scriptlets { calls, rules, exceptions, regexes, generic_rules: OnceLock::new(), generic_calls: OnceLock::new() })
 }
 
 fn put(out: &mut Vec<u8>, section: &[u8]) {
