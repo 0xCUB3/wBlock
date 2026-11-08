@@ -454,7 +454,7 @@ impl Plan {
             let mut rules = Vec::new();
             match self.rule(list, p) {
                 Rule::Network(r) => {
-                    for r in surviving(ctx, &r) {
+                    for r in surviving(ctx, *r) {
                         scoped(Rule::Network(Box::new(r)), scope, &mut rules);
                     }
                 }

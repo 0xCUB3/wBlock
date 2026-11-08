@@ -86,7 +86,7 @@ fn genericblock_host(r: &NetworkRule) -> Option<String> {
 pub(crate) fn emit_rule(
     ctx: &Context,
     safari: SafariVersion,
-    rule: &NetworkRule,
+    rule: NetworkRule,
     out: &mut Emitted,
     stats: &mut Stats,
 ) {
@@ -115,12 +115,12 @@ const NETWORK_TYPES: ResourceTypes = ResourceTypes::SCRIPT
 /// `*$domain=a|b` filter as one per page hostname; a badfilter removes the
 /// entries identical to its own (static-net-filtering.js,
 /// `compileToAtomicFilter` and `freeze`).
-pub(crate) fn surviving(ctx: &Context, rule: &NetworkRule) -> Vec<NetworkRule> {
+pub(crate) fn surviving(ctx: &Context, rule: NetworkRule) -> Vec<NetworkRule> {
     if rule.badfilter {
         return Vec::new();
     }
     let Some(bad) = ctx.bad.get(rule.pattern.body.as_str()) else {
-        return vec![rule.clone()];
+        return vec![rule];
     };
     // (typeless entry, typed entries) of a type set.
     let split = |t: ResourceTypes| match t {
@@ -128,8 +128,8 @@ pub(crate) fn surviving(ctx: &Context, rule: &NetworkRule) -> Vec<NetworkRule> {
         t if t.contains(NETWORK_TYPES) => (true, t.difference(NETWORK_TYPES)),
         t => (false, t),
     };
-    let by_origin = just_origin(rule);
-    let key = shape(rule, by_origin);
+    let by_origin = just_origin(&rule);
+    let key = shape(&rule, by_origin);
     let origins: Vec<Option<&DomainMatcher>> = if by_origin {
         rule.from.include.iter().map(Some).collect()
     } else {
@@ -150,7 +150,7 @@ pub(crate) fn surviving(ctx: &Context, rule: &NetworkRule) -> Vec<NetworkRule> {
         }
     }
     if left.iter().all(|&l| l == split(rule.types)) {
-        return vec![rule.clone()];
+        return vec![rule];
     }
     let network = if rule.types.is_empty() { ResourceTypes::empty() } else { NETWORK_TYPES };
     origins
@@ -839,20 +839,19 @@ where
         let mut stats = Stats::default();
         let mut page = Vec::new();
         for rule in rules {
-            let survivors = surviving(ctx, &rule);
+            let page_exception = (rule.exception && !rule.scope.is_empty()).then(|| rule.raw.clone());
+            let survivors = surviving(ctx, rule);
             let popup = |r: &NetworkRule| r.types.contains(ResourceTypes::POPUP) && !r.negated_types.contains(ResourceTypes::POPUP);
             // `@@...$doc,popup` is both a page exception and a popup allow.
             let popup_ok = survivors.iter().find(|r| popup(r))
-                .is_some_and(|r| crate::runtime::popup_rule(r).map_err(|reason| stats.drop(&reason)).is_ok());
-            if popup_ok || rule.exception && !rule.scope.is_empty() {
-                page.push(rule.raw.clone());
-            }
+                .filter(|r| crate::runtime::popup_rule(r).map_err(|reason| stats.drop(&reason)).is_ok());
+            page.extend(page_exception.or_else(|| popup_ok.map(|r| r.raw.clone())));
             for mut r in survivors {
                 if popup(&r) {
                     r.types.remove(ResourceTypes::POPUP);
                     if r.types.is_empty() { continue; }
                 }
-                emit_rule(ctx, safari, &r, &mut out, &mut stats);
+                emit_rule(ctx, safari, r, &mut out, &mut stats);
             }
         }
         (out, stats, page)
@@ -1062,7 +1061,7 @@ mod tests {
         let mut out = Emitted::default();
         let mut stats = Stats::default();
         for rule in rules {
-            emit_rule(&ctx, v, rule, &mut out, &mut stats);
+            emit_rule(&ctx, v, rule.clone(), &mut out, &mut stats);
         }
         dedupe_and_merge(&mut out);
         (out.tiered(), stats)
