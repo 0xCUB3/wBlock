@@ -131,7 +131,7 @@ impl Default for WebkitJson {
 impl WebkitJson {
     pub fn from_rules(rules: &[WkRule]) -> Self {
         Self {
-            json: to_json(rules),
+            json: ascii_only(to_json(rules)),
             rules: rules.len(),
         }
     }
@@ -153,7 +153,7 @@ impl WebkitJson {
     /// `json` is a complete, valid JSON array of `rules` objects.
     pub(crate) fn from_bytes(json: Vec<u8>, rules: usize) -> Self {
         Self {
-            json: String::from_utf8(json).expect("JSON is UTF-8"),
+            json: ascii_only(String::from_utf8(json).expect("JSON is UTF-8")),
             rules,
         }
     }
@@ -176,6 +176,30 @@ impl WebkitJson {
         json.push(']');
         Self { json, rules }
     }
+}
+
+/// `json` with every non-ASCII character written as a `\u` escape, which
+/// parses to the same strings. WebKit keeps a rule list's source in its
+/// compiled file, as UTF-16 once any character is above U+00FF, so one such
+/// character in a selector doubled the stored source (19 MB more for the
+/// default lists). Non-ASCII only occurs inside JSON strings.
+fn ascii_only(json: String) -> String {
+    if json.is_ascii() {
+        return json;
+    }
+    let mut out = String::with_capacity(json.len() + 64);
+    let mut units = [0u16; 2];
+    for c in json.chars() {
+        if c.is_ascii() {
+            out.push(c);
+            continue;
+        }
+        for unit in c.encode_utf16(&mut units) {
+            use std::fmt::Write;
+            write!(out, "\\u{unit:04x}").expect("String writes");
+        }
+    }
+    out
 }
 
 /// Anything `to_json` can serialize as Safari's rule list.
@@ -204,4 +228,29 @@ impl WebkitRules for WebkitJson {
 /// Serialize rules as Safari expects (compact JSON array).
 pub fn to_json<T: WebkitRules + ?Sized>(rules: &T) -> String {
     rules.to_webkit_json()
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{compile, CompileOptions, ListInput};
+
+    #[test]
+    fn non_ascii_is_escaped_to_the_same_rules() {
+        let text = "пример.рф##.реклама\nexample.com##[title=\"😀\"]";
+        let out = compile(
+            &[ListInput { text, trusted: false }],
+            &CompileOptions { safari: super::SafariVersion::new(18, 0) },
+        );
+        let json = out.webkit.as_str();
+        assert!(json.is_ascii(), "{json}");
+        let rules: serde_json::Value = serde_json::from_str(json).unwrap();
+        let mut selectors: Vec<&str> = rules
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter_map(|r| r["action"]["selector"].as_str())
+            .collect();
+        selectors.sort();
+        assert_eq!(selectors, [".реклама", "[title=\"😀\"]"]);
+    }
 }
