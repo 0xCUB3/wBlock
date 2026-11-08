@@ -406,6 +406,20 @@ check(
       && !("portBridgeId" in script)
   ),
 );
+const reloadSandbox = buildContentScriptSandbox(
+  null, [largeWarmScript], "https://discord.com/app", [], false,
+);
+reloadSandbox.__localValues.set("__wblock_warm_start_v1", seededCache);
+vm.createContext(reloadSandbox);
+vm.runInContext(source, reloadSandbox, { filename: "userscript-injector-warm-reload.js" });
+await tick();
+await tick();
+check(
+  "an unchanged warm-start cache is not rewritten on the next load",
+  reloadSandbox.__sentMessages.some(msg => msg.action === "getUserScripts")
+    && reloadSandbox.__localStorageWrites.length === 0
+    && reloadSandbox.__localValues.get("__wblock_warm_start_v1") === seededCache,
+);
 
 let resolveWarmValidation;
 const warmValidation = new Promise(resolve => { resolveWarmValidation = resolve; });
