@@ -410,22 +410,13 @@ struct SettingsView: View {
     }
 
     /// The same stat pills the Filters and Userscripts tabs open with, so every
-    /// tab's list starts below one row of pills.
-    /// A narrow Mac window can't fit three full pills; the row then turns compact
-    /// instead of widening the cards past the window's edges (#924).
-    @ViewBuilder
+    /// tab's list starts below one row of pills. On a narrow Mac window the
+    /// pills shrink together instead of switching to the compact layout (#924, #1091).
     private var statusPills: some View {
         #if os(iOS)
         statusPills(compact: true)
         #else
-        if #available(macOS 13.0, *) {
-            ViewThatFits(in: .horizontal) {
-                statusPills(compact: false)
-                statusPills(compact: true)
-            }
-        } else {
-            statusPills(compact: false)
-        }
+        statusPills(compact: false)
         #endif
     }
 

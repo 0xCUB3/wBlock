@@ -87,7 +87,7 @@ struct StatCard: View {
         self.showsDisclosure = showsDisclosure
     }
 
-    var body: some View {
+    private var content: some View {
         HStack(spacing: 10) {
             if !compact {
                 Image(systemName: icon)
@@ -144,25 +144,35 @@ struct StatCard: View {
         }
         .padding(.vertical, 12)
         .padding(.horizontal, compact ? 14 : 20)
+    }
+
+    var body: some View {
         #if os(iOS)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        content
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            .background {
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(Color(UIColor.secondarySystemGroupedBackground))
+            }
         #else
-        .fixedSize()
-        .background {
+        // A summary card is as wide as the row's widest card when there's
+        // room and shrinks evenly with its neighbors when there isn't, as a
+        // native row would, rather than switching layouts early (#1091).
+        let width = max(isStatsSummary ? summaryWidth ?? 0 : 0, compact ? 0 : 155)
+        Group {
             if isStatsSummary {
-                GeometryReader { Color.clear.preference(key: StatCardWidthPreference.self, value: $0.size.width) }
+                content
+                    .background {
+                        content.fixedSize().hidden().background {
+                            GeometryReader { Color.clear.preference(key: StatCardWidthPreference.self, value: $0.size.width) }
+                        }
+                    }
+                    .frame(idealWidth: width, maxWidth: width, alignment: .leading)
+            } else {
+                content.fixedSize().frame(minWidth: width, alignment: .leading)
             }
         }
-        .frame(minWidth: max(isStatsSummary ? summaryWidth ?? 0 : 0, compact ? 0 : 155), alignment: .leading)
+        .background(Capsule().fill(.regularMaterial))
         #endif
-        .background {
-            #if os(iOS)
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(Color(UIColor.secondarySystemGroupedBackground))
-            #else
-            Capsule()
-                .fill(.regularMaterial)
-            #endif
-        }
     }
 }
