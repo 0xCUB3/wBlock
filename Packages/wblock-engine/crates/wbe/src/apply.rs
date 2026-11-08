@@ -1740,6 +1740,8 @@ mod tests {
         assert!(json.contains("sub.example.com"));
         assert!(!json.contains("other.org"));
         assert!(!json.contains(".generic"));
+        // Site hides are the runtime's, narrowed to the list's sites.
+        assert_eq!(output.output.runtime, ["sub.example.com##.specific"]);
 
         // #899 reaches runtime rules too.
         let scoped = plan(

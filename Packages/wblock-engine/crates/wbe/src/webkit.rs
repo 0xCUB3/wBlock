@@ -236,7 +236,7 @@ mod tests {
 
     #[test]
     fn non_ascii_is_escaped_to_the_same_rules() {
-        let text = "пример.рф##.реклама\nexample.com##[title=\"😀\"]";
+        let text = "##.реклама\n##[title=\"😀\"]";
         let out = compile(
             &[ListInput { text, trusted: false }],
             &CompileOptions { safari: super::SafariVersion::new(18, 0) },
@@ -244,13 +244,6 @@ mod tests {
         let json = out.webkit.as_str();
         assert!(json.is_ascii(), "{json}");
         let rules: serde_json::Value = serde_json::from_str(json).unwrap();
-        let mut selectors: Vec<&str> = rules
-            .as_array()
-            .unwrap()
-            .iter()
-            .filter_map(|r| r["action"]["selector"].as_str())
-            .collect();
-        selectors.sort();
-        assert_eq!(selectors, [".реклама", "[title=\"😀\"]"]);
+        assert_eq!(rules[0]["action"]["selector"], ".реклама, [title=\"😀\"]");
     }
 }

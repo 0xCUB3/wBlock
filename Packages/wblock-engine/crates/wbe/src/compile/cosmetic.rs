@@ -3,8 +3,12 @@
 //! Model: uBO's cosmetic-filtering.js. A filter's key is its selector plus its
 //! `:matches-path()` argument. On a page, every exception applicable to the page
 //! removes its key from every hide applicable to the page, generic or specific.
-//! Exceptions are resolved here when each page they touch can be expressed
-//! natively. Otherwise every hide and exception with that key goes to `runtime`.
+//!
+//! Only generic hides (no site named) compile natively: a hide scoped to sites
+//! costs WebKit a rule to compile on every apply, and the wBlock Scripts
+//! extension applies it per page from the runtime engine instead, with the
+//! key's exceptions. When a key's exceptions cannot be expressed natively,
+//! every hide and exception of the key goes to `runtime`.
 
 use super::{CompileOptions, Stats, Tier, Tiered};
 use crate::ast::{CosmeticBody, CosmeticRule, DomainMatcher};
@@ -15,11 +19,16 @@ use std::collections::{BTreeMap, BTreeSet};
 /// (`MAX_SELECTORS_PER_RULE`).
 const GROUP_SIZE: usize = 250;
 
-/// Host part of a url-filter that matches any host.
-const ANY_HOST: &str = r"[^\/]+";
-
 /// A selector and the `:matches-path()` argument it is scoped to.
 type Key<'a> = (&'a str, Option<&'a str>);
+
+/// The hides and exceptions of one key, with whether Safari takes the selector.
+#[derive(Default)]
+struct Group<'a> {
+    native: bool,
+    hides: Vec<&'a CosmeticRule>,
+    exceptions: Vec<&'a CosmeticRule>,
+}
 
 pub(super) fn compile(
     rules: &[&CosmeticRule],
@@ -29,169 +38,66 @@ pub(super) fn compile(
     stats: &mut Stats,
 ) {
     let safari = opts.safari;
-    // Each rule's verdict and scope depend on the rule alone, so they are
-    // worked out in parallel; the rest is in rule order.
-    let decided = super::parallel_indices(rules.len(), |i| match &rules[i].body {
-        CosmeticBody::Hide(selector) => {
-            let verdict = verdict(selector, safari);
-            let scope = if verdict == Verdict::Native {
-                Scope::of(rules[i])
-            } else {
-                None
-            };
-            Some((verdict, scope))
-        }
+    // Each selector's verdict depends on it alone, so they are worked out in
+    // parallel; the rest is in rule order.
+    let verdicts = super::parallel_indices(rules.len(), |i| match &rules[i].body {
+        CosmeticBody::Hide(selector) => Some(verdict(selector, safari)),
         CosmeticBody::Procedural(_) | CosmeticBody::Style(_) => None,
     });
-    let mut hides: BTreeMap<Key, Vec<Entry>> = BTreeMap::new();
-    let mut exceptions: BTreeMap<Key, Vec<Entry>> = BTreeMap::new();
+    let mut groups: BTreeMap<Key, Group> = BTreeMap::new();
     let mut runtime_lines = BTreeSet::new();
-    for (rule, decided) in rules.iter().zip(decided) {
-        match &rule.body {
-            CosmeticBody::Procedural(_) | CosmeticBody::Style(_) => {
+    for (rule, verdict) in rules.iter().zip(verdicts) {
+        let (selector, verdict) = match (&rule.body, verdict) {
+            (CosmeticBody::Hide(selector), Some(verdict)) => (selector, verdict),
+            _ => {
                 runtime_lines.insert(rule.raw.as_str());
+                continue;
             }
-            CosmeticBody::Hide(selector) => match decided.expect("hide has a verdict") {
-                (Verdict::Invalid, _) => stats.drop("invalid cosmetic selector"),
-                (_, scope) => {
-                    let key = (selector.as_str(), rule.matches_path.as_deref());
-                    let map = if rule.exception {
-                        &mut exceptions
-                    } else {
-                        &mut hides
-                    };
-                    map.entry(key).or_default().push(Entry { rule, scope });
-                }
-            },
+        };
+        if verdict == Verdict::Invalid {
+            stats.drop("invalid cosmetic selector");
+            continue;
+        }
+        let group = groups.entry((selector.as_str(), rule.matches_path.as_deref())).or_default();
+        group.native = verdict == Verdict::Native;
+        if rule.exception {
+            group.exceptions.push(rule);
+        } else {
+            group.hides.push(rule);
         }
     }
 
-    let keys: Vec<&Key> = hides
-        .keys()
-        .chain(exceptions.keys())
-        .collect::<BTreeSet<&Key>>()
-        .into_iter()
-        .collect();
-    let resolved_all = super::parallel_indices(keys.len(), |i| {
-        let key = keys[i];
-        let hs = hides.get(key).map(Vec::as_slice).unwrap_or_default();
-        let es = exceptions.get(key).map(Vec::as_slice).unwrap_or_default();
-        resolve(hs, es)
-    });
-    let mut resolved: Vec<(&Key, Vec<(Tier, Trigger)>)> = Vec::new();
-    for (key, triggers) in keys.into_iter().zip(resolved_all) {
-        match triggers {
-            Some(triggers) => resolved.push((key, triggers)),
-            None => {
-                let hs = hides.get(key).map(Vec::as_slice).unwrap_or_default();
-                let es = exceptions.get(key).map(Vec::as_slice).unwrap_or_default();
-                for entry in hs.iter().chain(es) {
-                    runtime_lines.insert(entry.rule.raw.as_str());
-                }
-            }
+    // A specific copy of a generic hide goes to the runtime with the other
+    // specific hides: `$generichide` cancels only the generic one.
+    let mut native: BTreeMap<Trigger, BTreeSet<&str>> = BTreeMap::new();
+    for (key, group) in &groups {
+        let (triggers, to_runtime) = resolve(key.1, group);
+        for trigger in triggers {
+            native.entry(trigger).or_default().insert(key.0);
         }
+        runtime_lines.extend(to_runtime.into_iter().map(|r| r.raw.as_str()));
     }
-
-    // A specific copy of a generic hide is kept: `$generichide` cancels only
-    // the generic one.
-    let mut groups: BTreeMap<(Tier, &Trigger), BTreeSet<&str>> = BTreeMap::new();
-    for (key, triggers) in &resolved {
-        for (tier, trigger) in triggers {
-            groups.entry((*tier, trigger)).or_default().insert(key.0);
-        }
-    }
-    // Domain-scoped groups with the same selectors are one rule over the
-    // union of their domains.
-    let mut domains: BTreeMap<(Tier, Vec<&str>), Vec<String>> = BTreeMap::new();
-    let mut groups: Vec<((Tier, Trigger), Vec<&str>)> = groups
-        .into_iter()
-        .filter_map(|((tier, trigger), selectors)| {
-            let selectors = selectors.into_iter().collect();
-            match trigger {
-                Trigger::IfDomain(d) => {
-                    domains.entry((tier, selectors)).or_default().extend_from_slice(d);
-                    None
-                }
-                _ => Some(((tier, trigger.clone()), selectors)),
-            }
-        })
-        .collect();
-    groups.extend(domains.into_iter().map(|((tier, selectors), mut d)| {
-        d.sort();
-        d.dedup();
-        ((tier, Trigger::IfDomain(d)), selectors)
-    }));
-    groups.sort();
-    let emitted = super::parallel_indices(groups.len(), |g| {
-        let ((_, trigger), selectors) = &groups[g];
-        selectors
-            .chunks(GROUP_SIZE)
-            .map(|chunk| WkRule {
+    for (trigger, selectors) in native {
+        let selectors: Vec<&str> = selectors.into_iter().collect();
+        out.extend(selectors.chunks(GROUP_SIZE).map(|chunk| Tiered {
+            tier: Tier::GenericHide,
+            rule: WkRule {
                 trigger: trigger.to_trigger(),
                 action: WkAction::CssDisplayNone {
                     selector: chunk.join(", "),
                 },
-            })
-            .collect::<Vec<WkRule>>()
-    });
-    for (((tier, _), _), rules) in groups.iter().zip(emitted) {
-        out.extend(rules.into_iter().map(|rule| Tiered { tier: *tier, rule }));
+            },
+        }));
     }
 
     runtime.extend(runtime_lines.into_iter().map(str::to_string));
 }
 
-/// A hide or exception that reached the compiler. `scope: None` means the
-/// rule needs the runtime (regex domain, entity exclusion, or a selector Safari
-/// cannot take).
-struct Entry<'a> {
-    rule: &'a CosmeticRule,
-    scope: Option<Scope>,
-}
-
-/// Domain and path conditions of a rule, split by kind.
-#[derive(Clone, Default)]
-struct Scope {
-    hosts: Vec<String>,
-    entities: Vec<String>,
-    excludes: Vec<String>,
-    path: Option<String>,
-}
-
-impl Scope {
-    fn of(rule: &CosmeticRule) -> Option<Self> {
-        let mut scope = Scope {
-            path: rule.matches_path.clone(),
-            ..Self::default()
-        };
-        for matcher in &rule.domains.include {
-            match matcher {
-                DomainMatcher::Hostname(h) => scope.hosts.push(h.clone()),
-                DomainMatcher::Entity(e) => scope.entities.push(e.clone()),
-                DomainMatcher::Regex(_) => return None,
-            }
-        }
-        for matcher in &rule.domains.exclude {
-            match matcher {
-                DomainMatcher::Hostname(h) => scope.excludes.push(h.clone()),
-                _ => return None,
-            }
-        }
-        Some(scope)
-    }
-
-    fn is_generic(&self) -> bool {
-        self.hosts.is_empty() && self.entities.is_empty()
-    }
-}
-
-/// One Safari trigger. `Generic` and `Unless` apply to every page, so they
-/// are generic hides. The rest are specific.
+/// One Safari trigger of a generic hide.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 enum Trigger {
     Generic,
     Unless(Vec<String>),
-    IfDomain(Vec<String>),
     Url(String),
 }
 
@@ -204,7 +110,6 @@ impl Trigger {
         match self {
             Trigger::Generic => return trigger,
             Trigger::Unless(d) => trigger.unless_domain = Some(d.clone()),
-            Trigger::IfDomain(d) => trigger.if_domain = Some(d.clone()),
             Trigger::Url(r) => {
                 trigger.url_filter = r.clone();
                 trigger.url_filter_is_case_sensitive = Some(true);
@@ -217,132 +122,86 @@ impl Trigger {
     }
 }
 
-/// Resolves the hides and exceptions of one key. Returns the triggers the
-/// hides keep, or `None` when the key must go to the runtime.
-fn resolve(hides: &[Entry], exceptions: &[Entry]) -> Option<Vec<(Tier, Trigger)>> {
-    let mut excepted_hosts: Vec<&str> = Vec::new();
-    let mut global = false;
-    for exception in exceptions {
-        let scope = exception.scope.as_ref()?;
-        if !scope.entities.is_empty() || !scope.excludes.is_empty() {
-            return None;
-        }
-        if scope.hosts.is_empty() {
-            global = true;
-        }
-        excepted_hosts.extend(scope.hosts.iter().map(String::as_str));
+/// The hostnames of a domain list, or `None` if it has an entity or regex.
+fn hostnames(matchers: &[DomainMatcher]) -> Option<Vec<&str>> {
+    matchers
+        .iter()
+        .map(|m| match m {
+            DomainMatcher::Hostname(h) => Some(h.as_str()),
+            _ => None,
+        })
+        .collect()
+}
+
+/// Resolves the hides and exceptions of one key: the native triggers of its
+/// generic hides, and the rules that go to the runtime. The runtime gets the
+/// hides that name sites, and the key's exceptions with them so they lift
+/// those hides too.
+fn resolve<'a>(path: Option<&str>, group: &Group<'a>) -> (Vec<Trigger>, Vec<&'a CosmeticRule>) {
+    let everything = || (Vec::new(), group.hides.iter().chain(&group.exceptions).copied().collect());
+    if !group.native {
+        return everything();
     }
-    if global {
-        return Some(Vec::new());
+    let mut excepted: Vec<&str> = Vec::new();
+    for exception in &group.exceptions {
+        let Some(hosts) = hostnames(&exception.domains.include).filter(|_| exception.domains.exclude.is_empty()) else {
+            return everything();
+        };
+        if hosts.is_empty() {
+            // A generic exception lifts the key everywhere.
+            return (Vec::new(), Vec::new());
+        }
+        excepted.extend(hosts);
     }
     // uBO compiles a negated hostname of a hide as an exception on that
     // hostname, so it lifts every hide of the key there.
-    for hide in hides {
-        excepted_hosts.extend(hide.scope.as_ref()?.excludes.iter().map(String::as_str));
-    }
-
-    let mut triggers = Vec::new();
-    for hide in hides {
-        let mut scope = hide.scope.clone()?;
-        if scope.is_generic() {
-            scope.excludes = excepted_hosts.iter().map(|h| h.to_string()).collect();
-        } else {
-            scope.excludes.clear();
-            if !excepted_hosts.is_empty() {
-                if !scope.entities.is_empty() {
-                    return None;
-                }
-                let had_hosts = !scope.hosts.is_empty();
-                for host in &scope.hosts {
-                    if excepted_hosts.iter().any(|x| within(host, x)) {
-                        continue;
-                    }
-                    if excepted_hosts.iter().any(|x| within(x, host)) {
-                        // Pages under the excepted host would need an unless-domain
-                        // on a domain-specific trigger, which Safari cannot combine.
-                        return None;
-                    }
-                }
-                scope
-                    .hosts
-                    .retain(|host| !excepted_hosts.iter().any(|x| within(host, x)));
-                if had_hosts && scope.hosts.is_empty() {
-                    continue;
-                }
-            }
-        }
-        triggers.extend(scope_triggers(&scope)?);
-    }
-    Some(triggers)
-}
-
-/// `child` is `parent` or one of its subdomains.
-fn within(child: &str, parent: &str) -> bool {
-    child == parent || child.strip_suffix(parent).is_some_and(|p| p.ends_with('.'))
-}
-
-/// The triggers that express a scope natively, or `None` if Safari cannot.
-/// uBO matches entities and `:matches-path()` against each frame's own URL,
-/// so those go in the url-filter, which a document load tests against its own
-/// URL; `if-top-url` would follow the tab's page instead.
-fn scope_triggers(scope: &Scope) -> Option<Vec<(Tier, Trigger)>> {
-    let path = scope.path.as_deref();
-    if scope.is_generic() {
-        let trigger = match (path, scope.excludes.is_empty()) {
-            (None, true) => Trigger::Generic,
-            (None, false) => Trigger::Unless(domains(&scope.excludes)),
-            (Some(_), true) => Trigger::Url(url_regex(ANY_HOST, path)?),
-            (Some(_), false) => return None,
+    for hide in &group.hides {
+        let Some(hosts) = hostnames(&hide.domains.exclude) else {
+            return everything();
         };
-        return Some(vec![(Tier::GenericHide, trigger)]);
+        excepted.extend(hosts);
     }
-    let mut out = Vec::new();
-    if path.is_none() && !scope.hosts.is_empty() {
-        out.push((Tier::SpecificHide, Trigger::IfDomain(domains(&scope.hosts))));
-    } else {
-        for host in &scope.hosts {
-            out.push((Tier::SpecificHide, Trigger::Url(url_regex(&host_regex(host)?, path)?)));
-        }
+    let (generic, specific): (Vec<&CosmeticRule>, Vec<&CosmeticRule>) =
+        group.hides.iter().partition(|h| h.domains.include.is_empty());
+    let trigger = match (generic.is_empty(), path, excepted.is_empty()) {
+        (true, ..) => None,
+        (false, None, true) => Some(Trigger::Generic),
+        (false, None, false) => Some(Trigger::Unless(domains(&excepted))),
+        (false, Some(path), true) => match url_regex(path) {
+            Some(regex) => Some(Trigger::Url(regex)),
+            None => return everything(),
+        },
+        (false, Some(_), false) => return everything(),
+    };
+    let mut to_runtime = Vec::new();
+    if !specific.is_empty() {
+        to_runtime.extend(specific);
+        to_runtime.extend(&group.exceptions);
+        // The runtime needs the negations of the generic hides as exceptions.
+        to_runtime.extend(generic.iter().filter(|h| !h.domains.exclude.is_empty()));
     }
-    for entity in &scope.entities {
-        out.push((Tier::SpecificHide, Trigger::Url(url_regex(&entity_regex(entity)?, path)?)));
-    }
-    Some(out)
+    (trigger.into_iter().collect(), to_runtime)
 }
 
-fn domains(hosts: &[String]) -> Vec<String> {
+fn domains(hosts: &[&str]) -> Vec<String> {
     let mut out: Vec<String> = hosts.iter().map(|h| format!("*{h}")).collect();
     out.sort();
     out.dedup();
     out
 }
 
-/// Host part of a URL pattern matching `host` and its subdomains.
-fn host_regex(host: &str) -> Option<String> {
-    Some(format!(r"([^\/:]+\.)?{}", escape(host)?))
-}
-
-/// Host part matching `example.*`: the label, then a single-label suffix or
-/// `co.`/`com.` followed by one more label (`co.uk`, `com.au`). Longer public
-/// suffixes are not matched.
-fn entity_regex(entity: &str) -> Option<String> {
-    Some(format!(
-        r"([^\/:]+\.)?{}\.(com?\.)?[^\/:.]+",
-        escape(entity)?
-    ))
-}
-
-/// A url-filter for a host part, optionally with a `:matches-path()`
-/// argument. uBO tests the argument against `pathname + search`,
-/// case-sensitively and unanchored, so it must match after the host and
-/// before any fragment.
-fn url_regex(host: &str, path: Option<&str>) -> Option<String> {
-    let head = format!(r"^[^:]+:\/\/{host}");
-    let re = match path {
-        None => format!(r"{head}([:\/?#].*)?$"),
+/// A url-filter for a `:matches-path()` argument on any host. uBO tests the
+/// argument against `pathname + search`, case-sensitively and unanchored, so
+/// it must match after the host and before any fragment. uBO matches it
+/// against each frame's own URL, which is what a document load's url-filter
+/// tests; `if-top-url` would follow the tab's page instead.
+fn url_regex(path: &str) -> Option<String> {
+    let head = r"^[^:]+:\/\/[^\/]+";
+    let re = if path.starts_with('/') {
         // The argument may start at the pathname's leading slash.
-        Some(path) if path.starts_with('/') => format!(r"{head}(:[^\/#]*)?(\/[^#]*)?{}", plain_path(path)?),
-        Some(path) => format!(r"{head}(:[^\/#]*)?\/[^#]*{}", plain_path(path)?),
+        format!(r"{head}(:[^\/#]*)?(\/[^#]*)?{}", plain_path(path)?)
+    } else {
+        format!(r"{head}(:[^\/#]*)?\/[^#]*{}", plain_path(path)?)
     };
     super::regex::webkit_accepts(&re).then_some(re)
 }
@@ -367,19 +226,6 @@ fn plain_path(path: &str) -> Option<String> {
                 out.push('\\');
                 out.push(c);
             }
-            _ => return None,
-        }
-    }
-    Some(out)
-}
-
-/// Escapes a hostname or entity label for a url-filter regex.
-fn escape(label: &str) -> Option<String> {
-    let mut out = String::new();
-    for c in label.chars() {
-        match c {
-            c if c.is_ascii_alphanumeric() || c == '-' => out.push(c),
-            '.' => out.push_str(r"\."),
             _ => return None,
         }
     }
@@ -805,43 +651,38 @@ mod tests {
     }
 
     #[test]
-    fn domain_hide_uses_if_domain_with_subdomains() {
-        assert_eq!(
-            json(&[hide(".ad").on("example.com")]),
-            r#"[{"trigger":{"url-filter":".*","resource-type":["document"],"if-domain":["*example.com"]},"action":{"type":"css-display-none","selector":".ad"}}]"#
-        );
-    }
-
-    #[test]
-    fn same_domain_set_shares_one_rule() {
-        assert_eq!(
-            json(&[hide(".b").on("example.com"), hide(".a").on("example.com")]),
-            r#"[{"trigger":{"url-filter":".*","resource-type":["document"],"if-domain":["*example.com"]},"action":{"type":"css-display-none","selector":".a, .b"}}]"#
-        );
-    }
-
-    #[test]
-    fn domains_with_the_same_selectors_share_one_rule() {
-        assert_eq!(
-            json(&[
+    fn site_hides_go_to_runtime() {
+        assert_runtime(
+            &[
                 hide(".a").on("example.com"),
-                hide(".a").on("example.org"),
-                hide(".a").on("example.net"),
-                hide(".b").on("example.net"),
-            ]),
-            concat!(
-                r#"[{"trigger":{"url-filter":".*","resource-type":["document"],"if-domain":["*example.com","*example.org"]},"action":{"type":"css-display-none","selector":".a"}},"#,
-                r#"{"trigger":{"url-filter":".*","resource-type":["document"],"if-domain":["*example.net"]},"action":{"type":"css-display-none","selector":".a, .b"}}]"#
-            )
+                hide(".b").on("example.com").on("example.org"),
+                hide(".c").on("example.*"),
+                hide(".d").on("example.com").path("news"),
+            ],
+            &["example.*##.c", "example.com##.a", "example.com##.d", "example.com,example.org##.b"],
         );
     }
 
     #[test]
-    fn multiple_include_domains_share_if_domain_list() {
-        assert_eq!(
-            json(&[hide(".a").on("example.org").on("example.com")]),
-            r#"[{"trigger":{"url-filter":".*","resource-type":["document"],"if-domain":["*example.com","*example.org"]},"action":{"type":"css-display-none","selector":".a"}}]"#
+    fn site_hide_takes_the_exceptions_of_its_key_along() {
+        assert_runtime(
+            &[
+                hide(".a").on("example.com"),
+                exc(".a").on("sub.example.com"),
+                exc(".b").on("example.com"),
+            ],
+            &["example.com##.a", "sub.example.com#@#.a"],
         );
+    }
+
+    #[test]
+    fn generic_hide_stays_native_beside_site_copies() {
+        let (out, runtime) = run(&[hide(".a"), hide(".a").on("x.com"), exc(".a").on("y.com")]);
+        assert_eq!(
+            out,
+            r#"[{"trigger":{"url-filter":".*","resource-type":["document"],"unless-domain":["*y.com"]},"action":{"type":"css-display-none","selector":".a"}}]"#
+        );
+        assert_eq!(runtime, ["x.com##.a", "y.com#@#.a"]);
     }
 
     #[test]
@@ -857,17 +698,6 @@ mod tests {
         assert_runtime(
             &[hide(".a").on("example.com").off("sub.example.com")],
             &["example.com,~sub.example.com##.a"],
-        );
-    }
-
-    #[test]
-    fn entity_hide_matches_the_frame_url() {
-        assert_eq!(
-            json(&[hide(".a").on("example.*")]),
-            concat!(
-                r#"[{"trigger":{"url-filter":"^[^:]+:\\/\\/([^\\/:]+\\.)?example\\.(com?\\.)?[^\\/:.]+([:\\/?#].*)?$","url-filter-is-case-sensitive":true,"resource-type":["document"]},"#,
-                r#""action":{"type":"css-display-none","selector":".a"}}]"#
-            )
         );
     }
 
@@ -982,7 +812,7 @@ mod tests {
 
     #[test]
     fn generic_exception_removes_specific_hide_too() {
-        assert_eq!(json(&[hide(".a").on("example.com"), exc(".a")]), "[]");
+        assert_runtime(&[hide(".a").on("example.com"), exc(".a")], &[]);
     }
 
     #[test]
@@ -998,46 +828,6 @@ mod tests {
         assert_eq!(
             json(&[hide(".a").off("x.org"), exc(".a").on("example.com")]),
             r#"[{"trigger":{"url-filter":".*","resource-type":["document"],"unless-domain":["*example.com","*x.org"]},"action":{"type":"css-display-none","selector":".a"}}]"#
-        );
-    }
-
-    #[test]
-    fn domain_exception_removes_same_domain_specific_hide() {
-        assert_eq!(
-            json(&[hide(".a").on("example.com"), exc(".a").on("example.com")]),
-            "[]"
-        );
-    }
-
-    #[test]
-    fn domain_exception_removes_subdomain_specific_hide() {
-        assert_eq!(
-            json(&[
-                hide(".a").on("sub.example.com"),
-                exc(".a").on("example.com")
-            ]),
-            "[]"
-        );
-    }
-
-    #[test]
-    fn domain_exception_keeps_unrelated_specific_hide() {
-        assert_eq!(
-            json(&[hide(".a").on("example.org"), exc(".a").on("example.com")]),
-            json(&[hide(".a").on("example.org")])
-        );
-    }
-
-    #[test]
-    fn exception_for_parent_of_excepted_host_goes_to_runtime() {
-        // example.com keeps .a, sub.example.com must not get it. Safari cannot
-        // express that without if-domain plus unless-domain.
-        assert_runtime(
-            &[
-                hide(".a").on("example.com"),
-                exc(".a").on("sub.example.com"),
-            ],
-            &["example.com##.a", "sub.example.com#@#.a"],
         );
     }
 
@@ -1064,6 +854,10 @@ mod tests {
             &[hide(".a").on("example.com").off("sub.example.com"), hide(".a").on("example.com")],
             &["example.com##.a", "example.com,~sub.example.com##.a"],
         );
+        // The runtime's copy on bing.com needs the generic hide's negation.
+        let (out, runtime) = run(&[hide(".a").off("bing.com"), hide(".a").on("bing.com")]);
+        assert_eq!(out, json(&[hide(".a"), exc(".a").on("bing.com")]));
+        assert_eq!(runtime, ["bing.com##.a", "~bing.com##.a"]);
     }
 
     #[test]
@@ -1101,33 +895,11 @@ mod tests {
 
     #[test]
     fn specific_copy_of_unconditional_hide_survives_generichide() {
-        // `$generichide` cancels the generic `.a` on example.com, so the
-        // specific copy must stay to hide it there.
-        assert_eq!(
-            json(&[hide(".a"), hide(".a").on("example.com")]),
-            concat!(
-                r#"[{"trigger":{"url-filter":".*"},"action":{"type":"css-display-none","selector":".a"}},"#,
-                r#"{"trigger":{"url-filter":".*","resource-type":["document"],"if-domain":["*example.com"]},"action":{"type":"css-display-none","selector":".a"}}]"#
-            )
-        );
-    }
-
-    #[test]
-    fn generic_and_specific_are_in_separate_tiers() {
-        let rules = [hide(".a").on("example.com"), hide(".b")];
-        let rules: Vec<CosmeticRule> = rules.iter().map(R::build).collect();
-        let mut out = Vec::new();
-        let mut runtime = Vec::new();
-        let mut stats = Stats::default();
-        compile(
-            &rules.iter().collect::<Vec<_>>(),
-            &safari(17, 0),
-            &mut out,
-            &mut runtime,
-            &mut stats,
-        );
-        let tiers: Vec<Tier> = out.iter().map(|t| t.tier).collect();
-        assert_eq!(tiers, vec![Tier::GenericHide, Tier::SpecificHide]);
+        // `$generichide` cancels the native generic `.a` on example.com, so
+        // the runtime's specific copy hides it there.
+        let (out, runtime) = run(&[hide(".a"), hide(".a").on("example.com")]);
+        assert_eq!(out, json(&[hide(".a")]));
+        assert_eq!(runtime, ["example.com##.a"]);
     }
 
     #[test]
@@ -1153,17 +925,6 @@ mod tests {
             json(&[hide(".a").path("/news")]),
             concat!(
                 r#"[{"trigger":{"url-filter":"^[^:]+:\\/\\/[^\\/]+(:[^\\/#]*)?(\\/[^#]*)?\\/news","url-filter-is-case-sensitive":true,"resource-type":["document"]},"#,
-                r#""action":{"type":"css-display-none","selector":".a"}}]"#
-            )
-        );
-    }
-
-    #[test]
-    fn matches_path_with_domain_is_one_url_filter() {
-        assert_eq!(
-            json(&[hide(".a").on("example.com").path("news")]),
-            concat!(
-                r#"[{"trigger":{"url-filter":"^[^:]+:\\/\\/([^\\/:]+\\.)?example\\.com(:[^\\/#]*)?\\/[^#]*news","url-filter-is-case-sensitive":true,"resource-type":["document"]},"#,
                 r#""action":{"type":"css-display-none","selector":".a"}}]"#
             )
         );
@@ -1229,29 +990,6 @@ mod tests {
     #[test]
     fn exception_without_hide_is_a_no_op() {
         assert_eq!(json(&[exc(".a").on("example.com")]), "[]");
-    }
-
-    #[test]
-    fn entity_and_host_share_selector_in_both_triggers() {
-        assert_eq!(
-            json(&[hide(".a").on("example.com").on("example.*")]),
-            concat!(
-                r#"[{"trigger":{"url-filter":".*","resource-type":["document"],"if-domain":["*example.com"]},"action":{"type":"css-display-none","selector":".a"}},"#,
-                r#"{"trigger":{"url-filter":"^[^:]+:\\/\\/([^\\/:]+\\.)?example\\.(com?\\.)?[^\\/:.]+([:\\/?#].*)?$","url-filter-is-case-sensitive":true,"resource-type":["document"]},"action":{"type":"css-display-none","selector":".a"}}]"#
-            )
-        );
-    }
-
-    #[test]
-    fn exception_removes_one_selector_only() {
-        assert_eq!(
-            json(&[
-                hide(".a").on("example.com"),
-                hide(".b").on("example.com"),
-                exc(".a").on("example.com")
-            ]),
-            json(&[hide(".b").on("example.com")])
-        );
     }
 
     #[test]
