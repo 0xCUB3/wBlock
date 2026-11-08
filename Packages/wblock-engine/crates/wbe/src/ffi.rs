@@ -7,12 +7,10 @@ use crate::apply::{Extra, Plan, PlanRequest};
 use crate::ast::SourceRef;
 use crate::runtime::Engine;
 use std::cell::RefCell;
-use std::ffi::{c_char, c_int, CStr, CString};
-use std::fs::File;
-use std::mem::ManuallyDrop;
-use std::os::fd::FromRawFd;
+use std::ffi::{c_char, CStr, CString};
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::ptr;
+use std::slice;
 
 pub struct WbeCompileResult {
     webkit: CString,
@@ -241,22 +239,21 @@ pub unsafe extern "C" fn wbe_bytes_free(bytes: *mut u8, len: usize) {
     }
 }
 
-/// Loads the engine serialized in the open file `fd` after `offset` header
-/// bytes (`Engine::map`). The engine keeps its own mapping; `fd` stays the
-/// caller's.
-///
 /// # Safety
-/// `fd` must be an open file descriptor.
+/// `bytes` must point to `len` readable bytes.
 #[no_mangle]
-pub unsafe extern "C" fn wbe_engine_map(fd: c_int, offset: usize) -> *mut Engine {
+pub unsafe extern "C" fn wbe_engine_open(bytes: *const u8, len: usize) -> *mut Engine {
     guard(ptr::null_mut(), || {
-        let file = ManuallyDrop::new(File::from_raw_fd(fd));
-        Ok(Box::into_raw(Box::new(Engine::map(&file, offset)?)))
+        if bytes.is_null() {
+            return Err("bytes is NULL".into());
+        }
+        let bytes = slice::from_raw_parts(bytes, len);
+        Ok(Box::into_raw(Box::new(Engine::deserialize(bytes)?)))
     })
 }
 
 /// # Safety
-/// `engine` must be NULL or a live handle from `wbe_engine_map`; `url` a
+/// `engine` must be NULL or a live handle from `wbe_engine_open`; `url` a
 /// valid NUL-terminated string. Free the result with `wbe_string_free`.
 #[no_mangle]
 pub unsafe extern "C" fn wbe_engine_lookup(
@@ -272,7 +269,7 @@ pub unsafe extern "C" fn wbe_engine_lookup(
 }
 
 /// # Safety
-/// `engine` must be NULL or a live handle from `wbe_engine_map`, not yet freed.
+/// `engine` must be NULL or a live handle from `wbe_engine_open`, not yet freed.
 #[no_mangle]
 pub unsafe extern "C" fn wbe_engine_free(engine: *mut Engine) {
     if !engine.is_null() {
@@ -351,28 +348,16 @@ mod tests {
         let rules = c(rules);
         let (mut out, mut len) = (ptr::null_mut(), 0);
         assert!(wbe_engine_build(rules.as_ptr(), &mut out, &mut len));
-        let bytes = std::slice::from_raw_parts(out, len).to_vec();
+        let bytes = slice::from_raw_parts(out, len).to_vec();
         wbe_bytes_free(out, len);
         bytes
-    }
-
-    /// Maps `bytes` after a header from a file that is gone by the time the
-    /// engine is used, so the engine must hold its own mapping.
-    unsafe fn map(bytes: &[u8]) -> *mut Engine {
-        static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
-        let n = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        let path = std::env::temp_dir().join(format!("wbe-ffi-{}-{n}", std::process::id()));
-        std::fs::write(&path, [b"header".as_slice(), bytes].concat()).unwrap();
-        let file = File::open(&path).unwrap();
-        std::fs::remove_file(&path).unwrap();
-        wbe_engine_map(std::os::fd::AsRawFd::as_raw_fd(&file), 6)
     }
 
     #[test]
     fn engine_round_trip_through_c_abi() {
         unsafe {
             let bytes = build_bytes("example.com##.ad\nexample.com##+js(set-constant, a, true)");
-            let engine = map(&bytes);
+            let engine = wbe_engine_open(bytes.as_ptr(), bytes.len());
             assert!(!engine.is_null(), "{}", last_error());
             let url = c("https://example.com/");
             let json = take(wbe_engine_lookup(engine, url.as_ptr()));
@@ -393,15 +378,13 @@ mod tests {
             assert!(last_error().contains("runtime_text is NULL"));
             assert!(out.is_null());
 
-            assert!(wbe_engine_map(-1, 0).is_null());
-            assert!(map(&[]).is_null());
-            assert!(last_error().contains("engine"));
-            assert!(map(&[1u8, 2, 3]).is_null());
+            assert!(wbe_engine_open(ptr::null(), 0).is_null());
+            assert!(wbe_engine_open([1u8, 2, 3].as_ptr(), 3).is_null());
             assert!(last_error().contains("engine"));
 
             assert!(wbe_engine_lookup(ptr::null(), c("https://a/").as_ptr()).is_null());
             let empty = build_bytes("");
-            let engine = map(&empty);
+            let engine = wbe_engine_open(empty.as_ptr(), empty.len());
             assert!(wbe_engine_lookup(engine, ptr::null()).is_null());
             assert!(last_error().contains("url is NULL"));
             wbe_engine_free(engine);

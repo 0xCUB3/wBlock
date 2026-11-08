@@ -18,9 +18,10 @@ enum FilterEngineStore {
     /// time as 8 little-endian bytes; the engine follows.
     private static let headerLength = 72
 
-    private struct Header {
+    private struct Snapshot {
         let fingerprint: String
         let timestamp: Int64
+        let engine: Data
     }
 
     enum PublishError: Error {
@@ -54,7 +55,7 @@ enum FilterEngineStore {
         // the fingerprint as well as the rules.
         let fingerprint = SHA256.hash(data: Data((SafariVersionDetection.compilerIdentity + "\n" + runtimeRules).utf8))
             .map { String(format: "%02x", $0) }.joined()
-        if readHeader(in: directory)?.fingerprint == fingerprint {
+        if readSnapshot(in: directory)?.fingerprint == fingerprint {
             return
         }
         let engine = try measure(label: "Building filter engine") {
@@ -63,7 +64,7 @@ enum FilterEngineStore {
         let published = try withLock(in: directory) {
             let latest = try? String(contentsOf: directory.appendingPathComponent(latestRequestFileName), encoding: .utf8)
             guard latest == request else { return false }
-            let timestamp = max(Int64(Date().timeIntervalSince1970 * 1000), (readHeader(in: directory)?.timestamp ?? 0) + 1)
+            let timestamp = max(Int64(Date().timeIntervalSince1970 * 1000), (readSnapshot(in: directory)?.timestamp ?? 0) + 1)
             var file = Data(fingerprint.utf8)
             withUnsafeBytes(of: timestamp.littleEndian) { file.append(contentsOf: $0) }
             file.append(engine)
@@ -79,7 +80,7 @@ enum FilterEngineStore {
             forSecurityApplicationGroupIdentifier: groupIdentifier
         ) else { return false }
         let directory = containerURL.appendingPathComponent(directoryName, isDirectory: true)
-        return readHeader(in: directory) != nil
+        return readSnapshot(in: directory) != nil
     }
 
     /// The per-page payload for `url` (see Packages/wblock-engine/docs/BRIEF.md),
@@ -91,16 +92,13 @@ enum FilterEngineStore {
             ) else { throw PublishError.containerNotFound }
             let directory = containerURL.appendingPathComponent(directoryName, isDirectory: true)
             // Each publish atomically replaces the file, so its file number
-            // changes; the engine is loaded only then, from the same open file
-            // as the header.
-            guard let file = try? FileHandle(forReadingFrom: directory.appendingPathComponent(engineFileName))
+            // changes; the snapshot is read and decoded only then.
+            let file = directory.appendingPathComponent(engineFileName)
+            guard let fileNumber = (try? FileManager.default.attributesOfItem(atPath: file.path))?[.systemFileNumber] as? Int
             else { return nil }
-            defer { try? file.close() }
-            var info = stat()
-            guard fstat(file.fileDescriptor, &info) == 0 else { return nil }
-            if cached?.fileNumber != info.st_ino {
-                guard let header = readHeader(file) else { return nil }
-                cached = (info.st_ino, header.timestamp, try WBEngine.Engine(file: file, offset: headerLength))
+            if cached?.fileNumber != fileNumber {
+                guard let snapshot = readSnapshot(in: directory) else { return nil }
+                cached = (fileNumber, snapshot.timestamp, try WBEngine.Engine(data: snapshot.engine))
             }
             guard let (_, timestamp, engine) = cached,
                   var payload = try JSONSerialization.jsonObject(with: engine.lookup(url: url.absoluteString)) as? [String: Any]
@@ -112,25 +110,19 @@ enum FilterEngineStore {
     }
 
     /// The engine the extension process last loaded. Guarded by WebExtensionGate.
-    /// The engine keeps a read-only mapping of its file, so its tables cost no
-    /// memory of their own. Publishes replace the file by rename, so a mapping
+    nonisolated(unsafe) private static var cached: (fileNumber: Int, timestamp: Int64, engine: WBEngine.Engine)?
+
+    /// Maps the file, so a header read touches one page and the engine is handed
+    /// on without a copy. Publishes replace the file by rename, so a mapping
     /// stays valid while it is in use.
-    nonisolated(unsafe) private static var cached: (fileNumber: UInt64, timestamp: Int64, engine: WBEngine.Engine)?
-
-    private static func readHeader(in directory: URL) -> Header? {
-        guard let file = try? FileHandle(forReadingFrom: directory.appendingPathComponent(engineFileName))
-        else { return nil }
-        defer { try? file.close() }
-        return readHeader(file)
-    }
-
-    private static func readHeader(_ file: FileHandle) -> Header? {
-        guard let data = try? file.read(upToCount: headerLength), data.count == headerLength,
+    private static func readSnapshot(in directory: URL) -> Snapshot? {
+        guard let data = try? Data(contentsOf: directory.appendingPathComponent(engineFileName), options: .alwaysMapped),
+              data.count > headerLength,
               let fingerprint = String(data: data.prefix(64), encoding: .utf8),
               fingerprint.allSatisfy(\.isHexDigit)
         else { return nil }
-        let timestamp = data.dropFirst(64).withUnsafeBytes { $0.loadUnaligned(as: Int64.self) }
-        return Header(fingerprint: fingerprint, timestamp: Int64(littleEndian: timestamp))
+        let timestamp = data.dropFirst(64).prefix(8).withUnsafeBytes { $0.loadUnaligned(as: Int64.self) }
+        return Snapshot(fingerprint: fingerprint, timestamp: Int64(littleEndian: timestamp), engine: data.dropFirst(headerLength))
     }
 
     private static func withLock<T>(in directory: URL, _ body: () throws -> T) throws -> T {
