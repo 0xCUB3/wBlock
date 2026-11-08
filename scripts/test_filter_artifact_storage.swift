@@ -46,39 +46,23 @@ struct FilterArtifactStorageTests {
         let custom = try make("custom-\(UUID().uuidString).txt", old: true)
         let settings = try make("ProtobufData", folder: true)
         let unknown = try make("temp_notes.txt", old: true)
-        let engine = try make(".webext", folder: true)
-        let scratch = try FilterArtifactStorage.scratchDirectory(in: root)
-        expect(try excluded(scratch))
+        let scratch = root.appendingPathComponent("Library/Caches/FilterCompilation")
+        try manager.createDirectory(at: scratch, withIntermediateDirectories: true)
         func inputName() -> String { "temp_skula.wBlock.wBlock-Ads-iOS_\(UUID().uuidString).txt" }
-        let staleInput = try make(inputName(), old: true)
-        let recentInput = try make(inputName())
-        let staleEngine = try make("engine-rebuild-\(UUID().uuidString)", in: engine, old: true, folder: true)
-        let recentEngine = try make("engine-rebuild-\(UUID().uuidString)", in: scratch, folder: true)
-        let staleScratch = try make(inputName(), in: scratch, old: true)
-        let malformed = try make("engine-rebuild-not-a-uuid", in: engine, old: true, folder: true)
+        let input = try make(inputName())
+        let scratchInput = try make(inputName(), in: scratch)
+        let outside = try make("outside", folder: true)
+        let outsideInput = try make(inputName(), in: outside)
         let symlink = root.appendingPathComponent(inputName())
-        try manager.createSymbolicLink(at: symlink, withDestinationURL: custom)
-        FilterArtifactStorage.maintain(container: root, generatedFilenames: [legacy.lastPathComponent, "../outside"], now: now)
-        for url in [legacy, engine, recentInput] { expect(try excluded(url)) }
+        try manager.createSymbolicLink(at: symlink, withDestinationURL: outsideInput)
+        FilterArtifactStorage.maintain(container: root, generatedFilenames: [legacy.lastPathComponent, "../outside"])
+        expect(try excluded(legacy))
         for url in [root, custom, settings, unknown] {
             expect(try !excluded(url), "authoritative and unknown data must remain backup eligible")
         }
-        for url in [staleInput, staleEngine, staleScratch] { expect(!manager.fileExists(atPath: url.path), url.path) }
-        for url in [recentInput, recentEngine, custom, unknown, malformed, symlink] { expect(manager.fileExists(atPath: url.path)) }
-        // Maintenance is repeatable and must not follow a linked engine directory.
-        try manager.removeItem(at: engine)
-        let outside = try make("outside", folder: true)
-        let outsideInput = try make(inputName(), in: outside, old: true)
-        try manager.createSymbolicLink(at: engine, withDestinationURL: outside)
-        FilterArtifactStorage.maintain(container: root, generatedFilenames: [], now: now)
-        expect(manager.fileExists(atPath: outsideInput.path))
-        expect(try !excluded(outsideInput))
-        try manager.removeItem(at: scratch)
-        try manager.createSymbolicLink(at: scratch, withDestinationURL: outside)
-        do {
-            _ = try FilterArtifactStorage.scratchDirectory(in: root)
-            fatalError("scratch writers must not follow symlinks")
-        } catch is CocoaError {}
-        print("PASS filter artifact backup flags, atomic rewrites, migration, stale cleanup, source preservation, symlink safety")
+        for url in [input, scratch, scratchInput, symlink] { expect(!manager.fileExists(atPath: url.path), url.path) }
+        for url in [custom, unknown, outsideInput] { expect(manager.fileExists(atPath: url.path)) }
+        FilterArtifactStorage.maintain(container: root, generatedFilenames: [])
+        print("PASS filter artifact backup flags, atomic rewrites, migration, legacy cleanup, source preservation, symlink safety, block sharing")
     }
 }
