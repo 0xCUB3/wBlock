@@ -724,10 +724,10 @@ impl Plan {
         })
     }
 
-    /// #925: the largest list of this blocker with excluded sites (and no
-    /// #681 duplicates) compiles its plain blocks unconditioned, then one
-    /// ignore rule per excluded site. Only one list per blocker can: a second
-    /// ignore would cancel the first list's blocks.
+    /// #925: the largest list of this blocker with excluded sites, plain
+    /// blocks, and no #681 duplicates compiles its plain blocks unconditioned,
+    /// then one ignore rule per excluded site. Only one list per blocker can: a
+    /// second ignore would cancel the first list's blocks.
     fn segment_list(&self, target: usize) -> Option<usize> {
         self.targets[target]
             .lists
@@ -739,6 +739,7 @@ impl Plan {
                     && scope.only.is_none()
                     && !self.parsed[l].has_affinity
                     && self.duplicates[target][l].is_empty()
+                    && self.parsed[l].records().any(|p| p.plain && self.keeps(target, l, p))
             })
             .max_by_key(|&l| self.parsed[l].count())
     }
@@ -1708,6 +1709,23 @@ mod tests {
             .unwrap()
             .contains("other")));
         assert_eq!(plan.compile_target(0, &[]).admitted["excluded"], 2);
+    }
+
+    /// A list without plain blocks has nothing for an ignore rule to lift, so
+    /// the segment goes to a list that has some.
+    #[test]
+    fn segment_needs_plain_blocks() {
+        let plan = plan(
+            json!([
+                {"id":"big", "text":"||a.net^$badfilter\n||b.net^$popup\n||c.net^$domain=x.org", "scope":{"exclude":["skip.org"]}},
+                {"id":"small", "text":"||d.net^", "scope":{"exclude":["other.org"]}}
+            ]),
+            json!([{"slot":1,"lists":[{"list":0},{"list":1}]}]),
+            json!({}),
+        );
+        let ignores: Vec<Value> = rules(&plan, 0).into_iter().filter(|r| r["action"]["type"] == "ignore-previous-rules").collect();
+        assert!(!ignores.is_empty());
+        assert!(ignores.iter().all(|r| r.to_string().contains("other.org")), "{ignores:?}");
     }
 
     #[test]
