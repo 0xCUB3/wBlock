@@ -517,10 +517,11 @@ fn party(p: Party, exception: bool) -> Result<Option<WkLoadType>, String> {
         Party::Any => None,
         Party::First => Some(WkLoadType::FirstParty),
         Party::Third => Some(WkLoadType::ThirdParty),
-        // Strict parties are subsets of first/third, so an exception may use
-        // the wider one. A block cannot.
+        // An exception may take a wider party, a block cannot. Same hostname
+        // is within first-party; a different hostname can be first- or
+        // third-party, so `$strict3p` takes no load-type.
         Party::StrictFirst if exception => Some(WkLoadType::FirstParty),
-        Party::StrictThird if exception => Some(WkLoadType::ThirdParty),
+        Party::StrictThird if exception => None,
         Party::StrictFirst | Party::StrictThird => return Err("dnr:strict-party".into()),
     })
 }
@@ -1320,7 +1321,7 @@ mod tests {
         check(
             std::slice::from_ref(&widened),
             V15,
-            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[/:?#]","resource-type":["script"],"load-type":["third-party"]},"action":{"type":"ignore-previous-rules"}}]"#,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[/:?#]","resource-type":["script"]},"action":{"type":"ignore-previous-rules"}}]"#,
         );
     }
 
