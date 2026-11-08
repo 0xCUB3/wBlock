@@ -95,16 +95,29 @@ extension RemoveParamDNRRuleGenerator {
     }
 
     /// `host` of a `||host…` pattern.
-    static func anchoredHost(_ pattern: String) -> String? {
+    static func anchoredHost<S: StringProtocol>(_ pattern: S) -> String? where S.SubSequence == Substring {
         guard pattern.hasPrefix("||") else { return nil }
         let rest = pattern.dropFirst(2)
-        let end = rest.firstIndex { "^/$|?*:".contains($0) } ?? rest.endIndex
-        let host = rest[..<end].lowercased()
+        let host: String
+        if rest.utf8.allSatisfy({ $0 < 0x80 }) {
+            // ASCII bytes are whole characters, so the bytes give the same answer quickly.
+            let end = rest.utf8.firstIndex { "^/$|?*:".utf8.contains($0) } ?? rest.endIndex
+            host = RuleText.lowercased(rest[..<end])
+        } else {
+            let end = rest.firstIndex { "^/$|?*:".contains($0) } ?? rest.endIndex
+            host = rest[..<end].lowercased()
+        }
         return host.contains(".") ? host : nil
     }
 
     private static func isSameOrParent(_ parent: String, of host: String) -> Bool {
         host == parent || host.hasSuffix("." + parent)
+    }
+
+    /// Every `parent` for which `isSameOrParent(parent, of: host)` holds:
+    /// `host` and what follows each of its dots.
+    private static func selfAndParents(of host: String) -> [Substring] {
+        [host[...]] + host.indices.filter { host[$0] == "." }.map { host[host.index(after: $0)...] }
     }
 
     /// Lines one list needs for redirect resolution: redirect directives,
@@ -122,16 +135,17 @@ extension RemoveParamDNRRuleGenerator {
             }
         }
         guard !conditionalHosts.isEmpty else { return result }
-        for rawLine in contents.split(whereSeparator: \.isNewline) {
-            let line = rawLine.trimmingCharacters(in: .whitespaces)
-            guard line.hasPrefix("||") || line.hasPrefix("@@||"), !line.contains("redirect") else { continue }
+        // Set lookups instead of comparing each line's host with every conditional host.
+        let conditionalParents = Set(conditionalHosts.flatMap(selfAndParents))
+        RuleText.forEachLine(contents) { rawLine in
+            let line = RuleText.trimmed(rawLine)
+            guard line.hasPrefix("||") || line.hasPrefix("@@||"), !RuleText.contains(line, "redirect") else { return }
             let isException = line.hasPrefix("@@")
-            guard let host = anchoredHost(isException ? String(line.dropFirst(2)) : line) else { continue }
-            let related = conditionalHosts.contains {
-                isSameOrParent(host, of: $0) || (isException && isSameOrParent($0, of: host))
-            }
+            guard let host = anchoredHost(isException ? line.dropFirst(2) : line) else { return }
+            let related = conditionalParents.contains(host[...])
+                || isException && selfAndParents(of: host).contains { conditionalHosts.contains(String($0)) }
             if related {
-                result.append(line)
+                result.append(contentsOf: line)
                 result.append("\n")
             }
         }
@@ -183,6 +197,8 @@ extension RemoveParamDNRRuleGenerator {
             otherLines.append(plain)
         }
 
+        // Every exception is checked against every directive, so each is read once.
+        let prepared = exceptions.map(RedirectException.init)
         var rules: [DeclarativeRule] = []
         var seen = Set<Data>()
         var skipped = 0
@@ -193,9 +209,16 @@ extension RemoveParamDNRRuleGenerator {
                 guard !line.isConditional || isBlockedWholeHost(line, in: otherLines[index]),
                       let token = line.token,
                       let path = RedirectResourceCatalog.paths[token],
-                      var condition = redirectCondition(for: line, path: path),
-                      exceptions.allSatisfy({ apply($0, to: line, condition: &condition) })
+                      var condition = redirectCondition(for: line, path: path)
                 else {
+                    skipped += 1
+                    continue
+                }
+                let lowered = line.pattern.lowercased()
+                let host = anchoredHost(line.pattern)
+                guard prepared.allSatisfy({
+                    apply($0, toPattern: lowered, host: host, path: path, condition: &condition)
+                }) else {
                     skipped += 1
                     continue
                 }
@@ -214,34 +237,48 @@ extension RemoveParamDNRRuleGenerator {
         return (rules, skipped)
     }
 
+    /// A redirect exception, read once: its resource, lowercased pattern,
+    /// anchored host, and `domain=` scope.
+    private struct RedirectException {
+        let namesResource: Bool
+        let path: String?
+        let pattern: String
+        let host: String?
+        /// Nil unless the scope is one `domain=` list of supported domains.
+        let excepted: [String]?
+
+        init(_ line: RedirectLine) {
+            namesResource = line.token != nil
+            path = line.token.flatMap { RedirectResourceCatalog.paths[$0] }
+            let trimmed = line.pattern.trimmingCharacters(in: .whitespaces)
+            pattern = trimmed.lowercased()
+            host = anchoredHost(trimmed)
+            let scopes = line.options.filter { $0.name == "domain" || $0.name == "from" }
+            let domains = scopes.count == 1 ? scopes[0].value.map {
+                $0.split(separator: "|", omittingEmptySubsequences: false)
+                    .map { $0.trimmingCharacters(in: .whitespaces).lowercased() }
+            } : nil
+            excepted = domains?.allSatisfy(isSupportedDomain) == true ? domains : nil
+        }
+    }
+
     /// Applies a redirect exception to a directive's condition. Errs toward
     /// suppressing: it applies when it names the same or any resource and
-    /// shares the pattern or anchored host, or has no pattern. A plain
-    /// `domain=` scope is subtracted from the condition; any other scope, or
-    /// one the condition cannot exclude exactly, drops the directive.
+    /// shares the pattern (`lowered`) or anchored host, or has no pattern. A
+    /// plain `domain=` scope is subtracted from the condition; any other scope,
+    /// or one the condition cannot exclude exactly, drops the directive.
     /// Returns false when the directive must be dropped.
     private static func apply(
-        _ exception: RedirectLine, to line: RedirectLine, condition: inout RuleCondition
+        _ exception: RedirectException, toPattern lowered: String, host: String?, path: String,
+        condition: inout RuleCondition
     ) -> Bool {
-        if let token = exception.token,
-           RedirectResourceCatalog.paths[token] != line.token.flatMap({ RedirectResourceCatalog.paths[$0] }) {
-            return true
-        }
-        let pattern = exception.pattern.trimmingCharacters(in: .whitespaces)
-        var related = pattern.isEmpty || pattern == "*" || pattern.lowercased() == line.pattern.lowercased()
-        if !related, let a = anchoredHost(pattern), let b = anchoredHost(line.pattern) {
+        if exception.namesResource, exception.path != path { return true }
+        var related = exception.pattern.isEmpty || exception.pattern == "*" || exception.pattern == lowered
+        if !related, let a = exception.host, let b = host {
             related = isSameOrParent(a, of: b) || isSameOrParent(b, of: a)
         }
         guard related else { return true }
-
-        let scopes = exception.options.filter { $0.name == "domain" || $0.name == "from" }
-        guard scopes.count == 1, let value = scopes[0].value else { return false }
-        var excepted: [String] = []
-        for raw in value.split(separator: "|", omittingEmptySubsequences: false) {
-            let domain = raw.trimmingCharacters(in: .whitespaces).lowercased()
-            guard isSupportedDomain(domain) else { return false }
-            excepted.append(domain)
-        }
+        guard let excepted = exception.excepted else { return false }
         if var included = condition.domains {
             for domain in excepted {
                 if included.contains(where: { $0 != domain && isSameOrParent($0, of: domain) }) { return false }

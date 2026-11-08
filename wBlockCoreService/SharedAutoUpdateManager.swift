@@ -1887,7 +1887,7 @@ public actor SharedAutoUpdateManager {
         )
 
         let counts = await MainActor.run { ProtobufDataManager.shared.ruleCountsByCategory.mapValues { Int($0) } }
-        let reloadResults = try await reloadTargets(targets, ruleCounts: counts, policy: policy)
+        let reloadResults = try await reloadTargets(targets, ruleCounts: counts, policy: policy, force: true)
         let failedTargets = targets.filter { reloadResults[$0.bundleIdentifier]?.success == false }.map(\.displayName)
 
         if !failedTargets.isEmpty {
@@ -1903,10 +1903,13 @@ public actor SharedAutoUpdateManager {
 
     /// Reloads each blocker in order, reporting progress. Work still follows the
     /// last reload, so it reports `.saving` rather than letting the sheet read as done.
+    /// Unless `force`, a blocker whose reload marker shows Safari already has its
+    /// rules is skipped, as in the app's apply.
     private func reloadTargets(
         _ targets: [ContentBlockerTargetInfo],
         ruleCounts: [String: Int],
-        policy: AutoUpdateExecutionPolicy
+        policy: AutoUpdateExecutionPolicy,
+        force: Bool
     ) async throws -> [String: ContentBlockerService.ReloadAttemptResult] {
         var results: [String: ContentBlockerService.ReloadAttemptResult] = [:]
         await reportRunProgress(.reloading(done: 0, total: targets.count))
@@ -1919,10 +1922,15 @@ public actor SharedAutoUpdateManager {
                 ) ? max(policy.minimumTimeForReloadRetry, ContentBlockerReloadPolicy.recoveryTimeout)
                   : policy.minimumTimeForReloadRetry
             )
-            results[target.bundleIdentifier] = await ContentBlockerService.reloadWithRetry(
-                identifier: target.bundleIdentifier, maxRetries: 6,
-                groupIdentifier: GroupIdentifier.shared.value, targetRulesFilename: target.rulesFilename
-            )
+            results[target.bundleIdentifier] = force
+                ? await ContentBlockerService.reloadWithRetry(
+                    identifier: target.bundleIdentifier, maxRetries: 6,
+                    groupIdentifier: GroupIdentifier.shared.value, targetRulesFilename: target.rulesFilename
+                )
+                : await ContentBlockerService.reloadIfNeeded(
+                    identifier: target.bundleIdentifier, targetRulesFilename: target.rulesFilename,
+                    groupIdentifier: GroupIdentifier.shared.value, maxRetries: 6
+                )
             await reportRunProgress(.reloading(done: results.count, total: targets.count))
         }
         await reportRunProgress(.saving)
@@ -2106,12 +2114,10 @@ public actor SharedAutoUpdateManager {
         var advanced: [String] = []
         for target in targets {
             guard let conversion = results[target.bundleIdentifier]?.outcome else { throw CancellationError() }
-            let cached = ContentBlockerIncrementalCache.loadCachedAdvancedRules(
-                targetRulesFilename: target.rulesFilename,
-                groupIdentifier: GroupIdentifier.shared.value
-            )?.trimmingCharacters(in: .whitespacesAndNewlines)
-            let fresh = conversion.advancedRulesText?.trimmingCharacters(in: .whitespacesAndNewlines)
-            if let snippet = fresh?.isEmpty == false ? fresh : cached, !snippet.isEmpty {
+            // A compile saves the advanced rules it returns, and a reuse returns the saved ones,
+            // so the outcome is what the cache holds; reading the cache again only cost time.
+            if let snippet = conversion.advancedRulesText?.trimmingCharacters(in: .whitespacesAndNewlines),
+               !snippet.isEmpty {
                 advanced.append(snippet)
             }
         }
@@ -2119,7 +2125,7 @@ public actor SharedAutoUpdateManager {
         var reloadResults: [String: ContentBlockerService.ReloadAttemptResult] = [:]
         if reloadContentBlockers {
             let counts = results.mapValues { $0.outcome?.safariRulesCount ?? 0 }
-            reloadResults = try await reloadTargets(targets, ruleCounts: counts, policy: policy)
+            reloadResults = try await reloadTargets(targets, ruleCounts: counts, policy: policy, force: false)
         }
         var metrics: [RebuildTargetMetrics] = []
         var appliedSourceRuleCountsByFilterID: [UUID: Int] = [:]

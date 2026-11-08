@@ -681,24 +681,30 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         )
     }
 
+    /// An output with `previous`'s identity holds the same bytes (see
+    /// OutputIdentity), so its digest is reused instead of read again.
     private static func readReloadSnapshot(
         markerURL: URL,
         outputURL: URL,
-        appGroupURL: URL
+        appGroupURL: URL,
+        previous: ReloadSnapshot? = nil
     ) throws -> ReloadSnapshot {
-        let (marker, output, context) = try withContentBlockerOutputLock(
+        let (marker, reused, output, context) = try withContentBlockerOutputLock(
             at: appGroupURL,
             targetRulesFilename: outputURL.lastPathComponent
-        ) {
+        ) { () -> (ReloadMarker?, ReloadSnapshot?, (data: Data, identity: OutputIdentity)?, ReloadContext) in
             let marker = (try? Data(contentsOf: markerURL)).flatMap {
                 try? JSONDecoder().decode(ReloadMarker.self, from: $0)
             }
-            return (marker, mapOutput(outputURL), currentReloadContext)
+            if let previous, let identity = previous.outputIdentity, outputIdentity(outputURL) == identity {
+                return (marker, previous, nil, currentReloadContext)
+            }
+            return (marker, nil, mapOutput(outputURL), currentReloadContext)
         }
         return ReloadSnapshot(
             marker: marker,
-            outputDigest: try validOutputDigest(output?.data),
-            outputIdentity: output?.identity,
+            outputDigest: try reused?.outputDigest ?? validOutputDigest(output?.data),
+            outputIdentity: reused?.outputIdentity ?? output?.identity,
             context: context
         )
     }
@@ -892,7 +898,8 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
                 guard let verified = try? readReloadSnapshot(
                     markerURL: markerURL,
                     outputURL: outputURL,
-                    appGroupURL: containerURL
+                    appGroupURL: containerURL,
+                    previous: snapshot
                 ), let verifiedDigest = verified.outputDigest else {
                     invalidateMarker()
                     return ReloadAttemptResult(
@@ -969,7 +976,8 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
             guard let verified = try? readReloadSnapshot(
                 markerURL: markerURL,
                 outputURL: outputURL,
-                appGroupURL: containerURL
+                appGroupURL: containerURL,
+                previous: snapshot
             ), let verifiedDigest = verified.outputDigest else {
                 invalidateMarker()
                 return ReloadAttemptResult(
