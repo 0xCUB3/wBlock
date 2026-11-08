@@ -85,7 +85,7 @@ public enum FilterDownloadProcessor {
         let uuid = filter.id.uuidString
         let filename = ContentBlockerIncrementalCache.localFilename(for: filter)
         let fileURL = containerURL.appendingPathComponent(filename)
-        let baselineURL = containerURL.appendingPathComponent("diff-baseline-\(filename)")
+        let baselineURL = FilterListFetchChain.diffBaselineURL(for: filter, containerURL: containerURL)
         let stagedFileURL = containerURL.appendingPathComponent(
             ".pending-filter-\(uuid)-\(UUID().uuidString).txt",
             isDirectory: false

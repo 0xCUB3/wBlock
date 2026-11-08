@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 import wBlockCoreService
 
@@ -45,6 +46,8 @@ final class ChainProtocol: URLProtocol {
         check(!FilterUpdateResponseClassifier.looksLikeFilterListData(Data([0xff, 0xff])), "invalid short UTF-8")
         check(FilterUpdateResponseClassifier.classify(statusCode: 200, responseData: Data("<html>challenge</html>".utf8), localData: nil) == .invalidContent, "HTML invalid")
         check(FilterUpdateResponseClassifier.classify(statusCode: 200, responseData: Data("404: Not Found".utf8), localData: nil) == .invalidContent, "404 body invalid")
+        var readLocal = false
+        check(FilterUpdateResponseClassifier.classify(statusCode: 304, responseData: nil, localData: { readLocal = true; return nil }()) == .notModified && !readLocal, "304 skips the saved list")
         let crlf = Data("! Title: T\r\n!#unknown\r\n||a.com^\r\n".utf8)
         let saved = Data(FilterListContentProcessing.normalizedContent(from: String(decoding: crlf, as: UTF8.self)).utf8)
         check(FilterUpdateResponseClassifier.classify(statusCode: 200, responseData: crlf, localData: saved) == .unchangedContent, "CRLF body matches its saved form")
@@ -63,6 +66,38 @@ final class ChainProtocol: URLProtocol {
         reset([429, 429, 200]); do { _ = try await fetch() } catch { check(false, "validator case threw") }
         check(ChainProtocol.requests[0].value(forHTTPHeaderField: "If-None-Match") == "old", "validator on primary")
         check(ChainProtocol.requests.last?.value(forHTTPHeaderField: "If-None-Match") == nil, "no validator on fallback")
+        // uBO diff updates run inside the chain, and one patch file serves every list.
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        func baseline(_ patch: String) -> URL {
+            let url = dir.appendingPathComponent(UUID().uuidString)
+            try? Data("! Diff-Path: ../patches/\(patch).patch#a\n||a.com^\n".utf8).write(to: url)
+            return url
+        }
+        let patched = "! Diff-Path: ../patches/1.1.1.0.patch#a\n||a.com^\n||b.com^\n"
+        let sha = Insecure.SHA1.hash(data: Data(patched.utf8)).map { String(format: "%02x", $0) }.joined()
+        let patch = Data("diff name:a lines:2 checksum:\(sha.prefix(10))\na2 1\n||b.com^\n".utf8)
+        let patches = FilterPatchCache(), oldBaseline = baseline("1.1.1.0")
+        func deltaFetch(_ list: String, _ baselineURL: URL) async throws -> FilterListFetchResult {
+            try await FilterListFetchChain.fetch(
+                session: session, primaryURL: URL(string: "https://cdn.example/filters/\(list)")!, fallbackURLs: [],
+                etag: "old", retryDelay: 0, diffBaselineURL: baselineURL, patches: patches)
+        }
+        do {
+            reset([200], [patch])
+            let first = try await deltaFetch("one.txt", oldBaseline), second = try await deltaFetch("two.txt", oldBaseline)
+            check(first.response.statusCode == 200 && String(decoding: first.data, as: UTF8.self) == patched, "patch applied")
+            check(first.response.value(forHTTPHeaderField: "ETag") == nil, "patched body has no validators")
+            check(second.data == first.data, "second list patched")
+            check(ChainProtocol.requests.map { $0.url!.absoluteString } == ["https://cdn.example/patches/1.1.1.0.patch"], "one patch request")
+            reset([]); let deferred = try await deltaFetch("one.txt", baseline("2999.1.1.0"))
+            check(deferred.response.statusCode == 304 && ChainProtocol.requests.isEmpty, "unpublished patch is not fetched")
+            reset([404, 304]); let missing = try await FilterListFetchChain.fetch(
+                session: session, primaryURL: primary, fallbackURLs: [], etag: "old", retryDelay: 0,
+                diffBaselineURL: baseline("1.1.2.0"), patches: FilterPatchCache())
+            check(missing.response.statusCode == 304 && ChainProtocol.requests.count == 2, "missing patch falls back to conditional GET")
+            check(ChainProtocol.requests.last?.value(forHTTPHeaderField: "If-None-Match") == "old", "fallback GET keeps validators")
+        } catch { check(false, "delta fetch threw \(error)") }
         print("PASS")
     }
 }

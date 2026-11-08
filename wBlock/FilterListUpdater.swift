@@ -194,12 +194,14 @@ final class FilterListUpdater: @unchecked Sendable {
         var filtersWithUpdates: [FilterList] = []
         var checkedCount = 0
         let totalCount = eligibleFilters.count
+        let patches = FilterPatchCache()
         await progressCallback?(FilterRefreshProgress(completed: 0, total: totalCount))
         await boundedConcurrentForEach(eligibleFilters, operation: { filter in
             let validators = validatorsByID[filter.id] ?? (nil, nil)
             let hasUpdate = await self.hasUpdateNoMainActor(
                 for: filter,
                 validators: validators,
+                patches: patches,
                 pendingValidatorUpdates: pendingValidatorUpdates
             )
             return hasUpdate ? filter : nil
@@ -249,19 +251,17 @@ final class FilterListUpdater: @unchecked Sendable {
     private func hasUpdateNoMainActor(
         for filter: FilterList,
         validators: (etag: String?, lastModified: String?),
+        patches: FilterPatchCache,
         pendingValidatorUpdates: PendingValidatorUpdates
     ) async -> Bool {
         guard filter.isRemoteURL else { return false }
         do {
-            let result = try await FilterListFetchChain.fetch(
-                session: urlSession, primaryURL: filter.url,
-                fallbackURLs: FilterListURLMirror.fallbackURLs(for: filter.url),
-                etag: validators.etag, lastModified: validators.lastModified, timeout: 12)
+            let result = try await fetch(filter, validators: validators, patches: patches, timeout: 12)
             let data = result.data
             let httpResponse = result.response
-            let localData = localDataForComparison(filter: filter)
             let responseStatus = FilterUpdateResponseClassifier.classify(
-                statusCode: httpResponse.statusCode, responseData: data, localData: localData)
+                statusCode: httpResponse.statusCode, responseData: data,
+                localData: self.localDataForComparison(filter: filter))
 
             if result.servedFallback {
                 await pendingValidatorUpdates.add(
@@ -307,6 +307,23 @@ final class FilterListUpdater: @unchecked Sendable {
         }
     }
 
+    /// Conditional GET, preceded by a uBO patch for lists that advertise one.
+    private func fetch(
+        _ filter: FilterList,
+        validators: (etag: String?, lastModified: String?),
+        patches: FilterPatchCache,
+        timeout: TimeInterval
+    ) async throws -> FilterListFetchResult {
+        try await FilterListFetchChain.fetch(
+            session: urlSession, primaryURL: filter.url,
+            fallbackURLs: FilterListURLMirror.fallbackURLs(for: filter.url),
+            etag: validators.etag, lastModified: validators.lastModified, timeout: timeout,
+            diffBaselineURL: loader.getSharedContainerURL().map {
+                FilterListFetchChain.diffBaselineURL(for: filter, containerURL: $0)
+            },
+            patches: patches)
+    }
+
     private func localDataForComparison(filter: FilterList) -> Data? {
         guard let containerURL = loader.getSharedContainerURL() else { return nil }
         return FilterListContentProcessing.localDataForComparison(
@@ -316,7 +333,9 @@ final class FilterListUpdater: @unchecked Sendable {
     }
 
     /// Fetches, processes, and saves a filter list.
-    private func fetchAndProcessFilterResult(_ filter: FilterList) async -> FilterFetchResult {
+    private func fetchAndProcessFilterResult(
+        _ filter: FilterList, patches: FilterPatchCache
+    ) async -> FilterFetchResult {
         if !filter.isRemoteURL {
             // Local / inline user lists are already stored on disk.
             return loader.filterFileExists(filter) ? .unchanged : .failed
@@ -330,23 +349,19 @@ final class FilterListUpdater: @unchecked Sendable {
         // A helper's staged copy may already be stale; prefer the server and
         // fall back to the staged copy only when nothing newer arrives.
         let pending = PendingFilterUpdateRevisions.publishedRevision(filterID: filter.id.uuidString)
-        let fetched = await fetchFromServer(filter)
+        let fetched = await fetchFromServer(filter, patches: patches)
         if fetched != .updated, let pending, await applyPublishedPendingRevision(pending, to: filter) {
             return .updated
         }
         return fetched
     }
 
-    private func fetchFromServer(_ filter: FilterList) async -> FilterFetchResult {
+    private func fetchFromServer(_ filter: FilterList, patches: FilterPatchCache) async -> FilterFetchResult {
         do {
             let validators = loader.filterFileExists(filter)
                 ? await storedValidators(for: filter)
                 : (etag: nil, lastModified: nil)
-            
-            let result = try await FilterListFetchChain.fetch(
-                session: urlSession, primaryURL: filter.url,
-                fallbackURLs: FilterListURLMirror.fallbackURLs(for: filter.url),
-                etag: validators.etag, lastModified: validators.lastModified, timeout: 15)
+            let result = try await fetch(filter, validators: validators, patches: patches, timeout: 15)
             let httpResponse = result.response
 
             if httpResponse.statusCode == 304 {
@@ -520,7 +535,7 @@ final class FilterListUpdater: @unchecked Sendable {
     }
 
     func fetchAndProcessFilter(_ filter: FilterList) async -> Bool {
-        await fetchAndProcessFilterResult(filter).succeeded
+        await fetchAndProcessFilterResult(filter, patches: FilterPatchCache()).succeeded
     }
 
     private func refreshFilters(
@@ -539,8 +554,9 @@ final class FilterListUpdater: @unchecked Sendable {
         await progressCallback(FilterRefreshProgress(completed: 0, total: total))
 
         func runDownloadPass(_ passFilters: [FilterList]) async {
+            let patches = FilterPatchCache()
             await boundedConcurrentForEach(passFilters, operation: { filter in
-                (filter, await self.fetchAndProcessFilterResult(filter))
+                (filter, await self.fetchAndProcessFilterResult(filter, patches: patches))
             }, onResult: { result in
                 resultsByID[result.0.id] = result
                 await progressCallback(

@@ -16,10 +16,11 @@ public enum FilterUpdateResponseStatus: Equatable {
 }
 
 public enum FilterUpdateResponseClassifier {
+    /// `localData` is read only for a 200, so a 304 never loads the saved list.
     public static func classify(
         statusCode: Int,
         responseData: Data?,
-        localData: Data?
+        localData: @autoclosure () -> Data?
     ) -> FilterUpdateResponseStatus {
         switch statusCode {
         case 304:
@@ -28,7 +29,7 @@ public enum FilterUpdateResponseClassifier {
             guard let responseData, looksLikeFilterListData(responseData) else {
                 return .invalidContent
             }
-            return contentDiffers(remoteData: responseData, localData: localData)
+            return contentDiffers(remoteData: responseData, localData: localData())
                 ? .updatedContent
                 : .unchangedContent
         default:

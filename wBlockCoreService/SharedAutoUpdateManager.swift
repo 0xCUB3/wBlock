@@ -284,8 +284,9 @@ public actor SharedAutoUpdateManager {
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 30
         config.timeoutIntervalForResource = 120
+        // Update checks must see a fresh push; filters send their own validators.
+        config.urlCache = nil
         config.requestCachePolicy = .reloadIgnoringLocalCacheData
-        config.urlCache = URLCache(memoryCapacity: 4 * 1024 * 1024, diskCapacity: 0, diskPath: nil) // 4MB memory, no disk cache
         return URLSession(configuration: config)
     }()
 
@@ -1586,8 +1587,9 @@ public actor SharedAutoUpdateManager {
         var checkedCount = 0
         await reportRunProgress(.checking(done: 0, total: remoteFilters.count))
 
+        let patches = FilterPatchCache()
         await boundedConcurrentForEach(remoteFilters, operation: { filter in
-            await self.fetchIfUpdated(filter, containerURL: containerURL)
+            await self.fetchIfUpdated(filter, containerURL: containerURL, patches: patches)
         }, onResult: { outcome in
             checkedCount += 1
             await self.reportRunProgress(.checking(done: checkedCount, total: remoteFilters.count))
@@ -1629,9 +1631,11 @@ public actor SharedAutoUpdateManager {
     /// A list a helper downloaded but could not apply is still checked against
     /// the server, so the app never installs a copy that is already stale. The
     /// staged copy is used only when nothing newer can be fetched.
-    private func fetchIfUpdated(_ filter: FilterList, containerURL: URL) async -> FilterFetchOutcome {
+    private func fetchIfUpdated(
+        _ filter: FilterList, containerURL: URL, patches: FilterPatchCache
+    ) async -> FilterFetchOutcome {
         let pending = PendingFilterUpdateRevisions.publishedRevision(filterID: filter.id.uuidString)
-        let fetched = await fetchFromServer(filter, containerURL: containerURL)
+        let fetched = await fetchFromServer(filter, containerURL: containerURL, patches: patches)
         if case .updated = fetched { return fetched }
         guard let pending else { return fetched }
         var updated = filter
@@ -1651,25 +1655,20 @@ public actor SharedAutoUpdateManager {
         )
     }
 
-    private func fetchFromServer(_ filter: FilterList, containerURL: URL) async -> FilterFetchOutcome {
+    private func fetchFromServer(
+        _ filter: FilterList, containerURL: URL, patches: FilterPatchCache
+    ) async -> FilterFetchOutcome {
         let uuid = filter.id.uuidString
         let etag = await getFilterEtag(uuid)
         let lastModified = await getFilterLastModified(uuid)
-        // Attempt a uBlock-Origin-style delta/differential update first. A nil
-        // return means "not applicable or failed safely" — fall back to a full
-        // conditional GET below.
-        if let deltaOutcome = await attemptDeltaUpdate(
-            filter: filter,
-            containerURL: containerURL
-        ) {
-            return deltaOutcome
-        }
-
         do {
             let result = try await FilterListFetchChain.fetch(
                 session: urlSession, primaryURL: filter.url,
                 fallbackURLs: FilterListURLMirror.fallbackURLs(for: filter.url),
-                etag: etag, lastModified: lastModified, timeout: 30)
+                etag: etag, lastModified: lastModified, timeout: 30,
+                diffBaselineURL: FilterListFetchChain.diffBaselineURL(for: filter, containerURL: containerURL),
+                patches: patches,
+                log: { await self.appendSharedLog("Diff update: \(filter.name) \($0)") })
             let data = result.data
             let http = result.response
             let responseEtag = result.servedFallback ? nil : http.value(forHTTPHeaderField: "ETag")
@@ -1679,9 +1678,9 @@ public actor SharedAutoUpdateManager {
             if result.servedFallback {
                 await ProtobufDataManager.shared.setFilterValidators(uuid, etag: nil, lastModified: nil)
             }
-            let localData = localDataForComparison(filter: filter, containerURL: containerURL)
             let responseStatus = FilterUpdateResponseClassifier.classify(
-                statusCode: http.statusCode, responseData: data, localData: localData)
+                statusCode: http.statusCode, responseData: data,
+                localData: self.localDataForComparison(filter: filter, containerURL: containerURL))
 
             switch responseStatus {
             case .notModified:
@@ -1703,168 +1702,13 @@ public actor SharedAutoUpdateManager {
                 break
             }
 
-            guard let rawContent = String(data: data, encoding: .utf8) else {
-                return .error(filterName: filter.name, error: URLError(.cannotDecodeContentData))
-            }
-
-            return await processAndStoreRawContent(
-                rawContent: rawContent,
+            let processed = try await FilterDownloadProcessor.processAndPublish(
+                data: data,
+                sourceURL: result.sourceURL,
                 filter: filter,
                 containerURL: containerURL,
                 etag: responseEtag,
                 lastModified: responseLastModified,
-                sourceURL: result.sourceURL
-            )
-        } catch {
-            return .error(filterName: filter.name, error: error)
-        }
-    }
-
-    // MARK: - Differential/Delta Updates (uBO-style Diff-Path / Diff-Expires)
-
-    /// Attempts a delta update for `filter`. Returns `nil` to signal "fall back
-    /// to a full conditional GET"; a non-nil outcome fully resolves this cycle.
-    ///
-    /// Delta updates are bandwidth optimizations layered on top of the existing
-    /// fetch pipeline: any failure (no patch, malformed patch, bad checksum) is
-    /// silently recovered by the full-fetch fallback, so correctness never
-    /// depends on the patch infrastructure. The first successful full fetch for
-    /// a Diff-Path list also persists a raw baseline, enabling deltas thereafter.
-    private func attemptDeltaUpdate(
-        filter: FilterList,
-        containerURL: URL
-    ) async -> FilterFetchOutcome? {
-        guard let baselineURL = deltaBaselineURL(filter: filter, containerURL: containerURL),
-              let baselineText = try? String(contentsOf: baselineURL, encoding: .utf8),
-              !baselineText.isEmpty,
-              let metadata = FilterDiffUpdater.parseMetadata(from: baselineText)
-        else {
-            return nil
-        }
-
-        let now = Date()
-
-        // uBO's "nopatch-yet" gate: avoid fetching patches the CDN hasn't
-        // published yet (the new list and its patch ship atomically).
-        if let availability = FilterDiffUpdater.patchAvailabilityTime(metadata: metadata, now: now),
-           now < availability {
-            appendSharedLog(
-                "Diff update: \(filter.name) deferring patch fetch (expected at \(availability.ISO8601Format()))"
-            )
-            return .noChange
-        }
-
-        guard let patchURL = FilterDiffUpdater.resolvePatchURL(metadata: metadata, listURL: filter.url) else {
-            return nil
-        }
-
-        var patchRequest = URLRequest(
-            url: patchURL,
-            cachePolicy: .reloadIgnoringLocalCacheData,
-            timeoutInterval: 20
-        )
-        patchRequest.setValue("wBlock", forHTTPHeaderField: "User-Agent")
-
-        let patchSize: Int64
-        let patchText: String
-        do {
-            let (data, response) = try await urlSession.data(for: patchRequest)
-            guard let http = response as? HTTPURLResponse else { return nil }
-            guard (200..<300).contains(http.statusCode) else {
-                // 404 / 5xx: within the validity window this is "nopatch-yet"
-                // (deferrable); beyond it, fall back to a full fetch.
-                if let availability = FilterDiffUpdater.patchAvailabilityTime(metadata: metadata, now: now),
-                   metadata.diffExpiresSeconds > 0,
-                   now.timeIntervalSince(availability) < 4 * metadata.diffExpiresSeconds {
-                    appendSharedLog(
-                        "Diff update: \(filter.name) no patch yet (status \(http.statusCode)); deferring"
-                    )
-                    return .noChange
-                }
-                appendSharedLog(
-                    "Diff update: \(filter.name) patch fetch returned status \(http.statusCode); falling back to full fetch"
-                )
-                return nil
-            }
-            guard let text = String(data: data, encoding: .utf8) else { return nil }
-            patchText = text
-            patchSize = Int64(data.count)
-        } catch {
-            appendSharedLog(
-                "Diff update: \(filter.name) patch fetch failed (\(error.localizedDescription)); falling back to full fetch"
-            )
-            return nil
-        }
-
-        guard let blocks = FilterDiffUpdater.parsePatchFile(patchText) else {
-            appendSharedLog(
-                "Diff update: \(filter.name) patch at \(patchURL.absoluteString) failed to parse; falling back to full fetch"
-            )
-            return nil
-        }
-        guard let block = blocks[metadata.diffName] else {
-            appendSharedLog(
-                "Diff update: \(filter.name) patch has no block named '\(metadata.diffName)'; falling back to full fetch"
-            )
-            return nil
-        }
-
-        switch FilterDiffUpdater.applyBlock(block, to: baselineText) {
-        case .success(let patchedText):
-            appendSharedLog(
-                "Diff update: \(filter.name) applied \(formatBytes(patchSize)) patch from \(patchURL.absoluteString)"
-            )
-            // No fresh validators are available from a patch fetch (and we no
-            // longer hold a full-list ETag that matches the patched content),
-            // so report updated content with cleared validators. The next full
-            // fetch will re-establish them.
-            return await processAndStoreRawContent(
-                rawContent: patchedText,
-                filter: filter,
-                containerURL: containerURL,
-                etag: nil,
-                lastModified: nil,
-                sourceURL: filter.url
-            )
-        case .badPatch:
-            appendSharedLog(
-                "Diff update: \(filter.name) patch failed to apply (malformed); falling back to full fetch"
-            )
-            return nil
-        case .checksumMismatch(let expected, let computed):
-            appendSharedLog(
-                "Diff update: \(filter.name) checksum mismatch (expected \(expected), computed \(computed)); falling back to full fetch"
-            )
-            return nil
-        }
-    }
-
-    /// Raw-baseline file used as the diff application target. Holds the exact
-    /// downloaded bytes (pre-preprocessing) of the last successfully fetched
-    /// list that advertised a `! Diff-Path:`.
-    private func deltaBaselineURL(filter: FilterList, containerURL: URL) -> URL? {
-        let filename = "diff-baseline-\(ContentBlockerIncrementalCache.localFilename(for: filter))"
-        return containerURL.appendingPathComponent(filename)
-    }
-
-    /// Routes full and delta bodies through the same processing/publishing path
-    /// used by foreground downloads while keeping background logging local.
-    private func processAndStoreRawContent(
-        rawContent: String,
-        filter: FilterList,
-        containerURL: URL,
-        etag: String?,
-        lastModified: String?,
-        sourceURL: URL
-    ) async -> FilterFetchOutcome {
-        do {
-            let processed = try await FilterDownloadProcessor.processAndPublish(
-                data: Data(rawContent.utf8),
-                sourceURL: sourceURL,
-                filter: filter,
-                containerURL: containerURL,
-                etag: etag,
-                lastModified: lastModified,
                 urlSession: urlSession,
                 onIncludeFetchError: { subURL, statusCode in
                     let statusStr = statusCode.map { "\($0)" } ?? "network error"
@@ -1880,7 +1724,7 @@ public actor SharedAutoUpdateManager {
             }
             return .updated(
                 filter: processed.filter,
-                validators: (etag: etag, lastModified: lastModified)
+                validators: (etag: responseEtag, lastModified: responseLastModified)
             )
         } catch {
             return .error(filterName: filter.name, error: error)
