@@ -29,6 +29,19 @@ struct FilterArtifactStorageTests {
         try FilterArtifactStorage.write(Data("replacement".utf8), to: rules)
         expect(try excluded(rules), "atomic rewrites must retain exclusion")
         expect(try String(contentsOf: rules, encoding: .utf8) == "replacement")
+        // Writes that share blocks with a sibling still hold exactly the given bytes.
+        let base = root.appendingPathComponent("rules_ads_ios.shared.json")
+        let prefix = Data((0..<300_000).map { UInt8(truncatingIfNeeded: $0 &* 31) })
+        try prefix.write(to: base)
+        for data in [prefix, prefix + Data("tail".utf8), prefix.prefix(200_000), prefix.prefix(100_000) + Data(count: 50),
+                     Data("small".utf8), Data([1]) + prefix] {
+            try FilterArtifactStorage.write(data, to: rules, sharingBlocksWith: base)
+            expect(try Data(contentsOf: rules) == data && excluded(rules))
+            try FilterArtifactStorage.write(data, to: rules, sharingBlocksWith: rules)
+            expect(try Data(contentsOf: rules) == data)
+        }
+        try FilterArtifactStorage.write(prefix, to: rules, sharingBlocksWith: root.appendingPathComponent("missing"))
+        expect(try Data(contentsOf: rules) == prefix && Data(contentsOf: base) == prefix)
         let legacy = try make("rules_ads_ios.base.json")
         let custom = try make("custom-\(UUID().uuidString).txt", old: true)
         let settings = try make("ProtobufData", folder: true)
