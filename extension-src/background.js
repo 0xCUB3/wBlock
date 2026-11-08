@@ -26,7 +26,7 @@
    */
   let engineTimestamp = 0;
   let configurationGeneration = 0;
-  const CSS_SELECTORS_PER_INSERT = 1000;
+  const CSS_RULES_PER_INSERT = 1000;
   // Queues scriptlet calls in the page (MAIN world) for the scriptlets/*.js
   // files injected right after; each file runs and removes its own queue.
   // Injected functions and files are exempt from the page's CSP, unlike a
@@ -138,13 +138,12 @@
     if (scriptlets.length > 0) {
       pending.push(runScriptlets(target, scriptlets));
     }
-    if (configuration.styles?.length) {
-      pending.push(browser.scripting.insertCSS({ target, origin: 'USER', css: configuration.styles.join('\n') }));
-    }
-    // One rule per selector: a selector the engine rejects drops only itself.
-    for (let i = 0; i < selectors.length; i += CSS_SELECTORS_PER_INSERT) {
-      const css = selectors.slice(i, i + CSS_SELECTORS_PER_INSERT).map(selector => `${selector} { display: none !important; }`).join('\n');
-      pending.push(browser.scripting.insertCSS({ target, origin: 'USER', css }));
+    // One stylesheet for the page's styles and hides, which include the hides
+    // scoped to its site. One rule per selector: a selector the engine
+    // rejects drops only itself.
+    const css = [...(configuration.styles || []), ...selectors.map(selector => `${selector} { display: none !important; }`)];
+    for (let i = 0; i < css.length; i += CSS_RULES_PER_INSERT) {
+      pending.push(browser.scripting.insertCSS({ target, origin: 'USER', css: css.slice(i, i + CSS_RULES_PER_INSERT).join('\n') }));
     }
     for (const world of ['ISOLATED', 'MAIN']) {
       const filters = procedural.filter(rule => /"type"\s*:\s*"matches-(?:prop|property)"/.test(rule) === (world === 'MAIN'));
