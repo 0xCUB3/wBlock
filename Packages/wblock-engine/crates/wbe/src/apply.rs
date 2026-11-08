@@ -19,7 +19,7 @@ use crate::compile::{
     compile_blocker, parallel_indices, parse_list, CompileOptions, CompileOutput,
     surviving, NetworkContext, Others, Stats,
 };
-use crate::parse::cosmetic::with_domains;
+use crate::parse::{cosmetic::with_domains, restate};
 use crate::webkit::{SafariVersion, WebkitJson, WkAction, WkRule, WkTrigger};
 use serde::{Deserialize, Serialize};
 use std::collections::hash_map::DefaultHasher;
@@ -724,10 +724,10 @@ impl Plan {
         })
     }
 
-    /// #925: the largest list of this blocker with excluded sites (and no
-    /// #681 duplicates) compiles its plain blocks unconditioned, then one
-    /// ignore rule per excluded site. Only one list per blocker can: a second
-    /// ignore would cancel the first list's blocks.
+    /// #925: the largest list of this blocker with excluded sites, plain
+    /// blocks, and no #681 duplicates compiles its plain blocks unconditioned,
+    /// then one ignore rule per excluded site. Only one list per blocker can: a
+    /// second ignore would cancel the first list's blocks.
     fn segment_list(&self, target: usize) -> Option<usize> {
         self.targets[target]
             .lists
@@ -739,6 +739,7 @@ impl Plan {
                     && scope.only.is_none()
                     && !self.parsed[l].has_affinity
                     && self.duplicates[target][l].is_empty()
+                    && self.parsed[l].records().any(|p| p.plain && self.keeps(target, l, p))
             })
             .max_by_key(|&l| self.parsed[l].count())
     }
@@ -1228,7 +1229,7 @@ fn scoped(rule: Rule, scope: &SiteScope, out: &mut Vec<Rule>) {
             let Some(restricted) = restrict(&r.from, scope) else {
                 return;
             };
-            let companion = (!restricted.uncovered.is_empty() && !r.exception && !r.badfilter)
+            let companion = (!restricted.uncovered.is_empty() && !r.exception)
                 .then(|| NetworkRule {
                     exception: true,
                     important: false,
@@ -1242,8 +1243,10 @@ fn scoped(rule: Rule, scope: &SiteScope, out: &mut Vec<Rule>) {
             // An important block would outrank its companion; the user's
             // exclusion wins over `important`.
             r.important &= companion.is_none();
-            out.push(Rule::Network(r));
-            out.extend(companion.map(|r| Rule::Network(Box::new(r))));
+            for mut r in std::iter::once(*r).chain(companion) {
+                r.raw = restate(&r);
+                out.push(Rule::Network(Box::new(r)));
+            }
         }
         Rule::Cosmetic(mut r) => {
             let Some(restricted) = restrict(&r.domains, scope) else {
@@ -1708,6 +1711,23 @@ mod tests {
         assert_eq!(plan.compile_target(0, &[]).admitted["excluded"], 2);
     }
 
+    /// A list without plain blocks has nothing for an ignore rule to lift, so
+    /// the segment goes to a list that has some.
+    #[test]
+    fn segment_needs_plain_blocks() {
+        let plan = plan(
+            json!([
+                {"id":"big", "text":"||a.net^$badfilter\n||b.net^$popup\n||c.net^$domain=x.org", "scope":{"exclude":["skip.org"]}},
+                {"id":"small", "text":"||d.net^", "scope":{"exclude":["other.org"]}}
+            ]),
+            json!([{"slot":1,"lists":[{"list":0},{"list":1}]}]),
+            json!({}),
+        );
+        let ignores: Vec<Value> = rules(&plan, 0).into_iter().filter(|r| r["action"]["type"] == "ignore-previous-rules").collect();
+        assert!(!ignores.is_empty());
+        assert!(ignores.iter().all(|r| r.to_string().contains("other.org")), "{ignores:?}");
+    }
+
     #[test]
     fn selected_scope_and_cosmetic_preferences() {
         let selected = plan(
@@ -1732,6 +1752,41 @@ mod tests {
             runtime.contains(&"example.com,~sub.example.com##div:has-text(Ad)".to_string()),
             "{runtime:?}"
         );
+    }
+
+    /// The runtime engine reads popup rules and page exceptions from their raw
+    /// lines, so a list's site scope has to reach those lines too.
+    #[test]
+    fn site_scope_reaches_runtime_network_rules() {
+        let text = "||pop.net^$popup\n||only.net^$popup,domain=a.org|b.org\n||imp.net^$popup,important,domain=imp.org\n@@||page.org^$elemhide\n@@$popup,domain=c.org";
+        let engine = |scope: Value| {
+            let plan = plan(json!([{"id":"list", "text":text, "scope":scope}, {"id":"other", "text":"||c.net^$popup"}]), json!([{"slot":1,"lists":[{"list":0},{"list":1}]}]), json!({}));
+            crate::runtime::Engine::build(&plan.compile_target(0, &[]).output.runtime)
+        };
+        let blocked = |e: &crate::runtime::Engine, opener: &str, target: &str| {
+            e.lookup(&format!("wbe-popup-https://{opener}/#https://{target}/x")).popup_blocked == Some(true)
+        };
+        let elemhide = |e: &crate::runtime::Engine, page: &str| e.lookup(&format!("https://{page}/")).generichide;
+        let excluded = engine(json!({"exclude":["example.org", "a.org", "page.org", "c.org", "sub.imp.org"]}));
+        assert!(blocked(&excluded, "imp.org", "imp.net"));
+        assert!(!blocked(&excluded, "sub.imp.org", "imp.net"));
+        assert!(blocked(&excluded, "news.org", "pop.net"));
+        assert!(!blocked(&excluded, "example.org", "pop.net"));
+        assert!(!blocked(&excluded, "a.org", "only.net"));
+        assert!(blocked(&excluded, "b.org", "only.net"));
+        assert!(!elemhide(&excluded, "page.org"));
+        assert!(blocked(&excluded, "c.org", "c.net"));
+
+        let only = engine(json!({"only":["example.org", "b.org", "page.org"]}));
+        assert!(blocked(&only, "example.org", "pop.net"));
+        assert!(!blocked(&only, "news.org", "pop.net"));
+        assert!(!blocked(&only, "a.org", "only.net"));
+        assert!(blocked(&only, "b.org", "only.net"));
+        assert!(elemhide(&only, "page.org"));
+        assert!(blocked(&only, "c.org", "c.net"));
+
+        let elsewhere = engine(json!({"only":["example.org"]}));
+        assert!(!elemhide(&elsewhere, "page.org"));
     }
 
     #[test]
