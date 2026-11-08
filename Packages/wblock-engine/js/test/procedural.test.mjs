@@ -397,6 +397,45 @@ describe('re-application on mutation', () => {
     assert.equal(scans, 2);
   });
 
+  test('attribute and text changes rerun only the filters that can depend on them', async () => {
+    const { document, api, win } = setup('<div id="a" class="item">x</div><p id="p" title="t">y</p>');
+    let scans = 0;
+    const real = document.querySelectorAll.bind(document);
+    document.querySelectorAll = (sel) => {
+      scans++;
+      return real(sel);
+    };
+    api.apply([
+      filt([op('css-selector', 'div.ad'), op('has-text', 'x')]),
+      filt([op('css-selector', 'p'), op('matches-attr', 'data-x')]),
+    ]);
+    const a = document.getElementById('a');
+    const p = document.getElementById('p');
+    const settle = async () => { const before = scans; await sleep(250); return scans - before; };
+    a.classList.add('playing');
+    p.title = 'u';
+    a.dataset.y = '1';
+    assert.equal(await settle(), 0);
+    a.classList.add('ad');
+    assert.notEqual(await settle(), 0);
+    assert.equal(isHidden(win, a), true);
+    p.setAttribute('data-x', '');
+    assert.notEqual(await settle(), 0);
+    assert.equal(isHidden(win, p), true);
+    a.firstChild.data = 'z';
+    assert.notEqual(await settle(), 0);
+    assert.equal(isHidden(win, a), false);
+  });
+
+  test('a filter on computed style reruns on any attribute change', async () => {
+    const { document, api, win } = setup('<style>.big{width:5px}</style><div id="a"></div>');
+    api.apply([filt([op('css-selector', 'div'), op('matches-css', 'width: 5px')])]);
+    const a = document.getElementById('a');
+    a.className = 'big';
+    await sleep(250);
+    assert.equal(isHidden(win, a), true);
+  });
+
   test('observe:false applies once without watching', async () => {
     const { document, api, win } = setup('<div id="root"></div>');
     api.apply([filt([op('css-selector', '.ad')])], { observe: false });
