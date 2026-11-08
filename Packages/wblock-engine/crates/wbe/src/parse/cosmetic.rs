@@ -812,6 +812,14 @@ fn classify(sel: &str) -> Result<Kind, String> {
                     check_args(name, sel[end + 1..close].trim())?;
                     i = close + 1;
                 } else {
+                    // CSS forbids nesting `:has()`, so uBO runs it procedurally.
+                    if name == "has" && b.get(end) == Some(&b'(') {
+                        let close = find_close(b, end)?;
+                        if sel[end + 1..close].contains(":has(") {
+                            kind = Kind::Procedural;
+                            proc_op = true;
+                        }
+                    }
                     i = end;
                 }
             }
@@ -1173,6 +1181,12 @@ mod tests {
                 "invalid: generic procedural or action filter",
             ),
             ("#@#div:has-text(x)", "@proc div:has-text(x)"),
+            // CSS forbids `:has()` inside `:has()`, so uBO runs it procedurally.
+            (
+                "example.com##div:has(> div:has(> .ad))",
+                "[h:example.com] proc div:has(> div:has(> .ad))",
+            ),
+            ("example.com##div:not(:has(.ad))", "[h:example.com] hide div:not(:has(.ad))"),
             (
                 "~example.com##div:has-text(x)",
                 "invalid: generic procedural or action filter",
