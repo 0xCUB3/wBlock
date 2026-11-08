@@ -12,8 +12,9 @@
   'use strict';
 
   const DEFAULT_STYLE = 'display: none !important';
-  const OBSERVE = { attributes: true, childList: true, characterData: true, subtree: true };
   const BAD_STYLE = /image-set\(|url\(|expression|\\|\/\s*\/|\/\*|[{}<>]/i;
+  // Pseudo-classes that depend only on tree shape and the selectors they wrap.
+  const STRUCTURAL = /^(?:not|is|where|has|matches|nth-(?:last-)?(?:child|of-type)|(?:first|last|only)-(?:child|of-type)|root|scope)$/;
 
   const state = {
     filters: [],
@@ -26,9 +27,80 @@
     shadowRoots: new Set(),
     shadowStyles: new Map(),
     shadowWatch: false,
+    deps: null,
   };
 
-  const observer = new MutationObserver(() => schedule());
+  // What the filters can depend on besides tree shape: attribute names, class
+  // and id tokens, and text. `any` keeps every attribute and text change.
+  const newDeps = () => ({ any: false, text: false, attrs: new Set(), classes: new Set(), ids: new Set() });
+  const fold = (s) => (document.compatMode === 'BackCompat' ? s.toLowerCase() : s);
+
+  const trackCss = (sel) => {
+    const { deps } = state;
+    if (/[\\|]/.test(sel)) return void (deps.any = true);
+    const rest = sel.replace(/\[\s*([^\s~|^$*=\]]+)[^\]]*\]/g, (_, name) => {
+      deps.attrs.add(name).add(name.toLowerCase());
+      return ' ';
+    });
+    for (const [, kind, name] of rest.matchAll(/([.#]|:+)([^\s.#[\]:>+~,()*|='"]+)/g)) {
+      if (kind === '.') deps.classes.add(fold(name));
+      else if (kind === '#') deps.ids.add(fold(name));
+      else if (!STRUCTURAL.test(name)) deps.any = true;
+    }
+  };
+
+  const trackOperator = (type, arg) => {
+    const { deps } = state;
+    if (type === 'css-selector' || type === 'shadow' || (type === 'upward' && !/^\d+$/.test(arg))) trackCss(arg);
+    else if (type === 'has-text' || type === 'min-text-length') deps.text = true;
+    else if (type === 'watch-attr' || type === 'matches-attr') {
+      const names = type === 'matches-attr' ? [nameValue(arg)[0]] : String(arg).split(',').map(s => s.trim()).filter(Boolean);
+      if (names.length === 0 || names.some(n => n.startsWith('/'))) deps.any = true;
+      for (const n of names) deps.attrs.add(n);
+    } else if (/^(?:matches-css|matches-prop|xpath)/.test(type)) deps.any = true;
+  };
+
+  const trackAction = (action) => {
+    if (!action || (action.type !== 'remove-attr' && action.type !== 'remove-class')) return;
+    const name = unquote(action.arg || '');
+    if (action.type === 'remove-attr' && name.startsWith('/')) state.deps.any = true;
+    else if (name.startsWith('/')) state.deps.attrs.add('class');
+    else if (action.type === 'remove-class') state.deps.classes.add(fold(name));
+    else state.deps.attrs.add(name);
+  };
+
+  const tokens = (s) => new Set(s ? fold(s).split(/\s+/) : []);
+  const tokensChanged = (wanted, before, after) => {
+    const a = tokens(before), b = tokens(after);
+    for (const t of a) if (!b.has(t) && wanted.has(t)) return true;
+    for (const t of b) if (!a.has(t) && wanted.has(t)) return true;
+    return false;
+  };
+
+  // Attribute and text records outside the tracked dependencies cannot change a result.
+  const relevant = (r) => {
+    const { deps } = state;
+    if (r.type === 'childList' || deps.any) return true;
+    if (r.type === 'characterData') return deps.text;
+    const name = r.attributeName;
+    if (deps.attrs.has(name)) return true;
+    if (name === 'class') return tokensChanged(deps.classes, r.oldValue, r.target.getAttribute('class'));
+    return name === 'id' && tokensChanged(deps.ids, r.oldValue, r.target.getAttribute('id'));
+  };
+
+  const observeOptions = () => {
+    const { any, text, attrs, classes, ids } = state.deps;
+    const options = { childList: true, subtree: true, characterData: any || text };
+    if (any) return { ...options, attributes: true };
+    const filter = [...attrs];
+    if (classes.size) filter.push('class');
+    if (ids.size) filter.push('id');
+    return filter.length ? { ...options, attributeFilter: filter, attributeOldValue: true } : options;
+  };
+
+  const observer = new MutationObserver((records) => {
+    if (records.some(relevant)) schedule();
+  });
 
   const token = () => 'data-wbe-' + Math.random().toString(36).slice(2, 10);
 
@@ -280,7 +352,9 @@
       const make = OPS.get(type);
       if (!make || (typeof arg !== 'string' && !Array.isArray(arg))) throw new Error('bad operator');
       if (arg === '' && type !== 'others' && type !== 'watch-attr' && type !== 'shadow') throw new Error('empty argument');
-      return make(arg);
+      const run = make(arg);
+      trackOperator(type, arg);
+      return run;
     });
     const head = selector[0];
     return (root = document, self = false) => {
@@ -304,7 +378,9 @@
 
   const compileFilter = (json) => {
     const { selector, action } = typeof json === 'string' ? JSON.parse(json) : json;
-    return { dead: false, run: compileSelector(selector), act: compileAction(action) };
+    const compiled = { dead: false, run: compileSelector(selector), act: compileAction(action) };
+    trackAction(action);
+    return compiled;
   };
 
   const pass = () => {
@@ -355,8 +431,9 @@
       // Keep the page usable; the next mutation retries.
     } finally {
       if (state.observe) {
-        observer.observe(document, OBSERVE);
-        for (const root of state.shadowRoots) if (root.host.isConnected) observer.observe(root, OBSERVE);
+        const options = observeOptions();
+        observer.observe(document, options);
+        for (const root of state.shadowRoots) if (root.host.isConnected) observer.observe(root, options);
       }
     }
   };
@@ -380,6 +457,7 @@
     state.shadowWatch = false;
     state.shadowRoots.clear();
     state.filters = [];
+    state.deps = newDeps();
     for (const json of filters || []) {
       try {
         state.filters.push(compileFilter(json));
