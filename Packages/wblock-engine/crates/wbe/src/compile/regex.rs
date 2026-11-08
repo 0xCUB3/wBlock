@@ -84,6 +84,45 @@ fn accepted(filters: Vec<String>) -> Option<Vec<String>> {
     filters.iter().all(|f| webkit_accepts(f)).then_some(filters)
 }
 
+/// `f` in the form WebKit compiles faster: an unanchored filter with a wide
+/// atom (a class or `.`) and no quantifier gets its first atom repeated in
+/// front, so `/[0-9a-f]x` becomes `/*/[0-9a-f]x`. WebKit prefixes an
+/// unanchored filter with `.*` and puts every filter whose terms after the
+/// last quantifier are fixed into one NFA (CombinedURLFilters::processNFAs).
+/// There a wide atom multiplies the DFA states of all the literal filters
+/// beside it: EasyList and uBO filters compiled 14% slower and their largest
+/// DFA was twice the size. `.*a*a` matches what `.*a` does, and the `a*`
+/// gives the filter an NFA of its own, shared only with filters starting the
+/// same way.
+pub(crate) fn apart(f: String) -> String {
+    split_off(&f).unwrap_or(f)
+}
+
+fn split_off(f: &str) -> Option<String> {
+    let b = f.as_bytes();
+    let first = match b.first()? {
+        b'\\' => 2,
+        b'[' => class_end(b, 0)? + 1,
+        b'^' | b'.' | b'(' | b'$' => return None,
+        _ => 1,
+    };
+    let (mut wide, mut i) = (false, 0);
+    while i < b.len() {
+        match b[i] {
+            b'\\' => i += 1,
+            b'[' => {
+                wide = true;
+                i = class_end(b, i)?;
+            }
+            b'.' => wide = true,
+            b'*' | b'+' | b'?' => return None,
+            _ => {}
+        }
+        i += 1;
+    }
+    wide.then(|| format!("{}*{f}", &f[..first]))
+}
+
 /// Longest url-filter emitted. Counted repeats expand, so this also bounds
 /// the work a single source rule can cause in WebKit's compiler.
 const MAX_FILTER_LEN: usize = 4096;
@@ -192,14 +231,24 @@ pub fn domain_top_url(m: &DomainMatcher) -> Option<Vec<String>> {
     accepted(top_url(m)?)
 }
 
+/// The `if-top-url` regex for an `if-domain` entry: `*host` matches the host
+/// and its subdomains, `host` only itself. WebKit compiles `if-domain` to an
+/// unanchored regex (ContentExtensionParser.cpp, `getDomainList`), which also
+/// fires on a page whose query holds `http://host/`, and costs more to
+/// compile. Returns `None` for non-ASCII input.
+pub fn host_top_url(entry: &str) -> Option<String> {
+    let (mut out, host) = match entry.strip_prefix('*') {
+        Some(host) => (HOST_START.to_string(), host),
+        None => ("^[^:]+://+".to_string(), entry),
+    };
+    literal(host, &mut out)?;
+    out.push_str(HOST_END);
+    Some(out)
+}
+
 fn top_url(m: &DomainMatcher) -> Option<Vec<String>> {
     match m {
-        DomainMatcher::Hostname(h) => {
-            let mut out = HOST_START.to_string();
-            literal(h, &mut out)?;
-            out.push_str(HOST_END);
-            Some(vec![out])
-        }
+        DomainMatcher::Hostname(h) => Some(vec![host_top_url(&format!("*{h}"))?]),
         DomainMatcher::Entity(e) => {
             let mut out = HOST_START.to_string();
             literal(e, &mut out)?;
@@ -604,6 +653,41 @@ mod emitted_filter_tests {
     }
 
     #[test]
+    fn wide_unanchored_filters_get_their_own_nfa_and_match_the_same() {
+        for (f, want) in [
+            ("/[0-9a-f][0-9a-f]x\\.js", "/*/[0-9a-f][0-9a-f]x\\.js"),
+            ("[^a-z]ads/", "[^a-z]*[^a-z]ads/"),
+            ("\\.com/....js$", "\\.*\\.com/....js$"),
+            // Literal, anchored, quantified, or starting with `.` or a group.
+            ("/ads/x\\.js", "/ads/x\\.js"),
+            ("^https://a\\.com/[0-9]", "^https://a\\.com/[0-9]"),
+            ("/a[0-9]+", "/a[0-9]+"),
+            ("a.*[0-9]", "a.*[0-9]"),
+            (".x[0-9]", ".x[0-9]"),
+            ("(ab)[0-9]", "(ab)[0-9]"),
+        ] {
+            let got = apart(f.into());
+            assert_eq!(got, want);
+            assert!(webkit_accepts(&got), "{got}");
+            let re = |s: &str| ::regex::RegexBuilder::new(s).case_insensitive(true).build().unwrap();
+            let (a, b) = (re(f), re(&got));
+            for url in [
+                "https://x.com/ab1x.js",
+                "https://x.com//ab1X.JS",
+                "https://x.com/9ads/",
+                "https://x.com/?q=1ads/",
+                "https://cdn.com/abcd.js",
+                "https://cdn.com/abc.js",
+                "https://a.com/1",
+                "https://a.com/a12",
+                "https://a.com/ab7",
+            ] {
+                assert_eq!(a.is_match(url), b.is_match(url), "{f} {url}");
+            }
+        }
+    }
+
+    #[test]
     fn webkit_accepts_checks_structure() {
         for ok in [
             ".*",
@@ -829,6 +913,21 @@ mod tests {
             top(DomainMatcher::Hostname("example.com".into())).unwrap(),
             "^[^:]+://+([^:/]+\\.)?example\\.com[/:?#]"
         );
+    }
+
+    #[test]
+    fn if_domain_entries_as_anchored_top_urls() {
+        let re = |entry: &str| ::regex::RegexBuilder::new(&host_top_url(entry).unwrap()).case_insensitive(true).build().unwrap();
+        let sub = re("*foo.test");
+        for url in ["https://foo.test/", "https://a.b.foo.test/x", "http://foo.test:8080/", "https://FOO.test/"] {
+            assert!(sub.is_match(url), "{url}");
+        }
+        for url in ["http://127.0.0.1/?u=http://foo.test/", "https://xfoo.test/", "https://foo.test.evil/"] {
+            assert!(!sub.is_match(url), "{url}");
+        }
+        let exact = re("foo.test");
+        assert!(exact.is_match("https://foo.test/"));
+        assert!(!exact.is_match("https://a.foo.test/"));
     }
 
     #[test]

@@ -5,7 +5,7 @@
 //! makes them wider and can only under-block. Each rule's tier follows
 //! `compile/mod.rs`; exceptions use ignore-previous-rules.
 
-use super::regex::{domain_top_url, url_filter};
+use super::regex::{apart, domain_top_url, host_top_url, url_filter};
 use super::{DomainSpan, Emitted, Entry, Stats, Tier};
 use crate::ast::{
     DomainList, DomainMatcher, ExceptionScope, NetworkAction, NetworkRule, Party, Pattern,
@@ -306,6 +306,7 @@ fn compile_rule(
                         cond: cond.as_ref(),
                     },
                     ignore,
+                    v,
                 );
             }
         }
@@ -391,6 +392,7 @@ fn compile_scope(r: &NetworkRule, v: SafariVersion, out: &mut Emitted) -> Result
                     cond: Some(&cond),
                 },
                 true,
+                v,
             );
         }
     }
@@ -456,6 +458,7 @@ fn compile_scope(r: &NetworkRule, v: SafariVersion, out: &mut Emitted) -> Result
                 cond: cond.as_ref(),
             },
             true,
+            v,
         );
     }
     Ok(())
@@ -581,6 +584,10 @@ fn party(p: Party, exception: bool) -> Result<Option<WkLoadType>, String> {
 /// filter per target hostname. Other `$to=` uses are dropped for blocks and
 /// ignored for exceptions.
 fn urls(r: &NetworkRule, exception: bool) -> Result<Vec<String>, String> {
+    Ok(filters(r, exception)?.into_iter().map(apart).collect())
+}
+
+fn filters(r: &NetworkRule, exception: bool) -> Result<Vec<String>, String> {
     let pattern = match url_filter(&r.pattern) {
         Some(u) => u,
         None if exception => vec![".*".into()],
@@ -692,7 +699,7 @@ struct Trigger<'a> {
 /// Writes `{"trigger":{...},"action":{...}}` for `t`, with the keys in the
 /// field order `WkTrigger` serializes, so the output matches `WkRule`'s.
 /// `ignore` picks `ignore-previous-rules` over `block`.
-fn emit(out: &mut Emitted, tier: Tier, t: &Trigger, ignore: bool) {
+fn emit(out: &mut Emitted, tier: Tier, t: &Trigger, ignore: bool, v: SafariVersion) {
     let arena = out.arena();
     let bytes = &mut out.arenas[arena];
     let start = bytes.len();
@@ -718,22 +725,34 @@ fn emit(out: &mut Emitted, tier: Tier, t: &Trigger, ignore: bool) {
     let head = bytes.len();
     let mut domain = None;
     if let Some(cond) = t.cond {
-        let (key, list) = match cond {
-            Cond::IfDomain(list) => ("if-domain", list),
-            Cond::UnlessDomain(list) => ("unless-domain", list),
-            Cond::IfTopUrl(list) => ("if-top-url", list),
-            Cond::UnlessTopUrl(list) => ("unless-top-url", list),
-        };
-        bytes.extend_from_slice(b",\"");
-        bytes.extend_from_slice(key.as_bytes());
-        bytes.extend_from_slice(b"\":");
-        json_write(bytes, list);
-        if matches!(cond, Cond::IfDomain(_)) {
-            domain = Some(Box::new(DomainSpan {
-                head,
-                tail: bytes.len(),
-                domains: list.clone(),
-            }));
+        // From Safari 15 a domain list is written as anchored if-top-url
+        // regexes (`regex::host_top_url`), which compile faster.
+        let top = |list: &[String]| v.at_least(15, 0) && list.iter().all(|d| d.is_ascii());
+        match cond {
+            Cond::IfDomain(list) => {
+                let span = DomainSpan { head, tail: head, domains: list.clone(), top: top(list) };
+                let (key, value) = span.json();
+                bytes.extend_from_slice(key);
+                bytes.extend_from_slice(&value);
+                domain = Some(Box::new(DomainSpan { tail: bytes.len(), ..span }));
+            }
+            Cond::UnlessDomain(list) if top(list) => {
+                let urls: Option<Vec<String>> = list.iter().map(|d| host_top_url(d)).collect();
+                bytes.extend_from_slice(b",\"unless-top-url\":");
+                json_write(bytes, &urls.expect("ASCII domains"));
+            }
+            Cond::UnlessDomain(list) => {
+                bytes.extend_from_slice(b",\"unless-domain\":");
+                json_write(bytes, list);
+            }
+            Cond::IfTopUrl(list) => {
+                bytes.extend_from_slice(b",\"if-top-url\":");
+                json_write(bytes, list);
+            }
+            Cond::UnlessTopUrl(list) => {
+                bytes.extend_from_slice(b",\"unless-top-url\":");
+                json_write(bytes, list);
+            }
         }
     }
     bytes.extend_from_slice(b"},\"action\":");
@@ -1121,11 +1140,33 @@ mod tests {
         out.iter().map(|t| t.tier).collect()
     }
 
-    /// Asserts the JSON and the drop count, and returns the rules for other
-    /// checks.
+    /// `expect` with its domain lists as `emit` writes them for `v`: from
+    /// Safari 15, `if-domain` and `unless-domain` become top-URL regexes.
+    fn as_written(expect: &str, v: SafariVersion) -> String {
+        if !v.at_least(15, 0) {
+            return expect.into();
+        }
+        let mut rules: Vec<WkRule> = serde_json::from_str(expect).expect("expected JSON");
+        let urls = |list: Option<Vec<String>>| {
+            list.map(|l| l.iter().map(|d| host_top_url(d).unwrap()).collect())
+        };
+        for r in &mut rules {
+            let t = &mut r.trigger;
+            if let Some(list) = urls(t.if_domain.take()) {
+                t.if_top_url = Some(list);
+            }
+            if let Some(list) = urls(t.unless_domain.take()) {
+                t.unless_top_url = Some(list);
+            }
+        }
+        to_json(&rules)
+    }
+
+    /// Asserts the JSON (domain lists as `as_written`) and the drop count,
+    /// and returns the rules for other checks.
     fn check(rules: &[NetworkRule], v: SafariVersion, expect: &str) -> Vec<Tiered> {
         let (out, stats) = run(rules, v);
-        assert_eq!(json(&out), expect);
+        assert_eq!(json(&out), as_written(expect, v));
         assert!(
             stats.dropped.is_empty(),
             "unexpected drops: {:?}",
@@ -1511,6 +1552,18 @@ mod tests {
     }
 
     #[test]
+    fn domains_are_anchored_top_urls_from_safari_15() {
+        let rule = NetworkRule { from: list(&["a.com"], &["b.a.com"]), ..exc("@@||t.com^$script") };
+        let (old, _) = run(std::slice::from_ref(&rule), V14);
+        assert!(json(&old).contains(r#""if-domain":["*a.com"]"#), "{}", json(&old));
+        let (new, _) = run(std::slice::from_ref(&rule), V15);
+        assert!(json(&new).contains(r#""if-top-url":["^[^:]+://+([^:/]+\\.)?a\\.com[/:?#]"]"#), "{}", json(&new));
+        let block = NetworkRule { from: list(&[], &["a.com"]), types: RT::SCRIPT, ..net("||t.com^") };
+        let (new, _) = run(&[block], V15);
+        assert!(json(&new).contains(r#""unless-top-url":["^[^:]+://+([^:/]+\\.)?a\\.com[/:?#]"]"#), "{}", json(&new));
+    }
+
+    #[test]
     fn domain_exclude_becomes_unless_domain() {
         check(
             &[NetworkRule {
@@ -1578,7 +1631,7 @@ mod tests {
         };
         let (out, _) = run(std::slice::from_ref(&rule), V15);
         assert_eq!(out.len(), 2);
-        assert!(json(&out).contains(r#""if-domain":["*a.com"]"#));
+        assert!(json(&out).contains(r#""if-top-url":["^[^:]+://+([^:/]+\\.)?a\\.com[/:?#]"]"#));
         assert!(json(&out).contains(r#""if-top-url":["#));
     }
 
@@ -1767,7 +1820,7 @@ mod tests {
         assert_eq!(tiers(&out), [Tier::Block, Tier::Exception, Tier::Exception]);
         assert!(out
             .iter()
-            .all(|t| t.rule.trigger.if_domain == Some(vec!["*s.com".into()])));
+            .all(|t| t.rule.trigger.if_top_url == host_top_url("*s.com").map(|u| vec![u])));
     }
 
     #[test]
@@ -1917,7 +1970,7 @@ mod tests {
         // block crashed WebKit's compiler (Safari ContentBlockerLoader).
         assert_eq!(
             json(&out),
-            r#"[{"trigger":{"url-filter":"/ads\\.js","resource-type":["script"]},"action":{"type":"block"}},{"trigger":{"url-filter":".*","resource-type":["image","style-sheet","script","font","media","ping","fetch","websocket","other"],"if-domain":["*x.com"]},"action":{"type":"ignore-previous-rules"}},{"trigger":{"url-filter":"/ads\\.js","resource-type":["script"],"if-domain":["*y.com"]},"action":{"type":"block"}}]"#
+            as_written(r#"[{"trigger":{"url-filter":"/ads\\.js","resource-type":["script"]},"action":{"type":"block"}},{"trigger":{"url-filter":".*","resource-type":["image","style-sheet","script","font","media","ping","fetch","websocket","other"],"if-domain":["*x.com"]},"action":{"type":"ignore-previous-rules"}},{"trigger":{"url-filter":"/ads\\.js","resource-type":["script"],"if-domain":["*y.com"]},"action":{"type":"block"}}]"#, V15)
         );
         assert_eq!(tiers(&out), [Tier::GenericBlock, Tier::GenericBlockException, Tier::Block]);
         let scoped = NetworkRule {
@@ -1945,7 +1998,7 @@ mod tests {
             ..net("*")
         };
         let (out, _) = run(&[origin(&["a.com", "b.com", "c.com"]), bad(origin(&["b.com"]))], V15);
-        assert_eq!(json(&out), r#"[{"trigger":{"url-filter":".*","resource-type":["script"],"load-type":["third-party"],"if-domain":["*a.com","*c.com"]},"action":{"type":"block"}}]"#);
+        assert_eq!(json(&out), as_written(r#"[{"trigger":{"url-filter":".*","resource-type":["script"],"load-type":["third-party"],"if-domain":["*a.com","*c.com"]},"action":{"type":"block"}}]"#, V15));
         // A typeless badfilter cancels a typed filter's network types only.
         let (out, _) = run(&[typed(RT::all().difference(RT::POPUP | RT::POPUNDER)), bad(typed(RT::empty()))], V15);
         assert_eq!(json(&out), r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?ads\\.com[/:?#]","resource-type":["document"],"load-context":["top-frame"]},"action":{"type":"block"}}]"#);
@@ -2171,13 +2224,14 @@ mod tests {
 
     #[test]
     fn regex_pattern_translates_digit_class() {
+        // The class gets the filter its own WebKit NFA (`regex::apart`).
         check(
             &[NetworkRule {
                 types: RT::SCRIPT,
                 ..net("/ads\\d{2}\\.js/")
             }],
             V15,
-            r#"[{"trigger":{"url-filter":"ads[0-9][0-9]\\.js","resource-type":["script"]},"action":{"type":"block"}}]"#,
+            r#"[{"trigger":{"url-filter":"a*ads[0-9][0-9]\\.js","resource-type":["script"]},"action":{"type":"block"}}]"#,
         );
     }
 
@@ -2419,8 +2473,8 @@ mod tests {
         };
         let (out, _) = run(&[rule], V15);
         assert_eq!(
-            out[0].rule.trigger.if_domain,
-            Some(vec!["*shop.example.com".into()])
+            out[0].rule.trigger.if_top_url,
+            host_top_url("*shop.example.com").map(|u| vec![u])
         );
     }
 
