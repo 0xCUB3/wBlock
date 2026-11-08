@@ -1945,9 +1945,9 @@ mod tests {
         let rules = rules(&plan, 0);
         let exception = rules.iter().rposition(|r| {
             r["action"]["type"] == "ignore-previous-rules"
-                && r["trigger"]["if-domain"]
+                && r["trigger"]["if-top-url"]
                     .to_string()
-                    .contains("shop.example.com")
+                    .contains("shop\\\\.example\\\\.com")
         });
         let block = rules.iter().rposition(|r| r["action"]["type"] == "block");
         assert!(exception > block, "{rules:?}");
@@ -1964,9 +1964,9 @@ mod tests {
         assert!(rules
             .iter()
             .any(|rule| rule["action"]["type"] == "ignore-previous-rules"
-                && rule["trigger"]["if-domain"]
+                && rule["trigger"]["if-top-url"]
                     .to_string()
-                    .contains("sub.example.com")));
+                    .contains("sub\\\\.example\\\\.com")));
     }
 
     #[test]
@@ -2046,7 +2046,7 @@ mod tests {
             json!({}),
         );
         let left = crate::webkit::to_json(&plan.compile_target(0, &[]).output.webkit);
-        assert!(left.contains("*site.com") && left.contains("*page.com"), "{left}");
+        assert!(left.contains("site\\\\.com[") && left.contains("page\\\\.com["), "{left}");
     }
 
     #[test]

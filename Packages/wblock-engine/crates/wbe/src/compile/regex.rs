@@ -231,14 +231,24 @@ pub fn domain_top_url(m: &DomainMatcher) -> Option<Vec<String>> {
     accepted(top_url(m)?)
 }
 
+/// The `if-top-url` regex for an `if-domain` entry: `*host` matches the host
+/// and its subdomains, `host` only itself. WebKit compiles `if-domain` to an
+/// unanchored regex (ContentExtensionParser.cpp, `getDomainList`), which also
+/// fires on a page whose query holds `http://host/`, and costs more to
+/// compile. Returns `None` for non-ASCII input.
+pub fn host_top_url(entry: &str) -> Option<String> {
+    let (mut out, host) = match entry.strip_prefix('*') {
+        Some(host) => (HOST_START.to_string(), host),
+        None => ("^[^:]+://+".to_string(), entry),
+    };
+    literal(host, &mut out)?;
+    out.push_str(HOST_END);
+    Some(out)
+}
+
 fn top_url(m: &DomainMatcher) -> Option<Vec<String>> {
     match m {
-        DomainMatcher::Hostname(h) => {
-            let mut out = HOST_START.to_string();
-            literal(h, &mut out)?;
-            out.push_str(HOST_END);
-            Some(vec![out])
-        }
+        DomainMatcher::Hostname(h) => Some(vec![host_top_url(&format!("*{h}"))?]),
         DomainMatcher::Entity(e) => {
             let mut out = HOST_START.to_string();
             literal(e, &mut out)?;
@@ -903,6 +913,21 @@ mod tests {
             top(DomainMatcher::Hostname("example.com".into())).unwrap(),
             "^[^:]+://+([^:/]+\\.)?example\\.com[/:?#]"
         );
+    }
+
+    #[test]
+    fn if_domain_entries_as_anchored_top_urls() {
+        let re = |entry: &str| ::regex::RegexBuilder::new(&host_top_url(entry).unwrap()).case_insensitive(true).build().unwrap();
+        let sub = re("*foo.test");
+        for url in ["https://foo.test/", "https://a.b.foo.test/x", "http://foo.test:8080/", "https://FOO.test/"] {
+            assert!(sub.is_match(url), "{url}");
+        }
+        for url in ["http://127.0.0.1/?u=http://foo.test/", "https://xfoo.test/", "https://foo.test.evil/"] {
+            assert!(!sub.is_match(url), "{url}");
+        }
+        let exact = re("foo.test");
+        assert!(exact.is_match("https://foo.test/"));
+        assert!(!exact.is_match("https://a.foo.test/"));
     }
 
     #[test]

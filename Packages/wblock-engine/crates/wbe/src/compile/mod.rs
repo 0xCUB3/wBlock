@@ -113,23 +113,29 @@ pub(super) struct DomainSpan {
     head: usize,
     tail: usize,
     domains: Vec<String>,
+    /// Written as `if-top-url` regexes (`regex::host_top_url`).
+    top: bool,
+}
+
+impl DomainSpan {
+    /// The condition's key and value, as written.
+    fn json(&self) -> (&'static [u8], Vec<u8>) {
+        let value = if self.top {
+            let urls: Vec<String> = self
+                .domains
+                .iter()
+                .map(|d| regex::host_top_url(d).expect("ASCII domain"))
+                .collect();
+            serde_json::to_vec(&urls)
+        } else {
+            serde_json::to_vec(&self.domains)
+        };
+        let key: &[u8] = if self.top { b",\"if-top-url\":" } else { b",\"if-domain\":" };
+        (key, value.expect("domains serialize"))
+    }
 }
 
 pub(crate) use network::{surviving, Context as NetworkContext};
-
-/// Counts the bytes written to it.
-struct Count(usize);
-
-impl std::io::Write for Count {
-    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-        self.0 += buf.len();
-        Ok(buf.len())
-    }
-
-    fn flush(&mut self) -> std::io::Result<()> {
-        Ok(())
-    }
-}
 
 /// Tiers in output order.
 const TIERS: [Tier; 13] = [
@@ -189,9 +195,10 @@ impl Emitted {
         match &entry.domain {
             None => out.extend_from_slice(&arena[entry.start..entry.end]),
             Some(span) => {
+                let (key, value) = span.json();
                 out.extend_from_slice(&arena[entry.start..span.head]);
-                out.extend_from_slice(b",\"if-domain\":");
-                serde_json::to_writer(&mut *out, &span.domains).expect("domains serialize");
+                out.extend_from_slice(key);
+                out.extend_from_slice(&value);
                 out.extend_from_slice(&arena[span.tail..entry.end]);
             }
         }
@@ -202,12 +209,8 @@ impl Emitted {
         match &entry.domain {
             None => entry.end - entry.start,
             Some(span) => {
-                let mut domains = Count(0);
-                serde_json::to_writer(&mut domains, &span.domains).expect("domains serialize");
-                (span.head - entry.start)
-                    + b",\"if-domain\":".len()
-                    + domains.0
-                    + (entry.end - span.tail)
+                let (key, value) = span.json();
+                (span.head - entry.start) + key.len() + value.len() + (entry.end - span.tail)
             }
         }
     }
