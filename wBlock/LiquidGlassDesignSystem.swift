@@ -42,6 +42,8 @@ struct ListActionsToolbar<Primary: View, Apply: View, Leading: View>: ViewModifi
     @Binding var focusRequest: Bool
     @Binding var showEnabledOnly: Bool
     let searchPrompt: LocalizedStringKey
+    /// Pending changes give Apply a bubble of its own (#1087, #1098).
+    var splitsApply = false
     @ViewBuilder let primary: () -> Primary
     @ViewBuilder let apply: () -> Apply
     /// Pause Blocking. It lives here so iPhone search can clear it with the
@@ -135,6 +137,9 @@ struct ListActionsToolbar<Primary: View, Apply: View, Leading: View>: ViewModifi
                         }
                     } else {
                         ToolbarItem(placement: .topBarLeading) { leading() }
+                        if splitsApply {
+                            ToolbarSpacer(.fixed, placement: .topBarLeading)
+                        }
                         ToolbarItem(placement: .topBarLeading) { apply() }
                             .toolbarVisibilityPriorityCompat(.high)
                         // Search, Show Enabled Only, Add: the Mac order (#999).

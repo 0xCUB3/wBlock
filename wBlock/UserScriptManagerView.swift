@@ -147,6 +147,8 @@ struct UserScriptManagerView: View {
     let onRefresh: () async -> Void
     /// The Filters tab's Update/Apply button, shared so both tabs match (#953).
     let applyButton: AnyView
+    /// Whether Apply sits in a bubble of its own, as on the Filters tab.
+    var splitsApply = false
     let pauseButton: AnyView
     /// Rows lock while an apply the user started runs, so nothing changes
     /// under it and is quietly left for the next one.
@@ -438,7 +440,8 @@ struct UserScriptManagerView: View {
                     ProtobufDataManager.shared.setUserScriptShowEnabledOnly($0)
                 }
             ),
-            searchPrompt: "Search scripts"
+            searchPrompt: "Search scripts",
+            splitsApply: splitsApply
         ) {
             addMenu
         } apply: {

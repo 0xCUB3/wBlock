@@ -102,11 +102,9 @@ struct ContentView: View {
     private var showsApply: Bool {
         hasPendingChanges && !filterManager.isLoading && !filterManager.isAutoUpdateRunning
     }
-    #if os(macOS)
     /// showsApply, changed inside an animation so the toolbar glass morphs as
-    /// Apply splits off and rejoins (#1087).
+    /// Apply splits off and rejoins (#1087, #1098).
     @State private var splitsApply = false
-    #endif
 
     private var shouldShowRuleLimitIndicator: Bool {
         hasAppliedFilters && appliedSafariRulesCount >= filterManager.safariRuleCapacity
@@ -352,12 +350,10 @@ struct ContentView: View {
     private var applyChangesToolbarButton: some View {
         #if os(macOS)
         applyOrUpdateButton
-            .onAppear { splitsApply = showsApply }
-            .onChangeCompat(of: showsApply) { _, splits in
-                withAnimation(.smooth(duration: 0.3)) { splitsApply = splits }
-            }
+            .modifier(ApplySplitTracking(showsApply: showsApply, splitsApply: $splitsApply))
         #else
         updateToolbarButton
+            .modifier(ApplySplitTracking(showsApply: showsApply, splitsApply: $splitsApply))
         #endif
     }
 
@@ -460,7 +456,8 @@ struct ContentView: View {
             searchText: $filterSearchText,
             focusRequest: $showFilterSearch,
             showEnabledOnly: $showOnlyEnabledLists,
-            searchPrompt: "Search filters"
+            searchPrompt: "Search filters",
+            splitsApply: splitsApply
         ) {
             Button {
                 showingAddFilterSheet = true
@@ -544,6 +541,7 @@ struct ContentView: View {
                     await filterManager.checkForUpdates(scope: .scripts, presentation: .refresh)
                 },
                 applyButton: AnyView(applyChangesToolbarButton),
+                splitsApply: splitsApply,
                 pauseButton: AnyView(PauseBlockingButton(filterManager: filterManager)),
                 isApplying: filterManager.showingApplyProgressSheet
             )
@@ -653,7 +651,13 @@ struct ContentView: View {
 
     private func enableRecommended(_ ids: Set<UUID>, in category: FilterListCategory) {
         for filter in filterManager.filterLists where filter.category == category {
-            filterManager.setFilterListSelection(id: filter.id, selected: ids.contains(filter.id))
+            // A list not downloaded yet downloads now, like its own switch, so
+            // its row turns on at once instead of after Apply (#1098).
+            if ids.contains(filter.id), !filterManager.downloadedFilterIDs.contains(filter.id) {
+                downloadFilter(filter)
+            } else {
+                filterManager.setFilterListSelection(id: filter.id, selected: ids.contains(filter.id))
+            }
         }
         filterManager.flushPendingSave()
     }
@@ -2419,5 +2423,20 @@ private extension View {
         } message: { filter in
             Text(filter.message)
         }
+    }
+}
+
+/// Follows showsApply inside an animation, so Apply splits off and rejoins
+/// with the toolbar glass morphing.
+private struct ApplySplitTracking: ViewModifier {
+    let showsApply: Bool
+    @Binding var splitsApply: Bool
+
+    func body(content: Content) -> some View {
+        content
+            .onAppear { splitsApply = showsApply }
+            .onChangeCompat(of: showsApply) { _, splits in
+                withAnimation(.smooth(duration: 0.3)) { splitsApply = splits }
+            }
     }
 }
