@@ -379,9 +379,8 @@ impl Plan {
 
     /// One pass over records `range` of `list` for blocker `target`, which
     /// keeps what the compile needs from them and drops the rules themselves.
-    /// `segment` is the blocker's #925 segment list, whose plain blocks stay
-    /// out of the set.
-    fn scan(&self, target: usize, unit: &Unit, segment: Option<usize>) -> ListScan {
+    /// The #925 segment's blocks count too: an exception must see their hosts.
+    fn scan(&self, target: usize, unit: &Unit) -> ListScan {
         let list = unit.list;
         let scope = &self.lists[list].scope;
         let mut out = ListScan::default();
@@ -397,10 +396,6 @@ impl Plan {
                     continue;
                 };
                 out.admitted.push(identity(raw(&rule)));
-                // Segment blocks compile unscoped; the ignore rules scope them.
-                if Some(list) == segment && is_plain_block(&rule) {
-                    continue;
-                }
                 match rule {
                     Rule::Network(r) => out.ctx.add(&r),
                     Rule::Cosmetic(r) => out.others.cosmetic.push(r),
@@ -426,11 +421,9 @@ impl Plan {
     }
 
     /// `scan` for every list, the record ranges in parallel and merged per list.
-    fn scans(&self, target: usize, segment: Option<usize>) -> Vec<ListScan> {
+    fn scans(&self, target: usize) -> Vec<ListScan> {
         let units = self.record_units();
-        let parts = parallel_indices(units.len(), |u| {
-            (units[u].list, self.scan(target, &units[u], segment))
-        });
+        let parts = parallel_indices(units.len(), |u| (units[u].list, self.scan(target, &units[u])));
         let mut lists: Vec<ListScan> = (0..self.lists.len()).map(|_| ListScan::default()).collect();
         for (list, part) in parts {
             lists[list].absorb(part);
@@ -620,7 +613,7 @@ impl Plan {
             return None;
         }
         let segment_list = self.segment_list(target);
-        let scans = self.scans(target, segment_list);
+        let scans = self.scans(target);
 
         let mut stats = Stats::default();
         let mut admitted = BTreeMap::new();
@@ -1828,6 +1821,22 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn exception_lifts_segment_navigation_block() {
+        // The segment's untyped `||host^` blocks navigation to the host, so an
+        // exception for the host must take the untyped form that lifts it.
+        let plan = plan(
+            json!([{"id":"a", "text":"||cdn.example^", "scope":{"exclude":["other.com"]}},
+                   {"id":"b", "text":"@@||cdn.example^"}]),
+            json!([{"slot":1,"lists":[{"list":0},{"list":1}]}]),
+            json!({}),
+        );
+        let rules = rules(&plan, 0);
+        assert!(rules.iter().any(|r| r["action"]["type"] == "ignore-previous-rules"
+            && r["trigger"]["resource-type"].is_null()
+            && r["trigger"]["url-filter"].as_str().unwrap().contains("cdn")), "{rules:?}");
     }
 
     #[test]
