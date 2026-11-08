@@ -5,7 +5,7 @@
 //! makes them wider and can only under-block. Each rule's tier follows
 //! `compile/mod.rs`; exceptions use ignore-previous-rules.
 
-use super::regex::{domain_top_url, url_filter};
+use super::regex::{apart, domain_top_url, url_filter};
 use super::{DomainSpan, Emitted, Entry, Stats, Tier};
 use crate::ast::{
     DomainList, DomainMatcher, ExceptionScope, NetworkAction, NetworkRule, Party, Pattern,
@@ -528,6 +528,10 @@ fn party(p: Party, exception: bool) -> Result<Option<WkLoadType>, String> {
 /// filter per target hostname. Other `$to=` uses are dropped for blocks and
 /// ignored for exceptions.
 fn urls(r: &NetworkRule, exception: bool) -> Result<Vec<String>, String> {
+    Ok(filters(r, exception)?.into_iter().map(apart).collect())
+}
+
+fn filters(r: &NetworkRule, exception: bool) -> Result<Vec<String>, String> {
     let pattern = match url_filter(&r.pattern) {
         Some(u) => u,
         None if exception => vec![".*".into()],
@@ -2074,13 +2078,14 @@ mod tests {
 
     #[test]
     fn regex_pattern_translates_digit_class() {
+        // The class gets the filter its own WebKit NFA (`regex::apart`).
         check(
             &[NetworkRule {
                 types: RT::SCRIPT,
                 ..net("/ads\\d{2}\\.js/")
             }],
             V15,
-            r#"[{"trigger":{"url-filter":"ads[0-9][0-9]\\.js","resource-type":["script"]},"action":{"type":"block"}}]"#,
+            r#"[{"trigger":{"url-filter":"a*ads[0-9][0-9]\\.js","resource-type":["script"]},"action":{"type":"block"}}]"#,
         );
     }
 
