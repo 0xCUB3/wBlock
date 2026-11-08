@@ -395,17 +395,16 @@ impl Engine {
                     let call = std::iter::once(r.name).chain(r.args).collect();
                     scriptlets.add(r.exception, r.domains, call);
                 }
-                ParsedLine::Rule(Rule::Network(r)) if r.types.contains(crate::ast::ResourceTypes::POPUP) => {
-                    if let Ok(rule) = popup_rule(&r) {
+                // `@@...$doc,popup` is both a popup allow and a page exception.
+                ParsedLine::Rule(Rule::Network(r)) if r.types.contains(crate::ast::ResourceTypes::POPUP) || r.exception && !r.scope.is_empty() => {
+                    if let Some(rule) = popup_rule(&r).ok().filter(|_| r.types.contains(crate::ast::ResourceTypes::POPUP)) {
                         // Network allow rules are candidates, not cosmetic exceptions.
                         // An allow keeps its opener domains: indexed for every
                         // opener, uBO's `@@$popup,domain=datanodes.to` allowed
                         // every popup on every site (#1072). Safari's tab event
                         // names the opener tab, so a frame-only allow can miss.
-                        popups.add(false, r.from, vec!["wbe:popup".into(), rule.to_string()]);
+                        popups.add(false, r.from.clone(), vec!["wbe:popup".into(), rule.to_string()]);
                     }
-                }
-                ParsedLine::Rule(Rule::Network(r)) if r.exception && !r.scope.is_empty() => {
                     if r.scope.contains(ExceptionScope::GHIDE) {
                         cosmetic.push(line.as_str());
                         generic.push(line.as_str());
@@ -431,6 +430,7 @@ impl Engine {
                                         | "generichide"
                                         | "ghide"
                                         | "genericblock"
+                                        | "popup"
                                 )
                             })
                             .collect();
@@ -558,7 +558,12 @@ impl Engine {
     }
     fn blocks_popup(&self, source: &str, target: &str) -> bool {
         if !["http://", "https://"].iter().any(|p| target.starts_with(p)) { return false; }
+        use crate::ast::Party;
         let host = host_of(source).to_ascii_lowercase();
+        let target_host = host_of(target).to_ascii_lowercase();
+        let site = |h: &str| crate::registrable_domain(h).map_or_else(|| h.to_string(), str::to_string);
+        let third = site(&host) != site(&target_host);
+        let genericblock = self.genericblock.url_cosmetic_resources(source).generichide;
         let mut block = false;
         let mut allow = false;
         let mut important_block = false;
@@ -566,14 +571,24 @@ impl Engine {
         for call in self.popups.lookup(&host, true) {
             let Ok(rule) = serde_json::from_str::<serde_json::Value>(&call[1]) else { continue };
             let Some(pattern) = rule["pattern"].as_str() else { continue };
+            let Ok(party) = serde_json::from_value::<Party>(rule["party"].clone()) else { continue };
+            let party_ok = match party {
+                Party::Any => true,
+                Party::First => !third,
+                Party::Third => third,
+                Party::StrictFirst => host == target_host,
+                Party::StrictThird => host != target_host,
+            };
+            if !party_ok { continue; }
             let Ok(regex) = regex::RegexBuilder::new(pattern).case_insensitive(rule["matchCase"] != true).build() else { continue };
             if !regex.is_match(target) { continue; }
             match (rule["allow"] == true, rule["important"] == true) {
-                (false, false) => block = true, (true, false) => allow = true,
+                (false, false) => block |= !(genericblock && rule["generic"] == true),
+                (true, false) => allow = true,
                 (false, true) => important_block = true, (true, true) => important_allow = true,
             }
         }
-        !important_allow && (important_block || (block && !allow && !self.genericblock.url_cosmetic_resources(source).generichide))
+        !important_allow && (important_block || (block && !allow))
     }
 
 }
@@ -582,12 +597,11 @@ impl Engine {
 /// rest of the engine. Unsupported constraints never become broader blocks.
 pub(crate) fn popup_rule(r: &crate::ast::NetworkRule) -> Result<serde_json::Value, String> {
     use crate::ast::NetworkAction;
-    if !matches!(r.action, NetworkAction::Block) || !r.scope.is_empty() {
-        return Err("popup: unsupported action or page scope".into());
+    if !matches!(r.action, NetworkAction::Block) {
+        return Err("popup: unsupported action".into());
     }
-    if (!r.from.is_empty() || r.party != crate::ast::Party::Any) && !r.exception {
-        return Err("popup: Safari tab events do not identify opener frames for domain or party constraints".into());
-    }
+    // `domain=` and party are judged against the opener tab, as uBO does
+    // when it cannot tell which frame opened the popup.
     let constrained = !r.to.is_empty() || !r.denyallow.is_empty()
         || !r.method.include.is_empty() || !r.method.exclude.is_empty()
         || !r.runtime_only_options.is_empty();
@@ -604,7 +618,7 @@ pub(crate) fn popup_rule(r: &crate::ast::NetworkRule) -> Result<serde_json::Valu
         _ => return Err("popup: unsupported URL pattern".into()),
     };
     Ok(serde_json::json!({"pattern":pattern, "allow":r.exception, "important":r.important,
-        "matchCase":r.match_case}))
+        "matchCase":r.match_case, "party":r.party, "generic":r.from.include.is_empty()}))
 }
 
 fn read_index(rest: &mut &[u8]) -> Result<Scriptlets, String> {
@@ -707,6 +721,38 @@ example.com##+js(set-constant, adsEnabled, false)
         assert!(popup_blocked(rules, "https://movies.example/", "https://ads.example/ok"));
         // An unscoped allow still applies to every opener.
         assert!(!popup_blocked("||ads.example^$popup\n@@||ads.example/ok^$popup\n", "https://movies.example/", "https://ads.example/ok"));
+    }
+
+    #[test]
+    fn popup_blocks_keep_opener_domains_and_party() {
+        // uBO's catch-all for streaming hosts and EasyList's `://ads.` rule,
+        // both scoped by the opener tab.
+        let text = "$popup,third-party,domain=streamtape.com\n://ads.$popup,domain=~ad.olx.pl\n@@||site.example/ok$popup,1p\n||site.example^$popup\n||gen.example^$popup\n||spec.example^$popup,domain=keep.example\n@@||keep.example^$genericblock\n";
+        let out = crate::compile(&[crate::ListInput { text, trusted: false }], &crate::CompileOptions { safari: crate::webkit::SafariVersion::new(18, 0) });
+        assert!(out.stats.dropped.is_empty(), "{:?}", out.stats.dropped);
+        let engine = Engine::deserialize(&Engine::build(&out.runtime).serialize()).unwrap();
+        let blocked = |opener: &str, target: &str| engine.lookup(&format!("wbe-popup-{opener}#{target}")).popup_blocked == Some(true);
+        assert!(blocked("https://www.streamtape.com/e/1", "https://pop.example/"));
+        assert!(!blocked("https://www.streamtape.com/e/1", "https://cdn.streamtape.com/v"));
+        assert!(!blocked("https://other.example/", "https://pop.example/"));
+        assert!(blocked("https://news.example/", "https://ads.foo.example/"));
+        assert!(!blocked("https://ad.olx.pl/", "https://ads.foo.example/"));
+        assert!(!blocked("https://www.site.example/", "https://site.example/ok"));
+        assert!(blocked("https://other.example/", "https://site.example/ok"));
+        assert!(!blocked("https://keep.example/", "https://gen.example/"));
+        assert!(blocked("https://keep.example/", "https://spec.example/"));
+    }
+
+    #[test]
+    fn document_popup_exception_keeps_both_halves() {
+        // uBO's unbreak list ships `@@||awstrack.me/*auth.coindesk.com$doc,popup`.
+        let text = "##+js(set, a, 1)\n||awstrack.me^$popup\n@@||awstrack.me/*auth.coindesk.com$doc,popup\n";
+        let out = crate::compile(&[crate::ListInput { text, trusted: false }], &crate::CompileOptions { safari: crate::webkit::SafariVersion::new(18, 0) });
+        assert!(out.stats.dropped.is_empty(), "{:?}", out.stats.dropped);
+        let engine = Engine::deserialize(&Engine::build(&out.runtime).serialize()).unwrap();
+        let url = "https://awstrack.me/x?auth.coindesk.com";
+        assert!(engine.lookup(url).scriptlets.is_empty());
+        assert_eq!(engine.lookup(&format!("wbe-popup-https://news.example/#{url}")).popup_blocked, Some(false));
     }
 
     #[test]
