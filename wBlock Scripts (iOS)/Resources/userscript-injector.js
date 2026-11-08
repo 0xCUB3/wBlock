@@ -885,7 +885,9 @@ if (window.wBlockUserscriptInjectorHasRun) {
             try {
                 const raw = readWarmStartCache();
                 if (!raw) return null;
-                if (new TextEncoder().encode(raw).length > WBLOCK_WARM_START_MAX_BYTES) {
+                // A UTF-16 unit is at most 3 UTF-8 bytes; encode only near the limit.
+                if (raw.length * 3 > WBLOCK_WARM_START_MAX_BYTES
+                    && new TextEncoder().encode(raw).length > WBLOCK_WARM_START_MAX_BYTES) {
                     removeWarmStartCache();
                     return;
                 }
@@ -983,21 +985,27 @@ if (window.wBlockUserscriptInjectorHasRun) {
 
         persistWarmStartScripts(scripts) {
             try {
-                const savedAt = Date.now();
-                const bounded = [];
+                // Serialize and measure each script once; the cache is the
+                // JSON of { version, savedAt, scripts } built from these parts.
+                const head = JSON.stringify({ version: 1, savedAt: Date.now(), scripts: [] }).slice(0, -2);
+                const encoder = new TextEncoder();
+                const parts = [];
+                let bytes = encoder.encode(head).length + 2;
                 for (const script of scripts) {
-                    if (bounded.length >= WBLOCK_WARM_START_MAX_SCRIPTS) break;
+                    if (parts.length >= WBLOCK_WARM_START_MAX_SCRIPTS) break;
                     if (!this.isWarmStartEligible(script)) continue;
                     const {
                         storageBridgeId, menuBridgeId, xhrBridgeId, portBridgeId,
                         storageSnapshot, __wblockWarmStart, ...cached
                     } = script;
-                    const candidate = JSON.stringify({ version: 1, savedAt, scripts: [...bounded, cached] });
-                    if (new TextEncoder().encode(candidate).length <= WBLOCK_WARM_START_MAX_BYTES) {
-                        bounded.push(cached);
+                    const part = JSON.stringify(cached);
+                    const partBytes = encoder.encode(part).length + (parts.length > 0 ? 1 : 0);
+                    if (bytes + partBytes <= WBLOCK_WARM_START_MAX_BYTES) {
+                        parts.push(part);
+                        bytes += partBytes;
                     }
                 }
-                writeWarmStartCache(JSON.stringify({ version: 1, savedAt, scripts: bounded }));
+                writeWarmStartCache(head + parts.join(',') + ']}');
             } catch (_) { /* page storage is optional */ }
         }
 
