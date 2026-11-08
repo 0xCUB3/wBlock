@@ -48,22 +48,19 @@ extension SourceViewerControls where Extra == EmptyView {
     }
 }
 
-/// Source controls side by side. macOS 26 fuses them into one glass
-/// capsule, like a toolbar group (#1091).
+/// Source controls side by side. macOS 26 puts them in one glass capsule,
+/// like a toolbar group (#1091); each control inside is drawn by
+/// `SourceClusterItemStyle`. Glass buttons merged with a glass union came
+/// apart and drew off center.
 struct SourceControlCluster<Content: View>: View {
     @ViewBuilder var content: () -> Content
-    @Namespace private var namespace
 
     var body: some View {
         #if os(macOS)
         if #available(macOS 26.0, *) {
-            GlassEffectContainer {
-                HStack(spacing: 0) {
-                    Group(subviews: content()) { subviews in
-                        ForEach(subviews) { $0.glassEffectUnion(id: 0, namespace: namespace) }
-                    }
-                }
-            }
+            HStack(spacing: 0) { content() }
+                .padding(2)
+                .glassEffect(.regular, in: Capsule())
         } else {
             HStack(spacing: SourceControlMetrics.spacing) { content() }
         }
@@ -119,16 +116,10 @@ struct SourceControlButton: View {
     var body: some View {
         #if os(macOS)
         if #available(macOS 26.0, *) {
-            // Native glass, like the close button beside them (#1089). A
-            // control that's on fills with the accent color, as Show Enabled
-            // Only does in the toolbar (#1091).
             Button(action: action) {
-                Image(systemName: systemImage)
-                    .font(.body.weight(.medium))
-                    .frame(width: 20, height: 20)
+                Image(systemName: systemImage).frame(width: 20, height: 20)
             }
-            .glassToggleStyle(isOn: isOn)
-            .buttonBorderShape(.circle)
+            .buttonStyle(SourceClusterItemStyle(isOn: isOn))
             .accessibilityLabel(title)
             .help(title)
         } else {
@@ -164,27 +155,52 @@ struct SourceControlIcon: View {
 }
 
 #if os(macOS)
-@available(macOS 26.0, *)
-private extension View {
-    @ViewBuilder
-    func glassToggleStyle(isOn: Bool) -> some View {
-        if isOn { buttonStyle(.glassProminent) } else { buttonStyle(.glass) }
+/// A control inside a `SourceControlCluster`'s capsule. One that's on fills
+/// with the accent color, as Show Enabled Only does in the toolbar (#1091).
+struct SourceClusterItemStyle: ButtonStyle {
+    var isOn = false
+
+    func makeBody(configuration: Configuration) -> some View {
+        Item(label: configuration.label, isOn: isOn, isPressed: configuration.isPressed)
+    }
+
+    private struct Item: View {
+        let label: Configuration.Label
+        let isOn: Bool
+        let isPressed: Bool
+        @Environment(\.isEnabled) private var isEnabled
+
+        var body: some View {
+            label
+                .font(.body.weight(.medium))
+                .padding(.horizontal, 6)
+                .frame(minWidth: 30, minHeight: 22)
+                .foregroundStyle(isOn ? Color.white : (isEnabled ? Color.primary : Color.secondary.opacity(0.5)))
+                .background {
+                    if isOn {
+                        Capsule().fill(Color.accentColor.opacity(isPressed ? 0.8 : 1))
+                    } else if isPressed {
+                        Capsule().fill(Color.primary.opacity(0.12))
+                    }
+                }
+                .contentShape(Capsule())
+        }
     }
 }
 #endif
 
 /// The capsule behind a source window's menu, darker while pressed so a
-/// click shows (#1088). macOS 26 uses glass like its neighbors (#1089),
-/// filled with the accent color while the menu narrows what shows (#1091);
-/// elsewhere the icon takes the accent color instead. macOS before 14 can't
-/// style a menu as a button and keeps the plain capsule.
+/// click shows (#1088). On macOS 26 it's an item in the controls' shared
+/// capsule, filled with the accent color while the menu narrows what shows
+/// (#1091); elsewhere the icon takes the accent color instead. macOS before
+/// 14 can't style a menu as a button and keeps the plain capsule.
 struct SourceMenuCapsule: ViewModifier {
     var isActive = false
 
     func body(content: Content) -> some View {
         #if os(macOS)
         if #available(macOS 26.0, *) {
-            content.menuStyle(.button).glassToggleStyle(isOn: isActive).buttonBorderShape(.capsule)
+            content.menuStyle(.button).buttonStyle(SourceClusterItemStyle(isOn: isActive))
         } else if #available(macOS 14.0, *) {
             content.menuStyle(.button).buttonStyle(CapsulePressStyle()).foregroundStyle(tint)
         } else {

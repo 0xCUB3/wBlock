@@ -306,6 +306,10 @@ struct FilterRulesView: View {
     /// Each kind's count sits in its menu item; a legend under the editor
     /// cost a third of an iPhone screen (#1037) and its ViewThatFits/grid
     /// layout hung rotation while Find had the keyboard up (#1036).
+    private static var menuChevron: some View {
+        Image(systemName: "chevron.down").font(.caption2.weight(.semibold))
+    }
+
     private func filterMenu(_ analysis: FilterRuleAnalysis) -> some View {
         Menu {
             ForEach(Self.highlightedKinds, id: \.self) { kind in
@@ -319,8 +323,11 @@ struct FilterRulesView: View {
             HStack(spacing: 2) {
                 Image(systemName: "line.3.horizontal.decrease")
                 #if os(iOS)
-                // macOS draws its own indicator and drops extra label images.
-                Image(systemName: "chevron.down").font(.caption2.weight(.semibold))
+                Self.menuChevron
+                #else
+                // Older macOS draws its own indicator and drops extra label
+                // images; macOS 26 draws the label as given (#1091).
+                if #available(macOS 26.0, *) { Self.menuChevron }
                 #endif
             }
             .frame(height: SourceControlMetrics.size)
