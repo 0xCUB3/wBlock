@@ -211,11 +211,19 @@ fn compile_rule(
         NetworkAction::Other { option, .. } => return Err(format!("dnr:{option}")),
     }
     if !r.scope.is_empty() {
-        return if r.exception {
-            compile_scope(r, v, out)
-        } else {
-            Err("dnr:scope-on-block".into())
-        };
+        if !r.exception {
+            return Err("dnr:scope-on-block".into());
+        }
+        // uBO stores the page options as types beside the request types, so
+        // `@@...$elemhide,script` also allows the scripts it matches. The
+        // page exception already covers `$document`'s own request.
+        let types = r.types.difference(ResourceTypes::DOC);
+        let requests = NetworkRule { scope: ExceptionScope::empty(), types, ..r.clone() };
+        let page = compile_scope(r, v, out);
+        if !types.is_empty() {
+            compile_rule(&requests, v, ctx, out, tier)?;
+        }
+        return page;
     }
     let exception = r.exception;
     // `@@...$cname` only exempts a request from CNAME uncloaking; it never
@@ -384,41 +392,37 @@ fn compile_scope(r: &NetworkRule, v: SafariVersion, out: &mut Emitted) -> Result
             Err("genericblock: only unconstrained hostname page exceptions can be represented without canceling cosmetics".into())
         };
     };
-    let conds = match (
-        host_only(&r.pattern),
-        r.from.include.is_empty(),
-        r.from.exclude.is_empty(),
-    ) {
-        (Some(host), false, true)
-            if r.from
-                .include
-                .iter()
-                .all(|d| matches!(d, DomainMatcher::Hostname(_))) =>
-        {
-            let domains = r
-                .from
-                .include
-                .iter()
-                .filter_map(|domain| {
-                    let DomainMatcher::Hostname(domain) = domain else {
-                        unreachable!()
-                    };
-                    if domain == &host || domain.ends_with(&format!(".{host}")) {
-                        Some(format!("*{domain}"))
-                    } else if host.ends_with(&format!(".{domain}")) {
-                        Some(format!("*{host}"))
+    // The pattern's host part, `||host^` or a `||label.` prefix, if that is
+    // all it has. Excluded page domains are dropped, which widens the
+    // exception as `domain_conds` does.
+    let host = (r.pattern.kind == PatternKind::Hostname && !r.pattern.right_anchored)
+        .then(|| r.pattern.body.strip_suffix('^').unwrap_or(&r.pattern.body).to_ascii_lowercase())
+        .filter(|h| !h.is_empty() && h.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'.'));
+    let hostnames: Option<Vec<&str>> = r.from.include.iter()
+        .map(|d| match d { DomainMatcher::Hostname(h) => Some(h.as_str()), _ => None })
+        .collect();
+    let conds = match (host, hostnames) {
+        _ if r.pattern.is_match_all() => domain_conds(&r.from, v, true)?,
+        _ if r.from.include.is_empty() => vec![page_cond(&r.pattern, v)],
+        (Some(host), Some(hostnames)) => {
+            let domains: Vec<_> = hostnames
+                .into_iter()
+                .filter_map(|d| {
+                    if labels(d).any(|s| s == host || host.ends_with('.') && s.starts_with(&host)) {
+                        Some(format!("*{d}"))
                     } else {
-                        None
+                        labels(&host).skip(1).any(|s| s == d).then(|| format!("*{host}"))
                     }
                 })
-                .collect::<Vec<_>>();
+                .collect();
             if domains.is_empty() {
                 return Ok(());
             }
             vec![Some(Cond::IfDomain(domains))]
         }
-        (_, true, true) => vec![page_cond(&r.pattern, v)],
-        _ if r.pattern.is_match_all() => domain_conds(&r.from, v, true)?,
+        // A path pattern with page domains: either alone would hand the
+        // exception to far more pages, such as every google.* page for
+        // EasyList's `@@http://adsense.google.$document,domain=google.*`.
         _ => return Err("dnr:scope-domain-intersection".into()),
     };
     // Hides fire on the page's document request, so a cosmetic exception
@@ -482,11 +486,13 @@ impl StrictHosts {
 
     /// A block on `host`, a parent of it, or a subdomain of it.
     fn related(&self, host: &str) -> bool {
-        self.parents.contains(host)
-            || std::iter::once(host)
-                .chain(host.match_indices('.').map(|(i, _)| &host[i + 1..]))
-                .any(|h| self.hosts.contains(h))
+        self.parents.contains(host) || labels(host).any(|h| self.hosts.contains(h))
     }
+}
+
+/// `host` and each parent of it: `a.b.c`, `b.c`, `c`.
+fn labels(host: &str) -> impl Iterator<Item = &str> {
+    std::iter::once(host).chain(host.match_indices('.').map(|(i, _)| &host[i + 1..]))
 }
 
 /// The lowercase hostname of a `||host^` pattern with nothing after the host.
@@ -509,10 +515,11 @@ fn party(p: Party, exception: bool) -> Result<Option<WkLoadType>, String> {
         Party::Any => None,
         Party::First => Some(WkLoadType::FirstParty),
         Party::Third => Some(WkLoadType::ThirdParty),
-        // Strict parties are subsets of first/third, so an exception may use
-        // the wider one. A block cannot.
+        // An exception may take a wider party, a block cannot. Same hostname
+        // is within first-party; a different hostname can be first- or
+        // third-party, so `$strict3p` takes no load-type.
         Party::StrictFirst if exception => Some(WkLoadType::FirstParty),
-        Party::StrictThird if exception => Some(WkLoadType::ThirdParty),
+        Party::StrictThird if exception => None,
         Party::StrictFirst | Party::StrictThird => return Err("dnr:strict-party".into()),
     })
 }
@@ -1312,7 +1319,7 @@ mod tests {
         check(
             std::slice::from_ref(&widened),
             V15,
-            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[/:?#]","resource-type":["script"],"load-type":["third-party"]},"action":{"type":"ignore-previous-rules"}}]"#,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t\\.com[/:?#]","resource-type":["script"]},"action":{"type":"ignore-previous-rules"}}]"#,
         );
     }
 
@@ -1781,6 +1788,49 @@ mod tests {
             let (out, _) = run(std::slice::from_ref(&rule), V15);
             assert_eq!(tiers(&out), [Tier::ElemHideException]);
         }
+    }
+
+    #[test]
+    fn page_exception_with_request_types_keeps_both_halves() {
+        // EasyList ships `@@||jokerly.com/Okidak/vastChecker.htm$document,subdocument`.
+        let rule = NetworkRule {
+            scope: ExceptionScope::DOC,
+            types: RT::DOC | RT::FRAME,
+            ..exc("@@||jokerly.com/v.htm$document,subdocument")
+        };
+        let out = check(
+            std::slice::from_ref(&rule),
+            V15,
+            r#"[{"trigger":{"url-filter":".*","if-top-url":["^[^:]+://+([^:/]+\\.)?jokerly\\.com/v\\.htm"]},"action":{"type":"ignore-previous-rules"}},{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?jokerly\\.com/v\\.htm","resource-type":["document"],"load-context":["child-frame"]},"action":{"type":"ignore-previous-rules"}}]"#,
+        );
+        assert_eq!(tiers(&out), [Tier::DocumentException, Tier::Exception]);
+    }
+
+    #[test]
+    fn page_exception_intersects_host_prefix_and_drops_excludes() {
+        // uBO Quick Fixes ships `@@||shrink.$ghide,domain=shrink.icu|shrink.yt`.
+        let prefix = NetworkRule {
+            scope: ExceptionScope::GHIDE,
+            from: list(&["shrink.icu", "other.com"], &["a.shrink.icu"]),
+            ..exc("@@||shrink.$ghide")
+        };
+        let host = NetworkRule {
+            scope: ExceptionScope::EHIDE,
+            from: list(&[], &["y.com"]),
+            ..exc("@@||x.com^$elemhide")
+        };
+        check(
+            &[prefix, host],
+            V15,
+            r#"[{"trigger":{"url-filter":".*","resource-type":["document"],"if-domain":["*shrink.icu"]},"action":{"type":"ignore-previous-rules"}},{"trigger":{"url-filter":".*","resource-type":["document"],"if-domain":["*x.com"]},"action":{"type":"ignore-previous-rules"}}]"#,
+        );
+        // Either half alone would hand the exception to far more pages.
+        let google = NetworkRule {
+            scope: ExceptionScope::DOC,
+            from: list(&["google.com"], &[]),
+            ..exc("@@http://adsense.google.$document")
+        };
+        assert_eq!(drop_reason(&[google], V15), ["dnr:scope-domain-intersection"]);
     }
 
     #[test]
