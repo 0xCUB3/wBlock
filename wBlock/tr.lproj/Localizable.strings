@@ -3,15 +3,9 @@
 "The rule could not be saved. It may have changed or already exist." = "Kural kaydedilemedi. Değiştirilmiş olabilir veya zaten mevcut.";
 
 "Apply on" = "Uygulanacak siteler";
-"No sites selected. This list will not apply." = "Hiçbir site seçilmedi. Bu liste uygulanmayacak.";
-"Sites include their subdomains. Use * to match any top-level domain, for example amazon.*. Apply changes to update filtering." = "Siteler alt alan adlarını da kapsar. Herhangi bir üst düzey alan adıyla eşleşmek için * kullanın, örneğin amazon.*. Filtrelemeyi güncellemek için değişiklikleri uygulayın.";
-"Run on" = "Çalıştırılacak siteler";
 "All matching sites" = "Eşleşen tüm siteler";
 "Only selected sites" = "Yalnızca seçilen siteler";
 "Selected Sites" = "Seçilen siteler";
-"No sites selected. This script will not run." = "Hiçbir site seçilmedi. Bu betik çalışmayacak.";
-"This script will not run on excluded sites, even if they are selected." = "Bu betik, seçilmiş olsalar bile hariç tutulan sitelerde çalışmaz.";
-"Sites include their subdomains. The script’s own matching rules still apply. Reload the page after making changes." = "Siteler alt alan adlarını da kapsar. Betiğin kendi eşleştirme kuralları geçerliliğini korur. Değişiklik yaptıktan sonra sayfayı yeniden yükleyin.";
 "Could not save site settings" = "Site ayarları kaydedilemedi";
 "SponsorBlock Backups" = "SponsorBlock yedekleri";
 "Import SponsorBlock Settings" = "SponsorBlock ayarlarını içe aktar";
@@ -612,7 +606,6 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Trace" = "İzleme";
 "Trust: %@" = "Güven: %@";
 "Trust: \\(trust.capitalized)" = "Güven: \\(trust.capitalized)";
-"Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "wBlock betikleri toplu olarak veya zamanlanmış şekilde güncellediğinde mevcut sürümü korumak için bunu kapatın.";
 "Unable to access shared container" = "Paylaşılan kapsayıcıya erişilemiyor";
 "Unapplied Filter Changes" = "Uygulanmayan filtre değişiklikleri";
 "Unavailable" = "Mevcut değil";
@@ -900,8 +893,6 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Enable Experimental Filter?" = "Deneysel filtre etkinleştirilsin mi?";
 "Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "Deneysel filtreler yeni kuralları ana listelere eklenmeden önce test etmek içindir ve sitelerin düzgün çalışmasını engelleyebilir. Bunları sadece site bozulmalarını tespit edip bildirebilecek düzeydeyseniz açın.";
 "Reset" = "Sıfırla";
-"No sites selected. Cosmetic filtering will not apply." = "Hiçbir site seçilmedi. Kozmetik filtreleme uygulanmayacak.";
-"Cosmetic filtering will not apply on these sites. Network blocking still applies." = "Bu sitelerde kozmetik filtreleme uygulanmayacak. Ağ düzeyinde engelleme ise devam eder.";
 "When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device." = "Etkinleştirildiğinde, kullanıcı betiği durum tercihleri iCloud ile eşitlenir. Tercihlerinizi sadece bu cihazda saklamak için bu ayarı kapatın.";
 "Rule Capacity" = "Kural Kapasitesi";
 "Next Update" = "Sonraki Güncelleme";
@@ -931,7 +922,6 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "This isn’t a valid http(s) filter URL." = "Bu, geçerli bir http(s) filtre URL'si değil.";
 
 /* Filter list Automatic Updates setting description */
-"Turn this off to keep the current version when wBlock updates filter lists in bulk or on a schedule." = "wBlock filtre listelerini toplu olarak veya bir programa göre güncellediğinde mevcut sürümü korumak için bunu kapatın.";
 
 "Add Userscript" = "Kullanıcı betiği ekle";
 
@@ -1101,7 +1091,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Hides social media buttons and widgets, such as Like and Share, from the AdGuard project." = "«Beğen» ve «Paylaş» gibi sosyal medya düğmelerini ve widget'larını gizler. AdGuard projesinden.";
 "Hides third-party widgets such as assistants and support chats, from the AdGuard project." = "Asistan ve destek sohbetleri gibi üçüncü taraf widget'larını gizler. AdGuard projesinden.";
 "Keeps sites working when other lists break them, from the uBlock Origin project." = "Diğer listeler sitelerin çalışmasını bozduğunda sitelerin çalışmaya devam etmesini sağlar. uBlock Origin projesinden.";
-"Removes tracking parameters from URLs, from the AdGuard project." = "URL'lerdeki izleme parametrelerini kaldırır. AdGuard projesinden.";
+"Removes tracking parameters from URLs, from the AdGuard and uBlock Origin projects." = "URL'lerdeki izleme parametrelerini kaldırır. AdGuard ve uBlock Origin projelerinden.";
 "Removes unneeded parameters from URLs, so links are cleaner to copy and share." = "URL'lerdeki gereksiz parametreleri kaldırır, böylece bağlantıları kopyalamak ve paylaşmak daha kolay olur.";
 "Short-term rules that fix sites broken by other lists, from the uBlock Origin project." = "Diğer listelerin bozduğu siteleri düzelten kısa vadeli kurallar. uBlock Origin projesinden.";
 "Stops public websites from reaching devices on your local network, from the uBlock Origin project." = "Herkese açık web sitelerinin yerel ağınızdaki cihazlara erişmesini engeller. uBlock Origin projesinden.";
@@ -1123,3 +1113,16 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "Web sitelerinin renklerini yeniden düzenleyerek koyu temaya çevirir. Dark Reader projesinden. Dark Reader'ın site düzeltmeleri dahil olmadığı için bazı siteler bozuk görünebilir.";
 "Opens the publisher's regular page instead of its AMP version." = "AMP sürümü yerine yayıncının normal sayfasını açar.";
 "Disable AMP" = "Disable AMP";
+"wBlock on this site" = "Bu sitede wBlock";
+"Autoplay on this site" = "Bu sitede otomatik oynatma";
+"AdGuard URL Tracking Protection Filter" = "uBO/AdGuard URL Tracking Protection Filter";
+"When off, wBlock leaves this list at its current version." = "Kapalıyken wBlock bu listenin geçerli sürümünü korur.";
+"When off, wBlock leaves this script at its current version." = "Kapalıyken wBlock bu betiğin geçerli sürümünü korur.";
+"No sites selected, so this list is off." = "Site seçilmedi, bu yüzden bu liste kapalı.";
+"No sites selected, so this script is off." = "Site seçilmedi, bu yüzden bu betik kapalı.";
+"No sites selected, so cosmetic filtering is off." = "Site seçilmedi, bu yüzden kozmetik filtreleme kapalı.";
+"This list skips these sites." = "Bu liste bu siteleri atlar.";
+"This script skips these sites, even selected ones." = "Bu betik, seçili olsalar bile bu siteleri atlar.";
+"Cosmetic filtering skips these sites. Network blocking still applies." = "Kozmetik filtreleme bu siteleri atlar. Ağ engelleme yine de geçerlidir.";
+"Sites include their subdomains. Use * for any top-level domain, as in amazon.*." = "Siteler alt alan adlarını da kapsar. Herhangi bir üst düzey alan adı için * kullanın, örneğin amazon.*.";
+"Sites include their subdomains. Use * for any top-level domain, as in amazon.*. Reload the page after a change." = "Siteler alt alan adlarını da kapsar. Herhangi bir üst düzey alan adı için * kullanın, örneğin amazon.*. Değişiklikten sonra sayfayı yenileyin.";

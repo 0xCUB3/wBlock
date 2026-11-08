@@ -103,7 +103,7 @@ struct FilterInfoView: View {
                 if let author = credit?.author ?? cachedMetadata.author {
                     InfoMetadataRow(title: "Author", value: author)
                 }
-                if let homepage = credit?.homepage ?? cachedMetadata.homepage {
+                ForEach(credit?.homepages ?? cachedMetadata.homepage.map { [$0] } ?? [], id: \.self) { homepage in
                     InfoMetadataRow(title: "Homepage", value: homepage.absoluteString, url: homepage)
                 }
                 if isDownloaded, !liveFilter.version.isEmpty { InfoMetadataRow(title: "Version", value: liveFilter.version) }
@@ -193,15 +193,15 @@ struct FilterSettingsView: View {
             if liveFilter.isRemoteURL {
                 AutomaticUpdatesToggle(
                     isOn: liveFilter.updatesAutomatically,
-                    description: "Turn this off to keep the current version when wBlock updates filter lists in bulk or on a schedule."
+                    description: "When off, wBlock leaves this list at its current version."
                 ) { filterManager.setFilterList(liveFilter.id, updatesAutomatically: $0) }
             }
             SiteScopeEditor(
                 title: "Apply on", onlySelectedSites: liveFilter.onlySelectedSites, selectedSites: liveFilter.selectedSites,
                 excludedSites: liveFilter.onlySelectedSites ? nil : liveFilter.excludedSites,
-                emptySelectionMessage: "No sites selected. This list will not apply.",
-                excludedMessage: "This list will not apply on these sites. Other lists still apply.",
-                footer: "Sites include their subdomains. Use * to match any top-level domain, for example amazon.*. Apply changes to update filtering.",
+                emptySelectionMessage: "No sites selected, so this list is off.",
+                excludedMessage: "This list skips these sites.",
+                footer: "Sites include their subdomains. Use * for any top-level domain, as in amazon.*.",
                 updateMode: { filterManager.setOnlySelectedSites($0, for: liveFilter.id) },
                 updateSelected: { filterManager.setSelectedSites($0, for: liveFilter.id) },
                 updateExcluded: { filterManager.setExcludedSites($0, for: liveFilter.id) }
@@ -306,6 +306,17 @@ struct FilterRulesView: View {
     /// Each kind's count sits in its menu item; a legend under the editor
     /// cost a third of an iPhone screen (#1037) and its ViewThatFits/grid
     /// layout hung rotation while Find had the keyboard up (#1036).
+    /// macOS before 26 draws its own indicator and drops extra label images;
+    /// iOS and the macOS 26 glass capsule need the chevron in the label.
+    private static var labelDrawsChevron: Bool {
+        #if os(macOS)
+        if #available(macOS 26.0, *) { return true }
+        return false
+        #else
+        return true
+        #endif
+    }
+
     private static var menuChevron: some View {
         Image(systemName: "chevron.down").font(.caption2.weight(.semibold))
     }
@@ -322,10 +333,7 @@ struct FilterRulesView: View {
             // from Wrap Lines' similar bars (#932); tinted while some kinds are hidden.
             HStack(spacing: 2) {
                 Image(systemName: "line.3.horizontal.decrease")
-                #if os(iOS)
-                // macOS draws its own indicator and drops extra label images.
-                Self.menuChevron
-                #endif
+                if Self.labelDrawsChevron { Self.menuChevron }
             }
             .frame(height: SourceControlMetrics.menuLabelHeight)
             .contentShape(Rectangle())

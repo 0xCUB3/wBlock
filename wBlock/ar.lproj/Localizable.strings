@@ -3,15 +3,9 @@
 "The rule could not be saved. It may have changed or already exist." = "تعذر حفظ القاعدة. ربما تغيرت أو كانت موجودة بالفعل.";
 
 "Apply on" = "تطبيق على";
-"No sites selected. This list will not apply." = "لم يتم تحديد أي مواقع. لن تُطبَّق هذه القائمة.";
-"Sites include their subdomains. Use * to match any top-level domain, for example amazon.*. Apply changes to update filtering." = "تشمل المواقع نطاقاتها الفرعية. استخدم * لمطابقة أي نطاق من المستوى الأعلى، مثل amazon.*. طبّق التغييرات لتحديث التصفية.";
-"Run on" = "التشغيل على";
 "All matching sites" = "كل المواقع المطابقة";
 "Only selected sites" = "المواقع المحددة فقط";
 "Selected Sites" = "المواقع المحددة";
-"No sites selected. This script will not run." = "لم تُحدد أي مواقع. لن يعمل هذا السكربت.";
-"This script will not run on excluded sites, even if they are selected." = "لن يعمل هذا السكربت على المواقع المستبعدة، حتى لو كانت محددة.";
-"Sites include their subdomains. The script’s own matching rules still apply. Reload the page after making changes." = "تشمل المواقع نطاقاتها الفرعية. تظل قواعد المطابقة الخاصة بالسكربت سارية. أعد تحميل الصفحة بعد إجراء التغييرات.";
 "Could not save site settings" = "تعذر حفظ إعدادات المواقع";
 "SponsorBlock Backups" = "نسخ SponsorBlock الاحتياطية";
 "Import SponsorBlock Settings" = "استيراد إعدادات SponsorBlock";
@@ -614,7 +608,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Trace" = "تتبّع";
 "Trust: %@" = "الثقة: %@";
 "Trust: \\(trust.capitalized)" = "الثقة: \\(trust.capitalized)";
-"Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "أوقف هذا الخيار للاحتفاظ بالإصدار الحالي عندما يحدّث wBlock السكربتات دفعة واحدة أو وفق جدول.";
 "Unable to access shared container" = "تعذّر الوصول إلى الحاوية المشتركة";
 "Unapplied Filter Changes" = "تغييرات الفلاتر غير المطبقة";
 "Unavailable" = "غير متاح";
@@ -891,8 +884,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Enable Experimental Filter?" = "تفعيل الفلتر التجريبي؟";
 "Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "تختبر الفلاتر التجريبية قواعد جديدة قبل وصولها إلى القوائم الرئيسية وقد تتسبب في تعطل المواقع. فعّلها فقط إذا كنت مرتاحًا لاكتشاف الأعطال والإبلاغ عنها.";
 "Reset" = "إعادة تعيين";
-"No sites selected. Cosmetic filtering will not apply." = "لم يتم تحديد أي مواقع. لن تُطبَّق التصفية التجميلية.";
-"Cosmetic filtering will not apply on these sites. Network blocking still applies." = "لن تُطبَّق التصفية التجميلية على هذه المواقع. يظل حظر الشبكة مطبَّقًا.";
 "When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device." = "عند تفعيل هذا الخيار، تتم مزامنة حالات تشغيل وإيقاف سكربتات المستخدم عبر iCloud. أوقفه للاحتفاظ بهذه الحالات على هذا الجهاز فقط.";
 "Rule Capacity" = "سعة القواعد";
 "Next Update" = "التحديث التالي";
@@ -922,7 +913,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This isn’t a valid http(s) filter URL." = "هذا ليس عنوان URL صالحًا لقائمة فلاتر http(s).";
 
 /* Filter list Automatic Updates setting description */
-"Turn this off to keep the current version when wBlock updates filter lists in bulk or on a schedule." = "أوقف هذا الخيار للاحتفاظ بالإصدار الحالي عندما يحدّث wBlock قوائم الفلاتر دفعة واحدة أو وفق جدول.";
 
 "Add Userscript" = "إضافة سكربت مستخدم";
 
@@ -1092,7 +1082,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides social media buttons and widgets, such as Like and Share, from the AdGuard project." = "يخفي أزرار وأدوات وسائل التواصل الاجتماعي، مثل «أعجبني» و«مشاركة»، من مشروع AdGuard.";
 "Hides third-party widgets such as assistants and support chats, from the AdGuard project." = "يخفي أدوات الطرف الثالث مثل المساعدين ودردشات الدعم، من مشروع AdGuard.";
 "Keeps sites working when other lists break them, from the uBlock Origin project." = "يُبقي المواقع تعمل عندما تعطّلها القوائم الأخرى، من مشروع uBlock Origin.";
-"Removes tracking parameters from URLs, from the AdGuard project." = "يزيل معلمات التتبع من عناوين URL، من مشروع AdGuard.";
+"Removes tracking parameters from URLs, from the AdGuard and uBlock Origin projects." = "يزيل معلمات التتبع من عناوين URL، من مشروعي AdGuard وuBlock Origin.";
 "Removes unneeded parameters from URLs, so links are cleaner to copy and share." = "يزيل المعلمات غير الضرورية من عناوين URL، لتكون الروابط أنظف عند النسخ والمشاركة.";
 "Short-term rules that fix sites broken by other lists, from the uBlock Origin project." = "قواعد قصيرة الأجل تصلح المواقع التي عطّلتها قوائم أخرى، من مشروع uBlock Origin.";
 "Stops public websites from reaching devices on your local network, from the uBlock Origin project." = "يمنع مواقع الويب العامة من الوصول إلى الأجهزة في شبكتك المحلية، من مشروع uBlock Origin.";
@@ -1114,3 +1104,16 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "يجعل مواقع الويب داكنة بإعادة تنسيق ألوانها، من مشروع Dark Reader. قد تبدو بعض المواقع غير طبيعية، لأنه لا يتضمن إصلاحات المواقع الخاصة بـ Dark Reader.";
 "Opens the publisher's regular page instead of its AMP version." = "يفتح صفحة الناشر العادية بدلًا من نسخة AMP.";
 "Disable AMP" = "Disable AMP";
+"wBlock on this site" = "wBlock على هذا الموقع";
+"Autoplay on this site" = "التشغيل التلقائي في هذا الموقع";
+"AdGuard URL Tracking Protection Filter" = "uBO/AdGuard URL Tracking Protection Filter";
+"When off, wBlock leaves this list at its current version." = "عند الإيقاف، يُبقي wBlock هذه القائمة على إصدارها الحالي.";
+"When off, wBlock leaves this script at its current version." = "عند الإيقاف، يُبقي wBlock هذا البرنامج النصي على إصداره الحالي.";
+"No sites selected, so this list is off." = "لم يتم تحديد أي مواقع، لذا هذه القائمة متوقفة.";
+"No sites selected, so this script is off." = "لم يتم تحديد أي مواقع، لذا هذا البرنامج النصي متوقف.";
+"No sites selected, so cosmetic filtering is off." = "لم يتم تحديد أي مواقع، لذا التصفية التجميلية متوقفة.";
+"This list skips these sites." = "تتخطى هذه القائمة هذه المواقع.";
+"This script skips these sites, even selected ones." = "يتخطى هذا البرنامج النصي هذه المواقع، حتى المحددة منها.";
+"Cosmetic filtering skips these sites. Network blocking still applies." = "تتخطى التصفية التجميلية هذه المواقع. يظل حظر الشبكة مطبقًا.";
+"Sites include their subdomains. Use * for any top-level domain, as in amazon.*." = "تشمل المواقع نطاقاتها الفرعية. استخدم * لأي نطاق من المستوى الأعلى، مثل amazon.*.";
+"Sites include their subdomains. Use * for any top-level domain, as in amazon.*. Reload the page after a change." = "تشمل المواقع نطاقاتها الفرعية. استخدم * لأي نطاق من المستوى الأعلى، مثل amazon.*. أعد تحميل الصفحة بعد أي تغيير.";

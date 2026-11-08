@@ -3,15 +3,9 @@
 "The rule could not be saved. It may have changed or already exist." = "無法儲存規則。規則可能已變更或已存在。";
 
 "Apply on" = "套用範圍";
-"No sites selected. This list will not apply." = "未選取任何網站。此清單將不會套用。";
-"Sites include their subdomains. Use * to match any top-level domain, for example amazon.*. Apply changes to update filtering." = "網站範圍包含其子網域。使用 * 可符合任意頂級網域，例如 amazon.*。請套用變更以更新過濾。";
-"Run on" = "執行範圍";
 "All matching sites" = "所有符合條件的網站";
 "Only selected sites" = "僅選取的網站";
 "Selected Sites" = "選取的網站";
-"No sites selected. This script will not run." = "尚未選取網站。此腳本不會執行。";
-"This script will not run on excluded sites, even if they are selected." = "即使已選取，此腳本也不會在排除的網站上執行。";
-"Sites include their subdomains. The script’s own matching rules still apply. Reload the page after making changes." = "網站包括其子網域。腳本本身的比對規則仍然適用。變更後請重新載入頁面。";
 "Could not save site settings" = "無法儲存網站設定";
 "SponsorBlock Backups" = "SponsorBlock 備份";
 "Import SponsorBlock Settings" = "匯入 SponsorBlock 設定";
@@ -614,7 +608,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Trace" = "追蹤";
 "Trust: %@" = "信任度：%@";
 "Trust: \\(trust.capitalized)" = "信任度：\\(trust.capitalized)";
-"Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "關閉此項可在 wBlock 批次或依排程更新腳本時保留目前版本。";
 "Unable to access shared container" = "無法存取共享容器";
 "Unapplied Filter Changes" = "未套用的過濾器變更";
 "Unavailable" = "無法使用";
@@ -891,8 +884,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Enable Experimental Filter?" = "啟用實驗性過濾器？";
 "Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "實驗性過濾器會在新規則進入主要清單之前進行測試，可能導致網站出現問題。僅在你願意發現並回報問題時啟用。";
 "Reset" = "重設";
-"No sites selected. Cosmetic filtering will not apply." = "未選取任何網站。外觀過濾將不會套用。";
-"Cosmetic filtering will not apply on these sites. Network blocking still applies." = "外觀過濾不會在這些網站上套用。網路封鎖仍然有效。";
 "When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device." = "開啟後，使用者腳本的啟用狀態會透過 iCloud 同步。關閉後，這些狀態只保留在這部裝置上。";
 "Rule Capacity" = "規則容量";
 "Next Update" = "下次更新";
@@ -922,7 +913,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This isn’t a valid http(s) filter URL." = "這不是有效的 http(s) 過濾器 URL。";
 
 /* Filter list Automatic Updates setting description */
-"Turn this off to keep the current version when wBlock updates filter lists in bulk or on a schedule." = "關閉此項可在 wBlock 批次或依排程更新過濾器清單時保留目前版本。";
 
 "Add Userscript" = "新增使用者腳本";
 
@@ -1092,7 +1082,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides social media buttons and widgets, such as Like and Share, from the AdGuard project." = "隱藏社群媒體按鈕和小工具，例如「讚」和「分享」，來自 AdGuard 專案。";
 "Hides third-party widgets such as assistants and support chats, from the AdGuard project." = "隱藏第三方小工具，例如助理和支援聊天，來自 AdGuard 專案。";
 "Keeps sites working when other lists break them, from the uBlock Origin project." = "當其他清單導致網站失效時，讓網站維持正常運作，來自 uBlock Origin 專案。";
-"Removes tracking parameters from URLs, from the AdGuard project." = "從 URL 移除追蹤參數，來自 AdGuard 專案。";
+"Removes tracking parameters from URLs, from the AdGuard and uBlock Origin projects." = "從 URL 移除追蹤參數，來自 AdGuard 和 uBlock Origin 專案。";
 "Removes unneeded parameters from URLs, so links are cleaner to copy and share." = "移除 URL 中不必要的參數，讓連結更乾淨，方便複製和分享。";
 "Short-term rules that fix sites broken by other lists, from the uBlock Origin project." = "用於修復被其他清單破壞之網站的短期規則，來自 uBlock Origin 專案。";
 "Stops public websites from reaching devices on your local network, from the uBlock Origin project." = "阻止公開網站存取你本機網路上的裝置，來自 uBlock Origin 專案。";
@@ -1114,3 +1104,16 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "透過重新調整顏色讓網站變暗，來自 Dark Reader 專案。由於不包含 Dark Reader 的網站修正，部分網站可能顯示異常。";
 "Opens the publisher's regular page instead of its AMP version." = "開啟發布者的一般頁面，而不是 AMP 版本。";
 "Disable AMP" = "Disable AMP";
+"wBlock on this site" = "在此網站上啟用 wBlock";
+"Autoplay on this site" = "在此網站自動播放";
+"AdGuard URL Tracking Protection Filter" = "uBO/AdGuard URL Tracking Protection Filter";
+"When off, wBlock leaves this list at its current version." = "關閉後，wBlock 會讓此列表保持目前版本。";
+"When off, wBlock leaves this script at its current version." = "關閉後，wBlock 會讓此腳本保持目前版本。";
+"No sites selected, so this list is off." = "未選擇任何網站，因此此列表已關閉。";
+"No sites selected, so this script is off." = "未選擇任何網站，因此此腳本已關閉。";
+"No sites selected, so cosmetic filtering is off." = "未選擇任何網站，因此元素隱藏過濾已關閉。";
+"This list skips these sites." = "此列表會略過這些網站。";
+"This script skips these sites, even selected ones." = "此腳本會略過這些網站，即使已選取。";
+"Cosmetic filtering skips these sites. Network blocking still applies." = "元素隱藏過濾會略過這些網站。網路封鎖仍然有效。";
+"Sites include their subdomains. Use * for any top-level domain, as in amazon.*." = "網站包含其子網域。使用 * 比對任何頂層網域，例如 amazon.*。";
+"Sites include their subdomains. Use * for any top-level domain, as in amazon.*. Reload the page after a change." = "網站包含其子網域。使用 * 比對任何頂層網域，例如 amazon.*。變更後請重新載入頁面。";

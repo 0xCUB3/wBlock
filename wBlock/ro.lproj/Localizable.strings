@@ -3,15 +3,9 @@
 "The rule could not be saved. It may have changed or already exist." = "Regula nu a putut fi salvată. Este posibil să fi fost modificată sau să existe deja.";
 
 "Apply on" = "Aplică pe";
-"No sites selected. This list will not apply." = "Niciun site selectat. Această listă nu se va aplica.";
-"Sites include their subdomains. Use * to match any top-level domain, for example amazon.*. Apply changes to update filtering." = "Site-urile includ subdomeniile lor. Folosește * pentru orice domeniu de nivel superior, de exemplu amazon.*. Aplică modificările pentru a actualiza filtrarea.";
-"Run on" = "Rulează pe";
 "All matching sites" = "Toate site-urile corespunzătoare";
 "Only selected sites" = "Doar site-urile selectate";
 "Selected Sites" = "Site-uri selectate";
-"No sites selected. This script will not run." = "Niciun site selectat. Acest script nu va rula.";
-"This script will not run on excluded sites, even if they are selected." = "Acest script nu va rula pe site-urile excluse, chiar dacă sunt selectate.";
-"Sites include their subdomains. The script’s own matching rules still apply. Reload the page after making changes." = "Site-urile includ și subdomeniile lor. Regulile de potrivire ale scriptului se aplică în continuare. Reîncarcă pagina după modificări.";
 "Could not save site settings" = "Nu s-au putut salva setările site-urilor";
 "SponsorBlock Backups" = "Copii de rezervă SponsorBlock";
 "Import SponsorBlock Settings" = "Importă setările SponsorBlock";
@@ -612,7 +606,6 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Trace" = "Urmărire";
 "Trust: %@" = "Încredere: %@";
 "Trust: \\(trust.capitalized)" = "Încredere: \\(trust.capitalized)";
-"Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Dezactivează această opțiune pentru a păstra versiunea curentă când wBlock actualizează scripturile în masă sau după un program.";
 "Unable to access shared container" = "Nu se poate accesa containerul partajat";
 "Unapplied Filter Changes" = "Modificări neaplicate ale filtrelor";
 "Unavailable" = "Indisponibil";
@@ -891,8 +884,6 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Enable Experimental Filter?" = "Activezi filtrul experimental?";
 "Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "Filtrele experimentale testează reguli noi înainte să ajungă în listele principale și pot strica site-uri web. Activează-le doar dacă ești dispus să găsești și să raportezi problemele.";
 "Reset" = "Resetează";
-"No sites selected. Cosmetic filtering will not apply." = "Niciun site selectat. Filtrarea cosmetică nu se va aplica.";
-"Cosmetic filtering will not apply on these sites. Network blocking still applies." = "Filtrarea cosmetică nu se va aplica pe aceste site-uri. Blocarea de rețea rămâne activă.";
 "When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device." = "Când este activată, această opțiune sincronizează prin iCloud starea de activare a scripturilor de utilizator. Dezactiveaz-o pentru a păstra aceste alegeri doar pe acest dispozitiv.";
 "Rule Capacity" = "Capacitate reguli";
 "Next Update" = "Următoarea actualizare";
@@ -922,7 +913,6 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "This isn’t a valid http(s) filter URL." = "Aceasta nu este o adresă URL de filtru http(s) validă.";
 
 /* Filter list Automatic Updates setting description */
-"Turn this off to keep the current version when wBlock updates filter lists in bulk or on a schedule." = "Dezactivează această opțiune pentru a păstra versiunea curentă când wBlock actualizează listele de filtre în masă sau după un program.";
 
 "Add Userscript" = "Adaugă script de utilizator";
 
@@ -1092,7 +1082,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Hides social media buttons and widgets, such as Like and Share, from the AdGuard project." = "Ascunde butoanele și widgeturile rețelelor sociale, precum Like și Share. Din proiectul AdGuard.";
 "Hides third-party widgets such as assistants and support chats, from the AdGuard project." = "Ascunde widgeturile terță parte, precum asistenții și chatul de asistență. Din proiectul AdGuard.";
 "Keeps sites working when other lists break them, from the uBlock Origin project." = "Păstrează funcționarea site-urilor atunci când alte liste le strică. Din proiectul uBlock Origin.";
-"Removes tracking parameters from URLs, from the AdGuard project." = "Elimină parametrii de urmărire din adresele URL. Din proiectul AdGuard.";
+"Removes tracking parameters from URLs, from the AdGuard and uBlock Origin projects." = "Elimină parametrii de urmărire din adresele URL. Din proiectele AdGuard și uBlock Origin.";
 "Removes unneeded parameters from URLs, so links are cleaner to copy and share." = "Elimină parametrii inutili din adresele URL, astfel încât linkurile să fie mai curate la copiere și partajare.";
 "Short-term rules that fix sites broken by other lists, from the uBlock Origin project." = "Reguli pe termen scurt care repară site-urile defectate de alte liste. Din proiectul uBlock Origin.";
 "Stops public websites from reaching devices on your local network, from the uBlock Origin project." = "Împiedică site-urile publice să ajungă la dispozitivele din rețeaua ta locală. Din proiectul uBlock Origin.";
@@ -1114,3 +1104,16 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "Face site-urile web întunecate prin modificarea culorilor. Din proiectul Dark Reader. Unele site-uri pot arăta ciudat, deoarece nu include corecțiile Dark Reader pentru site-uri.";
 "Opens the publisher's regular page instead of its AMP version." = "Deschide pagina obișnuită a editorului în locul versiunii AMP.";
 "Disable AMP" = "Disable AMP";
+"wBlock on this site" = "wBlock pe acest site";
+"Autoplay on this site" = "Redare automată pe acest site";
+"AdGuard URL Tracking Protection Filter" = "uBO/AdGuard URL Tracking Protection Filter";
+"When off, wBlock leaves this list at its current version." = "Când este oprit, wBlock păstrează versiunea actuală a acestei liste.";
+"When off, wBlock leaves this script at its current version." = "Când este oprit, wBlock păstrează versiunea actuală a acestui script.";
+"No sites selected, so this list is off." = "Niciun site selectat, deci această listă este oprită.";
+"No sites selected, so this script is off." = "Niciun site selectat, deci acest script este oprit.";
+"No sites selected, so cosmetic filtering is off." = "Niciun site selectat, deci filtrarea cosmetică este oprită.";
+"This list skips these sites." = "Această listă omite aceste site-uri.";
+"This script skips these sites, even selected ones." = "Acest script omite aceste site-uri, chiar și pe cele selectate.";
+"Cosmetic filtering skips these sites. Network blocking still applies." = "Filtrarea cosmetică omite aceste site-uri. Blocarea rețelei se aplică în continuare.";
+"Sites include their subdomains. Use * for any top-level domain, as in amazon.*." = "Site-urile includ subdomeniile lor. Folosește * pentru orice domeniu de nivel superior, ca în amazon.*.";
+"Sites include their subdomains. Use * for any top-level domain, as in amazon.*. Reload the page after a change." = "Site-urile includ subdomeniile lor. Folosește * pentru orice domeniu de nivel superior, ca în amazon.*. Reîncarcă pagina după o modificare.";

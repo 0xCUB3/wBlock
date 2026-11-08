@@ -3,15 +3,9 @@
 "The rule could not be saved. It may have changed or already exist." = "Δεν ήταν δυνατή η αποθήκευση του κανόνα. Ίσως έχει αλλάξει ή υπάρχει ήδη.";
 
 "Apply on" = "Εφαρμογή σε";
-"No sites selected. This list will not apply." = "Δεν έχουν επιλεγεί ιστότοποι. Αυτή η λίστα δεν θα εφαρμόζεται.";
-"Sites include their subdomains. Use * to match any top-level domain, for example amazon.*. Apply changes to update filtering." = "Οι ιστότοποι περιλαμβάνουν τους υποτομείς τους. Χρησιμοποιήστε * για οποιονδήποτε τομέα ανώτατου επιπέδου, για παράδειγμα amazon.*. Εφαρμόστε τις αλλαγές για να ενημερώσετε το φιλτράρισμα.";
-"Run on" = "Εκτέλεση σε";
 "All matching sites" = "Όλους τους αντίστοιχους ιστοτόπους";
 "Only selected sites" = "Μόνο επιλεγμένους ιστοτόπους";
 "Selected Sites" = "Επιλεγμένοι ιστότοποι";
-"No sites selected. This script will not run." = "Δεν έχουν επιλεγεί ιστότοποι. Αυτός ο κώδικας δεν θα εκτελείται.";
-"This script will not run on excluded sites, even if they are selected." = "Αυτός ο κώδικας δεν θα εκτελείται σε εξαιρούμενους ιστοτόπους, ακόμη κι αν έχουν επιλεγεί.";
-"Sites include their subdomains. The script’s own matching rules still apply. Reload the page after making changes." = "Οι ιστότοποι περιλαμβάνουν τους υποτομείς τους. Οι κανόνες αντιστοίχισης του κώδικα εξακολουθούν να ισχύουν. Φορτώστε ξανά τη σελίδα μετά τις αλλαγές.";
 "Could not save site settings" = "Δεν ήταν δυνατή η αποθήκευση των ρυθμίσεων ιστοτόπων";
 "SponsorBlock Backups" = "Αντίγραφα ασφαλείας SponsorBlock";
 "Import SponsorBlock Settings" = "Εισαγωγή ρυθμίσεων SponsorBlock";
@@ -614,7 +608,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Trace" = "Ιχνηλάτηση";
 "Trust: %@" = "Εμπιστοσύνη: %@";
 "Trust: \\(trust.capitalized)" = "Εμπιστοσύνη: \\(trust.capitalized)";
-"Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Απενεργοποιήστε το για να διατηρήσετε την τρέχουσα έκδοση όταν το wBlock ενημερώνει τους κώδικες μαζικά ή βάσει προγράμματος.";
 "Unable to access shared container" = "Δεν είναι δυνατή η πρόσβαση στο κοινόχρηστο κοντέινερ";
 "Unapplied Filter Changes" = "Μη εφαρμοσμένες αλλαγές φίλτρου";
 "Unavailable" = "Μη διαθέσιμο";
@@ -891,8 +884,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Enable Experimental Filter?" = "Ενεργοποίηση πειραματικού φίλτρου;";
 "Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "Τα πειραματικά φίλτρα δοκιμάζουν νέους κανόνες πριν φτάσουν στις κύριες λίστες και μπορεί να χαλάσουν ιστότοπους. Ενεργοποιήστε τα μόνο αν σας βολεύει να εντοπίζετε και να αναφέρετε προβλήματα.";
 "Reset" = "Επαναφορά";
-"No sites selected. Cosmetic filtering will not apply." = "Δεν έχουν επιλεγεί ιστότοποι. Το αισθητικό φιλτράρισμα δεν θα εφαρμόζεται.";
-"Cosmetic filtering will not apply on these sites. Network blocking still applies." = "Το αισθητικό φιλτράρισμα δεν θα εφαρμόζεται σε αυτούς τους ιστότοπους. Ο αποκλεισμός δικτύου εξακολουθεί να ισχύει.";
 "When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device." = "Όταν είναι ενεργό, οι καταστάσεις ενεργοποίησης των κωδίκων χρήστη συγχρονίζονται μέσω iCloud. Απενεργοποιήστε το για να παραμείνουν αυτές οι ρυθμίσεις μόνο σε αυτή τη συσκευή.";
 "Rule Capacity" = "Χωρητικότητα κανόνων";
 "Next Update" = "Επόμενη ενημέρωση";
@@ -922,7 +913,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This isn’t a valid http(s) filter URL." = "Αυτή δεν είναι έγκυρη διεύθυνση URL φίλτρου http(s).";
 
 /* Filter list Automatic Updates setting description */
-"Turn this off to keep the current version when wBlock updates filter lists in bulk or on a schedule." = "Απενεργοποιήστε το για να διατηρήσετε την τρέχουσα έκδοση όταν το wBlock ενημερώνει τις λίστες φίλτρων μαζικά ή βάσει προγράμματος.";
 
 "Add Userscript" = "Προσθήκη κώδικα χρήστη";
 
@@ -1092,7 +1082,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides social media buttons and widgets, such as Like and Share, from the AdGuard project." = "Κρύβει κουμπιά και γραφικά στοιχεία κοινωνικών δικτύων, όπως το Like και το Share, από το έργο AdGuard.";
 "Hides third-party widgets such as assistants and support chats, from the AdGuard project." = "Κρύβει γραφικά στοιχεία τρίτων, όπως βοηθούς και συνομιλίες υποστήριξης, από το έργο AdGuard.";
 "Keeps sites working when other lists break them, from the uBlock Origin project." = "Διατηρεί τη λειτουργία των ιστότοπων όταν άλλες λίστες τους χαλάνε, από το έργο uBlock Origin.";
-"Removes tracking parameters from URLs, from the AdGuard project." = "Αφαιρεί παραμέτρους παρακολούθησης από τις διευθύνσεις URL, από το έργο AdGuard.";
+"Removes tracking parameters from URLs, from the AdGuard and uBlock Origin projects." = "Αφαιρεί παραμέτρους παρακολούθησης από τις διευθύνσεις URL, από τα έργα AdGuard και uBlock Origin.";
 "Removes unneeded parameters from URLs, so links are cleaner to copy and share." = "Αφαιρεί περιττές παραμέτρους από τις διευθύνσεις URL, ώστε οι σύνδεσμοι να είναι πιο καθαροί για αντιγραφή και κοινοποίηση.";
 "Short-term rules that fix sites broken by other lists, from the uBlock Origin project." = "Βραχυπρόθεσμοι κανόνες που διορθώνουν ιστότοπους που χάλασαν από άλλες λίστες, από το έργο uBlock Origin.";
 "Stops public websites from reaching devices on your local network, from the uBlock Origin project." = "Εμποδίζει τους δημόσιους ιστότοπους να φτάνουν σε συσκευές του τοπικού σας δικτύου, από το έργο uBlock Origin.";
@@ -1114,3 +1104,16 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "Κάνει τους ιστότοπους σκούρους αλλάζοντας τα χρώματά τους, από το έργο Dark Reader. Ορισμένοι ιστότοποι μπορεί να φαίνονται περίεργα, καθώς δεν περιλαμβάνει τις διορθώσεις ιστοτόπων του Dark Reader.";
 "Opens the publisher's regular page instead of its AMP version." = "Ανοίγει την κανονική σελίδα του εκδότη αντί για την έκδοση AMP.";
 "Disable AMP" = "Disable AMP";
+"wBlock on this site" = "wBlock σε αυτόν τον ιστότοπο";
+"Autoplay on this site" = "Αυτόματη αναπαραγωγή σε αυτόν τον ιστότοπο";
+"AdGuard URL Tracking Protection Filter" = "uBO/AdGuard URL Tracking Protection Filter";
+"When off, wBlock leaves this list at its current version." = "Όταν είναι ανενεργό, το wBlock κρατά την τρέχουσα έκδοση αυτής της λίστας.";
+"When off, wBlock leaves this script at its current version." = "Όταν είναι ανενεργό, το wBlock κρατά την τρέχουσα έκδοση αυτού του σεναρίου.";
+"No sites selected, so this list is off." = "Δεν έχουν επιλεγεί ιστότοποι, οπότε αυτή η λίστα είναι ανενεργή.";
+"No sites selected, so this script is off." = "Δεν έχουν επιλεγεί ιστότοποι, οπότε αυτό το σενάριο είναι ανενεργό.";
+"No sites selected, so cosmetic filtering is off." = "Δεν έχουν επιλεγεί ιστότοποι, οπότε το κοσμητικό φιλτράρισμα είναι ανενεργό.";
+"This list skips these sites." = "Αυτή η λίστα παραλείπει αυτούς τους ιστότοπους.";
+"This script skips these sites, even selected ones." = "Αυτό το σενάριο παραλείπει αυτούς τους ιστότοπους, ακόμη και τους επιλεγμένους.";
+"Cosmetic filtering skips these sites. Network blocking still applies." = "Το κοσμητικό φιλτράρισμα παραλείπει αυτούς τους ιστότοπους. Ο αποκλεισμός δικτύου εξακολουθεί να ισχύει.";
+"Sites include their subdomains. Use * for any top-level domain, as in amazon.*." = "Οι ιστότοποι περιλαμβάνουν τους υποτομείς τους. Χρησιμοποιήστε * για οποιονδήποτε τομέα ανώτατου επιπέδου, όπως amazon.*.";
+"Sites include their subdomains. Use * for any top-level domain, as in amazon.*. Reload the page after a change." = "Οι ιστότοποι περιλαμβάνουν τους υποτομείς τους. Χρησιμοποιήστε * για οποιονδήποτε τομέα ανώτατου επιπέδου, όπως amazon.*. Φορτώστε ξανά τη σελίδα μετά από αλλαγή.";

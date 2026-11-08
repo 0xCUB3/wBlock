@@ -8,17 +8,17 @@ import wBlockCoreService
 enum BuiltInFilterCredits {
     struct Credit {
         let author: String?
-        let homepage: URL
+        let homepages: [URL]
     }
 
     static func credit(for filter: FilterList) -> Credit? {
         guard !filter.isCustom else { return nil }
-        if filter.name.hasPrefix("AdGuard ") { return adGuard }
-        return byName[filter.name]
+        if let credit = byName[filter.name] { return credit }
+        return filter.name.hasPrefix("AdGuard ") ? adGuard : nil
     }
 
-    private static func credit(_ author: String?, _ homepage: String) -> Credit {
-        Credit(author: author, homepage: URL(string: homepage)!)
+    private static func credit(_ author: String?, _ homepages: String...) -> Credit {
+        Credit(author: author, homepages: homepages.map { URL(string: $0)! })
     }
 
     private static let adGuard = credit("AdGuard", "https://github.com/AdguardTeam/AdguardFilters")
@@ -28,6 +28,10 @@ enum BuiltInFilterCredits {
     private static let ruAdList = credit("dimisa-RUAdList", "https://github.com/easylist/ruadlist")
 
     private static let byName: [String: Credit] = [
+        // uBO's fork of AdGuard's list, shown as "uBO/AdGuard URL Tracking Protection Filter" (#1097).
+        "AdGuard URL Tracking Protection Filter": credit(
+            "AdGuard, Raymond Hill and the uAssets contributors",
+            "https://github.com/AdguardTeam/AdguardFilters", "https://github.com/uBlockOrigin/uAssets"),
         "uBlock filters – Ads": uAssets,
         "uBlock filters – Privacy": uAssets,
         "uBlock filters – Badware risks": uAssets,

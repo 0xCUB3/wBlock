@@ -3,15 +3,9 @@
 "The rule could not be saved. It may have changed or already exist." = "A szabály nem menthető. Lehet, hogy megváltozott vagy már létezik.";
 
 "Apply on" = "Alkalmazás itt";
-"No sites selected. This list will not apply." = "Nincs kiválasztott webhely. Ez a lista nem lesz alkalmazva.";
-"Sites include their subdomains. Use * to match any top-level domain, for example amazon.*. Apply changes to update filtering." = "A webhelyek az aldomainjeiket is magukban foglalják. A * bármely legfelső szintű domainre illeszkedik, például amazon.*. A szűrés frissítéséhez alkalmazd a módosításokat.";
-"Run on" = "Futtatás itt";
 "All matching sites" = "Minden illeszkedő webhelyen";
 "Only selected sites" = "Csak a kiválasztott webhelyeken";
 "Selected Sites" = "Kiválasztott webhelyek";
-"No sites selected. This script will not run." = "Nincs kiválasztott webhely. Ez a szkript nem fog futni.";
-"This script will not run on excluded sites, even if they are selected." = "Ez a szkript nem fut a kizárt webhelyeken, akkor sem, ha ki vannak választva.";
-"Sites include their subdomains. The script’s own matching rules still apply. Reload the page after making changes." = "A webhelyek az aldomainjeiket is magukban foglalják. A szkript saját illeszkedési szabályai továbbra is érvényesek. A módosítások után töltsd újra az oldalt.";
 "Could not save site settings" = "Nem sikerült menteni a webhelybeállításokat";
 "SponsorBlock Backups" = "SponsorBlock biztonsági mentések";
 "Import SponsorBlock Settings" = "SponsorBlock-beállítások importálása";
@@ -614,7 +608,6 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Trace" = "Nyomkövetés";
 "Trust: %@" = "Megbízhatóság: %@";
 "Trust: \\(trust.capitalized)" = "Megbízhatóság: \\(trust.capitalized)";
-"Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Kapcsold ki, ha meg akarod tartani a jelenlegi verziót, amikor a wBlock tömegesen vagy ütemezetten frissíti a szkripteket.";
 "Unable to access shared container" = "Nem érhető el a megosztott konténer";
 "Unapplied Filter Changes" = "Nem alkalmazott szűrőmódosítások";
 "Unavailable" = "Nem érhető el";
@@ -891,8 +884,6 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Enable Experimental Filter?" = "Engedélyezed a kísérleti szűrőt?";
 "Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "A kísérleti szűrők új szabályokat tesztelnek, mielőtt azok a fő listákba kerülnének, és elronthatnak weboldalakat. Csak akkor engedélyezd őket, ha szívesen keresed és jelented a hibákat.";
 "Reset" = "Visszaállítás";
-"No sites selected. Cosmetic filtering will not apply." = "Nincs kiválasztott webhely. A kozmetikai szűrés nem lesz alkalmazva.";
-"Cosmetic filtering will not apply on these sites. Network blocking still applies." = "A kozmetikai szűrés nem lesz alkalmazva ezeken a webhelyeken. A hálózati blokkolás továbbra is érvényes.";
 "When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device." = "Bekapcsolva az iCloud szinkronizálja a userscriptek be- és kikapcsolt állapotát. Kapcsold ki, ha ezeket a beállításokat csak ezen az eszközön szeretnéd megtartani.";
 "Rule Capacity" = "Szabálykapacitás";
 "Next Update" = "Következő frissítés";
@@ -922,7 +913,6 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "This isn’t a valid http(s) filter URL." = "Ez nem érvényes http(s) szűrő-URL.";
 
 /* Filter list Automatic Updates setting description */
-"Turn this off to keep the current version when wBlock updates filter lists in bulk or on a schedule." = "Kapcsold ki, ha meg akarod tartani a jelenlegi verziót, amikor a wBlock tömegesen vagy ütemezetten frissíti a szűrőlistákat.";
 
 "Add Userscript" = "Felhasználói szkript hozzáadása";
 
@@ -1092,7 +1082,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Hides social media buttons and widgets, such as Like and Share, from the AdGuard project." = "Elrejti a közösségi média gombjait és widgeteit, például a Tetszik és a Megosztás gombot. Az AdGuard projekt listája.";
 "Hides third-party widgets such as assistants and support chats, from the AdGuard project." = "Elrejti a harmadik féltől származó widgeteket, például az asszisztenseket és az ügyfélszolgálati csevegéseket. Az AdGuard projekt listája.";
 "Keeps sites working when other lists break them, from the uBlock Origin project." = "Működésben tartja a webhelyeket, ha más listák elrontják őket. Az uBlock Origin projekt listája.";
-"Removes tracking parameters from URLs, from the AdGuard project." = "Eltávolítja a követési paramétereket az URL-ekből. Az AdGuard projekt listája.";
+"Removes tracking parameters from URLs, from the AdGuard and uBlock Origin projects." = "Eltávolítja a követési paramétereket az URL-ekből. Az AdGuard és a uBlock Origin projekt listája.";
 "Removes unneeded parameters from URLs, so links are cleaner to copy and share." = "Eltávolítja a felesleges paramétereket az URL-ekből, így a hivatkozások tisztábban másolhatók és megoszthatók.";
 "Short-term rules that fix sites broken by other lists, from the uBlock Origin project." = "Rövid távú szabályok, amelyek javítják a más listák miatt elromlott webhelyeket. Az uBlock Origin projekt listája.";
 "Stops public websites from reaching devices on your local network, from the uBlock Origin project." = "Megakadályozza, hogy a nyilvános webhelyek elérjék a helyi hálózatodon lévő eszközöket. Az uBlock Origin projekt listája.";
@@ -1114,3 +1104,16 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "Sötétté teszi a webhelyeket a színeik átalakításával. A Dark Reader projektből. Egyes webhelyek furcsán nézhetnek ki, mivel nem tartalmazza a Dark Reader webhelyjavításait.";
 "Opens the publisher's regular page instead of its AMP version." = "A kiadó normál oldalát nyitja meg az AMP-változat helyett.";
 "Disable AMP" = "Disable AMP";
+"wBlock on this site" = "wBlock ezen a webhelyen";
+"Autoplay on this site" = "Automatikus lejátszás ezen a webhelyen";
+"AdGuard URL Tracking Protection Filter" = "uBO/AdGuard URL Tracking Protection Filter";
+"When off, wBlock leaves this list at its current version." = "Kikapcsolva a wBlock megtartja a lista jelenlegi verzióját.";
+"When off, wBlock leaves this script at its current version." = "Kikapcsolva a wBlock megtartja a szkript jelenlegi verzióját.";
+"No sites selected, so this list is off." = "Nincs kiválasztott webhely, így ez a lista ki van kapcsolva.";
+"No sites selected, so this script is off." = "Nincs kiválasztott webhely, így ez a szkript ki van kapcsolva.";
+"No sites selected, so cosmetic filtering is off." = "Nincs kiválasztott webhely, így a kozmetikai szűrés ki van kapcsolva.";
+"This list skips these sites." = "Ez a lista kihagyja ezeket a webhelyeket.";
+"This script skips these sites, even selected ones." = "Ez a szkript kihagyja ezeket a webhelyeket, a kiválasztottakat is.";
+"Cosmetic filtering skips these sites. Network blocking still applies." = "A kozmetikai szűrés kihagyja ezeket a webhelyeket. A hálózati blokkolás továbbra is érvényes.";
+"Sites include their subdomains. Use * for any top-level domain, as in amazon.*." = "A webhelyek az aldomainjeiket is tartalmazzák. A * bármely legfelső szintű domaint jelöli, például amazon.*.";
+"Sites include their subdomains. Use * for any top-level domain, as in amazon.*. Reload the page after a change." = "A webhelyek az aldomainjeiket is tartalmazzák. A * bármely legfelső szintű domaint jelöli, például amazon.*. Módosítás után töltsd újra az oldalt.";

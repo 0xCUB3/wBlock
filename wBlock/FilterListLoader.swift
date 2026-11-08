@@ -470,7 +470,7 @@ class FilterListLoader {
                 category: FilterListCategory.privacy,
                 description: "Blocks trackers and removes tracking parameters from URLs, from the uBlock Origin project.",
                 trustLevel: "high"),
-            // Privacy reads uBlock Privacy, EasyPrivacy, AdGuard URL Tracking, then the rest (#1088).
+            // Privacy reads uBlock Privacy, EasyPrivacy, URL Tracking Protection, then the rest (#1088).
             FilterList(
                 id: UUID(), name: "EasyPrivacy",
                 url: URL(
@@ -482,7 +482,7 @@ class FilterListLoader {
             FilterList(
                 id: UUID(), name: "AdGuard URL Tracking Protection Filter",
                 url: Self.adGuardUBlockURL(17), category: FilterListCategory.privacy,
-                description: "Removes tracking parameters from URLs, from the AdGuard project.",
+                description: "Removes tracking parameters from URLs, from the AdGuard and uBlock Origin projects.",
                 trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "uBlock filters – Badware risks",

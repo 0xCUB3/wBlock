@@ -30,6 +30,8 @@ struct SiteSettingsView: View {
         let selectedScriptIDs: Set<String>
         /// Filter lists that skip this site through their own excluded sites.
         let excludedFilterIDs: Set<UUID>
+        /// The site's Element Zapper rules, which "wBlock on this site" turns off too.
+        let isZapperDisabled: Bool
     }
 
     private struct SiteUndoState {
@@ -274,6 +276,14 @@ struct SiteSettingsView: View {
 
     @ViewBuilder
     private func expansionRows(_ site: SiteSummary) -> some View {
+        // Every component at once, the popup's top switch (#1097).
+        Toggle(isOn: Binding(
+            get: { !dataManager.areAllSiteComponentsDisabled(onHost: site.domain) },
+            set: { runs in mutateSite(site.domain) { await dataManager.setAllSiteComponentsDisabled(!runs, onHost: site.domain) } }
+        )) {
+            Text("wBlock on this site")
+        }
+
         // Content filtering is the switch the popup shows too. Turning it
         // off here clears both the filter-only list and any older whole-site
         // whitelist entry (#835).
@@ -290,7 +300,8 @@ struct SiteSettingsView: View {
             get: { dataManager.isAutoplayAllowed(onHost: site.domain) },
             set: { setAutoplayAllowed($0, domain: site.domain) }
         )) {
-            Text("Autoplay")
+            // As in the Safari extension's panel (#1097).
+            Text("Autoplay on this site")
         }
 
         Toggle(isOn: Binding(
@@ -390,7 +401,8 @@ struct SiteSettingsView: View {
                 hosts.contains(domain) ? scriptID : nil
             }),
             selectedScriptIDs: Set(dataManager.getUserScriptAllowedHosts().compactMap { $0.value.contains(domain) ? $0.key : nil }),
-            excludedFilterIDs: excludedFilterIDs(on: domain)
+            excludedFilterIDs: excludedFilterIDs(on: domain),
+            isZapperDisabled: dataManager.isZapperDisabled(forHost: domain)
         )
     }
 
@@ -443,6 +455,9 @@ struct SiteSettingsView: View {
         await dataManager.setUserScriptsDisabled(snapshot.areUserScriptsDisabled, onHost: domain)
         await restoreSelectedSites(snapshot.selectedScriptIDs, on: domain)
         setFilterExclusions(snapshot.excludedFilterIDs, on: domain)
+        if dataManager.isZapperDisabled(forHost: domain) != snapshot.isZapperDisabled {
+            await dataManager.setZapperRulesDisabled(snapshot.isZapperDisabled, forHost: domain)
+        }
         let disabledHosts = dataManager.getUserScriptDisabledHosts()
         for scriptID in Set(disabledHosts.keys).union(snapshot.disabledScriptIDs) {
             var hosts = disabledHosts[scriptID] ?? []

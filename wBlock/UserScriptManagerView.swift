@@ -1051,7 +1051,7 @@ struct UserScriptSettingsView: View {
                 if !script.isLocal && script.resolvedDownloadURL != nil {
                     AutomaticUpdatesToggle(
                         isOn: script.updatesAutomatically,
-                        description: "Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule."
+                        description: "When off, wBlock leaves this script at its current version."
                     ) { enabled in
                         Task { await userScriptManager.setUserScript(script, updatesAutomatically: enabled) }
                     }

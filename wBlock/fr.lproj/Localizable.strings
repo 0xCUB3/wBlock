@@ -3,15 +3,9 @@
 "The rule could not be saved. It may have changed or already exist." = "La règle n’a pas pu être enregistrée. Elle a peut-être été modifiée ou existe déjà.";
 
 "Apply on" = "Appliquer sur";
-"No sites selected. This list will not apply." = "Aucun site sélectionné. Cette liste ne sera pas appliquée.";
-"Sites include their subdomains. Use * to match any top-level domain, for example amazon.*. Apply changes to update filtering." = "Les sites incluent leurs sous-domaines. Utilisez * pour couvrir toutes les extensions de domaine, par exemple amazon.*. Appliquez les modifications pour mettre à jour le filtrage.";
-"Run on" = "Exécuter sur";
 "All matching sites" = "Tous les sites correspondants";
 "Only selected sites" = "Uniquement les sites sélectionnés";
 "Selected Sites" = "Sites sélectionnés";
-"No sites selected. This script will not run." = "Aucun site sélectionné. Ce script ne s’exécutera pas.";
-"This script will not run on excluded sites, even if they are selected." = "Ce script ne s’exécutera pas sur les sites exclus, même s’ils sont sélectionnés.";
-"Sites include their subdomains. The script’s own matching rules still apply. Reload the page after making changes." = "Les sites incluent leurs sous-domaines. Les règles de correspondance du script restent applicables. Rechargez la page après toute modification.";
 "Could not save site settings" = "Impossible d’enregistrer les réglages des sites";
 "SponsorBlock Backups" = "Sauvegardes SponsorBlock";
 "Import SponsorBlock Settings" = "Importer les réglages SponsorBlock";
@@ -612,7 +606,6 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Trace" = "Tracer";
 "Trust: %@" = "Confiance : %@";
 "Trust: \\(trust.capitalized)" = "Confiance : \\(trust.capitalized)";
-"Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "Désactivez cette option pour conserver la version actuelle lorsque wBlock met à jour les scripts en masse ou selon un planning.";
 "Unable to access shared container" = "Impossible d'accéder au conteneur partagé";
 "Unapplied Filter Changes" = "Modifications de filtre non appliquées";
 "Unavailable" = "Indisponible";
@@ -891,8 +884,6 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Enable Experimental Filter?" = "Activer le filtre expérimental ?";
 "Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "Les filtres expérimentaux testent de nouvelles règles avant qu’elles n’arrivent dans les listes principales et peuvent casser des sites web. Activez-les seulement si vous êtes prêt à repérer et signaler les problèmes.";
 "Reset" = "Réinitialiser";
-"No sites selected. Cosmetic filtering will not apply." = "Aucun site sélectionné. Le filtrage cosmétique ne sera pas appliqué.";
-"Cosmetic filtering will not apply on these sites. Network blocking still applies." = "Le filtrage cosmétique ne sera pas appliqué sur ces sites. Le blocage réseau reste actif.";
 "When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device." = "Lorsqu’elle est activée, cette option synchronise via iCloud l’état activé ou désactivé des scripts utilisateur. Désactivez-la pour conserver ces choix uniquement sur cet appareil.";
 "Rule Capacity" = "Capacité des règles";
 "Next Update" = "Prochaine mise à jour";
@@ -922,7 +913,6 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "This isn’t a valid http(s) filter URL." = "Ceci n’est pas une URL de filtre http(s) valide.";
 
 /* Filter list Automatic Updates setting description */
-"Turn this off to keep the current version when wBlock updates filter lists in bulk or on a schedule." = "Désactivez cette option pour conserver la version actuelle lorsque wBlock met à jour les listes de filtres en masse ou selon un planning.";
 
 "Add Userscript" = "Ajouter un script utilisateur";
 
@@ -1092,7 +1082,7 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Hides social media buttons and widgets, such as Like and Share, from the AdGuard project." = "Masque les boutons et widgets des réseaux sociaux, comme J'aime et Partager. Du projet AdGuard.";
 "Hides third-party widgets such as assistants and support chats, from the AdGuard project." = "Masque les widgets tiers, comme les assistants et les chats d'assistance. Du projet AdGuard.";
 "Keeps sites working when other lists break them, from the uBlock Origin project." = "Garde les sites fonctionnels quand d'autres listes les cassent. Du projet uBlock Origin.";
-"Removes tracking parameters from URLs, from the AdGuard project." = "Supprime les paramètres de pistage des URL. Du projet AdGuard.";
+"Removes tracking parameters from URLs, from the AdGuard and uBlock Origin projects." = "Supprime les paramètres de pistage des URL. Des projets AdGuard et uBlock Origin.";
 "Removes unneeded parameters from URLs, so links are cleaner to copy and share." = "Supprime les paramètres inutiles des URL pour que les liens soient plus propres à copier et partager.";
 "Short-term rules that fix sites broken by other lists, from the uBlock Origin project." = "Règles temporaires qui corrigent les sites cassés par d'autres listes. Du projet uBlock Origin.";
 "Stops public websites from reaching devices on your local network, from the uBlock Origin project." = "Empêche les sites publics d'atteindre les appareils de votre réseau local. Du projet uBlock Origin.";
@@ -1114,3 +1104,16 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "Assombrit les sites en modifiant leurs couleurs. Du projet Dark Reader. Certains sites peuvent paraître étranges, car il n'inclut pas les corrections de sites de Dark Reader.";
 "Opens the publisher's regular page instead of its AMP version." = "Ouvre la page normale de l’éditeur au lieu de sa version AMP.";
 "Disable AMP" = "Disable AMP";
+"wBlock on this site" = "wBlock sur ce site";
+"Autoplay on this site" = "Lecture automatique sur ce site";
+"AdGuard URL Tracking Protection Filter" = "uBO/AdGuard URL Tracking Protection Filter";
+"When off, wBlock leaves this list at its current version." = "Désactivé, wBlock garde la version actuelle de cette liste.";
+"When off, wBlock leaves this script at its current version." = "Désactivé, wBlock garde la version actuelle de ce script.";
+"No sites selected, so this list is off." = "Aucun site sélectionné, cette liste est donc désactivée.";
+"No sites selected, so this script is off." = "Aucun site sélectionné, ce script est donc désactivé.";
+"No sites selected, so cosmetic filtering is off." = "Aucun site sélectionné, le filtrage cosmétique est donc désactivé.";
+"This list skips these sites." = "Cette liste ignore ces sites.";
+"This script skips these sites, even selected ones." = "Ce script ignore ces sites, même sélectionnés.";
+"Cosmetic filtering skips these sites. Network blocking still applies." = "Le filtrage cosmétique ignore ces sites. Le blocage réseau s’applique toujours.";
+"Sites include their subdomains. Use * for any top-level domain, as in amazon.*." = "Les sites incluent leurs sous-domaines. Utilisez * pour n’importe quel domaine de premier niveau, comme amazon.*.";
+"Sites include their subdomains. Use * for any top-level domain, as in amazon.*. Reload the page after a change." = "Les sites incluent leurs sous-domaines. Utilisez * pour n’importe quel domaine de premier niveau, comme amazon.*. Rechargez la page après une modification.";

@@ -3,15 +3,9 @@
 "The rule could not be saved. It may have changed or already exist." = "قانون ذخیره نشد. ممکن است تغییر کرده باشد یا از قبل وجود داشته باشد.";
 
 "Apply on" = "اعمال روی";
-"No sites selected. This list will not apply." = "هیچ سایتی انتخاب نشده است. این فهرست اعمال نخواهد شد.";
-"Sites include their subdomains. Use * to match any top-level domain, for example amazon.*. Apply changes to update filtering." = "سایت‌ها شامل زیردامنه‌های خود می‌شوند. برای تطبیق هر دامنهٔ سطح بالا از * استفاده کنید، برای مثال amazon.*. برای به‌روزرسانی فیلترسازی، تغییرات را اعمال کنید.";
-"Run on" = "اجرا روی";
 "All matching sites" = "همهٔ سایت‌های منطبق";
 "Only selected sites" = "فقط سایت‌های انتخاب‌شده";
 "Selected Sites" = "سایت‌های انتخاب‌شده";
-"No sites selected. This script will not run." = "هیچ سایتی انتخاب نشده است. این اسکریپت اجرا نخواهد شد.";
-"This script will not run on excluded sites, even if they are selected." = "این اسکریپت در سایت‌های مستثنا اجرا نخواهد شد، حتی اگر انتخاب شده باشند.";
-"Sites include their subdomains. The script’s own matching rules still apply. Reload the page after making changes." = "سایت‌ها شامل زیردامنه‌های خود می‌شوند. قوانین انطباق خود اسکریپت همچنان اعمال می‌شوند. پس از اعمال تغییرات، صفحه را دوباره بارگذاری کنید.";
 "Could not save site settings" = "تنظیمات سایت ذخیره نشد";
 "SponsorBlock Backups" = "نسخه‌های پشتیبان SponsorBlock";
 "Import SponsorBlock Settings" = "وارد کردن تنظیمات SponsorBlock";
@@ -612,7 +606,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Trace" = "ردیابی";
 "Trust: %@" = "اعتماد: %@";
 "Trust: \\(trust.capitalized)" = "اعتماد: \\(trust.capitalized)";
-"Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "این گزینه را خاموش کنید تا هنگام به‌روزرسانی گروهی یا زمان‌بندی‌شدهٔ اسکریپت‌ها توسط wBlock، نسخهٔ فعلی حفظ شود.";
 "Unable to access shared container" = "دسترسی به محفظهٔ مشترک امکان‌پذیر نیست";
 "Unapplied Filter Changes" = "تغییرات اعمال‌نشدهٔ فیلتر";
 "Unavailable" = "در دسترس نیست";
@@ -900,8 +893,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Enable Experimental Filter?" = "فیلتر آزمایشی فعال شود؟";
 "Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "فیلترهای آزمایشی قوانین جدید را قبل از رسیدن به فهرست‌های اصلی آزمایش می‌کنند و ممکن است کارکرد وب‌سایت‌ها را مختل کنند. آن‌ها را تنها در صورتی فعال کنید که با یافتن و گزارش اشکالات مشکلی ندارید.";
 "Reset" = "بازنشانی";
-"No sites selected. Cosmetic filtering will not apply." = "هیچ سایتی انتخاب نشده است. فیلتر کردن ظاهری اعمال نخواهد شد.";
-"Cosmetic filtering will not apply on these sites. Network blocking still applies." = "فیلتر کردن ظاهری در این سایت‌ها اعمال نخواهد شد. مسدود کردن شبکه همچنان اعمال می‌شود.";
 "When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device." = "وقتی روشن باشد، گزینه‌های فعال/غیرفعال بودن اسکریپت کاربر از طریق iCloud همگام‌سازی می‌شوند. این گزینه را خاموش کنید تا آن گزینه‌ها روی این دستگاه باقی بمانند.";
 "Rule Capacity" = "ظرفیت قوانین";
 "Next Update" = "به‌روزرسانی بعدی";
@@ -931,7 +922,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This isn’t a valid http(s) filter URL." = "این یک URL فیلتر معتبر با http(s) نیست.";
 
 /* Filter list Automatic Updates setting description */
-"Turn this off to keep the current version when wBlock updates filter lists in bulk or on a schedule." = "این گزینه را خاموش کنید تا نسخهٔ فعلی هنگام به‌روزرسانی گروهی یا زمان‌بندی‌شدهٔ فهرست‌های فیلتر توسط wBlock حفظ شود.";
 
 "Add Userscript" = "افزودن اسکریپت کاربر";
 
@@ -1101,7 +1091,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides social media buttons and widgets, such as Like and Share, from the AdGuard project." = "دکمه‌ها و ابزارک‌های شبکه‌های اجتماعی مانند «پسندیدن» و «اشتراک‌گذاری» را پنهان می‌کند. از پروژه AdGuard.";
 "Hides third-party widgets such as assistants and support chats, from the AdGuard project." = "ابزارک‌های شخص ثالث مانند دستیارها و گفتگوهای پشتیبانی را پنهان می‌کند. از پروژه AdGuard.";
 "Keeps sites working when other lists break them, from the uBlock Origin project." = "وقتی فهرست‌های دیگر سایت‌ها را خراب می‌کنند، آن‌ها را سالم نگه می‌دارد. از پروژه uBlock Origin.";
-"Removes tracking parameters from URLs, from the AdGuard project." = "پارامترهای ردیابی را از نشانی‌ها حذف می‌کند. از پروژه AdGuard.";
+"Removes tracking parameters from URLs, from the AdGuard and uBlock Origin projects." = "پارامترهای ردیابی را از نشانی‌ها حذف می‌کند. از پروژه‌های AdGuard و uBlock Origin.";
 "Removes unneeded parameters from URLs, so links are cleaner to copy and share." = "پارامترهای غیرضروری را از نشانی‌ها حذف می‌کند تا پیوندها برای کپی و اشتراک‌گذاری تمیزتر باشند.";
 "Short-term rules that fix sites broken by other lists, from the uBlock Origin project." = "قوانین کوتاه‌مدتی که سایت‌های خراب‌شده توسط فهرست‌های دیگر را تعمیر می‌کنند. از پروژه uBlock Origin.";
 "Stops public websites from reaching devices on your local network, from the uBlock Origin project." = "جلوگیری می‌کند سایت‌های عمومی به دستگاه‌های شبکه محلی شما دسترسی پیدا کنند. از پروژه uBlock Origin.";
@@ -1123,3 +1113,16 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "با بازطراحی رنگ‌های وب‌سایت‌ها، آن‌ها را تیره می‌کند. از پروژه Dark Reader. ممکن است برخی سایت‌ها عجیب به نظر برسند، زیرا اصلاحات سایت‌های Dark Reader را شامل نمی‌شود.";
 "Opens the publisher's regular page instead of its AMP version." = "به‌جای نسخهٔ AMP، صفحهٔ معمولی ناشر را باز می‌کند.";
 "Disable AMP" = "Disable AMP";
+"wBlock on this site" = "wBlock on this site";
+"Autoplay on this site" = "Autoplay on this site";
+"AdGuard URL Tracking Protection Filter" = "uBO/AdGuard URL Tracking Protection Filter";
+"When off, wBlock leaves this list at its current version." = "When off, wBlock leaves this list at its current version.";
+"When off, wBlock leaves this script at its current version." = "When off, wBlock leaves this script at its current version.";
+"No sites selected, so this list is off." = "No sites selected, so this list is off.";
+"No sites selected, so this script is off." = "No sites selected, so this script is off.";
+"No sites selected, so cosmetic filtering is off." = "No sites selected, so cosmetic filtering is off.";
+"This list skips these sites." = "This list skips these sites.";
+"This script skips these sites, even selected ones." = "This script skips these sites, even selected ones.";
+"Cosmetic filtering skips these sites. Network blocking still applies." = "Cosmetic filtering skips these sites. Network blocking still applies.";
+"Sites include their subdomains. Use * for any top-level domain, as in amazon.*." = "Sites include their subdomains. Use * for any top-level domain, as in amazon.*.";
+"Sites include their subdomains. Use * for any top-level domain, as in amazon.*. Reload the page after a change." = "Sites include their subdomains. Use * for any top-level domain, as in amazon.*. Reload the page after a change.";

@@ -3,15 +3,9 @@
 "The rule could not be saved. It may have changed or already exist." = "규칙을 저장할 수 없습니다. 규칙이 변경되었거나 이미 존재할 수 있습니다.";
 
 "Apply on" = "적용 대상";
-"No sites selected. This list will not apply." = "선택된 사이트가 없습니다. 이 목록은 적용되지 않습니다.";
-"Sites include their subdomains. Use * to match any top-level domain, for example amazon.*. Apply changes to update filtering." = "사이트에는 하위 도메인도 포함됩니다. *를 사용하면 모든 최상위 도메인과 일치합니다. 예를 들어 amazon.*처럼 입력하세요. 필터링을 업데이트하려면 변경 사항을 적용하세요.";
-"Run on" = "실행할 사이트";
 "All matching sites" = "조건에 맞는 모든 사이트";
 "Only selected sites" = "선택한 사이트만";
 "Selected Sites" = "선택한 사이트";
-"No sites selected. This script will not run." = "선택한 사이트가 없습니다. 이 스크립트는 실행되지 않습니다.";
-"This script will not run on excluded sites, even if they are selected." = "제외된 사이트에서는 선택되어 있어도 이 스크립트가 실행되지 않습니다.";
-"Sites include their subdomains. The script’s own matching rules still apply. Reload the page after making changes." = "사이트에는 하위 도메인도 포함됩니다. 스크립트 자체의 일치 규칙도 계속 적용됩니다. 변경 후 페이지를 새로고침하세요.";
 "Could not save site settings" = "사이트 설정을 저장하지 못했습니다";
 "SponsorBlock Backups" = "SponsorBlock 백업";
 "Import SponsorBlock Settings" = "SponsorBlock 설정 가져오기";
@@ -614,7 +608,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Trace" = "추적";
 "Trust: %@" = "신뢰도: %@";
 "Trust: \\(trust.capitalized)" = "신뢰도: \\(trust.capitalized)";
-"Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "wBlock이 스크립트를 일괄 또는 예약 업데이트할 때 현재 버전을 유지하려면 이 옵션을 끄세요.";
 "Unable to access shared container" = "공유 컨테이너에 접근할 수 없습니다";
 "Unapplied Filter Changes" = "적용되지 않은 필터 변경 사항";
 "Unavailable" = "사용할 수 없음";
@@ -891,8 +884,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Enable Experimental Filter?" = "실험적 필터를 켜시겠습니까?";
 "Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "실험적 필터는 새 규칙을 주요 목록에 넣기 전에 시험하는 필터로, 웹사이트가 깨질 수 있습니다. 문제를 찾아 신고하는 데 익숙한 경우에만 켜세요.";
 "Reset" = "초기화";
-"No sites selected. Cosmetic filtering will not apply." = "선택된 사이트가 없습니다. 코스메틱 필터링이 적용되지 않습니다.";
-"Cosmetic filtering will not apply on these sites. Network blocking still applies." = "이 사이트에서는 코스메틱 필터링이 적용되지 않습니다. 네트워크 차단은 계속 적용됩니다.";
 "When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device." = "켜면 유저스크립트의 켬/끔 상태가 iCloud로 동기화됩니다. 끄면 이 기기에만 유지됩니다.";
 "Rule Capacity" = "규칙 용량";
 "Next Update" = "다음 업데이트";
@@ -922,7 +913,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This isn’t a valid http(s) filter URL." = "유효한 http(s) 필터 URL이 아닙니다.";
 
 /* Filter list Automatic Updates setting description */
-"Turn this off to keep the current version when wBlock updates filter lists in bulk or on a schedule." = "wBlock이 필터 목록을 일괄 또는 예약 업데이트할 때 현재 버전을 유지하려면 이 옵션을 끄세요.";
 
 "Add Userscript" = "유저스크립트 추가";
 
@@ -1092,7 +1082,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides social media buttons and widgets, such as Like and Share, from the AdGuard project." = "좋아요, 공유 등 소셜 미디어 버튼과 위젯을 숨깁니다. AdGuard 프로젝트에서 제공합니다.";
 "Hides third-party widgets such as assistants and support chats, from the AdGuard project." = "도우미 및 지원 채팅 등 타사 위젯을 숨깁니다. AdGuard 프로젝트에서 제공합니다.";
 "Keeps sites working when other lists break them, from the uBlock Origin project." = "다른 목록 때문에 깨진 사이트가 계속 작동하도록 합니다. uBlock Origin 프로젝트에서 제공합니다.";
-"Removes tracking parameters from URLs, from the AdGuard project." = "URL에서 추적 매개변수를 제거합니다. AdGuard 프로젝트에서 제공합니다.";
+"Removes tracking parameters from URLs, from the AdGuard and uBlock Origin projects." = "URL에서 추적 매개변수를 제거합니다. AdGuard 및 uBlock Origin 프로젝트에서 제공합니다.";
 "Removes unneeded parameters from URLs, so links are cleaner to copy and share." = "URL에서 불필요한 매개변수를 제거하여 링크를 더 쉽게 복사하고 공유할 수 있게 합니다.";
 "Short-term rules that fix sites broken by other lists, from the uBlock Origin project." = "다른 목록 때문에 깨진 사이트를 고치는 단기 규칙입니다. uBlock Origin 프로젝트에서 제공합니다.";
 "Stops public websites from reaching devices on your local network, from the uBlock Origin project." = "공용 웹사이트가 로컬 네트워크의 기기에 접근하지 못하도록 합니다. uBlock Origin 프로젝트에서 제공합니다.";
@@ -1114,3 +1104,16 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "웹사이트의 색상을 바꿔 어둡게 표시합니다. Dark Reader 프로젝트에서 제공합니다. Dark Reader의 사이트별 수정 사항은 포함되지 않으므로 일부 사이트가 어색하게 보일 수 있습니다.";
 "Opens the publisher's regular page instead of its AMP version." = "AMP 버전 대신 게시자의 일반 페이지를 엽니다.";
 "Disable AMP" = "Disable AMP";
+"wBlock on this site" = "이 사이트에서 wBlock 사용";
+"Autoplay on this site" = "이 사이트에서 자동 재생";
+"AdGuard URL Tracking Protection Filter" = "uBO/AdGuard URL Tracking Protection Filter";
+"When off, wBlock leaves this list at its current version." = "끄면 wBlock이 이 목록을 현재 버전으로 유지합니다.";
+"When off, wBlock leaves this script at its current version." = "끄면 wBlock이 이 스크립트를 현재 버전으로 유지합니다.";
+"No sites selected, so this list is off." = "선택한 사이트가 없어 이 목록이 꺼져 있습니다.";
+"No sites selected, so this script is off." = "선택한 사이트가 없어 이 스크립트가 꺼져 있습니다.";
+"No sites selected, so cosmetic filtering is off." = "선택한 사이트가 없어 외형 필터링이 꺼져 있습니다.";
+"This list skips these sites." = "이 목록은 이 사이트들을 건너뜁니다.";
+"This script skips these sites, even selected ones." = "이 스크립트는 선택된 사이트라도 이 사이트들을 건너뜁니다.";
+"Cosmetic filtering skips these sites. Network blocking still applies." = "외형 필터링은 이 사이트들을 건너뜁니다. 네트워크 차단은 계속 적용됩니다.";
+"Sites include their subdomains. Use * for any top-level domain, as in amazon.*." = "사이트에는 하위 도메인이 포함됩니다. 모든 최상위 도메인에는 *를 사용하세요(예: amazon.*).";
+"Sites include their subdomains. Use * for any top-level domain, as in amazon.*. Reload the page after a change." = "사이트에는 하위 도메인이 포함됩니다. 모든 최상위 도메인에는 *를 사용하세요(예: amazon.*). 변경 후 페이지를 새로고침하세요.";

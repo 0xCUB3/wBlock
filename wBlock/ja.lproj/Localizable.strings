@@ -3,15 +3,9 @@
 "The rule could not be saved. It may have changed or already exist." = "ルールを保存できませんでした。変更されたか、既に存在する可能性があります。";
 
 "Apply on" = "適用先";
-"No sites selected. This list will not apply." = "サイトが選択されていません。このリストは適用されません。";
-"Sites include their subdomains. Use * to match any top-level domain, for example amazon.*. Apply changes to update filtering." = "サイトにはサブドメインも含まれます。* を使うと任意のトップレベルドメインに一致します（例：amazon.*）。変更を適用してフィルタリングをアップデートしてください。";
-"Run on" = "実行するサイト";
 "All matching sites" = "条件に一致する全てのサイト";
 "Only selected sites" = "選択したサイトのみ";
 "Selected Sites" = "選択したサイト";
-"No sites selected. This script will not run." = "サイトが選択されていません。このスクリプトは実行されません。";
-"This script will not run on excluded sites, even if they are selected." = "選択されていても、除外したサイトではこのスクリプトは実行されません。";
-"Sites include their subdomains. The script’s own matching rules still apply. Reload the page after making changes." = "サイトにはサブドメインも含まれます。スクリプト独自の一致ルールも引き続き適用されます。変更後はページを再読み込みしてください。";
 "Could not save site settings" = "サイト設定を保存できませんでした";
 "SponsorBlock Backups" = "SponsorBlockのバックアップ";
 "Import SponsorBlock Settings" = "SponsorBlock設定をインポート";
@@ -614,7 +608,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Trace" = "トレース";
 "Trust: %@" = "信頼: %@";
 "Trust: \\(trust.capitalized)" = "信頼: \\(trust.capitalized)";
-"Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "wBlockがスクリプトをまとめて、またはスケジュールに従ってアップデートする際に、現在のバージョンを維持するにはこれをオフにしてください。";
 "Unable to access shared container" = "共有コンテナにアクセスできません";
 "Unapplied Filter Changes" = "適用されていないフィルターの変更";
 "Unavailable" = "利用できません";
@@ -860,8 +853,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Enable Experimental Filter?" = "実験的フィルターを有効にしますか？";
 "Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "実験的フィルターは、メインのリストに入る前の新しいルールを試すもので、ウェブサイトが正しく表示されなくなることがあります。不具合を見つけて報告できる場合にのみ有効にしてください。";
 "Reset" = "リセット";
-"No sites selected. Cosmetic filtering will not apply." = "サイトが選択されていません。コスメティックフィルタリングは適用されません。";
-"Cosmetic filtering will not apply on these sites. Network blocking still applies." = "これらのサイトではコスメティックフィルタリングは適用されません。ネットワークブロックは引き続き適用されます。";
 "When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device." = "オンにすると、ユーザースクリプトの有効／無効の状態がiCloud経由で同期されます。オフにすると、このデバイス上だけに保存されます。";
 "Rule Capacity" = "ルール容量";
 "Next Update" = "次回のアップデート";
@@ -891,7 +882,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This isn’t a valid http(s) filter URL." = "有効な http(s) フィルター URL ではありません。";
 
 /* Filter list Automatic Updates setting description */
-"Turn this off to keep the current version when wBlock updates filter lists in bulk or on a schedule." = "wBlockがフィルターリストをまとめて、またはスケジュールに従ってアップデートする際に、現在のバージョンを維持するにはこれをオフにしてください。";
 
 "Add Userscript" = "ユーザースクリプトを追加";
 
@@ -1061,7 +1051,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides social media buttons and widgets, such as Like and Share, from the AdGuard project." = "「いいね」や「シェア」などのソーシャルメディアのボタンとウィジェットを非表示にします。AdGuard プロジェクトのリストです。";
 "Hides third-party widgets such as assistants and support chats, from the AdGuard project." = "アシスタントやサポートチャットなどのサードパーティのウィジェットを非表示にします。AdGuard プロジェクトのリストです。";
 "Keeps sites working when other lists break them, from the uBlock Origin project." = "他のリストで壊れたサイトが動作し続けるようにします。uBlock Origin プロジェクトのリストです。";
-"Removes tracking parameters from URLs, from the AdGuard project." = "URL からトラッキング用のパラメータを削除します。AdGuard プロジェクトのリストです。";
+"Removes tracking parameters from URLs, from the AdGuard and uBlock Origin projects." = "URL からトラッキング用のパラメータを削除します。AdGuard と uBlock Origin プロジェクトのリストです。";
 "Removes unneeded parameters from URLs, so links are cleaner to copy and share." = "URL から不要なパラメータを削除し、リンクをコピーや共有しやすくします。";
 "Short-term rules that fix sites broken by other lists, from the uBlock Origin project." = "他のリストで壊れたサイトを修正する短期的なルールです。uBlock Origin プロジェクトのリストです。";
 "Stops public websites from reaching devices on your local network, from the uBlock Origin project." = "公開ウェブサイトからローカルネットワーク上のデバイスにアクセスできないようにします。uBlock Origin プロジェクトのリストです。";
@@ -1083,3 +1073,16 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "ウェブサイトの色を変更して暗い表示にします。Dark Reader プロジェクトのリストです。Dark Reader のサイト別修正は含まれないため、一部のサイトの表示がおかしくなる場合があります。";
 "Opens the publisher's regular page instead of its AMP version." = "AMP 版の代わりに、発行元の通常のページを開きます。";
 "Disable AMP" = "Disable AMP";
+"wBlock on this site" = "このサイトで wBlock を有効にする";
+"Autoplay on this site" = "このサイトで自動再生";
+"AdGuard URL Tracking Protection Filter" = "uBO/AdGuard URL Tracking Protection Filter";
+"When off, wBlock leaves this list at its current version." = "オフにすると、wBlock はこのリストを現在のバージョンのままにします。";
+"When off, wBlock leaves this script at its current version." = "オフにすると、wBlock はこのスクリプトを現在のバージョンのままにします。";
+"No sites selected, so this list is off." = "サイトが選択されていないため、このリストはオフです。";
+"No sites selected, so this script is off." = "サイトが選択されていないため、このスクリプトはオフです。";
+"No sites selected, so cosmetic filtering is off." = "サイトが選択されていないため、コスメティックフィルタはオフです。";
+"This list skips these sites." = "このリストはこれらのサイトをスキップします。";
+"This script skips these sites, even selected ones." = "このスクリプトは、選択済みでもこれらのサイトをスキップします。";
+"Cosmetic filtering skips these sites. Network blocking still applies." = "コスメティックフィルタはこれらのサイトをスキップします。ネットワークのブロックは引き続き適用されます。";
+"Sites include their subdomains. Use * for any top-level domain, as in amazon.*." = "サイトにはサブドメインも含まれます。* は任意のトップレベルドメインを表します（例: amazon.*）。";
+"Sites include their subdomains. Use * for any top-level domain, as in amazon.*. Reload the page after a change." = "サイトにはサブドメインも含まれます。* は任意のトップレベルドメインを表します（例: amazon.*）。変更後はページを再読み込みしてください。";

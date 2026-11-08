@@ -3,15 +3,9 @@
 "The rule could not be saved. It may have changed or already exist." = "无法保存规则。规则可能已更改或已存在。";
 
 "Apply on" = "应用范围";
-"No sites selected. This list will not apply." = "未选择任何网站。此列表将不会应用。";
-"Sites include their subdomains. Use * to match any top-level domain, for example amazon.*. Apply changes to update filtering." = "网站范围包含其子域名。使用 * 可匹配任意顶级域名，例如 amazon.*。请应用更改以更新过滤。";
-"Run on" = "运行范围";
 "All matching sites" = "所有匹配的网站";
 "Only selected sites" = "仅选定的网站";
 "Selected Sites" = "选定的网站";
-"No sites selected. This script will not run." = "未选择网站。此脚本不会运行。";
-"This script will not run on excluded sites, even if they are selected." = "即使已选中，此脚本也不会在排除的网站上运行。";
-"Sites include their subdomains. The script’s own matching rules still apply. Reload the page after making changes." = "网站包括其子域名。脚本自身的匹配规则仍然适用。更改后请重新加载页面。";
 "Could not save site settings" = "无法保存网站设置";
 "SponsorBlock Backups" = "SponsorBlock 备份";
 "Import SponsorBlock Settings" = "导入 SponsorBlock 设置";
@@ -612,7 +606,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Trace" = "跟踪";
 "Trust: %@" = "信任度：%@";
 "Trust: \\(trust.capitalized)" = "信任度：\\(trust.capitalized)";
-"Turn this off to keep the current version when wBlock updates scripts in bulk or on a schedule." = "关闭此项可在 wBlock 批量或按计划更新脚本时保留当前版本。";
 "Unable to access shared container" = "无法访问共享容器";
 "Unapplied Filter Changes" = "未应用的过滤器更改";
 "Unavailable" = "不可用";
@@ -891,8 +884,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Enable Experimental Filter?" = "启用实验性过滤器？";
 "Experimental filters test new rules before they reach the main lists and can break websites. Enable them only if you’re comfortable finding and reporting breakage." = "实验性过滤器会在新规则进入主列表之前对其进行测试，可能会导致网站出现问题。仅在你愿意发现并反馈问题时启用。";
 "Reset" = "重置";
-"No sites selected. Cosmetic filtering will not apply." = "未选择任何网站。外观过滤将不会应用。";
-"Cosmetic filtering will not apply on these sites. Network blocking still applies." = "外观过滤不会在这些网站上应用。网络拦截仍然有效。";
 "When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device." = "开启后，用户脚本的启用状态会通过 iCloud 同步。关闭后，这些状态仅保留在此设备上。";
 "Rule Capacity" = "规则容量";
 "Next Update" = "下次更新";
@@ -922,7 +913,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This isn’t a valid http(s) filter URL." = "这不是有效的 http(s) 过滤器 URL。";
 
 /* Filter list Automatic Updates setting description */
-"Turn this off to keep the current version when wBlock updates filter lists in bulk or on a schedule." = "关闭此项可在 wBlock 批量或按计划更新过滤器列表时保留当前版本。";
 
 "Add Userscript" = "添加用户脚本";
 
@@ -1092,7 +1082,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides social media buttons and widgets, such as Like and Share, from the AdGuard project." = "隐藏社交媒体按钮和小组件，例如“赞”和“分享”，来自 AdGuard 项目。";
 "Hides third-party widgets such as assistants and support chats, from the AdGuard project." = "隐藏第三方小组件，例如助手和支持聊天，来自 AdGuard 项目。";
 "Keeps sites working when other lists break them, from the uBlock Origin project." = "当其他列表导致网站出现问题时，让网站保持正常工作，来自 uBlock Origin 项目。";
-"Removes tracking parameters from URLs, from the AdGuard project." = "从 URL 中移除跟踪参数，来自 AdGuard 项目。";
+"Removes tracking parameters from URLs, from the AdGuard and uBlock Origin projects." = "从 URL 中移除跟踪参数，来自 AdGuard 和 uBlock Origin 项目。";
 "Removes unneeded parameters from URLs, so links are cleaner to copy and share." = "移除 URL 中不必要的参数，让链接更干净，便于复制和分享。";
 "Short-term rules that fix sites broken by other lists, from the uBlock Origin project." = "用于修复被其他列表破坏的网站的短期规则，来自 uBlock Origin 项目。";
 "Stops public websites from reaching devices on your local network, from the uBlock Origin project." = "阻止公共网站访问你本地网络中的设备，来自 uBlock Origin 项目。";
@@ -1114,3 +1104,16 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "通过重新设置颜色使网站变暗，来自 Dark Reader 项目。由于不包含 Dark Reader 的网站修复，部分网站显示可能不正常。";
 "Opens the publisher's regular page instead of its AMP version." = "打开发布者的常规页面，而不是 AMP 版本。";
 "Disable AMP" = "Disable AMP";
+"wBlock on this site" = "在此网站上启用 wBlock";
+"Autoplay on this site" = "在此网站自动播放";
+"AdGuard URL Tracking Protection Filter" = "uBO/AdGuard URL Tracking Protection Filter";
+"When off, wBlock leaves this list at its current version." = "关闭后，wBlock 会让此列表保持当前版本。";
+"When off, wBlock leaves this script at its current version." = "关闭后，wBlock 会让此脚本保持当前版本。";
+"No sites selected, so this list is off." = "未选择任何网站，因此此列表已关闭。";
+"No sites selected, so this script is off." = "未选择任何网站，因此此脚本已关闭。";
+"No sites selected, so cosmetic filtering is off." = "未选择任何网站，因此元素隐藏过滤已关闭。";
+"This list skips these sites." = "此列表会跳过这些网站。";
+"This script skips these sites, even selected ones." = "此脚本会跳过这些网站，即使已选中。";
+"Cosmetic filtering skips these sites. Network blocking still applies." = "元素隐藏过滤会跳过这些网站。网络拦截仍然生效。";
+"Sites include their subdomains. Use * for any top-level domain, as in amazon.*." = "网站包含其子域名。使用 * 匹配任意顶级域名，例如 amazon.*。";
+"Sites include their subdomains. Use * for any top-level domain, as in amazon.*. Reload the page after a change." = "网站包含其子域名。使用 * 匹配任意顶级域名，例如 amazon.*。更改后请重新加载页面。";

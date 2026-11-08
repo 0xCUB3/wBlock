@@ -201,9 +201,10 @@ struct SourceClusterItemStyle: ButtonStyle {
 #endif
 
 /// The capsule behind a source window's menu, darker while pressed so a
-/// click shows (#1088). macOS 26 uses a glass capsule of its own (#1092),
-/// prominent while the menu narrows what shows (#1091); elsewhere the icon
-/// takes the accent color instead. macOS before 14 can't style a menu as a
+/// click shows (#1088). macOS 26 draws it as a glass capsule of its own like
+/// the source controls (#1092, #1097), filled with the accent color while the
+/// menu narrows what shows (#1091); elsewhere the icon takes the accent color
+/// instead. macOS before 14 can't style a menu as a
 /// button and keeps the plain capsule.
 struct SourceMenuCapsule: ViewModifier {
     var isActive = false
@@ -211,11 +212,12 @@ struct SourceMenuCapsule: ViewModifier {
     func body(content: Content) -> some View {
         #if os(macOS)
         if #available(macOS 26.0, *) {
-            if isActive {
-                content.menuStyle(.button).buttonStyle(.glassProminent).buttonBorderShape(.capsule)
-            } else {
-                content.menuStyle(.button).buttonStyle(.glass).buttonBorderShape(.capsule)
-            }
+            // The same glass capsule, item style and click flash as Search
+            // and Wrap Lines beside it; a .glass button drew a shorter bubble
+            // of a different shape (#1097). The label brings its own chevron.
+            content.menuStyle(.button).buttonStyle(SourceClusterItemStyle(isOn: isActive))
+                .menuIndicator(.hidden)
+                .glassEffect(.regular.interactive(), in: Capsule())
         } else if #available(macOS 14.0, *) {
             content.menuStyle(.button).buttonStyle(CapsulePressStyle()).foregroundStyle(tint)
         } else {
