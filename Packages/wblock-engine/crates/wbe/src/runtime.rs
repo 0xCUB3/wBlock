@@ -6,13 +6,14 @@
 //! script string would be subject to the page's CSP). The lines come from
 //! `compile`, which already dropped untrusted `trusted-*` scriptlets.
 
-use crate::ast::{CosmeticBody, DomainList, DomainMatcher, ExceptionScope, ParsedLine, Rule};
+use crate::ast::{CosmeticBody, DomainList, DomainMatcher, ExceptionScope, ParsedLine, Party, Rule};
 use adblock::lists::{FilterSet, ParseOptions, RuleTypes};
 use adblock::resources::PermissionMask;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, HashMap, HashSet};
+use std::sync::OnceLock;
 
 pub struct Engine {
     cosmetic: adblock::Engine,
@@ -25,6 +26,8 @@ pub struct Engine {
     specifichide: adblock::Engine,
     scriptlets: Scriptlets,
     popups: Scriptlets,
+    /// Each popup call's rule, required literal, and regex, built on first use.
+    popup_rules: OnceLock<Vec<(Option<PopupRule>, String, OnceLock<Option<regex::Regex>>)>>,
 }
 
 /// Cosmetic actions for one page URL.
@@ -231,9 +234,11 @@ impl Scriptlets {
         self.call(id).first().is_some_and(|name| matches!(name.as_str(), "wbe:css" | "wbe:procedural"))
     }
 
-    /// `site_cosmetic` false leaves out the site-specific styles and procedurals
-    /// (`$specifichide`); generic ones and all other scriptlets stay.
-    fn lookup(&self, host: &str, site_cosmetic: bool) -> Vec<Vec<String>> {
+    /// The call ids that apply to `host`, the ids excepted there, and whether
+    /// `#@#+js()` applies. `site_cosmetic` false leaves out the site-specific
+    /// styles and procedurals (`$specifichide`); generic ones and all other
+    /// scriptlets stay.
+    fn ids(&self, host: &str, site_cosmetic: bool) -> (Vec<u32>, HashSet<u32>, bool) {
         let mut keys = host_keys(host);
         keys.extend(self.regexes.matches(host).iter().map(|i| format!("/{}/", self.regexes.patterns()[i])));
         let mut excepted = HashSet::new();
@@ -265,6 +270,11 @@ impl Scriptlets {
             && (!all_scriptlets_excepted || self.call(*id).first().is_some_and(|name| matches!(name.as_str(), "wbe:css" | "wbe:procedural" | "wbe:popup"))));
         ids.sort_unstable();
         ids.dedup();
+        (ids, excepted, all_scriptlets_excepted)
+    }
+
+    fn lookup(&self, host: &str, site_cosmetic: bool) -> Vec<Vec<String>> {
+        let (ids, excepted, all_scriptlets_excepted) = self.ids(host, site_cosmetic);
         let mut calls: Vec<Vec<String>> = ids.into_iter().map(|id| self.call(id)).collect();
         // Pair matched response rules with Safari's player requests and watch mode.
         const REQUEST: &str = "trusted-youtube-player-request";
@@ -403,7 +413,7 @@ impl Engine {
                         // opener, uBO's `@@$popup,domain=datanodes.to` allowed
                         // every popup on every site (#1072). Safari's tab event
                         // names the opener tab, so a frame-only allow can miss.
-                        popups.add(false, r.from.clone(), vec!["wbe:popup".into(), rule.to_string()]);
+                        popups.add(false, r.from.clone(), vec!["wbe:popup".into(), serde_json::to_string(&rule).expect("popup rule serializes")]);
                     }
                     if r.scope.contains(ExceptionScope::GHIDE) {
                         cosmetic.push(line.as_str());
@@ -471,6 +481,7 @@ impl Engine {
             specifichide: exception_engine(&specifichide),
             scriptlets: scriptlets.finish(),
             popups: popups.finish(),
+            popup_rules: OnceLock::new(),
         }
     }
 
@@ -508,6 +519,7 @@ impl Engine {
             specifichide,
             scriptlets,
             popups,
+            popup_rules: OnceLock::new(),
         })
     }
 
@@ -558,32 +570,41 @@ impl Engine {
     }
     fn blocks_popup(&self, source: &str, target: &str) -> bool {
         if !["http://", "https://"].iter().any(|p| target.starts_with(p)) { return false; }
-        use crate::ast::Party;
         let host = host_of(source).to_ascii_lowercase();
         let target_host = host_of(target).to_ascii_lowercase();
         let site = |h: &str| crate::registrable_domain(h).map_or_else(|| h.to_string(), str::to_string);
         let third = site(&host) != site(&target_host);
         let genericblock = self.genericblock.url_cosmetic_resources(source).generichide;
+        let lowered = target.to_ascii_lowercase();
+        let popups = self.popup_rules.get_or_init(|| {
+            (0..self.popups.calls.len()).map(|id| {
+                let call: Vec<String> = self.popups.calls.decode_at(id);
+                let rule = call.get(1).and_then(|rule| serde_json::from_str::<PopupRule>(rule).ok());
+                let needle = rule.as_ref().map(|r| required_literal(&r.pattern)).unwrap_or_default();
+                (rule, needle, OnceLock::new())
+            }).collect()
+        });
         let mut block = false;
         let mut allow = false;
         let mut important_block = false;
         let mut important_allow = false;
-        for call in self.popups.lookup(&host, true) {
-            let Ok(rule) = serde_json::from_str::<serde_json::Value>(&call[1]) else { continue };
-            let Some(pattern) = rule["pattern"].as_str() else { continue };
-            let Ok(party) = serde_json::from_value::<Party>(rule["party"].clone()) else { continue };
-            let party_ok = match party {
+        for id in self.popups.ids(&host, true).0 {
+            let Some((Some(rule), needle, regex)) = popups.get(id as usize) else { continue };
+            let party_ok = match rule.party {
                 Party::Any => true,
                 Party::First => !third,
                 Party::Third => third,
                 Party::StrictFirst => host == target_host,
                 Party::StrictThird => host != target_host,
             };
-            if !party_ok { continue; }
-            let Ok(regex) = regex::RegexBuilder::new(pattern).case_insensitive(rule["matchCase"] != true).build() else { continue };
-            if !regex.is_match(target) { continue; }
-            match (rule["allow"] == true, rule["important"] == true) {
-                (false, false) => block |= !(genericblock && rule["generic"] == true),
+            // Compiling every candidate's regex took ~160 ms per lookup on
+            // the default lists; a literal every match contains rules out
+            // nearly all of them first.
+            if !party_ok || !lowered.contains(needle.as_str()) { continue; }
+            let regex = regex.get_or_init(|| regex::RegexBuilder::new(&rule.pattern).case_insensitive(!rule.match_case).build().ok());
+            if !regex.as_ref().is_some_and(|r| r.is_match(target)) { continue; }
+            match (rule.allow, rule.important) {
+                (false, false) => block |= !(genericblock && rule.generic),
                 (true, false) => allow = true,
                 (false, true) => important_block = true, (true, true) => important_allow = true,
             }
@@ -593,9 +614,73 @@ impl Engine {
 
 }
 
+/// A popup filter as the runtime matches it, stored as JSON.
+#[derive(Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct PopupRule {
+    allow: bool,
+    generic: bool,
+    important: bool,
+    match_case: bool,
+    party: Party,
+    pattern: String,
+}
+
+/// The longest literal, lowercased, that every match of `pattern` contains.
+/// `pattern` is `url_filter` output, WebKit's subset without alternation;
+/// anything this does not follow yields `""`, which every URL contains.
+fn required_literal(pattern: &str) -> String {
+    let (mut best, mut run) = (String::new(), String::new());
+    let mut depth = 0usize;
+    let mut chars = pattern.chars();
+    while let Some(c) = chars.next() {
+        let literal = match c {
+            '\\' => match chars.next() {
+                Some(e) if e.is_ascii_punctuation() => Some(e),
+                Some('d' | 'D' | 'w' | 'W' | 's' | 'S' | 'b' | 'B') => None,
+                _ => return String::new(),
+            },
+            '[' => {
+                let mut first = true;
+                loop {
+                    match chars.next() {
+                        Some('\\') => { chars.next(); }
+                        Some('^') if first => continue,
+                        Some(']') if !first => break,
+                        Some('[') | None => return String::new(),
+                        _ => {}
+                    }
+                    first = false;
+                }
+                None
+            }
+            '(' => { depth += 1; None }
+            ')' => { depth = depth.saturating_sub(1); None }
+            '|' => return String::new(),
+            // The character before an optional quantifier is not required.
+            '*' | '?' => { run.pop(); None }
+            '{' => {
+                run.pop();
+                if !chars.by_ref().any(|c| c == '}') { return String::new(); }
+                None
+            }
+            c if c.is_ascii() && !matches!(c, '.' | '^' | '$' | '+' | '}') => Some(c),
+            _ => None,
+        };
+        match literal {
+            Some(c) if depth == 0 => run.push(c.to_ascii_lowercase()),
+            _ => {
+                if run.len() > best.len() { best = std::mem::take(&mut run); }
+                run.clear();
+            }
+        }
+    }
+    if run.len() > best.len() { run } else { best }
+}
+
 /// Popup matching uses the same URL compiler and source-domain index as the
 /// rest of the engine. Unsupported constraints never become broader blocks.
-pub(crate) fn popup_rule(r: &crate::ast::NetworkRule) -> Result<serde_json::Value, String> {
+pub(crate) fn popup_rule(r: &crate::ast::NetworkRule) -> Result<PopupRule, String> {
     use crate::ast::NetworkAction;
     if !matches!(r.action, NetworkAction::Block) {
         return Err("popup: unsupported action".into());
@@ -612,8 +697,8 @@ pub(crate) fn popup_rule(r: &crate::ast::NetworkRule) -> Result<serde_json::Valu
         _ if r.exception => ".*".into(), // conservative allow, never a broader block
         _ => return Err("popup: unsupported URL pattern".into()),
     };
-    Ok(serde_json::json!({"pattern":pattern, "allow":r.exception, "important":r.important,
-        "matchCase":r.match_case, "party":r.party, "generic":r.from.include.is_empty()}))
+    Ok(PopupRule { pattern, allow: r.exception, important: r.important,
+        match_case: r.match_case, party: r.party, generic: r.from.include.is_empty() })
 }
 
 fn read_index(rest: &mut &[u8]) -> Result<Scriptlets, String> {
@@ -716,6 +801,20 @@ example.com##+js(set-constant, adsEnabled, false)
         assert!(popup_blocked(rules, "https://movies.example/", "https://ads.example/ok"));
         // An unscoped allow still applies to every opener.
         assert!(!popup_blocked("||ads.example^$popup\n@@||ads.example/ok^$popup\n", "https://movies.example/", "https://ads.example/ok"));
+    }
+
+    #[test]
+    fn popup_prefilter_literal_is_required_by_every_match() {
+        for (pattern, literal) in [
+            (r"^[^:]+://+([^:/]+\.)?ads\.example[/:?#]", "ads.example"),
+            (r"/pop\.php\?id=[0-9]+", "/pop.php?id="),
+            (r"adsx?y{0,3}zzzz", "zzzz"),
+            (r"(foo)?barbaz", "barbaz"),
+            (r"a|bcdef", ""),
+            (r"\x41bc", ""),
+        ] {
+            assert_eq!(required_literal(pattern), literal, "{pattern}");
+        }
     }
 
     #[test]
