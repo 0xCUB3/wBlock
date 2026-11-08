@@ -50,35 +50,39 @@ extension SourceViewerControls where Extra == EmptyView {
     }
 }
 
-/// Source controls side by side. macOS 26 puts them in one glass capsule as
-/// tall as the glass close button, like a toolbar group, and it flashes when
-/// clicked as glass does (#1091, #1092). Each control inside is drawn by
-/// `SourceClusterItemStyle`; glass buttons merged with a glass union came
-/// apart and drew off center.
+/// Source controls side by side. iOS and macOS 26 put them in one glass
+/// capsule as tall as the glass close button, like a toolbar group, and it
+/// flashes when clicked as glass does (#1091, #1092, #1099). Each control
+/// inside is drawn by `SourceClusterItemStyle`; glass buttons merged with a
+/// glass union came apart and drew off center.
 struct SourceControlCluster<Content: View>: View {
     @ViewBuilder var content: () -> Content
 
     var body: some View {
-        #if os(macOS)
-        if #available(macOS 26.0, *) {
+        if #available(iOS 26.0, macOS 26.0, *) {
             HStack(spacing: 0) { content() }
                 .glassEffect(.regular.interactive(), in: Capsule())
         } else {
             HStack(spacing: SourceControlMetrics.spacing) { content() }
         }
-        #else
-        HStack(spacing: SourceControlMetrics.spacing) { content() }
-        #endif
     }
 }
 
 enum SourceControlMetrics {
-    /// A menu label's height. macOS 26 glass pads it to the close button's 28pt.
+    /// A menu label's height. Glass pads it to the close button's height.
     static var menuLabelHeight: CGFloat {
-        #if os(macOS)
-        if #available(macOS 26.0, *) { return 20 }
-        #endif
+        if #available(iOS 26.0, macOS 26.0, *) { return 20 }
         return size
+    }
+
+    /// A glass cluster item's height, which with its 2pt inset matches the
+    /// glass close button: 28pt on macOS, 34pt on iOS.
+    static var clusterItemHeight: CGFloat {
+        #if os(iOS)
+        30
+        #else
+        24
+        #endif
     }
 
     static var size: CGFloat {
@@ -91,9 +95,10 @@ enum SourceControlMetrics {
 
     static var spacing: CGFloat {
         #if os(iOS)
-        8
+        if #available(iOS 26.0, *) { return 12 }
+        return 8
         #else
-        12
+        return 12
         #endif
     }
 
@@ -124,8 +129,7 @@ struct SourceControlButton: View {
 
     @ViewBuilder
     var body: some View {
-        #if os(macOS)
-        if #available(macOS 26.0, *) {
+        if #available(iOS 26.0, macOS 26.0, *) {
             Button(action: action) {
                 Image(systemName: systemImage).frame(width: 20, height: 20)
             }
@@ -135,9 +139,6 @@ struct SourceControlButton: View {
         } else {
             plainButton
         }
-        #else
-        plainButton
-        #endif
     }
 
     private var plainButton: some View {
@@ -164,7 +165,6 @@ struct SourceControlIcon: View {
     }
 }
 
-#if os(macOS)
 /// A control inside a `SourceControlCluster`'s capsule. One that's on fills
 /// with the accent color, as Show Enabled Only does in the toolbar (#1091).
 struct SourceClusterItemStyle: ButtonStyle {
@@ -184,7 +184,7 @@ struct SourceClusterItemStyle: ButtonStyle {
             label
                 .font(.body.weight(.medium))
                 .padding(.horizontal, 8)
-                .frame(minWidth: 36, minHeight: 24)
+                .frame(minWidth: 36, minHeight: SourceControlMetrics.clusterItemHeight)
                 .foregroundStyle(isOn ? Color.white : (isEnabled ? Color.primary : Color.secondary.opacity(0.5)))
                 .background {
                     if isOn {
@@ -198,27 +198,37 @@ struct SourceClusterItemStyle: ButtonStyle {
         }
     }
 }
-#endif
 
 /// The capsule behind a source window's menu, darker while pressed so a
-/// click shows (#1088). macOS 26 draws it as a glass capsule of its own like
-/// the source controls (#1092, #1097), filled with the accent color while the
-/// menu narrows what shows (#1091); elsewhere the icon takes the accent color
-/// instead. macOS before 14 can't style a menu as a
+/// click shows (#1088). iOS and macOS 26 draw it as a glass capsule of its
+/// own like the source controls (#1092, #1097, #1099), filled with the accent
+/// color while the menu narrows what shows (#1091); elsewhere the icon takes
+/// the accent color instead. macOS before 14 can't style a menu as a
 /// button and keeps the plain capsule.
 struct SourceMenuCapsule: ViewModifier {
     var isActive = false
 
     func body(content: Content) -> some View {
-        #if os(macOS)
-        if #available(macOS 26.0, *) {
+        if #available(iOS 26.0, macOS 26.0, *) {
             // The same glass capsule, item style and click flash as Search
             // and Wrap Lines beside it; a .glass button drew a shorter bubble
             // of a different shape (#1097). The label brings its own chevron.
-            content.menuStyle(.button).buttonStyle(SourceClusterItemStyle(isOn: isActive))
+            content
+                #if os(macOS)
+                .menuStyle(.button)
                 .menuIndicator(.hidden)
+                #endif
+                .buttonStyle(SourceClusterItemStyle(isOn: isActive))
                 .glassEffect(.regular.interactive(), in: Capsule())
-        } else if #available(macOS 14.0, *) {
+        } else {
+            fallback(content)
+        }
+    }
+
+    @ViewBuilder
+    private func fallback(_ content: Content) -> some View {
+        #if os(macOS)
+        if #available(macOS 14.0, *) {
             content.menuStyle(.button).buttonStyle(CapsulePressStyle()).foregroundStyle(tint)
         } else {
             content.menuStyle(.borderlessButton).buttonStyle(.plain)

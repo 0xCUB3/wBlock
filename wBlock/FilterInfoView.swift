@@ -420,7 +420,10 @@ struct FilterRulesView: View {
     /// templates, so a plain tinted symbol lost its color there.
     private static func menuIcon(_ name: String, color: Color) -> Image {
         #if os(macOS)
-        let configuration = NSImage.SymbolConfiguration(paletteColors: [NSColor(color)])
+        // One palette color painted the check the color of its circle, so the
+        // menu showed dots; a white check draws a checkmark as iOS does (#1099).
+        let tint = NSColor(color)
+        let configuration = NSImage.SymbolConfiguration(paletteColors: name == "circle" ? [tint] : [.white, tint])
         guard let image = NSImage(systemSymbolName: name, accessibilityDescription: nil)?
             .withSymbolConfiguration(configuration) else { return Image(systemName: name) }
         image.isTemplate = false
