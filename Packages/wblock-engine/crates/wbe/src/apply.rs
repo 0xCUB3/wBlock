@@ -16,8 +16,8 @@ use crate::ast::{
     DomainList, DomainMatcher, NetworkAction, NetworkRule, Party, ResourceTypes, Rule,
 };
 use crate::compile::{
-    compile_blocker, compile_rules, parallel_indices, parse_list, CompileOptions, CompileOutput,
-    NetworkContext, Others, RuleSet, Stats,
+    compile_blocker, parallel_indices, parse_list, CompileOptions, CompileOutput,
+    NetworkContext, Others, Stats,
 };
 use crate::parse::cosmetic::with_domains;
 use crate::webkit::{SafariVersion, WebkitJson, WkAction, WkRule, WkTrigger};
@@ -142,7 +142,6 @@ struct Parsed {
     network: bool,
     /// `is_plain_block`, which the segment of #925 compiles unscoped.
     plain: bool,
-    badfilter: bool,
     /// Affinity types of the enclosing `!#safari_cb_affinity` block.
     affinity: Option<u8>,
 }
@@ -433,7 +432,15 @@ impl Plan {
 
     /// The network rules `scan` adds to the blocker's set from records `range`
     /// of `list`, in order. Parsed again, so a unit can be compiled on its own.
-    fn network_unit(&self, target: usize, unit: &Unit, segment: Option<usize>) -> Vec<NetworkRule> {
+    /// A rule `ctx`'s `$badfilter` rules cancel is dropped before its scope
+    /// changes it.
+    fn network_unit(
+        &self,
+        ctx: &NetworkContext,
+        target: usize,
+        unit: &Unit,
+        segment: Option<usize>,
+    ) -> Vec<NetworkRule> {
         let list = unit.list;
         let scope = &self.lists[list].scope;
         let mut out = Vec::new();
@@ -441,8 +448,12 @@ impl Plan {
             if !self.keeps(target, list, p) {
                 continue;
             }
+            let rule = self.rule(list, p);
+            if matches!(&rule, Rule::Network(r) if ctx.cancels(r)) {
+                continue;
+            }
             let mut rules = Vec::new();
-            scoped(self.rule(list, p), scope, &mut rules);
+            scoped(rule, scope, &mut rules);
             for rule in rules {
                 if Some(list) == segment && is_plain_block(&rule) {
                     continue;
@@ -638,15 +649,10 @@ impl Plan {
         }
         let units = self.record_units();
         let mut tail = Vec::new();
-        // The segment's `$badfilter` rules include the replicated ones.
-        let mut replicated_badfilters = Vec::new();
         for rule in replicated {
             match rule {
                 Rule::Network(r) => {
                     ctx.add(&r);
-                    if r.badfilter {
-                        replicated_badfilters.push(Rule::Network(r.clone()));
-                    }
                     tail.push(*r);
                 }
                 Rule::Cosmetic(r) => others.cosmetic.push(r),
@@ -678,7 +684,7 @@ impl Plan {
             &ctx,
             units.len() + 1,
             |unit| match units.get(unit) {
-                Some(unit) => self.network_unit(target, unit, segment_list),
+                Some(unit) => self.network_unit(&ctx, target, unit, segment_list),
                 None => tail.lock().expect("tail lock").take().expect("tail unit once"),
             },
             others,
@@ -686,26 +692,16 @@ impl Plan {
             stats,
         );
         if let Some(list) = segment_list {
-            let mut segment = RuleSet::default();
-            let assignment = self.assigned(target, list).cloned();
-            for p in self.parsed[list].records() {
-                // A badfilter is segment-wide, whatever its shard.
-                if p.badfilter {
-                    segment.push(self.rule(list, p));
-                    continue;
-                }
-                let keep = assignment.as_ref().is_some_and(|a| {
-                    a.shard
-                        .is_none_or(|(i, n)| p.identity % n as u64 == i as u64)
-                });
-                if keep && p.plain && !self.duplicates[target][list].contains(&p.identity) {
-                    segment.push(self.rule(list, p));
-                }
-            }
-            for rule in replicated_badfilters {
-                segment.push(rule);
-            }
-            let front = compile_rules(segment, &self.opts, Stats::default()).webkit;
+            // The blocker's context, so every `$badfilter` it holds applies.
+            let segment = |_| {
+                let plain = self.parsed[list].records().filter(|p| p.plain && self.keeps(target, list, p));
+                plain.filter_map(|p| match self.rule(list, p) {
+                    Rule::Network(r) => Some(*r),
+                    _ => None,
+                })
+                .collect()
+            };
+            let front = compile_blocker(&ctx, 1, segment, Others::default(), &self.opts, Stats::default()).webkit;
             let ignores: Vec<WkRule> = self.lists[list]
                 .scope
                 .exclude
@@ -947,7 +943,6 @@ fn parse_lines(list: &ListSpec, span: Range<usize>, lines_before: u32, patterns:
                 exception: matches!(rule, Rule::Network(r) if r.exception),
                 network: matches!(rule, Rule::Network(_)),
                 plain: is_plain_block(rule),
-                badfilter: matches!(rule, Rule::Network(r) if r.badfilter),
                 affinity,
             });
             if let Some(kept) = kept.as_mut() {
@@ -1215,9 +1210,10 @@ fn narrow(domains: &mut DomainList, raw: &mut String, restricted: Restricted) {
 
 /// Applies a list's site scope to one rule: zero rules when it no longer
 /// applies anywhere, two when a block needs a companion exception for an
-/// excluded subdomain of its scope (#767).
+/// excluded subdomain of its scope (#767). A `$badfilter` names a filter, not
+/// pages, so it stays as written and cancels the filter in any list's scope.
 fn scoped(rule: Rule, scope: &SiteScope, out: &mut Vec<Rule>) {
-    if scope.is_empty() {
+    if scope.is_empty() || matches!(&rule, Rule::Network(r) if r.badfilter) {
         out.push(rule);
         return;
     }
@@ -1574,6 +1570,29 @@ mod tests {
         assert!(!rules(&plan, 0)
             .iter()
             .any(|r| r["action"]["type"] == "block"));
+    }
+
+    #[test]
+    fn badfilter_cancels_across_site_scopes() {
+        // uBO's own filters `$badfilter` rules of other lists; a site scope on
+        // either list must not keep the filter alive.
+        let scopes = [json!({}), json!({"exclude":["other.com"]}), json!({"only":["news.com"]})];
+        for block_scope in &scopes {
+            for bad_scope in &scopes {
+                for targets in [json!([{"slot":1,"lists":[{"list":0},{"list":1}]}]),
+                                json!([{"slot":1,"lists":[{"list":0}]}, {"slot":2,"lists":[{"list":1}]}])] {
+                    let plan = plan(
+                        json!([{"id":"a", "text":"||cdn.example^\n||keep.example^", "scope":block_scope},
+                               {"id":"b", "text":"||cdn.example^$badfilter", "scope":bad_scope}]),
+                        targets,
+                        json!({}),
+                    );
+                    let rules = rules(&plan, 0);
+                    assert!(!rules.iter().any(|r| r["trigger"]["url-filter"].as_str().unwrap().contains("cdn")),
+                        "{block_scope} {bad_scope}: {rules:?}");
+                }
+            }
+        }
     }
 
     #[test]
