@@ -25,6 +25,8 @@ struct SourceViewerControls<Extra: View>: View {
             Group {
                 extra()
                 SourceControlButton("Search", systemImage: "magnifyingglass", action: onSearch)
+                    // Works while focus is outside the editor, which handles it itself (#1090).
+                    .keyboardShortcut("f", modifiers: .command)
                 SourceControlButton("Wrap Lines", systemImage: wrapsLines ? "text.justify.left" : "text.alignleft",
                                     isOn: wrapsLines) { wrapsLines.toggle() }
                     .accessibilityValue(wrapsLines ? String(localized: "On") : String(localized: "Off"))

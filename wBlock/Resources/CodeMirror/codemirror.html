@@ -180,10 +180,24 @@ input {
   height: 26px;
   padding: 0 !important;
   border-radius: 13px !important;
-  font-size: 18px !important;
-  line-height: 1 !important;
-  display: inline-grid;
-  place-content: center;
+  /* The × glyph sits below the middle of its line box, so the X is drawn
+     from two bars centered in the circle instead (#1090). */
+  font-size: 0 !important;
+}
+.cm-panels .cm-search button[name=close]::before,
+.cm-panels .cm-search button[name=close]::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 11px;
+  height: 1.5px;
+  border-radius: 1px;
+  background: var(--cm-foreground);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+.cm-panels .cm-search button[name=close]::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
 }
 
 /* Source sheets run the editor under the home indicator; this keeps the last
