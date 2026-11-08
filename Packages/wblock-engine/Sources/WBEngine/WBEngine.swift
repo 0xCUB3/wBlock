@@ -93,11 +93,10 @@ public enum WBEngine {
     public final class Engine {
         private let handle: OpaquePointer
 
-        public init(data: Data) throws {
-            let handle = data.withUnsafeBytes { raw in
-                wbe_engine_open(raw.bindMemory(to: UInt8.self).baseAddress, raw.count)
-            }
-            guard let handle else { throw EngineError.last() }
+        /// Maps the engine that starts `offset` bytes into the file at `path`.
+        /// Replace the file by rename; never write it in place while open.
+        public init(path: String, offset: Int) throws {
+            guard let handle = wbe_engine_open(path, offset) else { throw EngineError.last() }
             self.handle = handle
         }
 

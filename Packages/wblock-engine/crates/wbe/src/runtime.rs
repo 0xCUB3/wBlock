@@ -9,11 +9,12 @@
 
 use crate::ast::{CosmeticBody, DomainList, DomainMatcher, ExceptionScope, ParsedLine, Party, Rule};
 use adblock::lists::{FilterSet, ParseOptions};
-use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, HashMap, HashSet};
-use std::sync::OnceLock;
+use std::cell::RefCell;
+use std::ops::Range;
+use std::sync::{Arc, OnceLock};
 
 pub struct Engine {
     /// Flags the pages with a `$generichide` exception.
@@ -25,8 +26,8 @@ pub struct Engine {
     specifichide: adblock::Engine,
     scriptlets: Scriptlets,
     popups: Scriptlets,
-    /// Each popup call's rule, required literal, and regex, built on first use.
-    popup_rules: OnceLock<Vec<(Option<PopupRule>, String, OnceLock<Option<regex::Regex>>)>>,
+    /// Popup call regexes, compiled when a target first contains their literal.
+    popup_regexes: RefCell<HashMap<u32, Option<regex::Regex>>>,
 }
 
 /// Cosmetic actions for one page URL.
@@ -48,20 +49,20 @@ pub struct PagePayload {
 }
 
 /// Scriptlet calls and the rules that select them, read in place. Loading an
-/// engine copies these tables and decodes global calls once; a lookup decodes
-/// only the remaining entries for its host.
+/// engine copies these tables and decodes the generic rules' scopes once.
 struct Scriptlets {
-    /// Entry `i` is call `i`; keys are empty.
+    /// Entry `i` is call `i`, its strings; keys are empty.
     calls: Table,
     /// Keyed by hostname or entity (`name.*`); `""` holds generic ones
-    /// (cosmetic-filtering.js semantics). Values: `(call id, exclude)`.
+    /// (cosmetic-filtering.js semantics). Values: call ids, each with the
+    /// keys it is excluded from.
     rules: Table,
-    /// Keyed like `rules`. Values: call ids, or `null` for `#@#+js()`.
+    /// Keyed like `rules`. Values: call ids plus one, or 0 for `#@#+js()`.
     exceptions: Table,
     regexes: regex::RegexSet,
-    // Global calls are consulted on every page; keep their scopes decoded.
-    generic_rules: Vec<(u32, HashSet<String>)>,
-    generic_calls: HashMap<u32, Vec<String>>,
+    // Global calls are consulted on every lookup; their scopes are decoded on
+    // the first, so an engine that only answers pages never decodes popups'.
+    generic_rules: OnceLock<Vec<(u32, Box<[String]>)>>,
 }
 
 /// Scriptlet rules as `Engine::build` collects them.
@@ -69,7 +70,7 @@ struct Scriptlets {
 struct ScriptletRules {
     calls: Vec<Vec<String>>,
     index: HashMap<Vec<String>, u32>,
-    rules: BTreeMap<String, Vec<(u32, Vec<DomainMatcher>)>>,
+    rules: BTreeMap<String, Vec<(u32, Vec<String>)>>,
     exceptions: BTreeMap<String, Vec<Option<u32>>>,
     regexes: HashMap<String, regex::Regex>,
 }
@@ -103,70 +104,156 @@ impl ScriptletRules {
                 self.calls.len() as u32 - 1
             })
         });
-        let mut keys: Vec<String> = domains
-            .include
-            .iter()
-            .map(|m| match m {
-                DomainMatcher::Hostname(h) | DomainMatcher::Entity(h) => key(m, h),
-                DomainMatcher::Regex(r) => format!("/{r}/"),
-            })
-            .collect();
+        let mut keys: Vec<String> = domains.include.iter().map(key).collect();
         if domains.include.is_empty() {
             keys.push(String::new());
         }
+        // An exclusion is the host key it matches; an invalid regex one is
+        // `""`, which every host has, so it never widens a rule.
+        let exclude: Vec<String> = domains.exclude.iter().map(|m| match m {
+            DomainMatcher::Regex(r) if !self.regexes.contains_key(r) => String::new(),
+            m => key(m),
+        }).collect();
         for k in keys {
             if exception {
                 self.exceptions.entry(k).or_default().push(id);
             } else if let Some(id) = id {
-                self.rules
-                    .entry(k)
-                    .or_default()
-                    .push((id, domains.exclude.clone()));
+                self.rules.entry(k).or_default().push((id, exclude.clone()));
             }
         }
     }
 
     fn finish(self) -> Scriptlets {
-        let rules = Table::encode(self.rules.iter().map(|(k, v)| (k.as_str(), v)));
+        let rules = Table::encode(self.rules.iter().map(|(k, rules)| {
+            let mut value = Vec::new();
+            put_varint(&mut value, rules.len());
+            for (id, exclude) in rules {
+                put_varint(&mut value, *id as usize);
+                put_strs(&mut value, exclude);
+            }
+            (k.as_str(), value)
+        }));
         let regexes = regex::RegexSet::new(self.regexes.keys()).expect("validated domain regexes");
-        let generic_rules = generic_rules(&rules, &regexes);
-        let calls = Table::encode(self.calls.iter().map(|call| ("", call)));
         Scriptlets {
-            generic_calls: generic_rules.iter().map(|(id, _)| (*id, calls.decode_at(*id as usize))).collect(),
-            calls,
+            generic_rules: OnceLock::new(),
+            calls: Table::encode(self.calls.iter().map(|call| {
+                let mut value = Vec::new();
+                put_strs(&mut value, call);
+                ("", value)
+            })),
             rules,
-            exceptions: Table::encode(self.exceptions.iter().map(|(k, v)| (k.as_str(), v))),
+            exceptions: Table::encode(self.exceptions.iter().map(|(k, ids)| {
+                let mut value = Vec::new();
+                put_varint(&mut value, ids.len());
+                for id in ids {
+                    put_varint(&mut value, id.map_or(0, |id| id as usize + 1));
+                }
+                (k.as_str(), value)
+            })),
             regexes,
-            generic_rules,
         }
     }
 }
 
-/// Read-only map from byte keys to JSON values, in sorted key order.
-/// Layout, u32 LE: `n`, `n + 1` key ends, `n + 1` value ends, key bytes,
-/// value bytes. Lookups binary-search the keys in place.
-struct Table(Vec<u8>);
+fn put_varint(out: &mut Vec<u8>, mut n: usize) {
+    while n >= 0x80 {
+        out.push(n as u8 | 0x80);
+        n >>= 7;
+    }
+    out.push(n as u8);
+}
 
-impl Table {
-    fn encode<'a, V: Serialize + 'a>(entries: impl Iterator<Item = (&'a str, &'a V)>) -> Self {
-        let (mut key_ends, mut value_ends) = (vec![0u32], vec![0u32]);
-        let (mut keys, mut values) = (Vec::new(), Vec::new());
-        for (key, value) in entries {
-            keys.extend_from_slice(key.as_bytes());
-            values.extend(serde_json::to_vec(value).expect("scriptlet entry serializes"));
-            key_ends.push(keys.len() as u32);
-            value_ends.push(values.len() as u32);
+/// A count, then each string's length and bytes.
+fn put_strs(out: &mut Vec<u8>, strs: &[String]) {
+    put_varint(out, strs.len());
+    for s in strs {
+        put_varint(out, s.len());
+        out.extend(s.as_bytes());
+    }
+}
+
+/// Reads what `put_varint` and `put_strs` wrote; `None` once malformed.
+struct Reader<'a>(&'a [u8]);
+
+impl<'a> Reader<'a> {
+    fn varint(&mut self) -> Option<usize> {
+        let mut n = 0usize;
+        for shift in (0..64).step_by(7) {
+            let (&b, rest) = self.0.split_first()?;
+            self.0 = rest;
+            n |= ((b & 0x7f) as usize).checked_shl(shift)?;
+            if b < 0x80 { return Some(n); }
         }
-        let mut bytes = (key_ends.len() as u32 - 1).to_le_bytes().to_vec();
-        for end in key_ends.iter().chain(&value_ends) {
-            bytes.extend(end.to_le_bytes());
-        }
-        bytes.extend(keys);
-        bytes.extend(values);
-        Self(bytes)
+        None
     }
 
-    fn parse(bytes: &[u8]) -> Result<Self, String> {
+    fn bytes(&mut self) -> Option<&'a [u8]> {
+        let len = self.varint()?;
+        let (s, rest) = self.0.split_at_checked(len)?;
+        self.0 = rest;
+        Some(s)
+    }
+
+    fn str(&mut self) -> Option<&'a str> {
+        std::str::from_utf8(self.bytes()?).ok()
+    }
+
+    fn strs(&mut self) -> Option<Vec<&'a str>> {
+        (0..self.varint()?).map(|_| self.str()).collect()
+    }
+
+    /// A count, then that many items read by `item`.
+    fn list<T>(&mut self, mut item: impl FnMut(&mut Self) -> Option<T>) -> Option<Vec<T>> {
+        (0..self.varint()?).map(|_| item(self)).collect()
+    }
+}
+
+/// The bytes an engine's tables are read from: built or copied in, or a
+/// mapping of the engine file, which stays clean and out of the process's
+/// footprint.
+enum Blob {
+    Owned(Vec<u8>),
+    Mapped(memmap2::Mmap),
+}
+
+impl std::ops::Deref for Blob {
+    type Target = [u8];
+
+    fn deref(&self) -> &[u8] {
+        match self {
+            Blob::Owned(bytes) => bytes,
+            Blob::Mapped(map) => map,
+        }
+    }
+}
+
+/// Read-only map from byte keys to byte values, in sorted key order.
+/// Layout: u32 LE `n`, `n + 1` u32 LE entry ends, then the entries, each a
+/// varint key length, the key, and the value. Lookups binary-search in place.
+struct Table {
+    blob: Arc<Blob>,
+    range: Range<usize>,
+}
+
+impl Table {
+    fn encode<'a>(entries: impl Iterator<Item = (&'a str, Vec<u8>)>) -> Self {
+        let (mut ends, mut data) = (vec![0u32], Vec::new());
+        for (key, value) in entries {
+            put_varint(&mut data, key.len());
+            data.extend(key.as_bytes());
+            data.extend(value);
+            ends.push(data.len() as u32);
+        }
+        let mut bytes = (ends.len() as u32 - 1).to_le_bytes().to_vec();
+        for end in &ends {
+            bytes.extend(end.to_le_bytes());
+        }
+        bytes.extend(data);
+        Self { range: 0..bytes.len(), blob: Arc::new(Blob::Owned(bytes)) }
+    }
+
+    fn parse(blob: &Arc<Blob>, range: Range<usize>) -> Result<Self, String> {
+        let bytes = &blob[range.clone()];
         let malformed = || "engine: malformed scriptlets".to_string();
         let word = |at: usize| {
             bytes
@@ -174,74 +261,81 @@ impl Table {
                 .map(|w| u32::from_le_bytes(w.try_into().unwrap()) as usize)
         };
         let n = word(0).ok_or_else(malformed)?;
-        let header = 4 + 8 * (n + 1);
+        let header = 4 + 4 * (n + 1);
         if bytes.len() < header {
             return Err(malformed());
         }
-        let key_end = |i: usize| word(4 + 4 * i).expect("header checked");
-        let value_end = |i: usize| word(4 + 4 * (n + 1) + 4 * i).expect("header checked");
-        let ordered = (0..=n)
-            .all(|i| i == 0 || (key_end(i - 1) <= key_end(i) && value_end(i - 1) <= value_end(i)));
-        if !ordered || key_end(0) != 0 || value_end(0) != 0 {
+        let end = |i: usize| word(4 + 4 * i).expect("header checked");
+        if end(0) != 0 || !(1..=n).all(|i| end(i - 1) <= end(i)) || header + end(n) != bytes.len() {
             return Err(malformed());
         }
-        if header + key_end(n) + value_end(n) != bytes.len() {
-            return Err(malformed());
-        }
-        Ok(Self(bytes.to_vec()))
+        Ok(Self { blob: blob.clone(), range })
+    }
+
+    fn bytes(&self) -> &[u8] {
+        &self.blob[self.range.clone()]
     }
 
     fn len(&self) -> usize {
-        u32::from_le_bytes(self.0[..4].try_into().unwrap()) as usize
+        u32::from_le_bytes(self.bytes()[..4].try_into().unwrap()) as usize
     }
 
-    fn word(&self, at: usize) -> usize {
-        u32::from_le_bytes(self.0[at..at + 4].try_into().unwrap()) as usize
+    fn entry(&self, i: usize) -> Reader<'_> {
+        let bytes = self.bytes();
+        let base = 4 + 4 * (self.len() + 1);
+        let end = |i: usize| u32::from_le_bytes(bytes[4 + 4 * i..8 + 4 * i].try_into().unwrap()) as usize;
+        Reader(&bytes[base + end(i)..base + end(i + 1)])
     }
 
-    fn keys_at(&self) -> usize {
-        4 + 8 * (self.len() + 1)
+    /// Entry `i`'s key, and a reader at its value.
+    fn key_value(&self, i: usize) -> (&[u8], Reader<'_>) {
+        let mut entry = self.entry(i);
+        let key = entry.varint().and_then(|len| entry.0.split_at_checked(len));
+        key.map_or((&[][..], Reader(&[])), |(key, value)| (key, Reader(value)))
     }
 
-    fn key(&self, i: usize) -> &[u8] {
-        let base = self.keys_at();
-        &self.0[base + self.word(4 + 4 * i)..base + self.word(4 + 4 * (i + 1))]
-    }
-
-    fn value(&self, i: usize) -> &[u8] {
-        let n = self.len();
-        let base = self.keys_at() + self.word(4 + 4 * n);
-        let ends = 4 + 4 * (n + 1);
-        &self.0[base + self.word(ends + 4 * i)..base + self.word(ends + 4 * (i + 1))]
-    }
-
-    /// The value at `i`, or the default when it does not decode.
-    fn decode_at<T: DeserializeOwned + Default>(&self, i: usize) -> T {
-        serde_json::from_slice(self.value(i)).unwrap_or_default()
-    }
-
-    /// The value for `key`, or the default when there is none.
-    fn get<T: DeserializeOwned + Default>(&self, key: &str) -> T {
+    /// A reader at the value for `key`.
+    fn get(&self, key: &str) -> Option<Reader<'_>> {
         let (mut lo, mut hi) = (0, self.len());
         while lo < hi {
             let mid = (lo + hi) / 2;
-            match self.key(mid).cmp(key.as_bytes()) {
+            let (k, value) = self.key_value(mid);
+            match k.cmp(key.as_bytes()) {
                 Ordering::Less => lo = mid + 1,
                 Ordering::Greater => hi = mid,
-                Ordering::Equal => return self.decode_at(mid),
+                Ordering::Equal => return Some(value),
             }
         }
-        T::default()
+        None
+    }
+
+    /// Each rule for `key`: its call id and the keys it is excluded from.
+    fn rules(&self, key: &str) -> Vec<(u32, Vec<&str>)> {
+        self.get(key)
+            .and_then(|mut r| r.list(|r| Some((r.varint()? as u32, r.strs()?))))
+            .unwrap_or_default()
     }
 }
 
 impl Scriptlets {
-    fn call(&self, id: u32) -> Vec<String> {
-        self.generic_calls.get(&id).cloned().unwrap_or_else(|| self.calls.decode_at(id as usize))
+    /// Call `id`'s name and arguments; empty when it does not decode.
+    fn call(&self, id: u32) -> Vec<&str> {
+        self.reader(id).strs().unwrap_or_default()
+    }
+
+    /// A reader at call `id`'s argument count.
+    fn reader(&self, id: u32) -> Reader<'_> {
+        let i = id as usize;
+        if i < self.calls.len() { self.calls.key_value(i).1 } else { Reader(&[]) }
+    }
+
+    fn name(&self, id: u32) -> &str {
+        let mut call = self.reader(id);
+        call.varint().filter(|n| *n > 0).and_then(|_| call.str()).unwrap_or_default()
     }
 
     fn is_cosmetic(&self, id: u32) -> bool {
-        self.call(id).first().is_some_and(|name| matches!(name.as_str(), "wbe:hide" | "wbe:css" | "wbe:procedural"))
+        matches!(self.name(id), "wbe:hide" | "wbe:css" | "wbe:procedural")
     }
 
     /// The call ids that apply to `host`, the ids excepted there, and whether
@@ -254,22 +348,23 @@ impl Scriptlets {
         let mut excepted = HashSet::new();
         let mut all_scriptlets_excepted = false;
         for k in &keys {
-            for e in self.exceptions.get::<Vec<Option<u32>>>(k) {
-                match e {
+            let ids = self.exceptions.get(k).and_then(|mut r| r.list(Reader::varint)).unwrap_or_default();
+            for id in ids {
+                match id.checked_sub(1) {
                     None => all_scriptlets_excepted = true,
                     Some(id) => {
-                        excepted.insert(id);
+                        excepted.insert(id as u32);
                     }
                 }
             }
         }
-        let mut ids: Vec<u32> = self.generic_rules.iter()
-            .filter(|(id, excluded)| !keys.iter().any(|k| excluded.contains(k))
-                && (generic_hides || self.call(*id)[0] != "wbe:hide"))
+        let mut ids: Vec<u32> = self.generic_rules.get_or_init(|| generic_rules(&self.rules)).iter()
+            .filter(|(id, excluded)| !keys.iter().any(|k| excluded.binary_search(k).is_ok())
+                && (generic_hides || self.name(*id) != "wbe:hide"))
             .map(|(id, _)| *id).collect();
         for k in keys.iter().filter(|k| !k.is_empty()) {
-            for (id, exclude) in self.rules.get::<Vec<(u32, Vec<DomainMatcher>)>>(k) {
-                if !exclude.iter().any(|m| scope_matches(m, &keys, &self.regexes))
+            for (id, exclude) in self.rules.rules(k) {
+                if !exclude.iter().any(|e| keys.iter().any(|k| k == e))
                     && (site_cosmetic || !self.is_cosmetic(id))
                 {
                     ids.push(id);
@@ -277,15 +372,15 @@ impl Scriptlets {
             }
         }
         ids.retain(|id| !excepted.contains(id)
-            && (!all_scriptlets_excepted || self.call(*id).first().is_some_and(|name| matches!(name.as_str(), "wbe:hide" | "wbe:css" | "wbe:procedural" | "wbe:popup"))));
+            && (!all_scriptlets_excepted || matches!(self.name(*id), "wbe:hide" | "wbe:css" | "wbe:procedural" | "wbe:popup")));
         ids.sort_unstable();
         ids.dedup();
         (ids, excepted, all_scriptlets_excepted)
     }
 
-    fn lookup(&self, host: &str, site_cosmetic: bool, generic_hides: bool) -> Vec<Vec<String>> {
+    fn lookup(&self, host: &str, site_cosmetic: bool, generic_hides: bool) -> Vec<Vec<&str>> {
         let (ids, excepted, all_scriptlets_excepted) = self.ids(host, site_cosmetic, generic_hides);
-        let mut calls: Vec<Vec<String>> = ids.into_iter().map(|id| self.call(id)).collect();
+        let mut calls: Vec<Vec<&str>> = ids.into_iter().map(|id| self.call(id)).collect();
         // Pair matched response rules with Safari's player requests and watch mode.
         const REQUEST: &str = "trusted-youtube-player-request";
         let request_excepted = excepted
@@ -297,33 +392,36 @@ impl Scriptlets {
             && calls.iter().any(|call| {
                 call.len() == 4
                     && matches!(
-                        call[0].as_str(),
+                        call[0],
                         "trusted-replace-fetch-response" | "trusted-replace-xhr-response"
                     )
-                    && matches!(call[1].as_str(), "\"adPlacements\"" | "\"adSlots\"")
+                    && matches!(call[1], "\"adPlacements\"" | "\"adSlots\"")
                     && call[2] == "\"no_ads\""
             })
         {
             if !calls.iter().any(|call| call.as_slice() == [REQUEST]) {
-                calls.push(vec![REQUEST.to_string()]);
+                calls.push(vec![REQUEST]);
             }
-            let watch = vec![
-                "set-constant".to_string(),
-                "ytcfg.data_.EXPERIMENT_FLAGS.web_streaming_watch".to_string(),
-                "false".to_string(),
+            let watch = [
+                "set-constant",
+                "ytcfg.data_.EXPERIMENT_FLAGS.web_streaming_watch",
+                "false",
             ];
-            if !calls.contains(&watch) && !excepted.iter().any(|id| self.call(*id) == watch) {
-                calls.push(watch);
+            if !calls.iter().any(|call| call == &watch) && !excepted.iter().any(|id| self.call(*id) == watch) {
+                calls.push(watch.to_vec());
             }
         }
         calls
     }
 }
 
-fn key(m: &DomainMatcher, h: &str) -> String {
+/// The host key a domain matcher selects: the hostname, `name.*` for an
+/// entity, `/regex/` for a regex.
+fn key(m: &DomainMatcher) -> String {
     match m {
+        DomainMatcher::Hostname(h) => h.clone(),
         DomainMatcher::Entity(e) => format!("{e}.*"),
-        _ => h.to_string(),
+        DomainMatcher::Regex(r) => format!("/{r}/"),
     }
 }
 
@@ -353,24 +451,12 @@ fn host_keys(host: &str) -> Vec<String> {
 
 // A global rule can exclude thousands of hosts. Index those scopes once instead
 // of scanning the complete exclusion list on every page.
-fn generic_rules(rules: &Table, regexes: &regex::RegexSet) -> Vec<(u32, HashSet<String>)> {
-    rules.get::<Vec<(u32, Vec<DomainMatcher>)>>("").into_iter().map(|(id, exclude)| {
-        let keys = exclude.iter().map(|m| match m {
-            DomainMatcher::Hostname(h) | DomainMatcher::Entity(h) => key(m, h),
-            DomainMatcher::Regex(r) if regexes.patterns().contains(r) => format!("/{r}/"),
-            DomainMatcher::Regex(_) => String::new(),
-        }).collect();
-        (id, keys)
+fn generic_rules(rules: &Table) -> Vec<(u32, Box<[String]>)> {
+    rules.rules("").into_iter().map(|(id, exclude)| {
+        let mut exclude: Vec<String> = exclude.into_iter().map(str::to_owned).collect();
+        exclude.sort_unstable();
+        (id, exclude.into())
     }).collect()
-}
-
-/// Invalid regex exclusions remain conservative and never widen a rule.
-fn scope_matches(m: &DomainMatcher, keys: &[String], regexes: &regex::RegexSet) -> bool {
-    match m {
-        DomainMatcher::Regex(r) => !regexes.patterns().contains(r) || keys.contains(&format!("/{r}/")),
-        DomainMatcher::Hostname(h) => keys.contains(h),
-        DomainMatcher::Entity(h) => keys.contains(&key(m, h)),
-    }
 }
 
 fn host_of(url: &str) -> &str {
@@ -426,7 +512,7 @@ impl Engine {
                         // opener, uBO's `@@$popup,domain=datanodes.to` allowed
                         // every popup on every site (#1072). Safari's tab event
                         // names the opener tab, so a frame-only allow can miss.
-                        popups.add(false, r.from.clone(), vec!["wbe:popup".into(), serde_json::to_string(&rule).expect("popup rule serializes")]);
+                        popups.add(false, r.from.clone(), rule.into_call());
                     }
                     if r.scope.intersects(
                         ExceptionScope::GHIDE
@@ -484,7 +570,7 @@ impl Engine {
             specifichide: exception_engine(&specifichide),
             scriptlets: scriptlets.finish(),
             popups: popups.finish(),
-            popup_rules: OnceLock::new(),
+            popup_regexes: Default::default(),
         }
     }
 
@@ -496,7 +582,7 @@ impl Engine {
             put(&mut out, &engine.serialize());
         }
         for index in [&self.scriptlets, &self.popups] {
-            for table in [&index.calls, &index.rules, &index.exceptions] { put(&mut out, &table.0); }
+            for table in [&index.calls, &index.rules, &index.exceptions] { put(&mut out, table.bytes()); }
             let patterns: std::collections::BTreeSet<_> = index.regexes.patterns().iter().collect();
             put(&mut out, &serde_json::to_vec(&patterns).expect("regex patterns serialize"));
         }
@@ -504,14 +590,42 @@ impl Engine {
     }
 
     pub fn deserialize(bytes: &[u8]) -> Result<Self, String> {
-        let mut rest = bytes;
-        let generichide = read_engine(take(&mut rest)?)?;
-        let elemhide = read_engine(take(&mut rest)?)?;
-        let document = read_engine(take(&mut rest)?)?;
-        let genericblock = read_engine(take(&mut rest)?)?;
-        let specifichide = read_engine(take(&mut rest)?)?;
-        let scriptlets = read_index(&mut rest)?;
-        let popups = read_index(&mut rest)?;
+        Self::load(Arc::new(Blob::Owned(bytes.to_vec())), 0)
+    }
+
+    /// Maps the engine that starts `offset` bytes into the file at `path`.
+    /// The file must not be written while the engine is open; publishers
+    /// replace it by rename, which leaves the mapping intact.
+    pub fn open(path: &std::path::Path, offset: usize) -> Result<Self, String> {
+        let file = std::fs::File::open(path).map_err(|e| format!("engine: {e}"))?;
+        // SAFETY: the file is never modified in place (see above).
+        let map = unsafe { memmap2::Mmap::map(&file) }.map_err(|e| format!("engine: {e}"))?;
+        Self::load(Arc::new(Blob::Mapped(map)), offset)
+    }
+
+    /// The engine serialized in `blob` from `offset`, reading its tables in place.
+    fn load(blob: Arc<Blob>, offset: usize) -> Result<Self, String> {
+        let bytes = &blob[..];
+        let mut at = offset;
+        let mut take = || -> Result<Range<usize>, String> {
+            let len = bytes
+                .get(at..at + 4)
+                .map(|w| u32::from_le_bytes(w.try_into().unwrap()) as usize)
+                .ok_or("engine: truncated")?;
+            let section = at + 4..at + 4 + len;
+            bytes.get(section.clone()).ok_or("engine: truncated")?;
+            at = section.end;
+            Ok(section)
+        };
+        let mut engine = || read_engine(&bytes[take()?]);
+        let (generichide, elemhide, document, genericblock, specifichide) = (engine()?, engine()?, engine()?, engine()?, engine()?);
+        let mut index = || -> Result<Scriptlets, String> {
+            let (calls, rules, exceptions) = (Table::parse(&blob, take()?)?, Table::parse(&blob, take()?)?, Table::parse(&blob, take()?)?);
+            let patterns = serde_json::from_slice::<Vec<String>>(&bytes[take()?]).map_err(|e| e.to_string())?;
+            let regexes = regex::RegexSet::new(patterns).map_err(|e| e.to_string())?;
+            Ok(Scriptlets { calls, generic_rules: OnceLock::new(), rules, exceptions, regexes })
+        };
+        let (scriptlets, popups) = (index()?, index()?);
         Ok(Self {
             generichide,
             elemhide,
@@ -520,7 +634,7 @@ impl Engine {
             specifichide,
             scriptlets,
             popups,
-            popup_rules: OnceLock::new(),
+            popup_regexes: Default::default(),
         })
     }
 
@@ -537,20 +651,22 @@ impl Engine {
         let generic_off = self.generichide.url_cosmetic_resources(url).generichide;
         let document = self.document.url_cosmetic_resources(url).generichide;
         let elemhide = document || self.elemhide.url_cosmetic_resources(url).generichide;
-        let mut scriptlets = if document { Vec::new() } else {
+        let calls = if document { Vec::new() } else {
             self.scriptlets.lookup(&host_of(url).to_ascii_lowercase(), !specific_off, !generic_off)
         };
-        let (mut hide, mut styles, mut procedural) = (Vec::new(), Vec::new(), Vec::new());
-        scriptlets.retain(|call| {
-            let list = match call[0].as_str() {
+        let (mut hide, mut styles, mut procedural, mut scriptlets) = (Vec::new(), Vec::new(), Vec::new(), Vec::new());
+        for call in calls {
+            let list = match call[0] {
                 "wbe:hide" => &mut hide,
                 "wbe:css" => &mut styles,
                 "wbe:procedural" => &mut procedural,
-                _ => return true,
+                _ => {
+                    scriptlets.push(call.into_iter().map(str::to_owned).collect());
+                    continue;
+                }
             };
-            if !elemhide { list.push(call[1].clone()); }
-            false
-        });
+            if !elemhide { list.push(call[1].to_owned()); }
+        }
         hide.sort_unstable();
         PagePayload { hide, styles, procedural, scriptlets, generichide: elemhide || generic_off, popup_blocked: None }
     }
@@ -564,35 +680,33 @@ impl Engine {
         let third = site(&host) != site(&target_host);
         let genericblock = self.genericblock.url_cosmetic_resources(source).generichide;
         let lowered = target.to_ascii_lowercase();
-        let popups = self.popup_rules.get_or_init(|| {
-            (0..self.popups.calls.len()).map(|id| {
-                let call: Vec<String> = self.popups.calls.decode_at(id);
-                let rule = call.get(1).and_then(|rule| serde_json::from_str::<PopupRule>(rule).ok());
-                let needle = rule.as_ref().map(|r| required_literal(&r.pattern)).unwrap_or_default();
-                (rule, needle, OnceLock::new())
-            }).collect()
-        });
+        let mut regexes = self.popup_regexes.borrow_mut();
         let mut block = false;
         let mut allow = false;
         let mut important_block = false;
         let mut important_allow = false;
         for id in self.popups.ids(&host, true, true).0 {
-            let Some((Some(rule), needle, regex)) = popups.get(id as usize) else { continue };
-            let party_ok = match rule.party {
-                Party::Any => true,
-                Party::First => !third,
-                Party::Third => third,
-                Party::StrictFirst => host == target_host,
-                Party::StrictThird => host != target_host,
+            // Read only as far as each check needs.
+            let mut call = self.popups.reader(id);
+            let (Some(4), Some(_), Some(flags), Some(needle)) = (call.varint(), call.bytes(), call.bytes(), call.bytes()) else { continue };
+            let &[allows, generic, important, match_case, party] = flags else { continue };
+            let party_ok = match PARTIES.get(party.wrapping_sub(b'0') as usize) {
+                Some(Party::Any) => true,
+                Some(Party::First) => !third,
+                Some(Party::Third) => third,
+                Some(Party::StrictFirst) => host == target_host,
+                Some(Party::StrictThird) => host != target_host,
+                None => false,
             };
             // Compiling every candidate's regex took ~160 ms per lookup on
             // the default lists; a literal every match contains rules out
             // nearly all of them first.
-            if !party_ok || !lowered.contains(needle.as_str()) { continue; }
-            let regex = regex.get_or_init(|| regex::RegexBuilder::new(&rule.pattern).case_insensitive(!rule.match_case).build().ok());
+            if !party_ok || !needle.split_first().is_none_or(|(first, rest)| memchr::memchr_iter(*first, lowered.as_bytes()).any(|i| lowered.as_bytes()[i + 1..].starts_with(rest))) { continue; }
+            let Some(pattern) = call.str() else { continue };
+            let regex = regexes.entry(id).or_insert_with(|| regex::RegexBuilder::new(pattern).case_insensitive(match_case != b'1').build().ok());
             if !regex.as_ref().is_some_and(|r| r.is_match(target)) { continue; }
-            match (rule.allow, rule.important) {
-                (false, false) => block |= !(genericblock && rule.generic),
+            match (allows == b'1', important == b'1') {
+                (false, false) => block |= !(genericblock && generic == b'1'),
                 (true, false) => allow = true,
                 (false, true) => important_block = true, (true, true) => important_allow = true,
             }
@@ -602,9 +716,7 @@ impl Engine {
 
 }
 
-/// A popup filter as the runtime matches it, stored as JSON.
-#[derive(Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
+/// A popup filter as the runtime matches it.
 pub(crate) struct PopupRule {
     allow: bool,
     generic: bool,
@@ -612,6 +724,22 @@ pub(crate) struct PopupRule {
     match_case: bool,
     party: Party,
     pattern: String,
+}
+
+/// Popup flags store the party as its index here.
+const PARTIES: [Party; 5] = [Party::Any, Party::First, Party::Third, Party::StrictFirst, Party::StrictThird];
+
+impl PopupRule {
+    /// The rule as a call: `wbe:popup`; flags `allow`, `generic`,
+    /// `important`, `match_case` as `0`/`1` and the party's index; the
+    /// literal every match contains; the pattern.
+    fn into_call(self) -> Vec<String> {
+        let party = PARTIES.iter().position(|p| *p == self.party).expect("every party is listed");
+        let flags = [self.allow, self.generic, self.important, self.match_case].map(|f| if f { '1' } else { '0' });
+        let flags = flags.iter().collect::<String>() + &party.to_string();
+        let needle = required_literal(&self.pattern);
+        vec!["wbe:popup".into(), flags, needle, self.pattern]
+    }
 }
 
 /// The longest literal, lowercased, that every match of `pattern` contains.
@@ -688,31 +816,9 @@ pub(crate) fn popup_rule(r: &crate::ast::NetworkRule) -> Result<PopupRule, Strin
         match_case: r.match_case, party: r.party, generic: r.from.include.is_empty() })
 }
 
-fn read_index(rest: &mut &[u8]) -> Result<Scriptlets, String> {
-    let calls = Table::parse(take(rest)?)?;
-    let rules = Table::parse(take(rest)?)?;
-    let exceptions = Table::parse(take(rest)?)?;
-    let patterns = serde_json::from_slice::<Vec<String>>(take(rest)?).map_err(|e| e.to_string())?;
-    let regexes = regex::RegexSet::new(patterns).map_err(|e| e.to_string())?;
-    let generic_rules = generic_rules(&rules, &regexes);
-    let generic_calls = generic_rules.iter().map(|(id, _)| (*id, calls.decode_at(*id as usize))).collect();
-    Ok(Scriptlets { calls, generic_rules, generic_calls, rules, exceptions, regexes })
-}
-
 fn put(out: &mut Vec<u8>, section: &[u8]) {
     out.extend((section.len() as u32).to_le_bytes());
     out.extend(section);
-}
-
-/// The next length-prefixed section of `rest`.
-fn take<'a>(rest: &mut &'a [u8]) -> Result<&'a [u8], String> {
-    let len = rest
-        .get(..4)
-        .map(|w| u32::from_le_bytes(w.try_into().unwrap()) as usize)
-        .ok_or("engine: truncated")?;
-    let section = rest.get(4..4 + len).ok_or("engine: truncated")?;
-    *rest = &rest[4 + len..];
-    Ok(section)
 }
 
 fn read_engine(section: &[u8]) -> Result<adblock::Engine, String> {

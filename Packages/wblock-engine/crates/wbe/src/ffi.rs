@@ -10,7 +10,6 @@ use std::cell::RefCell;
 use std::ffi::{c_char, CStr, CString};
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::ptr;
-use std::slice;
 
 pub struct WbeCompileResult {
     webkit: CString,
@@ -239,16 +238,16 @@ pub unsafe extern "C" fn wbe_bytes_free(bytes: *mut u8, len: usize) {
     }
 }
 
+/// Maps the engine serialized at `offset` in the file at `path`
+/// (`Engine::open`); replace the file by rename, never write it in place.
+///
 /// # Safety
-/// `bytes` must point to `len` readable bytes.
+/// `path` must be a valid NUL-terminated string.
 #[no_mangle]
-pub unsafe extern "C" fn wbe_engine_open(bytes: *const u8, len: usize) -> *mut Engine {
+pub unsafe extern "C" fn wbe_engine_open(path: *const c_char, offset: usize) -> *mut Engine {
     guard(ptr::null_mut(), || {
-        if bytes.is_null() {
-            return Err("bytes is NULL".into());
-        }
-        let bytes = slice::from_raw_parts(bytes, len);
-        Ok(Box::into_raw(Box::new(Engine::deserialize(bytes)?)))
+        let path = cstr(path, "path")?;
+        Ok(Box::into_raw(Box::new(Engine::open(path.as_ref(), offset)?)))
     })
 }
 
@@ -344,21 +343,26 @@ mod tests {
             .to_owned()
     }
 
-    unsafe fn build_bytes(rules: &str) -> Vec<u8> {
+    /// A file holding `header` and then the engine for `rules`, and the
+    /// engine's offset.
+    unsafe fn build_file(name: &str, header: &[u8], rules: &str) -> (CString, usize) {
         let rules = c(rules);
         let (mut out, mut len) = (ptr::null_mut(), 0);
         assert!(wbe_engine_build(rules.as_ptr(), &mut out, &mut len));
-        let bytes = slice::from_raw_parts(out, len).to_vec();
+        let path = std::env::temp_dir().join(format!("wbe-ffi-{}-{name}", std::process::id()));
+        std::fs::write(&path, [header, std::slice::from_raw_parts(out, len)].concat()).unwrap();
         wbe_bytes_free(out, len);
-        bytes
+        (c(path.to_str().unwrap()), header.len())
     }
 
     #[test]
     fn engine_round_trip_through_c_abi() {
         unsafe {
-            let bytes = build_bytes("example.com##.ad\nexample.com##+js(set-constant, a, true)");
-            let engine = wbe_engine_open(bytes.as_ptr(), bytes.len());
+            let (path, offset) = build_file("round-trip", b"header", "example.com##.ad\nexample.com##+js(set-constant, a, true)");
+            let engine = wbe_engine_open(path.as_ptr(), offset);
             assert!(!engine.is_null(), "{}", last_error());
+            // A publish replaces the file; the open engine keeps its mapping.
+            std::fs::remove_file(path.to_str().unwrap()).unwrap();
             let url = c("https://example.com/");
             let json = take(wbe_engine_lookup(engine, url.as_ptr()));
             assert!(json.contains(r#""hide":[".ad"]"#), "{json}");
@@ -379,12 +383,14 @@ mod tests {
             assert!(out.is_null());
 
             assert!(wbe_engine_open(ptr::null(), 0).is_null());
-            assert!(wbe_engine_open([1u8, 2, 3].as_ptr(), 3).is_null());
+            let (junk, _) = build_file("junk", b"", "");
+            assert!(wbe_engine_open(junk.as_ptr(), 3).is_null());
             assert!(last_error().contains("engine"));
+            assert!(wbe_engine_open(c("/nonexistent/engine").as_ptr(), 0).is_null());
 
             assert!(wbe_engine_lookup(ptr::null(), c("https://a/").as_ptr()).is_null());
-            let empty = build_bytes("");
-            let engine = wbe_engine_open(empty.as_ptr(), empty.len());
+            let (empty, offset) = build_file("empty", b"", "");
+            let engine = wbe_engine_open(empty.as_ptr(), offset);
             assert!(wbe_engine_lookup(engine, ptr::null()).is_null());
             assert!(last_error().contains("url is NULL"));
             wbe_engine_free(engine);
