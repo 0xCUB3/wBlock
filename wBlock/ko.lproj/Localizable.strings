@@ -1113,4 +1113,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Multiple solutions for blocking Twitch ads (vaft)" = "Twitch 광고를 차단합니다.";
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "웹사이트의 색상을 바꿔 어둡게 표시합니다. Dark Reader 프로젝트에서 제공합니다. Dark Reader의 사이트별 수정 사항은 포함되지 않으므로 일부 사이트가 어색하게 보일 수 있습니다.";
 "Opens the publisher's regular page instead of its AMP version." = "AMP 버전 대신 게시자의 일반 페이지를 엽니다.";
-"AMP Redirect" = "AMP Redirect";
+"Disable AMP" = "Disable AMP";

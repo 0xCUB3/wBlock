@@ -1113,4 +1113,4 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Multiple solutions for blocking Twitch ads (vaft)" = "Blockiert Twitch-Werbung.";
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "Macht Websites dunkel, indem ihre Farben neu gestaltet werden, aus dem Dark-Reader-Projekt. Manche Websites wirken möglicherweise seltsam, da die Website-Korrekturen von Dark Reader nicht enthalten sind.";
 "Opens the publisher's regular page instead of its AMP version." = "Öffnet die normale Seite des Herausgebers statt der AMP-Version.";
-"AMP Redirect" = "AMP Redirect";
+"Disable AMP" = "Disable AMP";
