@@ -681,10 +681,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "ما یک پیکربندی موجود wBlock در iCloud (\\(remoteConfigUpdatedAtText)) پیدا کردیم. می‌توانید از آشنایی اولیه صرف‌نظر کرده و در عوض از آن استفاده کنید.";
 "Web extension %@" = "افزونهٔ وب %@";
 "Get Started" = "شروع کنید";
-"No default scripts" = "هیچ اسکریپت پیش‌فرضی وجود ندارد";
-"Recommended Scripts" = "اسکریپت‌های توصیه‌شده";
 "Removes cookie notices, pop-ups, banners, and other distracting elements." = "اعلان‌های کوکی، پنجره‌های پاپ‌آپ، بنرها و سایر عناصر مزاحم را حذف می‌کند.";
-"Reset to Default" = "بازنشانی به پیش‌فرض";
 "Lists for websites and languages of specific regions." = "فهرست‌هایی برای وب‌سایت‌ها و زبان‌های مناطق خاص.";
 "The end of Safari ad-blocking B.S." = "پایان دردسرهای مسدودسازی تبلیغات در Safari.";
 "Welcome to wBlock!" = "به wBlock خوش آمدید!";
@@ -756,11 +753,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 /* Userscript display categories */
 "Functionality" = "عملکرد";
 "Appearance" = "ظاهر";
-"Blocking userscripts and scripts that prevent ads, anti-adblock measures, or unwanted page behavior." = "اسکریپت‌های کاربر و اسکریپت‌های مسدودکننده‌ای که از تبلیغات، اقدامات ضد مسدودکنندهٔ تبلیغات یا رفتارهای ناخواستهٔ صفحه جلوگیری می‌کنند.";
-"Userscripts and scripts that add or restore useful website functionality." = "اسکریپت‌های کاربر و اسکریپت‌هایی که قابلیت‌های مفید وب‌سایت را اضافه کرده یا بازمی‌گردانند.";
-"Userstyles and scripts that change the appearance of websites." = "استایل‌های کاربر و اسکریپت‌هایی که ظاهر وب‌سایت‌ها را تغییر می‌دهند.";
-"Custom, remote, and local scripts that do not have a more specific display category." = "اسکریپت‌های سفارشی، ازراه‌دور و محلی که دسته‌بندی نمایشی خاص‌تری ندارند.";
-"Beta userscripts and scripts that are still being evaluated or may change." = "اسکریپت‌های کاربر بتا و اسکریپت‌هایی که هنوز در حال ارزیابی هستند یا ممکن است تغییر کنند.";
 "Enabled Userscripts & Userstyles" = "اسکریپت‌ها و استایل‌های کاربر فعال‌شده";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "وقتی هر یک از بخش‌های انتخاب‌شده موقتاً متوقف شده باشد، «توقف مسدودسازی» روشن است. ازسرگیری همهٔ بخش‌ها را بازیابی می‌کند.";
 

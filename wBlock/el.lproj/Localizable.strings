@@ -683,10 +683,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "Βρήκαμε μια υπάρχουσα διαμόρφωση wBlock στο iCloud (\\(remoteConfigUpdatedAtText)). Μπορείτε να παραλείψετε την αρχική ρύθμιση και να χρησιμοποιήσετε αυτήν.";
 "Web extension %@" = "Επέκταση web %@";
 "Get Started" = "Έναρξη";
-"No default scripts" = "Δεν υπάρχουν προεπιλεγμένοι κώδικες";
-"Recommended Scripts" = "Προτεινόμενοι Κώδικες";
 "Removes cookie notices, pop-ups, banners, and other distracting elements." = "Αφαιρεί ειδοποιήσεις cookie, αναδυόμενα παράθυρα, banner και άλλα ενοχλητικά στοιχεία.";
-"Reset to Default" = "Επαναφορά στις προεπιλογές";
 "Lists for websites and languages of specific regions." = "Λίστες για ιστότοπους και γλώσσες συγκεκριμένων περιοχών.";
 "The end of Safari ad-blocking B.S." = "Το τέλος της ανοησίας με τον αποκλεισμό διαφημίσεων στο Safari";
 "Welcome to wBlock!" = "Καλώς ορίσατε στο wBlock!";
@@ -759,11 +756,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 /* Userscript display categories */
 "Functionality" = "Λειτουργικότητα";
 "Appearance" = "Εμφάνιση";
-"Blocking userscripts and scripts that prevent ads, anti-adblock measures, or unwanted page behavior." = "Κώδικες χρήστη αποκλεισμού και κώδικες που εμποδίζουν διαφημίσεις, μέτρα κατά του αποκλεισμού διαφημίσεων ή ανεπιθύμητη συμπεριφορά σελίδων.";
-"Userscripts and scripts that add or restore useful website functionality." = "Κώδικες χρήστη και κώδικες που προσθέτουν ή επαναφέρουν χρήσιμες λειτουργίες ιστοτόπων.";
-"Userstyles and scripts that change the appearance of websites." = "Στυλ χρήστη και κώδικες που αλλάζουν την εμφάνιση ιστοτόπων.";
-"Custom, remote, and local scripts that do not have a more specific display category." = "Προσαρμοσμένοι, απομακρυσμένοι και τοπικοί κώδικες χωρίς ειδικότερη κατηγορία εμφάνισης.";
-"Beta userscripts and scripts that are still being evaluated or may change." = "Beta κώδικες χρήστη και κώδικες που αξιολογούνται ακόμη ή ενδέχεται να αλλάξουν.";
 
 /* Userstyle compiler diagnostics */
 "Choose a .user.js, .js, .user.css, .less, or .styl file." = "Επιλέξτε ένα αρχείο .user.js, .js, .user.css, .less ή .styl.";

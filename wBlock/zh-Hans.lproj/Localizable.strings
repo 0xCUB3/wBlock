@@ -681,10 +681,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "我们在 iCloud (\\(remoteConfigUpdatedAtText)) 中找到现有的 wBlock 配置。你可以跳过引导并直接使用它。";
 "Web extension %@" = "网页扩展 %@";
 "Get Started" = "开始使用";
-"No default scripts" = "没有默认脚本";
-"Recommended Scripts" = "推荐脚本";
 "Removes cookie notices, pop-ups, banners, and other distracting elements." = "移除 Cookie 提示、弹窗、横幅及其他干扰元素。";
-"Reset to Default" = "恢复默认设置";
 "Lists for websites and languages of specific regions." = "适用于特定地区网站和语言的列表。";
 "The end of Safari ad-blocking B.S." = "告别 Safari 广告拦截的糟心事";
 "Welcome to wBlock!" = "欢迎使用 wBlock！";
@@ -757,11 +754,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 /* Userscript display categories */
 "Functionality" = "功能";
 "Appearance" = "外观";
-"Blocking userscripts and scripts that prevent ads, anti-adblock measures, or unwanted page behavior." = "拦截广告、反广告拦截措施或不需要的网页行为的用户脚本和脚本。";
-"Userscripts and scripts that add or restore useful website functionality." = "为网站添加或恢复实用功能的用户脚本和脚本。";
-"Userstyles and scripts that change the appearance of websites." = "更改网站外观的用户样式和脚本。";
-"Custom, remote, and local scripts that do not have a more specific display category." = "没有更具体显示类别的自定义、远程和本地脚本。";
-"Beta userscripts and scripts that are still being evaluated or may change." = "仍在评估中或可能发生变化的 Beta 用户脚本和脚本。";
 "Enabled Userscripts & Userstyles" = "已启用的用户脚本和用户样式";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "只要有选定组件处于暂停状态，暂停拦截就会开启。恢复后将还原所有组件。";
 

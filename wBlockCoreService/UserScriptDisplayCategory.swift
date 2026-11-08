@@ -13,21 +13,6 @@ public enum UserScriptDisplayCategory: String, CaseIterable, Hashable, Sendable,
     case other = "Other"
 
     public var id: String { rawValue }
-
-    public var descriptionKey: String {
-        switch self {
-        case .blocking:
-            "Blocking userscripts and scripts that prevent ads, anti-adblock measures, or unwanted page behavior."
-        case .functionality:
-            "Userscripts and scripts that add or restore useful website functionality."
-        case .experimental:
-            "Beta userscripts and scripts that are still being evaluated or may change."
-        case .appearance:
-            "Userstyles and scripts that change the appearance of websites."
-        case .other:
-            "Custom, remote, and local scripts that do not have a more specific display category."
-        }
-    }
 }
 
 public struct UserScriptDisplayCategorySupport {

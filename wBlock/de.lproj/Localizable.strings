@@ -683,10 +683,7 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "Wir haben eine vorhandene wBlock-Konfiguration in iCloud (\\(remoteConfigUpdatedAtText)) gefunden. Du kannst die Einführung überspringen und stattdessen diese verwenden.";
 "Web extension %@" = "Web-Erweiterung %@";
 "Get Started" = "Loslegen";
-"No default scripts" = "Keine Standardskripte";
-"Recommended Scripts" = "Empfohlene Skripte";
 "Removes cookie notices, pop-ups, banners, and other distracting elements." = "Entfernt Cookie-Hinweise, Pop-ups, Banner und andere störende Elemente.";
-"Reset to Default" = "Auf Standard zurücksetzen";
 "Lists for websites and languages of specific regions." = "Listen für Websites und Sprachen bestimmter Regionen.";
 "The end of Safari ad-blocking B.S." = "Das Ende des Safari-Werbe­blocker-Wahnsinns";
 "Welcome to wBlock!" = "Willkommen bei wBlock!";
@@ -759,11 +756,6 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 /* Userscript display categories */
 "Functionality" = "Funktionen";
 "Appearance" = "Darstellung";
-"Blocking userscripts and scripts that prevent ads, anti-adblock measures, or unwanted page behavior." = "Benutzerskripte und Skripte, die Werbung, Anti-Adblock-Maßnahmen oder unerwünschtes Seitenverhalten verhindern.";
-"Userscripts and scripts that add or restore useful website functionality." = "Benutzerskripte und Skripte, die nützliche Website-Funktionen hinzufügen oder wiederherstellen.";
-"Userstyles and scripts that change the appearance of websites." = "Benutzerstile und Skripte, die das Erscheinungsbild von Websites ändern.";
-"Custom, remote, and local scripts that do not have a more specific display category." = "Benutzerdefinierte, Remote- und lokale Skripte ohne spezifischere Anzeigekategorie.";
-"Beta userscripts and scripts that are still being evaluated or may change." = "Beta-Benutzerskripte und Skripte, die noch getestet werden oder sich ändern können.";
 
 /* Userstyle compiler diagnostics */
 "Choose a .user.js, .js, .user.css, .less, or .styl file." = "Wähle eine .user.js-, .js-, .user.css-, .less- oder .styl-Datei aus.";

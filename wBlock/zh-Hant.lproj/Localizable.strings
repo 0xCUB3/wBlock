@@ -683,10 +683,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "我們在 iCloud（\\(remoteConfigUpdatedAtText)）找到既有的 wBlock 設定。你可以略過新手導覽並改用它。";
 "Web extension %@" = "網頁延伸功能 %@";
 "Get Started" = "開始使用";
-"No default scripts" = "沒有預設腳本";
-"Recommended Scripts" = "推薦腳本";
 "Removes cookie notices, pop-ups, banners, and other distracting elements." = "移除 Cookie 通知、彈出式視窗、橫幅和其他干擾元素。";
-"Reset to Default" = "重設為預設值";
 "Lists for websites and languages of specific regions." = "適用於特定地區網站和語言的清單。";
 "The end of Safari ad-blocking B.S." = "告別 Safari 廣告封鎖的糟心事";
 "Welcome to wBlock!" = "歡迎使用 wBlock！";
@@ -759,11 +756,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 /* Userscript display categories */
 "Functionality" = "功能";
 "Appearance" = "外觀";
-"Blocking userscripts and scripts that prevent ads, anti-adblock measures, or unwanted page behavior." = "可封鎖廣告、反廣告封鎖措施或不需要網頁行為的使用者腳本與腳本。";
-"Userscripts and scripts that add or restore useful website functionality." = "為網站新增或恢復實用功能的使用者腳本與腳本。";
-"Userstyles and scripts that change the appearance of websites." = "變更網站外觀的使用者樣式與腳本。";
-"Custom, remote, and local scripts that do not have a more specific display category." = "沒有更具體顯示類別的自訂、遠端與本機腳本。";
-"Beta userscripts and scripts that are still being evaluated or may change." = "仍在評估中或可能變更的 Beta 使用者腳本與腳本。";
 
 /* Userstyle compiler diagnostics */
 "Choose a .user.js, .js, .user.css, .less, or .styl file." = "選擇 .user.js、.js、.user.css、.less 或 .styl 檔案。";

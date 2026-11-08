@@ -681,10 +681,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "Am găsit o configurație wBlock existentă în iCloud (\\(remoteConfigUpdatedAtText)). Poți sări peste configurarea inițială și să o folosești pe aceea.";
 "Web extension %@" = "Extensie web %@";
 "Get Started" = "Începe";
-"No default scripts" = "Nu există scripturi implicite";
-"Recommended Scripts" = "Scripturi recomandate";
 "Removes cookie notices, pop-ups, banners, and other distracting elements." = "Elimină notificările despre cookie-uri, ferestrele pop-up, bannerele și alte elemente deranjante.";
-"Reset to Default" = "Resetează la valorile implicite";
 "Lists for websites and languages of specific regions." = "Liste pentru site-urile și limbile anumitor regiuni.";
 "The end of Safari ad-blocking B.S." = "Sfârșitul prostiilor blocării reclamelor în Safari.";
 "Welcome to wBlock!" = "Bine ai venit în wBlock!";
@@ -757,11 +754,6 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 /* Userscript display categories */
 "Functionality" = "Funcționalitate";
 "Appearance" = "Aspect";
-"Blocking userscripts and scripts that prevent ads, anti-adblock measures, or unwanted page behavior." = "Scripturi de utilizator de blocare și scripturi care împiedică reclamele, măsurile anti-adblock sau comportamentul nedorit al paginilor.";
-"Userscripts and scripts that add or restore useful website functionality." = "Scripturi de utilizator și scripturi care adaugă sau restaurează funcții utile ale site-urilor.";
-"Userstyles and scripts that change the appearance of websites." = "Stiluri de utilizator și scripturi care schimbă aspectul site-urilor.";
-"Custom, remote, and local scripts that do not have a more specific display category." = "Scripturi personalizate, la distanță și locale fără o categorie de afișare mai specifică.";
-"Beta userscripts and scripts that are still being evaluated or may change." = "Scripturi de utilizator beta și scripturi care sunt încă evaluate sau se pot schimba.";
 "Enabled Userscripts & Userstyles" = "Scripturi și stiluri de utilizator activate";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "Pauza blocării este activă cât timp orice componentă selectată este pusă pe pauză. Reluarea reactivează toate componentele.";
 

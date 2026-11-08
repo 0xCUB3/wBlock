@@ -167,7 +167,6 @@ struct UserScriptManagerView: View {
     @State private var isDropProcessing = false
     @State private var dropErrorMessage: String?
     @State private var pendingBetaEnableScript: UserScriptListItem?
-    @State private var selectedCategoryInfo: UserScriptDisplayCategory?
     @State private var handledAddRequest = 0
     @State private var handledSearchRequest = 0
 
@@ -264,7 +263,6 @@ struct UserScriptManagerView: View {
                 metadataOnly: selection.action == .editInfo
             )
         }
-        .infoPresentation(item: $selectedCategoryInfo, content: scriptCategoryInfoContent)
         .onAppear {
             refreshScripts()
             showOnlyEnabled = ProtobufDataManager.shared.getUserScriptShowEnabledOnly()
@@ -574,7 +572,7 @@ struct UserScriptManagerView: View {
     }
 
     private func displaySectionHeader(_ section: UserScriptDisplaySection) -> some View {
-        ListCategoryHeader(title: section.title, info: { selectedCategoryInfo = section.id }, anchorID: section.id.id)
+        ListCategoryHeader(title: section.title, info: nil)
     }
 
     private func scriptInfoContent(_ selection: SelectedUserScript) -> some View {
@@ -592,60 +590,6 @@ struct UserScriptManagerView: View {
                 }
             }
         ).tallInfoSheetPresentationCompat()
-    }
-
-    private func scriptCategoryInfoContent(_ category: UserScriptDisplayCategory) -> some View {
-        UserScriptCategoryInfoView(
-            category: category, defaultScriptNames: defaultScriptNames(for: category),
-            onReset: { resetCategory(category) }
-        ).infoSheetPresentationCompat()
-    }
-
-    private func defaultScriptNames(for category: UserScriptDisplayCategory) -> [String] {
-        UserScriptCategorySupport.defaultScriptNames(
-            for: category,
-            scripts: userScriptManager.userScripts.map { script in
-                (
-                    name: script.name,
-                    displayCategory: UserScriptDisplayCategorySupport.category(
-                        isUserStyle: script.isUserStyle,
-                        builtInRole: userScriptManager.builtInDisplayRole(for: script),
-                        persistedCategory: script.category,
-                        isBeta: userScriptManager.isBeta(for: script)
-                    ),
-                    isEnabledByDefault: userScriptManager.isEnabledByDefault(script)
-                )
-            }
-        )
-    }
-
-    private func resetCategory(_ category: UserScriptDisplayCategory) {
-        var enabledIDs = Set(
-            userScriptManager.userScripts.filter(\.isEnabled).map(\.id)
-        )
-        for script in userScriptManager.userScripts {
-            let displayCategory = UserScriptDisplayCategorySupport.category(
-                isUserStyle: script.isUserStyle,
-                builtInRole: userScriptManager.builtInDisplayRole(for: script),
-                persistedCategory: script.category,
-                isBeta: userScriptManager.isBeta(for: script)
-            )
-            guard let shouldEnable = UserScriptCategorySupport.resetEnabled(
-                isBuiltIn: userScriptManager.isDefaultUserScript(script),
-                displayCategory: displayCategory,
-                category: category,
-                isEnabledByDefault: userScriptManager.isEnabledByDefault(script)
-            ) else { continue }
-            if shouldEnable {
-                enabledIDs.insert(script.id)
-            } else {
-                enabledIDs.remove(script.id)
-            }
-        }
-        Task {
-            await userScriptManager.setEnabledScripts(withIDs: enabledIDs)
-            await MainActor.run { refreshScripts() }
-        }
     }
 
     /// Fetches a remote script's content without changing its enabled state (#665).

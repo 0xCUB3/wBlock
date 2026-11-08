@@ -681,10 +681,7 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "Nous avons trouvé une configuration wBlock existante dans iCloud (\\(remoteConfigUpdatedAtText)). Vous pouvez ignorer la configuration initiale et l'utiliser à la place.";
 "Web extension %@" = "Extension web %@";
 "Get Started" = "Commencer";
-"No default scripts" = "Aucun script par défaut";
-"Recommended Scripts" = "Scripts recommandés";
 "Removes cookie notices, pop-ups, banners, and other distracting elements." = "Supprime les avis de cookies, fenêtres pop-up, bannières et autres éléments distrayants.";
-"Reset to Default" = "Réinitialiser par défaut";
 "Lists for websites and languages of specific regions." = "Listes pour les sites web et les langues de régions précises.";
 "The end of Safari ad-blocking B.S." = "Fini les absurdités du blocage publicitaire dans Safari.";
 "Welcome to wBlock!" = "Bienvenue dans wBlock !";
@@ -757,11 +754,6 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 /* Userscript display categories */
 "Functionality" = "Fonctionnalités";
 "Appearance" = "Apparence";
-"Blocking userscripts and scripts that prevent ads, anti-adblock measures, or unwanted page behavior." = "Scripts utilisateur et scripts qui bloquent les publicités, les mesures anti-blocage ou les comportements indésirables des pages.";
-"Userscripts and scripts that add or restore useful website functionality." = "Scripts utilisateur et scripts qui ajoutent ou restaurent des fonctionnalités utiles aux sites web.";
-"Userstyles and scripts that change the appearance of websites." = "Styles utilisateur et scripts qui modifient l’apparence des sites web.";
-"Custom, remote, and local scripts that do not have a more specific display category." = "Scripts personnalisés, distants et locaux sans catégorie d’affichage plus précise.";
-"Beta userscripts and scripts that are still being evaluated or may change." = "Scripts utilisateur bêta et scripts encore en cours d’évaluation ou susceptibles de changer.";
 "Enabled Userscripts & Userstyles" = "Scripts utilisateur et styles utilisateur activés";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "La pause du blocage est active tant qu’un composant sélectionné est en pause. Reprendre réactive tous les composants.";
 

@@ -681,10 +681,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "iCloud'da (\\(remoteConfigUpdatedAtText)) mevcut bir wBlock yapılandırması bulundu. Kurulum sürecini atlayıp bunun yerine onu kullanabilirsiniz.";
 "Web extension %@" = "Web genişletmesi %@";
 "Get Started" = "Başla";
-"No default scripts" = "Varsayılan betik yok";
-"Recommended Scripts" = "Önerilen Betikler";
 "Removes cookie notices, pop-ups, banners, and other distracting elements." = "Çerez bildirimlerini, açılır pencereleri, afişleri ve dikkat dağıtan diğer öğeleri kaldırır.";
-"Reset to Default" = "Varsayılana sıfırla";
 "Lists for websites and languages of specific regions." = "Belirli bölgelerin web siteleri ve dilleri için listeler.";
 "The end of Safari ad-blocking B.S." = "Safari'deki reklam engelleme dertlerine son.";
 "Welcome to wBlock!" = "wBlock'a hoş geldiniz!";
@@ -756,11 +753,6 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 /* Userscript display categories */
 "Functionality" = "İşlevsellik";
 "Appearance" = "Görünüm";
-"Blocking userscripts and scripts that prevent ads, anti-adblock measures, or unwanted page behavior." = "Reklamları, reklam engelleyici karşıtı önlemleri veya istenmeyen sayfa davranışlarını engelleyen kullanıcı betiklerini ve betikleri engeller.";
-"Userscripts and scripts that add or restore useful website functionality." = "Sitelere yararlı işlevler kazandıran veya kaybolan işlevleri geri getiren kullanıcı betikleri.";
-"Userstyles and scripts that change the appearance of websites." = "Sitelerinin görünümünü değiştiren kullanıcı stilleri ve betikler.";
-"Custom, remote, and local scripts that do not have a more specific display category." = "Belirli bir kategoride yer almayan özel, harici ve yerel betikler.";
-"Beta userscripts and scripts that are still being evaluated or may change." = "Beta kullanıcı betikleri ve halen değerlendirilen veya değişebilecek betikler.";
 "Enabled Userscripts & Userstyles" = "Etkin kullanıcı betikleri ve kullanıcı stilleri";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "Engellemeyi Duraklat özelliği, seçilen herhangi bir bileşen duraklatıldığı sürece etkindir. Sürdür seçeneği tüm bileşenleri eski haline getirir.";
 

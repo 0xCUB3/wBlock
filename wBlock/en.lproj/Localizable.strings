@@ -681,10 +681,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead.";
 "Web extension %@" = "Web extension %@";
 "Get Started" = "Get Started";
-"No default scripts" = "No default scripts";
-"Recommended Scripts" = "Recommended Scripts";
 "Removes cookie notices, pop-ups, banners, and other distracting elements." = "Removes cookie notices, pop-ups, banners, and other distracting elements.";
-"Reset to Default" = "Reset to Default";
 "Lists for websites and languages of specific regions." = "Lists for websites and languages of specific regions.";
 "The end of Safari ad-blocking B.S." = "The end of Safari ad-blocking B.S.";
 "Welcome to wBlock!" = "Welcome to wBlock!";
@@ -756,11 +753,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 /* Userscript display categories */
 "Functionality" = "Functionality";
 "Appearance" = "Appearance";
-"Blocking userscripts and scripts that prevent ads, anti-adblock measures, or unwanted page behavior." = "Scripts that block ads, anti-adblock measures, and unwanted page behavior.";
-"Userscripts and scripts that add or restore useful website functionality." = "Scripts that add or restore useful website features.";
-"Userstyles and scripts that change the appearance of websites." = "Userstyles and scripts that change the appearance of websites.";
-"Custom, remote, and local scripts that do not have a more specific display category." = "Custom, remote, and local scripts without a more specific category.";
-"Beta userscripts and scripts that are still being evaluated or may change." = "Scripts still being tested that may change.";
 "Enabled Userscripts & Userstyles" = "Enabled Userscripts & Userstyles";
 "Pause Blocking is on while any selected component is paused. Resume restores all components." = "Pause Blocking stays on while any selected part is paused. Resume turns everything back on.";
 

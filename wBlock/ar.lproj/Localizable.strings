@@ -683,10 +683,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "وجدنا إعداد wBlock موجودًا في iCloud (\\(remoteConfigUpdatedAtText)). يمكنك تخطي الإعداد الأولي واستخدامه بدلًا من ذلك.";
 "Web extension %@" = "امتداد الويب %@";
 "Get Started" = "البدء";
-"No default scripts" = "لا توجد سكربتات افتراضية";
-"Recommended Scripts" = "السكربتات الموصى بها";
 "Removes cookie notices, pop-ups, banners, and other distracting elements." = "يزيل إشعارات ملفات تعريف الارتباط والنوافذ المنبثقة واللافتات والعناصر المشتتة الأخرى.";
-"Reset to Default" = "إعادة التعيين إلى الإعدادات الافتراضية";
 "Lists for websites and languages of specific regions." = "قوائم لمواقع ولغات مناطق محددة.";
 "The end of Safari ad-blocking B.S." = "نهاية هراء حظر الإعلانات في Safari.";
 "Welcome to wBlock!" = "مرحبًا بك في wBlock!";
@@ -759,11 +756,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 /* Userscript display categories */
 "Functionality" = "الوظائف";
 "Appearance" = "المظهر";
-"Blocking userscripts and scripts that prevent ads, anti-adblock measures, or unwanted page behavior." = "سكربتات المستخدم والسكربتات التي تحظر الإعلانات أو إجراءات مكافحة حظر الإعلانات أو السلوكيات غير المرغوب فيها في الصفحات.";
-"Userscripts and scripts that add or restore useful website functionality." = "سكربتات المستخدم والسكربتات التي تضيف وظائف مفيدة إلى مواقع الويب أو تستعيدها.";
-"Userstyles and scripts that change the appearance of websites." = "أنماط المستخدم والسكربتات التي تغيّر مظهر مواقع الويب.";
-"Custom, remote, and local scripts that do not have a more specific display category." = "سكربتات مخصصة وبعيدة ومحلية لا تنتمي إلى فئة عرض أكثر تحديدًا.";
-"Beta userscripts and scripts that are still being evaluated or may change." = "سكربتات المستخدم التجريبية والسكربتات التي لا تزال قيد التقييم أو قد تتغير.";
 
 /* Userstyle compiler diagnostics */
 "Choose a .user.js, .js, .user.css, .less, or .styl file." = "اختر ملفًا من نوع .user.js أو .js أو .user.css أو .less أو .styl.";

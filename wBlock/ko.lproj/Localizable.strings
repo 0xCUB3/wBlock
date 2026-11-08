@@ -683,10 +683,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "iCloud에서 기존 wBlock 구성(\\(remoteConfigUpdatedAtText))을 찾았습니다. 온보딩을 건너뛰고 해당 구성을 사용할 수 있습니다.";
 "Web extension %@" = "웹 확장 프로그램 %@";
 "Get Started" = "시작하기";
-"No default scripts" = "기본 스크립트 없음";
-"Recommended Scripts" = "추천 스크립트";
 "Removes cookie notices, pop-ups, banners, and other distracting elements." = "쿠키 알림, 팝업, 배너 및 기타 방해 요소를 제거합니다.";
-"Reset to Default" = "기본값으로 재설정";
 "Lists for websites and languages of specific regions." = "특정 지역의 웹사이트와 언어를 위한 목록입니다.";
 "The end of Safari ad-blocking B.S." = "Safari 광고 차단의 말도 안 되는 문제는 이제 끝입니다.";
 "Welcome to wBlock!" = "wBlock에 오신 것을 환영합니다!";
@@ -759,11 +756,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 /* Userscript display categories */
 "Functionality" = "기능";
 "Appearance" = "모양";
-"Blocking userscripts and scripts that prevent ads, anti-adblock measures, or unwanted page behavior." = "광고, 광고 차단 방지 조치 또는 원치 않는 페이지 동작을 막는 차단용 유저스크립트와 스크립트입니다.";
-"Userscripts and scripts that add or restore useful website functionality." = "웹사이트의 유용한 기능을 추가하거나 복원하는 유저스크립트와 스크립트입니다.";
-"Userstyles and scripts that change the appearance of websites." = "웹사이트의 모양을 변경하는 유저스타일과 스크립트입니다.";
-"Custom, remote, and local scripts that do not have a more specific display category." = "더 구체적인 표시 카테고리가 없는 사용자 지정, 원격 및 로컬 스크립트입니다.";
-"Beta userscripts and scripts that are still being evaluated or may change." = "아직 평가 중이거나 변경될 수 있는 베타 유저스크립트와 스크립트입니다.";
 
 /* Userstyle compiler diagnostics */
 "Choose a .user.js, .js, .user.css, .less, or .styl file." = ".user.js, .js, .user.css, .less 또는 .styl 파일을 선택하세요.";

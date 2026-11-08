@@ -683,10 +683,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "We found an existing wBlock configuration in iCloud (\\(remoteConfigUpdatedAtText)). You can skip onboarding and use that instead." = "Találtunk egy meglévő wBlock konfigurációt az iCloudban (\\(remoteConfigUpdatedAtText)). Kihagyhatod a kezdő beállítást, és ezt használhatod.";
 "Web extension %@" = "Webes kiterjesztés %@";
 "Get Started" = "Kezdés";
-"No default scripts" = "Nincsenek alapértelmezett szkriptek";
-"Recommended Scripts" = "Ajánlott szkriptek";
 "Removes cookie notices, pop-ups, banners, and other distracting elements." = "Eltávolítja a cookie-értesítéseket, felugró ablakokat, bannereket és más zavaró elemeket.";
-"Reset to Default" = "Alapértékek visszaállítása";
 "Lists for websites and languages of specific regions." = "Listák adott régiók webhelyeihez és nyelveihez.";
 "The end of Safari ad-blocking B.S." = "Vége a Safari reklámblokkolási ostobaságainak";
 "Welcome to wBlock!" = "Üdvözli a wBlock!";
@@ -759,11 +756,6 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 /* Userscript display categories */
 "Functionality" = "Funkciók";
 "Appearance" = "Megjelenés";
-"Blocking userscripts and scripts that prevent ads, anti-adblock measures, or unwanted page behavior." = "Hirdetéseket, reklámblokkolás-ellenes intézkedéseket vagy nem kívánt oldalviselkedést blokkoló szkriptek.";
-"Userscripts and scripts that add or restore useful website functionality." = "Hasznos webhelyfunkciókat hozzáadó vagy helyreállító szkriptek.";
-"Userstyles and scripts that change the appearance of websites." = "A webhelyek megjelenését módosító userstyle-ok és szkriptek.";
-"Custom, remote, and local scripts that do not have a more specific display category." = "Egyéni, távoli és helyi szkriptek, amelyekhez nem illik pontosabb megjelenítési kategória.";
-"Beta userscripts and scripts that are still being evaluated or may change." = "Béta felhasználói szkriptek és még értékelés alatt álló vagy változható szkriptek.";
 
 /* Userstyle compiler diagnostics */
 "Choose a .user.js, .js, .user.css, .less, or .styl file." = "Válassz egy .user.js, .js, .user.css, .less vagy .styl fájlt.";
