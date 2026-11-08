@@ -862,11 +862,16 @@ pub(crate) fn procedural(sel: &str) -> Result<serde_json::Value, String> {
             if b.get(end) != Some(&b'(') { i = end.max(i + 1); continue; }
             let close = find_close(b, end)?;
             let arg = &sel[end+1..close];
-            let nested = matches!(name, "has" | "not" | "if" | "if-not" | "is" | "where");
+            // `:has()` is always emulated. `:not()`, `:is()` and `:where()` stay
+            // CSS unless they hold an operator, so a selector list around them
+            // is not split into stray `, ...` segments.
+            let procedural_arg = classify(arg).is_ok_and(|k| k == Kind::Procedural);
+            let nested = matches!(name, "has" | "if" | "if-not")
+                || (matches!(name, "not" | "is" | "where") && (procedural_arg || arg.contains(":has(")));
             if !nested && !PROCEDURAL_OPS.contains(&name) && !ACTION_OPS.contains(&name) {
                 // Native functional pseudos are kept intact; an extended
                 // operator inside one cannot safely be passed through as CSS.
-                if classify(arg).is_ok_and(|k| matches!(k, Kind::Procedural)) {
+                if procedural_arg {
                     return Err(format!("procedural operator nested in unsupported :{name}"));
                 }
                 i = close + 1; continue;
@@ -1187,6 +1192,11 @@ mod tests {
                 "[h:example.com] proc div:has(> div:has(> .ad))",
             ),
             ("example.com##div:not(:has(.ad))", "[h:example.com] hide div:not(:has(.ad))"),
+            // A plain `:not()` stays CSS, so a selector list around it holds.
+            (
+                "example.com##html:not(#id), html:not(#id) > body:style(overflow: visible)",
+                "[h:example.com] proc html:not(#id), html:not(#id) > body:style(overflow: visible)",
+            ),
             (
                 "~example.com##div:has-text(x)",
                 "invalid: generic procedural or action filter",
