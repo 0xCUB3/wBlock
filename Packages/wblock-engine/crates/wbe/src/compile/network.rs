@@ -440,24 +440,29 @@ fn urls(r: &NetworkRule, exception: bool) -> Result<Vec<String>, String> {
         None if exception => ".*".into(),
         None => return Err("dnr:url-filter".into()),
     };
-    if r.to.is_empty() || exception {
+    if r.to.is_empty() {
         return Ok(vec![pattern]);
     }
-    if !r.to.exclude.is_empty() || !r.pattern.is_match_all() {
-        return Err("dnr:to".into());
-    }
-    r.to.include
-        .iter()
-        .map(|m| match m {
-            DomainMatcher::Hostname(h) => url_filter(&Pattern {
-                kind: PatternKind::Hostname,
-                body: format!("{h}^"),
-                ..Default::default()
-            })
-            .ok_or_else(|| "dnr:to".to_string()),
-            _ => Err("dnr:to".into()),
+    let folded = (r.to.exclude.is_empty() && r.pattern.is_match_all())
+        .then(|| {
+            r.to.include
+                .iter()
+                .map(|m| match m {
+                    DomainMatcher::Hostname(h) => url_filter(&Pattern {
+                        kind: PatternKind::Hostname,
+                        body: format!("{h}^"),
+                        ..Default::default()
+                    }),
+                    _ => None,
+                })
+                .collect::<Option<Vec<_>>>()
         })
-        .collect()
+        .flatten();
+    match folded {
+        Some(urls) => Ok(urls),
+        None if exception => Ok(vec![pattern]),
+        None => Err("dnr:to".into()),
+    }
 }
 
 /// One condition per trigger. Each alternative is a separate trigger, which
@@ -1510,6 +1515,13 @@ mod tests {
             std::slice::from_ref(&rule),
             V15,
             r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?tracker\\.com[/:?#]","resource-type":["script"]},"action":{"type":"block"}},{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t2\\.net[/:?#]","resource-type":["script"]},"action":{"type":"block"}}]"#,
+        );
+        // `@@*$script,to=tracker.com|t2.net` lifts those hosts' scripts, not
+        // every script.
+        check(
+            &[NetworkRule { exception: true, ..rule }],
+            V15,
+            r#"[{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?tracker\\.com[/:?#]","resource-type":["script"]},"action":{"type":"ignore-previous-rules"}},{"trigger":{"url-filter":"^[^:]+://+([^:/]+\\.)?t2\\.net[/:?#]","resource-type":["script"]},"action":{"type":"ignore-previous-rules"}}]"#,
         );
     }
 
