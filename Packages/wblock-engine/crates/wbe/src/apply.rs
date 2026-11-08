@@ -74,17 +74,19 @@ pub struct TargetSpec {
     pub lists: Vec<TargetList>,
 }
 
-#[derive(Debug, Clone, Default, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
+#[serde(default)]
 pub struct CosmeticScope {
     #[serde(flatten)]
     pub sites: SiteScope,
     /// False drops hides that name no site.
-    #[serde(default = "yes")]
     pub generic: bool,
 }
 
-fn yes() -> bool {
-    true
+impl Default for CosmeticScope {
+    fn default() -> Self {
+        CosmeticScope { sites: SiteScope::default(), generic: true }
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
