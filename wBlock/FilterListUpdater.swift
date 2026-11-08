@@ -259,9 +259,9 @@ final class FilterListUpdater: @unchecked Sendable {
             let result = try await fetch(filter, validators: validators, patches: patches, timeout: 12)
             let data = result.data
             let httpResponse = result.response
-            let localData = localDataForComparison(filter: filter)
             let responseStatus = FilterUpdateResponseClassifier.classify(
-                statusCode: httpResponse.statusCode, responseData: data, localData: localData)
+                statusCode: httpResponse.statusCode, responseData: data,
+                localData: self.localDataForComparison(filter: filter))
 
             if result.servedFallback {
                 await pendingValidatorUpdates.add(

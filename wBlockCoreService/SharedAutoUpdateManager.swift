@@ -1681,9 +1681,9 @@ public actor SharedAutoUpdateManager {
             if result.servedFallback {
                 await ProtobufDataManager.shared.setFilterValidators(uuid, etag: nil, lastModified: nil)
             }
-            let localData = localDataForComparison(filter: filter, containerURL: containerURL)
             let responseStatus = FilterUpdateResponseClassifier.classify(
-                statusCode: http.statusCode, responseData: data, localData: localData)
+                statusCode: http.statusCode, responseData: data,
+                localData: self.localDataForComparison(filter: filter, containerURL: containerURL))
 
             switch responseStatus {
             case .notModified:
