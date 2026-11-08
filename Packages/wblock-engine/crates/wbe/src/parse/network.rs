@@ -1838,6 +1838,7 @@ mod tests {
         ("||example.com^$domain=google.*|~google.de", "||example.com^ $from=google.*|~google.de"),
         ("||example.com^$to=a.com|~b.com", "||example.com^ $to=a.com"),
         ("||example.com^$to=a.com|~b.a.com", "||example.com^ $to=a.com|~b.a.com"),
+        ("||example.com^$domain=b.a.com|~a.com", "||example.com^ $from=b.a.com|~a.com"),
         ("||example.com^$from=a.com,to=b.com", "||example.com^ $from=a.com,to=b.com"),
         ("||example.com^$domain=*.example.com", "invalid: invalid domain `*.example.com`"),
         ("||example.com^$domain=a.com||b.com", "invalid: empty domain"),

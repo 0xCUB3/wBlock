@@ -74,8 +74,10 @@ impl DomainList {
         self.include.is_empty() && self.exclude.is_empty()
     }
 
-    /// Drops excludes that no include can match, so `a.com,~b.com` is just
-    /// `a.com`, as uBO matches it. Only hostname lists are judged.
+    /// Drops excludes that share no host with any include, so `a.com,~b.com`
+    /// is just `a.com`, as uBO matches it. An exclude that is a parent of an
+    /// include (`b.a.com,~a.com`) still cancels it. Only hostname lists are
+    /// judged.
     pub fn without_unreachable_excludes(mut self) -> Self {
         let hosts: Option<Vec<&String>> = self
             .include
@@ -88,11 +90,8 @@ impl DomainList {
         let Some(hosts) = hosts.filter(|h| !h.is_empty()) else {
             return self;
         };
-        let reachable = |x: &str| {
-            hosts.iter().any(|h| {
-                x == h.as_str() || x.strip_suffix(h.as_str()).is_some_and(|p| p.ends_with('.'))
-            })
-        };
+        let within = |a: &str, b: &str| a == b || a.strip_suffix(b).is_some_and(|p| p.ends_with('.'));
+        let reachable = |x: &str| hosts.iter().any(|h| within(x, h) || within(h, x));
         let kept = self
             .exclude
             .iter()
