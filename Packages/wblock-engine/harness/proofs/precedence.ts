@@ -21,12 +21,11 @@ const WBE = process.env.WBE_BIN ?? path.join(ROOT, 'target/release/wbe');
 // Each input is "a rule of this tier matched this load". `add` tiers set an
 // output; the rest are ignore-previous-rules, which cancel the outputs
 // accumulated so far (`cancel` narrows that to the named outputs). Hides are
-// judged on the page load, blocks on a subresource load.
+// judged on the page load, blocks on a subresource load. Native hides are all
+// generic; hides scoped to sites and `$specifichide` are the runtime engine's.
 const TIERS = [
   ['genericHide', { add: 'generic' }],
-  ['genericHideException', {}],
-  ['specificHide', { add: 'specific' }],
-  ['elemHideException', {}],
+  ['hideException', {}],
   ['block', { add: 'blocked' }],
   ['exception', {}],
   // `$important,$denyallow`: the block, then its exclusions, both ahead of the
@@ -45,7 +44,7 @@ const INPUTS = Object.fromEntries(TIERS.map(([name]) => [name, bool])) as Record
 function model(name: string, order: readonly Tier[]) {
   return fun(name).inputs(INPUTS).returns((e: any) => {
     const no = e.block.and(e.block.not());
-    const out: Record<string, any> = { blocked: no, generic: no, specific: no };
+    const out: Record<string, any> = { blocked: no, generic: no };
     for (const [tier, { add, cancel }] of order as any) {
       if (add) out[add] = out[add].or(e[tier]);
       for (const k of cancel ?? (add ? [] : Object.keys(out))) out[k] = out[k].and(e[tier].not());
@@ -67,14 +66,12 @@ const laws = (m: any) => [
   m.law('an important exception lifts every block', (e: any) => e.importantException, (o: any) => o.blocked.not()),
   m.law('an exception lifts an ordinary block', (e: any) => e.exception.and(e.importantBlock.not(), e.importantDenyallowBlock.not()), (o: any) => o.blocked.not()),
   m.law('nothing is blocked without a blocking filter', (e: any) => e.block.not().and(e.importantBlock.not(), e.importantDenyallowBlock.not()), (o: any) => o.blocked.not()),
-  m.law('$document lifts everything on the page', (e: any) => e.documentException, (o: any) => o.blocked.not().and(o.generic.not(), o.specific.not())),
-  m.law('$generichide keeps specific hides', (e: any) => e.specificHide.and(e.elemHideException.not(), e.exception.not(), e.importantException.not(), e.documentException.not()), (o: any) => o.specific),
+  m.law('$document lifts everything on the page', (e: any) => e.documentException, (o: any) => o.blocked.not().and(o.generic.not())),
   // WebKit limit, not uBO: an exception matching the page load itself also lifts
   // its hides. network.rs gives exceptions a page-load trigger only where one
   // must lift a strict host block.
-  m.law('a page-load exception lifts the page hides', (e: any) => e.exception, (o: any) => o.generic.not().and(o.specific.not())),
-  m.law('$generichide lifts generic hides', (e: any) => e.genericHideException, (o: any) => o.generic.not()),
-  m.law('$elemhide lifts every hide', (e: any) => e.elemHideException, (o: any) => o.generic.not().and(o.specific.not())),
+  m.law('a page-load exception lifts the page hides', (e: any) => e.exception, (o: any) => o.generic.not()),
+  m.law('$generichide and $elemhide lift the native hides', (e: any) => e.hideException, (o: any) => o.generic.not()),
   // A `$denyallow` exclusion lifts its own block (and the blocks above it),
   // but not an important block placed after it.
   m.law('a denyallow exclusion lifts its own important block', (e: any) => e.importantDenyallowBlock.and(e.importantDenyallowException, e.importantBlock.not(), e.importantException.not(), e.documentException.not()), (o: any) => o.blocked.not()),
@@ -112,9 +109,7 @@ assert.equal(earlyRefusal.stuck, 'sat', JSON.stringify(earlyRefusal));
 // a block is not a combination the compiler can produce.
 const FILTERS: Partial<Record<Input, string>> = {
   genericHide: '##.g',
-  genericHideException: '@@||page.example^$generichide',
-  specificHide: 'page.example##.s',
-  elemHideException: '@@||page.example^$elemhide',
+  hideException: '@@||page.example^$generichide',
   block: '||t.example/x',
   exception: '@@||t.example/x',
   importantBlock: '||t.example/x$important',
@@ -145,11 +140,10 @@ for (let mask = 0; mask < 1 << names.length; mask++) {
   const doc = rules.length ? simulate(rules, { url: page, resourceType: 'top-document', loadContext: 'top-frame', frameUrl: page, topUrl: page }) : null;
   // The exception filter targets the subresource, so it does not match the page load.
   const onPage = precedence.run({ ...env, exception: false, importantException: false });
-  const expected = { blocked: precedence.run(env).blocked, generic: onPage.generic, specific: onPage.specific };
+  const expected = { blocked: precedence.run(env).blocked, generic: onPage.generic };
   const actual = {
     blocked: sub?.blocked ?? false,
     generic: doc?.hiddenSelectors.some((s) => s.split(',').includes('.g')) ?? false,
-    specific: doc?.hiddenSelectors.some((s) => s.split(',').includes('.s')) ?? false,
   };
   assert.deepEqual(actual, expected, `combination ${JSON.stringify(env)}`);
   checked++;

@@ -14,8 +14,10 @@ far as uBO accepts it).
 - `parse/` — line parser (uBO semantics). `normalize.rs` rewrites AdGuard/ABP
   syntax to uBO syntax first.
 - `compile/` — rules to Safari JSON (`webkit.rs` types). Everything Safari can
-  enforce natively goes native; the rest (procedural cosmetics, `:style`,
-  `:remove`, scriptlets) goes to `runtime` for the Scripts extension.
+  enforce natively goes native, except hides scoped to sites, which would
+  cost WebKit compile time on every apply; those and the rest (procedural
+  cosmetics, `:style`, `:remove`, scriptlets) go to `runtime` for the
+  Scripts extension.
 - `runtime.rs` — per-page engine (wraps brave/adblock-rust) for the
   leftovers. `ffi.rs` — C ABI for Swift.
 - `harness/` — Node/TypeScript tests and benchmarks. No Swift tests.

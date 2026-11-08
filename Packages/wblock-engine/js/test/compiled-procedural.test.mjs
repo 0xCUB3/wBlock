@@ -86,7 +86,8 @@ test('genericblock exempts generic network requests while preserving specific bl
     assert.equal(decide('ads.test', 'other.com', 'script').blocked, true);
     assert.equal(decide('specific.test', 'example.com', 'script').blocked, true);
     assert.equal(decide('important.test', 'example.com', 'script').blocked, true);
-    assert.deepEqual(decide('example.com', 'example.com', 'document').hides, ['.ad']);
+    // Site hides are the runtime's; $genericblock leaves them in place.
+    assert.deepEqual(built.page('https://example.com/').hide, ['.ad']);
   } finally { built.close(); }
 });
 
