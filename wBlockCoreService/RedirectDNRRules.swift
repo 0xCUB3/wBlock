@@ -95,16 +95,29 @@ extension RemoveParamDNRRuleGenerator {
     }
 
     /// `host` of a `||host…` pattern.
-    static func anchoredHost(_ pattern: String) -> String? {
+    static func anchoredHost<S: StringProtocol>(_ pattern: S) -> String? where S.SubSequence == Substring {
         guard pattern.hasPrefix("||") else { return nil }
         let rest = pattern.dropFirst(2)
-        let end = rest.firstIndex { "^/$|?*:".contains($0) } ?? rest.endIndex
-        let host = rest[..<end].lowercased()
+        let host: String
+        if rest.utf8.allSatisfy({ $0 < 0x80 }) {
+            // ASCII bytes are whole characters, so the bytes give the same answer quickly.
+            let end = rest.utf8.firstIndex { "^/$|?*:".utf8.contains($0) } ?? rest.endIndex
+            host = RuleText.lowercased(rest[..<end])
+        } else {
+            let end = rest.firstIndex { "^/$|?*:".contains($0) } ?? rest.endIndex
+            host = rest[..<end].lowercased()
+        }
         return host.contains(".") ? host : nil
     }
 
     private static func isSameOrParent(_ parent: String, of host: String) -> Bool {
         host == parent || host.hasSuffix("." + parent)
+    }
+
+    /// Every `parent` for which `isSameOrParent(parent, of: host)` holds:
+    /// `host` and what follows each of its dots.
+    private static func selfAndParents(of host: String) -> [Substring] {
+        [host[...]] + host.indices.filter { host[$0] == "." }.map { host[host.index(after: $0)...] }
     }
 
     /// Lines one list needs for redirect resolution: redirect directives,
@@ -122,16 +135,17 @@ extension RemoveParamDNRRuleGenerator {
             }
         }
         guard !conditionalHosts.isEmpty else { return result }
-        for rawLine in contents.split(whereSeparator: \.isNewline) {
-            let line = rawLine.trimmingCharacters(in: .whitespaces)
-            guard line.hasPrefix("||") || line.hasPrefix("@@||"), !line.contains("redirect") else { continue }
+        // Set lookups instead of comparing each line's host with every conditional host.
+        let conditionalParents = Set(conditionalHosts.flatMap(selfAndParents))
+        RuleText.forEachLine(contents) { rawLine in
+            let line = RuleText.trimmed(rawLine)
+            guard line.hasPrefix("||") || line.hasPrefix("@@||"), !RuleText.contains(line, "redirect") else { return }
             let isException = line.hasPrefix("@@")
-            guard let host = anchoredHost(isException ? String(line.dropFirst(2)) : line) else { continue }
-            let related = conditionalHosts.contains {
-                isSameOrParent(host, of: $0) || (isException && isSameOrParent($0, of: host))
-            }
+            guard let host = anchoredHost(isException ? line.dropFirst(2) : line) else { return }
+            let related = conditionalParents.contains(host[...])
+                || isException && selfAndParents(of: host).contains { conditionalHosts.contains(String($0)) }
             if related {
-                result.append(line)
+                result.append(contentsOf: line)
                 result.append("\n")
             }
         }
