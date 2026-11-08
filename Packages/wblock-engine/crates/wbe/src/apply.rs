@@ -142,6 +142,8 @@ struct Parsed {
     exception: bool,
     /// A network rule, so the network pass can skip the other kinds unparsed.
     network: bool,
+    /// A network rule a blocker's `NetworkContext` holds, so its scan parses it.
+    in_context: bool,
     /// `is_plain_block`, which the segment of #925 compiles unscoped.
     plain: bool,
     /// Affinity types of the enclosing `!#safari_cb_affinity` block.
@@ -387,6 +389,12 @@ impl Plan {
         let mut out = ListScan::default();
         for p in &self.parsed[list].chunks[unit.chunk][unit.range.clone()] {
             if !self.keeps(target, list, p) {
+                continue;
+            }
+            // Unscoped, the rule is kept as it is, and only its identity counts.
+            if p.network && !p.in_context && scope.is_empty() {
+                out.takes = true;
+                out.admitted.push(p.identity);
                 continue;
             }
             let mut rules = Vec::new();
@@ -949,6 +957,7 @@ fn parse_lines(list: &ListSpec, span: Range<usize>, lines_before: u32, patterns:
                 shared: is_shared(rule),
                 exception: matches!(rule, Rule::Network(r) if r.exception),
                 network: matches!(rule, Rule::Network(_)),
+                in_context: matches!(rule, Rule::Network(r) if NetworkContext::holds(r)),
                 plain: is_plain_block(rule),
                 affinity,
             });

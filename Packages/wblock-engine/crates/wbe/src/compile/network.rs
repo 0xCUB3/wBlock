@@ -61,6 +61,11 @@ impl Context {
         }
     }
 
+    /// Whether `add` keeps anything of `rule`.
+    pub(crate) fn holds(rule: &NetworkRule) -> bool {
+        rule.badfilter || StrictHosts::host(rule).is_some()
+    }
+
     pub(crate) fn merge(&mut self, other: Context) {
         self.strict.hosts.extend(other.strict.hosts);
         self.strict.parents.extend(other.strict.parents);
@@ -486,11 +491,16 @@ struct StrictHosts {
 }
 
 impl StrictHosts {
-    fn add(&mut self, r: &NetworkRule) {
+    /// The host `add` indexes for `r`.
+    fn host(r: &NetworkRule) -> Option<String> {
         if r.exception || !r.types.is_empty() || !r.negated_types.is_empty() {
-            return;
+            return None;
         }
-        if let Some(h) = host_only(&r.pattern) {
+        host_only(&r.pattern)
+    }
+
+    fn add(&mut self, r: &NetworkRule) {
+        if let Some(h) = Self::host(r) {
             for (i, _) in h.match_indices('.') {
                 self.parents.insert(h[i + 1..].to_string());
             }
