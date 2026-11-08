@@ -1048,25 +1048,37 @@ fn hash<T: Hash + ?Sized>(value: &T) -> u64 {
 /// case-insensitively (wBlock's `FilterRuleAnalysis.ruleIdentity`).
 fn identity(raw: &str) -> u64 {
     let raw = raw.trim();
-    if let Some((at, _)) = crate::parse::cosmetic::find_marker(raw) {
+    let (head, lower, tail) = if let Some((at, _)) = crate::parse::cosmetic::find_marker(raw) {
         let (domains, rest) = raw.split_at(at);
-        return if domains.contains('/') {
-            hash(raw)
-        } else {
-            hash(&(domains.to_ascii_lowercase() + rest))
-        };
-    }
-    let body = raw.strip_prefix("@@").unwrap_or(raw);
-    let dollar = body.find('$').unwrap_or(body.len());
-    let (pattern, options) = body.split_at(dollar);
-    let case_sensitive = options
-        .split(',')
-        .any(|o| o.trim_start_matches('$') == "match-case");
-    if pattern.starts_with('/') || case_sensitive {
-        hash(raw)
+        if domains.contains('/') {
+            return hash(raw);
+        }
+        ("", domains, rest)
     } else {
-        hash(&(raw[..raw.len() - body.len()].to_string() + &pattern.to_ascii_lowercase() + options))
+        let body = raw.strip_prefix("@@").unwrap_or(raw);
+        let dollar = body.find('$').unwrap_or(body.len());
+        let (pattern, options) = body.split_at(dollar);
+        let case_sensitive = options
+            .split(',')
+            .any(|o| o.trim_start_matches('$') == "match-case");
+        if pattern.starts_with('/') || case_sensitive {
+            return hash(raw);
+        }
+        (&raw[..raw.len() - body.len()], pattern, options)
+    };
+    // `hash` of `head + lower.to_ascii_lowercase() + tail`, without building it.
+    let mut hasher = DefaultHasher::new();
+    hasher.write(head.as_bytes());
+    let mut buf = [0u8; 64];
+    for chunk in lower.as_bytes().chunks(buf.len()) {
+        let buf = &mut buf[..chunk.len()];
+        buf.copy_from_slice(chunk);
+        buf.make_ascii_lowercase();
+        hasher.write(buf);
     }
+    hasher.write(tail.as_bytes());
+    hasher.write_u8(0xff);
+    hasher.finish()
 }
 
 /// Lists with different site scopes compile one rule differently, so the
