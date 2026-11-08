@@ -70,17 +70,20 @@ struct ScriptletRules {
     calls: Vec<Vec<String>>,
     index: HashMap<Vec<String>, u32>,
     rules: BTreeMap<String, Vec<(u32, Vec<DomainMatcher>)>>,
-    exceptions: BTreeMap<String, Vec<(Option<u32>, Vec<DomainMatcher>)>>,
+    exceptions: BTreeMap<String, Vec<Option<u32>>>,
     regexes: HashMap<String, regex::Regex>,
 }
 
 impl ScriptletRules {
     /// A cosmetic or scriptlet filter. As uBO compiles them, its negated
-    /// hostnames are exceptions there, which lift the call of every filter.
-    fn add_filter(&mut self, exception: bool, domains: DomainList, call: Vec<String>) {
-        if !exception && !domains.exclude.is_empty() {
-            self.add(true, DomainList { include: domains.exclude.clone(), exclude: Vec::new() }, call.clone());
+    /// hostnames are exceptions there, which lift the call of every filter;
+    /// an exception's negated hostnames are ignored (uBlock#3375).
+    fn add_filter(&mut self, exception: bool, mut domains: DomainList, call: Vec<String>) {
+        let exclude = std::mem::take(&mut domains.exclude);
+        if !exception && !exclude.is_empty() {
+            self.add(true, DomainList { include: exclude.clone(), exclude: Vec::new() }, call.clone());
         }
+        if !exception { domains.exclude = exclude; }
         self.add(exception, domains, call);
     }
 
@@ -113,7 +116,7 @@ impl ScriptletRules {
         }
         for k in keys {
             if exception {
-                self.exceptions.entry(k).or_default().push((id, domains.exclude.clone()));
+                self.exceptions.entry(k).or_default().push(id);
             } else if let Some(id) = id {
                 self.rules
                     .entry(k)
@@ -251,8 +254,7 @@ impl Scriptlets {
         let mut excepted = HashSet::new();
         let mut all_scriptlets_excepted = false;
         for k in &keys {
-            for (e, exclude) in self.exceptions.get::<Vec<(Option<u32>, Vec<DomainMatcher>)>>(k) {
-                if exclude.iter().any(|m| scope_matches(m, &keys, &self.regexes)) { continue; }
+            for e in self.exceptions.get::<Vec<Option<u32>>>(k) {
                 match e {
                     None => all_scriptlets_excepted = true,
                     Some(id) => {
@@ -410,6 +412,8 @@ impl Engine {
                     };
                     scriptlets.add_filter(r.exception, r.domains, call);
                 }
+                // uBO drops a scriptlet exception whose hostnames are all negated.
+                ParsedLine::Rule(Rule::Scriptlet(r)) if r.exception && r.domains.include.is_empty() && !r.domains.exclude.is_empty() => {}
                 ParsedLine::Rule(Rule::Scriptlet(r)) => {
                     let call = std::iter::once(r.name).chain(r.args).collect();
                     scriptlets.add_filter(r.exception, r.domains, call);
@@ -1162,9 +1166,15 @@ example.com##+js(set-constant, adsEnabled, false)
         let set = call(&["set-constant", "a", "1"]);
         assert_eq!(calls(&[r"/example\.com$/##+js(set, a, 1)"], "https://www.example.com/"), [set.clone()]);
         assert!(calls(&[r"/example\.com$/##+js(set, a, 1)"], "https://other.com/").is_empty());
+        // uBO ignores the negated hostnames of an exception (uBlock#3375): it
+        // covers all of example.com, and one with only negated hostnames is
+        // dropped for scriptlets but global for cosmetics.
         let filters = ["example.com##+js(set, a, 1)", "example.com,~keep.example.com#@#+js(set, a, 1)"];
-        assert_eq!(calls(&filters, "https://keep.example.com/"), [set]);
-        assert!(calls(&filters, "https://example.com/").is_empty());
+        assert!(calls(&filters, "https://keep.example.com/").is_empty());
+        assert_eq!(calls(&["##+js(set, a, 1)", "~keep.example.com#@#+js(set, a, 1)"], "https://other.com/"), [set]);
+        let hides = Engine::build(&lines("wp.pl##.x\n~www.wp.pl,wp.pl#@#.x\n##.g\n~keep.example.com#@#.g\n"));
+        assert!(hides.lookup("https://www.wp.pl/").hide.is_empty());
+        assert!(hides.lookup("https://keep.example.com/").hide.is_empty());
     }
 
     #[test]
