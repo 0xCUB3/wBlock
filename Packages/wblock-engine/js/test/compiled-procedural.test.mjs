@@ -76,6 +76,8 @@ test('genericblock exempts generic network requests while preserving specific bl
         if (t['resource-type'] && !t['resource-type'].includes(type)) continue;
         if (t['unless-domain']?.some(d => top === d.replace(/^\*/, ''))) continue;
         if (t['if-domain'] && !t['if-domain'].some(d => top === d.replace(/^\*/, ''))) continue;
+        if (t['if-top-url'] && !t['if-top-url'].some(r => new RegExp(r).test(`https://${top}/`))) continue;
+        if (t['unless-top-url']?.some(r => new RegExp(r).test(`https://${top}/`))) continue;
         if (a.type === 'block') blocked = true;
         if (a.type === 'ignore-previous-rules') { blocked = false; hides.length = 0; }
         if (a.type === 'css-display-none') hides.push(a.selector);
