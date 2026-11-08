@@ -659,7 +659,7 @@ struct UserScriptManagerView: View {
                 HStack(spacing: 6) {
                     Text(script.localizedDisplayName)
                         .font(.body)
-                        .font(.body.weight(.medium))
+                        .fontWeight(.medium)
                         .foregroundStyle(.primary)
                         .fixedSize(horizontal: false, vertical: true)
                     if script.isBeta {
@@ -689,7 +689,7 @@ struct UserScriptManagerView: View {
                 if displayedEnabled && !script.isDownloaded && script.isLocal {
                     Text("Not Downloaded")
                         .font(.caption2)
-                        .font(.body.weight(.medium))
+                        .fontWeight(.medium)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
                         .background(Color.red.opacity(0.15))
