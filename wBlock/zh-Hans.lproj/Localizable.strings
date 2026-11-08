@@ -625,7 +625,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "No Element Zapper Rules" = "没有元素清除器规则";
 "Use the element zapper in the wBlock popup in Safari to hide page elements." = "在 Safari 的 wBlock 弹出窗口中使用元素清除器来隐藏页面元素。";
 "Update" = "更新";
-"Update & Apply" = "更新并应用";
 "Update Filters" = "更新过滤器";
 "Update Interval" = "更新间隔";
 "Update wBlock Filters" = "更新 wBlock 过滤器";

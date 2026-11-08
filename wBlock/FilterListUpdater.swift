@@ -23,7 +23,7 @@ final class FilterListUpdater: @unchecked Sendable {
         }
     }
 
-    /// Body from a successful update check, reused by Update & Apply so the
+    /// Body from a successful update check, reused by Update so the
     /// second pass does not fetch the same list again.
     private struct CachedFilterDownload: Sendable {
         let data: Data

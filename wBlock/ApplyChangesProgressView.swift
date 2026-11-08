@@ -238,7 +238,7 @@ struct ApplyChangesProgressView: View {
                 Task { await startSelectedUpdates() }
             } label: {
                 ZStack {
-                    Text(String(localized: "Update & Apply"))
+                    Text(String(localized: "Update"))
                         .opacity(isStartingSelectedUpdates ? 0 : 1)
                     if isStartingSelectedUpdates {
                         ProgressView()
@@ -250,7 +250,7 @@ struct ApplyChangesProgressView: View {
             .updateAndApplyButtonStyle()
             .disabled(selectedUpdateCount == 0 || isStartingSelectedUpdates)
             .keyboardShortcut(.defaultAction)
-            .accessibilityLabel(String(localized: "Update & Apply"))
+            .accessibilityLabel(String(localized: "Update"))
         }
     }
 

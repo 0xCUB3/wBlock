@@ -625,7 +625,6 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "No Element Zapper Rules" = "No hay reglas del ocultador de elementos";
 "Use the element zapper in the wBlock popup in Safari to hide page elements." = "Usa el ocultador de elementos en el menú emergente de wBlock en Safari para ocultar elementos de la página.";
 "Update" = "Actualizar";
-"Update & Apply" = "Actualizar y aplicar";
 "Update Filters" = "Actualizar filtros";
 "Update Interval" = "Intervalo de actualización";
 "Update wBlock Filters" = "Actualizar filtros de wBlock";

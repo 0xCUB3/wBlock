@@ -627,7 +627,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "No Element Zapper Rules" = "要素ブロックのルールはありません";
 "Use the element zapper in the wBlock popup in Safari to hide page elements." = "Safari のwBlockポップアップの要素ブロックで、ページ上の要素を非表示にできます。";
 "Update" = "アップデート";
-"Update & Apply" = "アップデートして適用";
 "Update Filters" = "フィルターをアップデート";
 "Update Interval" = "アップデート間隔";
 "Update wBlock Filters" = "wBlockフィルターをアップデート";

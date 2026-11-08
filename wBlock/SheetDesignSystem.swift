@@ -257,8 +257,13 @@ struct SheetContainer<Content: View>: View {
 // MARK: - Standard Button Styles
 
 extension View {
+    /// Large on iOS. macOS keeps the regular size, which draws a rounded
+    /// rectangle like its other buttons; large ones are capsules (#1092).
     func primaryActionButtonStyle() -> some View {
+        #if os(iOS)
+        self.buttonStyle(.borderedProminent).controlSize(.large)
+        #else
         self.buttonStyle(.borderedProminent)
-            .controlSize(.large)
+        #endif
     }
 }

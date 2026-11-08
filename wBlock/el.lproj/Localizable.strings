@@ -627,7 +627,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "No Element Zapper Rules" = "Δεν υπάρχουν κανόνες του εργαλείου απόκρυψης στοιχείων";
 "Use the element zapper in the wBlock popup in Safari to hide page elements." = "Χρησιμοποιήστε το εργαλείο απόκρυψης στοιχείων στο αναδυόμενο παράθυρο του wBlock στο Safari για να αποκρύψετε στοιχεία σελίδας.";
 "Update" = "Ενημέρωση";
-"Update & Apply" = "Ενημέρωση & εφαρμογή";
 "Update Filters" = "Ενημέρωση φίλτρων";
 "Update Interval" = "Διάστημα ενημέρωσης";
 "Update wBlock Filters" = "Ενημέρωση φίλτρων wBlock";
