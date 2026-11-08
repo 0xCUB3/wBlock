@@ -460,6 +460,11 @@ struct UserScriptManagerView: View {
             }
         } label: {
             Label("Add Userscript or Userstyle", systemImage: "plus")
+                #if os(macOS)
+                // A toolbar menu draws its glyph lighter than a button does;
+                // this matches Filters' Add (#1092).
+                .font(.body.weight(.medium))
+                #endif
         }
         // AppKit gives a toolbar menu with an arrow a bubble of its own, apart
         // from Show Enabled Only (#1091).
@@ -654,7 +659,7 @@ struct UserScriptManagerView: View {
                 HStack(spacing: 6) {
                     Text(script.localizedDisplayName)
                         .font(.body)
-                        .fontWeight(.medium)
+                        .font(.body.weight(.medium))
                         .foregroundStyle(.primary)
                         .fixedSize(horizontal: false, vertical: true)
                     if script.isBeta {
@@ -684,7 +689,7 @@ struct UserScriptManagerView: View {
                 if displayedEnabled && !script.isDownloaded && script.isLocal {
                     Text("Not Downloaded")
                         .font(.caption2)
-                        .fontWeight(.medium)
+                        .font(.body.weight(.medium))
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
                         .background(Color.red.opacity(0.15))
