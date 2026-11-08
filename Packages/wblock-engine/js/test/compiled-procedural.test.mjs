@@ -98,14 +98,15 @@ test('genericblock badfilter restores generic blocking without disabling cosmeti
   } finally { built.close(); }
 });
 
-test('popup lookups preserve exceptions and avoid guessing the opener frame', () => {
+test('popup lookups preserve exceptions and scope blocks by the opener tab', () => {
   const built = compile('||ads.test^$popup\n||scoped.test^$popup,domain=example.com\n@@||ads.test/allowed$popup\n||ads.test/forced$popup,important\nexample.com#@#+js()\n@@||exempt.com^$genericblock');
   try {
     const lookup = (source, target) => built.page(`wbe-popup-https://${source}/#https://${target}`).popup_blocked;
-    assert.equal(built.native.length, 0);
+    assert.ok(built.native.every(rule => rule.action.type !== 'block'));
     assert.equal(lookup('example.com', 'ads.test/'), true);
     assert.equal(lookup('other.com', 'ads.test/'), true);
-    assert.equal(lookup('example.com', 'scoped.test/'), false);
+    assert.equal(lookup('example.com', 'scoped.test/'), true);
+    assert.equal(lookup('other.com', 'scoped.test/'), false);
     assert.equal(lookup('example.com', 'ads.test/allowed'), false);
     assert.equal(lookup('example.com', 'ads.test/forced'), true);
     assert.equal(lookup('exempt.com', 'ads.test/'), false);
