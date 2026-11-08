@@ -10,7 +10,7 @@
 use crate::ast::{DomainMatcher, Pattern, PatternKind};
 
 /// uBO separator class.
-const SEPARATOR: &str = "[^a-zA-Z0-9_.%-]";
+pub(crate) const SEPARATOR: &str = "[^a-zA-Z0-9_.%-]";
 /// Hostname anchor (`||`), the expression Apple recommends.
 const HOST_START: &str = "^[^:]+://+([^:/]+\\.)?";
 /// What follows a host in a top-level URL. WHATWG URLs always have a path, so

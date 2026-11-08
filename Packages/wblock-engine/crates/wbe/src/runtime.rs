@@ -398,9 +398,11 @@ impl Engine {
                 ParsedLine::Rule(Rule::Network(r)) if r.types.contains(crate::ast::ResourceTypes::POPUP) => {
                     if let Ok(rule) = popup_rule(&r) {
                         // Network allow rules are candidates, not cosmetic exceptions.
-                        // Safari's tab event identifies the opener tab, not its
-                        // frame. Scoped allows must protect every possible opener.
-                        popups.add(false, DomainList::default(), vec!["wbe:popup".into(), rule.to_string()]);
+                        // An allow keeps its opener domains: indexed for every
+                        // opener, uBO's `@@$popup,domain=datanodes.to` allowed
+                        // every popup on every site (#1072). Safari's tab event
+                        // names the opener tab, so a frame-only allow can miss.
+                        popups.add(false, r.from, vec!["wbe:popup".into(), rule.to_string()]);
                     }
                 }
                 ParsedLine::Rule(Rule::Network(r)) if r.exception && !r.scope.is_empty() => {
@@ -592,7 +594,12 @@ pub(crate) fn popup_rule(r: &crate::ast::NetworkRule) -> Result<serde_json::Valu
     if constrained && !r.exception { return Err("popup: unsupported destination, method or response constraint".into()); }
     let pattern = crate::compile::regex::url_filter(&r.pattern);
     let pattern = match pattern {
-        Some(p) if !constrained => p,
+        // A trailing `^` also matches the end of the URL. Popups match in
+        // Rust, so alternation is fine here; WebKit rules can't use it.
+        Some(p) if !constrained => match p.strip_suffix(crate::compile::regex::SEPARATOR) {
+            Some(head) => format!("{head}(?:{}|$)", crate::compile::regex::SEPARATOR),
+            None => p,
+        },
         _ if r.exception => ".*".into(), // conservative allow, never a broader block
         _ => return Err("popup: unsupported URL pattern".into()),
     };
@@ -683,6 +690,23 @@ example.com##+js(set-constant, adsEnabled, false)
 
     fn call(parts: &[&str]) -> Vec<String> {
         parts.iter().map(|p| p.to_string()).collect()
+    }
+
+    fn popup_blocked(rules: &str, opener: &str, target: &str) -> bool {
+        Engine::build(&lines(rules)).lookup(&format!("wbe-popup-{opener}#{target}")).popup_blocked == Some(true)
+    }
+
+    #[test]
+    fn scoped_popup_exceptions_stay_on_their_openers() {
+        // uBO's lists ship `@@$popup,domain=datanodes.to,3p`. Indexed for every
+        // opener, that catch-all allow switched popup blocking off everywhere.
+        let rules = "||ads.example^$popup\n@@$popup,domain=datanodes.to,3p\n@@||ads.example/ok^$popup,domain=partner.example\n";
+        assert!(popup_blocked(rules, "https://movies.example/watch", "https://ads.example/x"));
+        assert!(!popup_blocked(rules, "https://datanodes.to/file", "https://ads.example/x"));
+        assert!(!popup_blocked(rules, "https://partner.example/", "https://ads.example/ok"));
+        assert!(popup_blocked(rules, "https://movies.example/", "https://ads.example/ok"));
+        // An unscoped allow still applies to every opener.
+        assert!(!popup_blocked("||ads.example^$popup\n@@||ads.example/ok^$popup\n", "https://movies.example/", "https://ads.example/ok"));
     }
 
     #[test]
