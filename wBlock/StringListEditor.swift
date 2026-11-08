@@ -109,7 +109,13 @@ extension View {
             .padding(12)
             // A fill relative to what is behind it: a material vanished in a
             // sheet's group, whose background is material too (#1096).
+            // On iOS the quaternary label gray read as a dark slab on white
+            // cells, so it uses the system fill a search field draws.
+            #if os(iOS)
+            .background(Color.groupFill, in: RoundedRectangle(cornerRadius: 8))
+            #else
             .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
+            #endif
     }
 }
 
