@@ -461,6 +461,9 @@ struct UserScriptManagerView: View {
         } label: {
             Label("Add Userscript or Userstyle", systemImage: "plus")
         }
+        // AppKit gives a toolbar menu with an arrow a bubble of its own, apart
+        // from Show Enabled Only (#1091).
+        .menuIndicator(.hidden)
         .help("Add Userscript or Userstyle")
     }
 

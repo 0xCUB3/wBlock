@@ -71,8 +71,7 @@ struct ListActionsToolbar<Primary: View, Apply: View, Leading: View>: ViewModifi
     func body(content: Content) -> some View {
         #if os(macOS)
         // Update sits on the leading edge as on iOS. Search stands alone, then
-        // Show Enabled Only and Add share one group, with the toolbar's own
-        // spacing between them (#999).
+        // Show Enabled Only and Add share one bubble (#999).
         if #available(macOS 26.0, *) {
             content.toolbar {
                 // Pause and Update are plain toolbar items, so AppKit draws
@@ -90,13 +89,12 @@ struct ListActionsToolbar<Primary: View, Apply: View, Leading: View>: ViewModifi
                 .sharedBackgroundVisibility(isSearchOpen ? .hidden : .automatic)
                 .toolbarVisibilityPriorityCompat(.high)
                 ToolbarSpacer(.fixed, placement: .primaryAction)
-                // One item, so AppKit can't split a menu (Userscripts' Add) into its own capsule.
-                ToolbarItem(placement: .primaryAction) {
-                    ControlGroup {
-                        filter
-                        primary()
-                    }
-                }
+                // Plain items like Pause and Update, so both bubbles get the
+                // same spacing and the overflow menu names each one. A
+                // ControlGroup padded its buttons wider and showed only icons
+                // in the overflow (#1091).
+                ToolbarItem(placement: .primaryAction) { filter }
+                ToolbarItem(placement: .primaryAction) { primary() }
             }
             .toolbarBackground(.visible, for: .windowToolbar)
         } else {
