@@ -560,6 +560,9 @@ fn parse_domains(list: &str) -> Result<DomainList, Reject> {
     let mut out = DomainList::default();
     let mut rest = list;
     let mut universal = false;
+    // Ancestor and path entries are skipped; the others still apply. A rule
+    // left without includes would widen to every site, so it is dropped.
+    let mut skipped = None;
     if list.is_empty() {
         return Ok(out);
     }
@@ -568,12 +571,19 @@ fn parse_domains(list: &str) -> Result<DomainList, Reject> {
         if entry == "*" {
             universal = true;
         } else {
-            let (negated, matcher) = parse_domain(entry)?;
-            if negated { out.exclude.push(matcher); } else { out.include.push(matcher); }
+            match parse_domain(entry) {
+                Ok((true, matcher)) => out.exclude.push(matcher),
+                Ok((false, matcher)) => out.include.push(matcher),
+                Err(reject @ Reject::Unsupported(_)) if !entry.starts_with('~') => skipped = Some(reject),
+                Err(reject) => return Err(reject),
+            }
         }
         match next {
             Some(r) => rest = r,
             None => {
+                if let Some(reject) = skipped.filter(|_| out.include.is_empty() && !universal) {
+                    return Err(reject);
+                }
                 if universal { out.include.clear(); }
                 return Ok(out.without_unreachable_excludes());
             }
@@ -633,7 +643,7 @@ fn parse_domain(entry: &str) -> Result<(bool, DomainMatcher), Reject> {
     }
     if p.contains(">>") || p.contains('/') {
         let host = p.split(['/', '>']).next().unwrap_or(p);
-        return match hostname(host) {
+        return match hostname(host.strip_suffix(".*").unwrap_or(host)) {
             Some(_) => Err(Reject::Unsupported("domain ancestor or path")),
             None => Err(Reject::Invalid(format!("bad domain '{p}'"))),
         };
@@ -1048,6 +1058,10 @@ mod tests {
             ("a*b.com##.x", "invalid: bad domain 'a*b.com'"),
             ("*##.x", "hide .x"),
             ("example.com>>##.x", "unsupported: domain ancestor or path"),
+            ("a.*>>,b.*>>##.x", "unsupported: domain ancestor or path"),
+            ("a.com>>,~b.com##.x", "unsupported: domain ancestor or path"),
+            ("~a.com>>,b.com##.x", "unsupported: domain ancestor or path"),
+            ("a.*>>,b.com/p,c.com##.x", "[h:c.com] hide .x"),
             (
                 "example.com/path##.x",
                 "unsupported: domain ancestor or path",
