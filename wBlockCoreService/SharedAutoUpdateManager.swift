@@ -265,9 +265,6 @@ public actor SharedAutoUpdateManager {
 
     private let sharedAutoUpdateLogFilename = "auto_update.log"
 
-    // Reused for shared-log timestamps; safe because all access is actor-isolated.
-    private let sharedLogDateFormatter = ISO8601DateFormatter()
-
     // Default interval (6 hours) — conservative to limit energy usage
     private let defaultIntervalHours: Double = 6
 
@@ -1752,7 +1749,7 @@ public actor SharedAutoUpdateManager {
         if let availability = FilterDiffUpdater.patchAvailabilityTime(metadata: metadata, now: now),
            now < availability {
             appendSharedLog(
-                "Diff update: \(filter.name) deferring patch fetch (expected at \(sharedLogDateFormatter.string(from: availability)))"
+                "Diff update: \(filter.name) deferring patch fetch (expected at \(availability.ISO8601Format()))"
             )
             return .noChange
         }
@@ -2430,25 +2427,7 @@ public actor SharedAutoUpdateManager {
 
     // MARK: - Shared Log (File-Based for Extensions)
     private func appendSharedLog(_ line: String) {
-        guard let base = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value) else { return }
-        let logURL = base.appendingPathComponent(sharedAutoUpdateLogFilename)
-        let timestamp = sharedLogDateFormatter.string(from: Date())
-        let full = "[\(timestamp)] \(line)\n"
-        if let data = full.data(using: .utf8) {
-            if FileManager.default.fileExists(atPath: logURL.path) {
-                do {
-                    let handle = try FileHandle(forWritingTo: logURL)
-                    defer { try? handle.close() }
-                    try handle.seekToEnd()
-                    try handle.write(contentsOf: data)
-                } catch {
-                    // Fallback to direct write if handle fails
-                    try? data.write(to: logURL, options: .atomic)
-                }
-            } else {
-                try? data.write(to: logURL)
-            }
-        }
+        SharedLogFile.append(line, to: sharedAutoUpdateLogFilename)
     }
 
     public func recordOperation(_ operation: String, fields: [String: String] = [:]) {
