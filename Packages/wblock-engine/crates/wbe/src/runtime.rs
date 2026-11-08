@@ -156,7 +156,7 @@ impl Table {
         let (mut keys, mut values) = (Vec::new(), Vec::new());
         for (key, value) in entries {
             keys.extend_from_slice(key.as_bytes());
-            values.extend(serde_json::to_vec(value).expect("scriptlet entry serializes"));
+            serde_json::to_writer(&mut values, value).expect("scriptlet entry serializes");
             key_ends.push(keys.len() as u32);
             value_ends.push(values.len() as u32);
         }
