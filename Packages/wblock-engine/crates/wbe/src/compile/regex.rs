@@ -34,7 +34,7 @@ pub fn url_filter(p: &Pattern) -> Option<Vec<String>> {
     if p.kind == PatternKind::Regex {
         // A regex that reduces to nothing (`/x{0}/`) matches every URL;
         // WebKit rejects an empty url-filter, so say that as `.*`.
-        return translate(&p.body)
+        return translate(&p.body, "")
             .map(|alts| if alts.iter().any(String::is_empty) { vec![".*".into()] } else { alts })
             .and_then(accepted);
     }
@@ -197,7 +197,9 @@ fn top_url(m: &DomainMatcher) -> Option<Vec<String>> {
             Some(vec![out])
         }
         DomainMatcher::Regex(src) => Some(
-            translate(src)?
+            // uBO tests the regex against the hostname, so no character
+            // class may run past it.
+            translate(src, "/:?#")?
                 .iter()
                 .map(|alt| {
                     let (anchored, body) = match alt.strip_prefix('^') {
@@ -243,13 +245,11 @@ fn literal(body: &str, out: &mut String) -> Option<()> {
 /// alternative is a filter of its own, and so another rule.
 const MAX_ALTERNATIVES: usize = 16;
 
-/// Separator class of `\b`, the complement of `\w`.
-const NON_WORD: &str = "[^a-zA-Z0-9_]";
-
 /// Translates a uBO regex body into the WebKit subset: one regex per
 /// alternative, with anchors left where they fall for `webkit_accepts` to
-/// judge. URLs never hold whitespace, so `\S` is any character.
-fn translate(src: &str) -> Option<Vec<String>> {
+/// judge. URLs never hold whitespace, so `\S` is any character. Negated
+/// classes and `.` never match a character of `exclude`.
+fn translate(src: &str, exclude: &'static str) -> Option<Vec<String>> {
     if src.is_empty() || !src.is_ascii() {
         return None;
     }
@@ -257,6 +257,7 @@ fn translate(src: &str) -> Option<Vec<String>> {
         src: src.as_bytes(),
         pos: 0,
         last_word: false,
+        exclude,
     };
     let out = p.seq(0)?;
     (p.pos == src.len()).then_some(out)
@@ -305,6 +306,8 @@ struct Translator<'a> {
     pos: usize,
     /// The last piece matched at least one word character and nothing else.
     last_word: bool,
+    /// Characters no wildcard or negated class matches.
+    exclude: &'static str,
 }
 
 impl Translator<'_> {
@@ -316,6 +319,16 @@ impl Translator<'_> {
         let c = self.peek()?;
         self.pos += 1;
         Some(c)
+    }
+
+    /// The class of every character but `set` and `exclude`.
+    fn negated(&self, set: &str) -> String {
+        format!("[^{set}{}]", self.exclude)
+    }
+
+    /// Any character but `exclude`.
+    fn any(&self) -> String {
+        if self.exclude.is_empty() { ".".into() } else { self.negated("") }
     }
 
     /// Parses alternatives up to `)` (inside a group) or the end.
@@ -353,7 +366,7 @@ impl Translator<'_> {
             return None;
         }
         if let [one] = atom.as_slice() {
-            let limit = if one == "." { MAX_ANY_REPEAT } else { MAX_REPEAT };
+            let limit = if *one == self.any() { MAX_ANY_REPEAT } else { MAX_REPEAT };
             if min.max(max.unwrap_or(0)) > limit {
                 return None;
             }
@@ -378,7 +391,7 @@ impl Translator<'_> {
         let one = |s: String| Some((vec![s], Atom::Char));
         match c {
             b'^' | b'$' => Some((vec![(c as char).to_string()], Atom::Assertion)),
-            b'.' => one(".".into()),
+            b'.' => one(self.any()),
             b'(' => {
                 if self.peek() == Some(b'?') {
                     if self.src.get(self.pos + 1) != Some(&b':') {
@@ -398,14 +411,15 @@ impl Translator<'_> {
             // the URL or a non-word character.
             b'\\' if self.peek() == Some(b'b') => {
                 self.pos += 1;
+                let non_word = self.negated("a-zA-Z0-9_");
                 let alts = if depth == 0 && self.pos == self.src.len() && self.last_word {
-                    [NON_WORD, "$"]
+                    vec![non_word, "$".into()]
                 } else if self.pos == 2 && self.peek().is_some_and(|n| n.is_ascii_alphanumeric() || n == b'_') {
-                    ["^", NON_WORD]
+                    vec!["^".into(), non_word]
                 } else {
                     return None;
                 };
-                Some((alts.map(String::from).to_vec(), Atom::Assertion))
+                Some((alts, Atom::Assertion))
             }
             b'\\' => one(self.escape()?),
             b'|' | b'*' | b'+' | b'?' | b'{' | b'}' | b']' | b')' => None,
@@ -478,10 +492,10 @@ impl Translator<'_> {
     fn escape(&mut self) -> Option<String> {
         Some(match self.next()? {
             b'd' => "[0-9]".into(),
-            b'D' => "[^0-9]".into(),
+            b'D' => self.negated("0-9"),
             b'w' => "[a-zA-Z0-9_]".into(),
-            b'W' => NON_WORD.into(),
-            b'S' => ".".into(),
+            b'W' => self.negated("a-zA-Z0-9_"),
+            b'S' => self.any(),
             c @ (b'.' | b'*' | b'+' | b'?' | b'(' | b')' | b'[' | b']' | b'{' | b'}' | b'\\'
             | b'^' | b'$' | b'|') => format!("\\{}", c as char),
             c @ (b'-' | b'/' | b':' | b'=' | b'&' | b'%' | b'_' | b'#' | b',' | b'@' | b'!'
@@ -523,7 +537,10 @@ impl Translator<'_> {
             }
         }
         if any {
-            return (!negated).then(|| ".".into());
+            return (!negated).then(|| self.any());
+        }
+        if negated {
+            out.push_str(self.exclude);
         }
         out.push(']');
         Some(out)
@@ -810,6 +827,11 @@ mod tests {
             top(DomainMatcher::Regex("cdn".into())).unwrap(),
             "^[^:]+://[^/:?#]*cdn[^/:?#]*[/:?#]"
         );
+        // uBO tests the regex against the hostname only.
+        for (rx, page) in [("^ads.+\\.net$", "https://adsfoo.com/x.net/"), ("^ads[^x]+\\.net$", "https://adsfoo.com/a.net/"), ("^ads\\D+\\.net$", "https://ads.com?.net/")] {
+            let filters = domain_top_url(&DomainMatcher::Regex(rx.into())).unwrap();
+            assert!(!filters.iter().any(|f| ::regex::Regex::new(f).unwrap().is_match(page)), "{rx}");
+        }
         assert_eq!(
             top(DomainMatcher::Regex("^a$|b".into())).unwrap(),
             "^[^:]+://a[/:?#] ^[^:]+://[^/:?#]*b[^/:?#]*[/:?#]"
