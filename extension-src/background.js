@@ -456,13 +456,13 @@
     return configuration;
   };
   // Safari lacks onCreatedNavigationTarget. As in uBO, a newly created tab
-  // with an opener stays a candidate for 10 s, and every http(s) URL it reaches
+  // with an opener stays a candidate for 10 s, and every http(s), blob: or data: URL it reaches
   // in that time, redirects included, is judged against the page that opened it.
   const popupCandidates = new Map();
   const POPUP_CANDIDATE_MS = 10000;
   const checkPopup = async (tabId, target) => {
     const candidate = popupCandidates.get(tabId);
-    if (!candidate || !/^https?:/i.test(target || '') || Date.now() > candidate.expires) return;
+    if (!candidate || !/^(?:https?|blob|data):/i.test(target || '') || Date.now() > candidate.expires) return;
     try {
       const opener = await candidate.opener;
       if (!opener) return;

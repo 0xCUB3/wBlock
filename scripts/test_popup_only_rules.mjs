@@ -69,3 +69,10 @@ tabs.get(8).url = 'https://ads.test/';
 listeners.updated(8, { url: 'https://ads.test/' }); await flush();
 assert.equal(requests.at(-1), 'wbe-popup-https://example.com/page#https://ads.test/');
 console.log('PASS popup redirects are tested again against the original opener');
+// uBO also tests blob: and data: targets (|blob:$popup, |data:text$popup).
+for (const [id, url] of [[9, 'blob:https://hqq.tv/1'], [10, 'data:text/html,<p>ad</p>']]) {
+  await create(id, url, 1);
+  assert.equal(requests.at(-1), 'wbe-popup-https://elsewhere.test/#' + url);
+}
+assert.deepEqual(removed, [3, 6, 7, 8, 9, 10], 'blob: and data: popups are closed');
+console.log('PASS blob: and data: popups are tested');
