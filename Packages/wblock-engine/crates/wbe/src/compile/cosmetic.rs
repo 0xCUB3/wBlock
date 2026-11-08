@@ -414,6 +414,21 @@ mod css {
     /// Canonical CSS text if `selector` parses in `dialect`, and whether the
     /// parse accepted a pseudo-class only `Permissive` knows.
     pub(super) fn canonical(selector: &str, dialect: Dialect) -> Option<(String, bool)> {
+        if is_plain(selector) {
+            return Some((selector.to_string(), false));
+        }
+        canonical_parsed(selector, dialect)
+    }
+
+    /// A lone class or id whose name needs no escaping, which every dialect
+    /// takes and writes back unchanged: most hides, without a parse.
+    pub(super) fn is_plain(selector: &str) -> bool {
+        let Some(name) = selector.strip_prefix(['.', '#']) else { return false };
+        name.starts_with(|c: char| c.is_ascii_alphabetic() || c == '_')
+            && name.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-')
+    }
+
+    pub(super) fn canonical_parsed(selector: &str, dialect: Dialect) -> Option<(String, bool)> {
         let mut input = ParserInput::new(selector);
         let mut parser = cssparser::Parser::new(&mut input);
         let dialect = DialectParser(dialect, Cell::new(false));
@@ -921,6 +936,18 @@ mod tests {
         let (out, runtime) = run(&[hide("a:frobnicate(x)")]);
         assert_eq!(out, "[]");
         assert!(runtime.is_empty());
+    }
+
+    /// The selectors `canonical` skips parsing parse to themselves.
+    #[test]
+    fn plain_selectors_parse_unchanged() {
+        for sel in [".a", "#_x", ".A-b_9", ".a--", "#ad300x250", ".-a", ".9a", "#9", ".é", ".a.b", "div"] {
+            for dialect in [css::Dialect::Webkit, css::Dialect::Permissive] {
+                let parsed = css::canonical_parsed(sel, dialect);
+                assert!(!css::is_plain(sel) || parsed == Some((sel.to_string(), false)), "{sel}");
+                assert_eq!(css::canonical(sel, dialect), parsed, "{sel}");
+            }
+        }
     }
 
     #[test]
