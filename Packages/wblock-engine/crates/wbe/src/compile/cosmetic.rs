@@ -247,10 +247,15 @@ enum Verdict {
 /// accepts (`:lang()`, `:dir()`) is valid for JS, so it needs the runtime.
 /// Version gates follow AdGuard's CosmeticRule (`:has()` 16.4, `:is()` 14).
 fn verdict(selector: &str, safari: SafariVersion) -> Verdict {
-    if css::canonical(selector, css::Dialect::Permissive).is_none() {
+    let Some((permissive, js_only)) = css::canonical(selector, css::Dialect::Permissive) else {
         return Verdict::Invalid;
-    }
-    let Some(canonical) = css::canonical(selector, css::Dialect::Webkit) else {
+    };
+    // Without a JS-only pseudo-class, WebKit's dialect parses it the same way.
+    let webkit = match js_only {
+        true => css::canonical(selector, css::Dialect::Webkit).map(|(canonical, _)| canonical),
+        false => Some(permissive),
+    };
+    let Some(canonical) = webkit else {
         return Verdict::NeedsJs;
     };
     let gated = (canonical.contains(":has(") && !safari.at_least(16, 4))
@@ -272,6 +277,7 @@ mod css {
     use cssparser::{CowRcStr, ParseError, ParserInput, SourceLocation, ToCss};
     use precomputed_hash::PrecomputedHash;
     use selectors::parser::{ParseRelative, SelectorList, SelectorParseErrorKind};
+    use std::cell::Cell;
     use std::fmt::{self, Write};
     use std::hash::{DefaultHasher, Hash, Hasher};
 
@@ -283,17 +289,32 @@ mod css {
         Permissive,
     }
 
-    /// Canonical CSS text if `selector` parses in `dialect`.
-    pub(super) fn canonical(selector: &str, dialect: Dialect) -> Option<String> {
+    /// Canonical CSS text if `selector` parses in `dialect`, and whether the
+    /// parse accepted a pseudo-class only `Permissive` knows.
+    pub(super) fn canonical(selector: &str, dialect: Dialect) -> Option<(String, bool)> {
+        if is_plain(selector) {
+            return Some((selector.to_string(), false));
+        }
+        canonical_parsed(selector, dialect)
+    }
+
+    /// A lone class or id whose name needs no escaping, which every dialect
+    /// takes and writes back unchanged: most hides, without a parse.
+    pub(super) fn is_plain(selector: &str) -> bool {
+        let Some(name) = selector.strip_prefix(['.', '#']) else { return false };
+        name.starts_with(|c: char| c.is_ascii_alphabetic() || c == '_')
+            && name.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-')
+    }
+
+    pub(super) fn canonical_parsed(selector: &str, dialect: Dialect) -> Option<(String, bool)> {
         let mut input = ParserInput::new(selector);
         let mut parser = cssparser::Parser::new(&mut input);
-        let list =
-            SelectorList::<Impl>::parse(&DialectParser(dialect), &mut parser, ParseRelative::No)
-                .ok()?;
+        let dialect = DialectParser(dialect, Cell::new(false));
+        let list = SelectorList::<Impl>::parse(&dialect, &mut parser, ParseRelative::No).ok()?;
         parser.expect_exhausted().ok()?;
         let mut out = String::new();
         list.to_css(&mut out).ok()?;
-        Some(out)
+        Some((out, dialect.1.get()))
     }
 
     /// Pseudo-classes that WebKit understands, excluding the tree-structural
@@ -353,7 +374,8 @@ mod css {
         "selection",
     ];
 
-    struct DialectParser(Dialect);
+    /// The dialect, and whether a `Permissive`-only pseudo-class was accepted.
+    struct DialectParser(Dialect, Cell<bool>);
 
     impl<'i> selectors::parser::Parser<'i> for DialectParser {
         type Impl = Impl;
@@ -372,9 +394,9 @@ mod css {
             location: SourceLocation,
             name: CowRcStr<'i>,
         ) -> Result<PseudoClass, ParseError<'i, Self::Error>> {
-            let known = CLASSES.contains(&name.as_ref())
-                || (self.0 == Dialect::Permissive && JS_CLASSES.contains(&name.as_ref()));
-            if known {
+            let js_only = self.0 == Dialect::Permissive && JS_CLASSES.contains(&name.as_ref());
+            self.1.set(self.1.get() | js_only);
+            if js_only || CLASSES.contains(&name.as_ref()) {
                 Ok(PseudoClass(name.to_string()))
             } else {
                 Err(location.new_custom_error(
@@ -395,6 +417,7 @@ mod css {
                 ));
             }
             while arguments.next_including_whitespace().is_ok() {}
+            self.1.set(true);
             Ok(PseudoClass(name.to_string()))
         }
 
@@ -780,6 +803,18 @@ mod tests {
         let (out, runtime) = run(&[hide("a:frobnicate(x)")]);
         assert_eq!(out, "[]");
         assert!(runtime.is_empty());
+    }
+
+    /// The selectors `canonical` skips parsing parse to themselves.
+    #[test]
+    fn plain_selectors_parse_unchanged() {
+        for sel in [".a", "#_x", ".A-b_9", ".a--", "#ad300x250", ".-a", ".9a", "#9", ".é", ".a.b", "div"] {
+            for dialect in [css::Dialect::Webkit, css::Dialect::Permissive] {
+                let parsed = css::canonical_parsed(sel, dialect);
+                assert!(!css::is_plain(sel) || parsed == Some((sel.to_string(), false)), "{sel}");
+                assert_eq!(css::canonical(sel, dialect), parsed, "{sel}");
+            }
+        }
     }
 
     #[test]

@@ -1721,7 +1721,7 @@ mod tests {
         );
         let output = selected.compile_target(0, &[]);
         let json = crate::webkit::to_json(&output.output.webkit);
-        assert!(json.contains("sub.example.com"));
+        assert!(json.contains("sub\\\\.example\\\\.com"));
         assert!(!json.contains("other.org"));
         assert!(!json.contains(".generic"));
         // Site hides are the runtime's, narrowed to the list's sites.
