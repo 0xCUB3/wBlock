@@ -585,7 +585,7 @@ fn parse_domains(list: &str) -> Result<DomainList, Reject> {
                     return Err(reject);
                 }
                 if universal { out.include.clear(); }
-                return Ok(out.without_unreachable_excludes());
+                return Ok(out);
             }
         }
     }
@@ -1075,6 +1075,8 @@ mod tests {
             ("a.com>>,~b.com##.x", "unsupported: domain ancestor or path"),
             ("~a.com>>,b.com##.x", "unsupported: domain ancestor or path"),
             ("a.*>>,b.com/p,c.com##.x", "[h:c.com] hide .x"),
+            // uBO keeps ~b.com: it is an exception for .x on b.com.
+            ("a.com,~b.com##.x", "[h:a.com,~h:b.com] hide .x"),
             (
                 "example.com/path##.x",
                 "unsupported: domain ancestor or path",
