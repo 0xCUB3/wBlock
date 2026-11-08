@@ -378,12 +378,9 @@ impl Scriptlets {
         (ids, excepted, all_scriptlets_excepted)
     }
 
-    fn lookup(&self, host: &str, site_cosmetic: bool, generic_hides: bool) -> Vec<Vec<String>> {
+    fn lookup(&self, host: &str, site_cosmetic: bool, generic_hides: bool) -> Vec<Vec<&str>> {
         let (ids, excepted, all_scriptlets_excepted) = self.ids(host, site_cosmetic, generic_hides);
-        let mut calls: Vec<Vec<String>> = ids
-            .into_iter()
-            .map(|id| self.call(id).into_iter().map(str::to_owned).collect())
-            .collect();
+        let mut calls: Vec<Vec<&str>> = ids.into_iter().map(|id| self.call(id)).collect();
         // Pair matched response rules with Safari's player requests and watch mode.
         const REQUEST: &str = "trusted-youtube-player-request";
         let request_excepted = excepted
@@ -395,15 +392,15 @@ impl Scriptlets {
             && calls.iter().any(|call| {
                 call.len() == 4
                     && matches!(
-                        call[0].as_str(),
+                        call[0],
                         "trusted-replace-fetch-response" | "trusted-replace-xhr-response"
                     )
-                    && matches!(call[1].as_str(), "\"adPlacements\"" | "\"adSlots\"")
+                    && matches!(call[1], "\"adPlacements\"" | "\"adSlots\"")
                     && call[2] == "\"no_ads\""
             })
         {
             if !calls.iter().any(|call| call.as_slice() == [REQUEST]) {
-                calls.push(vec![REQUEST.to_string()]);
+                calls.push(vec![REQUEST]);
             }
             let watch = [
                 "set-constant",
@@ -411,7 +408,7 @@ impl Scriptlets {
                 "false",
             ];
             if !calls.iter().any(|call| call == &watch) && !excepted.iter().any(|id| self.call(*id) == watch) {
-                calls.push(watch.map(str::to_owned).to_vec());
+                calls.push(watch.to_vec());
             }
         }
         calls
@@ -654,20 +651,22 @@ impl Engine {
         let generic_off = self.generichide.url_cosmetic_resources(url).generichide;
         let document = self.document.url_cosmetic_resources(url).generichide;
         let elemhide = document || self.elemhide.url_cosmetic_resources(url).generichide;
-        let mut scriptlets = if document { Vec::new() } else {
+        let calls = if document { Vec::new() } else {
             self.scriptlets.lookup(&host_of(url).to_ascii_lowercase(), !specific_off, !generic_off)
         };
-        let (mut hide, mut styles, mut procedural) = (Vec::new(), Vec::new(), Vec::new());
-        scriptlets.retain(|call| {
-            let list = match call[0].as_str() {
+        let (mut hide, mut styles, mut procedural, mut scriptlets) = (Vec::new(), Vec::new(), Vec::new(), Vec::new());
+        for call in calls {
+            let list = match call[0] {
                 "wbe:hide" => &mut hide,
                 "wbe:css" => &mut styles,
                 "wbe:procedural" => &mut procedural,
-                _ => return true,
+                _ => {
+                    scriptlets.push(call.into_iter().map(str::to_owned).collect());
+                    continue;
+                }
             };
-            if !elemhide { list.push(call[1].clone()); }
-            false
-        });
+            if !elemhide { list.push(call[1].to_owned()); }
+        }
         hide.sort_unstable();
         PagePayload { hide, styles, procedural, scriptlets, generichide: elemhide || generic_off, popup_blocked: None }
     }
