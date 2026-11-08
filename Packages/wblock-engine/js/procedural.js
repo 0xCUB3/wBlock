@@ -89,10 +89,20 @@
     return filter((el) => re.test(el.textContent));
   };
 
+  // uBO compileMatchAttrArgument, shared by matches-attr and matches-prop:
+  // `"name"=value`, or one (possibly quoted) `name=value`. The value is null when absent.
+  const nameValue = (arg) => {
+    const quoted = /^(["'])(.*?)\1=(.*)$/s.exec(arg);
+    if (quoted) return [quoted[2], unquote(quoted[3])];
+    const whole = unquote(arg);
+    const i = whole.indexOf('=');
+    return i < 0 ? [whole, null] : [whole.slice(0, i), unquote(whole.slice(i + 1))];
+  };
+
   const matchesAttr = (arg) => {
-    const i = arg.indexOf('=');
-    const key = toRegex(unquote(i < 0 ? arg : arg.slice(0, i)), true);
-    const value = i < 0 ? null : toRegex(unquote(arg.slice(i + 1)), true);
+    const [name, raw] = nameValue(arg);
+    const key = toRegex(name, true);
+    const value = raw === null ? null : toRegex(raw, true);
     return filter((el) =>
       el.getAttributeNames().some((n) => key.test(n) && (!value || value.test(el.getAttribute(n)))),
     );
@@ -142,9 +152,8 @@
   };
 
   const matchesProperty = (arg) => {
-    const equal = arg.indexOf('=');
-    const path = unquote(equal < 0 ? arg : arg.slice(0, equal));
-    const value = equal < 0 ? null : toRegex(unquote(arg.slice(equal + 1)), true);
+    const [path, raw] = nameValue(arg);
+    const value = raw === null ? null : toRegex(raw, true);
     // Regex path components may contain dots; split only outside /regex/.
     const parts = path.match(/\/(?:\\.|[^/])+\/|[^.]+/g).map(part =>
       part.startsWith('/') ? toRegex(part, true) : part);
