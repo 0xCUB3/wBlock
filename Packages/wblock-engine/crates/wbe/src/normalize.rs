@@ -38,6 +38,8 @@ pub fn adguard_to_ubo(line: &str) -> Cow<'_, str> {
     let (domains, body) = (&line[..at], &line[at + marker.len()..]);
     let exception = marker.starts_with("#@") || marker.starts_with("$@");
     let prefix = if exception { "#@#" } else { "##" };
+    // uBO translates a trailing `{ style }` under any marker.
+    let styled = style_injection(body);
     let rewritten = match marker {
         "$$" | "$@$" => None,
         "#%#" | "#@%#" => body
@@ -45,15 +47,17 @@ pub fn adguard_to_ubo(line: &str) -> Cow<'_, str> {
             .and_then(|s| s.strip_suffix(')'))
             .and_then(adg_scriptlet)
             .map(|js| format!("{domains}{prefix}{js}")),
-        "#$#" | "#$?#" | "#@$#" | "#@$?#" => style_injection(body)
+        "#$#" | "#$?#" | "#@$#" | "#@$?#" => styled
             .filter(|(sel, plain)| *plain || sel.ends_with(":remove()") || marker.contains('?'))
             .map(|(sel, _)| format!("{domains}{prefix}{}", rewrite_ops(&sel, marker.contains('?')))),
         // uBO translates `##selector { style }` too (`isStyleInjectionFilter`).
         _ => {
-            let body = style_injection(body).map_or(Cow::Borrowed(body), |(sel, _)| Cow::Owned(sel));
-            let ops = rewrite_ops(&body, marker.contains('?'));
-            (marker.contains('?') || matches!(body, Cow::Owned(_)) || matches!(ops, Cow::Owned(_)))
-                .then(|| format!("{domains}{prefix}{ops}"))
+            let ops = rewrite_ops(styled.as_ref().map_or(body, |(sel, _)| sel), marker.contains('?'));
+            if styled.is_some() || marker.contains('?') || matches!(ops, Cow::Owned(_)) {
+                Some(format!("{domains}{prefix}{ops}"))
+            } else {
+                None
+            }
         }
     };
     rewritten.map_or(Cow::Borrowed(line), Cow::Owned)
@@ -404,6 +408,11 @@ mod tests {
                 "example.com#@$?#.ad { display: none !important; }",
                 "example.com#@#.ad",
             ),
+            // uBO translates a trailing `{ style }` whatever the marker (EasyList uses `##`).
+            ("euronews.com##.a {remove:true;}", "euronews.com##.a:remove()"),
+            ("example.com##.a {top:0;}", "example.com##.a:style(top:0;)"),
+            ("example.com#@#.a { display: none !important; }", "example.com#@#.a"),
+            ("example.com#?#.a:-abp-has(.b) {top:0}", "example.com##.a:has(.b):style(top:0)"),
             // Preserve complete stylesheets instead of treating a block as a selector.
             (
                 "example.com#$#div { color: red; }{ x }",
