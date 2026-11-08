@@ -155,9 +155,6 @@
 "Backup" = "Kopia zapasowa";
 "Local Backup" = "Lokalna kopia zapasowa";
 "Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "Kopia zapasowa z %@ (aplikacja v%@, %@ filtrów). Zastąpi to bieżące wybory filtrów, listę dozwolonych i reguły usuwacza elementów.";
-"Balanced defaults." = "Zrównoważone ustawienia domyślne.";
-"Base and mobile filters only." = "Tylko filtr podstawowy i mobilny.";
-"Base filter only." = "Tylko filtr podstawowy.";
 "Beta" = "Beta";
 "Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "Skrypty użytkownika w wersji beta są wciąż testowane i mogą psuć strony lub działać nieprzewidywalnie. Możesz je wyłączyć w dowolnej chwili.";
 "BGAppRefresh" = "Odświeżanie aplikacji w tle";
@@ -409,7 +406,6 @@
 "Content will be checked when you tap Add." = "Zawartość zostanie sprawdzona po stuknięciu Dodaj.";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "match case" = "uwzględnij wielkość liter";
-"Minimal" = "Minimalny";
 "Missing conversion result for blocker" = "Brak wyniku konwersji dla blokera";
 "Multipurpose" = "Uniwersalne";
 "N/A" = "N/A";
@@ -1083,4 +1079,3 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Choose the annoyances to hide. You can change this later in Annoyances Info." = "Wybierz, które uciążliwości ukrywać. Możesz to później zmienić w informacjach o kategorii Uciążliwości.";
 "Blocks YouTube's ads and web player and plays videos in Safari's native player, with chapters, picture-in-picture, background playback, and audio-only mode. Includes SponsorBlock, which skips sponsored segments." = "Blokuje reklamy i odtwarzacz internetowy YouTube i odtwarza filmy w natywnym odtwarzaczu Safari, z rozdziałami, obrazem w obrazie, odtwarzaniem w tle i trybem tylko audio. Zawiera SponsorBlock, który pomija sponsorowane fragmenty.";
 "Blocks third-party video players on other sites and plays videos with Safari's native controls, adding auto PiP, background playback, subtitles, chapters, and Now Playing info." = "Blokuje zewnętrzne odtwarzacze wideo na innych stronach i odtwarza filmy z natywnymi elementami sterującymi Safari, dodając automatyczny obraz w obrazie, odtwarzanie w tle, napisy, rozdziały i informacje Odtwarzane teraz.";
-"Blocking Level" = "Poziom blokowania";

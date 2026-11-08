@@ -8,15 +8,8 @@ import AppKit
 #endif
 
 struct OnboardingView: View {
-    enum BlockingLevel: String, CaseIterable, Identifiable {
-        case minimal = "Minimal"
-        case recommended = "Recommended"
-        var id: String { rawValue }
-    }
-
     enum OnboardingStep: Int, CaseIterable, Identifiable {
         case welcome
-        case protection
         case regional
         case annoyances
         case userscripts
@@ -33,7 +26,6 @@ struct OnboardingView: View {
         dataManager.hasCompletedOnboarding
     }
 
-    @State private var selectedBlockingLevel: String
     @State private var selectedUserscripts: Set<String> = []
     @State private var step: OnboardingStep = .welcome
     @State private var selectedLanguages: Set<String>
@@ -81,7 +73,6 @@ struct OnboardingView: View {
         let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
         self.sharedDefaults = defaults
         _dataManager = StateObject(wrappedValue: ProtobufDataManager.shared)
-        _selectedBlockingLevel = State(initialValue: ProtobufDataManager.shared.selectedBlockingLevel)
 
         let stored = defaults.stringArray(forKey: Self.selectedLanguagesDefaultsKey)
         if let stored, !stored.isEmpty {
@@ -302,7 +293,7 @@ struct OnboardingView: View {
     }
 
     private var activeOnboardingSteps: [OnboardingStep] {
-        [.welcome, .protection, .regional, .annoyances, .userscripts, .sync, .setup]
+        [.welcome, .regional, .annoyances, .userscripts, .sync, .setup]
     }
 
     private var currentStepIndex: Int {
@@ -344,8 +335,6 @@ struct OnboardingView: View {
         switch step {
         case .welcome:
             welcomeStep
-        case .protection:
-            blockingLevelStep
         case .regional:
             regionalStep
         case .annoyances:
@@ -396,8 +385,6 @@ struct OnboardingView: View {
         switch step {
         case .welcome:
             return false
-        case .protection:
-            return selectedBlockingLevel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         case .regional:
             return !hasLanguagePickerSelection
         case .setup:
@@ -450,48 +437,6 @@ struct OnboardingView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 36)
-    }
-
-    /// The level the stored string names, matched as earlier builds wrote it.
-    private var blockingLevel: Binding<BlockingLevel?> {
-        Binding(
-            get: {
-                let stored = selectedBlockingLevel.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-                return BlockingLevel.allCases.first { $0.rawValue.lowercased() == stored }
-            },
-            set: { selectedBlockingLevel = $0?.rawValue ?? "" }
-        )
-    }
-
-    /// A native segmented control, like the system's own pickers (#1088).
-    private var blockingLevelStep: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Picker("Blocking Level", selection: blockingLevel) {
-                ForEach(BlockingLevel.allCases) { level in
-                    Text(LocalizedStringKey(level.rawValue)).tag(Optional(level))
-                }
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            if let level = blockingLevel.wrappedValue {
-                Text(blockingLevelDescription(level))
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-        }
-    }
-
-    func blockingLevelDescription(_ level: BlockingLevel) -> String {
-        switch level {
-        case .minimal:
-            #if os(macOS)
-            return String(localized: "Base filter only.")
-            #else
-            return String(localized: "Base and mobile filters only.")
-            #endif
-        case .recommended:
-            return String(localized: "Balanced defaults.")
-        }
     }
 
     private var availableFilterLanguages: [RegionalLanguageOption] {
@@ -979,11 +924,7 @@ struct OnboardingView: View {
     private func applyOnboardingChoices() async {
         // Snapshot the then-current manager array and apply choices by stable IDs.
         let currentFilters = filterManager.filterLists
-        let normalizedLevel = selectedBlockingLevel.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        let presetNames = normalizedLevel == "minimal"
-            ? FilterListLoader.minimalFilterNames
-            : FilterListLoader.recommendedFilterNames
-        var selectedFilterIDs = Set(currentFilters.filter { presetNames.contains($0.name) }.map(\.id))
+        var selectedFilterIDs = Set(currentFilters.filter { FilterListLoader.recommendedFilterNames.contains($0.name) }.map(\.id))
         if let bypassScript = bypassPaywallsScript,
            selectedUserscripts.contains(bypassScript.id),
            let filterName = bypassPaywallsFilterName,
@@ -994,7 +935,6 @@ struct OnboardingView: View {
         selectedFilterIDs.formUnion(selectedRegionalFilters)
         selectedFilterIDs.formUnion(AnnoyanceChoice.filters(for: selectedAnnoyances, in: currentFilters).map(\.id))
 
-        await dataManager.setSelectedBlockingLevel(selectedBlockingLevel)
         sharedDefaults.set(Array(selectedLanguages), forKey: Self.selectedLanguagesDefaultsKey)
         for filter in currentFilters {
             filterManager.setFilterListSelection(

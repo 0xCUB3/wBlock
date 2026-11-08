@@ -155,9 +155,6 @@
 "Backup" = "バックアップ";
 "Local Backup" = "ローカルバックアップ";
 "Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "%@ のバックアップ（アプリ v%@、%@ 件のフィルター）です。現在のフィルター選択、許可リスト、要素ブロックのルールがこれで置き換えられます。";
-"Balanced defaults." = "バランスの取れたデフォルト設定。";
-"Base and mobile filters only." = "ベースとモバイルフィルターのみ。";
-"Base filter only." = "ベースフィルターのみ。";
 "Beta" = "Beta";
 "Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "ベータ版ユーザースクリプトはまだテスト中で、ページが崩れたり予期しない動作をしたりすることがあります。いつでもオフにできます。";
 "BGAppRefresh" = "アプリのバックグラウンド更新";
@@ -409,7 +406,6 @@
 "Content will be checked when you tap Add." = "「追加」をタップすると内容が確認されます。";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "match case" = "大文字と小文字を区別";
-"Minimal" = "最小";
 "Missing conversion result for blocker" = "ブロッカーの変換結果が見つかりません";
 "Multipurpose" = "多目的";
 "N/A" = "N/A";
@@ -1052,4 +1048,3 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Choose the annoyances to hide. You can change this later in Annoyances Info." = "非表示にする迷惑要素を選んでください。あとで迷惑要素の情報から変更できます。";
 "Blocks YouTube's ads and web player and plays videos in Safari's native player, with chapters, picture-in-picture, background playback, and audio-only mode. Includes SponsorBlock, which skips sponsored segments." = "YouTube の広告とウェブプレーヤーをブロックし、Safari のネイティブプレーヤーで動画を再生します。チャプター、ピクチャ・イン・ピクチャ、バックグラウンド再生、音声のみモードに対応。スポンサー区間を飛ばす SponsorBlock も含まれます。";
 "Blocks third-party video players on other sites and plays videos with Safari's native controls, adding auto PiP, background playback, subtitles, chapters, and Now Playing info." = "他のサイトのサードパーティ製動画プレーヤーをブロックし、Safari のネイティブコントロールで動画を再生します。自動ピクチャ・イン・ピクチャ、バックグラウンド再生、字幕、チャプター、再生中の情報を追加します。";
-"Blocking Level" = "ブロックレベル";

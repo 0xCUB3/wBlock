@@ -155,9 +155,6 @@
 "Backup" = "Backup";
 "Local Backup" = "Backup locale";
 "Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "Backup da %@ (app v%@, %@ filtri). Questo sostituirà le selezioni filtro attuali, i siti consentiti e le regole di Rimozione elementi.";
-"Balanced defaults." = "Impostazioni predefinite bilanciate.";
-"Base and mobile filters only." = "Solo filtri di base e mobile.";
-"Base filter only." = "Solo filtro di base.";
 "Beta" = "Beta";
 "Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "Gli userscript beta sono ancora in fase di test e possono rompere le pagine o comportarsi in modo imprevisto. Puoi disattivarli in qualsiasi momento.";
 "BGAppRefresh" = "Aggiornamento dell'app in background";
@@ -409,7 +406,6 @@
 "Content will be checked when you tap Add." = "Il contenuto verrà verificato quando tocchi Aggiungi.";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "match case" = "maiuscole/minuscole";
-"Minimal" = "Minimo";
 "Missing conversion result for blocker" = "Risultato di conversione mancante per il blocco contenuti";
 "Multipurpose" = "Multiuso";
 "N/A" = "N/D";
@@ -1083,4 +1079,3 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "Choose the annoyances to hide. You can change this later in Annoyances Info." = "Scegli quali fastidi nascondere. Puoi cambiarlo più tardi nelle info Fastidi.";
 "Blocks YouTube's ads and web player and plays videos in Safari's native player, with chapters, picture-in-picture, background playback, and audio-only mode. Includes SponsorBlock, which skips sponsored segments." = "Blocca gli annunci e il player web di YouTube e riproduce i video nel player nativo di Safari, con capitoli, picture-in-picture, riproduzione in background e modalità solo audio. Include SponsorBlock, che salta i segmenti sponsorizzati.";
 "Blocks third-party video players on other sites and plays videos with Safari's native controls, adding auto PiP, background playback, subtitles, chapters, and Now Playing info." = "Blocca i player video di terze parti su altri siti e riproduce i video con i controlli nativi di Safari, aggiungendo PiP automatico, riproduzione in background, sottotitoli, capitoli e info In riproduzione.";
-"Blocking Level" = "Livello di blocco";

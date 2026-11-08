@@ -155,9 +155,6 @@
 "Backup" = "备份";
 "Local Backup" = "本地备份";
 "Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "来自 %@ 的备份（应用 v%@，%@ 个过滤器）。这将替换你当前的过滤器选择、允许列表和元素清除器规则。";
-"Balanced defaults." = "平衡的默认设置。";
-"Base and mobile filters only." = "仅基础和移动过滤器。";
-"Base filter only." = "仅基础过滤器。";
 "Beta" = "Beta";
 "Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "Beta 用户脚本仍在测试中，可能会破坏页面或出现异常行为。你可以随时将其关闭。";
 "BGAppRefresh" = "后台应用程序刷新";
@@ -409,7 +406,6 @@
 "Content will be checked when you tap Add." = "轻点“添加”时将检查内容。";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "match case" = "区分大小写";
-"Minimal" = "最小";
 "Missing conversion result for blocker" = "缺少拦截器的转换结果";
 "Multipurpose" = "多用途";
 "N/A" = "N/A";
@@ -1083,4 +1079,3 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Choose the annoyances to hide. You can change this later in Annoyances Info." = "选择要隐藏的烦人元素。之后可在“烦人元素”信息中更改。";
 "Blocks YouTube's ads and web player and plays videos in Safari's native player, with chapters, picture-in-picture, background playback, and audio-only mode. Includes SponsorBlock, which skips sponsored segments." = "屏蔽 YouTube 的广告和网页播放器，改用 Safari 原生播放器播放视频，支持章节、画中画、后台播放和纯音频模式。内含 SponsorBlock，可跳过赞助片段。";
 "Blocks third-party video players on other sites and plays videos with Safari's native controls, adding auto PiP, background playback, subtitles, chapters, and Now Playing info." = "屏蔽其他网站上的第三方视频播放器，改用 Safari 原生控件播放视频，并加入自动画中画、后台播放、字幕、章节和“正在播放”信息。";
-"Blocking Level" = "拦截级别";

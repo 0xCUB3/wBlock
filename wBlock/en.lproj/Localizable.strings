@@ -155,9 +155,6 @@
 "Backup" = "Backup";
 "Local Backup" = "Local Backup";
 "Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "Backup from %@ (wBlock %@, %@ filters). Restoring replaces your current filter choices, allowed sites, and Element Zapper rules.";
-"Balanced defaults." = "Balanced defaults.";
-"Base and mobile filters only." = "Base and mobile filters only.";
-"Base filter only." = "Base filter only.";
 "Beta" = "Beta";
 "Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "Beta userscripts are still being tested and may break pages. You can turn them off anytime.";
 "BGAppRefresh" = "BGAppRefresh";
@@ -409,7 +406,6 @@
 "Content will be checked when you tap Add." = "Content will be checked when you tap Add.";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "match case" = "match case";
-"Minimal" = "Minimal";
 "Missing conversion result for blocker" = "Missing conversion result for blocker";
 "Multipurpose" = "Multipurpose";
 "N/A" = "N/A";
@@ -1092,4 +1088,3 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Choose the annoyances to hide. You can change this later in Annoyances Info." = "Choose the annoyances to hide. You can change this later in Annoyances Info.";
 "Blocks YouTube's ads and web player and plays videos in Safari's native player, with chapters, picture-in-picture, background playback, and audio-only mode. Includes SponsorBlock, which skips sponsored segments." = "Blocks YouTube's ads and web player and plays videos in Safari's native player, with chapters, picture-in-picture, background playback, and audio-only mode. Includes SponsorBlock, which skips sponsored segments.";
 "Blocks third-party video players on other sites and plays videos with Safari's native controls, adding auto PiP, background playback, subtitles, chapters, and Now Playing info." = "Blocks third-party video players on other sites and plays videos with Safari's native controls, adding auto PiP, background playback, subtitles, chapters, and Now Playing info.";
-"Blocking Level" = "Blocking Level";

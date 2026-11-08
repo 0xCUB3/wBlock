@@ -155,9 +155,6 @@
 "Backup" = "Αντίγραφο ασφαλείας";
 "Local Backup" = "Τοπικό αντίγραφο ασφαλείας";
 "Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "Αντίγραφο ασφαλείας από %@ (έκδοση εφαρμογής %@, %@ φίλτρα). Αυτό θα αντικαταστήσει τις τρέχουσες επιλογές φίλτρων, τη λίστα επιτρεπόμενων και τους κανόνες του εργαλείου απόκρυψης στοιχείων.";
-"Balanced defaults." = "Ισορροπημένες προεπιλογές.";
-"Base and mobile filters only." = "Μόνο βασικό φίλτρο και φίλτρο κινητών.";
-"Base filter only." = "Μόνο βασικό φίλτρο.";
 "Beta" = "Beta";
 "Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "Οι beta κώδικες χρήστη βρίσκονται ακόμη υπό δοκιμή και μπορεί να χαλάσουν σελίδες ή να συμπεριφερθούν απρόσμενα. Μπορείτε να τους απενεργοποιήσετε ανά πάσα στιγμή.";
 "BGAppRefresh" = "Ανανέωση εφαρμογής στο παρασκήνιο";
@@ -409,7 +406,6 @@
 "Content will be checked when you tap Add." = "Το περιεχόμενο θα ελεγχθεί όταν πατήσετε Προσθήκη.";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "match case" = "διάκριση πεζών-κεφαλαίων";
-"Minimal" = "Ελάχιστο";
 "Missing conversion result for blocker" = "Λείπει το αποτέλεσμα μετατροπής για τον αποκλειστή";
 "Multipurpose" = "Πολλαπλών χρήσεων";
 "N/A" = "Μ/Δ";
@@ -1083,4 +1079,3 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Choose the annoyances to hide. You can change this later in Annoyances Info." = "Επιλέξτε ποιες ενοχλήσεις θα κρύβονται. Μπορείτε να το αλλάξετε αργότερα στις πληροφορίες της κατηγορίας Ενοχλήσεις.";
 "Blocks YouTube's ads and web player and plays videos in Safari's native player, with chapters, picture-in-picture, background playback, and audio-only mode. Includes SponsorBlock, which skips sponsored segments." = "Αποκλείει τις διαφημίσεις και το web player του YouTube και παίζει τα βίντεο στο εγγενές player του Safari, με κεφάλαια, εικόνα σε εικόνα, αναπαραγωγή στο παρασκήνιο και λειτουργία μόνο ήχου. Περιλαμβάνει το SponsorBlock, που παραλείπει τα χορηγούμενα τμήματα.";
 "Blocks third-party video players on other sites and plays videos with Safari's native controls, adding auto PiP, background playback, subtitles, chapters, and Now Playing info." = "Αποκλείει players βίντεο τρίτων σε άλλους ιστότοπους και παίζει τα βίντεο με τα εγγενή χειριστήρια του Safari, προσθέτοντας αυτόματη εικόνα σε εικόνα, αναπαραγωγή στο παρασκήνιο, υπότιτλους, κεφάλαια και πληροφορίες «Τώρα παίζει».";
-"Blocking Level" = "Επίπεδο αποκλεισμού";

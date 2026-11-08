@@ -13,7 +13,6 @@ import wBlockCoreService
 
 class FilterListLoader {
     // Defaults mirror uBlock Origin's default-enabled lists, plus wBlock's own hosts list.
-    static let minimalFilterNames: Set<String> = ["uBlock filters – Ads", "EasyList"]
     /// uBlock Origin's own defaults, plus AdGuard – Mobile Ads, which uBO turns
     /// on for a mobile user agent (assets.json `ua`). Safari on iPad presents
     /// as a Mac, so that is iPhone only.

@@ -155,9 +155,6 @@
 "Backup" = "نسخة احتياطية";
 "Local Backup" = "نسخة احتياطية محلية";
 "Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "نسخة احتياطية من %@ (إصدار التطبيق %@، %@ فلتر). سيؤدي هذا إلى استبدال اختيارات الفلاتر الحالية وقائمة السماح وقواعد أداة إخفاء العناصر.";
-"Balanced defaults." = "الإعدادات الافتراضية المتوازنة.";
-"Base and mobile filters only." = "الفلتر الأساسي وفلتر الجوال فقط.";
-"Base filter only." = "الفلتر الأساسي فقط.";
 "Beta" = "Beta";
 "Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "لا تزال السكربتات التجريبية قيد الاختبار وقد تعطّل الصفحات أو تتصرف بشكل غير متوقع. يمكنك إيقافها في أي وقت.";
 "BGAppRefresh" = "تحديث التطبيقات في الخلفية";
@@ -409,7 +406,6 @@
 "Content will be checked when you tap Add." = "سيتم التحقق من المحتوى عند الضغط على إضافة.";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "match case" = "مطابقة حالة الأحرف";
-"Minimal" = "الحد الأدنى";
 "Missing conversion result for blocker" = "نتيجة التحويل مفقودة لأداة الحظر";
 "Multipurpose" = "متعدد الأغراض";
 "N/A" = "غير متاح";
@@ -1083,4 +1079,3 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Choose the annoyances to hide. You can change this later in Annoyances Info." = "اختر الإزعاجات التي تريد إخفاءها. يمكنك تغيير ذلك لاحقًا من معلومات الإزعاجات.";
 "Blocks YouTube's ads and web player and plays videos in Safari's native player, with chapters, picture-in-picture, background playback, and audio-only mode. Includes SponsorBlock, which skips sponsored segments." = "يحظر إعلانات YouTube ومشغّله على الويب ويشغّل الفيديو في مشغّل Safari الأصلي، مع الفصول وصورة داخل صورة والتشغيل في الخلفية ووضع الصوت فقط. يتضمن SponsorBlock الذي يتخطى المقاطع المموّلة.";
 "Blocks third-party video players on other sites and plays videos with Safari's native controls, adding auto PiP, background playback, subtitles, chapters, and Now Playing info." = "يحظر مشغّلات الفيديو الخارجية على المواقع الأخرى ويشغّل الفيديو بعناصر تحكم Safari الأصلية، مضيفًا صورة داخل صورة تلقائيًا والتشغيل في الخلفية والترجمات والفصول ومعلومات قيد التشغيل.";
-"Blocking Level" = "مستوى الحظر";

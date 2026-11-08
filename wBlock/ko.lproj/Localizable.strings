@@ -155,9 +155,6 @@
 "Backup" = "백업";
 "Local Backup" = "로컬 백업";
 "Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "%@의 백업입니다(앱 v%@, 필터 %@개). 현재 필터 선택, 허용 목록, 요소 제거기 규칙이 이 백업으로 대체됩니다.";
-"Balanced defaults." = "균형 잡힌 기본 설정.";
-"Base and mobile filters only." = "기본 및 모바일 필터만 사용.";
-"Base filter only." = "기본 필터만 사용.";
 "Beta" = "Beta";
 "Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "베타 유저스크립트는 아직 테스트 중이라 페이지가 깨지거나 예기치 않게 동작할 수 있습니다. 언제든지 끌 수 있습니다.";
 "BGAppRefresh" = "백그라운드 앱 새로 고침";
@@ -409,7 +406,6 @@
 "Content will be checked when you tap Add." = "추가를 탭하면 콘텐츠를 확인합니다.";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "match case" = "대소문자 구분";
-"Minimal" = "최소";
 "Missing conversion result for blocker" = "차단기의 변환 결과가 없습니다";
 "Multipurpose" = "다목적";
 "N/A" = "해당 없음";
@@ -1083,4 +1079,3 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Choose the annoyances to hide. You can change this later in Annoyances Info." = "숨길 방해 요소를 선택하세요. 나중에 방해 요소 정보에서 바꿀 수 있습니다.";
 "Blocks YouTube's ads and web player and plays videos in Safari's native player, with chapters, picture-in-picture, background playback, and audio-only mode. Includes SponsorBlock, which skips sponsored segments." = "YouTube 광고와 웹 플레이어를 차단하고 Safari 기본 플레이어로 동영상을 재생하며, 챕터, PIP, 백그라운드 재생, 오디오 전용 모드를 지원합니다. 스폰서 구간을 건너뛰는 SponsorBlock이 포함되어 있습니다.";
 "Blocks third-party video players on other sites and plays videos with Safari's native controls, adding auto PiP, background playback, subtitles, chapters, and Now Playing info." = "다른 사이트의 타사 동영상 플레이어를 차단하고 Safari 기본 컨트롤로 동영상을 재생하며, 자동 PIP, 백그라운드 재생, 자막, 챕터, 지금 재생 중 정보를 더합니다.";
-"Blocking Level" = "차단 수준";

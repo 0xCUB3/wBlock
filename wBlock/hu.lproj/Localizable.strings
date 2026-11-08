@@ -155,9 +155,6 @@
 "Backup" = "Biztonsági mentés";
 "Local Backup" = "Helyi biztonsági mentés";
 "Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "Biztonsági mentés innen: %@ (app v%@, %@ szűrő). Ez lecseréli a jelenlegi szűrőválasztásaidat, az engedélyezőlistádat és az elemeltávolító szabályaidat.";
-"Balanced defaults." = "Kiegyensúlyozott alapbeállítások.";
-"Base and mobile filters only." = "Csak az alap és a mobil szűrő.";
-"Base filter only." = "Csak az alap szűrő.";
 "Beta" = "Beta";
 "Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "A beta userscriptek még tesztelés alatt állnak, ezért elronthatnak oldalakat vagy váratlanul viselkedhetnek. Bármikor kikapcsolhatod őket.";
 "BGAppRefresh" = "Háttér alkalmazás frissítése";
@@ -409,7 +406,6 @@
 "Content will be checked when you tap Add." = "A tartalmat a Hozzáadás gomb megérintésekor ellenőrizzük.";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "match case" = "kis- és nagybetű";
-"Minimal" = "Minimális";
 "Missing conversion result for blocker" = "Hiányzik a blokkoló konvertálási eredménye";
 "Multipurpose" = "Többcélú";
 "N/A" = "N/A";
@@ -1083,4 +1079,3 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Choose the annoyances to hide. You can change this later in Annoyances Info." = "Válaszd ki, mely zavaró elemek legyenek elrejtve. Ezt később a Zavaró elemek információinál módosíthatod.";
 "Blocks YouTube's ads and web player and plays videos in Safari's native player, with chapters, picture-in-picture, background playback, and audio-only mode. Includes SponsorBlock, which skips sponsored segments." = "Letiltja a YouTube hirdetéseit és webes lejátszóját, és a Safari natív lejátszójában játssza le a videókat fejezetekkel, kép a képben módban, háttérlejátszással és csak hang móddal. Tartalmazza a SponsorBlockot, amely átugorja a szponzorált részeket.";
 "Blocks third-party video players on other sites and plays videos with Safari's native controls, adding auto PiP, background playback, subtitles, chapters, and Now Playing info." = "Letiltja a külső videólejátszókat más webhelyeken, és a Safari natív vezérlőivel játssza le a videókat, automatikus kép a képben móddal, háttérlejátszással, feliratokkal, fejezetekkel és Most játszott adatokkal.";
-"Blocking Level" = "Tiltási szint";

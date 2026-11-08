@@ -196,7 +196,7 @@ private final class TestLoader: FilterListLoader {
 
         // A default name that matches no catalog entry would silently drop that list from the defaults.
         let catalogNames = Set(defaults.map(\.name))
-        for names in [FilterListLoader.recommendedFilterNames, FilterListLoader.minimalFilterNames, FilterListLoader.essentialFilterNames] {
+        for names in [FilterListLoader.recommendedFilterNames, FilterListLoader.essentialFilterNames] {
             precondition(names.isSubset(of: catalogNames), "default names missing from catalog: \(names.subtracting(catalogNames))")
         }
         // Lists whose source moved to uBlock Origin's copy, or that were renamed, keep their users' selection.

@@ -155,9 +155,6 @@
 "Backup" = "備份";
 "Local Backup" = "本機備份";
 "Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "來自 %@ 的備份（app v%@，%@ 個過濾器）。這會取代你目前的過濾器選擇、允許清單與元素清除器規則。";
-"Balanced defaults." = "平衡的預設設定。";
-"Base and mobile filters only." = "僅基礎與行動過濾器。";
-"Base filter only." = "僅基礎過濾器。";
 "Beta" = "Beta";
 "Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "Beta 使用者腳本仍在測試中，可能會破壞頁面或出現異常行為。你可以隨時將其關閉。";
 "BGAppRefresh" = "背景 App 重新整理";
@@ -409,7 +406,6 @@
 "Content will be checked when you tap Add." = "點一下「新增」時將檢查內容。";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "match case" = "區分大小寫";
-"Minimal" = "精簡";
 "Missing conversion result for blocker" = "缺少封鎖器的轉換結果";
 "Multipurpose" = "多用途";
 "N/A" = "N/A";
@@ -1083,4 +1079,3 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Choose the annoyances to hide. You can change this later in Annoyances Info." = "選擇要隱藏的惱人內容。之後可在「惱人內容」資訊中更改。";
 "Blocks YouTube's ads and web player and plays videos in Safari's native player, with chapters, picture-in-picture, background playback, and audio-only mode. Includes SponsorBlock, which skips sponsored segments." = "封鎖 YouTube 的廣告和網頁播放器，改用 Safari 原生播放器播放影片，支援章節、子母畫面、背景播放和純音訊模式。內含 SponsorBlock，可略過贊助片段。";
 "Blocks third-party video players on other sites and plays videos with Safari's native controls, adding auto PiP, background playback, subtitles, chapters, and Now Playing info." = "封鎖其他網站上的第三方影片播放器，改用 Safari 原生控制項播放影片，並加入自動子母畫面、背景播放、字幕、章節和「正在播放」資訊。";
-"Blocking Level" = "封鎖等級";

@@ -155,9 +155,6 @@
 "Backup" = "نسخهٔ پشتیبان";
 "Local Backup" = "نسخهٔ پشتیبان محلی";
 "Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "نسخهٔ پشتیبان از %@ (نسخهٔ برنامه %@، %@ فیلتر). این کار انتخاب‌های فعلی فیلتر، فهرست مجاز و قوانین حذف‌کنندهٔ عنصر شما را جایگزین خواهد کرد.";
-"Balanced defaults." = "پیش‌فرض‌های متوازن.";
-"Base and mobile filters only." = "فقط فیلترهای پایه و موبایل.";
-"Base filter only." = "فقط فیلتر پایه.";
 "Beta" = "Beta";
 "Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "اسکریپت‌های کاربر بتا هنوز در حال آزمایش هستند و ممکن است صفحات را با مشکل مواجه کنند یا رفتار غیرمنتظره‌ای داشته باشند. می‌توانید در هر زمان آن‌ها را غیرفعال کنید.";
 "BGAppRefresh" = "BGAppRefresh";
@@ -409,7 +406,6 @@
 "Content will be checked when you tap Add." = "محتوا هنگام ضربه زدن روی افزودن بررسی خواهد شد.";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "match case" = "تطابق با حروف بزرگ و کوچک";
-"Minimal" = "حداقل";
 "Missing conversion result for blocker" = "نتیجهٔ تبدیل برای مسدودکننده وجود ندارد";
 "Multipurpose" = "چندمنظوره";
 "N/A" = "نامشخص";
@@ -1092,4 +1088,3 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Choose the annoyances to hide. You can change this later in Annoyances Info." = "عناصر آزاردهنده‌ای را که باید پنهان شوند انتخاب کنید. بعداً می‌توانید این را در اطلاعات عناصر آزاردهنده تغییر دهید.";
 "Blocks YouTube's ads and web player and plays videos in Safari's native player, with chapters, picture-in-picture, background playback, and audio-only mode. Includes SponsorBlock, which skips sponsored segments." = "تبلیغات و پخش‌کنندهٔ وب YouTube را مسدود می‌کند و ویدیوها را در پخش‌کنندهٔ بومی Safari پخش می‌کند، همراه با فصل‌ها، تصویر در تصویر، پخش در پس‌زمینه و حالت فقط صدا. شامل SponsorBlock است که بخش‌های اسپانسری را رد می‌کند.";
 "Blocks third-party video players on other sites and plays videos with Safari's native controls, adding auto PiP, background playback, subtitles, chapters, and Now Playing info." = "پخش‌کننده‌های ویدیوی شخص ثالث را در سایت‌های دیگر مسدود می‌کند و ویدیوها را با کنترل‌های بومی Safari پخش می‌کند، همراه با تصویر در تصویر خودکار، پخش در پس‌زمینه، زیرنویس، فصل‌ها و اطلاعات «در حال پخش».";
-"Blocking Level" = "سطح مسدودسازی";

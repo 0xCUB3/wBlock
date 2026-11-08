@@ -155,9 +155,6 @@
 "Backup" = "Yedek";
 "Local Backup" = "Yerel yedek";
 "Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "%@ yedeklemesi (uygulama sürümü: %@, filtreler: %@). Bu işlem; mevcut filtre seçimlerinizi, izin listenizi ve öğe gizleyici kurallarınızı değiştirecektir.";
-"Balanced defaults." = "Dengeli ayarlar.";
-"Base and mobile filters only." = "Yalnızca temel ve mobil filtreler.";
-"Base filter only." = "Yalnızca temel filtreler.";
 "Beta" = "Beta";
 "Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "Beta kullanıcı betikleri henüz test aşamasındadır; sayfaların bozulmasına veya beklenmedik şekilde çalışmasına neden olabilir. İstediğiniz zaman bunları kapatabilirsiniz.";
 "BGAppRefresh" = "Arka planda uygulama yenileme";
@@ -409,7 +406,6 @@
 "Content will be checked when you tap Add." = "İçerik, Ekle öğesine dokunduğunuzda kontrol edilecektir.";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "match case" = "büyük/küçük harf";
-"Minimal" = "Sade";
 "Missing conversion result for blocker" = "Engelleyici için dönüşüm sonucu bulunamadı";
 "Multipurpose" = "Çok amaçlı";
 "N/A" = "N/A";
@@ -1092,4 +1088,3 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Choose the annoyances to hide. You can change this later in Annoyances Info." = "Gizlenecek can sıkıcı öğeleri seçin. Bunu daha sonra Can sıkıcı kategorisinin bilgisinden değiştirebilirsiniz.";
 "Blocks YouTube's ads and web player and plays videos in Safari's native player, with chapters, picture-in-picture, background playback, and audio-only mode. Includes SponsorBlock, which skips sponsored segments." = "YouTube'un reklamlarını ve web oynatıcısını engeller, videoları bölümler, resim içinde resim, arka planda oynatma ve yalnızca ses moduyla Safari'nin yerel oynatıcısında oynatır. Sponsorlu bölümleri atlayan SponsorBlock'u içerir.";
 "Blocks third-party video players on other sites and plays videos with Safari's native controls, adding auto PiP, background playback, subtitles, chapters, and Now Playing info." = "Diğer sitelerdeki üçüncü taraf video oynatıcılarını engeller, videoları Safari'nin yerel denetimleriyle oynatır; otomatik resim içinde resim, arka planda oynatma, altyazılar, bölümler ve Şimdi Çalıyor bilgisi ekler.";
-"Blocking Level" = "Engelleme düzeyi";

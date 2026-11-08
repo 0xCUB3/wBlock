@@ -155,9 +155,6 @@
 "Backup" = "Copie de rezervă";
 "Local Backup" = "Copie de rezervă locală";
 "Backup from %@ (app v%@, %@ filters). This will replace your current filter selections, whitelist, and element zapper rules." = "Copie de rezervă din %@ (app v%@, %@ filtre). Aceasta va înlocui selecțiile actuale de filtre, lista de permisiuni și regulile Eliminatorului de elemente.";
-"Balanced defaults." = "Setări implicite echilibrate.";
-"Base and mobile filters only." = "Doar filtrele de bază și mobil.";
-"Base filter only." = "Doar filtrul de bază.";
 "Beta" = "Beta";
 "Beta userscripts are still being tested and may break pages or behave unexpectedly. You can turn them off at any time." = "Scripturile de utilizator beta sunt încă în testare și pot strica pagini sau se pot comporta neașteptat. Le poți dezactiva oricând.";
 "BGAppRefresh" = "Actualizează aplicația de fundal";
@@ -409,7 +406,6 @@
 "Content will be checked when you tap Add." = "Conținutul va fi verificat când apeși Adaugă.";
 "Macedonian adBlock Filters" = "Macedonian adBlock Filters";
 "match case" = "ține cont de majuscule";
-"Minimal" = "Minim";
 "Missing conversion result for blocker" = "Lipsește rezultatul conversiei pentru blocant";
 "Multipurpose" = "Polivalent";
 "N/A" = "N/A";
@@ -1083,4 +1079,3 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Choose the annoyances to hide. You can change this later in Annoyances Info." = "Alege ce elemente enervante să fie ascunse. Poți schimba asta mai târziu în informațiile despre Elemente enervante.";
 "Blocks YouTube's ads and web player and plays videos in Safari's native player, with chapters, picture-in-picture, background playback, and audio-only mode. Includes SponsorBlock, which skips sponsored segments." = "Blochează reclamele și playerul web YouTube și redă videoclipurile în playerul nativ Safari, cu capitole, imagine în imagine, redare în fundal și mod doar audio. Include SponsorBlock, care sare peste segmentele sponsorizate.";
 "Blocks third-party video players on other sites and plays videos with Safari's native controls, adding auto PiP, background playback, subtitles, chapters, and Now Playing info." = "Blochează playerele video terțe de pe alte site-uri și redă videoclipurile cu comenzile native Safari, adăugând imagine în imagine automată, redare în fundal, subtitrări, capitole și informații În redare.";
-"Blocking Level" = "Nivel de blocare";
