@@ -1176,5 +1176,30 @@ for (const kind of ['script', 'style']) {
   check('invalidation requests fresh userscripts after combined startup', probe.__sentMessages.some(m => m.action === 'getUserScripts'));
 }
 
+// Every frame persists the warm-start cache; unchanged entries renew at most once a minute.
+{
+  const load = (scripts, seed) => {
+    const probe = buildContentScriptSandbox(null, scripts);
+    if (seed !== undefined) probe.__localValues.set("__wblock_warm_start_v1", seed);
+    vm.createContext(probe); vm.runInContext(source, probe);
+    return probe;
+  };
+  const first = load([localScript]);
+  await tick(); await tick();
+  const cached = first.__localValues.get("__wblock_warm_start_v1");
+  const repeat = load([localScript], cached);
+  await tick(); await tick();
+  check('an unchanged warm-start cache is not rewritten within a minute', cached && repeat.__localStorageWrites.length === 0);
+  const stale = load([localScript], cached.replace(/"savedAt":\d+/, `"savedAt":${Date.now() - 61000}`));
+  await tick(); await tick();
+  check('an unchanged warm-start cache renews its lease after a minute', stale.__localStorageWrites.length === 1);
+  const changed = load([{ ...localScript, content: "void 0;" }], cached);
+  await tick(); await tick();
+  check('a changed warm-start cache is rewritten at once', changed.__localValues.get("__wblock_warm_start_v1").includes("void 0;"));
+  const none = load([], cached);
+  await tick(); await tick();
+  check('a page with nothing to cache keeps no entry', !none.__localValues.has("__wblock_warm_start_v1") && none.__localStorageWrites.length === 0);
+}
+
 console.log(failures === 0 ? "\nAll checks passed." : `\n${failures} check(s) failed.`);
 process.exit(failures === 0 ? 0 : 1);

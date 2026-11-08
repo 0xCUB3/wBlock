@@ -987,7 +987,8 @@ if (window.wBlockUserscriptInjectorHasRun) {
             try {
                 // Serialize and measure each script once; the cache is the
                 // JSON of { version, savedAt, scripts } built from these parts.
-                const head = JSON.stringify({ version: 1, savedAt: Date.now(), scripts: [] }).slice(0, -2);
+                const savedAt = Date.now();
+                const head = JSON.stringify({ version: 1, savedAt, scripts: [] }).slice(0, -2);
                 const encoder = new TextEncoder();
                 const parts = [];
                 let bytes = encoder.encode(head).length + 2;
@@ -1005,7 +1006,20 @@ if (window.wBlockUserscriptInjectorHasRun) {
                         bytes += partBytes;
                     }
                 }
-                writeWarmStartCache(head + parts.join(',') + ']}');
+                // Every frame lands here. A page with nothing to cache keeps no
+                // entry, and an unchanged cache is rewritten only to renew its
+                // lease, at most once a minute.
+                const previous = readWarmStartCache();
+                if (parts.length === 0) {
+                    if (previous !== null) removeWarmStartCache();
+                    return;
+                }
+                const scriptsJSON = parts.join(',') + ']}';
+                const previousAt = previous && /^\{"version":1,"savedAt":(\d+),"scripts":\[/.exec(previous);
+                if (previousAt && savedAt - previousAt[1] >= 0 && savedAt - previousAt[1] < 60 * 1000
+                    && previous.length === previousAt[0].length + scriptsJSON.length
+                    && previous.endsWith(scriptsJSON)) return;
+                writeWarmStartCache(head + scriptsJSON);
             } catch (_) { /* page storage is optional */ }
         }
 
