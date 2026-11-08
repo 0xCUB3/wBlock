@@ -93,7 +93,21 @@ struct UserScriptFileStorageTests {
             }
             expect(read([directory], "local.user.js") == "local source", "unrelated local imports survive eviction")
         }
-        print("PASS: shared-first reads, migration, complete eviction, failure reporting and safe retry")
+        let scripts = root.appendingPathComponent("scripts")
+        try FileManager.default.createDirectory(at: scripts, withIntermediateDirectories: true)
+        let kept = UUID(), orphan = UUID(), old = Date().addingTimeInterval(-8 * 86400)
+        let names = ["\(kept).user.js", "\(orphan).user.js", "\(orphan).resources.json", "\(UUID()).user.js", "notes.txt", "\(orphan)"]
+        for name in names {
+            try write("x", scripts, name)
+            try FileManager.default.setAttributes([.modificationDate: old], ofItemAtPath: scripts.appendingPathComponent(name).path)
+        }
+        try write("x", scripts, "\(UUID()).user.js")
+        UserScriptFileStorage.removeOrphans(keeping: [kept], directories: [scripts])
+        let left = Set(try FileManager.default.contentsOfDirectory(atPath: scripts.path))
+        expect(left.isSuperset(of: ["\(kept).user.js", "notes.txt", "\(orphan)"]), "listed scripts and unknown files stay")
+        expect(left.isDisjoint(with: names[1...3]), "old files of unlisted scripts are removed")
+        expect(left.count == 4, "a script written this week may not be recorded yet")
+        print("PASS: shared-first reads, migration, complete eviction, failure reporting, safe retry and orphan removal")
     }
 
     private static func expect(_ condition: Bool, _ message: String) {
