@@ -6,6 +6,7 @@
 //! `compile/mod.rs`; exceptions use ignore-previous-rules.
 
 use super::regex::{apart, domain_top_url, host_top_url, url_filter};
+use super::prune::{domain_host, if_page, unless_page, Page, Shape};
 use super::{DomainSpan, Emitted, Entry, Stats, Tier};
 use crate::ast::{
     DomainList, DomainMatcher, ExceptionScope, NetworkAction, NetworkRule, Party, Pattern,
@@ -784,12 +785,22 @@ fn emit(out: &mut Emitted, tier: Tier, t: &Trigger, ignore: bool, v: SafariVersi
     });
     bytes.push(b'}');
     let end = bytes.len();
+    let page = match t.cond {
+        // `into_webkit` reads the domains of `domain`, which merges can grow.
+        None | Some(Cond::IfDomain(_)) => Page::Any,
+        Some(Cond::UnlessDomain(list)) => Page::Unless(list.iter().map(|d| domain_host(d)).collect()),
+        Some(Cond::IfTopUrl(list)) => if_page(list.iter().map(String::as_str)),
+        Some(Cond::UnlessTopUrl(list)) => unless_page(list.iter().map(String::as_str)),
+    };
+    let context = t.load_context.as_ref().map(std::slice::from_ref);
+    let load = t.load_type.as_ref().map(std::slice::from_ref);
     out.entries.push(Entry {
         tier,
         arena: arena as u32,
         start,
         end,
         domain,
+        shape: Shape::new(ignore, t.url, t.types, load, context, page),
     });
 }
 

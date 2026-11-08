@@ -10,6 +10,7 @@
 
 pub(crate) mod cosmetic;
 pub(crate) mod network;
+pub(crate) mod prune;
 pub mod regex;
 
 use crate::ast::{CosmeticRule, NetworkRule, ParsedLine, Rule, ScriptletRule, SourceRef};
@@ -104,6 +105,7 @@ pub(super) struct Entry {
     end: usize,
     /// An `if-domain` rule: its domain list can grow when rules merge.
     domain: Option<Box<DomainSpan>>,
+    shape: prune::Shape,
 }
 
 #[derive(Debug)]
@@ -226,38 +228,47 @@ impl Emitted {
         let start = bytes.len();
         serde_json::to_writer(&mut *bytes, rule).expect("WkRule serializes");
         let end = bytes.len();
+        let ignore = rule.action == crate::webkit::WkAction::IgnorePreviousRules;
         self.entries.push(Entry {
             tier,
             arena: arena as u32,
             start,
             end,
             domain: None,
+            shape: prune::Shape::of_trigger(ignore, &rule.trigger),
         });
     }
 
     /// Everything emitted, in tier order; within a tier, emission order.
-    fn into_webkit(self) -> WebkitJson {
-        // Sized up front so the output is never copied to grow.
-        let size = self
-            .entries
-            .iter()
-            .map(|e| self.rendered_len(e) + 1)
-            .sum::<usize>()
-            + 2;
-        let mut json = Vec::with_capacity(size);
-        json.push(b'[');
-        let mut first = true;
+    /// `seen` holds the rules that come before these; an ignore that cancels
+    /// none of them or of the rules here before it is left out (`prune`).
+    fn into_webkit(mut self, seen: &mut prune::Seen) -> WebkitJson {
+        let mut order = Vec::with_capacity(self.entries.len());
         for tier in TIERS {
-            for entry in self.entries.iter().filter(|e| e.tier == tier) {
-                if !first {
-                    json.push(b',');
+            for (i, entry) in self.entries.iter_mut().enumerate().filter(|(_, e)| e.tier == tier) {
+                if let Some(span) = entry.domain.as_deref().filter(|s| s.top) {
+                    entry.shape.set_page(prune::Page::If(span.domains.iter().map(|d| prune::domain_host(d)).collect()));
                 }
-                first = false;
-                self.render(entry, &mut json);
+                if !entry.shape.ignore {
+                    seen.add(&entry.shape);
+                } else if !seen.overlaps(&entry.shape) {
+                    continue;
+                }
+                order.push(i);
             }
         }
+        // Sized up front so the output is never copied to grow.
+        let size = order.iter().map(|&i| self.rendered_len(&self.entries[i]) + 1).sum::<usize>() + 2;
+        let mut json = Vec::with_capacity(size);
+        json.push(b'[');
+        for (n, &i) in order.iter().enumerate() {
+            if n > 0 {
+                json.push(b',');
+            }
+            self.render(&self.entries[i], &mut json);
+        }
         json.push(b']');
-        WebkitJson::from_bytes(json, self.entries.len())
+        WebkitJson::from_bytes(json, order.len())
     }
 
     #[cfg(test)]
@@ -391,13 +402,15 @@ pub fn compile_rules(set: RuleSet, opts: &CompileOptions, stats: Stats) -> Compi
         others,
         opts,
         stats,
+        &mut prune::Seen::default(),
     )
 }
 
 /// Compiles one blocker. Its network rules come in `units` groups: `unit(i)`
 /// returns group `i` and is called once, from any thread. `ctx` covers every
 /// network rule. Groups compile in parallel and are written in order, while
-/// the cosmetic and scriptlet rules compile alongside them.
+/// the cosmetic and scriptlet rules compile alongside them. `seen` holds the
+/// rules the blocker places before these and gains these (`prune`).
 pub(crate) fn compile_blocker<U>(
     ctx: &network::Context,
     units: usize,
@@ -405,6 +418,7 @@ pub(crate) fn compile_blocker<U>(
     others: Others,
     opts: &CompileOptions,
     mut stats: Stats,
+    seen: &mut prune::Seen,
 ) -> CompileOutput
 where
     U: Fn(usize) -> Vec<NetworkRule> + Sync,
@@ -430,7 +444,7 @@ where
     }
     stats.runtime_rules = runtime.len() as u64;
 
-    let webkit = emitted.into_webkit();
+    let webkit = emitted.into_webkit(seen);
     stats.native_rules = webkit.rules() as u64;
     CompileOutput {
         webkit,

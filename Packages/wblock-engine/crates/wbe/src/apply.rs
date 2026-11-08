@@ -19,6 +19,7 @@ use crate::compile::{
     compile_blocker, parallel_indices, parse_list, CompileOptions, CompileOutput,
     surviving, NetworkContext, Others, Stats,
 };
+use crate::compile::prune::Seen;
 use crate::parse::{cosmetic::with_domains, restate};
 use crate::webkit::{SafariVersion, WebkitJson, WkAction, WkRule, WkTrigger};
 use serde::{Deserialize, Serialize};
@@ -686,6 +687,28 @@ impl Plan {
         // The rules are held through the compile; spare capacity would be too.
         others.cosmetic.shrink_to_fit();
         others.scriptlets.shrink_to_fit();
+        // #925: the segment's blocks come first, then one ignore rule per
+        // excluded site; the exceptions after them can lift those blocks.
+        let mut seen = Seen::default();
+        let front = segment_list.map(|list| {
+            // The blocker's context, so every `$badfilter` it holds applies.
+            let segment = |_| {
+                let plain = self.parsed[list].records().filter(|p| p.plain && self.keeps(target, list, p));
+                plain.filter_map(|p| match self.rule(list, p) {
+                    Rule::Network(r) => Some(*r),
+                    _ => None,
+                })
+                .collect()
+            };
+            let front = compile_blocker(&ctx, 1, segment, Others::default(), &self.opts, Stats::default(), &mut seen).webkit;
+            let ignores: Vec<WkRule> = self.lists[list]
+                .scope
+                .exclude
+                .iter()
+                .filter_map(|site| ignore_rule(site))
+                .collect();
+            WebkitJson::join([&front, &WebkitJson::from_rules(&ignores)])
+        });
         let tail = Mutex::new(Some(tail));
         let mut output = compile_blocker(
             &ctx,
@@ -697,25 +720,10 @@ impl Plan {
             others,
             &self.opts,
             stats,
+            &mut seen,
         );
-        if let Some(list) = segment_list {
-            // The blocker's context, so every `$badfilter` it holds applies.
-            let segment = |_| {
-                let plain = self.parsed[list].records().filter(|p| p.plain && self.keeps(target, list, p));
-                plain.filter_map(|p| match self.rule(list, p) {
-                    Rule::Network(r) => Some(*r),
-                    _ => None,
-                })
-                .collect()
-            };
-            let front = compile_blocker(&ctx, 1, segment, Others::default(), &self.opts, Stats::default()).webkit;
-            let ignores: Vec<WkRule> = self.lists[list]
-                .scope
-                .exclude
-                .iter()
-                .filter_map(|site| ignore_rule(site))
-                .collect();
-            output.webkit = WebkitJson::join([&front, &WebkitJson::from_rules(&ignores), &output.webkit]);
+        if let Some(front) = front {
+            output.webkit = WebkitJson::join([&front, &output.webkit]);
             output.stats.native_rules = output.webkit.rules() as u64;
         }
         Some(TargetOutput {
@@ -1992,7 +2000,7 @@ mod tests {
             .map(|index| format!("||host{index}.example^"))
             .collect::<Vec<_>>()
             .join("\n")
-            + "\n@@||allowed.example^";
+            + "\n@@/allowed/";
         let plan = plan(
             json!([{ "id":"list", "text":text }]),
             json!([
@@ -2025,7 +2033,7 @@ mod tests {
     fn replicates_page_exceptions_into_every_blocker() {
         let plan = plan(
             json!([
-                {"id":"blocks", "text":"/ads.js\nsite.com##.ad"},
+                {"id":"blocks", "text":"/ads.js\n##.ad"},
                 {"id":"exceptions", "text":"@@||site.com^$document\n@@||page.com^$elemhide"}
             ]),
             json!([{"slot":1,"lists":[{"list":0}]},{"slot":2,"lists":[{"list":1}]}]),
