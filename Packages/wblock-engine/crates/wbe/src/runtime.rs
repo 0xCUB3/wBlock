@@ -608,12 +608,7 @@ pub(crate) fn popup_rule(r: &crate::ast::NetworkRule) -> Result<serde_json::Valu
     if constrained && !r.exception { return Err("popup: unsupported destination, method or response constraint".into()); }
     let pattern = crate::compile::regex::url_filter(&r.pattern);
     let pattern = match pattern {
-        // A trailing `^` also matches the end of the URL. Popups match in
-        // Rust, so alternation is fine here; WebKit rules can't use it.
-        Some(p) if !constrained => match p.strip_suffix(crate::compile::regex::SEPARATOR) {
-            Some(head) => format!("{head}(?:{}|$)", crate::compile::regex::SEPARATOR),
-            None => p,
-        },
+        Some(p) if !constrained => p,
         _ if r.exception => ".*".into(), // conservative allow, never a broader block
         _ => return Err("popup: unsupported URL pattern".into()),
     };

@@ -115,7 +115,7 @@ pub(super) struct DomainSpan {
     domains: Vec<String>,
 }
 
-pub(crate) use network::Context as NetworkContext;
+pub(crate) use network::{surviving, Context as NetworkContext};
 
 /// Counts the bytes written to it.
 struct Count(usize);

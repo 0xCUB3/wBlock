@@ -17,7 +17,7 @@ use crate::ast::{
 };
 use crate::compile::{
     compile_blocker, parallel_indices, parse_list, CompileOptions, CompileOutput,
-    NetworkContext, Others, Stats,
+    surviving, NetworkContext, Others, Stats,
 };
 use crate::parse::cosmetic::with_domains;
 use crate::webkit::{SafariVersion, WebkitJson, WkAction, WkRule, WkTrigger};
@@ -450,12 +450,16 @@ impl Plan {
             if !self.keeps(target, list, p) {
                 continue;
             }
-            let rule = self.rule(list, p);
-            if matches!(&rule, Rule::Network(r) if ctx.cancels(r)) {
-                continue;
-            }
+            // Badfilters cancel a rule before the list's scope narrows it.
             let mut rules = Vec::new();
-            scoped(rule, scope, &mut rules);
+            match self.rule(list, p) {
+                Rule::Network(r) => {
+                    for r in surviving(ctx, &r) {
+                        scoped(Rule::Network(Box::new(r)), scope, &mut rules);
+                    }
+                }
+                rule => scoped(rule, scope, &mut rules),
+            }
             for rule in rules {
                 if Some(list) == segment && is_plain_block(&rule) {
                     continue;
@@ -1323,9 +1327,11 @@ fn regex_escape(s: &str) -> String {
 }
 
 /// A network rule's pattern as #836 compares it (identity form: lowercase
-/// unless a regex). None for a rule with no pattern to compare.
+/// unless a regex). None for a rule with no pattern to compare, and for a
+/// page exception (`$document`, `$elemhide`, ...), whose pattern is the page.
 fn pattern_of(rule: &NetworkRule) -> Option<String> {
-    if matches!(rule.action, NetworkAction::RemoveParam(_))
+    if !rule.scope.is_empty()
+        || matches!(rule.action, NetworkAction::RemoveParam(_))
         || matches!(&rule.action, NetworkAction::Other { option, .. } if option == "uritransform")
     {
         return None;
@@ -1818,6 +1824,20 @@ mod tests {
     }
 
     #[test]
+    fn segment_blocks_honor_badfilters_of_other_lists() {
+        let plan = plan(
+            json!([
+                { "id":"big", "text":"||cdn.example^\n||keep.example^", "scope":{"exclude":["other.org"]}},
+                { "id":"fix", "text":"||cdn.example^$badfilter"}
+            ]),
+            json!([{"slot":1,"lists":[{"list":0},{"list":1}]}]),
+            json!({}),
+        );
+        let out = crate::webkit::to_json(&plan.compile_target(0, &[]).output.webkit);
+        assert!(out.contains("keep") && !out.contains("cdn"), "{out}");
+    }
+
+    #[test]
     fn segment_block_survives_cosmetic_exception() {
         let plan = plan(
             json!([{ "id":"list", "text":"||cdn.example^\n@@||example.com^$generichide", "scope":{"exclude":["other.org"]}}]),
@@ -1956,6 +1976,22 @@ mod tests {
         let (left, right) = (blocks(&left), blocks(&right));
         assert!(left.is_disjoint(&right));
         assert_eq!(left.len() + right.len(), 50);
+    }
+
+    /// A page exception's pattern names the page, not the requests it lifts,
+    /// so it reaches every blocker whatever their blocks' hosts.
+    #[test]
+    fn replicates_page_exceptions_into_every_blocker() {
+        let plan = plan(
+            json!([
+                {"id":"blocks", "text":"/ads.js\nsite.com##.ad"},
+                {"id":"exceptions", "text":"@@||site.com^$document\n@@||page.com^$elemhide"}
+            ]),
+            json!([{"slot":1,"lists":[{"list":0}]},{"slot":2,"lists":[{"list":1}]}]),
+            json!({}),
+        );
+        let left = crate::webkit::to_json(&plan.compile_target(0, &[]).output.webkit);
+        assert!(left.contains("*site.com") && left.contains("*page.com"), "{left}");
     }
 
     #[test]
