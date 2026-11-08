@@ -714,9 +714,18 @@ struct MacReorderableList: NSViewRepresentable {
             !(dragging && revealsDropTargets) && node.children.isEmpty && section(for: node)?.revealsOnlyWhileDragging == true
         }
 
+        /// Sections drawn concealed at the last note. A section that just
+        /// gained rows is no longer drag-only, but AppKit still holds its
+        /// concealed height until told, which left Other's rows under the
+        /// section above with no heading (#1092, #1097).
+        private var concealedSections: Set<Node.ID> = []
+
         private func noteConcealableSections() {
             guard let outline else { return }
-            let rows = IndexSet(roots.filter { section(for: $0)?.revealsOnlyWhileDragging == true }
+            let concealed = Set(roots.filter(isConcealed).map(\.id))
+            let changed = concealed.symmetricDifference(concealedSections)
+            concealedSections = concealed
+            let rows = IndexSet(roots.filter { changed.contains($0.id) || section(for: $0)?.revealsOnlyWhileDragging == true }
                 .map { outline.row(forItem: $0) }.filter { $0 >= 0 })
             guard !rows.isEmpty else { return }
             for row in rows {
