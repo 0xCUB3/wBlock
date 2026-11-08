@@ -42,3 +42,30 @@ beforeResponse = () => { tabs.get(5).url = 'https://news.test/'; };
 await create(5, 'https://ads.test/', 1);
 assert.deepEqual(removed, [3], 'navigation racing native lookup is preserved');
 console.log('PASS popup creation, delayed URL, page disable, pause and navigation race');
+// uBO keeps a popup candidate for 10 s and tests every URL it reaches, so a
+// popup that passes through an unblocked redirector is still closed.
+response = { popup_blocked: false };
+beforeResponse = () => {};
+await create(6, 'about:blank', 1);
+tabs.get(6).url = 'https://redirect.test/';
+listeners.updated(6, { url: 'https://redirect.test/' }); await flush();
+response = { popup_blocked: true };
+tabs.get(6).url = 'https://ads.test/';
+listeners.updated(6, { url: 'https://ads.test/' }); await flush();
+assert.deepEqual(removed, [3, 6], 'redirected popup is tested again');
+// A redirect that lands while the first lookup is in flight is tested too.
+beforeResponse = () => {
+  beforeResponse = () => {};
+  tabs.get(7).url = 'https://ads.test/landing';
+  listeners.updated(7, { url: 'https://ads.test/landing' });
+};
+await create(7, 'https://ads.test/', 1); await flush();
+assert.deepEqual(removed, [3, 6, 7], 'redirect racing the lookup is tested');
+// The opener is judged by the page that opened the popup, even if it navigates
+// away before the popup reaches its URL.
+await create(8, 'about:blank', 1);
+tabs.get(1).url = 'https://elsewhere.test/';
+tabs.get(8).url = 'https://ads.test/';
+listeners.updated(8, { url: 'https://ads.test/' }); await flush();
+assert.equal(requests.at(-1), 'wbe-popup-https://example.com/page#https://ads.test/');
+console.log('PASS popup redirects are tested again against the original opener');

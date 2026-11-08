@@ -455,35 +455,40 @@
     persistConfigCache();
     return configuration;
   };
-  // Safari lacks onCreatedNavigationTarget. Track only newly created tabs
-  // with an opener, then judge their first nonblank URL through that page's engine.
+  // Safari lacks onCreatedNavigationTarget. As in uBO, a newly created tab
+  // with an opener stays a candidate for 10 s, and every http(s) URL it reaches
+  // in that time, redirects included, is judged against the page that opened it.
   const popupCandidates = new Map();
+  const POPUP_CANDIDATE_MS = 10000;
   const checkPopup = async (tabId, target) => {
     const candidate = popupCandidates.get(tabId);
-    if (!candidate || !/^https?:/i.test(target || '') || candidate.checking) return;
-    candidate.checking = true;
+    if (!candidate || !/^https?:/i.test(target || '') || Date.now() > candidate.expires) return;
     try {
-      const openerId = await candidate.opener;
-      if (!Number.isInteger(openerId)) return;
-      const opener = await browser.tabs.get(openerId);
-      if (!/^https?:/i.test(opener.url || '')) return;
-      const source = opener.url.split('#')[0];
+      const opener = await candidate.opener;
+      if (!opener) return;
       // An internal lookup URI retains the opener host for native pause/site checks.
-      const configuration = await requestConfiguration({}, 'wbe-popup-' + source + '#' + target.split('#')[0], undefined);
+      const configuration = await requestConfiguration({}, 'wbe-popup-' + opener.source + '#' + target.split('#')[0], undefined);
       if (configuration.disabled || configuration.paused || !configuration.popup_blocked) return;
       const current = await browser.tabs.get(tabId);
-      // A lookup that lost a navigation race must never close the new page.
-      if (current.url === target && current.openerTabId === openerId) await browser.tabs.remove(tabId);
+      // A lookup that lost a navigation race must never close the new page;
+      // the newer URL has its own check.
+      if (popupCandidates.get(tabId) === candidate && current.url === target && current.openerTabId === opener.id) {
+        popupCandidates.delete(tabId);
+        await browser.tabs.remove(tabId);
+      }
     } catch {
       // A tab or opener may disappear while its native lookup is in flight.
-    } finally {
-      popupCandidates.delete(tabId);
     }
   };
   browser.tabs.onCreated?.addListener(tab => {
     // Safari leaves openerTabId off the created event; tabs.get reports it.
-    const opener = browser.tabs.get(tab.id).then(current => current.openerTabId, () => null);
-    popupCandidates.set(tab.id, { opener, checking: false });
+    // The opener page is read now, before it can navigate away.
+    const opener = browser.tabs.get(tab.id).then(async current => {
+      if (!Number.isInteger(current.openerTabId)) return null;
+      const { url } = await browser.tabs.get(current.openerTabId);
+      return /^https?:/i.test(url || '') ? { id: current.openerTabId, source: url.split('#')[0] } : null;
+    }).catch(() => null);
+    popupCandidates.set(tab.id, { opener, expires: Date.now() + POPUP_CANDIDATE_MS });
     if (popupCandidates.size > 128) popupCandidates.delete(popupCandidates.keys().next().value);
     void checkPopup(tab.id, tab.url);
   });
