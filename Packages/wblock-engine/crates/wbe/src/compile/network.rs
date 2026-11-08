@@ -476,7 +476,7 @@ fn domain_conds(
             match m {
                 DomainMatcher::Hostname(h) => hosts.push(format!("*{h}")),
                 _ => match domain_top_url(m) {
-                    Some(u) if top => tops.push(u),
+                    Some(u) if top => tops.extend(u),
                     _ => all = false,
                 },
             }
@@ -1468,7 +1468,7 @@ mod tests {
     fn regex_domain_that_cannot_translate_drops_the_block() {
         let rule = NetworkRule {
             from: DomainList {
-                include: vec![DomainMatcher::Regex("a|b".into())],
+                include: vec![DomainMatcher::Regex("(?=a)b".into())],
                 exclude: vec![],
             },
             types: RT::SCRIPT,
@@ -1484,7 +1484,7 @@ mod tests {
     fn exception_with_unconvertible_domain_widens_to_no_condition() {
         let rule = NetworkRule {
             from: DomainList {
-                include: vec![DomainMatcher::Regex("a|b".into())],
+                include: vec![DomainMatcher::Regex("(?=a)b".into())],
                 exclude: vec![],
             },
             types: RT::SCRIPT,
@@ -1889,7 +1889,7 @@ mod tests {
     fn untranslatable_regex_drops_block_and_widens_exception() {
         let block = NetworkRule {
             types: RT::SCRIPT,
-            ..net("/a\\d+|b/")
+            ..net("/(?=a)b/")
         };
         assert_eq!(
             drop_reason(std::slice::from_ref(&block), V15),
@@ -1897,7 +1897,7 @@ mod tests {
         );
         let except = NetworkRule {
             types: RT::SCRIPT,
-            ..exc("@@/a\\d+|b/")
+            ..exc("@@/(?=a)b/")
         };
         check(
             std::slice::from_ref(&except),
@@ -2211,7 +2211,7 @@ mod tests {
             "*",
             "||xn--bcher-kva.example^",
             "/a{3}[\\w.-]+(\\/x)?$/",
-            "/a|b/",
+            "/(?=a)b/",
         ];
         let types = [
             RT::empty(),
