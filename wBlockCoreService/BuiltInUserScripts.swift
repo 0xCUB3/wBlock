@@ -132,6 +132,7 @@ enum BuiltInUserScripts {
             name: popupBlockerName,
             url: popupBlockerStableURL,
             isEnabledByDefault: false,
+            description: "Blocks pop-up ads on web pages.",
             displayRole: .blocking
         ),
     ]

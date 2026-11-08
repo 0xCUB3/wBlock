@@ -50,7 +50,7 @@ enum AnnoyanceTopic: String, CaseIterable, Sendable {
 /// annoyance lists, none of which is on by default (#1087). Each choice turns
 /// on the lists it names. Pop-ups & Banners turns on EasyList's lists only (#1091).
 enum AnnoyanceChoice: String, CaseIterable, Identifiable, Sendable {
-    case cookies, popups, social, chat, general, ai
+    case general, cookies, popups, social, chat, ai
 
     var id: String { rawValue }
 

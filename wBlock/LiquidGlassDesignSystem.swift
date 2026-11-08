@@ -33,6 +33,24 @@ extension View {
     }
 }
 
+extension View {
+    /// Liquid Glass buttons on iOS 26; the bordered styles elsewhere.
+    @ViewBuilder
+    func glassButtonStyleCompat(prominent: Bool = false) -> some View {
+        #if os(iOS)
+        if #available(iOS 26.0, *) {
+            if prominent { buttonStyle(.glassProminent) } else { buttonStyle(.glass) }
+        } else if prominent {
+            buttonStyle(.borderedProminent)
+        } else {
+            buttonStyle(.bordered)
+        }
+        #else
+        if prominent { buttonStyle(.borderedProminent) } else { buttonStyle(.bordered) }
+        #endif
+    }
+}
+
 /// On macOS, Search leads the actions (see `InlineGlassSearchField`), then
 /// Show Enabled and Add as system toolbar items with the system's own sizing.
 /// On iOS and iPadOS, Update/Apply sits alone at the leading edge. That is a

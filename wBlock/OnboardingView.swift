@@ -117,21 +117,6 @@ struct OnboardingView: View {
             LocalizedStrings.text(
                 "Gets past paywalls on English-language news sites, and some in other languages.",
                 comment: "Default userscript description"
-            ),
-        "adguard extra":
-            LocalizedStrings.text(
-                "Handles advanced anti-adblock cases that filter rules miss.",
-                comment: "Default userscript description"
-            ),
-        "tinyshield":
-            LocalizedStrings.text(
-                "Lets ad blockers quickly resist Ad-Shield, which reinserts ads on matching sites after filter lists hide them.",
-                comment: "Default userscript description"
-            ),
-        "adguard popup blocker":
-            LocalizedStrings.text(
-                "Blocks pop-up ads on web pages.",
-                comment: "Default userscript description"
             )
     ]
 
@@ -177,10 +162,14 @@ struct OnboardingView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             onboardingHeader
+                .padding(.horizontal)
 
+            // Padded inside the scroll view, which clipped the sides of the
+            // setup box's glass shadow into bands above and below it (#1099).
             ScrollView {
                 stepContent
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal)
                     .padding(.vertical, 2)
             }
 
@@ -192,11 +181,13 @@ struct OnboardingView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal)
             }
 
             onboardingFooter
+                .padding(.horizontal)
         }
-        .padding()
+        .padding(.vertical)
         .interactiveDismissDisabled(!hasCompletedOnboarding)
     #if os(macOS)
         // One height for every step: the sheet sized itself to the content and
@@ -360,13 +351,13 @@ struct OnboardingView: View {
                 Button(String(localized: "Restore from backup…")) {
                     showingBackupImporter = true
                 }
-                .buttonStyle(.bordered)
+                .glassButtonStyleCompat()
             }
             if step != .welcome && !restoredFromBackup {
                 Button("Back") {
                     retreatToPreviousStep()
                 }
-                .buttonStyle(.bordered)
+                .glassButtonStyleCompat()
             }
 
             Spacer()
@@ -380,8 +371,7 @@ struct OnboardingView: View {
                     advanceToNextStep()
                 }
             }
-            .buttonStyle(.borderedProminent)
-            .tint(step == .welcome ? .accentColor : nil)
+            .glassButtonStyleCompat(prominent: true)
             .disabled(footerButtonDisabled)
             .keyboardShortcut(.defaultAction)
         }

@@ -345,7 +345,6 @@
 "go" = "Ir";
 "Go to line" = "Ir a la línea";
 "Greek AdBlock Filter" = "Greek AdBlock Filter";
-"Handles advanced anti-adblock cases that filter rules miss." = "Maneja casos avanzados antibloqueo de publicidad en los que se pasan por alto las reglas de filtrado.";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "Oculta ventanas emergentes, banners y otros elementos no deseados en la página.";
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";

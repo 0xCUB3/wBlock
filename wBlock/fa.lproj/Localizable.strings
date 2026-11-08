@@ -345,7 +345,6 @@
 "go" = "برو";
 "Go to line" = "رفتن به سطر";
 "Greek AdBlock Filter" = "Greek AdBlock Filter";
-"Handles advanced anti-adblock cases that filter rules miss." = "موارد پیشرفتهٔ ضد مسدودکنندهٔ تبلیغات را که قوانین فیلتر نادیده می‌گیرند مدیریت می‌کند.";
 "Hides in-page pop-ups, banners, and other unwanted page elements." = "پنجره‌های بازشو درون‌صفحه‌ای، بنرها و سایر عناصر ناخواستهٔ صفحه را پنهان می‌کند.";
 "https://example.com/filter.txt" = "https://example.com/filter.txt";
 "https://example.com/script.user.js" = "https://example.com/script.user.js";
