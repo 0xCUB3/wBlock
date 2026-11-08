@@ -267,8 +267,9 @@ pub(super) fn parse(line: &str, source: SourceRef) -> Option<ParsedLine> {
         // AdGuard's own scriptlet library and injector, as `adg:` calls.
         "#%#" | "#@%#" => return Some(adguard_script(body, exception, domains, source, line)),
         "#$#" | "#@$#" if body.contains('{') && body.trim_end().ends_with('}') => {
-            if body.to_ascii_lowercase().contains("url(") {
-                return Some(invalid("forbidden URL in CSS injection"));
+            let decls = &body[body.find('{').unwrap_or_default()..];
+            if let Err(reason) = check_style(decls) {
+                return Some(invalid(reason));
             }
             return Some(ParsedLine::Rule(Rule::Cosmetic(CosmeticRule {
                 source, raw: line.to_string(), exception, domains, matches_path: None,
@@ -929,8 +930,21 @@ fn check_args(name: &str, arg: &str) -> Result<(), String> {
             .map(|_| ())
             .map_err(|_| "non-integer :min-text-length".into()),
         _ if arg.is_empty() => Err(format!(":{name}() needs an argument")),
+        "style" => check_style(arg),
         _ => Ok(()),
     }
+}
+
+/// uBO's `compileStyleProperties` guard: no `url(`, `image-set(`, `//` (even
+/// with spaces between), `\` or `/*`, so injected CSS cannot load anything or
+/// smuggle such text past the check.
+fn check_style(style: &str) -> Result<(), String> {
+    let lower = style.to_ascii_lowercase();
+    let slashes = lower.match_indices('/').any(|(i, _)| lower[i + 1..].trim_start().starts_with('/'));
+    if lower.contains("url(") || lower.contains("image-set(") || lower.contains('\\') || lower.contains("/*") || slashes {
+        return Err("forbidden URL, comment or escape in style".into());
+    }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -1169,6 +1183,10 @@ mod tests {
                 "example.com##.a:style()",
                 "invalid: :style() needs an argument",
             ),
+            ("a.com##.a:style(background: URL(x))", "invalid: forbidden URL, comment or escape in style"),
+            ("a.com##.a:style(top: 0 / /x)", "invalid: forbidden URL, comment or escape in style"),
+            ("a.com##.a:style(content: '\\61')", "invalid: forbidden URL, comment or escape in style"),
+            ("a.com#$#.a { background: image-set(x 1x) }", "invalid: forbidden URL, comment or escape in style"),
             (
                 "example.com##div:has-text(a)::before",
                 "invalid: pseudo-element with a procedural operator",
