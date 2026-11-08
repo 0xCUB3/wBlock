@@ -13,7 +13,8 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, HashMap, HashSet};
-use std::sync::OnceLock;
+use std::ops::Range;
+use std::sync::{Arc, OnceLock};
 
 pub struct Engine {
     /// Flags the pages with a `$generichide` exception.
@@ -59,9 +60,11 @@ struct Scriptlets {
     /// Keyed like `rules`. Values: call ids, or `null` for `#@#+js()`.
     exceptions: Table,
     regexes: regex::RegexSet,
-    // Global calls are consulted on every page; keep their scopes decoded.
-    generic_rules: Vec<(u32, HashSet<String>)>,
-    generic_calls: HashMap<u32, Vec<String>>,
+    /// Global calls are consulted on every page; their scopes and calls are
+    /// decoded on first use, so loading an engine decodes none of them and
+    /// popup checks, which never read the calls, decode only the scopes.
+    generic_rules: OnceLock<Vec<(u32, HashSet<String>)>>,
+    generic_calls: OnceLock<HashMap<u32, Vec<String>>>,
 }
 
 /// Scriptlet rules as `Engine::build` collects them.
@@ -127,17 +130,13 @@ impl ScriptletRules {
     }
 
     fn finish(self) -> Scriptlets {
-        let rules = Table::encode(self.rules.iter().map(|(k, v)| (k.as_str(), v)));
-        let regexes = regex::RegexSet::new(self.regexes.keys()).expect("validated domain regexes");
-        let generic_rules = generic_rules(&rules, &regexes);
-        let calls = Table::encode(self.calls.iter().map(|call| ("", call)));
         Scriptlets {
-            generic_calls: generic_rules.iter().map(|(id, _)| (*id, calls.decode_at(*id as usize))).collect(),
-            calls,
-            rules,
+            calls: Table::encode(self.calls.iter().map(|call| ("", call))),
+            rules: Table::encode(self.rules.iter().map(|(k, v)| (k.as_str(), v))),
             exceptions: Table::encode(self.exceptions.iter().map(|(k, v)| (k.as_str(), v))),
-            regexes,
-            generic_rules,
+            regexes: regex::RegexSet::new(self.regexes.keys()).expect("validated domain regexes"),
+            generic_rules: OnceLock::new(),
+            generic_calls: OnceLock::new(),
         }
     }
 }
@@ -145,7 +144,23 @@ impl ScriptletRules {
 /// Read-only map from byte keys to JSON values, in sorted key order.
 /// Layout, u32 LE: `n`, `n + 1` key ends, `n + 1` value ends, key bytes,
 /// value bytes. Lookups binary-search the keys in place.
-struct Table(Vec<u8>);
+struct Table(Bytes);
+
+/// A table's bytes: its own buffer, or a section of a mapped engine file.
+enum Bytes {
+    Owned(Vec<u8>),
+    Mapped(Arc<memmap2::Mmap>, Range<usize>),
+}
+
+impl std::ops::Deref for Bytes {
+    type Target = [u8];
+    fn deref(&self) -> &[u8] {
+        match self {
+            Bytes::Owned(bytes) => bytes,
+            Bytes::Mapped(map, range) => &map[range.clone()],
+        }
+    }
+}
 
 impl Table {
     fn encode<'a, V: Serialize + 'a>(entries: impl Iterator<Item = (&'a str, &'a V)>) -> Self {
@@ -163,10 +178,11 @@ impl Table {
         }
         bytes.extend(keys);
         bytes.extend(values);
-        Self(bytes)
+        Self(Bytes::Owned(bytes))
     }
 
-    fn parse(bytes: &[u8]) -> Result<Self, String> {
+    /// Validates `bytes` and keeps them as `keep` returns them.
+    fn parse(bytes: &[u8], keep: Keep) -> Result<Self, String> {
         let malformed = || "engine: malformed scriptlets".to_string();
         let word = |at: usize| {
             bytes
@@ -188,7 +204,7 @@ impl Table {
         if header + key_end(n) + value_end(n) != bytes.len() {
             return Err(malformed());
         }
-        Ok(Self(bytes.to_vec()))
+        Ok(Self(keep(bytes)))
     }
 
     fn len(&self) -> usize {
@@ -236,8 +252,15 @@ impl Table {
 }
 
 impl Scriptlets {
+    fn generic_rules(&self) -> &[(u32, HashSet<String>)] {
+        self.generic_rules.get_or_init(|| generic_rules(&self.rules, &self.regexes))
+    }
+
     fn call(&self, id: u32) -> Vec<String> {
-        self.generic_calls.get(&id).cloned().unwrap_or_else(|| self.calls.decode_at(id as usize))
+        let generic = self.generic_calls.get_or_init(|| {
+            self.generic_rules().iter().map(|(id, _)| (*id, self.calls.decode_at(*id as usize))).collect()
+        });
+        generic.get(&id).cloned().unwrap_or_else(|| self.calls.decode_at(id as usize))
     }
 
     fn is_cosmetic(&self, id: u32) -> bool {
@@ -263,7 +286,7 @@ impl Scriptlets {
                 }
             }
         }
-        let mut ids: Vec<u32> = self.generic_rules.iter()
+        let mut ids: Vec<u32> = self.generic_rules().iter()
             .filter(|(id, excluded)| !keys.iter().any(|k| excluded.contains(k))
                 && (generic_hides || self.call(*id)[0] != "wbe:hide"))
             .map(|(id, _)| *id).collect();
@@ -504,14 +527,33 @@ impl Engine {
     }
 
     pub fn deserialize(bytes: &[u8]) -> Result<Self, String> {
+        Self::read(bytes, &|section| Bytes::Owned(section.to_vec()))
+    }
+
+    /// The engine serialized in `file` after `offset` header bytes. Its tables
+    /// are read in place from a mapping of the file, so they cost no memory of
+    /// their own; the file must not be modified while the engine is in use
+    /// (publishes replace it by rename).
+    pub fn map(file: &std::fs::File, offset: usize) -> Result<Self, String> {
+        // SAFETY: as documented, the file is never written in place.
+        let map = Arc::new(unsafe { memmap2::Mmap::map(file) }.map_err(|e| format!("engine: {e}"))?);
+        let base = map.as_ptr() as usize;
+        let bytes = map.get(offset..).ok_or("engine: truncated")?;
+        Self::read(bytes, &|section| {
+            let start = section.as_ptr() as usize - base;
+            Bytes::Mapped(map.clone(), start..start + section.len())
+        })
+    }
+
+    fn read(bytes: &[u8], keep: Keep) -> Result<Self, String> {
         let mut rest = bytes;
         let generichide = read_engine(take(&mut rest)?)?;
         let elemhide = read_engine(take(&mut rest)?)?;
         let document = read_engine(take(&mut rest)?)?;
         let genericblock = read_engine(take(&mut rest)?)?;
         let specifichide = read_engine(take(&mut rest)?)?;
-        let scriptlets = read_index(&mut rest)?;
-        let popups = read_index(&mut rest)?;
+        let scriptlets = read_index(&mut rest, keep)?;
+        let popups = read_index(&mut rest, keep)?;
         Ok(Self {
             generichide,
             elemhide,
@@ -688,15 +730,16 @@ pub(crate) fn popup_rule(r: &crate::ast::NetworkRule) -> Result<PopupRule, Strin
         match_case: r.match_case, party: r.party, generic: r.from.include.is_empty() })
 }
 
-fn read_index(rest: &mut &[u8]) -> Result<Scriptlets, String> {
-    let calls = Table::parse(take(rest)?)?;
-    let rules = Table::parse(take(rest)?)?;
-    let exceptions = Table::parse(take(rest)?)?;
+/// How a loaded engine keeps a table's section of the serialized bytes.
+type Keep<'a> = &'a dyn Fn(&[u8]) -> Bytes;
+
+fn read_index(rest: &mut &[u8], keep: Keep) -> Result<Scriptlets, String> {
+    let calls = Table::parse(take(rest)?, keep)?;
+    let rules = Table::parse(take(rest)?, keep)?;
+    let exceptions = Table::parse(take(rest)?, keep)?;
     let patterns = serde_json::from_slice::<Vec<String>>(take(rest)?).map_err(|e| e.to_string())?;
     let regexes = regex::RegexSet::new(patterns).map_err(|e| e.to_string())?;
-    let generic_rules = generic_rules(&rules, &regexes);
-    let generic_calls = generic_rules.iter().map(|(id, _)| (*id, calls.decode_at(*id as usize))).collect();
-    Ok(Scriptlets { calls, generic_rules, generic_calls, rules, exceptions, regexes })
+    Ok(Scriptlets { calls, rules, exceptions, regexes, generic_rules: OnceLock::new(), generic_calls: OnceLock::new() })
 }
 
 fn put(out: &mut Vec<u8>, section: &[u8]) {

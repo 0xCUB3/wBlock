@@ -78,48 +78,113 @@ extension RemoveParamDNRRuleGenerator {
         return regex
     }
 
-    private static func domainMatches(_ host: String, _ domain: String) -> Bool {
-        let domain = domain.lowercased()
-        if domain.hasSuffix(".*") {
-            // Entity boundaries use the same PSL as the network engine. In
-            // particular, transfernow.co.uk matches but transfernow.evil.com does not.
-            guard let root = WBEngine.registrableDomain(of: host), let dot = root.firstIndex(of: ".") else { return false }
-            let suffix = root[dot...]
-            let entityHost = String(host.dropLast(suffix.count))
-            let entity = String(domain.dropLast(2))
-            return entityHost == entity || entityHost.hasSuffix("." + entity)
+    /// The host a page rule is matched against, with its entity form (the
+    /// host without its public suffix) derived once.
+    private struct PageHost {
+        let name: String
+        private(set) lazy var entity: String? = WBEngine.registrableDomain(of: name)
+            .flatMap { root in root.firstIndex(of: ".").map { String(name.dropLast(root[$0...].count)) } }
+
+        init(_ name: String) { self.name = name }
+
+        /// `domain` is lowercased.
+        mutating func matches(_ domain: String) -> Bool {
+            if domain.hasSuffix(".*") {
+                // Entity boundaries use the same PSL as the network engine. In
+                // particular, transfernow.co.uk matches but transfernow.evil.com does not.
+                guard let entityHost = entity else { return false }
+                let entity = String(domain.dropLast(2))
+                return entityHost == entity || entityHost.hasSuffix("." + entity)
+            }
+            return name == domain || name.hasSuffix("." + domain)
         }
-        return host == domain || host.hasSuffix("." + domain)
+
+        mutating func inScope(_ domains: [String]) -> Bool {
+            if domains.contains(where: { $0.hasPrefix("~") && matches(String($0.dropFirst())) }) { return false }
+            let included = domains.filter { !$0.hasPrefix("~") }
+            return included.isEmpty || included.contains { matches($0) }
+        }
     }
 
-    private static func scopeMatches(_ value: String, host: String) -> Bool {
-        let domains = value.split(separator: "|").map(String.init)
-        if domains.contains(where: { $0.hasPrefix("~") && domainMatches(host, String($0.dropFirst())) }) { return false }
-        let included = domains.filter { !$0.hasPrefix("~") }
-        return included.isEmpty || included.contains { domainMatches(host, $0) }
+    /// A page rule that can apply to a top-level page, with its options
+    /// parsed and its domains lowercased once rather than on every page.
+    struct PreparedPageRule {
+        let rule: ParsedRule
+        let excludedSites: [String]
+        let includedSites: [String]?
+        /// Each `domain` and `to` list.
+        let scopes: [[String]]
+        /// Each `denyallow` list.
+        let denyallow: [[String]]
+        let caseSensitive: Bool
+        /// Bytes every URL the pattern matches contains, lowercased unless
+        /// `caseSensitive`; empty when there are none to test.
+        let literal: [UInt8]
+    }
+
+    static func prepare(_ rules: [PageRule]) -> [PreparedPageRule] {
+        rules.compactMap { page in
+            let pairs = page.rule.options.map(optionNameAndValue)
+            if let types = resourceTypes(from: pairs), !types.contains("main_frame") { return nil }
+            if pairs.contains(where: { $0.name == "third-party" }) { return nil }
+            let caseSensitive = page.rule.options.contains("match-case")
+            let lists = { (names: [String]) in
+                pairs.filter { names.contains($0.name) }.map { ($0.value ?? "").split(separator: "|").map { $0.lowercased() } }
+            }
+            return PreparedPageRule(
+                rule: page.rule,
+                excludedSites: page.excludedSites.map { $0.lowercased() },
+                includedSites: page.includedSites?.map { $0.lowercased() },
+                scopes: lists(["domain", "to"]),
+                denyallow: lists(["denyallow"]),
+                caseSensitive: caseSensitive,
+                literal: requiredLiteral(page.rule.pattern, caseSensitive: caseSensitive)
+            )
+        }
+    }
+
+    /// The longest run of a pattern that `urlPatternRegex` escapes as literal
+    /// text, lowercased unless `caseSensitive`; empty for a regex pattern or a
+    /// run that is not ASCII.
+    private static func requiredLiteral(_ pattern: String, caseSensitive: Bool) -> [UInt8] {
+        if pattern.hasPrefix("/"), pattern.hasSuffix("/"), pattern.count > 1 { return [] }
+        var text = Substring(pattern)
+        if text.hasPrefix("||") { text.removeFirst(2) } else if text.hasPrefix("|") { text.removeFirst() }
+        if text.hasSuffix("|") { text.removeLast() }
+        let longest = text.utf8.split { $0 == UInt8(ascii: "*") || $0 == UInt8(ascii: "^") }.max { $0.count < $1.count } ?? []
+        guard longest.allSatisfy({ $0 < 0x80 }) else { return [] }
+        return longest.map { !caseSensitive && (65...90).contains($0) ? $0 + 32 : $0 }
+    }
+
+    static func cleanPageURL(_ original: String, rules: [PageRule]) -> String {
+        cleanPageURL(original, prepared: prepare(rules))
     }
 
     /// A page has itself as its document origin, as in uBO's main_frame context.
     /// This never guesses the initiator of an XHR or rewrites subresources after load.
-    static func cleanPageURL(_ original: String, rules: [PageRule]) -> String {
+    static func cleanPageURL(_ original: String, prepared rules: [PreparedPageRule]) -> String {
         guard let url = URL(string: original), ["http", "https"].contains(url.scheme?.lowercased() ?? ""),
-              let host = url.host?.lowercased(), let queryStart = original.firstIndex(of: "?") else { return original }
+              let hostName = url.host?.lowercased(), let queryStart = original.firstIndex(of: "?") else { return original }
         let fragmentStart = original.firstIndex(of: "#") ?? original.endIndex
         guard queryStart < fragmentStart else { return original }
         let requestURL = String(original[..<fragmentStart])
         let range = NSRange(requestURL.startIndex..., in: requestURL)
+        var host = PageHost(hostName)
+        // A pattern's literal text is in every URL it matches. On ASCII text,
+        // case-insensitive matching is ASCII lowercasing; other text skips the test.
+        let ascii = requestURL.utf8.allSatisfy { $0 < 0x80 }
+        let (exact, lowered) = (Array(requestURL.utf8), Array(requestURL.lowercased().utf8))
+        func contains(_ text: [UInt8], _ literal: [UInt8]) -> Bool {
+            text.withUnsafeBytes { t in literal.withUnsafeBytes { memmem(t.baseAddress, t.count, $0.baseAddress, $0.count) != nil } }
+        }
         let matching = rules.filter { page in
-            let rule = page.rule, pairs = rule.options.map(optionNameAndValue)
-            if !page.excludedSites.allSatisfy({ !domainMatches(host, $0) }) { return false }
-            if let sites = page.includedSites, !sites.contains(where: { domainMatches(host, $0) }) { return false }
-            if let types = resourceTypes(from: pairs), !types.contains("main_frame") { return false }
-            if pairs.contains(where: { $0.name == "third-party" }) { return false }
-            for pair in pairs {
-                if ["domain", "to"].contains(pair.name), !scopeMatches(pair.value ?? "", host: host) { return false }
-                if pair.name == "denyallow", (pair.value ?? "").split(separator: "|").contains(where: { domainMatches(host, String($0)) }) { return false }
-            }
-            return urlPatternRegex(rule.pattern, caseSensitive: rule.options.contains("match-case"))?
-                .firstMatch(in: requestURL, range: range) != nil
+            if page.excludedSites.contains(where: { host.matches($0) }) { return false }
+            if let sites = page.includedSites, !sites.contains(where: { host.matches($0) }) { return false }
+            if page.scopes.contains(where: { !host.inScope($0) }) { return false }
+            if page.denyallow.contains(where: { $0.contains { host.matches($0) } }) { return false }
+            if page.rule.pattern.isEmpty { return true }
+            if ascii, !page.literal.isEmpty, !contains(page.caseSensitive ? exact : lowered, page.literal) { return false }
+            return urlPatternRegex(page.rule.pattern, caseSensitive: page.caseSensitive)?.firstMatch(in: requestURL, range: range) != nil
         }.map(\.rule)
         let exceptions = Set(matching.filter(\.isException).map { $0.removeParamValue ?? "" })
         let directives = matching.filter { rule in
@@ -152,16 +217,23 @@ extension RemoveParamDNRRuleGenerator {
     }
 
     private static let pageCacheLock = NSLock()
-    nonisolated(unsafe) private static var pageCache: (data: Data, rules: [PageRule])?
+    nonisolated(unsafe) private static var pageCache: (identity: [UInt64], rules: [PreparedPageRule])?
 
     static func cleanSavedPageURL(_ original: String, containerURL: URL) -> String {
-        guard let data = try? Data(contentsOf: containerURL.appendingPathComponent(pageRulesFilename)) else { return original }
+        // Writes replace the file by rename, so its file number and time
+        // identify its contents; it is read and decoded only when they change.
+        let file = containerURL.appendingPathComponent(pageRulesFilename)
+        var info = stat()
+        guard stat(file.path, &info) == 0 else { return original }
+        let identity = [UInt64(info.st_ino), UInt64(bitPattern: Int64(info.st_mtimespec.tv_sec)),
+                        UInt64(bitPattern: Int64(info.st_mtimespec.tv_nsec)), UInt64(bitPattern: Int64(info.st_size))]
         pageCacheLock.lock()
         defer { pageCacheLock.unlock() }
-        if pageCache?.data != data {
-            guard let rules = try? JSONDecoder().decode([PageRule].self, from: data) else { return original }
-            pageCache = (data, rules)
+        if pageCache?.identity != identity {
+            guard let data = try? Data(contentsOf: file),
+                  let rules = try? JSONDecoder().decode([PageRule].self, from: data) else { return original }
+            pageCache = (identity, prepare(rules))
         }
-        return cleanPageURL(original, rules: pageCache?.rules ?? [])
+        return cleanPageURL(original, prepared: pageCache?.rules ?? [])
     }
 }

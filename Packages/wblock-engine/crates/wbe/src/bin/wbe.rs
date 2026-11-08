@@ -83,8 +83,9 @@ fn lookup_cmd(args: &[String]) {
     };
 
     let start = Instant::now();
-    let bytes = std::fs::read(engine_path).unwrap_or_else(|e| panic!("{engine_path}: {e}"));
-    let engine = Engine::deserialize(&bytes).unwrap_or_else(|e| panic!("{e}"));
+    // Mapped, as the extension loads it.
+    let file = std::fs::File::open(engine_path).unwrap_or_else(|e| panic!("{engine_path}: {e}"));
+    let engine = Engine::map(&file, 0).unwrap_or_else(|e| panic!("{e}"));
     let load_ms = start.elapsed().as_secs_f64() * 1000.0;
 
     match bench {

@@ -186,7 +186,11 @@ public enum WebExtensionRequestHandler {
                     var clean = original
                     if !BlockingPauseStore.isPaused(.filters), !HostMatcher.isHostDisabled(host: host, disabledSites: disabled),
                        let container = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value) {
-                        clean = RemoveParamDNRRuleGenerator.cleanSavedPageURL(original, containerURL: container)
+                        // A cold call reads and decodes the page rules; keep it
+                        // off the main actor, as the engine lookup is.
+                        clean = await Task.detached(priority: .userInitiated) {
+                            RemoveParamDNRRuleGenerator.cleanSavedPageURL(original, containerURL: container)
+                        }.value
                     }
                     context.completeRequest(returningItems: [createResponse(with: ["ok": true, "cleanUrl": clean])])
                 }
@@ -251,6 +255,14 @@ public enum WebExtensionRequestHandler {
                     if paused {
                         message?["payload"] = emptyRulesPayload(disabled: false, paused: true)
                     } else {
+                        // A cold engine load reads a file; keep it off the main
+                        // actor so state and userscript requests are not stuck
+                        // behind it, and overlap it with loading the site state.
+                        // Cosmetic rules follow the frame URL, as in uBO, so the
+                        // top URL is not needed.
+                        let lookupTask = Task.detached(priority: .userInitiated) {
+                            lookupEnginePayload(url: url)
+                        }
                         // Advanced rules are a filtering component, so a filter-only
                         // exception must silence them too (issue #652). Like the
                         // native if-domain rule and uBO's per-site switch, it
@@ -261,13 +273,7 @@ public enum WebExtensionRequestHandler {
                         if disabled {
                             message?["payload"] = emptyRulesPayload(disabled: true, paused: false)
                         } else {
-                            // A cold engine load reads and deserializes a file; keep it
-                            // off the main actor so state and userscript requests are
-                            // not stuck behind it. Cosmetic rules follow the frame URL,
-                            // as in uBO, so the top URL is not needed.
-                            let lookup = await Task.detached(priority: .userInitiated) {
-                                lookupEnginePayload(url: url)
-                            }.value
+                            let lookup = await lookupTask.value
                             if let errorMessage = lookup.error {
                                 os_log(.error, "%@", errorMessage)
                                 message?["payload"] = nil
