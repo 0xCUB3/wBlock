@@ -872,10 +872,10 @@ extension AppFilterManager {
                 advancedRulesByTarget.removeValue(forKey: targetInfo.bundleIdentifier)
             }
 
-            let advancedCount =
-                conversionResult.advancedRulesText?.isEmpty == false
-                ? conversionResult.advancedRulesText!.components(separatedBy: .newlines).count
-                : 0
+            // Counted in place: splitting megabytes of rules into strings only to count them was slow.
+            let advancedCount = conversionResult.advancedRulesText.map { text in
+                text.isEmpty ? 0 : text.utf8.reduce(1) { $1 == 0x0A ? $0 + 1 : $0 }
+            } ?? 0
 
             conversionMetrics.append(
                 TargetConversionMetrics(
@@ -960,9 +960,9 @@ extension AppFilterManager {
                     advancedRulesByTarget[$0.bundleIdentifier]
                 }
 
+                let totalLines = conversionMetrics.reduce(0) { $0 + $1.advancedRules }
                 try await Task.detached {
                     let combinedAdvancedRules = orderedAdvancedRules.joined(separator: "\n")
-                    let totalLines = combinedAdvancedRules.components(separatedBy: "\n").count
                     await ConcurrentLogManager.shared.info(
                         .filterApply, LocalizedStrings.text("Building filter engine"),
                         metadata: [
