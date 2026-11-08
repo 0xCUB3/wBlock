@@ -2273,12 +2273,10 @@ public actor SharedAutoUpdateManager {
         var advanced: [String] = []
         for target in targets {
             guard let conversion = results[target.bundleIdentifier]?.outcome else { throw CancellationError() }
-            let cached = ContentBlockerIncrementalCache.loadCachedAdvancedRules(
-                targetRulesFilename: target.rulesFilename,
-                groupIdentifier: GroupIdentifier.shared.value
-            )?.trimmingCharacters(in: .whitespacesAndNewlines)
-            let fresh = conversion.advancedRulesText?.trimmingCharacters(in: .whitespacesAndNewlines)
-            if let snippet = fresh?.isEmpty == false ? fresh : cached, !snippet.isEmpty {
+            // A compile saves the advanced rules it returns, and a reuse returns the saved ones,
+            // so the outcome is what the cache holds; reading the cache again only cost time.
+            if let snippet = conversion.advancedRulesText?.trimmingCharacters(in: .whitespacesAndNewlines),
+               !snippet.isEmpty {
                 advanced.append(snippet)
             }
         }
