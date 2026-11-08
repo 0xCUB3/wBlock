@@ -569,7 +569,9 @@ impl Engine {
         }
     }
     fn blocks_popup(&self, source: &str, target: &str) -> bool {
-        if !["http://", "https://"].iter().any(|p| target.starts_with(p)) { return false; }
+        // As uBO, data: and blob: targets are tested too; about:blank is where
+        // every popup starts, before it reaches its URL.
+        if !["http://", "https://", "blob:", "data:"].iter().any(|p| target.starts_with(p)) { return false; }
         let host = host_of(source).to_ascii_lowercase();
         let target_host = host_of(target).to_ascii_lowercase();
         let site = |h: &str| crate::registrable_domain(h).map_or_else(|| h.to_string(), str::to_string);
@@ -815,6 +817,17 @@ example.com##+js(set-constant, adsEnabled, false)
         ] {
             assert_eq!(required_literal(pattern), literal, "{pattern}");
         }
+    }
+
+    #[test]
+    fn blob_and_data_popups_are_checked() {
+        // uBO's `|blob:$popup,domain=hqq.tv|waaw.to` and `|data:text$popup,domain=~clker.com`.
+        let rules = "|blob:$popup,domain=hqq.tv|waaw.to\n|data:text$popup,domain=~clker.com\n$popup,domain=any.example\n";
+        assert!(popup_blocked(rules, "https://hqq.tv/e/1", "blob:https://hqq.tv/abc"));
+        assert!(!popup_blocked(rules, "https://other.example/", "blob:https://hqq.tv/abc"));
+        assert!(popup_blocked(rules, "https://news.example/", "data:text/html,<p>a#b"));
+        assert!(!popup_blocked(rules, "https://clker.com/", "data:text/html,x"));
+        assert!(!popup_blocked(rules, "https://any.example/", "about:blank"));
     }
 
     #[test]
