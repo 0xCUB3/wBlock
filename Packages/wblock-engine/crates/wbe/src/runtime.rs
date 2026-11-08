@@ -12,7 +12,7 @@ use adblock::lists::{FilterSet, ParseOptions};
 use serde::Serialize;
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, HashMap, HashSet};
-use std::sync::OnceLock;
+use std::cell::RefCell;
 
 pub struct Engine {
     /// Flags the pages with a `$generichide` exception.
@@ -24,8 +24,8 @@ pub struct Engine {
     specifichide: adblock::Engine,
     scriptlets: Scriptlets,
     popups: Scriptlets,
-    /// Each popup call's rule, required literal, and regex, built on first use.
-    popup_rules: OnceLock<Vec<(Option<PopupRule>, String, OnceLock<Option<regex::Regex>>)>>,
+    /// Popup call regexes, compiled when a target first contains their literal.
+    popup_regexes: RefCell<HashMap<u32, Option<regex::Regex>>>,
 }
 
 /// Cosmetic actions for one page URL.
@@ -184,11 +184,15 @@ impl<'a> Reader<'a> {
         None
     }
 
-    fn str(&mut self) -> Option<&'a str> {
+    fn bytes(&mut self) -> Option<&'a [u8]> {
         let len = self.varint()?;
         let (s, rest) = self.0.split_at_checked(len)?;
         self.0 = rest;
-        std::str::from_utf8(s).ok()
+        Some(s)
+    }
+
+    fn str(&mut self) -> Option<&'a str> {
+        std::str::from_utf8(self.bytes()?).ok()
     }
 
     fn strs(&mut self) -> Option<Vec<&'a str>> {
@@ -285,13 +289,17 @@ impl Table {
 impl Scriptlets {
     /// Call `id`'s name and arguments; empty when it does not decode.
     fn call(&self, id: u32) -> Vec<&str> {
+        self.reader(id).strs().unwrap_or_default()
+    }
+
+    /// A reader at call `id`'s argument count.
+    fn reader(&self, id: u32) -> Reader<'_> {
         let i = id as usize;
-        (i < self.calls.len()).then(|| self.calls.key_value(i).1.strs()).flatten().unwrap_or_default()
+        if i < self.calls.len() { self.calls.key_value(i).1 } else { Reader(&[]) }
     }
 
     fn name(&self, id: u32) -> &str {
-        let i = id as usize;
-        let mut call = if i < self.calls.len() { self.calls.key_value(i).1 } else { Reader(&[]) };
+        let mut call = self.reader(id);
         call.varint().filter(|n| *n > 0).and_then(|_| call.str()).unwrap_or_default()
     }
 
@@ -474,7 +482,7 @@ impl Engine {
                         // opener, uBO's `@@$popup,domain=datanodes.to` allowed
                         // every popup on every site (#1072). Safari's tab event
                         // names the opener tab, so a frame-only allow can miss.
-                        popups.add(false, r.from.clone(), vec!["wbe:popup".into(), serde_json::to_string(&rule).expect("popup rule serializes")]);
+                        popups.add(false, r.from.clone(), rule.into_call());
                     }
                     if r.scope.intersects(
                         ExceptionScope::GHIDE
@@ -532,7 +540,7 @@ impl Engine {
             specifichide: exception_engine(&specifichide),
             scriptlets: scriptlets.finish(),
             popups: popups.finish(),
-            popup_rules: OnceLock::new(),
+            popup_regexes: Default::default(),
         }
     }
 
@@ -568,7 +576,7 @@ impl Engine {
             specifichide,
             scriptlets,
             popups,
-            popup_rules: OnceLock::new(),
+            popup_regexes: Default::default(),
         })
     }
 
@@ -612,34 +620,33 @@ impl Engine {
         let third = site(&host) != site(&target_host);
         let genericblock = self.genericblock.url_cosmetic_resources(source).generichide;
         let lowered = target.to_ascii_lowercase();
-        let popups = self.popup_rules.get_or_init(|| {
-            (0..self.popups.calls.len()).map(|id| {
-                let rule = self.popups.call(id as u32).get(1).and_then(|rule| serde_json::from_str::<PopupRule>(rule).ok());
-                let needle = rule.as_ref().map(|r| required_literal(&r.pattern)).unwrap_or_default();
-                (rule, needle, OnceLock::new())
-            }).collect()
-        });
+        let mut regexes = self.popup_regexes.borrow_mut();
         let mut block = false;
         let mut allow = false;
         let mut important_block = false;
         let mut important_allow = false;
         for id in self.popups.ids(&host, true, true).0 {
-            let Some((Some(rule), needle, regex)) = popups.get(id as usize) else { continue };
-            let party_ok = match rule.party {
-                Party::Any => true,
-                Party::First => !third,
-                Party::Third => third,
-                Party::StrictFirst => host == target_host,
-                Party::StrictThird => host != target_host,
+            // Read only as far as each check needs.
+            let mut call = self.popups.reader(id);
+            let (Some(4), Some(_), Some(flags), Some(needle)) = (call.varint(), call.bytes(), call.bytes(), call.bytes()) else { continue };
+            let &[allows, generic, important, match_case, party] = flags else { continue };
+            let party_ok = match PARTIES.get(party.wrapping_sub(b'0') as usize) {
+                Some(Party::Any) => true,
+                Some(Party::First) => !third,
+                Some(Party::Third) => third,
+                Some(Party::StrictFirst) => host == target_host,
+                Some(Party::StrictThird) => host != target_host,
+                None => false,
             };
             // Compiling every candidate's regex took ~160 ms per lookup on
             // the default lists; a literal every match contains rules out
             // nearly all of them first.
-            if !party_ok || !lowered.contains(needle.as_str()) { continue; }
-            let regex = regex.get_or_init(|| regex::RegexBuilder::new(&rule.pattern).case_insensitive(!rule.match_case).build().ok());
+            if !party_ok || !needle.split_first().is_none_or(|(first, rest)| memchr::memchr_iter(*first, lowered.as_bytes()).any(|i| lowered.as_bytes()[i + 1..].starts_with(rest))) { continue; }
+            let Some(pattern) = call.str() else { continue };
+            let regex = regexes.entry(id).or_insert_with(|| regex::RegexBuilder::new(pattern).case_insensitive(match_case != b'1').build().ok());
             if !regex.as_ref().is_some_and(|r| r.is_match(target)) { continue; }
-            match (rule.allow, rule.important) {
-                (false, false) => block |= !(genericblock && rule.generic),
+            match (allows == b'1', important == b'1') {
+                (false, false) => block |= !(genericblock && generic == b'1'),
                 (true, false) => allow = true,
                 (false, true) => important_block = true, (true, true) => important_allow = true,
             }
@@ -649,9 +656,7 @@ impl Engine {
 
 }
 
-/// A popup filter as the runtime matches it, stored as JSON.
-#[derive(Serialize, serde::Deserialize)]
-#[serde(rename_all = "camelCase")]
+/// A popup filter as the runtime matches it.
 pub(crate) struct PopupRule {
     allow: bool,
     generic: bool,
@@ -659,6 +664,22 @@ pub(crate) struct PopupRule {
     match_case: bool,
     party: Party,
     pattern: String,
+}
+
+/// Popup flags store the party as its index here.
+const PARTIES: [Party; 5] = [Party::Any, Party::First, Party::Third, Party::StrictFirst, Party::StrictThird];
+
+impl PopupRule {
+    /// The rule as a call: `wbe:popup`; flags `allow`, `generic`,
+    /// `important`, `match_case` as `0`/`1` and the party's index; the
+    /// literal every match contains; the pattern.
+    fn into_call(self) -> Vec<String> {
+        let party = PARTIES.iter().position(|p| *p == self.party).expect("every party is listed");
+        let flags = [self.allow, self.generic, self.important, self.match_case].map(|f| if f { '1' } else { '0' });
+        let flags = flags.iter().collect::<String>() + &party.to_string();
+        let needle = required_literal(&self.pattern);
+        vec!["wbe:popup".into(), flags, needle, self.pattern]
+    }
 }
 
 /// The longest literal, lowercased, that every match of `pattern` contains.
