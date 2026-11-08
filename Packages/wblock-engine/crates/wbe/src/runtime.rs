@@ -14,7 +14,7 @@ use std::cmp::Ordering;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::cell::RefCell;
 use std::ops::Range;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 
 pub struct Engine {
     /// Flags the pages with a `$generichide` exception.
@@ -60,8 +60,9 @@ struct Scriptlets {
     /// Keyed like `rules`. Values: call ids plus one, or 0 for `#@#+js()`.
     exceptions: Table,
     regexes: regex::RegexSet,
-    // Global calls are consulted on every page; keep their scopes decoded.
-    generic_rules: Vec<(u32, Box<[String]>)>,
+    // Global calls are consulted on every lookup; their scopes are decoded on
+    // the first, so an engine that only answers pages never decodes popups'.
+    generic_rules: OnceLock<Vec<(u32, Box<[String]>)>>,
 }
 
 /// Scriptlet rules as `Engine::build` collects them.
@@ -134,7 +135,7 @@ impl ScriptletRules {
         }));
         let regexes = regex::RegexSet::new(self.regexes.keys()).expect("validated domain regexes");
         Scriptlets {
-            generic_rules: generic_rules(&rules),
+            generic_rules: OnceLock::new(),
             calls: Table::encode(self.calls.iter().map(|call| {
                 let mut value = Vec::new();
                 put_strs(&mut value, call);
@@ -357,7 +358,7 @@ impl Scriptlets {
                 }
             }
         }
-        let mut ids: Vec<u32> = self.generic_rules.iter()
+        let mut ids: Vec<u32> = self.generic_rules.get_or_init(|| generic_rules(&self.rules)).iter()
             .filter(|(id, excluded)| !keys.iter().any(|k| excluded.binary_search(k).is_ok())
                 && (generic_hides || self.name(*id) != "wbe:hide"))
             .map(|(id, _)| *id).collect();
@@ -625,7 +626,7 @@ impl Engine {
             let (calls, rules, exceptions) = (Table::parse(&blob, take()?)?, Table::parse(&blob, take()?)?, Table::parse(&blob, take()?)?);
             let patterns = serde_json::from_slice::<Vec<String>>(&bytes[take()?]).map_err(|e| e.to_string())?;
             let regexes = regex::RegexSet::new(patterns).map_err(|e| e.to_string())?;
-            Ok(Scriptlets { calls, generic_rules: generic_rules(&rules), rules, exceptions, regexes })
+            Ok(Scriptlets { calls, generic_rules: OnceLock::new(), rules, exceptions, regexes })
         };
         let (scriptlets, popups) = (index()?, index()?);
         Ok(Self {
