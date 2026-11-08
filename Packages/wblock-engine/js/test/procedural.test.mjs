@@ -132,6 +132,15 @@ describe('matches-attr', () => {
     assert.equal(isHidden(win, document.getElementById('c')), false);
   });
 
+  test('a fully quoted name=value argument, as uBO reads it', () => {
+    for (const arg of ['"role=dialog"', '"role"="dialog"', 'role="dialog"']) {
+      const { document, api, win } = setup('<div id="a" role="dialog"></div><div id="b" role="menu"></div>');
+      api.apply([filt([op('css-selector', 'div'), op('matches-attr', arg)])]);
+      assert.equal(isHidden(win, document.getElementById('a')), true, arg);
+      assert.equal(isHidden(win, document.getElementById('b')), false, arg);
+    }
+  });
+
   test('value regex', () => {
     const { document, api, win } = setup('<div id="a" data-x="v9"></div><div id="b" data-x="w"></div>');
     api.apply([filt([op('css-selector', 'div'), op('matches-attr', 'data-x=/^v\\d$/')])]);
@@ -168,9 +177,11 @@ describe('matches-css', () => {
       if (pseudo !== '::before') return real(el, pseudo);
       return { getPropertyValue: (n) => (el.id === 'a' && n === 'content' ? '"Anzeige"' : '') };
     };
-    api.apply([filt([op('css-selector', 'div'), op('matches-css-before', 'content:/Anzeige/i')])]);
-    assert.equal(isMarked(document.getElementById('a')), true);
-    assert.equal(isMarked(document.getElementById('b')), false);
+    for (const [type, arg] of [['matches-css-before', 'content:/Anzeige/i'], ['matches-css', 'before, content:/Anzeige/i']]) {
+      api.apply([filt([op('css-selector', 'div'), op(type, arg)])]);
+      assert.equal(isMarked(document.getElementById('a')), true, arg);
+      assert.equal(isMarked(document.getElementById('b')), false, arg);
+    }
   });
 
   test('matches-css-after reads the ::after pseudo element', () => {
@@ -626,9 +637,11 @@ describe('compatibility gates', () => {
     assert.equal(isMarked(document.querySelector('#ad')), true);
     assert.equal(isMarked(document.querySelector('#keep')), false);
     assert.equal(isMarked(document.querySelector('#throws')), false);
-    api.apply([filt([op('css-selector', 'img'), op('matches-prop', 'id=keep')])]);
-    assert.equal(isMarked(document.querySelector('#keep')), true);
-    assert.equal(isMarked(document.querySelector('#ad')), false);
+    for (const arg of ['id=keep', '"id=keep"']) {
+      api.apply([filt([op('css-selector', 'img'), op('matches-prop', arg)])]);
+      assert.equal(isMarked(document.querySelector('#keep')), true, arg);
+      assert.equal(isMarked(document.querySelector('#ad')), false, arg);
+    }
   });
 
   test('others preserves selected subtrees and their ancestors', () => {

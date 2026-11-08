@@ -263,9 +263,12 @@ public enum WebExtensionRequestHandler {
                         message?["payload"] = emptyRulesPayload(disabled: false, paused: true)
                     } else {
                         // Advanced rules are a filtering component, so a filter-only
-                        // exception must silence them too (issue #652).
+                        // exception must silence them too (issue #652). Like the
+                        // native if-domain rule and uBO's per-site switch, it
+                        // covers the site's frames too.
                         let disabledSites = await currentFilterDisabledSites()
-                        let disabled = HostMatcher.isHostDisabled(host: url.host ?? "", disabledSites: disabledSites)
+                        let site = (payload["topUrl"] as? String).flatMap(URL.init(string:)) ?? url
+                        let disabled = HostMatcher.isHostDisabled(host: site.host ?? "", disabledSites: disabledSites)
                         if disabled {
                             message?["payload"] = emptyRulesPayload(disabled: true, paused: false)
                         } else {
