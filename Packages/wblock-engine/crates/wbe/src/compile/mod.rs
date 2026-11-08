@@ -421,8 +421,11 @@ where
         cosmetic::compile(&cosmetic, opts, &mut tiered, &mut runtime, &mut stats);
         worker.join().expect("network compiler thread")
     });
+    // Compiled, the cosmetic rules and hides are not held through the rest.
+    drop(cosmetic);
+    drop(others.cosmetic);
     stats.merge(&network_stats);
-    for t in &tiered {
+    for t in tiered {
         emitted.push_rule(t.tier, &t.rule);
     }
     runtime.extend(page_exceptions);

@@ -24,7 +24,6 @@ use crate::webkit::{SafariVersion, WebkitJson, WkAction, WkRule, WkTrigger};
 use serde::{Deserialize, Serialize};
 use std::collections::hash_map::DefaultHasher;
 use rustc_hash::{FxHashMap, FxHashSet};
-use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::ops::Range;
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
@@ -97,11 +96,6 @@ pub struct PlanRequest {
     pub targets: Vec<TargetSpec>,
     #[serde(default)]
     pub cosmetics: CosmeticScope,
-    /// Keep each list's patterns in the cache for later plans, so a plan
-    /// fingerprints its blockers without parsing their rules again. It costs
-    /// memory for as long as the cache holds the list, so a phone leaves it off.
-    #[serde(default)]
-    pub retain: bool,
 }
 
 /// Extra text one blocker compiles after its lists (zapper rules, wBlock's
@@ -142,6 +136,10 @@ struct Parsed {
     exception: bool,
     /// A network rule, so the network pass can skip the other kinds unparsed.
     network: bool,
+    /// A network rule a blocker's `NetworkContext` holds, so its scan parses it.
+    in_context: bool,
+    /// A network rule `pattern_of` reads a pattern from (`comparable`).
+    comparable: bool,
     /// `is_plain_block`, which the segment of #925 compiles unscoped.
     plain: bool,
     /// Affinity types of the enclosing `!#safari_cb_affinity` block.
@@ -151,33 +149,15 @@ struct Parsed {
 struct ParsedList {
     /// The records in line order, in the chunks they were parsed in.
     chunks: Vec<Vec<Parsed>>,
-    /// The patterns of the records, per chunk, when the list keeps them.
-    patterns: Option<Vec<PatternChunk>>,
     has_affinity: bool,
     /// A `!#` directive anywhere keeps the list out of #681 dedupe, as before.
     has_directive: bool,
     stats: Stats,
 }
 
-/// The patterns of one chunk's records: `text` holds them back to back, and
-/// `spans` gives each record's (start, length) in it, length 0 for none.
-#[derive(Default)]
-struct PatternChunk {
-    text: String,
-    spans: Vec<(u32, u32)>,
-}
-
 impl ParsedList {
     fn records(&self) -> impl Iterator<Item = &Parsed> + '_ {
         self.chunks.iter().flatten()
-    }
-
-    /// Record `i` of `chunk`'s pattern, when the list keeps patterns: `Some(None)`
-    /// for a record with none.
-    fn stored_pattern(&self, chunk: usize, i: usize) -> Option<Option<&str>> {
-        let kept = self.patterns.as_ref()?.get(chunk)?;
-        let (start, len) = kept.spans[i];
-        Some((len > 0).then(|| &kept.text[start as usize..(start + len) as usize]))
     }
 
     fn count(&self) -> usize {
@@ -195,18 +175,16 @@ struct ParseKey {
     trusted: bool,
     scope: u64,
     version: u32,
-    retain: bool,
 }
 
 impl ParseKey {
-    fn of(list: &ListSpec, text: u64, retain: bool) -> ParseKey {
+    fn of(list: &ListSpec, text: u64) -> ParseKey {
         ParseKey {
             text,
             len: list.text.len(),
             trusted: list.trusted,
             scope: hash(&(&list.scope.exclude, &list.scope.only)),
             version: crate::OUTPUT_VERSION,
-            retain,
         }
     }
 }
@@ -229,7 +207,7 @@ impl ParseCache {
         if let Some((_, hit)) = self.entries().iter().find(|(k, _)| *k == key) {
             return hit.clone();
         }
-        let parsed = Arc::new(parse(list, key.retain));
+        let parsed = Arc::new(parse(list));
         let mut entries = self.entries();
         if !entries.iter().any(|(k, _)| *k == key) {
             entries.push((key, parsed.clone()));
@@ -326,7 +304,7 @@ impl Plan {
             .lists
             .iter()
             .zip(&text_hashes)
-            .map(|(list, &text)| ParseKey::of(list, text, request.retain))
+            .map(|(list, &text)| ParseKey::of(list, text))
             .collect();
         let parsed = parallel_indices(request.lists.len(), |i| cache.parsed(keys[i], &request.lists[i]));
         cache.keep(&keys);
@@ -347,11 +325,25 @@ impl Plan {
     /// `parse` did.
     fn rule(&self, list: usize, p: &Parsed) -> Rule {
         let spec = &self.lists[list];
-        let line = spec.text[p.offset..].lines().next().unwrap_or_default();
-        let mut rules = parse_list(line, list as u32, spec.trusted, &mut Stats::default());
+        let mut rules = parse_list(self.line(list, p), list as u32, spec.trusted, &mut Stats::default());
         let mut rule = rules.swap_remove(p.index as usize);
         set_line(&mut rule, p.line);
         rule
+    }
+
+    /// The line of the rule at `p`.
+    fn line(&self, list: usize, p: &Parsed) -> &str {
+        self.lists[list].text[p.offset..].lines().next().unwrap_or_default()
+    }
+
+    /// `pattern_of` the network rule at `p`, read from its line unparsed. None
+    /// when the list has a site scope, which changes the rule.
+    fn line_pattern(&self, list: usize, p: &Parsed) -> Option<Option<String>> {
+        if !self.lists[list].scope.is_empty() {
+            return None;
+        }
+        // A line holds one rule, whose `raw` is the normalized line.
+        Some(p.comparable.then(|| pattern_text(&crate::normalize::adguard_to_ubo(self.line(list, p)))).flatten())
     }
 
     pub fn target_count(&self) -> usize {
@@ -387,6 +379,12 @@ impl Plan {
         let mut out = ListScan::default();
         for p in &self.parsed[list].chunks[unit.chunk][unit.range.clone()] {
             if !self.keeps(target, list, p) {
+                continue;
+            }
+            // Unscoped, the rule is kept as it is, and only its identity counts.
+            if p.network && !p.in_context && scope.is_empty() {
+                out.takes = true;
+                out.admitted.push(p.identity);
                 continue;
             }
             let mut rules = Vec::new();
@@ -454,7 +452,7 @@ impl Plan {
             let mut rules = Vec::new();
             match self.rule(list, p) {
                 Rule::Network(r) => {
-                    for r in surviving(ctx, &r) {
+                    for r in surviving(ctx, *r) {
                         scoped(Rule::Network(Box::new(r)), scope, &mut rules);
                     }
                 }
@@ -549,9 +547,9 @@ impl Plan {
         (self.fingerprint_of(target, extras, &replicated), replicated)
     }
 
-    /// The patterns `scan` keeps for `target`, from the patterns a list keeps
-    /// when it has them and otherwise from its rules.
-    fn own_patterns(&self, target: usize) -> Vec<Cow<'_, str>> {
+    /// The patterns of the network rules `scan` keeps for `target`, read from
+    /// their lines when the list is unscoped and otherwise from its rules.
+    fn own_patterns(&self, target: usize) -> Vec<String> {
         let units = self.record_units();
         parallel_indices(units.len(), |u| {
             let Unit { list, chunk, range } = &units[u];
@@ -563,15 +561,15 @@ impl Plan {
                 if !p.network || p.exception || !self.keeps(target, list, p) {
                     continue;
                 }
-                match parsed.stored_pattern(chunk, i) {
-                    Some(pattern) => out.extend(pattern.map(Cow::Borrowed)),
+                match self.line_pattern(list, p) {
+                    Some(pattern) => out.extend(pattern),
                     None => {
                         let mut rules = Vec::new();
                         scoped(self.rule(list, p), &self.lists[list].scope, &mut rules);
                         for rule in &rules {
                             if let Rule::Network(r) = rule {
                                 if !r.exception {
-                                    out.extend(pattern_of(r).map(Cow::Owned));
+                                    out.extend(pattern_of(r));
                                 }
                             }
                         }
@@ -685,6 +683,9 @@ impl Plan {
             }
             stats.merge(&extra_stats);
         }
+        // The rules are held through the compile; spare capacity would be too.
+        others.cosmetic.shrink_to_fit();
+        others.scriptlets.shrink_to_fit();
         let tail = Mutex::new(Some(tail));
         let mut output = compile_blocker(
             &ctx,
@@ -789,10 +790,10 @@ impl Plan {
                 if !p.shared {
                     continue;
                 }
-                if let Some(stored) = parsed.stored_pattern(chunk, i).filter(|_| p.network) {
-                    // The list keeps patterns, so only a matching rule is parsed.
-                    let matches = stored.is_none_or(|pattern| {
-                        pattern_host(pattern).is_none() || cancels(pattern, &patterns, &bare_hosts, &sorted)
+                if let Some(pattern) = self.line_pattern(list, p).filter(|_| p.network) {
+                    // Only a matching rule is parsed.
+                    let matches = pattern.is_none_or(|pattern| {
+                        pattern_host(&pattern).is_none() || cancels(&pattern, &patterns, &bare_hosts, &sorted)
                     });
                     if matches {
                         found.push((p.identity, self.rule(list, p)));
@@ -841,39 +842,37 @@ impl Plan {
 }
 
 /// Bytes of list text one thread parses at a time. Chunks end at line ends.
-/// A list with an affinity block is parsed in one piece, because the block's
-/// type carries from one line to the next.
 const PARSE_CHUNK: usize = 1 << 20;
 
 /// The records of `list`. Each rule is parsed again from its line when a
 /// blocker needs it (`Plan::rule`), with the list's index, so the index is not
-/// needed here. `retain` keeps the patterns too (see `PlanRequest::retain`).
-fn parse(list: &ListSpec, retain: bool) -> ParsedList {
-    parse_chunked(list, PARSE_CHUNK, retain)
+/// needed here.
+fn parse(list: &ListSpec) -> ParsedList {
+    parse_chunked(list, PARSE_CHUNK)
 }
 
 /// `parse` with chunks of about `chunk_bytes`, parsed in parallel. The records,
-/// line numbers, stats, and patterns are the same whatever the chunk size.
-fn parse_chunked(list: &ListSpec, chunk_bytes: usize, retain: bool) -> ParsedList {
+/// line numbers, and stats are the same whatever the chunk size.
+fn parse_chunked(list: &ListSpec, chunk_bytes: usize) -> ParsedList {
     let text = list.text.as_str();
-    // A site scope changes the rules a list's patterns come from, so only
-    // unscoped lists keep them.
-    let patterns = retain && list.scope.is_empty();
-    let spans = if text.contains(AFFINITY) {
-        vec![(0..text.len(), 0)]
-    } else {
-        line_spans(text, chunk_bytes)
-    };
-    let parts = if spans.len() == 1 {
-        vec![parse_lines(list, spans[0].0.clone(), spans[0].1, patterns)]
-    } else {
-        parallel_indices(spans.len(), |i| {
-            parse_lines(list, spans[i].0.clone(), spans[i].1, patterns)
+    let spans = line_spans(text, chunk_bytes);
+    // An affinity block's types carry from one line to the next, so each span
+    // starts in the block the lines before it leave open.
+    let mut open = None;
+    let opens: Vec<Option<u8>> = spans
+        .iter()
+        .map(|(range, _)| {
+            let start = open;
+            if text.contains(AFFINITY) {
+                open = text[range.clone()].lines().filter_map(affinity_directive).last().unwrap_or(open);
+            }
+            start
         })
-    };
+        .collect();
+    let parse = |i: usize| parse_lines(list, spans[i].0.clone(), spans[i].1, opens[i]);
+    let parts = if spans.len() == 1 { vec![parse(0)] } else { parallel_indices(spans.len(), parse) };
     let mut merged = ParsedList {
         chunks: Vec::with_capacity(parts.len()),
-        patterns: patterns.then(Vec::new),
         has_affinity: false,
         has_directive: false,
         stats: Stats::default(),
@@ -883,9 +882,6 @@ fn parse_chunked(list: &ListSpec, chunk_bytes: usize, retain: bool) -> ParsedLis
         merged.has_directive |= part.has_directive;
         merged.stats.merge(&part.stats);
         merged.chunks.extend(part.chunks);
-        if let (Some(all), Some(kept)) = (&mut merged.patterns, part.patterns) {
-            all.extend(kept);
-        }
     }
     merged
 }
@@ -913,28 +909,22 @@ fn line_spans(text: &str, chunk_bytes: usize) -> Vec<(Range<usize>, u32)> {
 }
 
 /// The records of the lines of `list.text` in `span`, whose first line is
-/// number `lines_before + 1`. With `patterns`, also their patterns.
-fn parse_lines(list: &ListSpec, span: Range<usize>, lines_before: u32, patterns: bool) -> ParsedList {
+/// number `lines_before + 1` and in the affinity block `affinity`.
+fn parse_lines(list: &ListSpec, span: Range<usize>, lines_before: u32, mut affinity: Option<u8>) -> ParsedList {
     let text = &list.text[span];
     let mut stats = Stats::default();
     // Sized up front: growing it would leave the old buffers behind.
     let mut rules = Vec::with_capacity(text.lines().count());
-    let mut kept = patterns.then(PatternChunk::default);
-    let mut affinity: Option<u8> = None;
     let mut has_affinity = false;
     let mut has_directive = false;
     // Lines are parsed one at a time so affinity blocks can be tracked.
     for (n, line) in text.lines().enumerate() {
-        let trimmed = line.trim();
-        if let Some(rest) = trimmed.strip_prefix(AFFINITY) {
+        if let Some(types) = affinity_directive(line) {
             has_affinity = true;
-            affinity = rest
-                .strip_prefix('(')
-                .and_then(|r| r.strip_suffix(')'))
-                .and_then(affinity_mask);
+            affinity = types;
             continue;
         }
-        if trimmed.starts_with("!#") {
+        if line.trim().starts_with("!#") {
             has_directive = true;
         }
         let mut line_stats = Stats::default();
@@ -949,34 +939,18 @@ fn parse_lines(list: &ListSpec, span: Range<usize>, lines_before: u32, patterns:
                 shared: is_shared(rule),
                 exception: matches!(rule, Rule::Network(r) if r.exception),
                 network: matches!(rule, Rule::Network(_)),
+                in_context: matches!(rule, Rule::Network(r) if NetworkContext::holds(r)),
+                comparable: matches!(rule, Rule::Network(r) if comparable(r)),
                 plain: is_plain_block(rule),
                 affinity,
             });
-            if let Some(kept) = kept.as_mut() {
-                let pattern = match rule {
-                    Rule::Network(r) => pattern_of(r),
-                    _ => None,
-                };
-                let start = kept.text.len() as u32;
-                let len = pattern.as_deref().map_or(0, str::len) as u32;
-                if let Some(pattern) = pattern {
-                    kept.text.push_str(&pattern);
-                }
-                kept.spans.push((start, len));
-            }
         }
         stats.merge(&line_stats);
     }
-    // Capacity past the records and patterns would stay in the cache.
+    // Capacity past the records would stay in the cache.
     rules.shrink_to_fit();
-    let patterns = kept.map(|mut kept| {
-        kept.text.shrink_to_fit();
-        kept.spans.shrink_to_fit();
-        vec![kept]
-    });
     ParsedList {
         chunks: vec![rules],
-        patterns,
         has_affinity,
         has_directive,
         stats,
@@ -992,6 +966,12 @@ fn set_line(rule: &mut Rule, line: u32) {
 }
 
 const AFFINITY: &str = "!#safari_cb_affinity";
+
+/// The affinity types a `!#safari_cb_affinity(...)` line opens, when `line` is one.
+fn affinity_directive(line: &str) -> Option<Option<u8>> {
+    let rest = line.trim().strip_prefix(AFFINITY)?;
+    Some(rest.strip_prefix('(').and_then(|r| r.strip_suffix(')')).and_then(affinity_mask))
+}
 
 /// AdGuard's content blocker types: general, privacy, social, other, custom, security.
 fn affinity_mask(names: &str) -> Option<u8> {
@@ -1048,25 +1028,37 @@ fn hash<T: Hash + ?Sized>(value: &T) -> u64 {
 /// case-insensitively (wBlock's `FilterRuleAnalysis.ruleIdentity`).
 fn identity(raw: &str) -> u64 {
     let raw = raw.trim();
-    if let Some((at, _)) = crate::parse::cosmetic::find_marker(raw) {
+    let (head, lower, tail) = if let Some((at, _)) = crate::parse::cosmetic::find_marker(raw) {
         let (domains, rest) = raw.split_at(at);
-        return if domains.contains('/') {
-            hash(raw)
-        } else {
-            hash(&(domains.to_ascii_lowercase() + rest))
-        };
-    }
-    let body = raw.strip_prefix("@@").unwrap_or(raw);
-    let dollar = body.find('$').unwrap_or(body.len());
-    let (pattern, options) = body.split_at(dollar);
-    let case_sensitive = options
-        .split(',')
-        .any(|o| o.trim_start_matches('$') == "match-case");
-    if pattern.starts_with('/') || case_sensitive {
-        hash(raw)
+        if domains.contains('/') {
+            return hash(raw);
+        }
+        ("", domains, rest)
     } else {
-        hash(&(raw[..raw.len() - body.len()].to_string() + &pattern.to_ascii_lowercase() + options))
+        let body = raw.strip_prefix("@@").unwrap_or(raw);
+        let dollar = body.find('$').unwrap_or(body.len());
+        let (pattern, options) = body.split_at(dollar);
+        let case_sensitive = options
+            .split(',')
+            .any(|o| o.trim_start_matches('$') == "match-case");
+        if pattern.starts_with('/') || case_sensitive {
+            return hash(raw);
+        }
+        (&raw[..raw.len() - body.len()], pattern, options)
+    };
+    // `hash` of `head + lower.to_ascii_lowercase() + tail`, without building it.
+    let mut hasher = DefaultHasher::new();
+    hasher.write(head.as_bytes());
+    let mut buf = [0u8; 64];
+    for chunk in lower.as_bytes().chunks(buf.len()) {
+        let buf = &mut buf[..chunk.len()];
+        buf.copy_from_slice(chunk);
+        buf.make_ascii_lowercase();
+        hasher.write(buf);
     }
+    hasher.write(tail.as_bytes());
+    hasher.write_u8(0xff);
+    hasher.finish()
 }
 
 /// Lists with different site scopes compile one rule differently, so the
@@ -1333,13 +1325,19 @@ fn regex_escape(s: &str) -> String {
 /// unless a regex). None for a rule with no pattern to compare, and for a
 /// page exception (`$document`, `$elemhide`, ...), whose pattern is the page.
 fn pattern_of(rule: &NetworkRule) -> Option<String> {
-    if !rule.scope.is_empty()
-        || matches!(rule.action, NetworkAction::RemoveParam(_))
-        || matches!(&rule.action, NetworkAction::Other { option, .. } if option == "uritransform")
-    {
-        return None;
-    }
-    let raw = rule.raw.trim();
+    comparable(rule).then(|| pattern_text(&rule.raw)).flatten()
+}
+
+/// Whether `pattern_of` reads a pattern from the rule's `raw`.
+fn comparable(rule: &NetworkRule) -> bool {
+    rule.scope.is_empty()
+        && !matches!(rule.action, NetworkAction::RemoveParam(_))
+        && !matches!(&rule.action, NetworkAction::Other { option, .. } if option == "uritransform")
+}
+
+/// The pattern of a comparable rule's `raw` (`pattern_of`).
+fn pattern_text(raw: &str) -> Option<String> {
+    let raw = raw.trim();
     let body = raw.strip_prefix("@@").unwrap_or(raw);
     let pattern = if body.starts_with('/') {
         let close = body[1..].char_indices().scan(false, |escaped, (i, c)| {
@@ -1461,26 +1459,17 @@ mod tests {
         .unwrap()
     }
 
-    /// Retained patterns must fingerprint and compile exactly as parsed rules
-    /// do: exceptions, bare hosts, and scoped lists all take the parse path
-    /// or the stored patterns with the same result.
+    /// Patterns read from lines must be the patterns of the parsed rules.
     #[test]
-    fn retained_patterns_match_parsed_rules() {
-        let left = "||ads.example.com^\n@@||ads.example.com/ok^\n||tracker.net/x\n||bare.org^\n$badfilter,domain=other.com\n";
-        let right = "@@||tracker.net^\n||tracker.net/x^$third-party\nexample.com##.x\n@@||bare.org^\n||ads.example.com^$image\n";
-        let lists = |retain: bool, scope: Value| {
-            let mut request = two_list_request(left, right, scope);
-            request.retain = retain;
-            request
-        };
-        for scope in [json!({}), json!({"exclude": ["shop.*"]})] {
-            let parsed = Plan::with_cache(lists(false, scope.clone()), &ParseCache::default());
-            let kept = Plan::with_cache(lists(true, scope.clone()), &ParseCache::default());
-            for target in 0..parsed.target_count() {
-                assert_eq!(parsed.fingerprint(target, &[]), kept.fingerprint(target, &[]));
-                assert_eq!(rules(&parsed, target), rules(&kept, target));
-            }
+    fn line_patterns_match_parsed_rules() {
+        let left = "||ads.example.com^\n@@||ads.example.com/ok^\n||Tracker.net/X\n||bare.org^\n$badfilter,domain=other.com\n/ad[0-9]/$script\n||x.org^$removeparam=utm\n@@||y.org^$elemhide\n";
+        let plan = Plan::with_cache(two_list_request(left, "", json!({})), &ParseCache::default());
+        for p in plan.parsed[0].records().filter(|p| p.network) {
+            let Rule::Network(rule) = plan.rule(0, p) else { unreachable!() };
+            assert_eq!(plan.line_pattern(0, p), Some(pattern_of(&rule)), "{}", rule.raw);
         }
+        let scoped = Plan::with_cache(two_list_request(left, "", json!({"exclude": ["shop.*"]})), &ParseCache::default());
+        assert!(scoped.parsed[0].records().all(|p| scoped.line_pattern(0, p).is_none()));
     }
 
     #[test]
@@ -1509,6 +1498,7 @@ mod tests {
     fn chunked_parse_matches_one_piece() {
         let text: String = (0..300)
             .map(|i| match i % 4 {
+                _ if i % 50 == 7 => format!("!#safari_cb_affinity{}\n", ["(privacy)", "", "(general,social)"][i % 3]),
                 0 => format!("||ad{i}.example^$third-party\n"),
                 1 => format!("! comment {i}\n"),
                 2 => format!("@@||ad{}.example^\r\n", i - 2),
@@ -1522,24 +1512,18 @@ mod tests {
             trusted: false,
             scope: SiteScope::default(),
         };
-        let records = |parsed: &ParsedList| -> Vec<(usize, u32, u32, u64, bool, bool)> {
+        let records = |parsed: &ParsedList| -> Vec<(usize, u32, u32, u64, bool, bool, Option<u8>)> {
             parsed
                 .records()
-                .map(|p| (p.offset, p.line, p.index, p.identity, p.shared, p.network))
+                .map(|p| (p.offset, p.line, p.index, p.identity, p.shared, p.network, p.affinity))
                 .collect()
         };
-        let patterns = |parsed: &ParsedList| -> Vec<Option<String>> {
-            (0..parsed.chunks.len())
-                .flat_map(|c| (0..parsed.chunks[c].len()).map(move |i| (c, i)))
-                .map(|(c, i)| parsed.stored_pattern(c, i).flatten().map(str::to_owned))
-                .collect()
-        };
-        let whole = parse_chunked(&list, usize::MAX, true);
+        let whole = parse_chunked(&list, usize::MAX);
         for chunk in [1, 64, 1000] {
-            let chunked = parse_chunked(&list, chunk, true);
+            let chunked = parse_chunked(&list, chunk);
             assert!(chunked.chunks.len() > 1, "chunk {chunk} gives one chunk");
             assert_eq!(records(&chunked), records(&whole), "chunk {chunk}");
-            assert_eq!(patterns(&chunked), patterns(&whole), "chunk {chunk}");
+            assert_eq!(chunked.has_affinity, whole.has_affinity);
             assert_eq!(chunked.stats.lines, whole.stats.lines);
             assert_eq!(chunked.stats.rules, whole.stats.rules);
         }
@@ -2173,14 +2157,11 @@ mod tests {
             },
             generic: true,
         };
-        // WBE_RETAIN=0 runs the phone path, which keeps no patterns.
-        let retain = std::env::var("WBE_RETAIN").map_or(true, |v| v != "0");
         Plan::new(PlanRequest {
             safari: (18, 0),
             lists,
             targets,
             cosmetics,
-            retain,
         })
     }
 
