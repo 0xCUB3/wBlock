@@ -15,7 +15,7 @@ use std::collections::{BTreeMap, BTreeSet};
 /// (`MAX_SELECTORS_PER_RULE`).
 const GROUP_SIZE: usize = 250;
 
-/// Host part of an `if-top-url` pattern that matches any host.
+/// Host part of a url-filter that matches any host.
 const ANY_HOST: &str = r"[^\/]+";
 
 /// A selector and the `:matches-path()` argument it is scoped to.
@@ -76,7 +76,7 @@ pub(super) fn compile(
         let key = keys[i];
         let hs = hides.get(key).map(Vec::as_slice).unwrap_or_default();
         let es = exceptions.get(key).map(Vec::as_slice).unwrap_or_default();
-        resolve(hs, es, safari)
+        resolve(hs, es)
     });
     let mut resolved: Vec<(&Key, Vec<(Tier, Trigger)>)> = Vec::new();
     for (key, triggers) in keys.into_iter().zip(resolved_all) {
@@ -174,7 +174,7 @@ enum Trigger {
     Generic,
     Unless(Vec<String>),
     IfDomain(Vec<String>),
-    TopUrl(Vec<String>),
+    Url(String),
 }
 
 impl Trigger {
@@ -187,7 +187,10 @@ impl Trigger {
             Trigger::Generic => return trigger,
             Trigger::Unless(d) => trigger.unless_domain = Some(d.clone()),
             Trigger::IfDomain(d) => trigger.if_domain = Some(d.clone()),
-            Trigger::TopUrl(r) => trigger.if_top_url = Some(r.clone()),
+            Trigger::Url(r) => {
+                trigger.url_filter = r.clone();
+                trigger.url_filter_is_case_sensitive = Some(true);
+            }
         }
         // A scoped hide only needs checking when a document loads, not on
         // every subresource (wBlock #873).
@@ -198,11 +201,7 @@ impl Trigger {
 
 /// Resolves the hides and exceptions of one key. Returns the triggers the
 /// hides keep, or `None` when the key must go to the runtime.
-fn resolve(
-    hides: &[Entry],
-    exceptions: &[Entry],
-    safari: SafariVersion,
-) -> Option<Vec<(Tier, Trigger)>> {
+fn resolve(hides: &[Entry], exceptions: &[Entry]) -> Option<Vec<(Tier, Trigger)>> {
     let mut excepted_hosts: Vec<&str> = Vec::new();
     let mut global = false;
     for exception in exceptions {
@@ -254,7 +253,7 @@ fn resolve(
                 }
             }
         }
-        triggers.extend(scope_triggers(&scope, safari)?);
+        triggers.extend(scope_triggers(&scope)?);
     }
     Some(triggers)
 }
@@ -265,36 +264,30 @@ fn within(child: &str, parent: &str) -> bool {
 }
 
 /// The triggers that express a scope natively, or `None` if Safari cannot.
-fn scope_triggers(scope: &Scope, safari: SafariVersion) -> Option<Vec<(Tier, Trigger)>> {
-    let needs_top_url = scope.path.is_some() || !scope.entities.is_empty();
-    if needs_top_url && !safari.at_least(16, 4) {
-        return None;
-    }
+/// uBO matches entities and `:matches-path()` against each frame's own URL,
+/// so those go in the url-filter, which a document load tests against its own
+/// URL; `if-top-url` would follow the tab's page instead.
+fn scope_triggers(scope: &Scope) -> Option<Vec<(Tier, Trigger)>> {
+    let path = scope.path.as_deref();
     if scope.is_generic() {
-        let trigger = match (&scope.path, scope.excludes.is_empty()) {
+        let trigger = match (path, scope.excludes.is_empty()) {
             (None, true) => Trigger::Generic,
             (None, false) => Trigger::Unless(domains(&scope.excludes)),
-            (Some(path), true) => Trigger::TopUrl(url_regexes(ANY_HOST, Some(path.as_str()))?),
+            (Some(_), true) => Trigger::Url(url_regex(ANY_HOST, path)?),
             (Some(_), false) => return None,
         };
         return Some(vec![(Tier::GenericHide, trigger)]);
     }
     let mut out = Vec::new();
-    match &scope.path {
-        None if !scope.hosts.is_empty() => {
-            out.push((Tier::SpecificHide, Trigger::IfDomain(domains(&scope.hosts))));
-        }
-        None => {}
-        Some(path) => {
-            for host in &scope.hosts {
-                let regexes = url_regexes(&host_regex(host)?, Some(path.as_str()))?;
-                out.push((Tier::SpecificHide, Trigger::TopUrl(regexes)));
-            }
+    if path.is_none() && !scope.hosts.is_empty() {
+        out.push((Tier::SpecificHide, Trigger::IfDomain(domains(&scope.hosts))));
+    } else {
+        for host in &scope.hosts {
+            out.push((Tier::SpecificHide, Trigger::Url(url_regex(&host_regex(host)?, path)?)));
         }
     }
     for entity in &scope.entities {
-        let regexes = url_regexes(&entity_regex(entity)?, scope.path.as_deref())?;
-        out.push((Tier::SpecificHide, Trigger::TopUrl(regexes)));
+        out.push((Tier::SpecificHide, Trigger::Url(url_regex(&entity_regex(entity)?, path)?)));
     }
     Some(out)
 }
@@ -321,41 +314,37 @@ fn entity_regex(entity: &str) -> Option<String> {
     ))
 }
 
-/// Full `if-top-url` patterns for a host part, optionally with a
-/// `:matches-path()` argument. uBO tests the argument against
-/// `pathname + search`, case-insensitively and unanchored, so the path is
-/// matched after the host and before any fragment.
-fn url_regexes(host: &str, path: Option<&str>) -> Option<Vec<String>> {
-    let mut out = url_regex_candidates(host, path)?;
-    out.retain(|r| super::regex::webkit_accepts(r));
-    (!out.is_empty()).then_some(out)
-}
-
-fn url_regex_candidates(host: &str, path: Option<&str>) -> Option<Vec<String>> {
+/// A url-filter for a host part, optionally with a `:matches-path()`
+/// argument. uBO tests the argument against `pathname + search`,
+/// case-sensitively and unanchored, so it must match after the host and
+/// before any fragment.
+fn url_regex(host: &str, path: Option<&str>) -> Option<String> {
     let head = format!(r"^[^:]+:\/\/{host}");
-    let Some(path) = path else {
-        return Some(vec![format!(r"{head}([:\/?#].*)?$")]);
-    };
-    let arg = plain_path(path)?;
-    let mut out = vec![format!(r"{head}(:[^\/#]*)?\/[^#]*{arg}[^#]*")];
-    if path.starts_with('/') {
+    let re = match path {
+        None => format!(r"{head}([:\/?#].*)?$"),
         // The argument may start at the pathname's leading slash.
-        out.push(format!(r"{head}(:[^\/#]*)?{arg}[^#]*"));
-    }
-    Some(out)
+        Some(path) if path.starts_with('/') => format!(r"{head}(:[^\/#]*)?(\/[^#]*)?{}", plain_path(path)?),
+        Some(path) => format!(r"{head}(:[^\/#]*)?\/[^#]*{}", plain_path(path)?),
+    };
+    super::regex::webkit_accepts(&re).then_some(re)
 }
 
 /// uBO's `regexFromString` for a plain `:matches-path()` argument, in the
 /// url-filter subset Safari accepts. Regex arguments and characters that
-/// would need other escaping go to the runtime.
+/// would need other escaping go to the runtime. A `#` would reach into the
+/// fragment, which uBO never tests.
 fn plain_path(path: &str) -> Option<String> {
-    if path.starts_with('/') && path.len() > 1 && path.ends_with('/') {
+    let regex = path
+        .strip_prefix('/')
+        .and_then(|rest| rest.rsplit_once('/'))
+        .is_some_and(|(body, flags)| !body.is_empty() && flags.chars().all(|c| "imu".contains(c)));
+    if regex {
         return None;
     }
     let mut out = String::new();
     for c in path.chars() {
         match c {
-            c if c.is_ascii_alphanumeric() || "-_%=&~,;:'\"<>@!# ".contains(c) => out.push(c),
+            c if c.is_ascii_alphanumeric() || "-_%=&~,;:'\"<>@! ".contains(c) => out.push(c),
             '/' | '.' | '?' | '+' | '*' => {
                 out.push('\\');
                 out.push(c);
@@ -849,21 +838,14 @@ mod tests {
     }
 
     #[test]
-    fn entity_hide_uses_if_top_url() {
+    fn entity_hide_matches_the_frame_url() {
         assert_eq!(
             json(&[hide(".a").on("example.*")]),
             concat!(
-                r#"[{"trigger":{"url-filter":".*","resource-type":["document"],"if-top-url":["^[^:]+:\\/\\/([^\\/:]+\\.)?example\\.(com?\\.)?[^\\/:.]+([:\\/?#].*)?$"]},"#,
+                r#"[{"trigger":{"url-filter":"^[^:]+:\\/\\/([^\\/:]+\\.)?example\\.(com?\\.)?[^\\/:.]+([:\\/?#].*)?$","url-filter-is-case-sensitive":true,"resource-type":["document"]},"#,
                 r#""action":{"type":"css-display-none","selector":".a"}}]"#
             )
         );
-    }
-
-    #[test]
-    fn entity_hide_is_runtime_below_16_4() {
-        let (json, runtime) = run_at(&[hide(".a").on("example.*")], safari(16, 0));
-        assert_eq!(json, "[]");
-        assert_eq!(runtime, vec!["example.*##.a"]);
     }
 
     #[test]
@@ -1126,7 +1108,7 @@ mod tests {
     }
 
     #[test]
-    fn matches_path_generic_is_top_url_generic_tier() {
+    fn matches_path_generic_is_generic_tier() {
         let rules = [hide(".a").path("/news")];
         let rules: Vec<CosmeticRule> = rules.iter().map(R::build).collect();
         let mut out = Vec::new();
@@ -1143,32 +1125,25 @@ mod tests {
     }
 
     #[test]
-    fn matches_path_generic_uses_if_top_url() {
+    fn matches_path_matches_the_frame_url() {
         assert_eq!(
             json(&[hide(".a").path("/news")]),
             concat!(
-                r#"[{"trigger":{"url-filter":".*","resource-type":["document"],"if-top-url":["^[^:]+:\\/\\/[^\\/]+(:[^\\/#]*)?\\/[^#]*\\/news[^#]*","^[^:]+:\\/\\/[^\\/]+(:[^\\/#]*)?\\/news[^#]*"]},"#,
+                r#"[{"trigger":{"url-filter":"^[^:]+:\\/\\/[^\\/]+(:[^\\/#]*)?(\\/[^#]*)?\\/news","url-filter-is-case-sensitive":true,"resource-type":["document"]},"#,
                 r#""action":{"type":"css-display-none","selector":".a"}}]"#
             )
         );
     }
 
     #[test]
-    fn matches_path_with_domain_is_one_top_url_condition() {
+    fn matches_path_with_domain_is_one_url_filter() {
         assert_eq!(
             json(&[hide(".a").on("example.com").path("news")]),
             concat!(
-                r#"[{"trigger":{"url-filter":".*","resource-type":["document"],"if-top-url":["^[^:]+:\\/\\/([^\\/:]+\\.)?example\\.com(:[^\\/#]*)?\\/[^#]*news[^#]*"]},"#,
+                r#"[{"trigger":{"url-filter":"^[^:]+:\\/\\/([^\\/:]+\\.)?example\\.com(:[^\\/#]*)?\\/[^#]*news","url-filter-is-case-sensitive":true,"resource-type":["document"]},"#,
                 r#""action":{"type":"css-display-none","selector":".a"}}]"#
             )
         );
-    }
-
-    #[test]
-    fn matches_path_below_16_4_goes_to_runtime() {
-        let (out, runtime) = run_at(&[hide(".a").path("/news")], safari(16, 0));
-        assert_eq!(out, "[]");
-        assert_eq!(runtime, vec!["##.a"]);
     }
 
     #[test]
@@ -1179,6 +1154,7 @@ mod tests {
     #[test]
     fn matches_path_regex_goes_to_runtime() {
         assert_runtime(&[hide(".a").path("/n\\d+/")], &["##.a"]);
+        assert_runtime(&[hide(".b").path("/News/i")], &["##.b"]);
     }
 
     #[test]
@@ -1208,7 +1184,7 @@ mod tests {
     fn exception_and_hide_key_on_matches_path() {
         // A plain exception does not cancel a path-restricted hide's key.
         let (out, _) = run(&[hide(".a").path("/x"), exc(".a").on("example.com")]);
-        assert!(out.contains("if-top-url"));
+        assert!(out.contains(r#"\\/x""#));
     }
 
     #[test]
@@ -1238,7 +1214,7 @@ mod tests {
             json(&[hide(".a").on("example.com").on("example.*")]),
             concat!(
                 r#"[{"trigger":{"url-filter":".*","resource-type":["document"],"if-domain":["*example.com"]},"action":{"type":"css-display-none","selector":".a"}},"#,
-                r#"{"trigger":{"url-filter":".*","resource-type":["document"],"if-top-url":["^[^:]+:\\/\\/([^\\/:]+\\.)?example\\.(com?\\.)?[^\\/:.]+([:\\/?#].*)?$"]},"action":{"type":"css-display-none","selector":".a"}}]"#
+                r#"{"trigger":{"url-filter":"^[^:]+:\\/\\/([^\\/:]+\\.)?example\\.(com?\\.)?[^\\/:.]+([:\\/?#].*)?$","url-filter-is-case-sensitive":true,"resource-type":["document"]},"action":{"type":"css-display-none","selector":".a"}}]"#
             )
         );
     }
