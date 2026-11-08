@@ -2,6 +2,7 @@
 //! uses, which options exist (and their aliases), and what is invalid.
 
 pub(crate) mod cosmetic;
+pub(crate) use network::restate;
 mod network;
 
 use crate::ast::{ParsedLine, SourceRef};

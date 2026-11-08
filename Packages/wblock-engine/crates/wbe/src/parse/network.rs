@@ -220,6 +220,35 @@ struct NetOpt {
     neg: bool,
     /// Value after `=`, arguments unescaped. `None` when the option has no `=`.
     value: Option<String>,
+    /// Where the option sits in the option text.
+    text: std::ops::Range<usize>,
+}
+
+/// `r.raw` restated with `r`'s exception flag, `important` and `domain=`, so
+/// the runtime engine, which reads raw lines, sees a list's site scope.
+pub(crate) fn restate(r: &NetworkRule) -> String {
+    let head = strip_inline_comment(&r.raw, r.raw.contains(char::is_whitespace)).trim_end();
+    let anchor = index_of_net_anchor(head).unwrap_or(head.len());
+    let pattern = head[..anchor].strip_prefix("@@").unwrap_or(&head[..anchor]);
+    let hosts = (anchor == head.len()).then(|| hosts_host(pattern)).flatten();
+    let options = head.get(anchor + 1..).unwrap_or("");
+    let mut parts: Vec<&str> = parse_options(options)
+        .unwrap_or_default()
+        .into_iter()
+        .filter(|o| !matches!(o.opt, Opt::From | Opt::Important))
+        .map(|o| &options[o.text])
+        .collect();
+    let domains: Vec<String> = super::cosmetic::domain_texts(&r.from).iter().map(|d| d.replace('|', "\\|")).collect();
+    let domains = (!domains.is_empty()).then(|| format!("domain={}", domains.join("|")));
+    parts.extend(r.important.then_some("important"));
+    parts.extend(domains.as_deref());
+    format!(
+        "{}{}{}{}",
+        if r.exception { "@@" } else { "" },
+        hosts.map_or(pattern.to_string(), |host| format!("||{host}^")),
+        if parts.is_empty() { "" } else { "$" },
+        parts.join(","),
+    )
 }
 
 /// Line-level facts uBO computes once (`hasWhitespace`, `hasUppercase`,
@@ -414,7 +443,7 @@ fn parse_options(s: &str) -> Result<Vec<NetOpt>, String> {
         } else {
             (None, j)
         };
-        out.push(NetOpt { opt, neg, value });
+        out.push(NetOpt { opt, neg, value, text: i..end });
         if end == n {
             return Ok(out);
         }
@@ -1987,6 +2016,25 @@ mod tests {
         assert_eq!(r.action, NetworkAction::Block);
         assert_eq!(r.types, ResourceTypes::IMAGE);
         assert!(r.negated_types.is_empty());
+    }
+
+    #[test]
+    fn restated_lines_parse_back_to_the_rule() {
+        for line in [
+            "0.0.0.0 ads.example",
+            "||a.net^$popup,domain=/a\\|b/|x.org,important # note",
+            "@@$popup,from=c.org,3p",
+            "||x.net^$domain=a.org,popup",
+        ] {
+            let ParsedLine::Rule(Rule::Network(mut r)) = parse(line, SourceRef::default()) else { panic!("{line}") };
+            let host = r.from.include.iter().find_map(|m| match m { DomainMatcher::Hostname(h) => Some(h.clone()), _ => None });
+            r.from.exclude.push(DomainMatcher::Hostname(format!("sub.{}", host.unwrap_or("ex.org".into()))));
+            r.important = !r.important;
+            let restated = restate(&r);
+            let ParsedLine::Rule(Rule::Network(mut back)) = parse(&restated, SourceRef::default()) else { panic!("{restated}") };
+            back.raw.clone_from(&r.raw);
+            assert_eq!(back, r, "{line} -> {restated}");
+        }
     }
 
     fn read_list(name: &str) -> Option<String> {

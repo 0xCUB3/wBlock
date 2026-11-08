@@ -205,6 +205,11 @@ pub(crate) fn is_comment(line: &str) -> bool {
 /// sees the scope a rule was narrowed to.
 pub(crate) fn with_domains(raw: &str, domains: &DomainList) -> String {
     let at = find_marker(raw).map_or(0, |(at, _)| at);
+    format!("{}{}", domain_texts(domains).join(","), &raw[at..])
+}
+
+/// Each domain of `domains` as filter text, includes first, excludes with `~`.
+pub(crate) fn domain_texts(domains: &DomainList) -> Vec<String> {
     let one = |m: &DomainMatcher| match m {
         DomainMatcher::Hostname(h) => h.clone(),
         DomainMatcher::Entity(e) => format!("{e}.*"),
@@ -212,7 +217,7 @@ pub(crate) fn with_domains(raw: &str, domains: &DomainList) -> String {
     };
     let mut parts: Vec<String> = domains.include.iter().map(one).collect();
     parts.extend(domains.exclude.iter().map(|m| format!("~{}", one(m))));
-    format!("{}{}", parts.join(","), &raw[at..])
+    parts
 }
 
 /// Leftmost cosmetic marker and its byte offset. The marker needs at least one
