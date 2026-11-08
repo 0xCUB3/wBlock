@@ -727,19 +727,14 @@ where
         let mut stats = Stats::default();
         let mut page = Vec::new();
         for mut rule in rules {
-            if rule.exception
-                && rule
-                    .scope
-                    .intersects(ExceptionScope::DOC | ExceptionScope::EHIDE | ExceptionScope::SHIDE | ExceptionScope::GHIDE | ExceptionScope::GENERICBLOCK)
-            {
+            // `@@...$doc,popup` is both a page exception and a popup allow.
+            let popup = rule.types.contains(ResourceTypes::POPUP) && !rule.negated_types.contains(ResourceTypes::POPUP)
+                && !rule.badfilter && !ctx.bad.contains(&unlabeled(&rule));
+            let popup_ok = popup && crate::runtime::popup_rule(&rule).map_err(|reason| stats.drop(&reason)).is_ok();
+            if popup_ok || rule.exception && !rule.scope.is_empty() {
                 page.push(rule.raw.clone());
             }
-            if rule.types.contains(ResourceTypes::POPUP) && !rule.negated_types.contains(ResourceTypes::POPUP)
-                && !rule.badfilter && !ctx.bad.contains(&unlabeled(&rule)) {
-                match crate::runtime::popup_rule(&rule) {
-                    Ok(_) => page.push(rule.raw.clone()),
-                    Err(reason) => stats.drop(&reason),
-                }
+            if popup {
                 rule.types.remove(ResourceTypes::POPUP);
                 if rule.types.is_empty() { continue; }
             }

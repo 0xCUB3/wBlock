@@ -395,17 +395,16 @@ impl Engine {
                     let call = std::iter::once(r.name).chain(r.args).collect();
                     scriptlets.add(r.exception, r.domains, call);
                 }
-                ParsedLine::Rule(Rule::Network(r)) if r.types.contains(crate::ast::ResourceTypes::POPUP) => {
-                    if let Ok(rule) = popup_rule(&r) {
+                // `@@...$doc,popup` is both a popup allow and a page exception.
+                ParsedLine::Rule(Rule::Network(r)) if r.types.contains(crate::ast::ResourceTypes::POPUP) || r.exception && !r.scope.is_empty() => {
+                    if let Some(rule) = popup_rule(&r).ok().filter(|_| r.types.contains(crate::ast::ResourceTypes::POPUP)) {
                         // Network allow rules are candidates, not cosmetic exceptions.
                         // An allow keeps its opener domains: indexed for every
                         // opener, uBO's `@@$popup,domain=datanodes.to` allowed
                         // every popup on every site (#1072). Safari's tab event
                         // names the opener tab, so a frame-only allow can miss.
-                        popups.add(false, r.from, vec!["wbe:popup".into(), rule.to_string()]);
+                        popups.add(false, r.from.clone(), vec!["wbe:popup".into(), rule.to_string()]);
                     }
-                }
-                ParsedLine::Rule(Rule::Network(r)) if r.exception && !r.scope.is_empty() => {
                     if r.scope.contains(ExceptionScope::GHIDE) {
                         cosmetic.push(line.as_str());
                         generic.push(line.as_str());
@@ -431,6 +430,7 @@ impl Engine {
                                         | "generichide"
                                         | "ghide"
                                         | "genericblock"
+                                        | "popup"
                                 )
                             })
                             .collect();
@@ -597,8 +597,8 @@ impl Engine {
 /// rest of the engine. Unsupported constraints never become broader blocks.
 pub(crate) fn popup_rule(r: &crate::ast::NetworkRule) -> Result<serde_json::Value, String> {
     use crate::ast::NetworkAction;
-    if !matches!(r.action, NetworkAction::Block) || !r.scope.is_empty() {
-        return Err("popup: unsupported action or page scope".into());
+    if !matches!(r.action, NetworkAction::Block) {
+        return Err("popup: unsupported action".into());
     }
     // `domain=` and party are judged against the opener tab, as uBO does
     // when it cannot tell which frame opened the popup.
@@ -741,6 +741,18 @@ example.com##+js(set-constant, adsEnabled, false)
         assert!(blocked("https://other.example/", "https://site.example/ok"));
         assert!(!blocked("https://keep.example/", "https://gen.example/"));
         assert!(blocked("https://keep.example/", "https://spec.example/"));
+    }
+
+    #[test]
+    fn document_popup_exception_keeps_both_halves() {
+        // uBO's unbreak list ships `@@||awstrack.me/*auth.coindesk.com$doc,popup`.
+        let text = "##+js(set, a, 1)\n||awstrack.me^$popup\n@@||awstrack.me/*auth.coindesk.com$doc,popup\n";
+        let out = crate::compile(&[crate::ListInput { text, trusted: false }], &crate::CompileOptions { safari: crate::webkit::SafariVersion::new(18, 0) });
+        assert!(out.stats.dropped.is_empty(), "{:?}", out.stats.dropped);
+        let engine = Engine::deserialize(&Engine::build(&out.runtime).serialize()).unwrap();
+        let url = "https://awstrack.me/x?auth.coindesk.com";
+        assert!(engine.lookup(url).scriptlets.is_empty());
+        assert_eq!(engine.lookup(&format!("wbe-popup-https://news.example/#{url}")).popup_blocked, Some(false));
     }
 
     #[test]
