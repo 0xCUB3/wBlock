@@ -1332,9 +1332,11 @@ fn regex_escape(s: &str) -> String {
 }
 
 /// A network rule's pattern as #836 compares it (identity form: lowercase
-/// unless a regex). None for a rule with no pattern to compare.
+/// unless a regex). None for a rule with no pattern to compare, and for a
+/// page exception (`$document`, `$elemhide`, ...), whose pattern is the page.
 fn pattern_of(rule: &NetworkRule) -> Option<String> {
-    if matches!(rule.action, NetworkAction::RemoveParam(_))
+    if !rule.scope.is_empty()
+        || matches!(rule.action, NetworkAction::RemoveParam(_))
         || matches!(&rule.action, NetworkAction::Other { option, .. } if option == "uritransform")
     {
         return None;
@@ -1926,6 +1928,22 @@ mod tests {
         let (left, right) = (blocks(&left), blocks(&right));
         assert!(left.is_disjoint(&right));
         assert_eq!(left.len() + right.len(), 50);
+    }
+
+    /// A page exception's pattern names the page, not the requests it lifts,
+    /// so it reaches every blocker whatever their blocks' hosts.
+    #[test]
+    fn replicates_page_exceptions_into_every_blocker() {
+        let plan = plan(
+            json!([
+                {"id":"blocks", "text":"/ads.js\nsite.com##.ad"},
+                {"id":"exceptions", "text":"@@||site.com^$document\n@@||page.com^$elemhide"}
+            ]),
+            json!([{"slot":1,"lists":[{"list":0}]},{"slot":2,"lists":[{"list":1}]}]),
+            json!({}),
+        );
+        let left = crate::webkit::to_json(&plan.compile_target(0, &[]).output.webkit);
+        assert!(left.contains("*site.com") && left.contains("*page.com"), "{left}");
     }
 
     #[test]
