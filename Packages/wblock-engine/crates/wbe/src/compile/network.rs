@@ -34,25 +34,39 @@ const DEFAULT_TYPES: ResourceTypes = ResourceTypes::all().difference(
 #[derive(Default)]
 pub(crate) struct Context {
     strict: StrictHosts,
-    bad: Vec<NetworkRule>,
-    bad_bodies: FxHashSet<String>,
+    /// `$badfilter` rules by pattern body.
+    bad: FxHashMap<String, Vec<Bad>>,
+}
+
+/// A `$badfilter` rule with the shapes `surviving` compares, made once.
+struct Bad {
+    types: ResourceTypes,
+    include: Vec<DomainMatcher>,
+    shape: NetworkRule,
+    /// The shape for a "just origin" filter, when the rule is one.
+    origin_shape: Option<NetworkRule>,
 }
 
 impl Context {
     pub(crate) fn add(&mut self, rule: &NetworkRule) {
         self.strict.add(rule);
         if rule.badfilter {
-            let bad = unlabeled(rule);
-            self.bad_bodies.insert(bad.pattern.body.clone());
-            self.bad.push(bad);
+            let bad = Bad {
+                types: rule.types,
+                include: rule.from.include.clone(),
+                shape: shape(rule, false),
+                origin_shape: just_origin(rule).then(|| shape(rule, true)),
+            };
+            self.bad.entry(rule.pattern.body.clone()).or_default().push(bad);
         }
     }
 
     pub(crate) fn merge(&mut self, other: Context) {
         self.strict.hosts.extend(other.strict.hosts);
         self.strict.parents.extend(other.strict.parents);
-        self.bad.extend(other.bad);
-        self.bad_bodies.extend(other.bad_bodies);
+        for (body, bad) in other.bad {
+            self.bad.entry(body).or_default().extend(bad);
+        }
     }
 }
 
@@ -105,9 +119,9 @@ pub(crate) fn surviving(ctx: &Context, rule: &NetworkRule) -> Vec<NetworkRule> {
     if rule.badfilter {
         return Vec::new();
     }
-    if !ctx.bad_bodies.contains(rule.pattern.body.as_str()) {
+    let Some(bad) = ctx.bad.get(rule.pattern.body.as_str()) else {
         return vec![rule.clone()];
-    }
+    };
     // (typeless entry, typed entries) of a type set.
     let split = |t: ResourceTypes| match t {
         t if t.is_empty() => (true, t),
@@ -115,25 +129,21 @@ pub(crate) fn surviving(ctx: &Context, rule: &NetworkRule) -> Vec<NetworkRule> {
         t => (false, t),
     };
     let by_origin = just_origin(rule);
-    let shape = |r: &NetworkRule| {
-        let mut r = unlabeled(r);
-        r.types = ResourceTypes::empty();
-        if by_origin {
-            r.from.include.clear();
-        }
-        r
-    };
-    let key = shape(rule);
+    let key = shape(rule, by_origin);
     let origins: Vec<Option<&DomainMatcher>> = if by_origin {
         rule.from.include.iter().map(Some).collect()
     } else {
         vec![None]
     };
     let mut left = vec![split(rule.types); origins.len()];
-    for bad in ctx.bad.iter().filter(|b| (!by_origin || just_origin(b)) && shape(b) == key) {
+    let same = |b: &&Bad| match by_origin {
+        true => b.origin_shape.as_ref() == Some(&key),
+        false => b.shape == key,
+    };
+    for bad in bad.iter().filter(same) {
         let (typeless, typed) = split(bad.types);
         for (origin, left) in origins.iter().zip(&mut left) {
-            if origin.is_none_or(|o| bad.from.include.contains(o)) {
+            if origin.is_none_or(|o| bad.include.contains(o)) {
                 left.0 &= !typeless;
                 left.1.remove(typed);
             }
@@ -176,13 +186,17 @@ fn just_origin(r: &NetworkRule) -> bool {
         && matches!(r.action, NetworkAction::Block)
 }
 
-/// A rule with its provenance and `$badfilter` flag cleared, for comparing
-/// filters.
-fn unlabeled(r: &NetworkRule) -> NetworkRule {
+/// What `$badfilter` compares of a rule: no provenance, flag or types, and
+/// for a "just origin" filter (`by_origin`) no page hostnames.
+fn shape(r: &NetworkRule, by_origin: bool) -> NetworkRule {
     let mut r = r.clone();
     r.source = SourceRef::default();
     r.raw.clear();
     r.badfilter = false;
+    r.types = ResourceTypes::empty();
+    if by_origin {
+        r.from.include.clear();
+    }
     r
 }
 
