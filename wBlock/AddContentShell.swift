@@ -49,7 +49,8 @@ struct AddContentSheet<Mode: AddContentMode, Content: View>: View {
                     .buttonStyle(.borderedProminent)
                     .keyboardShortcut(.defaultAction)
             }
-            .controlSize(.large)
+            // Regular size, so they're rounded rectangles like onboarding's;
+            // macOS 26 draws large buttons as capsules (#1091).
             .padding([.horizontal, .bottom], 20)
         }
         // A fixed size; the grouped form scrolls inside it (#971).
