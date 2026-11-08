@@ -1359,6 +1359,11 @@ public class UserScriptManager: ObservableObject {
         _ = await dataManager.refreshFromDiskIfModified(forceRead: true)
         userScripts = dataManager.getUserScripts(includePersistedContent: true)
         logger.info("📖 Loaded \(self.userScripts.count) userscripts from ProtobufDataManager")
+        // Only a store that was read is a complete list of the scripts to keep.
+        if dataManager.lastError == nil {
+            let ids = Set(userScripts.map(\.id)), directories = Self.scriptsDirectoryURLs()
+            Task.detached(priority: .utility) { UserScriptFileStorage.removeOrphans(keeping: ids, directories: directories) }
+        }
 
         let embeddedMigration = migrateEmbeddedProtobufContentToFilesIfNeeded()
         if embeddedMigration.embeddedCount > 0 {

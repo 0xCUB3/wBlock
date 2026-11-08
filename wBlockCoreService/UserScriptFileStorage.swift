@@ -42,6 +42,23 @@ enum UserScriptFileStorage {
         if let firstError { throw firstError }
     }
 
+    /// Removes the source and sidecars of scripts the store no longer lists, such
+    /// as those left behind by a data reset. Files written in the last week stay:
+    /// another process may have saved a script it has not recorded yet.
+    nonisolated static func removeOrphans(keeping ids: Set<UUID>, directories: [URL], now: Date = Date()) {
+        let keys: Set<URLResourceKey> = [.isRegularFileKey, .contentModificationDateKey]
+        for directory in directories {
+            for url in (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: Array(keys))) ?? [] {
+                let name = url.lastPathComponent
+                guard name.dropFirst(36).first == ".", let id = UUID(uuidString: String(name.prefix(36))), !ids.contains(id),
+                      let values = try? url.resourceValues(forKeys: keys), values.isRegularFile == true,
+                      let modified = values.contentModificationDate, now.timeIntervalSince(modified) > 7 * 24 * 60 * 60
+                else { continue }
+                try? FileManager.default.removeItem(at: url)
+            }
+        }
+    }
+
     nonisolated static func read<Value>(
         fileName: String,
         directories: [URL],

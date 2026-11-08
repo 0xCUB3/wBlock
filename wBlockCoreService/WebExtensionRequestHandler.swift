@@ -25,17 +25,6 @@ public enum WebExtensionRequestHandler {
     private static let maximumGMXHRRequestBodyBytes = 2 * 1024 * 1024
     private static let maximumGMXHRHeaders = 128
 
-    // Reused for shared-log timestamps. Requests can be handled on concurrent
-    // threads, so formatting is serialized behind a lock.
-    private static let sharedLogDateFormatter = ISO8601DateFormatter()
-    private static let sharedLogDateFormatterLock = NSLock()
-
-    private static func sharedLogTimestamp() -> String {
-        sharedLogDateFormatterLock.lock()
-        defer { sharedLogDateFormatterLock.unlock() }
-        return sharedLogDateFormatter.string(from: Date())
-    }
-
     // Reuse one stateless session. Native fallback must not inherit the app
     // cookie jar or credential storage; it cannot access Safari's cookie store.
     private static let gmDefaultSession: URLSession = {
@@ -992,32 +981,8 @@ public enum WebExtensionRequestHandler {
     }
 
     private static func appendSharedWebExtensionLog(_ line: String) {
-        guard let base = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value) else {
-            return
-        }
-
-        let logURL = base.appendingPathComponent(sharedWebExtensionLogFilename)
-        let timestamp = sharedLogTimestamp()
-        let fullLine = "[\(timestamp)] \(line)\n"
-
-        guard let data = fullLine.data(using: .utf8) else {
-            return
-        }
-
-        if FileManager.default.fileExists(atPath: logURL.path) {
-            do {
-                let handle = try FileHandle(forWritingTo: logURL)
-                defer { try? handle.close() }
-                try handle.seekToEnd()
-                try handle.write(contentsOf: data)
-            } catch {
-                try? data.write(to: logURL, options: .atomic)
-            }
-        } else {
-            try? data.write(to: logURL)
-        }
+        SharedLogFile.append(line, to: sharedWebExtensionLogFilename)
     }
-
 
     private static func applyDisabledSitesFastPath(disabledSites: [String], platform: Platform) async -> (
         reloadedTargets: Int,

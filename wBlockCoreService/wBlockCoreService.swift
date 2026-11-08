@@ -859,7 +859,7 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
             if let output = mapOutput(outputURL), (try? validOutputDigest(output.data)) != nil {
                 rewritten = (try? withContentBlockerOutputLock(at: containerURL, targetRulesFilename: targetRulesFilename) {
                     guard outputIdentity(outputURL) == output.identity else { return false }
-                    try FilterArtifactStorage.write(output.data, to: outputURL)
+                    try FilterArtifactStorage.write(output.data, to: outputURL, sharingBlocksWith: outputURL)
                     try? FileManager.default.removeItem(at: markerURL)
                     return true
                 }) ?? false
@@ -1308,7 +1308,8 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         groupIdentifier: String,
         targetRulesFilename: String,
         containerURL explicitContainerURL: URL? = nil,
-        knownRuleCount: Int? = nil
+        knownRuleCount: Int? = nil,
+        sharingBlocksWith siblingFilename: String? = nil
     ) throws -> ContentBlockerSaveResult {
         os_log(.info, "Saving pre-formatted JSON content blocker rules to %@", targetRulesFilename)
         #if os(iOS)
@@ -1335,7 +1336,8 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         ) {
             let outputChanged = unchangedIdentity == nil || outputIdentity(sharedFileURL) != unchangedIdentity
             if outputChanged {
-                try FilterArtifactStorage.write(data, to: sharedFileURL)
+                try FilterArtifactStorage.write(data, to: sharedFileURL,
+                    sharingBlocksWith: siblingFilename.map { appGroupURL.appendingPathComponent($0) })
                 os_log(.info, "Successfully saved rules to %@", sharedFileURL.path)
             } else {
                 os_log(.info, "Skipped unchanged rules at %@", sharedFileURL.path)
@@ -1375,7 +1377,8 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
             groupIdentifier: groupIdentifier,
             targetRulesFilename: targetRulesFilename,
             containerURL: containerURL,
-            knownRuleCount: finalized.ruleCount
+            knownRuleCount: finalized.ruleCount,
+            sharingBlocksWith: ContentBlockerIncrementalCache.baseRulesFilename(for: targetRulesFilename)
         )
         return (
             ruleCount: finalized.ruleCount,
@@ -1569,7 +1572,8 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
             // The fingerprint names the base it was saved with, so it goes last.
             try? FileManager.default.removeItem(at: containerURL.appendingPathComponent(fingerprintFilename))
             _ = try saveContentBlockerIfChanged(jsonRules: baseJSON, groupIdentifier: groupIdentifier,
-                targetRulesFilename: baseFilename, containerURL: containerURL, knownRuleCount: baseCount)
+                targetRulesFilename: baseFilename, containerURL: containerURL, knownRuleCount: baseCount,
+                sharingBlocksWith: rulesFilename)
             try saveBlockerListFile(contents: String(baseCount), groupIdentifier: groupIdentifier, filename: "\(baseFilename).count", containerURL: containerURL)
             try saveBlockerListFile(contents: advanced ?? "", groupIdentifier: groupIdentifier, filename: ContentBlockerIncrementalCache.baseAdvancedRulesFilename(for: rulesFilename), containerURL: containerURL)
             try saveBlockerListFile(contents: SafariVersionDetection.compilerIdentity, groupIdentifier: groupIdentifier, filename: ContentBlockerIncrementalCache.baseCompilerFilename(for: rulesFilename), containerURL: containerURL)

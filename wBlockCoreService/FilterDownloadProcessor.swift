@@ -131,7 +131,7 @@ public enum FilterDownloadProcessor {
                 if !filter.isCustom { FilterArtifactStorage.excludeFromBackup(fileURL) }
                 if let rawBaselineData {
                     do {
-                        try FilterArtifactStorage.write(rawBaselineData, to: baselineURL)
+                        try FilterArtifactStorage.write(rawBaselineData, to: baselineURL, sharingBlocksWith: fileURL)
                     } catch {
                         try? FileManager.default.removeItem(at: baselineURL)
                     }
