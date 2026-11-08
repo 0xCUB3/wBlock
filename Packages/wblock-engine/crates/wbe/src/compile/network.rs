@@ -54,6 +54,11 @@ impl Context {
         self.bad.extend(other.bad);
         self.bad_bodies.extend(other.bad_bodies);
     }
+
+    /// Whether a `$badfilter` rule of the set cancels `rule`.
+    pub(crate) fn cancels(&self, rule: &NetworkRule) -> bool {
+        self.bad_bodies.contains(rule.pattern.body.as_str()) && self.bad.contains(&unlabeled(rule))
+    }
 }
 
 /// The host of a `$genericblock` exception Safari can represent: one
@@ -76,12 +81,7 @@ pub(crate) fn emit_rule(
     out: &mut Emitted,
     stats: &mut Stats,
 ) {
-    if rule.badfilter {
-        return;
-    }
-    if ctx.bad_bodies.contains(rule.pattern.body.as_str())
-        && ctx.bad.contains(&unlabeled(rule))
-    {
+    if rule.badfilter || ctx.cancels(rule) {
         return;
     }
     if let Err(reason) = compile_rule(rule, safari, ctx, out, None) {
@@ -729,7 +729,7 @@ where
         for mut rule in rules {
             // `@@...$doc,popup` is both a page exception and a popup allow.
             let popup = rule.types.contains(ResourceTypes::POPUP) && !rule.negated_types.contains(ResourceTypes::POPUP)
-                && !rule.badfilter && !ctx.bad.contains(&unlabeled(&rule));
+                && !rule.badfilter && !ctx.cancels(&rule);
             let popup_ok = popup && crate::runtime::popup_rule(&rule).map_err(|reason| stats.drop(&reason)).is_ok();
             if popup_ok || rule.exception && !rule.scope.is_empty() {
                 page.push(rule.raw.clone());
