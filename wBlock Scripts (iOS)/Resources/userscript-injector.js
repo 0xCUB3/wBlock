@@ -1091,7 +1091,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
             if (typeof browser !== 'undefined' && browser.runtime && browser.runtime.onMessage) {
                 wBlockLog('[wBlock] Using browser.runtime.onMessage for listening.');
                 listenWhileShown(browser.runtime.onMessage, (message, sender, sendResponse) => {
-                    wBlockLog('[wBlock] Received message via browser.runtime.onMessage:', JSON.parse(JSON.stringify(message || {})));
+                    wBlockLog('[wBlock] Received message via browser.runtime.onMessage:', message);
 
                     if (message && message.type === 'wblock:pageSupportProbe') {
                         return Promise.resolve({
@@ -1141,7 +1141,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
             } else if (typeof safari !== 'undefined' && safari.extension && typeof safari.self !== 'undefined' && safari.self.addEventListener) {
                 wBlockLog('[wBlock] Using safari.self.addEventListener for listening.');
                 safari.self.addEventListener('message', (event) => {
-                    wBlockLog('[wBlock] Received message via safari.self.addEventListener:', event.name, JSON.parse(JSON.stringify(event.message || {})));
+                    wBlockLog('[wBlock] Received message via safari.self.addEventListener:', event.name, event.message);
                     const requestId = event.message && event.message.requestId;
                     if (requestId && this.pendingNativeRequests.has(requestId)) {
                         const pending = this.pendingNativeRequests.get(requestId);
