@@ -9,7 +9,7 @@
 use super::{CompileOptions, Stats, Tier, Tiered};
 use crate::ast::{CosmeticBody, CosmeticRule, DomainMatcher};
 use crate::webkit::{SafariVersion, WkAction, WkResourceType, WkRule, WkTrigger};
-use std::collections::{BTreeMap, BTreeSet, HashSet};
+use std::collections::{BTreeMap, BTreeSet};
 
 /// Selectors per emitted rule. AdGuard's Compiler uses the same limit
 /// (`MAX_SELECTORS_PER_RULE`).
@@ -92,22 +92,12 @@ pub(super) fn compile(
         }
     }
 
-    // A selector hidden on every page makes its domain-specific copies redundant.
-    let universal: HashSet<&str> = resolved
-        .iter()
-        .filter(|(key, _)| key.1.is_none())
-        .filter(|(_, ts)| ts.contains(&(Tier::GenericHide, Trigger::Generic)))
-        .map(|(key, _)| key.0)
-        .collect();
-
+    // A specific copy of a generic hide is kept: `$generichide` cancels only
+    // the generic one.
     let mut groups: BTreeMap<(Tier, &Trigger), BTreeSet<&str>> = BTreeMap::new();
     for (key, triggers) in &resolved {
         for (tier, trigger) in triggers {
-            let redundant =
-                *tier == Tier::SpecificHide && key.1.is_none() && universal.contains(key.0);
-            if !redundant {
-                groups.entry((*tier, trigger)).or_default().insert(key.0);
-            }
+            groups.entry((*tier, trigger)).or_default().insert(key.0);
         }
     }
     let groups: Vec<((Tier, &Trigger), Vec<&str>)> = groups
@@ -1090,16 +1080,14 @@ mod tests {
     }
 
     #[test]
-    fn unconditional_hide_drops_redundant_specific_copies() {
+    fn specific_copy_of_unconditional_hide_survives_generichide() {
+        // `$generichide` cancels the generic `.a` on example.com, so the
+        // specific copy must stay to hide it there.
         assert_eq!(
-            json(&[
-                hide(".a"),
-                hide(".a").on("example.com"),
-                hide(".b").on("example.com")
-            ]),
+            json(&[hide(".a"), hide(".a").on("example.com")]),
             concat!(
                 r#"[{"trigger":{"url-filter":".*"},"action":{"type":"css-display-none","selector":".a"}},"#,
-                r#"{"trigger":{"url-filter":".*","resource-type":["document"],"if-domain":["*example.com"]},"action":{"type":"css-display-none","selector":".b"}}]"#
+                r#"{"trigger":{"url-filter":".*","resource-type":["document"],"if-domain":["*example.com"]},"action":{"type":"css-display-none","selector":".a"}}]"#
             )
         );
     }
