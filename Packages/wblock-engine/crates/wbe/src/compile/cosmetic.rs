@@ -9,7 +9,7 @@
 use super::{CompileOptions, Stats, Tier, Tiered};
 use crate::ast::{CosmeticBody, CosmeticRule, DomainMatcher};
 use crate::webkit::{SafariVersion, WkAction, WkResourceType, WkRule, WkTrigger};
-use std::collections::{BTreeMap, BTreeSet, HashSet};
+use std::collections::{BTreeMap, BTreeSet};
 
 /// Selectors per emitted rule. AdGuard's Compiler uses the same limit
 /// (`MAX_SELECTORS_PER_RULE`).
@@ -92,22 +92,12 @@ pub(super) fn compile(
         }
     }
 
-    // A selector hidden on every page makes its domain-specific copies redundant.
-    let universal: HashSet<&str> = resolved
-        .iter()
-        .filter(|(key, _)| key.1.is_none())
-        .filter(|(_, ts)| ts.contains(&(Tier::GenericHide, Trigger::Generic)))
-        .map(|(key, _)| key.0)
-        .collect();
-
+    // A specific copy of a generic hide is kept: `$generichide` cancels only
+    // the generic one.
     let mut groups: BTreeMap<(Tier, &Trigger), BTreeSet<&str>> = BTreeMap::new();
     for (key, triggers) in &resolved {
         for (tier, trigger) in triggers {
-            let redundant =
-                *tier == Tier::SpecificHide && key.1.is_none() && universal.contains(key.0);
-            if !redundant {
-                groups.entry((*tier, trigger)).or_default().insert(key.0);
-            }
+            groups.entry((*tier, trigger)).or_default().insert(key.0);
         }
     }
     let groups: Vec<((Tier, &Trigger), Vec<&str>)> = groups
@@ -228,16 +218,20 @@ fn resolve(
     if global {
         return Some(Vec::new());
     }
+    // uBO compiles a negated hostname of a hide as an exception on that
+    // hostname, so it lifts every hide of the key there.
+    for hide in hides {
+        excepted_hosts.extend(hide.scope.as_ref()?.excludes.iter().map(String::as_str));
+    }
 
     let mut triggers = Vec::new();
     for hide in hides {
         let mut scope = hide.scope.clone()?;
-        if !excepted_hosts.is_empty() {
-            if scope.is_generic() {
-                scope
-                    .excludes
-                    .extend(excepted_hosts.iter().map(|h| h.to_string()));
-            } else {
+        if scope.is_generic() {
+            scope.excludes = excepted_hosts.iter().map(|h| h.to_string()).collect();
+        } else {
+            scope.excludes.clear();
+            if !excepted_hosts.is_empty() {
                 if !scope.entities.is_empty() {
                     return None;
                 }
@@ -284,9 +278,6 @@ fn scope_triggers(scope: &Scope, safari: SafariVersion) -> Option<Vec<(Tier, Tri
             (Some(_), false) => return None,
         };
         return Some(vec![(Tier::GenericHide, trigger)]);
-    }
-    if !scope.excludes.is_empty() {
-        return None;
     }
     let mut out = Vec::new();
     match &scope.path {
@@ -1057,6 +1048,20 @@ mod tests {
     }
 
     #[test]
+    fn negated_domain_of_hide_excepts_every_hide_of_the_selector() {
+        // uBO compiles `~bing.com##.a` as `##.a` plus `bing.com#@#.a`, so a
+        // copy of `.a` from another list does not hide it on bing.com either.
+        assert_eq!(
+            json(&[hide(".a").off("bing.com").off("x.net"), hide(".a").off("x.net")]),
+            json(&[hide(".a"), exc(".a").on("bing.com").on("x.net")])
+        );
+        assert_runtime(
+            &[hide(".a").on("example.com").off("sub.example.com"), hide(".a").on("example.com")],
+            &["example.com##.a", "example.com,~sub.example.com##.a"],
+        );
+    }
+
+    #[test]
     fn exception_with_excludes_goes_to_runtime() {
         assert_runtime(
             &[hide(".a"), exc(".a").off("x.com")],
@@ -1090,16 +1095,14 @@ mod tests {
     }
 
     #[test]
-    fn unconditional_hide_drops_redundant_specific_copies() {
+    fn specific_copy_of_unconditional_hide_survives_generichide() {
+        // `$generichide` cancels the generic `.a` on example.com, so the
+        // specific copy must stay to hide it there.
         assert_eq!(
-            json(&[
-                hide(".a"),
-                hide(".a").on("example.com"),
-                hide(".b").on("example.com")
-            ]),
+            json(&[hide(".a"), hide(".a").on("example.com")]),
             concat!(
                 r#"[{"trigger":{"url-filter":".*"},"action":{"type":"css-display-none","selector":".a"}},"#,
-                r#"{"trigger":{"url-filter":".*","resource-type":["document"],"if-domain":["*example.com"]},"action":{"type":"css-display-none","selector":".b"}}]"#
+                r#"{"trigger":{"url-filter":".*","resource-type":["document"],"if-domain":["*example.com"]},"action":{"type":"css-display-none","selector":".a"}}]"#
             )
         );
     }

@@ -48,13 +48,12 @@ pub fn adguard_to_ubo(line: &str) -> Cow<'_, str> {
         "#$#" | "#$?#" | "#@$#" | "#@$?#" => style_injection(body)
             .filter(|(sel, plain)| *plain || sel.ends_with(":remove()") || marker.contains('?'))
             .map(|(sel, _)| format!("{domains}{prefix}{}", rewrite_ops(&sel, marker.contains('?')))),
+        // uBO translates `##selector { style }` too (`isStyleInjectionFilter`).
         _ => {
-            let ops = rewrite_ops(body, marker.contains('?'));
-            if marker.contains('?') || matches!(ops, Cow::Owned(_)) {
-                Some(format!("{domains}{prefix}{ops}"))
-            } else {
-                None
-            }
+            let body = style_injection(body).map_or(Cow::Borrowed(body), |(sel, _)| Cow::Owned(sel));
+            let ops = rewrite_ops(&body, marker.contains('?'));
+            (marker.contains('?') || matches!(body, Cow::Owned(_)) || matches!(ops, Cow::Owned(_)))
+                .then(|| format!("{domains}{prefix}{ops}"))
         }
     };
     rewritten.map_or(Cow::Borrowed(line), Cow::Owned)
@@ -393,6 +392,10 @@ mod tests {
                 "example.com#$#body > * { filter: none !important; }",
             ),
             ("#$#body { color: red }", "#$#body { color: red }"),
+            // EasyList's `##selector { style }`, translated as uBO does.
+            ("example.com##.a {top:0;}", "example.com##.a:style(top:0;)"),
+            ("example.com###b {remove:true;}", "example.com###b:remove()"),
+            ("example.com#@#.a { display: none !important; }", "example.com#@#.a"),
             (
                 "example.com#@$#.ad { display: none !important; }",
                 "example.com#@#.ad",
