@@ -57,9 +57,22 @@ pub fn url_filter(p: &Pattern) -> Option<String> {
         PatternKind::Left => out.push('^'),
         _ => {}
     }
-    literal(body, &mut out)?;
-    if p.right_anchored {
-        out.push('$');
+    // A trailing `^` also matches the end of the URL (uBO
+    // `FilterTrailingSeparator`). WebKit has no alternation, so the separator
+    // and the rest of the URL become optional before the end.
+    match body.strip_suffix('^') {
+        Some(head) => {
+            literal(head, &mut out)?;
+            out.push('(');
+            out.push_str(SEPARATOR);
+            out.push_str(if p.right_anchored { ")?$" } else { ".*)?$" });
+        }
+        None => {
+            literal(body, &mut out)?;
+            if p.right_anchored {
+                out.push('$');
+            }
+        }
     }
     webkit_accepts(&out).then_some(out)
 }
@@ -514,6 +527,23 @@ mod tests {
             .unwrap(),
             "^[^:]+://+([^:/]+\\.)?ads\\.com[/:?#]path"
         );
+    }
+
+    #[test]
+    fn trailing_separator_also_matches_the_end() {
+        let host = |body: &str, right_anchored| {
+            let f = filter(&Pattern { kind: PatternKind::Hostname, body: body.into(), right_anchored }).unwrap();
+            assert!(webkit_accepts(&f), "{f}");
+            ::regex::Regex::new(&f).unwrap()
+        };
+        let re = host("cdn.com/ads.js^", false);
+        assert!(re.is_match("https://cdn.com/ads.js"));
+        assert!(re.is_match("https://cdn.com/ads.js?v=1"));
+        assert!(!re.is_match("https://cdn.com/ads.jsx"));
+        let re = host("cdn.com/ads.js^", true);
+        assert!(re.is_match("https://cdn.com/ads.js"));
+        assert!(re.is_match("https://cdn.com/ads.js?"));
+        assert!(!re.is_match("https://cdn.com/ads.js?v=1"));
     }
 
     #[test]
