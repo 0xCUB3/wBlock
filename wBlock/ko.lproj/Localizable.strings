@@ -96,10 +96,8 @@
 "Additional filter list for websites in Hebrew." = "히브리어 웹사이트에 대한 추가 필터 목록입니다.";
 "Additional filter list for websites in Hindi, Tamil and other Dravidian and Indic languages." = "힌디어, 타밀어, 기타 드라비다어 및 인도어로 된 웹사이트에 대한 추가 필터 목록입니다.";
 "Additional filter list for websites in Icelandic." = "아이슬란드어 웹사이트에 대한 추가 필터 목록입니다.";
-"Additional filter list for websites in Persian." = "페르시아어 웹사이트에 대한 추가 필터 목록입니다.";
 "Additional filter list for websites in Latvian." = "라트비아어 웹사이트에 대한 추가 필터 목록입니다.";
 "Additional filter list for websites in Lithuanian." = "리투아니아어 웹사이트에 대한 추가 필터 목록입니다.";
-"Additional filter list for websites in Slovenian." = "슬로베니아어 웹사이트에 대한 추가 필터 목록입니다.";
 "AdGuard Chinese filter" = "AdGuard Chinese filter";
 "AdGuard Dutch filter" = "AdGuard Dutch filter";
 "EasyDutch" = "EasyDutch";
@@ -173,7 +171,6 @@
 "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "Safari는 이 목록의 inline-script 규칙을 적용할 수 없습니다. 지원되는 영어 사이트에서는 유저스크립트에서 Bypass Paywalls Clean을 활성화하세요.";
 "Blocks pop-up ads on web pages." = "웹 페이지의 팝업 광고를 차단합니다.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "프로모션 팝업, 뉴스레터 가입, 알림 요청을 차단합니다.";
-"Hides social media content and icons. Blocks social widgets and scripts, including many that AdGuard Social Media Filter misses." = "소셜 미디어 콘텐츠와 아이콘을 숨깁니다. AdGuard Social Media Filter가 놓치는 많은 항목을 포함해 소셜 위젯과 스크립트를 차단합니다.";
 "Blocks third-party widgets, chat assistants, and support widgets." = "타사 위젯, 채팅 도우미 및 지원 위젯을 차단합니다.";
 "Building combined filter engine..." = "결합 필터 엔진 구축 중...";
 "Building filter engine" = "필터 엔진을 빌드합니다";
@@ -728,7 +725,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Change File" = "파일 변경";
 "Local imports won't auto-update; re-import to replace." = "로컬 가져오기는 자동으로 업데이트되지 않습니다. 교체하려면 다시 가져오세요.";
 "Blocks Twitch ads with the vaft script from TwitchAdSolutions." = "TwitchAdSolutions의 vaft 스크립트로 Twitch 광고를 차단합니다.";
-"Optional. Blocks Twitch ads and handles complicated anti-adblock cases, but it slows page loads." = "선택 사항입니다. Twitch 광고를 차단하고 복잡한 광고 차단 방지 사례를 처리하지만, 페이지 로딩이 느려집니다.";
 
 /* Issue 508 UI */
 "Disable Essential Filter?" = "필수 필터를 비활성화할까요?";
@@ -778,7 +774,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "column %@: %@" = "열 %@: %@";
 "Userstyle compiler timed out." = "유저스타일 컴파일러 시간이 초과되었습니다.";
 "Userstyle compiler must not run on the main thread." = "유저스타일 컴파일러는 메인 스레드에서 실행하면 안 됩니다.";
-"Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "wBlock용 MIT 라이선스 Dark Reader API 엔진(베타, 전체 사이트 수정 데이터베이스 제외).";
 "Pure Black (OLED)" = "완전한 검정 (OLED)";
 "Follow System" = "시스템 따르기";
 "Always Dark" = "항상 어둡게";
@@ -890,11 +885,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Autoplay" = "자동 재생";
 "Autoplay off" = "자동 재생 꺼짐";
 "Userscripts off" = "유저스크립트 꺼짐";
-"Following the Autoplay setting in the Safari extension." = "Safari 확장 프로그램의 자동 재생 설정을 따릅니다.";
-"Overrides the Autoplay setting in the Safari extension." = "Safari 확장 프로그램의 자동 재생 설정을 덮어씁니다.";
-"Runs every enabled userscript that matches this site." = "이 사이트와 일치하는 모든 활성 유저스크립트를 실행합니다.";
-"Applies filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "필터 목록과 스크립틀릿을 적용합니다. 유저스크립트, 요소 제거기, 자동 재생은 별도의 스위치가 있습니다.";
-"Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches. Each site includes its subdomains." = "추가된 사이트는 필터 목록과 스크립틀릿을 건너뜁니다. 유저스크립트, 요소 제거기, 자동 재생은 별도의 스위치가 있습니다. 각 사이트에는 하위 도메인도 포함됩니다.";
 "Websites" = "웹사이트";
 "Next update: %@" = "다음 업데이트: %@";
 "Next update" = "다음 업데이트";
@@ -946,22 +936,10 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Available when the current sync finishes." = "현재 동기화가 끝나면 사용할 수 있습니다.";
 "Generic Rules" = "일반 규칙";
 "Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps." = "사이트를 지정하지 않는 규칙으로 모든 사이트의 요소를 숨깁니다. 끄면 사이트별 숨기기는 유지되고, 특히 무거운 웹 앱에서 페이지가 가벼워집니다.";
-"Automatically removes unnecessary '$' and '&' values from URLs, making them easier to copy from the URL bar and pasting elsewhere as links. Already included in Dandelion Sprout's Annoyances List." = "URL에서 불필요한 '$' 및 '&' 값을 자동으로 제거하여 URL 표시줄에서 쉽게 복사하고 다른 곳에 링크로 붙여넣을 수 있도록 합니다. 이미 Dandelion Sprout's Annoyances List에 포함되어 있습니다.";
-"Blocks cookie notices on web pages." = "웹 페이지의 쿠키 알림을 차단합니다.";
-"Filter for social media widgets such as 'Like' and 'Share' buttons and more." = "'좋아요', '공유' 버튼 등 소셜 미디어 위젯을 위한 필터입니다.";
-"Hides website features that use generative AI and AI-generated content." = "생성형 AI 및 AI 생성 콘텐츠를 사용하는 웹사이트 기능을 숨깁니다.";
 "This filter blocks tracking pixels in email clients." = "이 필터는 이메일 클라이언트에서 추적 픽셀을 차단합니다.";
-"Prevents public Internet sites from digging into your LAN files." = "공용 인터넷 사이트가 LAN의 파일을 들여다보지 못하도록 방지합니다.";
-"Blocks more malware than most other major anti-malware lists - domains and URL patterns used in malware redirection chains, IP addresses that are solely used by malware, PUP nags, and a few scammers. Already included in Dandelion Sprout's Annoyances List." = "대부분의 주요 악성코드 차단 목록보다 더 많은 악성코드를 차단합니다. 악성코드 리디렉션 체인에 사용되는 도메인 및 URL 패턴, 악성코드 전용 IP 주소, PUP(잠재적으로 원하지 않는 프로그램) 알림, 그리고 일부 사기꾼을 차단합니다. 이미 Dandelion Sprout's Annoyances List에 포함되어 있습니다.";
-"Filter that blocks ads, trackers, and other nasty things." = "광고, 추적기 및 기타 유해한 요소를 차단하는 필터입니다.";
-"Filter designed to test certain hazardous filtering rules before they are added to the basic filters." = "위험할 수 있는 필터링 규칙을 기본 필터에 추가하기 전 실험하기 위한 필터입니다.";
-"Additional filter list for websites in Indonesian and Malay." = "인도네시아어 및 말레이어 웹사이트를 위한 추가 필터 목록입니다.";
-"Hufilter. Filter list that specifically removes ads, privacy threats, and security risks on websites in the Hungarian language." = "Hufilter. 헝가리어로 된 웹사이트의 광고, 개인정보 위협, 보안 위험을 구체적으로 제거하는 필터 목록입니다.";
-"Privacy protection supplement for EasyList." = "EasyList의 개인정보 보호 보완 필터입니다.";
 
 /* Add Filter List: Find */
 "wBlock Ad and Tracking Hosts" = "wBlock 광고 및 추적 호스트";
-"Blocks ad and tracking hosts that the other lists only block in part." = "다른 목록이 일부만 차단하는 광고 및 추적 호스트를 차단합니다.";
 
 "Filter Logs" = "로그 필터";
 "Apply Anyway" = "그래도 적용";
@@ -999,19 +977,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "EasyList – Chat Widgets" = "EasyList – Chat Widgets";
 "EasyList – Newsletter Notices" = "EasyList – Newsletter Notices";
 "EasyList – Notifications" = "EasyList – Notifications";
-"Ad blocking rules from the uBlock Origin project. Meant to be used alongside EasyList." = "uBlock Origin 프로젝트의 광고 차단 규칙입니다. EasyList와 함께 사용하도록 만들어졌습니다.";
 "Additional filter list for websites in German." = "독일어 웹사이트에 대한 추가 필터 목록입니다.";
 "Additional filter list for websites in Italian." = "이탈리아어 웹사이트에 대한 추가 필터 목록입니다.";
-"Additional filter list for websites in Korean." = "한국어 웹사이트에 대한 추가 필터 목록입니다.";
-"Additional filter list for websites in Persian." = "페르시아어 웹사이트에 대한 추가 필터 목록입니다.";
 "Additional filter list for websites in Polish." = "폴란드어 웹사이트에 대한 추가 필터 목록입니다.";
 "Additional filter list for websites in Spanish." = "스페인어 웹사이트에 대한 추가 필터 목록입니다.";
 "Blocks trackers and removes tracking parameters from URLs, from the uBlock Origin project." = "추적기를 차단하고 URL에서 추적 매개변수를 제거합니다. uBlock Origin 프로젝트의 목록입니다.";
-"Blocks sites documented to install adware or malware, or to steal login credentials." = "애드웨어나 악성코드를 설치하거나 로그인 정보를 훔치는 것으로 확인된 사이트를 차단합니다.";
-"Short-term rules that fix sites broken by other filter lists." = "다른 필터 목록 때문에 깨진 사이트를 고치는 단기 규칙입니다.";
-"Rules that keep sites working when default lists break them." = "기본 목록 때문에 사이트가 작동하지 않을 때 작동하도록 유지하는 규칙입니다.";
-"Hides annoying page elements, such as overlays and promotional banners, from the uBlock Origin project." = "오버레이와 프로모션 배너처럼 페이지의 성가신 요소를 숨깁니다. uBlock Origin 프로젝트의 목록입니다.";
-"Blocks ads on websites, from the EasyList project." = "웹사이트의 광고를 차단합니다. EasyList 프로젝트의 목록입니다.";
 "Blocks phishing and malware domains flagged by CERT Polska." = "CERT Polska가 표시한 피싱 및 악성코드 도메인을 차단합니다.";
 "Blocks URLs that distribute malware, based on URLhaus data." = "URLhaus 데이터를 바탕으로 악성코드를 배포하는 URL을 차단합니다.";
 "Blocks visitor counters on Russian-language websites." = "러시아어 웹사이트의 방문자 카운터를 차단합니다.";
@@ -1019,10 +989,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "EasyList Germany" = "EasyList Germany";
 "EasyList Italy" = "EasyList Italy";
 "EasyList Spanish" = "EasyList Spanish";
-"Hides miscellaneous annoyances on websites, from the EasyList project." = "웹사이트의 여러 성가신 요소를 숨깁니다. EasyList 프로젝트의 목록입니다.";
-"Hides live chat and support widgets on websites, from the EasyList project." = "웹사이트의 실시간 채팅 및 고객 지원 위젯을 숨깁니다. EasyList 프로젝트에서 제공합니다.";
-"Hides newsletter sign-up prompts on websites, from the EasyList project." = "웹사이트의 뉴스레터 구독 안내를 숨깁니다. EasyList 프로젝트에서 제공합니다.";
-"Hides prompts that ask you to allow notifications, from the EasyList project." = "알림 허용을 요청하는 안내를 숨깁니다. EasyList 프로젝트에서 제공합니다.";
 "Official Polish filters for AdBlock, uBlock Origin & AdGuard" = "Official Polish filters for AdBlock, uBlock Origin & AdGuard";
 "PersianBlockerNG" = "PersianBlockerNG";
 "RU AdList" = "RU AdList";
@@ -1045,10 +1011,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Phishing URL Blocklist" = "Phishing URL Blocklist";
 "Fanboy – Anti-Facebook" = "Fanboy – Anti-Facebook";
 "Dan Pollock's hosts file" = "Dan Pollock's hosts file";
-"Experimental rules from the uBlock Origin project. They may break sites." = "uBlock Origin 프로젝트의 실험적 규칙입니다. 일부 사이트가 제대로 작동하지 않을 수 있습니다.";
-"Blocks URLs that host phishing pages, based on OpenPhish, IPThreat and PhishTank data." = "OpenPhish, IPThreat, PhishTank 데이터를 기반으로 피싱 페이지를 호스팅하는 URL을 차단합니다.";
 "Blocks Facebook social plugins and login widgets on other websites. May break sites that rely on them." = "다른 웹사이트의 Facebook 소셜 플러그인과 로그인 위젯을 차단합니다. 이에 의존하는 사이트가 제대로 작동하지 않을 수 있습니다.";
-"Hosts file that blocks ads, trackers, and other unwanted sites, from Dan Pollock's project." = "광고, 추적기, 기타 원치 않는 사이트를 차단하는 hosts 파일입니다. Dan Pollock 프로젝트에서 제공합니다.";
 
 /* Annoyances topic headings */
 "Cookie Notices" = "쿠키 알림";
@@ -1067,3 +1030,85 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Choose the annoyances to hide. You can change this later in Annoyances Info." = "숨길 방해 요소를 선택하세요. 나중에 방해 요소 정보에서 바꿀 수 있습니다.";
 "Blocks YouTube's ads and web player and plays videos in Safari's native player, with chapters, picture-in-picture, background playback, and audio-only mode. Includes SponsorBlock, which skips sponsored segments." = "YouTube 광고와 웹 플레이어를 차단하고 Safari 기본 플레이어로 동영상을 재생하며, 챕터, PIP, 백그라운드 재생, 오디오 전용 모드를 지원합니다. 스폰서 구간을 건너뛰는 SponsorBlock이 포함되어 있습니다.";
 "Blocks third-party video players on other sites and plays videos with Safari's native controls, adding auto PiP, background playback, subtitles, chapters, and Now Playing info." = "다른 사이트의 타사 동영상 플레이어를 차단하고 Safari 기본 컨트롤로 동영상을 재생하며, 자동 PIP, 백그라운드 재생, 자막, 챕터, 지금 재생 중 정보를 더합니다.";
+
+/* Rewritten descriptions (#1093) */
+"Blocks Swedish ads, trackers, social media widgets, annoyances, and sponsored articles." = "스웨덴 광고, 추적기, 소셜 미디어 위젯, 방해 요소, 후원 기사를 차단합니다.";
+"Blocks ad and tracking hosts that other lists miss, from the wBlock project." = "다른 목록이 놓치는 광고 및 추적 호스트를 차단합니다. wBlock 프로젝트에서 제공합니다.";
+"Blocks ads and trackers on Macedonian websites." = "마케도니아 웹사이트에서 광고와 추적기를 차단합니다.";
+"Blocks ads from mobile ad networks, from the AdGuard project." = "모바일 광고 네트워크의 광고를 차단합니다. AdGuard 프로젝트에서 제공합니다.";
+"Blocks ads on Albanian and Kosovar websites." = "알바니아어 및 코소보 웹사이트의 광고를 차단합니다.";
+"Blocks ads on Arabic websites." = "아랍어 웹사이트의 광고를 차단합니다.";
+"Blocks ads on Bulgarian websites." = "불가리아어 웹사이트의 광고를 차단합니다.";
+"Blocks ads on Chinese websites, from the AdGuard project. Includes EasyList China." = "중국어 웹사이트의 광고를 차단합니다. AdGuard 프로젝트에서 제공하며 EasyList China를 포함합니다.";
+"Blocks ads on Czech and Slovak websites, from the EasyList project." = "체코어 및 슬로바키아어 웹사이트의 광고를 차단합니다. EasyList 프로젝트에서 제공합니다.";
+"Blocks ads on Dhivehi (Maldivian) websites." = "디베히어(몰디브) 웹사이트의 광고를 차단합니다.";
+"Blocks ads on Dutch websites, from the AdGuard project. Includes EasyList Dutch." = "네덜란드어 웹사이트의 광고를 차단합니다. AdGuard 프로젝트에서 제공하며 EasyList Dutch를 포함합니다.";
+"Blocks ads on English-language websites, from the AdGuard project. Works alongside EasyList." = "영어 웹사이트의 광고를 차단합니다. AdGuard 프로젝트에서 제공하며 EasyList와 함께 작동합니다.";
+"Blocks ads on Estonian websites." = "에스토니아어 웹사이트의 광고를 차단합니다.";
+"Blocks ads on Finnish websites." = "핀란드어 웹사이트의 광고를 차단합니다.";
+"Blocks ads on French websites, from the AdGuard project. Includes Liste FR." = "프랑스어 웹사이트의 광고를 차단합니다. AdGuard 프로젝트에서 제공하며 Liste FR을 포함합니다.";
+"Blocks ads on German websites, from the AdGuard project. Includes EasyList Germany." = "독일어 웹사이트의 광고를 차단합니다. AdGuard 프로젝트에서 제공하며 EasyList Germany를 포함합니다.";
+"Blocks ads on Greek websites." = "그리스어 웹사이트의 광고를 차단합니다.";
+"Blocks ads on Hebrew websites, from the EasyList project." = "히브리어 웹사이트의 광고를 차단합니다. EasyList 프로젝트에서 제공합니다.";
+"Blocks ads on Icelandic websites." = "아이슬란드어 웹사이트의 광고를 차단합니다.";
+"Blocks ads on Indonesian and Malay websites." = "인도네시아어 및 말레이어 웹사이트의 광고를 차단합니다.";
+"Blocks ads on Italian websites, from the AdGuard project. Includes EasyList Italy." = "이탈리아어 웹사이트의 광고를 차단합니다. AdGuard 프로젝트에서 제공하며 EasyList Italy를 포함합니다.";
+"Blocks ads on Japanese websites, from the AdGuard project." = "일본어 웹사이트의 광고를 차단합니다. AdGuard 프로젝트에서 제공합니다.";
+"Blocks ads on Korean websites." = "한국어 웹사이트의 광고를 차단합니다.";
+"Blocks ads on Latvian websites." = "라트비아어 웹사이트의 광고를 차단합니다.";
+"Blocks ads on Lithuanian websites, from the EasyList project." = "리투아니아어 웹사이트의 광고를 차단합니다. EasyList 프로젝트에서 제공합니다.";
+"Blocks ads on Persian websites." = "페르시아어 웹사이트의 광고를 차단합니다.";
+"Blocks ads on Polish websites, from the AdGuard project. Includes the official Polish filters." = "폴란드어 웹사이트의 광고를 차단합니다. AdGuard 프로젝트에서 제공하며 공식 폴란드어 필터를 포함합니다.";
+"Blocks ads on Romanian websites." = "루마니아어 웹사이트의 광고를 차단합니다.";
+"Blocks ads on Russian websites." = "러시아어 웹사이트의 광고를 차단합니다.";
+"Blocks ads on Serbian, Montenegrin, Croatian, and Bosnian websites." = "세르비아어, 몬테네그로어, 크로아티아어, 보스니아어 웹사이트의 광고를 차단합니다.";
+"Blocks ads on Slovenian websites." = "슬로베니아어 웹사이트의 광고를 차단합니다.";
+"Blocks ads on Spanish and Portuguese websites, including Brazilian Portuguese, from the AdGuard project." = "스페인어 및 포르투갈어 웹사이트(브라질 포르투갈어 포함)의 광고를 차단합니다. AdGuard 프로젝트에서 제공합니다.";
+"Blocks ads on Thai websites, from the EasyList project." = "태국어 웹사이트의 광고를 차단합니다. EasyList 프로젝트에서 제공합니다.";
+"Blocks ads on Turkish websites, from the AdGuard project." = "터키어 웹사이트의 광고를 차단합니다. AdGuard 프로젝트에서 제공합니다.";
+"Blocks ads on Vietnamese websites." = "베트남어 웹사이트의 광고를 차단합니다.";
+"Blocks ads on websites from Norway, Denmark, Iceland, the Danish territories, and Sámi communities." = "노르웨이, 덴마크, 아이슬란드, 덴마크령 및 사미족 공동체 웹사이트의 광고를 차단합니다.";
+"Blocks ads on websites in Hindi, Tamil, and other Indic and Dravidian languages." = "힌디어, 타밀어 및 기타 인도·드라비다어족 언어 웹사이트의 광고를 차단합니다.";
+"Blocks ads, from the EasyList project." = "광고를 차단합니다. EasyList 프로젝트에서 제공합니다.";
+"Blocks ads, from the uBlock Origin project. Works alongside EasyList." = "광고를 차단합니다. uBlock Origin 프로젝트에서 제공하며 EasyList와 함께 작동합니다.";
+"Blocks ads, trackers, and other unwanted hosts." = "광고, 추적기 및 기타 원치 않는 호스트를 차단합니다.";
+"Blocks ads, trackers, and security threats on Hungarian websites." = "헝가리어 웹사이트의 광고, 추적기 및 보안 위협을 차단합니다.";
+"Blocks malware domains, malware redirects, unwanted-software nags, and some scams." = "악성코드 도메인, 악성코드 리디렉션, 원치 않는 소프트웨어 알림 및 일부 사기를 차단합니다.";
+"Blocks phishing pages, using data from OpenPhish, IPThreat, and PhishTank." = "OpenPhish, IPThreat, PhishTank의 데이터를 사용하여 피싱 페이지를 차단합니다.";
+"Blocks sites known to spread adware or malware or to steal logins, from the uBlock Origin project." = "애드웨어나 악성코드를 퍼뜨리거나 로그인 정보를 훔치는 것으로 알려진 사이트를 차단합니다. uBlock Origin 프로젝트에서 제공합니다.";
+"Blocks trackers, from the EasyList project. Works alongside EasyList." = "추적기를 차단합니다. EasyList 프로젝트에서 제공하며 EasyList와 함께 작동합니다.";
+"Hides banners that push a site's mobile app, from the AdGuard project." = "사이트의 모바일 앱 설치를 유도하는 배너를 숨깁니다. AdGuard 프로젝트에서 제공합니다.";
+"Hides cookie notices, from the AdGuard project." = "쿠키 알림을 숨깁니다. AdGuard 프로젝트에서 제공합니다.";
+"Hides cookie notices, from the EasyList project." = "쿠키 알림을 숨깁니다. EasyList 프로젝트에서 제공합니다.";
+"Hides cookie notices, from the uBlock Origin project." = "쿠키 알림을 숨깁니다. uBlock Origin 프로젝트에서 제공합니다.";
+"Hides live chat and support widgets, from the EasyList project." = "실시간 채팅 및 지원 위젯을 숨깁니다. EasyList 프로젝트에서 제공합니다.";
+"Hides newsletter sign-up prompts, from the EasyList project." = "뉴스레터 구독 안내를 숨깁니다. EasyList 프로젝트에서 제공합니다.";
+"Hides other annoyances, from the EasyList project." = "기타 방해 요소를 숨깁니다. EasyList 프로젝트에서 제공합니다.";
+"Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project." = "오버레이, 프로모션 배너 및 기타 방해 요소를 숨깁니다. uBlock Origin 프로젝트에서 제공합니다.";
+"Hides pop-ups that sites don't need to work, from the AdGuard project." = "사이트 작동에 필요하지 않은 팝업을 숨깁니다. AdGuard 프로젝트에서 제공합니다.";
+"Hides promotions, copy restrictions, and other annoyances, from the AdGuard project." = "프로모션, 복사 제한 및 기타 방해 요소를 숨깁니다. AdGuard 프로젝트에서 제공합니다.";
+"Hides prompts that ask to show notifications, from the EasyList project." = "알림 표시를 요청하는 안내를 숨깁니다. EasyList 프로젝트에서 제공합니다.";
+"Hides social media buttons and widgets, from the EasyList project." = "소셜 미디어 버튼과 위젯을 숨깁니다. EasyList 프로젝트에서 제공합니다.";
+"Hides social media buttons and widgets, such as Like and Share, from the AdGuard project." = "좋아요, 공유 등 소셜 미디어 버튼과 위젯을 숨깁니다. AdGuard 프로젝트에서 제공합니다.";
+"Hides third-party widgets such as assistants and support chats, from the AdGuard project." = "도우미 및 지원 채팅 등 타사 위젯을 숨깁니다. AdGuard 프로젝트에서 제공합니다.";
+"Keeps sites working when other lists break them, from the uBlock Origin project." = "다른 목록 때문에 깨진 사이트가 계속 작동하도록 합니다. uBlock Origin 프로젝트에서 제공합니다.";
+"Removes tracking parameters from URLs, from the AdGuard project." = "URL에서 추적 매개변수를 제거합니다. AdGuard 프로젝트에서 제공합니다.";
+"Removes unneeded parameters from URLs, so links are cleaner to copy and share." = "URL에서 불필요한 매개변수를 제거하여 링크를 더 쉽게 복사하고 공유할 수 있게 합니다.";
+"Short-term rules that fix sites broken by other lists, from the uBlock Origin project." = "다른 목록 때문에 깨진 사이트를 고치는 단기 규칙입니다. uBlock Origin 프로젝트에서 제공합니다.";
+"Stops public websites from reaching devices on your local network, from the uBlock Origin project." = "공용 웹사이트가 로컬 네트워크의 기기에 접근하지 못하도록 합니다. uBlock Origin 프로젝트에서 제공합니다.";
+"Tests new rules before they reach the main lists, from the AdGuard project. It may break sites." = "주요 목록에 반영되기 전에 새 규칙을 테스트합니다. AdGuard 프로젝트에서 제공합니다. 사이트가 깨질 수 있습니다.";
+"Tests new rules before they reach the main lists, from the uBlock Origin project. It may break sites." = "주요 목록에 반영되기 전에 새 규칙을 테스트합니다. uBlock Origin 프로젝트에서 제공합니다. 사이트가 깨질 수 있습니다.";
+"Makes websites dark by restyling their colors, from the Dark Reader project. Some sites may look off, since it doesn't include Dark Reader's site fixes." = "웹사이트의 색상을 바꿔 어둡게 표시합니다. Dark Reader 프로젝트에서 제공합니다. Dark Reader의 사이트별 수정 사항은 포함되지 않으므로 일부 사이트가 어색하게 보일 수 있습니다.";
+"Blocks Twitch ads and handles complicated anti-adblock cases, but it slows page loads." = "Twitch 광고를 차단하고 복잡한 광고 차단 방지 사례도 처리하지만 페이지 로드 속도가 느려집니다.";
+"Shows dislike counts on YouTube again, using data from the Return YouTube Dislike community." = "Return YouTube Dislike 커뮤니티의 데이터를 사용하여 YouTube에 싫어요 수를 다시 표시합니다.";
+"Gets past paywalls on English-language news sites, and some in other languages." = "영어 뉴스 사이트와 일부 다른 언어의 뉴스 사이트에서 유료 구독 장벽을 우회합니다.";
+"Blocks Twitch ads." = "Twitch 광고를 차단합니다.";
+"Content Filtering" = "콘텐츠 필터링";
+"Each site includes its subdomains." = "각 사이트에는 하위 도메인도 포함됩니다.";
+"Keeps filters updating while wBlock is closed. Turn off to update only while wBlock is open." = "wBlock이 닫혀 있어도 필터가 계속 업데이트됩니다. 끄면 wBlock이 열려 있을 때만 업데이트됩니다.";
+"About Dark Reader" = "Dark Reader 정보";
+"Donate to Dark Reader" = "Dark Reader 후원하기";
+"Return of the YouTube Dislike, Based off https://www.returnyoutubedislike.com/" = "Return YouTube Dislike 커뮤니티의 데이터를 사용하여 YouTube에 싫어요 수를 다시 표시합니다.";
+"Bypass Paywalls of English (& other) language news sites" = "영어 뉴스 사이트와 일부 다른 언어의 뉴스 사이트에서 유료 구독 장벽을 우회합니다.";
+"Multiple solutions for blocking Twitch ads (vaft)" = "Twitch 광고를 차단합니다.";
+"Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "웹사이트의 색상을 바꿔 어둡게 표시합니다. Dark Reader 프로젝트에서 제공합니다. Dark Reader의 사이트별 수정 사항은 포함되지 않으므로 일부 사이트가 어색하게 보일 수 있습니다.";

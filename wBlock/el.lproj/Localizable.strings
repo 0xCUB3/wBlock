@@ -96,10 +96,8 @@
 "Additional filter list for websites in Hebrew." = "Πρόσθετη λίστα φίλτρων για ιστότοπους στα εβραϊκά.";
 "Additional filter list for websites in Hindi, Tamil and other Dravidian and Indic languages." = "Πρόσθετη λίστα φίλτρων για ιστότοπους στα χίντι, στα ταμιλικά και σε άλλες δραβιδικές και ινδικές γλώσσες.";
 "Additional filter list for websites in Icelandic." = "Πρόσθετη λίστα φίλτρων για ιστότοπους στα ισλανδικά.";
-"Additional filter list for websites in Persian." = "Πρόσθετη λίστα φίλτρων για ιστότοπους στα περσικά.";
 "Additional filter list for websites in Latvian." = "Πρόσθετη λίστα φίλτρων για ιστότοπους στα λετονικά.";
 "Additional filter list for websites in Lithuanian." = "Πρόσθετη λίστα φίλτρων για ιστότοπους στα λιθουανικά.";
-"Additional filter list for websites in Slovenian." = "Πρόσθετη λίστα φίλτρων για ιστότοπους στα σλοβενικά.";
 "AdGuard Chinese filter" = "AdGuard Chinese filter";
 "AdGuard Dutch filter" = "AdGuard Dutch filter";
 "EasyDutch" = "EasyDutch";
@@ -173,7 +171,6 @@
 "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "Το Safari δεν μπορεί να εφαρμόσει τους κανόνες inline-script αυτής της λίστας. Ενεργοποιήστε το Bypass Paywalls Clean στους Κώδικες χρήστη για τους υποστηριζόμενους αγγλόφωνους ιστότοπους.";
 "Blocks pop-up ads on web pages." = "Αποκλείει τις αναδυόμενες διαφημίσεις στις ιστοσελίδες.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "Αποκλείει διαφημιστικά αναδυόμενα παράθυρα, εγγραφές σε ενημερωτικά δελτία και αιτήματα ειδοποιήσεων.";
-"Hides social media content and icons. Blocks social widgets and scripts, including many that AdGuard Social Media Filter misses." = "Κρύβει περιεχόμενο και εικονίδια κοινωνικών δικτύων. Αποκλείει γραφικά στοιχεία και σενάρια κοινωνικών δικτύων, μαζί με πολλά που ξεφεύγουν από το AdGuard Social Media Filter.";
 "Blocks third-party widgets, chat assistants, and support widgets." = "Αποκλείει γραφικά στοιχεία τρίτων, βοηθούς συνομιλίας και γραφικά στοιχεία υποστήριξης.";
 "Building combined filter engine..." = "Δημιουργία συνδυασμένης μηχανής φίλτρων...";
 "Building filter engine" = "Δημιουργία μηχανής φίλτρων";
@@ -728,7 +725,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Change File" = "Αλλαγή αρχείου";
 "Local imports won't auto-update; re-import to replace." = "Οι τοπικές εισαγωγές δεν ενημερώνονται αυτόματα· εισαγάγετε ξανά για αντικατάσταση.";
 "Blocks Twitch ads with the vaft script from TwitchAdSolutions." = "Αποκλείει τις διαφημίσεις του Twitch με τον κώδικα vaft από το TwitchAdSolutions.";
-"Optional. Blocks Twitch ads and handles complicated anti-adblock cases, but it slows page loads." = "Προαιρετικό. Αποκλείει τις διαφημίσεις του Twitch και τις πολύπλοκες περιπτώσεις κατά των αποκλεισμών, αλλά επιβραδύνει τη φόρτωση σελίδων.";
 
 /* Issue 508 UI */
 "Disable Essential Filter?" = "Απενεργοποίηση απαραίτητου φίλτρου;";
@@ -778,7 +774,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "column %@: %@" = "στήλη %@: %@";
 "Userstyle compiler timed out." = "Το χρονικό όριο του μεταγλωττιστή στυλ χρήστη έληξε.";
 "Userstyle compiler must not run on the main thread." = "Ο μεταγλωττιστής στυλ χρήστη δεν πρέπει να εκτελείται στο κύριο νήμα.";
-"Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "Η μηχανή API του Dark Reader με άδεια MIT για το wBlock (beta· χωρίς την πλήρη βάση διορθώσεων ιστοτόπων).";
 "Pure Black (OLED)" = "Απόλυτο μαύρο (OLED)";
 "Follow System" = "Ακολούθηση συστήματος";
 "Always Dark" = "Πάντα σκοτεινό";
@@ -890,11 +885,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Autoplay" = "Αυτόματη αναπαραγωγή";
 "Autoplay off" = "Αυτόματη αναπαραγωγή ανενεργή";
 "Userscripts off" = "Κώδικες χρήστη ανενεργοί";
-"Following the Autoplay setting in the Safari extension." = "Ακολουθεί τη ρύθμιση αυτόματης αναπαραγωγής της επέκτασης Safari.";
-"Overrides the Autoplay setting in the Safari extension." = "Παρακάμπτει τη ρύθμιση αυτόματης αναπαραγωγής της επέκτασης Safari.";
-"Runs every enabled userscript that matches this site." = "Εκτελεί κάθε ενεργό κώδικα χρήστη που ταιριάζει σε αυτόν τον ιστότοπο.";
-"Applies filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Εφαρμόζει λίστες φίλτρων και scriptlets. Οι κώδικες χρήστη, το εργαλείο απόκρυψης στοιχείων και η αυτόματη αναπαραγωγή έχουν δικούς τους διακόπτες.";
-"Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches. Each site includes its subdomains." = "Οι προστιθέμενοι ιστότοποι παρακάμπτουν λίστες φίλτρων και scriptlets. Οι κώδικες χρήστη, το εργαλείο απόκρυψης στοιχείων και η αυτόματη αναπαραγωγή έχουν δικούς τους διακόπτες. Κάθε ιστότοπος περιλαμβάνει τους υποτομείς του.";
 "Websites" = "Ιστότοποι";
 "Next update: %@" = "Επόμενη ενημέρωση: %@";
 "Next update" = "Επόμενη ενημέρωση";
@@ -946,22 +936,10 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Available when the current sync finishes." = "Διαθέσιμο όταν ολοκληρωθεί ο τρέχων συγχρονισμός.";
 "Generic Rules" = "Γενικοί κανόνες";
 "Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps." = "Κρύβει στοιχεία σε κάθε ιστότοπο με κανόνες που δεν ορίζουν ιστότοπο. Αν το απενεργοποιήσετε, η απόκρυψη ανά ιστότοπο παραμένει και οι σελίδες γίνονται πιο ελαφριές, ειδικά οι απαιτητικές εφαρμογές ιστού.";
-"Automatically removes unnecessary '$' and '&' values from URLs, making them easier to copy from the URL bar and pasting elsewhere as links. Already included in Dandelion Sprout's Annoyances List." = "Αφαιρεί αυτόματα τις περιττές τιμές «$» και «&» από τα URL, κάνοντάς τα ευκολότερα να αντιγραφούν από τη γραμμή URL και να επικολληθούν οπουδήποτε αλλού ως σύνδεσμοι. Περιλαμβάνεται ήδη στη Dandelion Sprout's Annoyances List.";
-"Blocks cookie notices on web pages." = "Αποκλείει τις ειδοποιήσεις cookie σε ιστοσελίδες.";
-"Filter for social media widgets such as 'Like' and 'Share' buttons and more." = "Φίλτρο για γραφικά στοιχεία μέσων κοινωνικής δικτύωσης, όπως τα κουμπιά 'Μου αρέσει' και 'Κοινοποίηση', και άλλα.";
-"Hides website features that use generative AI and AI-generated content." = "Αποκρύπτει λειτουργίες ιστότοπων που χρησιμοποιούν γενετική τεχνητή νοημοσύνη και περιεχόμενο που δημιουργείται από AI.";
 "This filter blocks tracking pixels in email clients." = "Αυτό το φίλτρο αποκλείει pixels παρακολούθησης σε πελάτες ηλεκτρονικού ταχυδρομείου.";
-"Prevents public Internet sites from digging into your LAN files." = "Αποτρέπει τους δημόσιους ιστότοπους του Διαδικτύου από το να ερευνούν τα αρχεία του LAN σας.";
-"Blocks more malware than most other major anti-malware lists - domains and URL patterns used in malware redirection chains, IP addresses that are solely used by malware, PUP nags, and a few scammers. Already included in Dandelion Sprout's Annoyances List." = "Αποκλείει περισσότερο κακόβουλο λογισμικό από τις περισσότερες άλλες μεγάλες λίστες κατά του κακόβουλου λογισμικού - τομείς και μοτίβα URL που χρησιμοποιούνται σε αλυσίδες ανακατεύθυνσης κακόβουλου λογισμικού, διευθύνσεις IP που χρησιμοποιούνται αποκλειστικά από κακόβουλο λογισμικό, ενοχλητικά από PUP, και μερικούς απατεώνες. Περιλαμβάνεται ήδη στη Dandelion Sprout's Annoyances List.";
-"Filter that blocks ads, trackers, and other nasty things." = "Φίλτρο που αποκλείει διαφημίσεις, προγράμματα παρακολούθησης και άλλα επικίνδυνα πράγματα.";
-"Filter designed to test certain hazardous filtering rules before they are added to the basic filters." = "Φίλτρο σχεδιασμένο για να δοκιμάζει ορισμένους επικίνδυνους κανόνες φιλτραρίσματος προτού προστεθούν στα βασικά φίλτρα.";
-"Additional filter list for websites in Indonesian and Malay." = "Πρόσθετη λίστα φίλτρων για ιστότοπους στα ινδονησιακά και τα μαλαισιανά.";
-"Hufilter. Filter list that specifically removes ads, privacy threats, and security risks on websites in the Hungarian language." = "Hufilter. Λίστα φίλτρων που αφαιρεί ειδικά διαφημίσεις, απειλές απορρήτου και κινδύνους ασφάλειας σε ιστότοπους στην ουγγρική γλώσσα.";
-"Privacy protection supplement for EasyList." = "Συμπλήρωμα προστασίας απορρήτου για το EasyList.";
 
 /* Add Filter List: Find */
 "wBlock Ad and Tracking Hosts" = "Διακομιστές διαφημίσεων και παρακολούθησης wBlock";
-"Blocks ad and tracking hosts that the other lists only block in part." = "Αποκλείει διακομιστές διαφημίσεων και παρακολούθησης που οι άλλες λίστες αποκλείουν μόνο εν μέρει.";
 
 "Filter Logs" = "Φιλτράρισμα αρχείων καταγραφής";
 "Apply Anyway" = "Εφαρμογή ούτως ή άλλως";
@@ -999,19 +977,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "EasyList – Chat Widgets" = "EasyList – Chat Widgets";
 "EasyList – Newsletter Notices" = "EasyList – Newsletter Notices";
 "EasyList – Notifications" = "EasyList – Notifications";
-"Ad blocking rules from the uBlock Origin project. Meant to be used alongside EasyList." = "Κανόνες αποκλεισμού διαφημίσεων από το έργο uBlock Origin. Προορίζονται για χρήση μαζί με το EasyList.";
 "Additional filter list for websites in German." = "Πρόσθετη λίστα φίλτρων για ιστότοπους στα γερμανικά.";
 "Additional filter list for websites in Italian." = "Πρόσθετη λίστα φίλτρων για ιστότοπους στα ιταλικά.";
-"Additional filter list for websites in Korean." = "Πρόσθετη λίστα φίλτρων για ιστότοπους στα κορεάτικα.";
-"Additional filter list for websites in Persian." = "Πρόσθετη λίστα φίλτρων για ιστότοπους στα περσικά.";
 "Additional filter list for websites in Polish." = "Πρόσθετη λίστα φίλτρων για ιστότοπους στα πολωνικά.";
 "Additional filter list for websites in Spanish." = "Πρόσθετη λίστα φίλτρων για ιστότοπους στα ισπανικά.";
 "Blocks trackers and removes tracking parameters from URLs, from the uBlock Origin project." = "Αποκλείει τους ιχνηλάτες και αφαιρεί τις παραμέτρους παρακολούθησης από τις διευθύνσεις URL. Από το έργο uBlock Origin.";
-"Blocks sites documented to install adware or malware, or to steal login credentials." = "Αποκλείει ιστότοπους που έχει τεκμηριωθεί ότι εγκαθιστούν adware ή κακόβουλο λογισμικό ή κλέβουν στοιχεία σύνδεσης.";
-"Short-term rules that fix sites broken by other filter lists." = "Προσωρινοί κανόνες που επιδιορθώνουν ιστότοπους που χάλασαν από άλλες λίστες φίλτρων.";
-"Rules that keep sites working when default lists break them." = "Κανόνες που διατηρούν τους ιστότοπους σε λειτουργία όταν οι προεπιλεγμένες λίστες τους χαλούν.";
-"Hides annoying page elements, such as overlays and promotional banners, from the uBlock Origin project." = "Αποκρύπτει ενοχλητικά στοιχεία των σελίδων, όπως επικαλύψεις και διαφημιστικά banner. Από το έργο uBlock Origin.";
-"Blocks ads on websites, from the EasyList project." = "Αποκλείει διαφημίσεις στους ιστότοπους. Από το έργο EasyList.";
 "Blocks phishing and malware domains flagged by CERT Polska." = "Αποκλείει τομείς phishing και κακόβουλου λογισμικού που έχει επισημάνει η CERT Polska.";
 "Blocks URLs that distribute malware, based on URLhaus data." = "Αποκλείει διευθύνσεις URL που διανέμουν κακόβουλο λογισμικό, με βάση δεδομένα του URLhaus.";
 "Blocks visitor counters on Russian-language websites." = "Αποκλείει μετρητές επισκεπτών σε ιστότοπους στα ρωσικά.";
@@ -1019,10 +989,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "EasyList Germany" = "EasyList Germany";
 "EasyList Italy" = "EasyList Italy";
 "EasyList Spanish" = "EasyList Spanish";
-"Hides miscellaneous annoyances on websites, from the EasyList project." = "Αποκρύπτει διάφορες ενοχλήσεις στους ιστότοπους. Από το έργο EasyList.";
-"Hides live chat and support widgets on websites, from the EasyList project." = "Αποκρύπτει τα widget ζωντανής συνομιλίας και υποστήριξης σε ιστότοπους. Από το έργο EasyList.";
-"Hides newsletter sign-up prompts on websites, from the EasyList project." = "Αποκρύπτει προτροπές εγγραφής σε ενημερωτικά δελτία σε ιστότοπους. Από το έργο EasyList.";
-"Hides prompts that ask you to allow notifications, from the EasyList project." = "Αποκρύπτει προτροπές που ζητούν άδεια για ειδοποιήσεις. Από το έργο EasyList.";
 "Official Polish filters for AdBlock, uBlock Origin & AdGuard" = "Official Polish filters for AdBlock, uBlock Origin & AdGuard";
 "PersianBlockerNG" = "PersianBlockerNG";
 "RU AdList" = "RU AdList";
@@ -1045,10 +1011,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Phishing URL Blocklist" = "Phishing URL Blocklist";
 "Fanboy – Anti-Facebook" = "Fanboy – Anti-Facebook";
 "Dan Pollock's hosts file" = "Dan Pollock's hosts file";
-"Experimental rules from the uBlock Origin project. They may break sites." = "Πειραματικοί κανόνες από το έργο uBlock Origin. Ενδέχεται να προκαλέσουν προβλήματα σε ιστότοπους.";
-"Blocks URLs that host phishing pages, based on OpenPhish, IPThreat and PhishTank data." = "Αποκλείει τα URL που φιλοξενούν σελίδες phishing, με βάση δεδομένα των OpenPhish, IPThreat και PhishTank.";
 "Blocks Facebook social plugins and login widgets on other websites. May break sites that rely on them." = "Αποκλείει τα κοινωνικά plugin και τα widget σύνδεσης του Facebook σε άλλους ιστότοπους. Ενδέχεται να προκαλέσει προβλήματα σε ιστότοπους που τα χρησιμοποιούν.";
-"Hosts file that blocks ads, trackers, and other unwanted sites, from Dan Pollock's project." = "Αρχείο hosts που αποκλείει διαφημίσεις, trackers και άλλους ανεπιθύμητους ιστότοπους. Από το έργο του Dan Pollock.";
 
 /* Annoyances topic headings */
 "Cookie Notices" = "Ειδοποιήσεις cookie";
@@ -1067,3 +1030,85 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Choose the annoyances to hide. You can change this later in Annoyances Info." = "Επιλέξτε ποιες ενοχλήσεις θα κρύβονται. Μπορείτε να το αλλάξετε αργότερα στις πληροφορίες της κατηγορίας Ενοχλήσεις.";
 "Blocks YouTube's ads and web player and plays videos in Safari's native player, with chapters, picture-in-picture, background playback, and audio-only mode. Includes SponsorBlock, which skips sponsored segments." = "Αποκλείει τις διαφημίσεις και το web player του YouTube και παίζει τα βίντεο στο εγγενές player του Safari, με κεφάλαια, εικόνα σε εικόνα, αναπαραγωγή στο παρασκήνιο και λειτουργία μόνο ήχου. Περιλαμβάνει το SponsorBlock, που παραλείπει τα χορηγούμενα τμήματα.";
 "Blocks third-party video players on other sites and plays videos with Safari's native controls, adding auto PiP, background playback, subtitles, chapters, and Now Playing info." = "Αποκλείει players βίντεο τρίτων σε άλλους ιστότοπους και παίζει τα βίντεο με τα εγγενή χειριστήρια του Safari, προσθέτοντας αυτόματη εικόνα σε εικόνα, αναπαραγωγή στο παρασκήνιο, υπότιτλους, κεφάλαια και πληροφορίες «Τώρα παίζει».";
+
+/* Rewritten descriptions (#1093) */
+"Blocks Swedish ads, trackers, social media widgets, annoyances, and sponsored articles." = "Αποκλείει σουηδικές διαφημίσεις, προγράμματα παρακολούθησης, γραφικά στοιχεία κοινωνικών δικτύων, ενοχλήσεις και χορηγούμενα άρθρα.";
+"Blocks ad and tracking hosts that other lists miss, from the wBlock project." = "Αποκλείει τομείς διαφημίσεων και παρακολούθησης που χάνουν άλλες λίστες, από το έργο wBlock.";
+"Blocks ads and trackers on Macedonian websites." = "Αποκλείει διαφημίσεις και προγράμματα παρακολούθησης σε ιστότοπους της Μακεδονίας.";
+"Blocks ads from mobile ad networks, from the AdGuard project." = "Αποκλείει διαφημίσεις από δίκτυα διαφήμισης για κινητά, από το έργο AdGuard.";
+"Blocks ads on Albanian and Kosovar websites." = "Αποκλείει διαφημίσεις σε αλβανικούς και κοσοβάρικους ιστότοπους.";
+"Blocks ads on Arabic websites." = "Αποκλείει διαφημίσεις σε ιστότοπους στα αραβικά.";
+"Blocks ads on Bulgarian websites." = "Αποκλείει διαφημίσεις σε βουλγαρικούς ιστότοπους.";
+"Blocks ads on Chinese websites, from the AdGuard project. Includes EasyList China." = "Αποκλείει διαφημίσεις σε κινεζικούς ιστότοπους, από το έργο AdGuard. Περιλαμβάνει την EasyList China.";
+"Blocks ads on Czech and Slovak websites, from the EasyList project." = "Αποκλείει διαφημίσεις σε τσεχικούς και σλοβακικούς ιστότοπους, από το έργο EasyList.";
+"Blocks ads on Dhivehi (Maldivian) websites." = "Αποκλείει διαφημίσεις σε ιστότοπους στα ντιβέχι (μαλδιβικά).";
+"Blocks ads on Dutch websites, from the AdGuard project. Includes EasyList Dutch." = "Αποκλείει διαφημίσεις σε ολλανδικούς ιστότοπους, από το έργο AdGuard. Περιλαμβάνει την EasyList Dutch.";
+"Blocks ads on English-language websites, from the AdGuard project. Works alongside EasyList." = "Αποκλείει διαφημίσεις σε αγγλόφωνους ιστότοπους, από το έργο AdGuard. Λειτουργεί μαζί με την EasyList.";
+"Blocks ads on Estonian websites." = "Αποκλείει διαφημίσεις σε εσθονικούς ιστότοπους.";
+"Blocks ads on Finnish websites." = "Αποκλείει διαφημίσεις σε φινλανδικούς ιστότοπους.";
+"Blocks ads on French websites, from the AdGuard project. Includes Liste FR." = "Αποκλείει διαφημίσεις σε γαλλικούς ιστότοπους, από το έργο AdGuard. Περιλαμβάνει τη Liste FR.";
+"Blocks ads on German websites, from the AdGuard project. Includes EasyList Germany." = "Αποκλείει διαφημίσεις σε γερμανικούς ιστότοπους, από το έργο AdGuard. Περιλαμβάνει την EasyList Germany.";
+"Blocks ads on Greek websites." = "Αποκλείει διαφημίσεις σε ελληνικούς ιστότοπους.";
+"Blocks ads on Hebrew websites, from the EasyList project." = "Αποκλείει διαφημίσεις σε εβραϊκούς ιστότοπους, από το έργο EasyList.";
+"Blocks ads on Icelandic websites." = "Αποκλείει διαφημίσεις σε ισλανδικούς ιστότοπους.";
+"Blocks ads on Indonesian and Malay websites." = "Αποκλείει διαφημίσεις σε ινδονησιακούς και μαλαισιανούς ιστότοπους.";
+"Blocks ads on Italian websites, from the AdGuard project. Includes EasyList Italy." = "Αποκλείει διαφημίσεις σε ιταλικούς ιστότοπους, από το έργο AdGuard. Περιλαμβάνει την EasyList Italy.";
+"Blocks ads on Japanese websites, from the AdGuard project." = "Αποκλείει διαφημίσεις σε ιαπωνικούς ιστότοπους, από το έργο AdGuard.";
+"Blocks ads on Korean websites." = "Αποκλείει διαφημίσεις σε κορεατικούς ιστότοπους.";
+"Blocks ads on Latvian websites." = "Αποκλείει διαφημίσεις σε λετονικούς ιστότοπους.";
+"Blocks ads on Lithuanian websites, from the EasyList project." = "Αποκλείει διαφημίσεις σε λιθουανικούς ιστότοπους, από το έργο EasyList.";
+"Blocks ads on Persian websites." = "Αποκλείει διαφημίσεις σε ιστότοπους στα περσικά.";
+"Blocks ads on Polish websites, from the AdGuard project. Includes the official Polish filters." = "Αποκλείει διαφημίσεις σε πολωνικούς ιστότοπους, από το έργο AdGuard. Περιλαμβάνει τα επίσημα πολωνικά φίλτρα.";
+"Blocks ads on Romanian websites." = "Αποκλείει διαφημίσεις σε ρουμανικούς ιστότοπους.";
+"Blocks ads on Russian websites." = "Αποκλείει διαφημίσεις σε ρωσικούς ιστότοπους.";
+"Blocks ads on Serbian, Montenegrin, Croatian, and Bosnian websites." = "Αποκλείει διαφημίσεις σε σερβικούς, μαυροβουνιακούς, κροατικούς και βοσνιακούς ιστότοπους.";
+"Blocks ads on Slovenian websites." = "Αποκλείει διαφημίσεις σε σλοβενικούς ιστότοπους.";
+"Blocks ads on Spanish and Portuguese websites, including Brazilian Portuguese, from the AdGuard project." = "Αποκλείει διαφημίσεις σε ισπανόφωνους και πορτογαλόφωνους ιστότοπους, συμπεριλαμβανομένης της βραζιλιάνικης πορτογαλικής, από το έργο AdGuard.";
+"Blocks ads on Thai websites, from the EasyList project." = "Αποκλείει διαφημίσεις σε ταϊλανδικούς ιστότοπους, από το έργο EasyList.";
+"Blocks ads on Turkish websites, from the AdGuard project." = "Αποκλείει διαφημίσεις σε τουρκικούς ιστότοπους, από το έργο AdGuard.";
+"Blocks ads on Vietnamese websites." = "Αποκλείει διαφημίσεις σε βιετναμέζικους ιστότοπους.";
+"Blocks ads on websites from Norway, Denmark, Iceland, the Danish territories, and Sámi communities." = "Αποκλείει διαφημίσεις σε ιστότοπους από τη Νορβηγία, τη Δανία, την Ισλανδία, τις δανικές εδαφικές κτήσεις και τις κοινότητες Σάμι.";
+"Blocks ads on websites in Hindi, Tamil, and other Indic and Dravidian languages." = "Αποκλείει διαφημίσεις σε ιστότοπους στα χίντι, τα ταμίλ και άλλες ινδικές και δραβιδικές γλώσσες.";
+"Blocks ads, from the EasyList project." = "Αποκλείει διαφημίσεις, από το έργο EasyList.";
+"Blocks ads, from the uBlock Origin project. Works alongside EasyList." = "Αποκλείει διαφημίσεις, από το έργο uBlock Origin. Λειτουργεί μαζί με την EasyList.";
+"Blocks ads, trackers, and other unwanted hosts." = "Αποκλείει διαφημίσεις, προγράμματα παρακολούθησης και άλλους ανεπιθύμητους τομείς.";
+"Blocks ads, trackers, and security threats on Hungarian websites." = "Αποκλείει διαφημίσεις, προγράμματα παρακολούθησης και απειλές ασφαλείας σε ουγγρικούς ιστότοπους.";
+"Blocks malware domains, malware redirects, unwanted-software nags, and some scams." = "Αποκλείει τομείς κακόβουλου λογισμικού, ανακατευθύνσεις κακόβουλου λογισμικού, ειδοποιήσεις ανεπιθύμητου λογισμικού και ορισμένες απάτες.";
+"Blocks phishing pages, using data from OpenPhish, IPThreat, and PhishTank." = "Αποκλείει σελίδες phishing, με δεδομένα από τα OpenPhish, IPThreat και PhishTank.";
+"Blocks sites known to spread adware or malware or to steal logins, from the uBlock Origin project." = "Αποκλείει ιστότοπους που είναι γνωστό ότι διαδίδουν adware ή κακόβουλο λογισμικό ή κλέβουν συνδέσεις, από το έργο uBlock Origin.";
+"Blocks trackers, from the EasyList project. Works alongside EasyList." = "Αποκλείει προγράμματα παρακολούθησης, από το έργο EasyList. Λειτουργεί μαζί με την EasyList.";
+"Hides banners that push a site's mobile app, from the AdGuard project." = "Κρύβει banner που προωθούν την εφαρμογή για κινητά ενός ιστότοπου, από το έργο AdGuard.";
+"Hides cookie notices, from the AdGuard project." = "Κρύβει ειδοποιήσεις cookie, από το έργο AdGuard.";
+"Hides cookie notices, from the EasyList project." = "Κρύβει ειδοποιήσεις cookie, από το έργο EasyList.";
+"Hides cookie notices, from the uBlock Origin project." = "Κρύβει ειδοποιήσεις cookie, από το έργο uBlock Origin.";
+"Hides live chat and support widgets, from the EasyList project." = "Κρύβει γραφικά στοιχεία ζωντανής συνομιλίας και υποστήριξης, από το έργο EasyList.";
+"Hides newsletter sign-up prompts, from the EasyList project." = "Κρύβει προτροπές εγγραφής σε ενημερωτικά δελτία, από το έργο EasyList.";
+"Hides other annoyances, from the EasyList project." = "Κρύβει άλλες ενοχλήσεις, από το έργο EasyList.";
+"Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project." = "Κρύβει επικαλύψεις, διαφημιστικά banner και άλλες ενοχλήσεις, από το έργο uBlock Origin.";
+"Hides pop-ups that sites don't need to work, from the AdGuard project." = "Κρύβει αναδυόμενα παράθυρα που οι ιστότοποι δεν χρειάζονται για να λειτουργήσουν, από το έργο AdGuard.";
+"Hides promotions, copy restrictions, and other annoyances, from the AdGuard project." = "Κρύβει προωθήσεις, περιορισμούς αντιγραφής και άλλες ενοχλήσεις, από το έργο AdGuard.";
+"Hides prompts that ask to show notifications, from the EasyList project." = "Κρύβει προτροπές που ζητούν να εμφανιστούν ειδοποιήσεις, από το έργο EasyList.";
+"Hides social media buttons and widgets, from the EasyList project." = "Κρύβει κουμπιά και γραφικά στοιχεία κοινωνικών δικτύων, από το έργο EasyList.";
+"Hides social media buttons and widgets, such as Like and Share, from the AdGuard project." = "Κρύβει κουμπιά και γραφικά στοιχεία κοινωνικών δικτύων, όπως το Like και το Share, από το έργο AdGuard.";
+"Hides third-party widgets such as assistants and support chats, from the AdGuard project." = "Κρύβει γραφικά στοιχεία τρίτων, όπως βοηθούς και συνομιλίες υποστήριξης, από το έργο AdGuard.";
+"Keeps sites working when other lists break them, from the uBlock Origin project." = "Διατηρεί τη λειτουργία των ιστότοπων όταν άλλες λίστες τους χαλάνε, από το έργο uBlock Origin.";
+"Removes tracking parameters from URLs, from the AdGuard project." = "Αφαιρεί παραμέτρους παρακολούθησης από τις διευθύνσεις URL, από το έργο AdGuard.";
+"Removes unneeded parameters from URLs, so links are cleaner to copy and share." = "Αφαιρεί περιττές παραμέτρους από τις διευθύνσεις URL, ώστε οι σύνδεσμοι να είναι πιο καθαροί για αντιγραφή και κοινοποίηση.";
+"Short-term rules that fix sites broken by other lists, from the uBlock Origin project." = "Βραχυπρόθεσμοι κανόνες που διορθώνουν ιστότοπους που χάλασαν από άλλες λίστες, από το έργο uBlock Origin.";
+"Stops public websites from reaching devices on your local network, from the uBlock Origin project." = "Εμποδίζει τους δημόσιους ιστότοπους να φτάνουν σε συσκευές του τοπικού σας δικτύου, από το έργο uBlock Origin.";
+"Tests new rules before they reach the main lists, from the AdGuard project. It may break sites." = "Δοκιμάζει νέους κανόνες προτού φτάσουν στις κύριες λίστες, από το έργο AdGuard. Ενδέχεται να χαλάσει ιστότοπους.";
+"Tests new rules before they reach the main lists, from the uBlock Origin project. It may break sites." = "Δοκιμάζει νέους κανόνες προτού φτάσουν στις κύριες λίστες, από το έργο uBlock Origin. Ενδέχεται να χαλάσει ιστότοπους.";
+"Makes websites dark by restyling their colors, from the Dark Reader project. Some sites may look off, since it doesn't include Dark Reader's site fixes." = "Κάνει τους ιστότοπους σκούρους αλλάζοντας τα χρώματά τους, από το έργο Dark Reader. Ορισμένοι ιστότοποι μπορεί να φαίνονται περίεργα, καθώς δεν περιλαμβάνει τις διορθώσεις ιστοτόπων του Dark Reader.";
+"Blocks Twitch ads and handles complicated anti-adblock cases, but it slows page loads." = "Αποκλείει διαφημίσεις του Twitch και χειρίζεται πολύπλοκες περιπτώσεις anti-adblock, αλλά επιβραδύνει τη φόρτωση σελίδων.";
+"Shows dislike counts on YouTube again, using data from the Return YouTube Dislike community." = "Εμφανίζει ξανά τις καταμετρήσεις “δεν μου αρέσει” στο YouTube, με δεδομένα από την κοινότητα Return YouTube Dislike.";
+"Gets past paywalls on English-language news sites, and some in other languages." = "Παρακάμπτει τα paywall σε αγγλόφωνους ειδησεογραφικούς ιστότοπους και σε ορισμένους σε άλλες γλώσσες.";
+"Blocks Twitch ads." = "Αποκλείει διαφημίσεις του Twitch.";
+"Content Filtering" = "Φιλτράρισμα περιεχομένου";
+"Each site includes its subdomains." = "Κάθε ιστότοπος περιλαμβάνει τους υποτομείς του.";
+"Keeps filters updating while wBlock is closed. Turn off to update only while wBlock is open." = "Διατηρεί την ενημέρωση των φίλτρων όταν το wBlock είναι κλειστό. Απενεργοποιήστε για ενημέρωση μόνο όταν το wBlock είναι ανοιχτό.";
+"About Dark Reader" = "Σχετικά με το Dark Reader";
+"Donate to Dark Reader" = "Δωρεά στο Dark Reader";
+"Return of the YouTube Dislike, Based off https://www.returnyoutubedislike.com/" = "Εμφανίζει ξανά τις καταμετρήσεις “δεν μου αρέσει” στο YouTube, με δεδομένα από την κοινότητα Return YouTube Dislike.";
+"Bypass Paywalls of English (& other) language news sites" = "Παρακάμπτει τα paywall σε αγγλόφωνους ειδησεογραφικούς ιστότοπους και σε ορισμένους σε άλλες γλώσσες.";
+"Multiple solutions for blocking Twitch ads (vaft)" = "Αποκλείει διαφημίσεις του Twitch.";
+"Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "Κάνει τους ιστότοπους σκούρους αλλάζοντας τα χρώματά τους, από το έργο Dark Reader. Ορισμένοι ιστότοποι μπορεί να φαίνονται περίεργα, καθώς δεν περιλαμβάνει τις διορθώσεις ιστοτόπων του Dark Reader.";

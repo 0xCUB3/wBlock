@@ -149,7 +149,7 @@ struct SiteSettingsView: View {
         return existing.contains(normalized) ? nil : normalized
     }
 
-    private let addSiteFooter: LocalizedStringKey = "Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches. Each site includes its subdomains."
+    private let addSiteFooter: LocalizedStringKey = "Each site includes its subdomains."
 
     private func addSiteRow(_ field: some View) -> some View {
         HStack(spacing: 12) {
@@ -298,41 +298,23 @@ struct SiteSettingsView: View {
             get: { contentFilteringRuns(on: site) },
             set: { setContentFiltering($0, domain: site.domain) }
         )) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Content filtering")
-                    .font(.body)
-                Text("Applies filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
+            // Named as in the Safari extension's panel; the rows need no
+            // captions (#1093).
+            Text("Content Filtering")
         }
 
         Toggle(isOn: Binding(
             get: { dataManager.isAutoplayAllowed(onHost: site.domain) },
             set: { setAutoplayAllowed($0, domain: site.domain) }
         )) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Autoplay")
-                    .font(.body)
-                Text(site.autoplayOverride == nil
-                     ? "Following the Autoplay setting in the Safari extension."
-                     : "Overrides the Autoplay setting in the Safari extension.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
+            Text("Autoplay")
         }
 
         Toggle(isOn: Binding(
             get: { !site.areUserScriptsDisabled },
             set: { setUserScriptsEnabled($0, domain: site.domain) }
         )) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Userscripts")
-                    .font(.body)
-                Text("Runs every enabled userscript that matches this site.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
+            Text("Userscripts")
         }
 
         ForEach(siteUserScripts(for: site.domain)) { script in
@@ -348,16 +330,9 @@ struct SiteSettingsView: View {
                     }
                 }
             )) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(script.name)
-                        .font(.body)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-
-                    Text("Run on this site")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+                Text(script.name)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
             }
             .disabled(site.areUserScriptsDisabled)
         }

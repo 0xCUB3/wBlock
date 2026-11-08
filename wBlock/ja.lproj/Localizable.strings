@@ -96,10 +96,8 @@
 "Additional filter list for websites in Hebrew." = "ヘブライ語のウェブサイト用の追加フィルターリスト。";
 "Additional filter list for websites in Hindi, Tamil and other Dravidian and Indic languages." = "ヒンディー語、タミル語、その他のドラヴィダ語およびインド語のウェブサイト用の追加フィルターリスト。";
 "Additional filter list for websites in Icelandic." = "アイスランド語のウェブサイト用の追加フィルターリスト。";
-"Additional filter list for websites in Persian." = "ペルシャ語のウェブサイト用の追加フィルターリスト。";
 "Additional filter list for websites in Latvian." = "ラトビア語のウェブサイト用の追加フィルターリスト。";
 "Additional filter list for websites in Lithuanian." = "リトアニア語のウェブサイト用の追加フィルターリスト。";
-"Additional filter list for websites in Slovenian." = "スロベニア語のウェブサイト用の追加フィルターリスト。";
 "AdGuard Chinese filter" = "AdGuard Chinese filter";
 "AdGuard Dutch filter" = "AdGuard Dutch filter";
 "EasyDutch" = "EasyDutch";
@@ -173,7 +171,6 @@
 "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "Safari はこのリストの inline-script ルールを適用できません。対応する英語サイトでは、ユーザースクリプトで Bypass Paywalls Clean を有効にしてください。";
 "Blocks pop-up ads on web pages." = "ウェブページ上のポップアップ広告をブロックします。";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "プロモーションのポップアップ、ニュースレターの登録、通知リクエストをブロックします。";
-"Hides social media content and icons. Blocks social widgets and scripts, including many that AdGuard Social Media Filter misses." = "ソーシャルメディアのコンテンツやアイコンを非表示にします。AdGuard Social Media Filter が見逃す多くのものを含め、ソーシャルウィジェットやスクリプトをブロックします。";
 "Blocks third-party widgets, chat assistants, and support widgets." = "サードパーティのウィジェット、チャットアシスタント、サポートウィジェットをブロックします。";
 "Building combined filter engine..." = "複合フィルターエンジンを構築中...";
 "Building filter engine" = "フィルターエンジンを構築中";
@@ -724,7 +721,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Change File" = "ファイルを変更";
 "Local imports won't auto-update; re-import to replace." = "ローカルインポートは自動アップデートされません。置き換えるには再インポートしてください。";
 "Blocks Twitch ads with the vaft script from TwitchAdSolutions." = "TwitchAdSolutions の vaft スクリプトで Twitch の広告をブロックします。";
-"Optional. Blocks Twitch ads and handles complicated anti-adblock cases, but it slows page loads." = "任意。Twitch の広告をブロックし、複雑なアドブロック対策にも対応しますが、ページの読み込みが遅くなります。";
 
 /* Issue 508 UI */
 "Disable Essential Filter?" = "必須フィルターを無効にしますか？";
@@ -772,7 +768,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "column %@: %@" = "列 %@：%@";
 "Userstyle compiler timed out." = "ユーザースタイルコンパイラがタイムアウトしました。";
 "Userstyle compiler must not run on the main thread." = "ユーザースタイルコンパイラはメインスレッドで実行してはいけません。";
-"Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "wBlock向けのMITライセンスDark Reader APIエンジン（ベータ版。サイト修正データベース全体は含まれません）。";
 "Pure Black (OLED)" = "ピュアブラック（OLED）";
 "Follow System" = "システムに合わせる";
 "Always Dark" = "常にダーク";
@@ -859,11 +854,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Autoplay" = "自動再生";
 "Autoplay off" = "自動再生オフ";
 "Userscripts off" = "ユーザースクリプトオフ";
-"Following the Autoplay setting in the Safari extension." = "Safari機能拡張の自動再生設定に従います。";
-"Overrides the Autoplay setting in the Safari extension." = "Safari機能拡張の自動再生設定を上書きします。";
-"Runs every enabled userscript that matches this site." = "このサイトに一致する有効なユーザースクリプトを全て実行します。";
-"Applies filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "フィルターリストとスクリプトレットを適用します。ユーザースクリプト、要素ブロック、自動再生には個別のスイッチがあります。";
-"Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches. Each site includes its subdomains." = "追加したサイトではフィルターリストとスクリプトレットを適用しません。ユーザースクリプト、要素ブロック、自動再生には個別のスイッチがあります。各サイトにはそのサブドメインも含まれます。";
 "Websites" = "ウェブサイト";
 "Next update: %@" = "次回のアップデート: %@";
 "Next update" = "次回のアップデート";
@@ -915,22 +905,10 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Available when the current sync finishes." = "現在の同期が終わると使用できます。";
 "Generic Rules" = "汎用ルール";
 "Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps." = "サイトを指定しないルールで、すべてのサイトの要素を非表示にします。オフにすると、サイト別の非表示は残り、特に重いウェブアプリでページが軽くなります。";
-"Automatically removes unnecessary '$' and '&' values from URLs, making them easier to copy from the URL bar and pasting elsewhere as links. Already included in Dandelion Sprout's Annoyances List." = "URLから不要な「$」や「&」値を自動的に削除し、URLバーからコピーして他の場所にリンクとして貼り付けやすくします。既に Dandelion Sprout の Annoyances List にも含まれています。";
-"Blocks cookie notices on web pages." = "ウェブページで表示されるCookie（クッキー）使用同意通知をブロックします。";
-"Filter for social media widgets such as 'Like' and 'Share' buttons and more." = "SNSウィジェット用フィルター(いいね! ボタンなど)。";
-"Hides website features that use generative AI and AI-generated content." = "生成AIとAI生成コンテンツを使用しているウェブサイト機能を非表示にします。";
 "This filter blocks tracking pixels in email clients." = "メールクライアント内のトラッキングピクセルをブロックしてくれるフィルターです。";
-"Prevents public Internet sites from digging into your LAN files." = "パブリックインターネットサイトが LAN ファイルにアクセスするのを防ぎます。";
-"Blocks more malware than most other major anti-malware lists - domains and URL patterns used in malware redirection chains, IP addresses that are solely used by malware, PUP nags, and a few scammers. Already included in Dandelion Sprout's Annoyances List." = "他の主要なマルウェア対策リストよりも多くのマルウェアをブロックします。マルウェアのリダイレクトチェーンで使用されるドメインやURLパターン、マルウェアによってのみ使用されるIPアドレス、PUPの迷惑要素、そしていくつかの詐欺師もブロック対象に入っています。※このリストは、既に「Dandelion Sprout\\'s Annoyances List」に含まれています。";
-"Filter that blocks ads, trackers, and other nasty things." = "広告やトラッカー（追跡ソフト）などのような嫌なものをブロックするフィルター。";
-"Filter designed to test certain hazardous filtering rules before they are added to the basic filters." = "特定の危険なフィルタリングルールを基本フィルターに追加する前にテストするように設計されたフィルターです。";
-"Additional filter list for websites in Indonesian and Malay." = "インドネシア語およびマレー語サイト用、補足フィルターリストです。";
-"Hufilter. Filter list that specifically removes ads, privacy threats, and security risks on websites in the Hungarian language." = "Hufilter。ハンガリー語ウェブサイト上の広告・プライバシー脅威・セキュリティリスクをするための専用フィルターリスト。";
-"Privacy protection supplement for EasyList." = "EasyList用のプライバシー保護補足フィルター。";
 
 /* Add Filter List: Find */
 "wBlock Ad and Tracking Hosts" = "wBlock 広告・トラッキングホスト";
-"Blocks ad and tracking hosts that the other lists only block in part." = "他のリストでは一部しかブロックされない広告・トラッキングのホストをブロックします。";
 
 "Filter Logs" = "ログを絞り込む";
 "Apply Anyway" = "このまま適用";
@@ -968,19 +946,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "EasyList – Chat Widgets" = "EasyList – Chat Widgets";
 "EasyList – Newsletter Notices" = "EasyList – Newsletter Notices";
 "EasyList – Notifications" = "EasyList – Notifications";
-"Ad blocking rules from the uBlock Origin project. Meant to be used alongside EasyList." = "uBlock Origin プロジェクトの広告ブロックルール。EasyList と併用することを想定しています。";
 "Additional filter list for websites in German." = "ドイツ語のウェブサイト用の追加フィルターリスト。";
 "Additional filter list for websites in Italian." = "イタリア語のウェブサイト用の追加フィルターリスト。";
-"Additional filter list for websites in Korean." = "韓国語のウェブサイト用の追加フィルターリスト。";
-"Additional filter list for websites in Persian." = "ペルシア語のウェブサイト用の追加フィルターリスト。";
 "Additional filter list for websites in Polish." = "ポーランド語のウェブサイト用の追加フィルターリスト。";
 "Additional filter list for websites in Spanish." = "スペイン語のウェブサイト用の追加フィルターリスト。";
 "Blocks trackers and removes tracking parameters from URLs, from the uBlock Origin project." = "トラッカーをブロックし、URL から追跡パラメータを削除します。uBlock Origin プロジェクトのリストです。";
-"Blocks sites documented to install adware or malware, or to steal login credentials." = "アドウェアやマルウェアのインストール、ログイン情報の窃取が確認されているサイトをブロックします。";
-"Short-term rules that fix sites broken by other filter lists." = "他のフィルターリストによって表示が崩れたサイトを修正する一時的なルールです。";
-"Rules that keep sites working when default lists break them." = "標準リストによってサイトが動作しなくなったとき、動作を維持するためのルールです。";
-"Hides annoying page elements, such as overlays and promotional banners, from the uBlock Origin project." = "オーバーレイやプロモーションバナーなど、ページ上の煩わしい要素を非表示にします。uBlock Origin プロジェクトのリストです。";
-"Blocks ads on websites, from the EasyList project." = "ウェブサイトの広告をブロックします。EasyList プロジェクトのリストです。";
 "Blocks phishing and malware domains flagged by CERT Polska." = "CERT Polska が検出したフィッシングとマルウェアのドメインをブロックします。";
 "Blocks URLs that distribute malware, based on URLhaus data." = "URLhaus のデータに基づき、マルウェアを配布する URL をブロックします。";
 "Blocks visitor counters on Russian-language websites." = "ロシア語のウェブサイトの訪問者カウンターをブロックします。";
@@ -988,10 +958,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "EasyList Germany" = "EasyList Germany";
 "EasyList Italy" = "EasyList Italy";
 "EasyList Spanish" = "EasyList Spanish";
-"Hides miscellaneous annoyances on websites, from the EasyList project." = "ウェブサイト上のさまざまな煩わしい要素を非表示にします。EasyList プロジェクトのリストです。";
-"Hides live chat and support widgets on websites, from the EasyList project." = "ウェブサイト上のライブチャットやサポートのウィジェットを非表示にします。EasyList プロジェクトのリストです。";
-"Hides newsletter sign-up prompts on websites, from the EasyList project." = "ウェブサイト上のニュースレター登録の案内を非表示にします。EasyList プロジェクトのリストです。";
-"Hides prompts that ask you to allow notifications, from the EasyList project." = "通知を許可するよう求める表示を非表示にします。EasyList プロジェクトのリストです。";
 "Official Polish filters for AdBlock, uBlock Origin & AdGuard" = "Official Polish filters for AdBlock, uBlock Origin & AdGuard";
 "PersianBlockerNG" = "PersianBlockerNG";
 "RU AdList" = "RU AdList";
@@ -1014,10 +980,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Phishing URL Blocklist" = "Phishing URL Blocklist";
 "Fanboy – Anti-Facebook" = "Fanboy – Anti-Facebook";
 "Dan Pollock's hosts file" = "Dan Pollock's hosts file";
-"Experimental rules from the uBlock Origin project. They may break sites." = "uBlock Origin プロジェクトの実験的なルールです。サイトの表示が崩れる場合があります。";
-"Blocks URLs that host phishing pages, based on OpenPhish, IPThreat and PhishTank data." = "OpenPhish、IPThreat、PhishTank のデータに基づき、フィッシングページを配信している URL をブロックします。";
 "Blocks Facebook social plugins and login widgets on other websites. May break sites that rely on them." = "他のウェブサイト上の Facebook のソーシャルプラグインやログインウィジェットをブロックします。これらに依存するサイトが動作しなくなる場合があります。";
-"Hosts file that blocks ads, trackers, and other unwanted sites, from Dan Pollock's project." = "広告、トラッカー、その他の不要なサイトをブロックする hosts ファイルです。Dan Pollock のプロジェクトのリストです。";
 
 /* Annoyances topic headings */
 "Cookie Notices" = "Cookieの通知";
@@ -1036,3 +999,85 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Choose the annoyances to hide. You can change this later in Annoyances Info." = "非表示にする迷惑要素を選んでください。あとで迷惑要素の情報から変更できます。";
 "Blocks YouTube's ads and web player and plays videos in Safari's native player, with chapters, picture-in-picture, background playback, and audio-only mode. Includes SponsorBlock, which skips sponsored segments." = "YouTube の広告とウェブプレーヤーをブロックし、Safari のネイティブプレーヤーで動画を再生します。チャプター、ピクチャ・イン・ピクチャ、バックグラウンド再生、音声のみモードに対応。スポンサー区間を飛ばす SponsorBlock も含まれます。";
 "Blocks third-party video players on other sites and plays videos with Safari's native controls, adding auto PiP, background playback, subtitles, chapters, and Now Playing info." = "他のサイトのサードパーティ製動画プレーヤーをブロックし、Safari のネイティブコントロールで動画を再生します。自動ピクチャ・イン・ピクチャ、バックグラウンド再生、字幕、チャプター、再生中の情報を追加します。";
+
+/* Rewritten descriptions (#1093) */
+"Blocks Swedish ads, trackers, social media widgets, annoyances, and sponsored articles." = "スウェーデンの広告、トラッカー、ソーシャルメディアのウィジェット、迷惑要素、スポンサー記事をブロックします。";
+"Blocks ad and tracking hosts that other lists miss, from the wBlock project." = "他のリストで漏れる広告とトラッキングのホストをブロックします。wBlock プロジェクトのリストです。";
+"Blocks ads and trackers on Macedonian websites." = "マケドニアのウェブサイト上の広告とトラッカーをブロックします。";
+"Blocks ads from mobile ad networks, from the AdGuard project." = "モバイル広告ネットワークの広告をブロックします。AdGuard プロジェクトのリストです。";
+"Blocks ads on Albanian and Kosovar websites." = "アルバニア語およびコソボのウェブサイト上の広告をブロックします。";
+"Blocks ads on Arabic websites." = "アラビア語のウェブサイト上の広告をブロックします。";
+"Blocks ads on Bulgarian websites." = "ブルガリア語のウェブサイト上の広告をブロックします。";
+"Blocks ads on Chinese websites, from the AdGuard project. Includes EasyList China." = "中国語のウェブサイト上の広告をブロックします。AdGuard プロジェクトのリストで、EasyList China を含みます。";
+"Blocks ads on Czech and Slovak websites, from the EasyList project." = "チェコ語およびスロバキア語のウェブサイト上の広告をブロックします。EasyList プロジェクトのリストです。";
+"Blocks ads on Dhivehi (Maldivian) websites." = "ディベヒ語（モルディブ）のウェブサイト上の広告をブロックします。";
+"Blocks ads on Dutch websites, from the AdGuard project. Includes EasyList Dutch." = "オランダ語のウェブサイト上の広告をブロックします。AdGuard プロジェクトのリストで、EasyList Dutch を含みます。";
+"Blocks ads on English-language websites, from the AdGuard project. Works alongside EasyList." = "英語のウェブサイト上の広告をブロックします。AdGuard プロジェクトのリストで、EasyList と併用できます。";
+"Blocks ads on Estonian websites." = "エストニア語のウェブサイト上の広告をブロックします。";
+"Blocks ads on Finnish websites." = "フィンランド語のウェブサイト上の広告をブロックします。";
+"Blocks ads on French websites, from the AdGuard project. Includes Liste FR." = "フランス語のウェブサイト上の広告をブロックします。AdGuard プロジェクトのリストで、Liste FR を含みます。";
+"Blocks ads on German websites, from the AdGuard project. Includes EasyList Germany." = "ドイツ語のウェブサイト上の広告をブロックします。AdGuard プロジェクトのリストで、EasyList Germany を含みます。";
+"Blocks ads on Greek websites." = "ギリシャ語のウェブサイト上の広告をブロックします。";
+"Blocks ads on Hebrew websites, from the EasyList project." = "ヘブライ語のウェブサイト上の広告をブロックします。EasyList プロジェクトのリストです。";
+"Blocks ads on Icelandic websites." = "アイスランド語のウェブサイト上の広告をブロックします。";
+"Blocks ads on Indonesian and Malay websites." = "インドネシア語およびマレー語のウェブサイト上の広告をブロックします。";
+"Blocks ads on Italian websites, from the AdGuard project. Includes EasyList Italy." = "イタリア語のウェブサイト上の広告をブロックします。AdGuard プロジェクトのリストで、EasyList Italy を含みます。";
+"Blocks ads on Japanese websites, from the AdGuard project." = "日本語のウェブサイト上の広告をブロックします。AdGuard プロジェクトのリストです。";
+"Blocks ads on Korean websites." = "韓国語のウェブサイト上の広告をブロックします。";
+"Blocks ads on Latvian websites." = "ラトビア語のウェブサイト上の広告をブロックします。";
+"Blocks ads on Lithuanian websites, from the EasyList project." = "リトアニア語のウェブサイト上の広告をブロックします。EasyList プロジェクトのリストです。";
+"Blocks ads on Persian websites." = "ペルシア語のウェブサイト上の広告をブロックします。";
+"Blocks ads on Polish websites, from the AdGuard project. Includes the official Polish filters." = "ポーランド語のウェブサイト上の広告をブロックします。AdGuard プロジェクトのリストで、公式のポーランド語フィルターを含みます。";
+"Blocks ads on Romanian websites." = "ルーマニア語のウェブサイト上の広告をブロックします。";
+"Blocks ads on Russian websites." = "ロシア語のウェブサイト上の広告をブロックします。";
+"Blocks ads on Serbian, Montenegrin, Croatian, and Bosnian websites." = "セルビア語、モンテネグロ語、クロアチア語、ボスニア語のウェブサイト上の広告をブロックします。";
+"Blocks ads on Slovenian websites." = "スロベニア語のウェブサイト上の広告をブロックします。";
+"Blocks ads on Spanish and Portuguese websites, including Brazilian Portuguese, from the AdGuard project." = "スペイン語およびポルトガル語のウェブサイト（ブラジル系ポルトガル語を含む）上の広告をブロックします。AdGuard プロジェクトのリストです。";
+"Blocks ads on Thai websites, from the EasyList project." = "タイ語のウェブサイト上の広告をブロックします。EasyList プロジェクトのリストです。";
+"Blocks ads on Turkish websites, from the AdGuard project." = "トルコ語のウェブサイト上の広告をブロックします。AdGuard プロジェクトのリストです。";
+"Blocks ads on Vietnamese websites." = "ベトナム語のウェブサイト上の広告をブロックします。";
+"Blocks ads on websites from Norway, Denmark, Iceland, the Danish territories, and Sámi communities." = "ノルウェー、デンマーク、アイスランド、デンマーク領、サーミ人コミュニティのウェブサイト上の広告をブロックします。";
+"Blocks ads on websites in Hindi, Tamil, and other Indic and Dravidian languages." = "ヒンディー語、タミル語、その他のインド語派およびドラヴィダ語族のウェブサイト上の広告をブロックします。";
+"Blocks ads, from the EasyList project." = "広告をブロックします。EasyList プロジェクトのリストです。";
+"Blocks ads, from the uBlock Origin project. Works alongside EasyList." = "広告をブロックします。uBlock Origin プロジェクトのリストで、EasyList と併用できます。";
+"Blocks ads, trackers, and other unwanted hosts." = "広告、トラッカー、その他の不要なホストをブロックします。";
+"Blocks ads, trackers, and security threats on Hungarian websites." = "ハンガリー語のウェブサイト上の広告、トラッカー、セキュリティ上の脅威をブロックします。";
+"Blocks malware domains, malware redirects, unwanted-software nags, and some scams." = "マルウェアのドメイン、マルウェアのリダイレクト、不要なソフトウェアの通知、一部の詐欺をブロックします。";
+"Blocks phishing pages, using data from OpenPhish, IPThreat, and PhishTank." = "フィッシングページをブロックします。OpenPhish、IPThreat、PhishTank のデータを使用します。";
+"Blocks sites known to spread adware or malware or to steal logins, from the uBlock Origin project." = "アドウェアやマルウェアを拡散したり、ログイン情報を盗んだりすることが知られているサイトをブロックします。uBlock Origin プロジェクトのリストです。";
+"Blocks trackers, from the EasyList project. Works alongside EasyList." = "トラッカーをブロックします。EasyList プロジェクトのリストで、EasyList と併用できます。";
+"Hides banners that push a site's mobile app, from the AdGuard project." = "サイトのモバイルアプリへの誘導バナーを非表示にします。AdGuard プロジェクトのリストです。";
+"Hides cookie notices, from the AdGuard project." = "Cookie の通知を非表示にします。AdGuard プロジェクトのリストです。";
+"Hides cookie notices, from the EasyList project." = "Cookie の通知を非表示にします。EasyList プロジェクトのリストです。";
+"Hides cookie notices, from the uBlock Origin project." = "Cookie の通知を非表示にします。uBlock Origin プロジェクトのリストです。";
+"Hides live chat and support widgets, from the EasyList project." = "ライブチャットとサポートのウィジェットを非表示にします。EasyList プロジェクトのリストです。";
+"Hides newsletter sign-up prompts, from the EasyList project." = "ニュースレター登録の案内を非表示にします。EasyList プロジェクトのリストです。";
+"Hides other annoyances, from the EasyList project." = "その他の迷惑要素を非表示にします。EasyList プロジェクトのリストです。";
+"Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project." = "オーバーレイ、プロモーションバナー、その他の迷惑要素を非表示にします。uBlock Origin プロジェクトのリストです。";
+"Hides pop-ups that sites don't need to work, from the AdGuard project." = "サイトの動作に必要のないポップアップを非表示にします。AdGuard プロジェクトのリストです。";
+"Hides promotions, copy restrictions, and other annoyances, from the AdGuard project." = "プロモーション、コピー制限、その他の迷惑要素を非表示にします。AdGuard プロジェクトのリストです。";
+"Hides prompts that ask to show notifications, from the EasyList project." = "通知の表示を求めるプロンプトを非表示にします。EasyList プロジェクトのリストです。";
+"Hides social media buttons and widgets, from the EasyList project." = "ソーシャルメディアのボタンとウィジェットを非表示にします。EasyList プロジェクトのリストです。";
+"Hides social media buttons and widgets, such as Like and Share, from the AdGuard project." = "「いいね」や「シェア」などのソーシャルメディアのボタンとウィジェットを非表示にします。AdGuard プロジェクトのリストです。";
+"Hides third-party widgets such as assistants and support chats, from the AdGuard project." = "アシスタントやサポートチャットなどのサードパーティのウィジェットを非表示にします。AdGuard プロジェクトのリストです。";
+"Keeps sites working when other lists break them, from the uBlock Origin project." = "他のリストで壊れたサイトが動作し続けるようにします。uBlock Origin プロジェクトのリストです。";
+"Removes tracking parameters from URLs, from the AdGuard project." = "URL からトラッキング用のパラメータを削除します。AdGuard プロジェクトのリストです。";
+"Removes unneeded parameters from URLs, so links are cleaner to copy and share." = "URL から不要なパラメータを削除し、リンクをコピーや共有しやすくします。";
+"Short-term rules that fix sites broken by other lists, from the uBlock Origin project." = "他のリストで壊れたサイトを修正する短期的なルールです。uBlock Origin プロジェクトのリストです。";
+"Stops public websites from reaching devices on your local network, from the uBlock Origin project." = "公開ウェブサイトからローカルネットワーク上のデバイスにアクセスできないようにします。uBlock Origin プロジェクトのリストです。";
+"Tests new rules before they reach the main lists, from the AdGuard project. It may break sites." = "新しいルールを主要なリストに反映する前にテストします。AdGuard プロジェクトのリストです。サイトが壊れる場合があります。";
+"Tests new rules before they reach the main lists, from the uBlock Origin project. It may break sites." = "新しいルールを主要なリストに反映する前にテストします。uBlock Origin プロジェクトのリストです。サイトが壊れる場合があります。";
+"Makes websites dark by restyling their colors, from the Dark Reader project. Some sites may look off, since it doesn't include Dark Reader's site fixes." = "ウェブサイトの色を変更して暗い表示にします。Dark Reader プロジェクトのリストです。Dark Reader のサイト別修正は含まれないため、一部のサイトの表示がおかしくなる場合があります。";
+"Blocks Twitch ads and handles complicated anti-adblock cases, but it slows page loads." = "Twitch の広告をブロックし、複雑なアドブロック対策も処理しますが、ページの読み込みが遅くなります。";
+"Shows dislike counts on YouTube again, using data from the Return YouTube Dislike community." = "Return YouTube Dislike コミュニティのデータを使い、YouTube の低評価数を再び表示します。";
+"Gets past paywalls on English-language news sites, and some in other languages." = "英語のニュースサイトと、一部の他言語のニュースサイトでペイウォールを回避します。";
+"Blocks Twitch ads." = "Twitch の広告をブロックします。";
+"Content Filtering" = "コンテンツフィルタリング";
+"Each site includes its subdomains." = "各サイトにはサブドメインも含まれます。";
+"Keeps filters updating while wBlock is closed. Turn off to update only while wBlock is open." = "wBlock が閉じている間もフィルターを更新し続けます。オフにすると、wBlock が開いているときだけ更新します。";
+"About Dark Reader" = "Dark Reader について";
+"Donate to Dark Reader" = "Dark Reader に寄付";
+"Return of the YouTube Dislike, Based off https://www.returnyoutubedislike.com/" = "Return YouTube Dislike コミュニティのデータを使い、YouTube の低評価数を再び表示します。";
+"Bypass Paywalls of English (& other) language news sites" = "英語のニュースサイトと、一部の他言語のニュースサイトでペイウォールを回避します。";
+"Multiple solutions for blocking Twitch ads (vaft)" = "Twitch の広告をブロックします。";
+"Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "ウェブサイトの色を変更して暗い表示にします。Dark Reader プロジェクトのリストです。Dark Reader のサイト別修正は含まれないため、一部のサイトの表示がおかしくなる場合があります。";

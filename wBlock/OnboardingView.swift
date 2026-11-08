@@ -109,9 +109,15 @@ struct OnboardingView: View {
 
     private let userscriptDescriptionFallbacksByName: [String: String] = [
         "return youtube dislike":
-            LocalizedStrings.text("Return of the YouTube Dislike.", comment: "Default userscript description"),
+            LocalizedStrings.text(
+                "Shows dislike counts on YouTube again, using data from the Return YouTube Dislike community.",
+                comment: "Default userscript description"
+            ),
         "bypass paywalls clean":
-            LocalizedStrings.text("Bypass paywalls of news sites.", comment: "Default userscript description"),
+            LocalizedStrings.text(
+                "Gets past paywalls on English-language news sites, and some in other languages.",
+                comment: "Default userscript description"
+            ),
         "adguard extra":
             LocalizedStrings.text(
                 "Handles advanced anti-adblock cases that filter rules miss.",

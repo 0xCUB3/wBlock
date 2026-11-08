@@ -1487,6 +1487,12 @@ private struct DarkReaderAppearancePicker: View {
             }
             Divider()
             Toggle("Pure Black (OLED)", isOn: $pureBlack)
+            Divider()
+            // Credited like DeArrow (#1093).
+            Link(destination: URL(string: "https://darkreader.org/")!) {
+                Label("About Dark Reader", systemImage: "arrow.up.right.square")
+            }
+            Link("Donate to Dark Reader", destination: URL(string: "https://darkreader.org/support-us/")!)
         } label: {
             UserScriptSettingsPill(
                 title: Text(followsSystemAppearance ? "Follow System" : "Always Dark"),

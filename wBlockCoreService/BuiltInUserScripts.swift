@@ -45,7 +45,7 @@ enum BuiltInUserScripts {
     static let playerCleanerURL = "https://raw.githubusercontent.com/0xCUB3/wBlock-userscripts/main/packages/player-cleaner/dist/player-cleaner.user.js"
     static let darkReaderURL = DarkReaderAppearancePreference.scriptURL
     static let darkReaderDescription =
-        "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)."
+        "Makes websites dark by restyling their colors, from the Dark Reader project. Some sites may look off, since it doesn't include Dark Reader's site fixes."
     static let tubeCleanerDescription =
         "Blocks YouTube's ads and web player and plays videos in Safari's native player, with chapters, picture-in-picture, background playback, and audio-only mode. Includes SponsorBlock, which skips sponsored segments."
     static let playerCleanerDescription =
@@ -101,7 +101,7 @@ enum BuiltInUserScripts {
             name: "AdGuard Extra",
             url: "https://userscripts.adtidy.org/release/adguard-extra/1.0/adguard-extra.user.js",
             isEnabledByDefault: false,
-            description: "Optional. Blocks Twitch ads and handles complicated anti-adblock cases, but it slows page loads.",
+            description: "Blocks Twitch ads and handles complicated anti-adblock cases, but it slows page loads.",
             displayRole: .functionality
         ),
         BuiltInUserScriptDefinition(

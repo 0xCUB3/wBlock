@@ -96,10 +96,8 @@
 "Additional filter list for websites in Hebrew." = "希伯来语网站的附加过滤器列表。";
 "Additional filter list for websites in Hindi, Tamil and other Dravidian and Indic languages." = "印地语、泰米尔语和其他德拉威语和印度语网站的附加过滤器列表。";
 "Additional filter list for websites in Icelandic." = "冰岛语网站的附加过滤器列表。";
-"Additional filter list for websites in Persian." = "波斯语网站的附加过滤器列表。";
 "Additional filter list for websites in Latvian." = "拉脱维亚语网站的附加过滤器列表。";
 "Additional filter list for websites in Lithuanian." = "立陶宛语网站的附加过滤器列表。";
-"Additional filter list for websites in Slovenian." = "斯洛文尼亚语网站的附加过滤器列表。";
 "AdGuard Chinese filter" = "AdGuard Chinese filter";
 "AdGuard Dutch filter" = "AdGuard Dutch filter";
 "EasyDutch" = "EasyDutch";
@@ -173,7 +171,6 @@
 "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "Safari 无法应用此列表的 inline-script 规则。对于受支持的英语网站，请在用户脚本中启用 Bypass Paywalls Clean。";
 "Blocks pop-up ads on web pages." = "拦截网页上的弹出广告。";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "拦截促销弹出窗口、时事通讯注册和通知请求。";
-"Hides social media content and icons. Blocks social widgets and scripts, including many that AdGuard Social Media Filter misses." = "隐藏社交媒体内容和图标。拦截社交小部件和脚本，包括许多 AdGuard Social Media Filter 漏掉的项目。";
 "Blocks third-party widgets, chat assistants, and support widgets." = "拦截第三方小部件、聊天助手和支持小部件。";
 "Building combined filter engine..." = "正在构建组合过滤器引擎...";
 "Building filter engine" = "正在构建过滤器引擎";
@@ -726,7 +723,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Change File" = "更改文件";
 "Local imports won't auto-update; re-import to replace." = "本地导入不会自动更新；请重新导入以替换。";
 "Blocks Twitch ads with the vaft script from TwitchAdSolutions." = "使用 TwitchAdSolutions 的 vaft 脚本拦截 Twitch 广告。";
-"Optional. Blocks Twitch ads and handles complicated anti-adblock cases, but it slows page loads." = "可选。拦截 Twitch 广告并处理复杂的反广告拦截情况，但会降低页面加载速度。";
 
 /* Issue 508 UI */
 "Disable Essential Filter?" = "要停用必要过滤器吗？";
@@ -778,7 +774,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "column %@: %@" = "第 %@ 列：%@";
 "Userstyle compiler timed out." = "用户样式编译器超时。";
 "Userstyle compiler must not run on the main thread." = "用户样式编译器不得在主线程上运行。";
-"Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "面向 wBlock 的 MIT 许可证 Dark Reader API 引擎（测试版；不含完整的网站修复数据库）。";
 "Pure Black (OLED)" = "纯黑（OLED）";
 "Follow System" = "跟随系统";
 "Always Dark" = "始终深色";
@@ -890,11 +885,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Autoplay" = "自动播放";
 "Autoplay off" = "自动播放已关闭";
 "Userscripts off" = "用户脚本已关闭";
-"Following the Autoplay setting in the Safari extension." = "遵循 Safari 扩展中的自动播放设置。";
-"Overrides the Autoplay setting in the Safari extension." = "覆盖 Safari 扩展中的自动播放设置。";
-"Runs every enabled userscript that matches this site." = "运行所有匹配此网站的已启用用户脚本。";
-"Applies filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "应用过滤器列表和 scriptlet。用户脚本、元素清除器和自动播放有各自的开关。";
-"Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches. Each site includes its subdomains." = "已添加的网站会跳过过滤器列表和 scriptlet。用户脚本、元素清除器和自动播放有各自的开关。每个网站都包括其子域名。";
 "Websites" = "网站";
 "Next update: %@" = "下次更新：%@";
 "Next update" = "下次更新";
@@ -946,22 +936,10 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Available when the current sync finishes." = "当前同步完成后可用。";
 "Generic Rules" = "通用规则";
 "Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps." = "使用未指定网站的规则在所有网站上隐藏元素。关闭后仍保留针对特定网站的隐藏，并让页面更轻快，尤其是复杂的网页应用。";
-"Automatically removes unnecessary '$' and '&' values from URLs, making them easier to copy from the URL bar and pasting elsewhere as links. Already included in Dandelion Sprout's Annoyances List." = "自动从 URL 中删除不必要的 '$' 和 '&' 值，使它们更容易从 URL 栏中复制并作为链接粘贴到其他地方。已包含在 Dandelion Sprout's Annoyances List 中。";
-"Blocks cookie notices on web pages." = "拦截网页上的 Cookie 通知。";
-"Filter for social media widgets such as 'Like' and 'Share' buttons and more." = "用于社交媒体小部件（如“点赞”和“分享”按钮等）的过滤器。";
-"Hides website features that use generative AI and AI-generated content." = "隐藏使用生成式 AI 及 AI 生成内容的网站功能。";
 "This filter blocks tracking pixels in email clients." = "此过滤器用于拦截邮件客户端中的跟踪像素。";
-"Prevents public Internet sites from digging into your LAN files." = "防止公共互联网网站窃取局域网文件。";
-"Blocks more malware than most other major anti-malware lists - domains and URL patterns used in malware redirection chains, IP addresses that are solely used by malware, PUP nags, and a few scammers. Already included in Dandelion Sprout's Annoyances List." = "比大多数主流反恶意软件列表拦截更多恶意软件：包括恶意软件重定向链中使用的域名和 URL 模式、仅被恶意软件使用的 IP 地址、潜在有害程序（PUP）弹窗以及少数诈骗者。已包含在 Dandelion Sprout's Annoyances List 中。";
-"Filter that blocks ads, trackers, and other nasty things." = "拦截广告、跟踪器及其他讨厌内容的过滤器。";
-"Filter designed to test certain hazardous filtering rules before they are added to the basic filters." = "此过滤器设计用于在将某些有风险的过滤规则添加到基本过滤器之前对其进行测试。";
-"Additional filter list for websites in Indonesian and Malay." = "印度尼西亚语和马来语网站的附加过滤器列表。";
-"Hufilter. Filter list that specifically removes ads, privacy threats, and security risks on websites in the Hungarian language." = "Hufilter。专门移除匈牙利语网站上广告、隐私威胁和安全风险的过滤器列表。";
-"Privacy protection supplement for EasyList." = "EasyList 的隐私保护补充。";
 
 /* Add Filter List: Find */
 "wBlock Ad and Tracking Hosts" = "wBlock 广告与跟踪主机";
-"Blocks ad and tracking hosts that the other lists only block in part." = "拦截其他列表只部分拦截的广告和跟踪主机。";
 
 "Filter Logs" = "过滤日志";
 "Apply Anyway" = "仍然应用";
@@ -999,19 +977,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "EasyList – Chat Widgets" = "EasyList – Chat Widgets";
 "EasyList – Newsletter Notices" = "EasyList – Newsletter Notices";
 "EasyList – Notifications" = "EasyList – Notifications";
-"Ad blocking rules from the uBlock Origin project. Meant to be used alongside EasyList." = "来自 uBlock Origin 项目的广告拦截规则，建议与 EasyList 一起使用。";
 "Additional filter list for websites in German." = "德语网站的附加过滤器列表。";
 "Additional filter list for websites in Italian." = "意大利语网站的附加过滤器列表。";
-"Additional filter list for websites in Korean." = "韩语网站的附加过滤器列表。";
-"Additional filter list for websites in Persian." = "波斯语网站的附加过滤器列表。";
 "Additional filter list for websites in Polish." = "波兰语网站的附加过滤器列表。";
 "Additional filter list for websites in Spanish." = "西班牙语网站的附加过滤器列表。";
 "Blocks trackers and removes tracking parameters from URLs, from the uBlock Origin project." = "拦截追踪器，并从网址中移除追踪参数。来自 uBlock Origin 项目。";
-"Blocks sites documented to install adware or malware, or to steal login credentials." = "拦截已被证实会安装广告软件或恶意软件、或窃取登录凭据的网站。";
-"Short-term rules that fix sites broken by other filter lists." = "临时规则，用于修复被其他过滤列表弄坏的网站。";
-"Rules that keep sites working when default lists break them." = "当默认列表导致网站失效时，保持网站正常运行的规则。";
-"Hides annoying page elements, such as overlays and promotional banners, from the uBlock Origin project." = "隐藏页面中令人烦扰的元素，例如遮罩层和促销横幅。来自 uBlock Origin 项目。";
-"Blocks ads on websites, from the EasyList project." = "拦截网站上的广告。来自 EasyList 项目。";
 "Blocks phishing and malware domains flagged by CERT Polska." = "拦截 CERT Polska 标记的钓鱼和恶意软件域名。";
 "Blocks URLs that distribute malware, based on URLhaus data." = "根据 URLhaus 数据拦截传播恶意软件的网址。";
 "Blocks visitor counters on Russian-language websites." = "拦截俄语网站上的访客计数器。";
@@ -1019,10 +989,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "EasyList Germany" = "EasyList Germany";
 "EasyList Italy" = "EasyList Italy";
 "EasyList Spanish" = "EasyList Spanish";
-"Hides miscellaneous annoyances on websites, from the EasyList project." = "隐藏网站上各种令人烦扰的内容。来自 EasyList 项目。";
-"Hides live chat and support widgets on websites, from the EasyList project." = "隐藏网站上的在线聊天和客服小部件。来自 EasyList 项目。";
-"Hides newsletter sign-up prompts on websites, from the EasyList project." = "隐藏网站上的订阅通讯邮件提示。来自 EasyList 项目。";
-"Hides prompts that ask you to allow notifications, from the EasyList project." = "隐藏请求允许通知的提示。来自 EasyList 项目。";
 "Official Polish filters for AdBlock, uBlock Origin & AdGuard" = "Official Polish filters for AdBlock, uBlock Origin & AdGuard";
 "PersianBlockerNG" = "PersianBlockerNG";
 "RU AdList" = "RU AdList";
@@ -1045,10 +1011,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Phishing URL Blocklist" = "Phishing URL Blocklist";
 "Fanboy – Anti-Facebook" = "Fanboy – Anti-Facebook";
 "Dan Pollock's hosts file" = "Dan Pollock's hosts file";
-"Experimental rules from the uBlock Origin project. They may break sites." = "来自 uBlock Origin 项目的实验性规则，可能导致部分网站无法正常显示。";
-"Blocks URLs that host phishing pages, based on OpenPhish, IPThreat and PhishTank data." = "根据 OpenPhish、IPThreat 和 PhishTank 的数据，拦截托管钓鱼页面的网址。";
 "Blocks Facebook social plugins and login widgets on other websites. May break sites that rely on them." = "拦截其他网站上的 Facebook 社交插件和登录小部件。可能导致依赖这些功能的网站无法正常使用。";
-"Hosts file that blocks ads, trackers, and other unwanted sites, from Dan Pollock's project." = "拦截广告、追踪器和其他不需要的网站的 hosts 文件。来自 Dan Pollock 的项目。";
 
 /* Annoyances topic headings */
 "Cookie Notices" = "Cookie 通知";
@@ -1067,3 +1030,85 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Choose the annoyances to hide. You can change this later in Annoyances Info." = "选择要隐藏的烦人元素。之后可在“烦人元素”信息中更改。";
 "Blocks YouTube's ads and web player and plays videos in Safari's native player, with chapters, picture-in-picture, background playback, and audio-only mode. Includes SponsorBlock, which skips sponsored segments." = "屏蔽 YouTube 的广告和网页播放器，改用 Safari 原生播放器播放视频，支持章节、画中画、后台播放和纯音频模式。内含 SponsorBlock，可跳过赞助片段。";
 "Blocks third-party video players on other sites and plays videos with Safari's native controls, adding auto PiP, background playback, subtitles, chapters, and Now Playing info." = "屏蔽其他网站上的第三方视频播放器，改用 Safari 原生控件播放视频，并加入自动画中画、后台播放、字幕、章节和“正在播放”信息。";
+
+/* Rewritten descriptions (#1093) */
+"Blocks Swedish ads, trackers, social media widgets, annoyances, and sponsored articles." = "拦截瑞典语广告、跟踪器、社交媒体小组件、烦人元素和赞助文章。";
+"Blocks ad and tracking hosts that other lists miss, from the wBlock project." = "拦截其他列表遗漏的广告和跟踪主机，来自 wBlock 项目。";
+"Blocks ads and trackers on Macedonian websites." = "拦截马其顿语网站上的广告和跟踪器。";
+"Blocks ads from mobile ad networks, from the AdGuard project." = "拦截来自移动广告网络的广告，来自 AdGuard 项目。";
+"Blocks ads on Albanian and Kosovar websites." = "拦截阿尔巴尼亚语和科索沃网站上的广告。";
+"Blocks ads on Arabic websites." = "拦截阿拉伯语网站上的广告。";
+"Blocks ads on Bulgarian websites." = "拦截保加利亚语网站上的广告。";
+"Blocks ads on Chinese websites, from the AdGuard project. Includes EasyList China." = "拦截中文网站上的广告，来自 AdGuard 项目。包含 EasyList China。";
+"Blocks ads on Czech and Slovak websites, from the EasyList project." = "拦截捷克语和斯洛伐克语网站上的广告，来自 EasyList 项目。";
+"Blocks ads on Dhivehi (Maldivian) websites." = "拦截迪维希语（马尔代夫语）网站上的广告。";
+"Blocks ads on Dutch websites, from the AdGuard project. Includes EasyList Dutch." = "拦截荷兰语网站上的广告，来自 AdGuard 项目。包含 EasyList Dutch。";
+"Blocks ads on English-language websites, from the AdGuard project. Works alongside EasyList." = "拦截英语网站上的广告，来自 AdGuard 项目。可与 EasyList 配合使用。";
+"Blocks ads on Estonian websites." = "拦截爱沙尼亚语网站上的广告。";
+"Blocks ads on Finnish websites." = "拦截芬兰语网站上的广告。";
+"Blocks ads on French websites, from the AdGuard project. Includes Liste FR." = "拦截法语网站上的广告，来自 AdGuard 项目。包含 Liste FR。";
+"Blocks ads on German websites, from the AdGuard project. Includes EasyList Germany." = "拦截德语网站上的广告，来自 AdGuard 项目。包含 EasyList Germany。";
+"Blocks ads on Greek websites." = "拦截希腊语网站上的广告。";
+"Blocks ads on Hebrew websites, from the EasyList project." = "拦截希伯来语网站上的广告，来自 EasyList 项目。";
+"Blocks ads on Icelandic websites." = "拦截冰岛语网站上的广告。";
+"Blocks ads on Indonesian and Malay websites." = "拦截印尼语和马来语网站上的广告。";
+"Blocks ads on Italian websites, from the AdGuard project. Includes EasyList Italy." = "拦截意大利语网站上的广告，来自 AdGuard 项目。包含 EasyList Italy。";
+"Blocks ads on Japanese websites, from the AdGuard project." = "拦截日语网站上的广告，来自 AdGuard 项目。";
+"Blocks ads on Korean websites." = "拦截韩语网站上的广告。";
+"Blocks ads on Latvian websites." = "拦截拉脱维亚语网站上的广告。";
+"Blocks ads on Lithuanian websites, from the EasyList project." = "拦截立陶宛语网站上的广告，来自 EasyList 项目。";
+"Blocks ads on Persian websites." = "拦截波斯语网站上的广告。";
+"Blocks ads on Polish websites, from the AdGuard project. Includes the official Polish filters." = "拦截波兰语网站上的广告，来自 AdGuard 项目。包含官方波兰语过滤器。";
+"Blocks ads on Romanian websites." = "拦截罗马尼亚语网站上的广告。";
+"Blocks ads on Russian websites." = "拦截俄语网站上的广告。";
+"Blocks ads on Serbian, Montenegrin, Croatian, and Bosnian websites." = "拦截塞尔维亚语、黑山语、克罗地亚语和波斯尼亚语网站上的广告。";
+"Blocks ads on Slovenian websites." = "拦截斯洛文尼亚语网站上的广告。";
+"Blocks ads on Spanish and Portuguese websites, including Brazilian Portuguese, from the AdGuard project." = "拦截西班牙语和葡萄牙语网站上的广告（包括巴西葡萄牙语），来自 AdGuard 项目。";
+"Blocks ads on Thai websites, from the EasyList project." = "拦截泰语网站上的广告，来自 EasyList 项目。";
+"Blocks ads on Turkish websites, from the AdGuard project." = "拦截土耳其语网站上的广告，来自 AdGuard 项目。";
+"Blocks ads on Vietnamese websites." = "拦截越南语网站上的广告。";
+"Blocks ads on websites from Norway, Denmark, Iceland, the Danish territories, and Sámi communities." = "拦截来自挪威、丹麦、冰岛、丹麦属地和萨米人社区的网站上的广告。";
+"Blocks ads on websites in Hindi, Tamil, and other Indic and Dravidian languages." = "拦截印地语、泰米尔语及其他印度语和达罗毗荼语系网站上的广告。";
+"Blocks ads, from the EasyList project." = "拦截广告，来自 EasyList 项目。";
+"Blocks ads, from the uBlock Origin project. Works alongside EasyList." = "拦截广告，来自 uBlock Origin 项目。可与 EasyList 配合使用。";
+"Blocks ads, trackers, and other unwanted hosts." = "拦截广告、跟踪器和其他不需要的主机。";
+"Blocks ads, trackers, and security threats on Hungarian websites." = "拦截匈牙利语网站上的广告、跟踪器和安全威胁。";
+"Blocks malware domains, malware redirects, unwanted-software nags, and some scams." = "拦截恶意软件域名、恶意软件重定向、不需要的软件提示以及部分诈骗。";
+"Blocks phishing pages, using data from OpenPhish, IPThreat, and PhishTank." = "利用 OpenPhish、IPThreat 和 PhishTank 的数据拦截钓鱼页面。";
+"Blocks sites known to spread adware or malware or to steal logins, from the uBlock Origin project." = "拦截已知传播广告软件或恶意软件，或窃取登录信息的网站，来自 uBlock Origin 项目。";
+"Blocks trackers, from the EasyList project. Works alongside EasyList." = "拦截跟踪器，来自 EasyList 项目。可与 EasyList 配合使用。";
+"Hides banners that push a site's mobile app, from the AdGuard project." = "隐藏推广网站移动应用的横幅，来自 AdGuard 项目。";
+"Hides cookie notices, from the AdGuard project." = "隐藏 Cookie 通知，来自 AdGuard 项目。";
+"Hides cookie notices, from the EasyList project." = "隐藏 Cookie 通知，来自 EasyList 项目。";
+"Hides cookie notices, from the uBlock Origin project." = "隐藏 Cookie 通知，来自 uBlock Origin 项目。";
+"Hides live chat and support widgets, from the EasyList project." = "隐藏在线聊天和支持小组件，来自 EasyList 项目。";
+"Hides newsletter sign-up prompts, from the EasyList project." = "隐藏电子邮件订阅提示，来自 EasyList 项目。";
+"Hides other annoyances, from the EasyList project." = "隐藏其他烦人元素，来自 EasyList 项目。";
+"Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project." = "隐藏遮罩层、推广横幅和其他烦人元素，来自 uBlock Origin 项目。";
+"Hides pop-ups that sites don't need to work, from the AdGuard project." = "隐藏网站正常运行并不需要的弹出窗口，来自 AdGuard 项目。";
+"Hides promotions, copy restrictions, and other annoyances, from the AdGuard project." = "隐藏促销内容、复制限制和其他烦人元素，来自 AdGuard 项目。";
+"Hides prompts that ask to show notifications, from the EasyList project." = "隐藏请求显示通知的提示，来自 EasyList 项目。";
+"Hides social media buttons and widgets, from the EasyList project." = "隐藏社交媒体按钮和小组件，来自 EasyList 项目。";
+"Hides social media buttons and widgets, such as Like and Share, from the AdGuard project." = "隐藏社交媒体按钮和小组件，例如“赞”和“分享”，来自 AdGuard 项目。";
+"Hides third-party widgets such as assistants and support chats, from the AdGuard project." = "隐藏第三方小组件，例如助手和支持聊天，来自 AdGuard 项目。";
+"Keeps sites working when other lists break them, from the uBlock Origin project." = "当其他列表导致网站出现问题时，让网站保持正常工作，来自 uBlock Origin 项目。";
+"Removes tracking parameters from URLs, from the AdGuard project." = "从 URL 中移除跟踪参数，来自 AdGuard 项目。";
+"Removes unneeded parameters from URLs, so links are cleaner to copy and share." = "移除 URL 中不必要的参数，让链接更干净，便于复制和分享。";
+"Short-term rules that fix sites broken by other lists, from the uBlock Origin project." = "用于修复被其他列表破坏的网站的短期规则，来自 uBlock Origin 项目。";
+"Stops public websites from reaching devices on your local network, from the uBlock Origin project." = "阻止公共网站访问你本地网络中的设备，来自 uBlock Origin 项目。";
+"Tests new rules before they reach the main lists, from the AdGuard project. It may break sites." = "在新规则进入主列表之前进行测试，来自 AdGuard 项目。可能会导致网站出现问题。";
+"Tests new rules before they reach the main lists, from the uBlock Origin project. It may break sites." = "在新规则进入主列表之前进行测试，来自 uBlock Origin 项目。可能会导致网站出现问题。";
+"Makes websites dark by restyling their colors, from the Dark Reader project. Some sites may look off, since it doesn't include Dark Reader's site fixes." = "通过重新设置颜色使网站变暗，来自 Dark Reader 项目。由于不包含 Dark Reader 的网站修复，部分网站显示可能不正常。";
+"Blocks Twitch ads and handles complicated anti-adblock cases, but it slows page loads." = "拦截 Twitch 广告并处理复杂的反广告拦截情况，但会减慢页面加载速度。";
+"Shows dislike counts on YouTube again, using data from the Return YouTube Dislike community." = "重新在 YouTube 上显示不喜欢数，数据来自 Return YouTube Dislike 社区。";
+"Gets past paywalls on English-language news sites, and some in other languages." = "绕过英语新闻网站的付费墙，以及部分其他语言网站的付费墙。";
+"Blocks Twitch ads." = "拦截 Twitch 广告。";
+"Content Filtering" = "内容过滤";
+"Each site includes its subdomains." = "每个网站都包括其子域名。";
+"Keeps filters updating while wBlock is closed. Turn off to update only while wBlock is open." = "wBlock 关闭时仍保持过滤器更新。关闭后仅在 wBlock 打开时更新。";
+"About Dark Reader" = "关于 Dark Reader";
+"Donate to Dark Reader" = "向 Dark Reader 捐赠";
+"Return of the YouTube Dislike, Based off https://www.returnyoutubedislike.com/" = "重新在 YouTube 上显示不喜欢数，数据来自 Return YouTube Dislike 社区。";
+"Bypass Paywalls of English (& other) language news sites" = "绕过英语新闻网站的付费墙，以及部分其他语言网站的付费墙。";
+"Multiple solutions for blocking Twitch ads (vaft)" = "拦截 Twitch 广告。";
+"Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "通过重新设置颜色使网站变暗，来自 Dark Reader 项目。由于不包含 Dark Reader 的网站修复，部分网站显示可能不正常。";

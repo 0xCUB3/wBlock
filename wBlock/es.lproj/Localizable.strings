@@ -96,10 +96,8 @@
 "Additional filter list for websites in Hebrew." = "Lista de filtros adicional para sitios web en hebreo.";
 "Additional filter list for websites in Hindi, Tamil and other Dravidian and Indic languages." = "Lista de filtros adicional para sitios web en hindi, tamil y otros idiomas dravídicos e índicos.";
 "Additional filter list for websites in Icelandic." = "Lista de filtros adicional para sitios web en islandés.";
-"Additional filter list for websites in Persian." = "Lista de filtros adicional para sitios web en persa.";
 "Additional filter list for websites in Latvian." = "Lista de filtros adicional para sitios web en letón.";
 "Additional filter list for websites in Lithuanian." = "Lista de filtros adicional para sitios web en lituano.";
-"Additional filter list for websites in Slovenian." = "Lista de filtros adicional para sitios web en esloveno.";
 "AdGuard Chinese filter" = "AdGuard Chinese filter";
 "AdGuard Dutch filter" = "AdGuard Dutch filter";
 "EasyDutch" = "EasyDutch";
@@ -173,7 +171,6 @@
 "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "Safari no puede aplicar las reglas inline-script de esta lista. Activa Bypass Paywalls Clean en Scripts de usuario para los sitios en inglés compatibles.";
 "Blocks pop-up ads on web pages." = "Bloquea anuncios emergentes en páginas web.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "Bloquea ventanas emergentes promocionales, suscripciones a boletines y solicitudes de notificación.";
-"Hides social media content and icons. Blocks social widgets and scripts, including many that AdGuard Social Media Filter misses." = "Oculta contenido e iconos de redes sociales. Bloquea widgets y scripts sociales, incluidos muchos que AdGuard Social Media Filter pasa por alto.";
 "Blocks third-party widgets, chat assistants, and support widgets." = "Bloquea widgets, asistentes de chat y widgets de soporte de terceros.";
 "Building combined filter engine..." = "Construyendo motor de filtros combinado...";
 "Building filter engine" = "Construyendo el motor de filtros";
@@ -726,7 +723,6 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Change File" = "Cambiar archivo";
 "Local imports won't auto-update; re-import to replace." = "Las importaciones locales no se actualizan automáticamente; vuelve a importar para reemplazarlas.";
 "Blocks Twitch ads with the vaft script from TwitchAdSolutions." = "Bloquea los anuncios de Twitch con el script vaft de TwitchAdSolutions.";
-"Optional. Blocks Twitch ads and handles complicated anti-adblock cases, but it slows page loads." = "Opcional. Bloquea los anuncios de Twitch y gestiona casos complicados de bloqueadores de anuncios, pero ralentiza la carga de páginas.";
 
 /* Issue 508 UI */
 "Disable Essential Filter?" = "¿Desactivar el filtro esencial?";
@@ -778,7 +774,6 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "column %@: %@" = "columna %@: %@";
 "Userstyle compiler timed out." = "El compilador de estilos de usuario agotó el tiempo de espera.";
 "Userstyle compiler must not run on the main thread." = "El compilador de estilos de usuario no debe ejecutarse en el hilo principal.";
-"Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "Motor de API de Dark Reader con licencia MIT para wBlock (beta; sin la base de datos completa de correcciones de sitios).";
 "Pure Black (OLED)" = "Negro puro (OLED)";
 "Follow System" = "Seguir el sistema";
 "Always Dark" = "Siempre oscuro";
@@ -890,11 +885,6 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Autoplay" = "Reproducción automática";
 "Autoplay off" = "Reproducción automática desactivada";
 "Userscripts off" = "Scripts de usuario desactivados";
-"Following the Autoplay setting in the Safari extension." = "Sigue el ajuste de reproducción automática de la extensión de Safari.";
-"Overrides the Autoplay setting in the Safari extension." = "Anula el ajuste de reproducción automática de la extensión de Safari.";
-"Runs every enabled userscript that matches this site." = "Ejecuta todos los scripts de usuario activados que coinciden con este sitio.";
-"Applies filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Aplica listas de filtros y scriptlets. Los scripts de usuario, el ocultador de elementos y la reproducción automática tienen sus propios interruptores.";
-"Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches. Each site includes its subdomains." = "Los sitios añadidos omiten listas de filtros y scriptlets. Los scripts de usuario, el ocultador de elementos y la reproducción automática tienen sus propios interruptores. Cada sitio incluye sus subdominios.";
 "Websites" = "Sitios web";
 "Next update: %@" = "Próxima actualización: %@";
 "Next update" = "Próxima actualización";
@@ -946,22 +936,10 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Available when the current sync finishes." = "Disponible cuando termine la sincronización actual.";
 "Generic Rules" = "Reglas genéricas";
 "Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps." = "Oculta elementos en todos los sitios con reglas que no indican ninguno. Al desactivarlo se mantiene la ocultación específica de cada sitio y las páginas son más ligeras, sobre todo las aplicaciones web exigentes.";
-"Automatically removes unnecessary '$' and '&' values from URLs, making them easier to copy from the URL bar and pasting elsewhere as links. Already included in Dandelion Sprout's Annoyances List." = "Elimina automáticamente los valores '$' y '&' innecesarios de las URL, lo que facilita la copia de la barra de URL y el pegado en otros lugares como enlaces. Ya incluido en la lista Dandelion Sprout's Annoyances.";
-"Blocks cookie notices on web pages." = "Bloquea avisos de cookies en sitios web.";
-"Filter for social media widgets such as 'Like' and 'Share' buttons and more." = "Filtro para widgets de redes sociales, como los botones 'Me gusta' y 'Compartir', y más.";
-"Hides website features that use generative AI and AI-generated content." = "Oculta funciones de sitios web que utilizan IA generativa y contenido generado por IA.";
 "This filter blocks tracking pixels in email clients." = "Este filtro bloquea los píxeles de rastreo en los clientes de correo electrónico.";
-"Prevents public Internet sites from digging into your LAN files." = "Evita que los sitios públicos de Internet accedan a tus archivos de LAN.";
-"Blocks more malware than most other major anti-malware lists - domains and URL patterns used in malware redirection chains, IP addresses that are solely used by malware, PUP nags, and a few scammers. Already included in Dandelion Sprout's Annoyances List." = "Bloquea más malware que la mayoría de otras listas principales de anti-malware: dominios y patrones de URL utilizados en cadenas de redirección de malware, direcciones IP que solo son utilizadas por malware, molestias de PUP y algunos estafadores. Ya está incluida en Dandelion Sprout's Annoyances List.";
-"Filter that blocks ads, trackers, and other nasty things." = "Filtro que bloquea anuncios, rastreadores y otras cosas desagradables.";
-"Filter designed to test certain hazardous filtering rules before they are added to the basic filters." = "Filtro diseñado para probar ciertas reglas de filtrado peligrosas antes de que se añadan a los filtros básicos.";
-"Additional filter list for websites in Indonesian and Malay." = "Lista de filtros adicional para sitios web en indonesio y malayo.";
-"Hufilter. Filter list that specifically removes ads, privacy threats, and security risks on websites in the Hungarian language." = "Hufilter. Lista de filtros que elimina específicamente anuncios, amenazas a la privacidad y riesgos de seguridad en sitios web en idioma húngaro.";
-"Privacy protection supplement for EasyList." = "Suplemento de protección de privacidad para EasyList.";
 
 /* Add Filter List: Find */
 "wBlock Ad and Tracking Hosts" = "Hosts de anuncios y rastreo de wBlock";
-"Blocks ad and tracking hosts that the other lists only block in part." = "Bloquea hosts de anuncios y rastreo que las demás listas solo bloquean en parte.";
 
 "Filter Logs" = "Filtrar registros";
 "Apply Anyway" = "Aplicar de todos modos";
@@ -999,19 +977,11 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "EasyList – Chat Widgets" = "EasyList – Chat Widgets";
 "EasyList – Newsletter Notices" = "EasyList – Newsletter Notices";
 "EasyList – Notifications" = "EasyList – Notifications";
-"Ad blocking rules from the uBlock Origin project. Meant to be used alongside EasyList." = "Reglas para bloquear anuncios del proyecto uBlock Origin. Pensadas para usarse junto con EasyList.";
 "Additional filter list for websites in German." = "Lista de filtros adicional para sitios web en alemán.";
 "Additional filter list for websites in Italian." = "Lista de filtros adicional para sitios web en italiano.";
-"Additional filter list for websites in Korean." = "Lista de filtros adicional para sitios web en coreano.";
-"Additional filter list for websites in Persian." = "Lista de filtros adicional para sitios web en persa.";
 "Additional filter list for websites in Polish." = "Lista de filtros adicional para sitios web en polaco.";
 "Additional filter list for websites in Spanish." = "Lista de filtros adicional para sitios web en español.";
 "Blocks trackers and removes tracking parameters from URLs, from the uBlock Origin project." = "Bloquea rastreadores y elimina los parámetros de seguimiento de las URL. Lista del proyecto uBlock Origin.";
-"Blocks sites documented to install adware or malware, or to steal login credentials." = "Bloquea sitios documentados por instalar adware o malware, o por robar credenciales de inicio de sesión.";
-"Short-term rules that fix sites broken by other filter lists." = "Reglas temporales que arreglan sitios rotos por otras listas de filtros.";
-"Rules that keep sites working when default lists break them." = "Reglas que mantienen los sitios funcionando cuando las listas predeterminadas los rompen.";
-"Hides annoying page elements, such as overlays and promotional banners, from the uBlock Origin project." = "Oculta elementos molestos de las páginas, como superposiciones y banners promocionales. Lista del proyecto uBlock Origin.";
-"Blocks ads on websites, from the EasyList project." = "Bloquea anuncios en sitios web. Lista del proyecto EasyList.";
 "Blocks phishing and malware domains flagged by CERT Polska." = "Bloquea los dominios de phishing y malware señalados por CERT Polska.";
 "Blocks URLs that distribute malware, based on URLhaus data." = "Bloquea las URL que distribuyen malware, según los datos de URLhaus.";
 "Blocks visitor counters on Russian-language websites." = "Bloquea los contadores de visitas en sitios web en ruso.";
@@ -1019,10 +989,6 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "EasyList Germany" = "EasyList Germany";
 "EasyList Italy" = "EasyList Italy";
 "EasyList Spanish" = "EasyList Spanish";
-"Hides miscellaneous annoyances on websites, from the EasyList project." = "Oculta diversas molestias de los sitios web. Lista del proyecto EasyList.";
-"Hides live chat and support widgets on websites, from the EasyList project." = "Oculta los widgets de chat en vivo y de soporte en los sitios web. Lista del proyecto EasyList.";
-"Hides newsletter sign-up prompts on websites, from the EasyList project." = "Oculta las invitaciones a suscribirse a boletines en los sitios web. Lista del proyecto EasyList.";
-"Hides prompts that ask you to allow notifications, from the EasyList project." = "Oculta las solicitudes para permitir notificaciones. Lista del proyecto EasyList.";
 "Official Polish filters for AdBlock, uBlock Origin & AdGuard" = "Official Polish filters for AdBlock, uBlock Origin & AdGuard";
 "PersianBlockerNG" = "PersianBlockerNG";
 "RU AdList" = "RU AdList";
@@ -1045,10 +1011,7 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Phishing URL Blocklist" = "Phishing URL Blocklist";
 "Fanboy – Anti-Facebook" = "Fanboy – Anti-Facebook";
 "Dan Pollock's hosts file" = "Dan Pollock's hosts file";
-"Experimental rules from the uBlock Origin project. They may break sites." = "Reglas experimentales del proyecto uBlock Origin. Pueden romper sitios.";
-"Blocks URLs that host phishing pages, based on OpenPhish, IPThreat and PhishTank data." = "Bloquea las URL que alojan páginas de phishing, según datos de OpenPhish, IPThreat y PhishTank.";
 "Blocks Facebook social plugins and login widgets on other websites. May break sites that rely on them." = "Bloquea los complementos sociales y los widgets de inicio de sesión de Facebook en otros sitios web. Puede romper sitios que dependen de ellos.";
-"Hosts file that blocks ads, trackers, and other unwanted sites, from Dan Pollock's project." = "Archivo hosts que bloquea anuncios, rastreadores y otros sitios no deseados. Del proyecto de Dan Pollock.";
 
 /* Annoyances topic headings */
 "Cookie Notices" = "Avisos de cookies";
@@ -1067,3 +1030,85 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Choose the annoyances to hide. You can change this later in Annoyances Info." = "Elige qué molestias ocultar. Puedes cambiarlo más tarde en la información de Molestias.";
 "Blocks YouTube's ads and web player and plays videos in Safari's native player, with chapters, picture-in-picture, background playback, and audio-only mode. Includes SponsorBlock, which skips sponsored segments." = "Bloquea los anuncios y el reproductor web de YouTube y reproduce los vídeos en el reproductor nativo de Safari, con capítulos, imagen en imagen, reproducción en segundo plano y modo solo audio. Incluye SponsorBlock, que salta los segmentos patrocinados.";
 "Blocks third-party video players on other sites and plays videos with Safari's native controls, adding auto PiP, background playback, subtitles, chapters, and Now Playing info." = "Bloquea reproductores de vídeo de terceros en otros sitios y reproduce los vídeos con los controles nativos de Safari, con imagen en imagen automática, reproducción en segundo plano, subtítulos, capítulos e información de A la escucha.";
+
+/* Rewritten descriptions (#1093) */
+"Blocks Swedish ads, trackers, social media widgets, annoyances, and sponsored articles." = "Bloquea anuncios, rastreadores, widgets de redes sociales, molestias y artículos patrocinados de Suecia.";
+"Blocks ad and tracking hosts that other lists miss, from the wBlock project." = "Bloquea hosts de publicidad y rastreo que otras listas no detectan, del proyecto wBlock.";
+"Blocks ads and trackers on Macedonian websites." = "Bloquea anuncios y rastreadores en sitios web macedonios.";
+"Blocks ads from mobile ad networks, from the AdGuard project." = "Bloquea anuncios de redes publicitarias móviles, del proyecto AdGuard.";
+"Blocks ads on Albanian and Kosovar websites." = "Bloquea anuncios en sitios web albaneses y kosovares.";
+"Blocks ads on Arabic websites." = "Bloquea anuncios en sitios web en árabe.";
+"Blocks ads on Bulgarian websites." = "Bloquea anuncios en sitios web búlgaros.";
+"Blocks ads on Chinese websites, from the AdGuard project. Includes EasyList China." = "Bloquea anuncios en sitios web chinos, del proyecto AdGuard. Incluye EasyList China.";
+"Blocks ads on Czech and Slovak websites, from the EasyList project." = "Bloquea anuncios en sitios web checos y eslovacos, del proyecto EasyList.";
+"Blocks ads on Dhivehi (Maldivian) websites." = "Bloquea anuncios en sitios web en dhivehi (maldivo).";
+"Blocks ads on Dutch websites, from the AdGuard project. Includes EasyList Dutch." = "Bloquea anuncios en sitios web neerlandeses, del proyecto AdGuard. Incluye EasyList Dutch.";
+"Blocks ads on English-language websites, from the AdGuard project. Works alongside EasyList." = "Bloquea anuncios en sitios web en inglés, del proyecto AdGuard. Funciona junto con EasyList.";
+"Blocks ads on Estonian websites." = "Bloquea anuncios en sitios web estonios.";
+"Blocks ads on Finnish websites." = "Bloquea anuncios en sitios web finlandeses.";
+"Blocks ads on French websites, from the AdGuard project. Includes Liste FR." = "Bloquea anuncios en sitios web franceses, del proyecto AdGuard. Incluye Liste FR.";
+"Blocks ads on German websites, from the AdGuard project. Includes EasyList Germany." = "Bloquea anuncios en sitios web alemanes, del proyecto AdGuard. Incluye EasyList Germany.";
+"Blocks ads on Greek websites." = "Bloquea anuncios en sitios web griegos.";
+"Blocks ads on Hebrew websites, from the EasyList project." = "Bloquea anuncios en sitios web hebreos, del proyecto EasyList.";
+"Blocks ads on Icelandic websites." = "Bloquea anuncios en sitios web islandeses.";
+"Blocks ads on Indonesian and Malay websites." = "Bloquea anuncios en sitios web indonesios y malayos.";
+"Blocks ads on Italian websites, from the AdGuard project. Includes EasyList Italy." = "Bloquea anuncios en sitios web italianos, del proyecto AdGuard. Incluye EasyList Italy.";
+"Blocks ads on Japanese websites, from the AdGuard project." = "Bloquea anuncios en sitios web japoneses, del proyecto AdGuard.";
+"Blocks ads on Korean websites." = "Bloquea anuncios en sitios web coreanos.";
+"Blocks ads on Latvian websites." = "Bloquea anuncios en sitios web letones.";
+"Blocks ads on Lithuanian websites, from the EasyList project." = "Bloquea anuncios en sitios web lituanos, del proyecto EasyList.";
+"Blocks ads on Persian websites." = "Bloquea anuncios en sitios web persas.";
+"Blocks ads on Polish websites, from the AdGuard project. Includes the official Polish filters." = "Bloquea anuncios en sitios web polacos, del proyecto AdGuard. Incluye los filtros oficiales polacos.";
+"Blocks ads on Romanian websites." = "Bloquea anuncios en sitios web rumanos.";
+"Blocks ads on Russian websites." = "Bloquea anuncios en sitios web rusos.";
+"Blocks ads on Serbian, Montenegrin, Croatian, and Bosnian websites." = "Bloquea anuncios en sitios web serbios, montenegrinos, croatas y bosnios.";
+"Blocks ads on Slovenian websites." = "Bloquea anuncios en sitios web eslovenos.";
+"Blocks ads on Spanish and Portuguese websites, including Brazilian Portuguese, from the AdGuard project." = "Bloquea anuncios en sitios web en español y portugués, incluido el portugués de Brasil, del proyecto AdGuard.";
+"Blocks ads on Thai websites, from the EasyList project." = "Bloquea anuncios en sitios web tailandeses, del proyecto EasyList.";
+"Blocks ads on Turkish websites, from the AdGuard project." = "Bloquea anuncios en sitios web turcos, del proyecto AdGuard.";
+"Blocks ads on Vietnamese websites." = "Bloquea anuncios en sitios web vietnamitas.";
+"Blocks ads on websites from Norway, Denmark, Iceland, the Danish territories, and Sámi communities." = "Bloquea anuncios en sitios web de Noruega, Dinamarca, Islandia, los territorios daneses y las comunidades sami.";
+"Blocks ads on websites in Hindi, Tamil, and other Indic and Dravidian languages." = "Bloquea anuncios en sitios web en hindi, tamil y otras lenguas indoarias y drávidas.";
+"Blocks ads, from the EasyList project." = "Bloquea anuncios, del proyecto EasyList.";
+"Blocks ads, from the uBlock Origin project. Works alongside EasyList." = "Bloquea anuncios, del proyecto uBlock Origin. Funciona junto con EasyList.";
+"Blocks ads, trackers, and other unwanted hosts." = "Bloquea anuncios, rastreadores y otros hosts no deseados.";
+"Blocks ads, trackers, and security threats on Hungarian websites." = "Bloquea anuncios, rastreadores y amenazas de seguridad en sitios web húngaros.";
+"Blocks malware domains, malware redirects, unwanted-software nags, and some scams." = "Bloquea dominios de malware, redirecciones de malware, avisos de software no deseado y algunas estafas.";
+"Blocks phishing pages, using data from OpenPhish, IPThreat, and PhishTank." = "Bloquea páginas de phishing, con datos de OpenPhish, IPThreat y PhishTank.";
+"Blocks sites known to spread adware or malware or to steal logins, from the uBlock Origin project." = "Bloquea sitios conocidos por difundir adware o malware o por robar inicios de sesión, del proyecto uBlock Origin.";
+"Blocks trackers, from the EasyList project. Works alongside EasyList." = "Bloquea rastreadores, del proyecto EasyList. Funciona junto con EasyList.";
+"Hides banners that push a site's mobile app, from the AdGuard project." = "Oculta banners que promocionan la aplicación móvil de un sitio, del proyecto AdGuard.";
+"Hides cookie notices, from the AdGuard project." = "Oculta avisos de cookies, del proyecto AdGuard.";
+"Hides cookie notices, from the EasyList project." = "Oculta avisos de cookies, del proyecto EasyList.";
+"Hides cookie notices, from the uBlock Origin project." = "Oculta avisos de cookies, del proyecto uBlock Origin.";
+"Hides live chat and support widgets, from the EasyList project." = "Oculta widgets de chat en vivo y de soporte, del proyecto EasyList.";
+"Hides newsletter sign-up prompts, from the EasyList project." = "Oculta solicitudes de suscripción al boletín, del proyecto EasyList.";
+"Hides other annoyances, from the EasyList project." = "Oculta otras molestias, del proyecto EasyList.";
+"Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project." = "Oculta superposiciones, banners promocionales y otras molestias, del proyecto uBlock Origin.";
+"Hides pop-ups that sites don't need to work, from the AdGuard project." = "Oculta ventanas emergentes que los sitios no necesitan para funcionar, del proyecto AdGuard.";
+"Hides promotions, copy restrictions, and other annoyances, from the AdGuard project." = "Oculta promociones, restricciones de copia y otras molestias, del proyecto AdGuard.";
+"Hides prompts that ask to show notifications, from the EasyList project." = "Oculta solicitudes para mostrar notificaciones, del proyecto EasyList.";
+"Hides social media buttons and widgets, from the EasyList project." = "Oculta botones y widgets de redes sociales, del proyecto EasyList.";
+"Hides social media buttons and widgets, such as Like and Share, from the AdGuard project." = "Oculta botones y widgets de redes sociales, como Me gusta y Compartir, del proyecto AdGuard.";
+"Hides third-party widgets such as assistants and support chats, from the AdGuard project." = "Oculta widgets de terceros, como asistentes y chats de soporte, del proyecto AdGuard.";
+"Keeps sites working when other lists break them, from the uBlock Origin project." = "Mantiene los sitios funcionando cuando otras listas los rompen, del proyecto uBlock Origin.";
+"Removes tracking parameters from URLs, from the AdGuard project." = "Elimina los parámetros de seguimiento de las URL, del proyecto AdGuard.";
+"Removes unneeded parameters from URLs, so links are cleaner to copy and share." = "Elimina los parámetros innecesarios de las URL, para que los enlaces sean más limpios al copiarlos y compartirlos.";
+"Short-term rules that fix sites broken by other lists, from the uBlock Origin project." = "Reglas a corto plazo que arreglan sitios rotos por otras listas, del proyecto uBlock Origin.";
+"Stops public websites from reaching devices on your local network, from the uBlock Origin project." = "Impide que los sitios públicos lleguen a los dispositivos de tu red local, del proyecto uBlock Origin.";
+"Tests new rules before they reach the main lists, from the AdGuard project. It may break sites." = "Prueba nuevas reglas antes de que lleguen a las listas principales, del proyecto AdGuard. Puede romper sitios.";
+"Tests new rules before they reach the main lists, from the uBlock Origin project. It may break sites." = "Prueba nuevas reglas antes de que lleguen a las listas principales, del proyecto uBlock Origin. Puede romper sitios.";
+"Makes websites dark by restyling their colors, from the Dark Reader project. Some sites may look off, since it doesn't include Dark Reader's site fixes." = "Oscurece los sitios web cambiando sus colores, del proyecto Dark Reader. Algunos sitios pueden verse raros, ya que no incluye las correcciones de sitios de Dark Reader.";
+"Blocks Twitch ads and handles complicated anti-adblock cases, but it slows page loads." = "Bloquea anuncios de Twitch y gestiona casos complejos de anti-adblock, pero ralentiza la carga de las páginas.";
+"Shows dislike counts on YouTube again, using data from the Return YouTube Dislike community." = "Vuelve a mostrar el recuento de “no me gusta” en YouTube, con datos de la comunidad Return YouTube Dislike.";
+"Gets past paywalls on English-language news sites, and some in other languages." = "Evita los muros de pago en sitios de noticias en inglés y algunos en otros idiomas.";
+"Blocks Twitch ads." = "Bloquea anuncios de Twitch.";
+"Content Filtering" = "Filtrado de contenido";
+"Each site includes its subdomains." = "Cada sitio incluye sus subdominios.";
+"Keeps filters updating while wBlock is closed. Turn off to update only while wBlock is open." = "Mantiene los filtros actualizados mientras wBlock está cerrado. Desactívalo para actualizar solo mientras wBlock está abierto.";
+"About Dark Reader" = "Acerca de Dark Reader";
+"Donate to Dark Reader" = "Donar a Dark Reader";
+"Return of the YouTube Dislike, Based off https://www.returnyoutubedislike.com/" = "Vuelve a mostrar el recuento de “no me gusta” en YouTube, con datos de la comunidad Return YouTube Dislike.";
+"Bypass Paywalls of English (& other) language news sites" = "Evita los muros de pago en sitios de noticias en inglés y algunos en otros idiomas.";
+"Multiple solutions for blocking Twitch ads (vaft)" = "Bloquea anuncios de Twitch.";
+"Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "Oscurece los sitios web cambiando sus colores, del proyecto Dark Reader. Algunos sitios pueden verse raros, ya que no incluye las correcciones de sitios de Dark Reader.";

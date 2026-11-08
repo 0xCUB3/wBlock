@@ -549,7 +549,7 @@ struct SettingsView: View {
                 Toggle(isOn: backgroundAgentEnabledBinding) {
                     rowLabel(
                         "Background Update Agent",
-                        detail: Text("Keeps filters updating when wBlock isn't running. Turn off to avoid a persistent login item; updates will then only run while wBlock is open.")
+                        detail: Text("Keeps filters updating while wBlock is closed. Turn off to update only while wBlock is open.")
                     )
                 }
                 #endif

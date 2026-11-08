@@ -96,10 +96,8 @@
 "Additional filter list for websites in Hebrew." = "Listă suplimentară de filtre pentru site-urile web în limba ebraică.";
 "Additional filter list for websites in Hindi, Tamil and other Dravidian and Indic languages." = "Listă suplimentară de filtre pentru site-urile web în limbile hindi, tamilă și alte limbi dravidiene și indice.";
 "Additional filter list for websites in Icelandic." = "Listă suplimentară de filtre pentru site-urile web în limba islandeză.";
-"Additional filter list for websites in Persian." = "Listă suplimentară de filtre pentru site-urile web în limba persană.";
 "Additional filter list for websites in Latvian." = "Listă suplimentară de filtre pentru site-urile web în limba letonă.";
 "Additional filter list for websites in Lithuanian." = "Listă suplimentară de filtre pentru site-urile web în limba lituaniană.";
-"Additional filter list for websites in Slovenian." = "Listă suplimentară de filtre pentru site-urile web în limba slovenă.";
 "AdGuard Chinese filter" = "AdGuard Chinese filter";
 "AdGuard Dutch filter" = "AdGuard Dutch filter";
 "EasyDutch" = "EasyDutch";
@@ -173,7 +171,6 @@
 "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "Safari nu poate aplica regulile inline-script din această listă. Activează Bypass Paywalls Clean în Scripturi de utilizator pentru site-urile în engleză acceptate.";
 "Blocks pop-up ads on web pages." = "Blochează reclamele pop-up de pe paginile web.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "Blochează ferestrele pop-up promoționale, înscrierile la buletine informative și solicitările de notificare.";
-"Hides social media content and icons. Blocks social widgets and scripts, including many that AdGuard Social Media Filter misses." = "Ascunde conținutul și pictogramele rețelelor sociale. Blochează widgeturile și scripturile sociale, inclusiv multe pe care AdGuard Social Media Filter le ratează.";
 "Blocks third-party widgets, chat assistants, and support widgets." = "Blochează widgeturile terță parte, asistenții de chat și widgeturile de asistență.";
 "Building combined filter engine..." = "Se construiește motorul de filtre combinat...";
 "Building filter engine" = "Construire motor de filtre";
@@ -726,7 +723,6 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Change File" = "Schimbă fișierul";
 "Local imports won't auto-update; re-import to replace." = "Importurile locale nu se actualizează automat; importă din nou pentru înlocuire.";
 "Blocks Twitch ads with the vaft script from TwitchAdSolutions." = "Blochează reclamele Twitch cu scriptul vaft din TwitchAdSolutions.";
-"Optional. Blocks Twitch ads and handles complicated anti-adblock cases, but it slows page loads." = "Opțional. Blochează reclamele Twitch și tratează cazurile complicate de blocare a reclamelor, dar încetinește încărcarea paginilor.";
 
 /* Issue 508 UI */
 "Disable Essential Filter?" = "Dezactivezi filtrul esențial?";
@@ -778,7 +774,6 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "column %@: %@" = "coloana %@: %@";
 "Userstyle compiler timed out." = "Compilatorul de stiluri de utilizator a depășit limita de timp.";
 "Userstyle compiler must not run on the main thread." = "Compilatorul de stiluri de utilizator nu trebuie să ruleze pe firul principal.";
-"Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "Motorul API Dark Reader, licențiat MIT, pentru wBlock (beta; fără baza completă de remedieri pentru site-uri).";
 "Pure Black (OLED)" = "Negru pur (OLED)";
 "Follow System" = "Urmează sistemul";
 "Always Dark" = "Întotdeauna întunecat";
@@ -890,11 +885,6 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Autoplay" = "Redare automată";
 "Autoplay off" = "Redare automată dezactivată";
 "Userscripts off" = "Scripturi de utilizator dezactivate";
-"Following the Autoplay setting in the Safari extension." = "Urmează setarea de redare automată din extensia Safari.";
-"Overrides the Autoplay setting in the Safari extension." = "Înlocuiește setarea de redare automată din extensia Safari.";
-"Runs every enabled userscript that matches this site." = "Rulează fiecare script de utilizator activat care se potrivește acestui site.";
-"Applies filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches." = "Aplică listele de filtre și scriptleturile. Scripturile de utilizator, Eliminatorul de elemente și redarea automată au comutatoare proprii.";
-"Added sites skip filter lists and scriptlets. Userscripts, the zapper, and autoplay have their own switches. Each site includes its subdomains." = "Site-urile adăugate ocolesc listele de filtre și scriptleturile. Scripturile de utilizator, Eliminatorul de elemente și redarea automată au comutatoare proprii. Fiecare site își include subdomeniile.";
 "Websites" = "Site-uri";
 "Next update: %@" = "Următoarea actualizare: %@";
 "Next update" = "Următoarea actualizare";
@@ -946,22 +936,10 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Available when the current sync finishes." = "Disponibil după ce se termină sincronizarea curentă.";
 "Generic Rules" = "Reguli generice";
 "Hides elements on every site with rules that don't name one. Turning this off keeps site-specific hiding and makes pages lighter, especially busy web apps." = "Ascunde elemente pe toate site-urile cu reguli care nu numesc un site. Dezactivarea păstrează ascunderea specifică fiecărui site și face paginile mai ușoare, mai ales aplicațiile web complexe.";
-"Automatically removes unnecessary '$' and '&' values from URLs, making them easier to copy from the URL bar and pasting elsewhere as links. Already included in Dandelion Sprout's Annoyances List." = "Înlătură automat valorile '$' și '&' inutile de pe adresele URL, ceea ce le face mai ușor de copiat din bara URL și de lipit în altă parte ca linkuri. Deja inclus în lista Dandelion Sprout's Annoyances List.";
-"Blocks cookie notices on web pages." = "Blochează notificările privind cookie-urile de pe paginile web.";
-"Filter for social media widgets such as 'Like' and 'Share' buttons and more." = "Filtru pentru widgeturile rețelelor sociale, cum ar fi butoanele „Îmi place” și „Distribuie”, și altele.";
-"Hides website features that use generative AI and AI-generated content." = "Ascunde funcționalitățile site-urilor web care folosesc IA generativă și conținut generat de IA.";
 "This filter blocks tracking pixels in email clients." = "Acest filtru blochează pixelii de urmărire în clienți de e-mail.";
-"Prevents public Internet sites from digging into your LAN files." = "Împiedică site-urile publice de Internet să acceseze fișierele tale din LAN.";
-"Blocks more malware than most other major anti-malware lists - domains and URL patterns used in malware redirection chains, IP addresses that are solely used by malware, PUP nags, and a few scammers. Already included in Dandelion Sprout's Annoyances List." = "Blochează mai mult malware decât majoritatea celorlalte liste anti-malware majore - domenii și tipare de URL folosite în lanțuri de redirecționare de malware, adrese IP folosite exclusiv de malware, notificări PUP și câțiva escroci. Deja inclusă în Dandelion Sprout's Annoyances List.";
-"Filter that blocks ads, trackers, and other nasty things." = "Filtru care blochează reclame, instrumente de urmărire și alte lucruri neplăcute.";
-"Filter designed to test certain hazardous filtering rules before they are added to the basic filters." = "Filtru conceput pentru a testa anumite reguli de filtrare periculoase înainte de a fi adăugate la filtrele de bază.";
-"Additional filter list for websites in Indonesian and Malay." = "Listă suplimentară de filtre pentru site-urile web în limbile indoneziană și malaeză.";
-"Hufilter. Filter list that specifically removes ads, privacy threats, and security risks on websites in the Hungarian language." = "Hufilter. Listă de filtre care elimină în mod specific reclamele, amenințările la adresa confidențialității și riscurile de securitate de pe site-urile web în limba maghiară.";
-"Privacy protection supplement for EasyList." = "Supliment de protecție a confidențialității pentru EasyList.";
 
 /* Add Filter List: Find */
 "wBlock Ad and Tracking Hosts" = "Gazde de reclame și urmărire wBlock";
-"Blocks ad and tracking hosts that the other lists only block in part." = "Blochează gazdele de reclame și urmărire pe care celelalte liste le blochează doar parțial.";
 
 "Filter Logs" = "Filtrează jurnalele";
 "Apply Anyway" = "Aplică oricum";
@@ -999,19 +977,11 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "EasyList – Chat Widgets" = "EasyList – Chat Widgets";
 "EasyList – Newsletter Notices" = "EasyList – Newsletter Notices";
 "EasyList – Notifications" = "EasyList – Notifications";
-"Ad blocking rules from the uBlock Origin project. Meant to be used alongside EasyList." = "Reguli de blocare a reclamelor din proiectul uBlock Origin. Destinate utilizării împreună cu EasyList.";
 "Additional filter list for websites in German." = "Listă suplimentară de filtre pentru site-urile web în limba germană.";
 "Additional filter list for websites in Italian." = "Listă suplimentară de filtre pentru site-urile web în limba italiană.";
-"Additional filter list for websites in Korean." = "Listă suplimentară de filtre pentru site-urile web în limba coreeană.";
-"Additional filter list for websites in Persian." = "Listă suplimentară de filtre pentru site-urile web în limba persană.";
 "Additional filter list for websites in Polish." = "Listă suplimentară de filtre pentru site-urile web în limba poloneză.";
 "Additional filter list for websites in Spanish." = "Listă suplimentară de filtre pentru site-urile web în limba spaniolă.";
 "Blocks trackers and removes tracking parameters from URLs, from the uBlock Origin project." = "Blochează urmăritoarele și elimină parametrii de urmărire din adresele URL. Listă din proiectul uBlock Origin.";
-"Blocks sites documented to install adware or malware, or to steal login credentials." = "Blochează site-urile documentate că instalează adware sau malware ori că fură datele de autentificare.";
-"Short-term rules that fix sites broken by other filter lists." = "Reguli temporare care repară site-urile defectate de alte liste de filtre.";
-"Rules that keep sites working when default lists break them." = "Reguli care mențin site-urile funcționale când listele implicite le defectează.";
-"Hides annoying page elements, such as overlays and promotional banners, from the uBlock Origin project." = "Ascunde elementele deranjante ale paginilor, precum suprapunerile și bannerele promoționale. Listă din proiectul uBlock Origin.";
-"Blocks ads on websites, from the EasyList project." = "Blochează reclamele de pe site-uri. Listă din proiectul EasyList.";
 "Blocks phishing and malware domains flagged by CERT Polska." = "Blochează domeniile de phishing și malware semnalate de CERT Polska.";
 "Blocks URLs that distribute malware, based on URLhaus data." = "Blochează adresele URL care distribuie malware, pe baza datelor URLhaus.";
 "Blocks visitor counters on Russian-language websites." = "Blochează contoarele de vizitatori de pe site-urile în limba rusă.";
@@ -1019,10 +989,6 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "EasyList Germany" = "EasyList Germany";
 "EasyList Italy" = "EasyList Italy";
 "EasyList Spanish" = "EasyList Spanish";
-"Hides miscellaneous annoyances on websites, from the EasyList project." = "Ascunde diverse neplăceri de pe site-uri. Listă din proiectul EasyList.";
-"Hides live chat and support widgets on websites, from the EasyList project." = "Ascunde widgeturile de chat live și de asistență de pe site-uri. Din proiectul EasyList.";
-"Hides newsletter sign-up prompts on websites, from the EasyList project." = "Ascunde solicitările de abonare la newslettere de pe site-uri. Din proiectul EasyList.";
-"Hides prompts that ask you to allow notifications, from the EasyList project." = "Ascunde solicitările de a permite notificările. Din proiectul EasyList.";
 "Official Polish filters for AdBlock, uBlock Origin & AdGuard" = "Official Polish filters for AdBlock, uBlock Origin & AdGuard";
 "PersianBlockerNG" = "PersianBlockerNG";
 "RU AdList" = "RU AdList";
@@ -1045,10 +1011,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Phishing URL Blocklist" = "Phishing URL Blocklist";
 "Fanboy – Anti-Facebook" = "Fanboy – Anti-Facebook";
 "Dan Pollock's hosts file" = "Dan Pollock's hosts file";
-"Experimental rules from the uBlock Origin project. They may break sites." = "Reguli experimentale din proiectul uBlock Origin. Pot defecta unele site-uri.";
-"Blocks URLs that host phishing pages, based on OpenPhish, IPThreat and PhishTank data." = "Blochează adresele URL care găzduiesc pagini de phishing, pe baza datelor OpenPhish, IPThreat și PhishTank.";
 "Blocks Facebook social plugins and login widgets on other websites. May break sites that rely on them." = "Blochează modulele sociale și widgeturile de autentificare Facebook de pe alte site-uri. Poate defecta site-urile care se bazează pe ele.";
-"Hosts file that blocks ads, trackers, and other unwanted sites, from Dan Pollock's project." = "Fișier hosts care blochează reclamele, trackerele și alte site-uri nedorite. Din proiectul lui Dan Pollock.";
 
 /* Annoyances topic headings */
 "Cookie Notices" = "Notificări cookie";
@@ -1067,3 +1030,85 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Choose the annoyances to hide. You can change this later in Annoyances Info." = "Alege ce elemente enervante să fie ascunse. Poți schimba asta mai târziu în informațiile despre Elemente enervante.";
 "Blocks YouTube's ads and web player and plays videos in Safari's native player, with chapters, picture-in-picture, background playback, and audio-only mode. Includes SponsorBlock, which skips sponsored segments." = "Blochează reclamele și playerul web YouTube și redă videoclipurile în playerul nativ Safari, cu capitole, imagine în imagine, redare în fundal și mod doar audio. Include SponsorBlock, care sare peste segmentele sponsorizate.";
 "Blocks third-party video players on other sites and plays videos with Safari's native controls, adding auto PiP, background playback, subtitles, chapters, and Now Playing info." = "Blochează playerele video terțe de pe alte site-uri și redă videoclipurile cu comenzile native Safari, adăugând imagine în imagine automată, redare în fundal, subtitrări, capitole și informații În redare.";
+
+/* Rewritten descriptions (#1093) */
+"Blocks Swedish ads, trackers, social media widgets, annoyances, and sponsored articles." = "Blochează reclamele, instrumentele de urmărire, widgeturile rețelelor sociale, elementele enervante și articolele sponsorizate suedeze.";
+"Blocks ad and tracking hosts that other lists miss, from the wBlock project." = "Blochează gazdele de reclame și de urmărire pe care alte liste le ratează. Din proiectul wBlock.";
+"Blocks ads and trackers on Macedonian websites." = "Blochează reclamele și instrumentele de urmărire de pe site-urile web macedonene.";
+"Blocks ads from mobile ad networks, from the AdGuard project." = "Blochează reclamele din rețelele de publicitate mobilă. Din proiectul AdGuard.";
+"Blocks ads on Albanian and Kosovar websites." = "Blochează reclamele de pe site-urile web albaneze și kosovare.";
+"Blocks ads on Arabic websites." = "Blochează reclamele de pe site-urile web în limba arabă.";
+"Blocks ads on Bulgarian websites." = "Blochează reclamele de pe site-urile web în limba bulgară.";
+"Blocks ads on Chinese websites, from the AdGuard project. Includes EasyList China." = "Blochează reclamele de pe site-urile web în limba chineză. Din proiectul AdGuard. Include EasyList China.";
+"Blocks ads on Czech and Slovak websites, from the EasyList project." = "Blochează reclamele de pe site-urile web cehe și slovace. Din proiectul EasyList.";
+"Blocks ads on Dhivehi (Maldivian) websites." = "Blochează reclamele de pe site-urile web în limba dhivehi (maldiviană).";
+"Blocks ads on Dutch websites, from the AdGuard project. Includes EasyList Dutch." = "Blochează reclamele de pe site-urile web în limba olandeză. Din proiectul AdGuard. Include EasyList Dutch.";
+"Blocks ads on English-language websites, from the AdGuard project. Works alongside EasyList." = "Blochează reclamele de pe site-urile web în limba engleză. Din proiectul AdGuard. Funcționează alături de EasyList.";
+"Blocks ads on Estonian websites." = "Blochează reclamele de pe site-urile web estoniene.";
+"Blocks ads on Finnish websites." = "Blochează reclamele de pe site-urile web finlandeze.";
+"Blocks ads on French websites, from the AdGuard project. Includes Liste FR." = "Blochează reclamele de pe site-urile web franceze. Din proiectul AdGuard. Include Liste FR.";
+"Blocks ads on German websites, from the AdGuard project. Includes EasyList Germany." = "Blochează reclamele de pe site-urile web germane. Din proiectul AdGuard. Include EasyList Germany.";
+"Blocks ads on Greek websites." = "Blochează reclamele de pe site-urile web grecești.";
+"Blocks ads on Hebrew websites, from the EasyList project." = "Blochează reclamele de pe site-urile web ebraice. Din proiectul EasyList.";
+"Blocks ads on Icelandic websites." = "Blochează reclamele de pe site-urile web islandeze.";
+"Blocks ads on Indonesian and Malay websites." = "Blochează reclamele de pe site-urile web în limbile indoneziană și malaeziană.";
+"Blocks ads on Italian websites, from the AdGuard project. Includes EasyList Italy." = "Blochează reclamele de pe site-urile web italiene. Din proiectul AdGuard. Include EasyList Italy.";
+"Blocks ads on Japanese websites, from the AdGuard project." = "Blochează reclamele de pe site-urile web japoneze. Din proiectul AdGuard.";
+"Blocks ads on Korean websites." = "Blochează reclamele de pe site-urile web coreene.";
+"Blocks ads on Latvian websites." = "Blochează reclamele de pe site-urile web letone.";
+"Blocks ads on Lithuanian websites, from the EasyList project." = "Blochează reclamele de pe site-urile web lituaniene. Din proiectul EasyList.";
+"Blocks ads on Persian websites." = "Blochează reclamele de pe site-urile web persane.";
+"Blocks ads on Polish websites, from the AdGuard project. Includes the official Polish filters." = "Blochează reclamele de pe site-urile web poloneze. Din proiectul AdGuard. Include filtrele oficiale poloneze.";
+"Blocks ads on Romanian websites." = "Blochează reclamele de pe site-urile web românești.";
+"Blocks ads on Russian websites." = "Blochează reclamele de pe site-urile web ruse.";
+"Blocks ads on Serbian, Montenegrin, Croatian, and Bosnian websites." = "Blochează reclamele de pe site-urile web în limbile sârbă, muntenegreană, croată și bosniacă.";
+"Blocks ads on Slovenian websites." = "Blochează reclamele de pe site-urile web slovene.";
+"Blocks ads on Spanish and Portuguese websites, including Brazilian Portuguese, from the AdGuard project." = "Blochează reclamele de pe site-urile web în limbile spaniolă și portugheză, inclusiv portugheza braziliană. Din proiectul AdGuard.";
+"Blocks ads on Thai websites, from the EasyList project." = "Blochează reclamele de pe site-urile web thailandeze. Din proiectul EasyList.";
+"Blocks ads on Turkish websites, from the AdGuard project." = "Blochează reclamele de pe site-urile web turcești. Din proiectul AdGuard.";
+"Blocks ads on Vietnamese websites." = "Blochează reclamele de pe site-urile web vietnameze.";
+"Blocks ads on websites from Norway, Denmark, Iceland, the Danish territories, and Sámi communities." = "Blochează reclamele de pe site-urile web din Norvegia, Danemarca, Islanda, teritoriile daneze și comunitățile sami.";
+"Blocks ads on websites in Hindi, Tamil, and other Indic and Dravidian languages." = "Blochează reclamele de pe site-urile web în hindi, tamilă și alte limbi indiene și dravidiene.";
+"Blocks ads, from the EasyList project." = "Blochează reclamele. Din proiectul EasyList.";
+"Blocks ads, from the uBlock Origin project. Works alongside EasyList." = "Blochează reclamele. Din proiectul uBlock Origin. Funcționează alături de EasyList.";
+"Blocks ads, trackers, and other unwanted hosts." = "Blochează reclamele, instrumentele de urmărire și alte gazde nedorite.";
+"Blocks ads, trackers, and security threats on Hungarian websites." = "Blochează reclamele, instrumentele de urmărire și amenințările la adresa securității de pe site-urile web maghiare.";
+"Blocks malware domains, malware redirects, unwanted-software nags, and some scams." = "Blochează domeniile de malware, redirecționările malware, notificările pentru software nedorit și unele înșelătorii.";
+"Blocks phishing pages, using data from OpenPhish, IPThreat, and PhishTank." = "Blochează paginile de phishing, folosind date de la OpenPhish, IPThreat și PhishTank.";
+"Blocks sites known to spread adware or malware or to steal logins, from the uBlock Origin project." = "Blochează site-urile cunoscute că răspândesc adware sau malware ori că fură datele de autentificare. Din proiectul uBlock Origin.";
+"Blocks trackers, from the EasyList project. Works alongside EasyList." = "Blochează instrumentele de urmărire. Din proiectul EasyList. Funcționează alături de EasyList.";
+"Hides banners that push a site's mobile app, from the AdGuard project." = "Ascunde bannerele care promovează aplicația mobilă a site-ului. Din proiectul AdGuard.";
+"Hides cookie notices, from the AdGuard project." = "Ascunde notificările cookie. Din proiectul AdGuard.";
+"Hides cookie notices, from the EasyList project." = "Ascunde notificările cookie. Din proiectul EasyList.";
+"Hides cookie notices, from the uBlock Origin project." = "Ascunde notificările cookie. Din proiectul uBlock Origin.";
+"Hides live chat and support widgets, from the EasyList project." = "Ascunde chatul live și widgeturile de asistență. Din proiectul EasyList.";
+"Hides newsletter sign-up prompts, from the EasyList project." = "Ascunde solicitările de abonare la buletinul informativ. Din proiectul EasyList.";
+"Hides other annoyances, from the EasyList project." = "Ascunde alte elemente enervante. Din proiectul EasyList.";
+"Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project." = "Ascunde suprapunerile, bannerele promoționale și alte elemente enervante. Din proiectul uBlock Origin.";
+"Hides pop-ups that sites don't need to work, from the AdGuard project." = "Ascunde ferestrele pop-up de care site-urile nu au nevoie pentru a funcționa. Din proiectul AdGuard.";
+"Hides promotions, copy restrictions, and other annoyances, from the AdGuard project." = "Ascunde promoțiile, restricțiile de copiere și alte elemente enervante. Din proiectul AdGuard.";
+"Hides prompts that ask to show notifications, from the EasyList project." = "Ascunde solicitările de a afișa notificări. Din proiectul EasyList.";
+"Hides social media buttons and widgets, from the EasyList project." = "Ascunde butoanele și widgeturile rețelelor sociale. Din proiectul EasyList.";
+"Hides social media buttons and widgets, such as Like and Share, from the AdGuard project." = "Ascunde butoanele și widgeturile rețelelor sociale, precum Like și Share. Din proiectul AdGuard.";
+"Hides third-party widgets such as assistants and support chats, from the AdGuard project." = "Ascunde widgeturile terță parte, precum asistenții și chatul de asistență. Din proiectul AdGuard.";
+"Keeps sites working when other lists break them, from the uBlock Origin project." = "Păstrează funcționarea site-urilor atunci când alte liste le strică. Din proiectul uBlock Origin.";
+"Removes tracking parameters from URLs, from the AdGuard project." = "Elimină parametrii de urmărire din adresele URL. Din proiectul AdGuard.";
+"Removes unneeded parameters from URLs, so links are cleaner to copy and share." = "Elimină parametrii inutili din adresele URL, astfel încât linkurile să fie mai curate la copiere și partajare.";
+"Short-term rules that fix sites broken by other lists, from the uBlock Origin project." = "Reguli pe termen scurt care repară site-urile defectate de alte liste. Din proiectul uBlock Origin.";
+"Stops public websites from reaching devices on your local network, from the uBlock Origin project." = "Împiedică site-urile publice să ajungă la dispozitivele din rețeaua ta locală. Din proiectul uBlock Origin.";
+"Tests new rules before they reach the main lists, from the AdGuard project. It may break sites." = "Testează reguli noi înainte ca acestea să ajungă în listele principale. Din proiectul AdGuard. Poate defecta site-uri.";
+"Tests new rules before they reach the main lists, from the uBlock Origin project. It may break sites." = "Testează reguli noi înainte ca acestea să ajungă în listele principale. Din proiectul uBlock Origin. Poate defecta site-uri.";
+"Makes websites dark by restyling their colors, from the Dark Reader project. Some sites may look off, since it doesn't include Dark Reader's site fixes." = "Face site-urile web întunecate prin modificarea culorilor. Din proiectul Dark Reader. Unele site-uri pot arăta ciudat, deoarece nu include corecțiile Dark Reader pentru site-uri.";
+"Blocks Twitch ads and handles complicated anti-adblock cases, but it slows page loads." = "Blochează reclamele Twitch și gestionează cazurile complicate de anti-adblock, dar încetinește încărcarea paginilor.";
+"Shows dislike counts on YouTube again, using data from the Return YouTube Dislike community." = "Afișează din nou numărul de dislike-uri de pe YouTube, folosind date de la comunitatea Return YouTube Dislike.";
+"Gets past paywalls on English-language news sites, and some in other languages." = "Ocolește paywall-urile de pe site-urile de știri în limba engleză și pe unele în alte limbi.";
+"Blocks Twitch ads." = "Blochează reclamele Twitch.";
+"Content Filtering" = "Filtrarea conținutului";
+"Each site includes its subdomains." = "Fiecare site include subdomeniile sale.";
+"Keeps filters updating while wBlock is closed. Turn off to update only while wBlock is open." = "Păstrează filtrele actualizate cât timp wBlock este închis. Dezactivează pentru a actualiza doar cât timp wBlock este deschis.";
+"About Dark Reader" = "Despre Dark Reader";
+"Donate to Dark Reader" = "Donează pentru Dark Reader";
+"Return of the YouTube Dislike, Based off https://www.returnyoutubedislike.com/" = "Afișează din nou numărul de dislike-uri de pe YouTube, folosind date de la comunitatea Return YouTube Dislike.";
+"Bypass Paywalls of English (& other) language news sites" = "Ocolește paywall-urile de pe site-urile de știri în limba engleză și pe unele în alte limbi.";
+"Multiple solutions for blocking Twitch ads (vaft)" = "Blochează reclamele Twitch.";
+"Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "Face site-urile web întunecate prin modificarea culorilor. Din proiectul Dark Reader. Unele site-uri pot arăta ciudat, deoarece nu include corecțiile Dark Reader pentru site-uri.";
