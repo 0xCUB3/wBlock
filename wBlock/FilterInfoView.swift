@@ -325,9 +325,8 @@ struct FilterRulesView: View {
             }
             .frame(height: SourceControlMetrics.size)
             .contentShape(Rectangle())
-            .foregroundStyle(shownKinds.count == FilterRuleKind.allCases.count ? Color.primary : Color.accentColor)
         }
-        .modifier(SourceMenuCapsule())
+        .modifier(SourceMenuCapsule(isActive: shownKinds.count != FilterRuleKind.allCases.count))
         .menuIndicator(.visible)
         .menuStaysOpenCompat()
         .fixedSize()

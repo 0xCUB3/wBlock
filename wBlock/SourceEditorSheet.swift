@@ -36,11 +36,13 @@ struct SourceEditorSheet: View {
             .padding(.horizontal, 16)
             .padding(.top, 16)
             HStack(spacing: SourceControlMetrics.spacing) {
-                SourceControlButton("Undo", systemImage: "arrow.uturn.backward", action: editorController.undo)
-                    .disabled(!editorController.canUndo)
-                SourceControlButton("Redo", systemImage: "arrow.uturn.forward", action: editorController.redo)
-                    .disabled(!editorController.canRedo)
-                SourceControlButton("Paste", systemImage: "doc.on.clipboard", action: onPaste ?? pasteClipboard)
+                SourceControlCluster {
+                    SourceControlButton("Undo", systemImage: "arrow.uturn.backward", action: editorController.undo)
+                        .disabled(!editorController.canUndo)
+                    SourceControlButton("Redo", systemImage: "arrow.uturn.forward", action: editorController.redo)
+                        .disabled(!editorController.canRedo)
+                    SourceControlButton("Paste", systemImage: "doc.on.clipboard", action: onPaste ?? pasteClipboard)
+                }
                 Spacer(minLength: 0)
                 SourceViewerControls(wrapsLines: $wrapsLines, onSearch: editorController.openSearch)
             }

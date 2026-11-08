@@ -22,7 +22,7 @@ struct SourceViewerControls<Extra: View>: View {
 
     var body: some View {
         HStack(spacing: SourceControlMetrics.spacing) {
-            Group {
+            SourceControlCluster {
                 extra()
                 SourceControlButton("Search", systemImage: "magnifyingglass", action: onSearch)
                     // Works while focus is outside the editor, which handles it itself (#1090).
@@ -45,6 +45,31 @@ struct SourceViewerControls<Extra: View>: View {
 extension SourceViewerControls where Extra == EmptyView {
     init(wrapsLines: Binding<Bool>, onSearch: @escaping () -> Void, onClose: (() -> Void)? = nil) {
         self.init(wrapsLines: wrapsLines, onSearch: onSearch, onClose: onClose) { EmptyView() }
+    }
+}
+
+/// Source controls side by side. macOS 26 fuses them into one glass
+/// capsule, like a toolbar group (#1091).
+struct SourceControlCluster<Content: View>: View {
+    @ViewBuilder var content: () -> Content
+    @Namespace private var namespace
+
+    var body: some View {
+        #if os(macOS)
+        if #available(macOS 26.0, *) {
+            GlassEffectContainer {
+                HStack(spacing: 0) {
+                    Group(subviews: content()) { subviews in
+                        ForEach(subviews) { $0.glassEffectUnion(id: 0, namespace: namespace) }
+                    }
+                }
+            }
+        } else {
+            HStack(spacing: SourceControlMetrics.spacing) { content() }
+        }
+        #else
+        HStack(spacing: SourceControlMetrics.spacing) { content() }
+        #endif
     }
 }
 
@@ -94,14 +119,15 @@ struct SourceControlButton: View {
     var body: some View {
         #if os(macOS)
         if #available(macOS 26.0, *) {
-            // Native glass bubbles, like the close button beside them (#1089).
+            // Native glass, like the close button beside them (#1089). A
+            // control that's on fills with the accent color, as Show Enabled
+            // Only does in the toolbar (#1091).
             Button(action: action) {
                 Image(systemName: systemImage)
                     .font(.body.weight(.medium))
                     .frame(width: 20, height: 20)
-                    .foregroundStyle(isOn ? Color.accentColor : Color.primary)
             }
-            .buttonStyle(.glass)
+            .glassToggleStyle(isOn: isOn)
             .buttonBorderShape(.circle)
             .accessibilityLabel(title)
             .help(title)
@@ -137,25 +163,40 @@ struct SourceControlIcon: View {
     }
 }
 
+#if os(macOS)
+@available(macOS 26.0, *)
+private extension View {
+    @ViewBuilder
+    func glassToggleStyle(isOn: Bool) -> some View {
+        if isOn { buttonStyle(.glassProminent) } else { buttonStyle(.glass) }
+    }
+}
+#endif
+
 /// The capsule behind a source window's menu, darker while pressed so a
-/// click shows (#1088). macOS 26 uses a glass capsule like its neighbors
-/// (#1089); macOS before 14 can't style a menu as a button and keeps the
-/// plain capsule.
+/// click shows (#1088). macOS 26 uses glass like its neighbors (#1089),
+/// filled with the accent color while the menu narrows what shows (#1091);
+/// elsewhere the icon takes the accent color instead. macOS before 14 can't
+/// style a menu as a button and keeps the plain capsule.
 struct SourceMenuCapsule: ViewModifier {
+    var isActive = false
+
     func body(content: Content) -> some View {
         #if os(macOS)
         if #available(macOS 26.0, *) {
-            content.menuStyle(.button).buttonStyle(.glass).buttonBorderShape(.capsule)
+            content.menuStyle(.button).glassToggleStyle(isOn: isActive).buttonBorderShape(.capsule)
         } else if #available(macOS 14.0, *) {
-            content.menuStyle(.button).buttonStyle(CapsulePressStyle())
+            content.menuStyle(.button).buttonStyle(CapsulePressStyle()).foregroundStyle(tint)
         } else {
             content.menuStyle(.borderlessButton).buttonStyle(.plain)
-                .modifier(CapsuleChrome(isPressed: false))
+                .modifier(CapsuleChrome(isPressed: false)).foregroundStyle(tint)
         }
         #else
-        content.buttonStyle(CapsulePressStyle())
+        content.buttonStyle(CapsulePressStyle()).foregroundStyle(tint)
         #endif
     }
+
+    private var tint: Color { isActive ? .accentColor : .primary }
 }
 
 private struct CapsulePressStyle: ButtonStyle {
