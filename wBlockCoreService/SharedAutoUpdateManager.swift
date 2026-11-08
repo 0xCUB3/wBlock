@@ -287,8 +287,9 @@ public actor SharedAutoUpdateManager {
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 30
         config.timeoutIntervalForResource = 120
+        // Update checks must see a fresh push; filters send their own validators.
+        config.urlCache = nil
         config.requestCachePolicy = .reloadIgnoringLocalCacheData
-        config.urlCache = URLCache(memoryCapacity: 4 * 1024 * 1024, diskCapacity: 0, diskPath: nil) // 4MB memory, no disk cache
         return URLSession(configuration: config)
     }()
 
