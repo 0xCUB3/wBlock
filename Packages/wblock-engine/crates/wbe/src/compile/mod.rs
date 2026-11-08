@@ -19,29 +19,27 @@ use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub enum Tier {
+    /// Hides that name no site. Hides scoped to sites are the runtime's.
     GenericHide = 0,
-    /// `$generichide`: cancels generic hides only.
-    GenericHideException = 1,
-    SpecificHide = 2,
-    /// `$elemhide` (and `$specifichide`, widened): cancels all hides.
-    ElemHideException = 3,
+    /// `$generichide` and `$elemhide`: cancel the native hides.
+    HideException = 1,
     /// Blocks with no page domains, which `$genericblock` lifts.
-    GenericBlock = 4,
+    GenericBlock = 2,
     /// `$genericblock`: cancels the generic blocks before it on the page's
     /// subresources, leaving its hides and the blocks after it in place.
-    GenericBlockException = 5,
-    Block = 6,
-    Exception = 7,
+    GenericBlockException = 3,
+    Block = 4,
+    Exception = 5,
     /// `$important` with `$denyallow`: the block, then its exclusions.
-    ImportantDenyallowBlock = 8,
+    ImportantDenyallowBlock = 6,
     /// The exclusions of an important `$denyallow` block. Each cancels only
     /// the blocks before it, so they sit ahead of every other important block.
-    ImportantDenyallowException = 9,
-    ImportantBlock = 10,
+    ImportantDenyallowException = 7,
+    ImportantBlock = 8,
     /// AdGuard `$important` exceptions override important blocks.
-    ImportantException = 11,
+    ImportantException = 9,
     /// `@@...$document`: cancels everything on the page.
-    DocumentException = 12,
+    DocumentException = 10,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -134,11 +132,9 @@ impl std::io::Write for Count {
 }
 
 /// Tiers in output order.
-const TIERS: [Tier; 13] = [
+const TIERS: [Tier; 11] = [
     Tier::GenericHide,
-    Tier::GenericHideException,
-    Tier::SpecificHide,
-    Tier::ElemHideException,
+    Tier::HideException,
     Tier::GenericBlock,
     Tier::GenericBlockException,
     Tier::Block,

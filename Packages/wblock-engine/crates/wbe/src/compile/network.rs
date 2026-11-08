@@ -365,10 +365,9 @@ fn compile_denyallow(
     result
 }
 
-/// `@@...$document`, `$generichide`, `$elemhide`, `$specifichide`: one
-/// ignore-previous-rules over every type, conditioned on the page URL.
-/// `$specifichide` is widened to `$elemhide`, which also cancels generic
-/// hides.
+/// `@@...$document`, `$generichide`, `$elemhide`: one ignore-previous-rules
+/// over every type, conditioned on the page URL. Native hides are all generic,
+/// so `$specifichide` has nothing native to cancel; the runtime applies it.
 fn compile_scope(r: &NetworkRule, v: SafariVersion, out: &mut Emitted) -> Result<(), String> {
     let generic = r.scope.contains(ExceptionScope::GENERICBLOCK);
     if let Some(host) = genericblock_host(r).filter(|_| generic) {
@@ -397,12 +396,10 @@ fn compile_scope(r: &NetworkRule, v: SafariVersion, out: &mut Emitted) -> Result
     let remaining = r.scope.difference(ExceptionScope::GENERICBLOCK);
     let tier = if remaining.contains(ExceptionScope::DOC) {
         Tier::DocumentException
-    } else if remaining.intersects(ExceptionScope::EHIDE | ExceptionScope::SHIDE) {
-        Tier::ElemHideException
-    } else if remaining.contains(ExceptionScope::GHIDE) {
-        Tier::GenericHideException
+    } else if remaining.intersects(ExceptionScope::EHIDE | ExceptionScope::GHIDE) {
+        Tier::HideException
     } else {
-        return if generic && genericblock_host(r).is_some() { Ok(()) } else {
+        return if remaining == ExceptionScope::SHIDE || generic && genericblock_host(r).is_some() { Ok(()) } else {
             Err("genericblock: only unconstrained hostname page exceptions can be represented without canceling cosmetics".into())
         };
     };
@@ -1823,29 +1820,28 @@ mod tests {
     }
 
     #[test]
-    fn generichide_exception_uses_generic_hide_tier() {
-        let rule = NetworkRule {
-            scope: ExceptionScope::GHIDE,
-            ..exc("@@||example.org^$generichide")
-        };
-        let out = check(
-            std::slice::from_ref(&rule),
-            V15,
-            r#"[{"trigger":{"url-filter":".*","resource-type":["document"],"if-domain":["*example.org"]},"action":{"type":"ignore-previous-rules"}}]"#,
-        );
-        assert_eq!(tiers(&out), [Tier::GenericHideException]);
+    fn generichide_and_elemhide_cancel_the_native_hides() {
+        for scope in [ExceptionScope::GHIDE, ExceptionScope::EHIDE] {
+            let rule = NetworkRule {
+                scope,
+                ..exc("@@||example.org^$generichide")
+            };
+            let out = check(
+                std::slice::from_ref(&rule),
+                V15,
+                r#"[{"trigger":{"url-filter":".*","resource-type":["document"],"if-domain":["*example.org"]},"action":{"type":"ignore-previous-rules"}}]"#,
+            );
+            assert_eq!(tiers(&out), [Tier::HideException]);
+        }
     }
 
     #[test]
-    fn elemhide_and_specifichide_use_elemhide_tier() {
-        for scope in [ExceptionScope::EHIDE, ExceptionScope::SHIDE] {
-            let rule = NetworkRule {
-                scope,
-                ..exc("@@||example.org^$elemhide")
-            };
-            let (out, _) = run(std::slice::from_ref(&rule), V15);
-            assert_eq!(tiers(&out), [Tier::ElemHideException]);
-        }
+    fn specifichide_is_left_to_the_runtime() {
+        let rule = NetworkRule {
+            scope: ExceptionScope::SHIDE,
+            ..exc("@@||example.org^$specifichide")
+        };
+        assert!(check(std::slice::from_ref(&rule), V15, "[]").is_empty());
     }
 
     #[test]
@@ -1880,7 +1876,7 @@ mod tests {
         check(
             &[prefix, host],
             V15,
-            r#"[{"trigger":{"url-filter":".*","resource-type":["document"],"if-domain":["*shrink.icu"]},"action":{"type":"ignore-previous-rules"}},{"trigger":{"url-filter":".*","resource-type":["document"],"if-domain":["*x.com"]},"action":{"type":"ignore-previous-rules"}}]"#,
+            r#"[{"trigger":{"url-filter":".*","resource-type":["document"],"if-domain":["*shrink.icu","*x.com"]},"action":{"type":"ignore-previous-rules"}}]"#,
         );
         // Either half alone would hand the exception to far more pages.
         let google = NetworkRule {

@@ -22,11 +22,10 @@ const WBE = process.env.WBE_BIN ?? path.join(ROOT, 'target/release/wbe');
 // output; the rest are ignore-previous-rules, which cancel the outputs
 // accumulated so far (`cancel` narrows that to the named outputs). Hides are
 // judged on the page load, blocks on a subresource load. Native hides are all
-// generic; hides scoped to sites are the runtime engine's.
+// generic; hides scoped to sites and `$specifichide` are the runtime engine's.
 const TIERS = [
   ['genericHide', { add: 'generic' }],
-  ['genericHideException', {}],
-  ['elemHideException', {}],
+  ['hideException', {}],
   ['block', { add: 'blocked' }],
   ['exception', {}],
   // `$important,$denyallow`: the block, then its exclusions, both ahead of the
@@ -72,8 +71,7 @@ const laws = (m: any) => [
   // its hides. network.rs gives exceptions a page-load trigger only where one
   // must lift a strict host block.
   m.law('a page-load exception lifts the page hides', (e: any) => e.exception, (o: any) => o.generic.not()),
-  m.law('$generichide lifts generic hides', (e: any) => e.genericHideException, (o: any) => o.generic.not()),
-  m.law('$elemhide lifts every native hide', (e: any) => e.elemHideException, (o: any) => o.generic.not()),
+  m.law('$generichide and $elemhide lift the native hides', (e: any) => e.hideException, (o: any) => o.generic.not()),
   // A `$denyallow` exclusion lifts its own block (and the blocks above it),
   // but not an important block placed after it.
   m.law('a denyallow exclusion lifts its own important block', (e: any) => e.importantDenyallowBlock.and(e.importantDenyallowException, e.importantBlock.not(), e.importantException.not(), e.documentException.not()), (o: any) => o.blocked.not()),
@@ -111,8 +109,7 @@ assert.equal(earlyRefusal.stuck, 'sat', JSON.stringify(earlyRefusal));
 // a block is not a combination the compiler can produce.
 const FILTERS: Partial<Record<Input, string>> = {
   genericHide: '##.g',
-  genericHideException: '@@||page.example^$generichide',
-  elemHideException: '@@||page.example^$elemhide',
+  hideException: '@@||page.example^$generichide',
   block: '||t.example/x',
   exception: '@@||t.example/x',
   importantBlock: '||t.example/x$important',
