@@ -428,6 +428,7 @@
 "Not synced yet" = "Még nincs szinkronizálva";
 "OK" = "OK";
 "on line" = "a(z) sorban";
+"$1 of $2" = "$1 / $2";
 "Online Security Filter" = "Online Security Filter";
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "%@ esetén csak közösség által karbantartott listák érhetők el. Engedélyezd őket, ha ez számodra megfelelő.";
 "Only pasted user lists can be edited." = "Csak a beillesztett felhasználói listák szerkeszthetők.";

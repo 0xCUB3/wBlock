@@ -428,6 +428,7 @@
 "Not synced yet" = "尚未同步";
 "OK" = "确定";
 "on line" = "在第";
+"$1 of $2" = "第 $1 个，共 $2 个";
 "Online Security Filter" = "Online Security Filter";
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "仅有适用于 %@ 的社区维护列表。若你能接受，请启用它们。";
 "Only pasted user lists can be edited." = "只能编辑粘贴的用户列表。";

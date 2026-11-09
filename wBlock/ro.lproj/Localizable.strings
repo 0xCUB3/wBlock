@@ -428,6 +428,7 @@
 "Not synced yet" = "Încă nesincronizat";
 "OK" = "OK";
 "on line" = "la linia";
+"$1 of $2" = "$1 din $2";
 "Online Security Filter" = "Online Security Filter";
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "Pentru %@ sunt disponibile doar liste menținute de comunitate. Activează-le dacă te simți confortabil.";
 "Only pasted user lists can be edited." = "Numai listele de utilizator lipite pot fi editate.";

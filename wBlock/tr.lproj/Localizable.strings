@@ -428,6 +428,7 @@
 "Not synced yet" = "Henüz eşitlenmedi";
 "OK" = "Tamam";
 "on line" = "satırda";
+"$1 of $2" = "$2 içinde $1";
 "Online Security Filter" = "Online Security Filter";
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "%@ için yalnızca topluluk tarafından yönetilen listeler mevcuttur. Dilerseniz bunları etkinleştirebilirsiniz.";
 "Only pasted user lists can be edited." = "Yalnızca yapıştırılan kullanıcı listeleri düzenlenebilir.";

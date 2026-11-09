@@ -428,6 +428,7 @@
 "Not synced yet" = "Noch nicht synchronisiert";
 "OK" = "OK";
 "on line" = "in Zeile";
+"$1 of $2" = "$1 von $2";
 "Online Security Filter" = "Online Security Filter";
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "Für %@ sind nur von der Community gepflegte Listen verfügbar. Aktiviere sie, wenn du damit einverstanden bist.";
 "Only pasted user lists can be edited." = "Nur eingefügte Benutzerlisten können bearbeitet werden.";

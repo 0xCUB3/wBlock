@@ -428,6 +428,7 @@
 "Not synced yet" = "まだ同期されていません";
 "OK" = "OK";
 "on line" = "行";
+"$1 of $2" = "$2 件中 $1 件";
 "Online Security Filter" = "Online Security Filter";
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "%@ではコミュニティ管理のリストのみ利用できます。問題なければ有効にしてください。";
 "Only pasted user lists can be edited." = "ペーストされたユーザーリストのみ編集できます。";

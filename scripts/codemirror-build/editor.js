@@ -32,6 +32,7 @@ import {
   openSearchPanel,
   searchPanelOpen,
   search,
+  getSearchQuery,
   highlightSelectionMatches,
 } from "@codemirror/search";
 import {
@@ -91,6 +92,7 @@ function theme() {
     ".cm-search input": { backgroundColor: "var(--cm-input-background)", color: "var(--cm-foreground)", border: "1px solid var(--cm-border)", borderRadius: "8px", padding: "6px 8px" },
     ".cm-search button": { backgroundColor: "var(--cm-button-background)", color: "var(--cm-foreground)", border: "1px solid var(--cm-border)", borderRadius: "8px", padding: "6px 10px" },
     ".cm-search button:hover": { backgroundColor: "var(--cm-button-hover)" },
+    ".cm-wblock-match-count": { margin: "0 6px", color: "var(--cm-gutter-foreground)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" },
     ".cm-panels": { backgroundColor: "var(--cm-panel-background)", color: "var(--cm-foreground)" },
     ".cm-matchingBracket": { backgroundColor: "var(--cm-bracket-match)", outline: "1px solid var(--cm-border)" },
   });
@@ -217,6 +219,7 @@ function baseExtensions() {
       ...completionKeymap,
     ]),
     search({ top: true }),
+    matchCounter,
     // The search panel's fields are built without the editor's content
     // attributes, so autocorrect rewrote search terms (#943).
     EditorView.updateListener.of((update) => {
@@ -246,6 +249,54 @@ function baseExtensions() {
     }),
   ];
 }
+
+// "3 of 120" beside the Find field (#1100). The count is kept per query and
+// document; moving between matches only looks up the selected one.
+const matchCounter = ViewPlugin.fromClass(class {
+  constructor(editorView) {
+    this.query = null;
+    this.doc = null;
+    this.starts = [];
+    this.sync(editorView);
+  }
+  update(update) {
+    if (searchPanelOpen(update.state)) this.sync(update.view);
+  }
+  sync(editorView) {
+    const field = editorView.dom.querySelector(".cm-search .cm-textfield[name=search]");
+    if (!field) return;
+    let label = field.nextElementSibling;
+    if (!label?.classList.contains("cm-wblock-match-count")) {
+      label = document.createElement("span");
+      label.className = "cm-wblock-match-count";
+      field.after(label);
+    }
+    const { state } = editorView;
+    const query = getSearchQuery(state);
+    if (query !== this.query || state.doc !== this.doc) {
+      this.query = query;
+      this.doc = state.doc;
+      this.starts = [];
+      if (query.valid) {
+        const cursor = query.getCursor(state);
+        for (let next = cursor.next(); !next.done; next = cursor.next()) this.starts.push(next.value.from);
+      }
+    }
+    if (!query.valid) {
+      label.textContent = "";
+      return;
+    }
+    const { from } = state.selection.main;
+    let low = 0;
+    let high = this.starts.length;
+    while (low < high) {
+      const mid = (low + high) >> 1;
+      if (this.starts[mid] < from) low = mid + 1; else high = mid;
+    }
+    const current = this.starts[low] === from && !state.selection.main.empty ? low + 1 : 0;
+    label.textContent = state.phrase("$1 of $2", current.toLocaleString(), this.starts.length.toLocaleString());
+  }
+});
 
 function highlightBlock(analysis, name) {
   // Filter rules have no grammar here; their rule type colors the line.

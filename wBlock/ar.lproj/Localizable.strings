@@ -428,6 +428,7 @@
 "Not synced yet" = "لم تتم المزامنة بعد";
 "OK" = "موافق";
 "on line" = "في السطر";
+"$1 of $2" = "$1 من $2";
 "Online Security Filter" = "Online Security Filter";
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "لا تتوفر لـ %@ إلا القوائم التي يديرها المجتمع. فعّلها إذا كنت مرتاحًا لذلك.";
 "Only pasted user lists can be edited." = "يمكن تحرير قوائم المستخدم الملصوقة فقط.";

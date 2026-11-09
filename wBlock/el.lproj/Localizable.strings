@@ -428,6 +428,7 @@
 "Not synced yet" = "Δεν έχει συγχρονιστεί ακόμη";
 "OK" = "Εντάξει";
 "on line" = "στη γραμμή";
+"$1 of $2" = "$1 από $2";
 "Online Security Filter" = "Online Security Filter";
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "Μόνο λίστες που διατηρούνται από την κοινότητα είναι διαθέσιμες για %@. Ενεργοποιήστε τις αν νιώθετε άνετα.";
 "Only pasted user lists can be edited." = "Μόνο οι επικολλημένες λίστες χρήστη μπορούν να υποστούν επεξεργασία.";

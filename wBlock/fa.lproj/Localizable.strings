@@ -428,6 +428,7 @@
 "Not synced yet" = "هنوز همگام‌سازی نشده است";
 "OK" = "تأیید";
 "on line" = "در خط";
+"$1 of $2" = "$1 از $2";
 "Online Security Filter" = "Online Security Filter";
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "تنها فهرست‌های نگهداری‌شده توسط جامعه برای %@ در دسترس هستند. در صورت تمایل آن‌ها را فعال کنید.";
 "Only pasted user lists can be edited." = "فقط فهرست‌های چسبانده‌شده توسط کاربر قابل ویرایش هستند.";

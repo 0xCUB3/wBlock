@@ -428,6 +428,7 @@
 "Not synced yet" = "尚未同步";
 "OK" = "好";
 "on line" = "在第";
+"$1 of $2" = "第 $1 個，共 $2 個";
 "Online Security Filter" = "Online Security Filter";
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "%@ 僅提供社群維護清單。若你可以接受，請啟用它們。";
 "Only pasted user lists can be edited." = "只能編輯貼上的使用者清單。";

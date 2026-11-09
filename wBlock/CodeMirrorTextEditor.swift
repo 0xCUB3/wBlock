@@ -153,6 +153,7 @@ private enum CodeMirrorResources {
                 comment: "CodeMirror replacement line summary"
             ),
             "on line": LocalizedStrings.text("on line", comment: "CodeMirror current match line label"),
+            "$1 of $2": LocalizedStrings.text("$1 of $2", comment: "CodeMirror match counter: current match number, then the total"),
         ]
     }
 }

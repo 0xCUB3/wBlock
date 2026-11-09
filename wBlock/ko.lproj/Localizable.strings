@@ -428,6 +428,7 @@
 "Not synced yet" = "아직 동기화되지 않음";
 "OK" = "확인";
 "on line" = "줄";
+"$1 of $2" = "$2개 중 $1개";
 "Online Security Filter" = "Online Security Filter";
 "Only community-maintained lists are available for %@. Enable them if you're comfortable." = "%@에 대해서는 커뮤니티 관리 목록만 사용할 수 있습니다. 괜찮으시다면 활성화하세요.";
 "Only pasted user lists can be edited." = "붙여넣은 사용자 목록만 편집할 수 있습니다.";
