@@ -458,10 +458,10 @@ fn compile_scope(r: &NetworkRule, v: SafariVersion, out: &mut Emitted) -> Result
         // EasyList's `@@http://adsense.google.$document,domain=google.*`.
         _ => return Err("dnr:scope-domain-intersection".into()),
     };
-    // Hides fire on the page's document request, so a cosmetic exception
-    // needs only that; it must not cancel the network blocks a #925
-    // segment places ahead of it.
-    let documents = (tier != Tier::DocumentException).then_some(&[WkResourceType::Document][..]);
+    // Every load of the page, not only its document: WebKit applies a hide
+    // that matches any load to the page (a script or image load would bring
+    // generic hides back). Hide exceptions come before every network rule
+    // (`into_webkit`), so they cancel nothing but hides.
     for cond in conds {
         emit(
             out,
@@ -469,7 +469,7 @@ fn compile_scope(r: &NetworkRule, v: SafariVersion, out: &mut Emitted) -> Result
             &Trigger {
                 url: ".*",
                 case_sensitive: false,
-                types: documents,
+                types: None,
                 load_type: None,
                 load_context: None,
                 cond: cond.as_ref(),
@@ -1916,7 +1916,7 @@ mod tests {
             let out = check(
                 std::slice::from_ref(&rule),
                 V15,
-                r#"[{"trigger":{"url-filter":".*","resource-type":["document"],"if-domain":["*example.org"]},"action":{"type":"ignore-previous-rules"}}]"#,
+                r#"[{"trigger":{"url-filter":".*","if-domain":["*example.org"]},"action":{"type":"ignore-previous-rules"}}]"#,
             );
             assert_eq!(tiers(&out), [Tier::HideException]);
         }
@@ -1963,7 +1963,7 @@ mod tests {
         check(
             &[prefix, host],
             V15,
-            r#"[{"trigger":{"url-filter":".*","resource-type":["document"],"if-domain":["*shrink.icu","*x.com"]},"action":{"type":"ignore-previous-rules"}}]"#,
+            r#"[{"trigger":{"url-filter":".*","if-domain":["*shrink.icu","*x.com"]},"action":{"type":"ignore-previous-rules"}}]"#,
         );
         // Either half alone would hand the exception to far more pages.
         let google = NetworkRule {
@@ -1983,7 +1983,7 @@ mod tests {
         check(
             std::slice::from_ref(&rule),
             V14,
-            r#"[{"trigger":{"url-filter":".*","resource-type":["document"]},"action":{"type":"ignore-previous-rules"}}]"#,
+            r#"[{"trigger":{"url-filter":".*"},"action":{"type":"ignore-previous-rules"}}]"#,
         );
     }
 
@@ -2521,7 +2521,7 @@ mod tests {
         check(
             std::slice::from_ref(&rule),
             V15,
-            r#"[{"trigger":{"url-filter":".*","resource-type":["document"],"if-top-url":["^[^:]+://+([^:/]+\\.)?google\\.(com?\\.)?[^:/.]+[/:?#]"]},"action":{"type":"ignore-previous-rules"}}]"#,
+            r#"[{"trigger":{"url-filter":".*","if-top-url":["^[^:]+://+([^:/]+\\.)?google\\.(com?\\.)?[^:/.]+[/:?#]"]},"action":{"type":"ignore-previous-rules"}}]"#,
         );
     }
 

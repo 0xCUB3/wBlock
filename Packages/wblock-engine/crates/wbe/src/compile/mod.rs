@@ -242,9 +242,16 @@ impl Emitted {
     /// Everything emitted, in tier order; within a tier, emission order.
     /// `seen` holds the rules that come before these; an ignore that cancels
     /// none of them or of the rules here before it is left out (`prune`).
-    fn into_webkit(mut self, seen: &mut prune::Seen) -> WebkitJson {
+    /// `network_front` goes after the hides and their exceptions and before
+    /// every network tier: a hide exception applies to every load of its
+    /// page, so nothing it can cancel may come before it but hides.
+    fn into_webkit(mut self, seen: &mut prune::Seen, network_front: &WebkitJson) -> WebkitJson {
         let mut order = Vec::with_capacity(self.entries.len());
+        let mut front_at = 0;
         for tier in TIERS {
+            if tier == Tier::GenericBlock {
+                front_at = order.len();
+            }
             for (i, entry) in self.entries.iter_mut().enumerate().filter(|(_, e)| e.tier == tier) {
                 if let Some(span) = entry.domain.as_deref().filter(|s| s.top) {
                     entry.shape.set_page(prune::Page::If(span.domains.iter().map(|d| prune::domain_host(d)).collect()));
@@ -258,17 +265,28 @@ impl Emitted {
             }
         }
         // Sized up front so the output is never copied to grow.
-        let size = order.iter().map(|&i| self.rendered_len(&self.entries[i]) + 1).sum::<usize>() + 2;
+        let front = network_front.as_str();
+        let front = &front[1..front.len() - 1];
+        let size = order.iter().map(|&i| self.rendered_len(&self.entries[i]) + 1).sum::<usize>() + front.len() + 3;
         let mut json = Vec::with_capacity(size);
         json.push(b'[');
-        for (n, &i) in order.iter().enumerate() {
-            if n > 0 {
+        let comma = |json: &mut Vec<u8>| {
+            if json.len() > 1 {
                 json.push(b',');
             }
-            self.render(&self.entries[i], &mut json);
+        };
+        for n in 0..=order.len() {
+            if n == front_at && !front.is_empty() {
+                comma(&mut json);
+                json.extend_from_slice(front.as_bytes());
+            }
+            if let Some(&i) = order.get(n) {
+                comma(&mut json);
+                self.render(&self.entries[i], &mut json);
+            }
         }
         json.push(b']');
-        WebkitJson::from_bytes(json, order.len())
+        WebkitJson::from_bytes(json, order.len() + network_front.rules())
     }
 
     #[cfg(test)]
@@ -403,6 +421,7 @@ pub fn compile_rules(set: RuleSet, opts: &CompileOptions, stats: Stats) -> Compi
         opts,
         stats,
         &mut prune::Seen::default(),
+        &WebkitJson::default(),
     )
 }
 
@@ -410,7 +429,8 @@ pub fn compile_rules(set: RuleSet, opts: &CompileOptions, stats: Stats) -> Compi
 /// returns group `i` and is called once, from any thread. `ctx` covers every
 /// network rule. Groups compile in parallel and are written in order, while
 /// the cosmetic and scriptlet rules compile alongside them. `seen` holds the
-/// rules the blocker places before these and gains these (`prune`).
+/// rules the blocker places before these and gains these (`prune`), and
+/// `network_front` is placed ahead of the network rules (`into_webkit`).
 pub(crate) fn compile_blocker<U>(
     ctx: &network::Context,
     units: usize,
@@ -419,6 +439,7 @@ pub(crate) fn compile_blocker<U>(
     opts: &CompileOptions,
     mut stats: Stats,
     seen: &mut prune::Seen,
+    network_front: &WebkitJson,
 ) -> CompileOutput
 where
     U: Fn(usize) -> Vec<NetworkRule> + Sync,
@@ -444,7 +465,7 @@ where
     }
     stats.runtime_rules = runtime.len() as u64;
 
-    let webkit = emitted.into_webkit(seen);
+    let webkit = emitted.into_webkit(seen, network_front);
     stats.native_rules = webkit.rules() as u64;
     CompileOutput {
         webkit,

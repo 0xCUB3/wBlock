@@ -636,8 +636,9 @@ impl Plan {
         // The rules are held through the compile; spare capacity would be too.
         others.cosmetic.shrink_to_fit();
         others.scriptlets.shrink_to_fit();
-        // #925: the segment's blocks come first, then one ignore rule per
-        // excluded site; the exceptions after them can lift those blocks.
+        // #925: the segment's blocks lead the network rules, then one ignore
+        // rule per excluded site; the exceptions after them can lift those
+        // blocks. Hides and their exceptions come before all of them.
         let mut seen = Seen::default();
         let front = segment_list.map(|list| {
             // The blocker's context, so every `$badfilter` it holds applies.
@@ -649,7 +650,7 @@ impl Plan {
                 })
                 .collect()
             };
-            let front = compile_blocker(&ctx, 1, segment, Others::default(), &self.opts, Stats::default(), &mut seen).webkit;
+            let front = compile_blocker(&ctx, 1, segment, Others::default(), &self.opts, Stats::default(), &mut seen, &WebkitJson::default()).webkit;
             let ignores: Vec<WkRule> = self.lists[list]
                 .scope
                 .exclude
@@ -659,7 +660,7 @@ impl Plan {
             WebkitJson::join([&front, &WebkitJson::from_rules(&ignores)])
         });
         let tail = Mutex::new(Some(tail));
-        let mut output = compile_blocker(
+        let output = compile_blocker(
             &ctx,
             units.len() + 1,
             |unit| match units.get(unit) {
@@ -670,11 +671,8 @@ impl Plan {
             &self.opts,
             stats,
             &mut seen,
+            &front.unwrap_or_default(),
         );
-        if let Some(front) = front {
-            output.webkit = WebkitJson::join([&front, &output.webkit]);
-            output.stats.native_rules = output.webkit.rules() as u64;
-        }
         Some(TargetOutput {
             output,
             admitted,
@@ -1520,6 +1518,42 @@ mod tests {
             .unwrap()
             .contains("other")));
         assert_eq!(plan.compile_target(0, &[]).admitted["excluded"], 2);
+    }
+
+    /// WebKit applies a hide matching any load to the page, so a hide
+    /// exception covers every load of its page; it may then cancel nothing
+    /// but hides, so every block of the blocker (the #925 segment, extras,
+    /// copied rules, generic blocks) comes after it.
+    #[test]
+    fn hide_exceptions_cover_every_load_and_precede_every_block() {
+        let plan = plan(
+            json!([
+                {"id":"excluded", "text":"||tracker.net^\n/banner.", "scope":{"exclude":["shop.example"]}},
+                {"id":"own", "text":"/ads.js\n##.ad\n@@||site.example^$generichide\n@@||site.example^$genericblock\n@@||page.example^$elemhide"},
+                {"id":"other", "text":"@@||cdn.example/ads.js"}
+            ]),
+            json!([{"slot":1,"lists":[{"list":0},{"list":1}]},{"slot":2,"lists":[{"list":2}]}]),
+            json!({}),
+        );
+        let extra = Extra { text: "||extra.example^\n/extra-ad.".into(), trusted: true };
+        let output = plan.compile_target(0, &[extra]).output.webkit;
+        let rules: Vec<Value> = serde_json::from_str(output.as_str()).unwrap();
+        let hide_exception = |r: &Value| {
+            r["action"]["type"] == "ignore-previous-rules"
+                && r["trigger"]["url-filter"] == ".*"
+                && ["site", "page"].iter().any(|h| r["trigger"]["if-top-url"].to_string().contains(h))
+                && r["trigger"]["resource-type"].is_null()
+                && r["trigger"]["if-domain"].is_null()
+        };
+        let last = rules.iter().rposition(|r| hide_exception(r)).expect("typeless hide exceptions");
+        let pages: String = rules.iter().filter(|r| hide_exception(r)).map(|r| r["trigger"]["if-top-url"].to_string()).collect();
+        assert!(pages.contains("site") && pages.contains("page"), "{rules:?}");
+        let first_block = rules.iter().position(|r| r["action"]["type"] == "block").unwrap();
+        assert!(last < first_block, "{rules:?}");
+        assert!(rules[..first_block].iter().all(|r| hide_exception(r) || r["action"]["type"] == "css-display-none"));
+        for text in ["tracker", "banner", "extra", "cdn\\\\.example", "ads\\\\.js"] {
+            assert!(output.as_str().contains(text), "{text}: {rules:?}");
+        }
     }
 
     /// A list without plain blocks has nothing for an ignore rule to lift, so
