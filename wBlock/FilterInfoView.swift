@@ -220,6 +220,9 @@ struct FilterRulesView: View {
     @State private var isLoading = true
     @State private var shownKinds: Set<FilterRuleKind> = Set(FilterRuleKind.allCases)
     @State private var rebuildTask: Task<Void, Never>?
+    #if os(macOS)
+    @State private var showingKinds = false
+    #endif
     @Environment(\.dismiss) private var dismiss
 
     private static let highlightedKinds: [FilterRuleKind] = [.network, .elementHiding, .advanced, .removeParam, .unsupported, .duplicate]
@@ -306,44 +309,49 @@ struct FilterRulesView: View {
     /// Each kind's count sits in its menu item; a legend under the editor
     /// cost a third of an iPhone screen (#1037) and its ViewThatFits/grid
     /// layout hung rotation while Find had the keyboard up (#1036).
-    /// macOS before 26 draws its own indicator and drops extra label images;
-    /// iOS and the macOS 26 glass capsule need the chevron in the label.
-    private static var labelDrawsChevron: Bool {
-        #if os(macOS)
-        if #available(macOS 26.0, *) { return true }
-        return false
-        #else
-        return true
-        #endif
-    }
-
-    private static var menuChevron: some View {
-        Image(systemName: "chevron.down").font(.caption2.weight(.semibold))
-    }
-
     private func filterMenu(_ analysis: FilterRuleAnalysis) -> some View {
-        Menu {
-            ForEach(Self.highlightedKinds, id: \.self) { kind in
-                kindToggle(kind, analysis: analysis)
-            }
-            Divider()
-            kindToggle(.comment, analysis: analysis)
-        } label: {
-            // The chevron marks it as a menu (#948) and the capsule keeps it apart
-            // from Wrap Lines' similar bars (#932); tinted while some kinds are hidden.
-            HStack(spacing: 2) {
-                Image(systemName: "line.3.horizontal.decrease")
-                if Self.labelDrawsChevron { Self.menuChevron }
-            }
-            .frame(height: SourceControlMetrics.menuLabelHeight)
-            .contentShape(Rectangle())
+        Group {
+            #if os(macOS)
+            // AppKit closes a menu on every click and SwiftUI can't keep it
+            // open, so the Mac lists the kinds in a popover that stays until
+            // dismissed, as the iOS menu does (#1100).
+            Button { showingKinds.toggle() } label: { filterMenuLabel }
+                .popover(isPresented: $showingKinds, arrowEdge: .bottom) {
+                    VStack(alignment: .leading, spacing: 0) { filterMenuItems(analysis) }
+                        .buttonStyle(PopoverRowStyle())
+                        .padding(6)
+                        .fixedSize()
+                }
+            #else
+            Menu { filterMenuItems(analysis) } label: { filterMenuLabel }
+                .menuIndicator(.visible)
+                .menuStaysOpenCompat()
+            #endif
         }
         .modifier(SourceMenuCapsule(isActive: shownKinds.count != FilterRuleKind.allCases.count))
-        .menuIndicator(.visible)
-        .menuStaysOpenCompat()
         .fixedSize()
         .accessibilityLabel("View")
         .help("View")
+    }
+
+    @ViewBuilder
+    private func filterMenuItems(_ analysis: FilterRuleAnalysis) -> some View {
+        ForEach(Self.highlightedKinds, id: \.self) { kind in
+            kindToggle(kind, analysis: analysis)
+        }
+        Divider()
+        kindToggle(.comment, analysis: analysis)
+    }
+
+    /// The chevron marks it as a menu (#948) and the capsule keeps it apart
+    /// from Wrap Lines' similar bars (#932); tinted while some kinds are hidden.
+    private var filterMenuLabel: some View {
+        HStack(spacing: 2) {
+            Image(systemName: "line.3.horizontal.decrease")
+            Image(systemName: "chevron.down").font(.caption2.weight(.semibold))
+        }
+        .frame(height: SourceControlMetrics.menuLabelHeight)
+        .contentShape(Rectangle())
     }
 
     /// A button rather than a toggle: a toggle item shows only a plain
@@ -450,3 +458,30 @@ struct FilterRulesView: View {
     }
 
 }
+
+#if os(macOS)
+/// A row in the View popover, highlighted under the pointer like a menu item.
+private struct PopoverRowStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        Row(configuration: configuration)
+    }
+
+    private struct Row: View {
+        let configuration: Configuration
+        @State private var isHovered = false
+
+        var body: some View {
+            configuration.label
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(Color.primary.opacity(configuration.isPressed ? 0.16 : (isHovered ? 0.08 : 0)))
+                )
+                .contentShape(Rectangle())
+                .onHover { isHovered = $0 }
+        }
+    }
+}
+#endif
