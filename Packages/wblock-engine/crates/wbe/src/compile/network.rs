@@ -1902,7 +1902,7 @@ mod tests {
         check(
             std::slice::from_ref(&rule),
             V15,
-            r#"[{"trigger":{"url-filter":".*","if-top-url":["^[^:]+://+([^:/]+\\.)?example\\.org/news([^a-zA-Z0-9_.%-].*)?$"]},"action":{"type":"ignore-previous-rules"}}]"#,
+            r#"[{"trigger":{"url-filter":".*","if-top-url":["^[^:]+://+([^:/]+\\.)?example\\.org/news[^a-zA-Z0-9_.%-]","^[^:]+://+([^:/]+\\.)?example\\.org/news$"]},"action":{"type":"ignore-previous-rules"}}]"#,
         );
     }
 
