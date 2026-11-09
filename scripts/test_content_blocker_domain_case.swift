@@ -2,8 +2,8 @@ import Foundation
 import wBlockCoreService
 
 // WebKit rejects a whole rule list when any if-domain/unless-domain entry has uppercase
-// letters, and SafariConverterLib keeps domains as written (#898). Domain-scoped hiding rules are
-// limited to document loads so WebKit doesn't re-evaluate them on every subresource (#873).
+// letters, and SafariConverterLib keeps domains as written (#898). Site hides now run in the
+// runtime, so the native domains left are generic hides' negated ones.
 @main
 struct ContentBlockerDomainCaseTests {
     static func main() throws {
@@ -16,7 +16,7 @@ struct ContentBlockerDomainCaseTests {
 
         let target = ContentBlockerTargetManager.shared.allTargets(forPlatform: .macOS)[0]
         let list = FilterList(name: "mixed case", url: URL(string: "https://example.com/list.txt")!, category: .foreign, isSelected: true)
-        try "Foo.COM##.ad\nbar.com,~Baz.Com##.ad\nKaro.Studio##a[href*=\"Karo.Studio\"]>img\n##.generic-ad\n"
+        try "~Foo.COM,~bar.com##.ad\n##a[href*=\"Karo.Studio\"]>img\n##.generic-ad\n"
             .write(to: container.appendingPathComponent(ContentBlockerIncrementalCache.localFilename(for: list)), atomically: true, encoding: .utf8)
 
         let ordered = ContentBlockerMappingService.orderedForCompilation([list])
