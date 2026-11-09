@@ -1,6 +1,6 @@
 // Behavioural check for #836: an `@@` exception that lives in a list compiled
 // into another content blocker must be replicated next to the block it
-// cancels, and exceptions that cancel nothing in a target stay out of it.
+// can cancel, including generic blocks that name no host.
 import Foundation
 import wBlockCoreService
 
@@ -78,11 +78,10 @@ struct Main {
         if actions(blockerRules, containing: "tracker").last != "ignore-previous-rules" {
             fail("an exception narrower than a whole-host block must be replicated")
         }
-        if !actions(blockerRules, containing: "unrelated").isEmpty {
-            fail("an exception that cancels nothing in this slot must not be replicated")
-        }
-        if !actions(blockerRules, containing: "ads\\.example").isEmpty {
-            fail("an exception whose block lives in its own slot must not be replicated")
+        // Every slot compiles the compatibility rules' path blocks (`/js/widget/ads.js`),
+        // which match URLs on any host, so a host exception lifts them there too.
+        if actions(blockerRules, containing: "unrelated").last != "ignore-previous-rules" {
+            fail("an exception must reach a slot whose generic blocks match its URLs")
         }
 
         let excepterRules = try compile(excepterSlot)

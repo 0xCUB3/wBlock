@@ -133,14 +133,10 @@ struct Parsed {
     identity: u64,
     /// Exceptions and `$badfilter` stay in every shard and drive #681.
     shared: bool,
-    /// An exception rule, which `shared` also covers with `$badfilter`.
-    exception: bool,
     /// A network rule, so the network pass can skip the other kinds unparsed.
     network: bool,
     /// A network rule a blocker's `NetworkContext` holds, so its scan parses it.
     in_context: bool,
-    /// A network rule `pattern_of` reads a pattern from (`comparable`).
-    comparable: bool,
     /// `is_plain_block`, which the segment of #925 compiles unscoped.
     plain: bool,
     /// Affinity types of the enclosing `!#safari_cb_affinity` block.
@@ -335,16 +331,6 @@ impl Plan {
     /// The line of the rule at `p`.
     fn line(&self, list: usize, p: &Parsed) -> &str {
         self.lists[list].text[p.offset..].lines().next().unwrap_or_default()
-    }
-
-    /// `pattern_of` the network rule at `p`, read from its line unparsed. None
-    /// when the list has a site scope, which changes the rule.
-    fn line_pattern(&self, list: usize, p: &Parsed) -> Option<Option<String>> {
-        if !self.lists[list].scope.is_empty() {
-            return None;
-        }
-        // A line holds one rule, whose `raw` is the normalized line.
-        Some(p.comparable.then(|| pattern_text(&crate::normalize::adguard_to_ubo(self.line(list, p)))).flatten())
     }
 
     pub fn target_count(&self) -> usize {
@@ -543,45 +529,8 @@ impl Plan {
     /// The fingerprint of `target`'s output, and the rules that other blockers'
     /// exceptions copy into it, which the output is compiled from.
     fn fingerprinted(&self, target: usize, extras: &[Extra]) -> (u64, Vec<Rule>) {
-        let own = self.own_patterns(target);
-        let replicated = self.replicated(target, own.iter().map(|pattern| pattern.as_ref()));
+        let replicated = self.replicated(target);
         (self.fingerprint_of(target, extras, &replicated), replicated)
-    }
-
-    /// The patterns of the network rules `scan` keeps for `target`, read from
-    /// their lines when the list is unscoped and otherwise from its rules.
-    fn own_patterns(&self, target: usize) -> Vec<String> {
-        let units = self.record_units();
-        parallel_indices(units.len(), |u| {
-            let Unit { list, chunk, range } = &units[u];
-            let (list, chunk) = (*list, *chunk);
-            let parsed = &self.parsed[list];
-            let mut out = Vec::new();
-            for i in range.clone() {
-                let p = &parsed.chunks[chunk][i];
-                if !p.network || p.exception || !self.keeps(target, list, p) {
-                    continue;
-                }
-                match self.line_pattern(list, p) {
-                    Some(pattern) => out.extend(pattern),
-                    None => {
-                        let mut rules = Vec::new();
-                        scoped(self.rule(list, p), &self.lists[list].scope, &mut rules);
-                        for rule in &rules {
-                            if let Rule::Network(r) = rule {
-                                if !r.exception {
-                                    out.extend(pattern_of(r));
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            out
-        })
-        .into_iter()
-        .flatten()
-        .collect()
     }
 
     fn fingerprint_of(&self, target: usize, extras: &[Extra], replicated: &[Rule]) -> u64 {
@@ -768,62 +717,29 @@ impl Plan {
         Some(rule)
     }
 
-    /// #836: network exceptions of lists this blocker does not compile, when
-    /// they can cancel one of its blocks (Safari applies an exception only in
-    /// its own blocker). `own` holds the patterns of the blocker's network
-    /// rules (`own_patterns`). Matching errs toward copying, which is harmless.
-    fn replicated<'a>(&self, target: usize, own: impl Iterator<Item = &'a str>) -> Vec<Rule> {
-        let mut patterns = FxHashSet::default();
-        let mut bare_hosts = FxHashSet::default();
-        for pattern in own {
-            bare_hosts.extend(bare_host(pattern));
-            patterns.insert(pattern);
-        }
-        let mut sorted: Vec<&str> = patterns.iter().copied().collect();
-        sorted.sort_unstable();
+    /// #836: the exceptions and `$badfilter`s of lists this blocker does not
+    /// compile, since Safari applies an exception only in its own blocker. All
+    /// of them, as a host exception can lift a block naming no host (`/ads.`,
+    /// `||ads`); `prune` drops those no earlier rule can match.
+    fn replicated(&self, target: usize) -> Vec<Rule> {
         let units: Vec<Unit> = self
             .record_units()
             .into_iter()
             .filter(|unit| self.assigned(target, unit.list).is_none())
             .collect();
-        // Candidates pass the cancel check per record range, in parallel; the
-        // `seen` check that makes each rule count once runs after, in order.
+        // Records are read per range, in parallel; the `seen` check that makes
+        // each rule count once runs after, in order.
         let candidates = parallel_indices(units.len(), |u| {
             let Unit { list, chunk, range } = &units[u];
             let (list, chunk) = (*list, *chunk);
-            let parsed = &self.parsed[list];
             let mut found: Vec<(u64, Rule)> = Vec::new();
-            for i in range.clone() {
-                let p = &parsed.chunks[chunk][i];
-                if !p.shared {
-                    continue;
-                }
-                if let Some(pattern) = self.line_pattern(list, p).filter(|_| p.network) {
-                    // Only a matching rule is parsed.
-                    let matches = pattern.is_none_or(|pattern| {
-                        pattern_host(&pattern).is_none() || cancels(&pattern, &patterns, &bare_hosts, &sorted)
-                    });
-                    if matches {
-                        found.push((p.identity, self.rule(list, p)));
-                    }
-                    continue;
-                }
+            for p in self.parsed[list].chunks[chunk][range.clone()].iter().filter(|p| p.shared) {
                 let mut scoped_rules = Vec::new();
                 scoped(self.rule(list, p), &self.lists[list].scope, &mut scoped_rules);
                 for rule in scoped_rules {
                     match &rule {
-                        Rule::Cosmetic(r) if r.exception => {
-                            found.push((identity(&r.raw), rule));
-                        }
-                        Rule::Network(r) if r.exception || r.badfilter => {
-                            let matches = pattern_of(r).is_none_or(|pattern| {
-                                pattern_host(&pattern).is_none()
-                                    || cancels(&pattern, &patterns, &bare_hosts, &sorted)
-                            });
-                            if matches {
-                                found.push((identity(&r.raw), rule));
-                            }
-                        }
+                        Rule::Cosmetic(r) if r.exception => found.push((identity(&r.raw), rule)),
+                        Rule::Network(r) if r.exception || r.badfilter => found.push((identity(&r.raw), rule)),
                         _ => {}
                     }
                 }
@@ -945,10 +861,8 @@ fn parse_lines(list: &ListSpec, span: Range<usize>, lines_before: u32, mut affin
                 index: position as u32,
                 identity: identity_in_scope(raw(rule), &list.scope),
                 shared: is_shared(rule),
-                exception: matches!(rule, Rule::Network(r) if r.exception),
                 network: matches!(rule, Rule::Network(_)),
                 in_context: matches!(rule, Rule::Network(r) if NetworkContext::holds(r)),
-                comparable: matches!(rule, Rule::Network(r) if comparable(r)),
                 plain: is_plain_block(rule),
                 affinity,
             });
@@ -1329,88 +1243,6 @@ fn regex_escape(s: &str) -> String {
     out
 }
 
-/// A network rule's pattern as #836 compares it (identity form: lowercase
-/// unless a regex). None for a rule with no pattern to compare, and for a
-/// page exception (`$document`, `$elemhide`, ...), whose pattern is the page.
-fn pattern_of(rule: &NetworkRule) -> Option<String> {
-    comparable(rule).then(|| pattern_text(&rule.raw)).flatten()
-}
-
-/// Whether `pattern_of` reads a pattern from the rule's `raw`.
-fn comparable(rule: &NetworkRule) -> bool {
-    rule.scope.is_empty()
-        && !matches!(rule.action, NetworkAction::RemoveParam(_))
-        && !matches!(&rule.action, NetworkAction::Other { option, .. } if option == "uritransform")
-}
-
-/// The pattern of a comparable rule's `raw` (`pattern_of`).
-fn pattern_text(raw: &str) -> Option<String> {
-    let raw = raw.trim();
-    let body = raw.strip_prefix("@@").unwrap_or(raw);
-    let pattern = if body.starts_with('/') {
-        let close = body[1..].char_indices().scan(false, |escaped, (i, c)| {
-            let hit = !*escaped && c == '/';
-            *escaped = !*escaped && c == '\\';
-            Some((i, hit))
-        });
-        let end = close.filter(|(_, hit)| *hit).map(|(i, _)| i + 2).next();
-        end.map_or(body, |e| &body[..e]).to_string()
-    } else {
-        body[..body.find('$').unwrap_or(body.len())].to_ascii_lowercase()
-    };
-    (!pattern.is_empty()).then_some(pattern)
-}
-
-/// The host of a `||host` pattern without wildcards, when the host has a dot.
-fn pattern_host(pattern: &str) -> Option<&str> {
-    pattern
-        .strip_prefix("||")
-        .filter(|_| !pattern.contains('*'))
-        .map(|rest| &rest[..rest.find(['^', '/', '$', '|', '?']).unwrap_or(rest.len())])
-        .filter(|host| host.contains('.'))
-}
-
-/// The host of a whole-host pattern: `||host^`, `||host`, `||host^|` or `||host/`.
-fn bare_host(pattern: &str) -> Option<&str> {
-    let host = pattern_host(pattern)?;
-    matches!(&pattern[2 + host.len()..], "" | "^" | "^|" | "/").then_some(host)
-}
-
-/// Whether a block with `pattern` is cancelled by an exception with one of
-/// `patterns`, which are sorted in `sorted`. `bare_hosts` are the hosts of
-/// the whole-host patterns among them.
-fn cancels(
-    pattern: &str,
-    patterns: &FxHashSet<&str>,
-    bare_hosts: &FxHashSet<&str>,
-    sorted: &[&str],
-) -> bool {
-    if patterns.contains(pattern) {
-        return true;
-    }
-    let Some(host) = pattern_host(pattern) else { return false };
-    // A whole-host block on this host or a parent domain covers the URL:
-    // each suffix of two or more labels.
-    let mut suffix = host;
-    while let Some((_, parent)) = suffix.split_once('.') {
-        if bare_hosts.contains(suffix) {
-            return true;
-        }
-        suffix = parent;
-    }
-    let key = pattern.trim_end_matches(['^', '|']);
-    if key.len() < 4 {
-        return false;
-    }
-    // A block whose pattern is a prefix of the exception matches the same URLs.
-    if (4..=key.len()).any(|end| key.is_char_boundary(end) && patterns.contains(&key[..end])) {
-        return true;
-    }
-    // An exception whose pattern is a prefix of a block is broader than it.
-    let at = sorted.partition_point(|p| *p < key);
-    sorted.get(at).is_some_and(|p| p.starts_with(key))
-}
-
 impl Stats {
     pub(crate) fn merge(&mut self, other: &Stats) {
         self.lines += other.lines;
@@ -1465,19 +1297,6 @@ mod tests {
             "targets": [{ "slot": 1, "lists": [{"list": 0}, {"list": 1}] }],
         }))
         .unwrap()
-    }
-
-    /// Patterns read from lines must be the patterns of the parsed rules.
-    #[test]
-    fn line_patterns_match_parsed_rules() {
-        let left = "||ads.example.com^\n@@||ads.example.com/ok^\n||Tracker.net/X\n||bare.org^\n$badfilter,domain=other.com\n/ad[0-9]/$script\n||x.org^$removeparam=utm\n@@||y.org^$elemhide\n";
-        let plan = Plan::with_cache(two_list_request(left, "", json!({})), &ParseCache::default());
-        for p in plan.parsed[0].records().filter(|p| p.network) {
-            let Rule::Network(rule) = plan.rule(0, p) else { unreachable!() };
-            assert_eq!(plan.line_pattern(0, p), Some(pattern_of(&rule)), "{}", rule.raw);
-        }
-        let scoped = Plan::with_cache(two_list_request(left, "", json!({"exclude": ["shop.*"]})), &ParseCache::default());
-        assert!(scoped.parsed[0].records().all(|p| scoped.line_pattern(0, p).is_none()));
     }
 
     #[test]
@@ -1866,9 +1685,8 @@ mod tests {
             json!({}),
         );
         let output = crate::webkit::to_json(&plan.compile_target(0, &[]).output.webkit);
-        assert!(output.contains("deep"), "{output}");
-        let own = plan.own_patterns(0);
-        assert_eq!(plan.replicated(0, own.iter().map(|p| p.as_ref())).len(), 2);
+        let ignores = output.matches("ignore-previous-rules").count();
+        assert!(output.contains("one\\\\.test/path/deep") && ignores == 4, "{output}");
         assert!(!output.contains("other\\\\.test"), "{output}");
     }
 
@@ -2060,6 +1878,22 @@ mod tests {
         assert!(rules(&plan, 1)
             .iter()
             .all(|rule| rule["action"]["type"] == "ignore-previous-rules"));
+    }
+
+    /// A host exception lifts a generic block of another blocker that names
+    /// no host (EasyList's `/adserver.` and uBO Quick Fixes' exception).
+    #[test]
+    fn replicates_host_exceptions_over_generic_blocks() {
+        let plan = plan(
+            json!([
+                {"id":"easylist", "text":"/adserver.$~stylesheet,~xmlhttprequest,domain=~konograma.com"},
+                {"id":"quick-fixes", "text":"@@||kupuvamsamo.online/adserver.js$domain=seirsanduk.com"}
+            ]),
+            json!([{"slot":1,"lists":[{"list":0}]},{"slot":2,"lists":[{"list":1}]}]),
+            json!({}),
+        );
+        assert!(rules(&plan, 0).iter().any(|r| r["action"]["type"] == "ignore-previous-rules"
+            && r["trigger"]["url-filter"].as_str().unwrap().contains("kupuvamsamo")));
     }
 
     #[test]
