@@ -221,6 +221,7 @@ compile_core_test filter-list-site-exclusion scripts/test_filter_list_site_exclu
 compile_core_test site-exclusion-ignore-segment scripts/test_site_exclusion_ignore_segment.swift
 compile_core_test userscript-pattern-budget scripts/test_userscript_pattern_budget.swift
 compile_core_test userscript-stale-extension-cleanup scripts/test_userscript_stale_extension_cleanup.swift
+compile_core_test userscript-update-unchanged-source scripts/test_userscript_update_unchanged_source.swift
 compile_core_test userscript-duplicates scripts/test_userscript_duplicates.swift \
   wBlock/CloudSyncUserScriptSync.swift \
   wBlock/CloudSyncRemoteUserScriptSync.swift

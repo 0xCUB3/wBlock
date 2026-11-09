@@ -3493,9 +3493,11 @@ public class UserScriptManager: ObservableObject {
                     return false
                 }
 
+                // Unchanged source is not an update, even when one was requested:
+                // a CDN can still serve the old file after .meta.js shows the bump.
                 if self.userScripts[index].content == processedContent,
                    self.userScripts[index].resourceContents == resourceContents {
-                    if persistChanges || needsPersistenceRetry {
+                    if needsPersistenceRetry {
                         return try await self.persistDownloadedUserScript(candidate.id)
                     }
                     return false
