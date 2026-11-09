@@ -163,7 +163,7 @@
 "Blocks cookie consent notices on web pages." = "Blochează notificările privind consimțământul cookie-urilor pe paginile web.";
 "Blocks miscellaneous irritating elements not covered by other filters." = "Blochează diversele elemente iritante neacoperite de alte filtre.";
 "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "Safari nu poate aplica regulile inline-script din această listă. Activează Bypass Paywalls Clean în Scripturi de utilizator pentru site-urile în engleză acceptate.";
-"Blocks pop-up ads on web pages." = "Blochează reclamele pop-up de pe paginile web.";
+"Blocks pop-up and pop-under windows that pages open when you click, from the AdGuard project." = "Blochează ferestrele pop-up și pop-under pe care paginile le deschid la clic. Din proiectul AdGuard.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "Blochează ferestrele pop-up promoționale, înscrierile la buletine informative și solicitările de notificare.";
 "Blocks third-party widgets, chat assistants, and support widgets." = "Blochează widgeturile terță parte, asistenții de chat și widgeturile de asistență.";
 "Building combined filter engine..." = "Se construiește motorul de filtre combinat...";
@@ -1072,7 +1072,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Hides cookie notices, from the uBlock Origin project." = "Ascunde notificările cookie. Din proiectul uBlock Origin.";
 "Hides live chat and support widgets, from the EasyList project." = "Ascunde chatul live și widgeturile de asistență. Din proiectul EasyList.";
 "Hides newsletter sign-up prompts, from the EasyList project." = "Ascunde solicitările de abonare la buletinul informativ. Din proiectul EasyList.";
-"Hides other annoyances, from the EasyList project." = "Ascunde alte elemente enervante. Din proiectul EasyList.";
+"Hides newsletter prompts, in-page pop-ups, app banners, and other annoyances, from the EasyList project." = "Ascunde invitațiile la newslettere, ferestrele pop-up din pagină, bannerele aplicațiilor și alte elemente enervante. Din proiectul EasyList.";
 "Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project." = "Ascunde suprapunerile, bannerele promoționale și alte elemente enervante. Din proiectul uBlock Origin.";
 "Hides pop-ups that sites don't need to work, from the AdGuard project." = "Ascunde ferestrele pop-up de care site-urile nu au nevoie pentru a funcționa. Din proiectul AdGuard.";
 "Hides promotions, copy restrictions, and other annoyances, from the AdGuard project." = "Ascunde promoțiile, restricțiile de copiere și alte elemente enervante. Din proiectul AdGuard.";

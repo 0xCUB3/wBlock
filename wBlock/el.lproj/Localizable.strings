@@ -163,7 +163,7 @@
 "Blocks cookie consent notices on web pages." = "Αποκλείει τις ειδοποιήσεις συναίνεσης για cookie σε ιστοσελίδες.";
 "Blocks miscellaneous irritating elements not covered by other filters." = "Αποκλείει διάφορα ενοχλητικά στοιχεία που δεν καλύπτονται από άλλα φίλτρα.";
 "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "Το Safari δεν μπορεί να εφαρμόσει τους κανόνες inline-script αυτής της λίστας. Ενεργοποιήστε το Bypass Paywalls Clean στους Κώδικες χρήστη για τους υποστηριζόμενους αγγλόφωνους ιστότοπους.";
-"Blocks pop-up ads on web pages." = "Αποκλείει τις αναδυόμενες διαφημίσεις στις ιστοσελίδες.";
+"Blocks pop-up and pop-under windows that pages open when you click, from the AdGuard project." = "Αποκλείει αναδυόμενα παράθυρα και παράθυρα pop-under που ανοίγουν οι σελίδες όταν κάνετε κλικ, από το έργο AdGuard.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "Αποκλείει διαφημιστικά αναδυόμενα παράθυρα, εγγραφές σε ενημερωτικά δελτία και αιτήματα ειδοποιήσεων.";
 "Blocks third-party widgets, chat assistants, and support widgets." = "Αποκλείει γραφικά στοιχεία τρίτων, βοηθούς συνομιλίας και γραφικά στοιχεία υποστήριξης.";
 "Building combined filter engine..." = "Δημιουργία συνδυασμένης μηχανής φίλτρων...";
@@ -1072,7 +1072,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides cookie notices, from the uBlock Origin project." = "Κρύβει ειδοποιήσεις cookie, από το έργο uBlock Origin.";
 "Hides live chat and support widgets, from the EasyList project." = "Κρύβει γραφικά στοιχεία ζωντανής συνομιλίας και υποστήριξης, από το έργο EasyList.";
 "Hides newsletter sign-up prompts, from the EasyList project." = "Κρύβει προτροπές εγγραφής σε ενημερωτικά δελτία, από το έργο EasyList.";
-"Hides other annoyances, from the EasyList project." = "Κρύβει άλλες ενοχλήσεις, από το έργο EasyList.";
+"Hides newsletter prompts, in-page pop-ups, app banners, and other annoyances, from the EasyList project." = "Κρύβει προτροπές για newsletter, αναδυόμενα παράθυρα μέσα στη σελίδα, banner εφαρμογών και άλλες ενοχλήσεις, από το έργο EasyList.";
 "Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project." = "Κρύβει επικαλύψεις, διαφημιστικά banner και άλλες ενοχλήσεις, από το έργο uBlock Origin.";
 "Hides pop-ups that sites don't need to work, from the AdGuard project." = "Κρύβει αναδυόμενα παράθυρα που οι ιστότοποι δεν χρειάζονται για να λειτουργήσουν, από το έργο AdGuard.";
 "Hides promotions, copy restrictions, and other annoyances, from the AdGuard project." = "Κρύβει προωθήσεις, περιορισμούς αντιγραφής και άλλες ενοχλήσεις, από το έργο AdGuard.";

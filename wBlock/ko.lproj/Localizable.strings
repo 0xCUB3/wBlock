@@ -163,7 +163,7 @@
 "Blocks cookie consent notices on web pages." = "웹페이지에서 쿠키 동의 알림을 차단합니다.";
 "Blocks miscellaneous irritating elements not covered by other filters." = "다른 필터에서 다루지 않는 기타 성가신 요소를 차단합니다.";
 "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "Safari는 이 목록의 inline-script 규칙을 적용할 수 없습니다. 지원되는 영어 사이트에서는 유저스크립트에서 Bypass Paywalls Clean을 활성화하세요.";
-"Blocks pop-up ads on web pages." = "웹 페이지의 팝업 광고를 차단합니다.";
+"Blocks pop-up and pop-under windows that pages open when you click, from the AdGuard project." = "클릭할 때 페이지가 여는 팝업과 팝언더 창을 차단합니다. AdGuard 프로젝트에서 제공합니다.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "프로모션 팝업, 뉴스레터 가입, 알림 요청을 차단합니다.";
 "Blocks third-party widgets, chat assistants, and support widgets." = "타사 위젯, 채팅 도우미 및 지원 위젯을 차단합니다.";
 "Building combined filter engine..." = "결합 필터 엔진 구축 중...";
@@ -1072,7 +1072,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides cookie notices, from the uBlock Origin project." = "쿠키 알림을 숨깁니다. uBlock Origin 프로젝트에서 제공합니다.";
 "Hides live chat and support widgets, from the EasyList project." = "실시간 채팅 및 지원 위젯을 숨깁니다. EasyList 프로젝트에서 제공합니다.";
 "Hides newsletter sign-up prompts, from the EasyList project." = "뉴스레터 구독 안내를 숨깁니다. EasyList 프로젝트에서 제공합니다.";
-"Hides other annoyances, from the EasyList project." = "기타 방해 요소를 숨깁니다. EasyList 프로젝트에서 제공합니다.";
+"Hides newsletter prompts, in-page pop-ups, app banners, and other annoyances, from the EasyList project." = "뉴스레터 구독 요청, 페이지 내 팝업, 앱 배너 등 방해 요소를 숨깁니다. EasyList 프로젝트에서 제공합니다.";
 "Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project." = "오버레이, 프로모션 배너 및 기타 방해 요소를 숨깁니다. uBlock Origin 프로젝트에서 제공합니다.";
 "Hides pop-ups that sites don't need to work, from the AdGuard project." = "사이트 작동에 필요하지 않은 팝업을 숨깁니다. AdGuard 프로젝트에서 제공합니다.";
 "Hides promotions, copy restrictions, and other annoyances, from the AdGuard project." = "프로모션, 복사 제한 및 기타 방해 요소를 숨깁니다. AdGuard 프로젝트에서 제공합니다.";

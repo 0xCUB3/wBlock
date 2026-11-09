@@ -163,7 +163,7 @@
 "Blocks cookie consent notices on web pages." = "اعلان‌های موافقت با کوکی را در صفحات وب مسدود می‌کند.";
 "Blocks miscellaneous irritating elements not covered by other filters." = "عناصر آزاردهندهٔ متفرقه‌ای را که توسط سایر فیلترها پوشش داده نشده‌اند، مسدود می‌کند.";
 "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "قوانین اسکریپت درون‌خطی این فهرست را Safari نمی‌تواند اعمال کند. برای سایت‌های انگلیسی‌زبان پشتیبانی‌شده، Bypass Paywalls Clean را در Userscripts فعال کنید.";
-"Blocks pop-up ads on web pages." = "تبلیغات پاپ‌آپ را در صفحات وب مسدود می‌کند.";
+"Blocks pop-up and pop-under windows that pages open when you click, from the AdGuard project." = "پنجره‌های پاپ‌آپ و پاپ‌آندری را که صفحه‌ها هنگام کلیک باز می‌کنند مسدود می‌کند. از پروژه AdGuard.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "پاپ‌آپ‌های تبلیغاتی، ثبت‌نام خبرنامه و درخواست‌های اعلان را مسدود می‌کند.";
 "Blocks third-party widgets, chat assistants, and support widgets." = "ابزارک‌های شخص ثالث، دستیاران چت و ابزارک‌های پشتیبانی را مسدود می‌کند.";
 "Building combined filter engine..." = "در حال ساخت موتور فیلتر ترکیبی...";
@@ -1081,7 +1081,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides cookie notices, from the uBlock Origin project." = "اعلان‌های کوکی را پنهان می‌کند. از پروژه uBlock Origin.";
 "Hides live chat and support widgets, from the EasyList project." = "ابزارک‌های گفتگوی زنده و پشتیبانی را پنهان می‌کند. از پروژه EasyList.";
 "Hides newsletter sign-up prompts, from the EasyList project." = "درخواست‌های عضویت در خبرنامه را پنهان می‌کند. از پروژه EasyList.";
-"Hides other annoyances, from the EasyList project." = "سایر عناصر آزاردهنده را پنهان می‌کند. از پروژه EasyList.";
+"Hides newsletter prompts, in-page pop-ups, app banners, and other annoyances, from the EasyList project." = "درخواست‌های عضویت در خبرنامه، پاپ‌آپ‌های درون صفحه، بنرهای اپ و سایر عناصر آزاردهنده را پنهان می‌کند. از پروژه EasyList.";
 "Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project." = "پوشش‌ها، بنرهای تبلیغاتی و سایر عناصر آزاردهنده را پنهان می‌کند. از پروژه uBlock Origin.";
 "Hides pop-ups that sites don't need to work, from the AdGuard project." = "پنجره‌های پاپ‌آپی را که سایت‌ها برای کار کردن به آن‌ها نیاز ندارند پنهان می‌کند. از پروژه AdGuard.";
 "Hides promotions, copy restrictions, and other annoyances, from the AdGuard project." = "تبلیغات ترویجی، محدودیت‌های کپی و سایر عناصر آزاردهنده را پنهان می‌کند. از پروژه AdGuard.";

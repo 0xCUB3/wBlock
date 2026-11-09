@@ -163,7 +163,7 @@
 "Blocks cookie consent notices on web pages." = "Blocks cookie consent notices on web pages.";
 "Blocks miscellaneous irritating elements not covered by other filters." = "Hides annoying page elements that other lists don't cover.";
 "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "Safari can't apply this list's inline script rules. For supported English-language sites, turn on Bypass Paywalls Clean in Userscripts.";
-"Blocks pop-up ads on web pages." = "Blocks pop-up ads on web pages.";
+"Blocks pop-up and pop-under windows that pages open when you click, from the AdGuard project." = "Blocks pop-up and pop-under windows that pages open when you click, from the AdGuard project.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "Blocks promotional pop-ups, newsletter sign-ups, and notification prompts.";
 "Blocks third-party widgets, chat assistants, and support widgets." = "Blocks third-party widgets, chat assistants, and support widgets.";
 "Building combined filter engine..." = "Building combined filter engine...";
@@ -1081,7 +1081,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides cookie notices, from the uBlock Origin project." = "Hides cookie notices, from the uBlock Origin project.";
 "Hides live chat and support widgets, from the EasyList project." = "Hides live chat and support widgets, from the EasyList project.";
 "Hides newsletter sign-up prompts, from the EasyList project." = "Hides newsletter sign-up prompts, from the EasyList project.";
-"Hides other annoyances, from the EasyList project." = "Hides other annoyances, from the EasyList project.";
+"Hides newsletter prompts, in-page pop-ups, app banners, and other annoyances, from the EasyList project." = "Hides newsletter prompts, in-page pop-ups, app banners, and other annoyances, from the EasyList project.";
 "Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project." = "Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project.";
 "Hides pop-ups that sites don't need to work, from the AdGuard project." = "Hides pop-ups that sites don't need to work, from the AdGuard project.";
 "Hides promotions, copy restrictions, and other annoyances, from the AdGuard project." = "Hides promotions, copy restrictions, and other annoyances, from the AdGuard project.";

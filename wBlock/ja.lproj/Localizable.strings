@@ -163,7 +163,7 @@
 "Blocks cookie consent notices on web pages." = "ウェブページ上の Cookie 同意通知をブロックします。";
 "Blocks miscellaneous irritating elements not covered by other filters." = "他のフィルターではカバーできないさまざまな煩わしい要素をブロックします。";
 "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "Safari はこのリストの inline-script ルールを適用できません。対応する英語サイトでは、ユーザースクリプトで Bypass Paywalls Clean を有効にしてください。";
-"Blocks pop-up ads on web pages." = "ウェブページ上のポップアップ広告をブロックします。";
+"Blocks pop-up and pop-under windows that pages open when you click, from the AdGuard project." = "クリック時にページが開くポップアップやポップアンダーをブロックします。AdGuard プロジェクトのスクリプトです。";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "プロモーションのポップアップ、ニュースレターの登録、通知リクエストをブロックします。";
 "Blocks third-party widgets, chat assistants, and support widgets." = "サードパーティのウィジェット、チャットアシスタント、サポートウィジェットをブロックします。";
 "Building combined filter engine..." = "複合フィルターエンジンを構築中...";
@@ -1041,7 +1041,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides cookie notices, from the uBlock Origin project." = "Cookie の通知を非表示にします。uBlock Origin プロジェクトのリストです。";
 "Hides live chat and support widgets, from the EasyList project." = "ライブチャットとサポートのウィジェットを非表示にします。EasyList プロジェクトのリストです。";
 "Hides newsletter sign-up prompts, from the EasyList project." = "ニュースレター登録の案内を非表示にします。EasyList プロジェクトのリストです。";
-"Hides other annoyances, from the EasyList project." = "その他の迷惑要素を非表示にします。EasyList プロジェクトのリストです。";
+"Hides newsletter prompts, in-page pop-ups, app banners, and other annoyances, from the EasyList project." = "ニュースレターの登録案内、ページ内ポップアップ、アプリのバナーなどの迷惑要素を非表示にします。EasyList プロジェクトのリストです。";
 "Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project." = "オーバーレイ、プロモーションバナー、その他の迷惑要素を非表示にします。uBlock Origin プロジェクトのリストです。";
 "Hides pop-ups that sites don't need to work, from the AdGuard project." = "サイトの動作に必要のないポップアップを非表示にします。AdGuard プロジェクトのリストです。";
 "Hides promotions, copy restrictions, and other annoyances, from the AdGuard project." = "プロモーション、コピー制限、その他の迷惑要素を非表示にします。AdGuard プロジェクトのリストです。";

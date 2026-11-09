@@ -163,7 +163,7 @@
 "Blocks cookie consent notices on web pages." = "Блокирует уведомления о согласии на использование файлов cookie на веб-страницах.";
 "Blocks miscellaneous irritating elements not covered by other filters." = "Блокирует различные раздражающие элементы, не улавливаемые другими фильтрами.";
 "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "Safari не может применять правила inline-script из этого списка. Для поддерживаемых англоязычных сайтов включите Bypass Paywalls Clean в разделе пользовательских скриптов.";
-"Blocks pop-up ads on web pages." = "Блокирует всплывающую рекламу на веб-страницах.";
+"Blocks pop-up and pop-under windows that pages open when you click, from the AdGuard project." = "Блокирует всплывающие и фоновые окна, которые страницы открывают при нажатии, из проекта AdGuard.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "Блокирует рекламные всплывающие окна, подписку на рассылку новостей и запросы на уведомления.";
 "Blocks third-party widgets, chat assistants, and support widgets." = "Блокирует сторонние виджеты, чат-помощники и виджеты поддержки.";
 "Building combined filter engine..." = "Сборка комбинированного движка фильтров...";
@@ -1072,7 +1072,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides cookie notices, from the uBlock Origin project." = "Скрывает уведомления о cookie, из проекта uBlock Origin.";
 "Hides live chat and support widgets, from the EasyList project." = "Скрывает виджеты живого чата и поддержки, из проекта EasyList.";
 "Hides newsletter sign-up prompts, from the EasyList project." = "Скрывает предложения подписаться на рассылку, из проекта EasyList.";
-"Hides other annoyances, from the EasyList project." = "Скрывает прочие раздражители, из проекта EasyList.";
+"Hides newsletter prompts, in-page pop-ups, app banners, and other annoyances, from the EasyList project." = "Скрывает предложения подписаться на рассылку, всплывающие окна на странице, баннеры приложений и прочие раздражители, из проекта EasyList.";
 "Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project." = "Скрывает оверлеи, рекламные баннеры и прочие раздражители, из проекта uBlock Origin.";
 "Hides pop-ups that sites don't need to work, from the AdGuard project." = "Скрывает всплывающие окна, которые сайтам не нужны для работы, из проекта AdGuard.";
 "Hides promotions, copy restrictions, and other annoyances, from the AdGuard project." = "Скрывает промо-материалы, ограничения на копирование и прочие раздражители, из проекта AdGuard.";

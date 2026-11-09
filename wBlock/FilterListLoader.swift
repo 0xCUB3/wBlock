@@ -533,7 +533,7 @@ class FilterListLoader {
                 id: UUID(), name: "EasyList – Other Annoyances",
                 url: URL(string: "https://ublockorigin.github.io/uAssetsCDN/thirdparties/easylist-annoyances.txt")!,
                 category: FilterListCategory.annoyances,
-                description: "Hides other annoyances, from the EasyList project."),
+                description: "Hides newsletter prompts, in-page pop-ups, app banners, and other annoyances, from the EasyList project."),
             // Social & Chat reads EasyList Social, EasyList Chat, AdGuard Social, AdGuard Widgets (#1087).
             FilterList(
                 id: UUID(), name: "EasyList – Social Widgets",

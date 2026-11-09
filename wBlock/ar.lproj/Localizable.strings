@@ -163,7 +163,7 @@
 "Blocks cookie consent notices on web pages." = "يحظر إشعارات الموافقة على ملفات تعريف الارتباط على صفحات الويب.";
 "Blocks miscellaneous irritating elements not covered by other filters." = "يحظر العناصر المزعجة المتنوعة التي لا تغطيها الفلاتر الأخرى.";
 "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "لا يستطيع Safari تطبيق قواعد inline-script في هذه القائمة. فعّل Bypass Paywalls Clean في سكربتات المستخدم للمواقع المدعومة باللغة الإنجليزية.";
-"Blocks pop-up ads on web pages." = "يحظر الإعلانات المنبثقة على صفحات الويب.";
+"Blocks pop-up and pop-under windows that pages open when you click, from the AdGuard project." = "يحظر النوافذ المنبثقة والنوافذ الخلفية التي تفتحها الصفحات عند النقر، من مشروع AdGuard.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "يحظر النوافذ المنبثقة الترويجية والاشتراكات في الرسائل الإخبارية وطلبات الإشعارات.";
 "Blocks third-party widgets, chat assistants, and support widgets." = "يحظر أدوات الطرف الثالث ومساعدي الدردشة وأدوات الدعم.";
 "Building combined filter engine..." = "جارٍ بناء محرك الفلاتر المدمج...";
@@ -1072,7 +1072,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides cookie notices, from the uBlock Origin project." = "يخفي إشعارات ملفات تعريف الارتباط، من مشروع uBlock Origin.";
 "Hides live chat and support widgets, from the EasyList project." = "يخفي أدوات الدردشة المباشرة والدعم، من مشروع EasyList.";
 "Hides newsletter sign-up prompts, from the EasyList project." = "يخفي مطالبات الاشتراك في النشرات الإخبارية، من مشروع EasyList.";
-"Hides other annoyances, from the EasyList project." = "يخفي الإزعاجات الأخرى، من مشروع EasyList.";
+"Hides newsletter prompts, in-page pop-ups, app banners, and other annoyances, from the EasyList project." = "يخفي طلبات الاشتراك في النشرات البريدية والنوافذ المنبثقة داخل الصفحة ولافتات التطبيقات وغيرها من الإزعاجات، من مشروع EasyList.";
 "Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project." = "يخفي الطبقات المتراكبة واللافتات الترويجية والإزعاجات الأخرى، من مشروع uBlock Origin.";
 "Hides pop-ups that sites don't need to work, from the AdGuard project." = "يخفي النوافذ المنبثقة التي لا تحتاجها المواقع للعمل، من مشروع AdGuard.";
 "Hides promotions, copy restrictions, and other annoyances, from the AdGuard project." = "يخفي العروض الترويجية وقيود النسخ والإزعاجات الأخرى، من مشروع AdGuard.";

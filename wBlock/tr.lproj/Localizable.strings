@@ -163,7 +163,7 @@
 "Blocks cookie consent notices on web pages." = "Web sayfalarındaki çerez onay bildirimlerini engeller.";
 "Blocks miscellaneous irritating elements not covered by other filters." = "Diğer filtrelerin kapsamadığı çeşitli rahatsız edici öğeleri engeller.";
 "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "Safari, bu listenin satır içi komut dosyası kurallarını uygulayamıyor. Desteklenen İngilizce siteler için kullanıcı betikleri üzerinden Bypass Paywalls Clean'i etkinleştirin.";
-"Blocks pop-up ads on web pages." = "Web sayfalarındaki açılır reklamları engeller.";
+"Blocks pop-up and pop-under windows that pages open when you click, from the AdGuard project." = "Sayfaların tıklamayla açtığı açılır ve arka pencereleri engeller. AdGuard projesinden.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "Tanıtım amaçlı açılır pencereleri, bülten kayıtlarını ve bildirim isteklerini engeller.";
 "Blocks third-party widgets, chat assistants, and support widgets." = "Üçüncü taraf araçları, sohbet asistanlarını ve destek pencere ögelerini engeller.";
 "Building combined filter engine..." = "Birleşik filtreleme motoru oluşturuluyor...";
@@ -1081,7 +1081,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Hides cookie notices, from the uBlock Origin project." = "Çerez bildirimlerini gizler. uBlock Origin projesinden.";
 "Hides live chat and support widgets, from the EasyList project." = "Canlı sohbet ve destek widget'larını gizler. EasyList projesinden.";
 "Hides newsletter sign-up prompts, from the EasyList project." = "Bülten abonelik istemlerini gizler. EasyList projesinden.";
-"Hides other annoyances, from the EasyList project." = "Diğer can sıkıcı öğeleri gizler. EasyList projesinden.";
+"Hides newsletter prompts, in-page pop-ups, app banners, and other annoyances, from the EasyList project." = "Bülten abonelik istemlerini, sayfa içi açılır pencereleri, uygulama afişlerini ve diğer can sıkıcı öğeleri gizler. EasyList projesinden.";
 "Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project." = "Kaplamaları, tanıtım afişlerini ve diğer can sıkıcı öğeleri gizler. uBlock Origin projesinden.";
 "Hides pop-ups that sites don't need to work, from the AdGuard project." = "Sitelerin çalışması için gerekli olmayan açılır pencereleri gizler. AdGuard projesinden.";
 "Hides promotions, copy restrictions, and other annoyances, from the AdGuard project." = "Promosyonları, kopyalama kısıtlamalarını ve diğer can sıkıcı öğeleri gizler. AdGuard projesinden.";

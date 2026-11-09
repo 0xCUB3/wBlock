@@ -163,7 +163,7 @@
 "Blocks cookie consent notices on web pages." = "Bloque les avis de consentement aux cookies sur les pages web.";
 "Blocks miscellaneous irritating elements not covered by other filters." = "Bloque divers éléments irritants non couverts par d’autres filtres.";
 "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "Safari ne peut pas appliquer les règles inline-script de cette liste. Activez Bypass Paywalls Clean dans Scripts utilisateur pour les sites anglophones pris en charge.";
-"Blocks pop-up ads on web pages." = "Bloque les publicités pop-up sur les pages web.";
+"Blocks pop-up and pop-under windows that pages open when you click, from the AdGuard project." = "Bloque les fenêtres pop-up et pop-under que les pages ouvrent au clic. Du projet AdGuard.";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "Bloque les fenêtres contextuelles promotionnelles, les inscriptions à la newsletter et les demandes de notification.";
 "Blocks third-party widgets, chat assistants, and support widgets." = "Bloque les widgets tiers, les assistants de discussion et les widgets d'assistance.";
 "Building combined filter engine..." = "Construction d'un moteur de filtre combiné...";
@@ -1072,7 +1072,7 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Hides cookie notices, from the uBlock Origin project." = "Masque les avis de cookies. Du projet uBlock Origin.";
 "Hides live chat and support widgets, from the EasyList project." = "Masque les widgets de chat en direct et d'assistance. Du projet EasyList.";
 "Hides newsletter sign-up prompts, from the EasyList project." = "Masque les invitations à s'abonner à la newsletter. Du projet EasyList.";
-"Hides other annoyances, from the EasyList project." = "Masque d'autres nuisances. Du projet EasyList.";
+"Hides newsletter prompts, in-page pop-ups, app banners, and other annoyances, from the EasyList project." = "Masque les invitations aux newsletters, les pop-ups intégrés aux pages, les bannières d'apps et d'autres nuisances. Du projet EasyList.";
 "Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project." = "Masque les superpositions, les bannières promotionnelles et autres nuisances. Du projet uBlock Origin.";
 "Hides pop-ups that sites don't need to work, from the AdGuard project." = "Masque les fenêtres pop-up dont les sites n'ont pas besoin pour fonctionner. Du projet AdGuard.";
 "Hides promotions, copy restrictions, and other annoyances, from the AdGuard project." = "Masque les promotions, les restrictions de copie et autres nuisances. Du projet AdGuard.";

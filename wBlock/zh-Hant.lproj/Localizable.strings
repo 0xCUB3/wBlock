@@ -163,7 +163,7 @@
 "Blocks cookie consent notices on web pages." = "封鎖網頁上的 cookie 同意通知。";
 "Blocks miscellaneous irritating elements not covered by other filters." = "封鎖其他過濾器未涵蓋的各種惱人元素。";
 "Safari cannot apply this list's inline-script rules. Enable Bypass Paywalls Clean in Userscripts for supported English-language sites." = "Safari 無法套用此清單的 inline-script 規則。對於支援的英語網站，請在使用者腳本中啟用 Bypass Paywalls Clean。";
-"Blocks pop-up ads on web pages." = "封鎖網頁上的彈出式廣告。";
+"Blocks pop-up and pop-under windows that pages open when you click, from the AdGuard project." = "封鎖網頁在點按時開啟的彈出式視窗和背後彈出視窗，來自 AdGuard 專案。";
 "Blocks promotional pop-ups, newsletter sign-ups, and notification requests." = "封鎖促銷彈出視窗、電子報訂閱和通知請求。";
 "Blocks third-party widgets, chat assistants, and support widgets." = "封鎖第三方小工具、聊天助理和支援小工具。";
 "Building combined filter engine..." = "正在建置合併的過濾器引擎...";
@@ -1072,7 +1072,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides cookie notices, from the uBlock Origin project." = "隱藏 Cookie 通知，來自 uBlock Origin 專案。";
 "Hides live chat and support widgets, from the EasyList project." = "隱藏即時聊天和支援小工具，來自 EasyList 專案。";
 "Hides newsletter sign-up prompts, from the EasyList project." = "隱藏電子報訂閱提示，來自 EasyList 專案。";
-"Hides other annoyances, from the EasyList project." = "隱藏其他惱人內容，來自 EasyList 專案。";
+"Hides newsletter prompts, in-page pop-ups, app banners, and other annoyances, from the EasyList project." = "隱藏電子報訂閱提示、頁內彈出視窗、App 橫幅和其他惱人內容，來自 EasyList 專案。";
 "Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project." = "隱藏覆蓋層、促銷橫幅和其他惱人內容，來自 uBlock Origin 專案。";
 "Hides pop-ups that sites don't need to work, from the AdGuard project." = "隱藏網站正常運作並不需要的彈出視窗，來自 AdGuard 專案。";
 "Hides promotions, copy restrictions, and other annoyances, from the AdGuard project." = "隱藏促銷內容、複製限制和其他惱人內容，來自 AdGuard 專案。";
