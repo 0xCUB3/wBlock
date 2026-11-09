@@ -706,8 +706,9 @@ final class FilterListUpdater: @unchecked Sendable {
         // Phase 1: Try checking metadata URL if available
         if let metaURL = metaURL {
             do {
-                let (data, _) = try await urlSession.data(from: metaURL)
-                if let onlineContent = String(data: data, encoding: .utf8) {
+                let (data, response) = try await urlSession.data(from: metaURL)
+                if (response as? HTTPURLResponse)?.statusCode == 200,
+                   let onlineContent = String(data: data, encoding: .utf8) {
                     var tempScript = UserScript(name: script.name, content: onlineContent)
                     tempScript.parseMetadata()
 
