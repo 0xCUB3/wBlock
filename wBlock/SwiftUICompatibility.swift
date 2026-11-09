@@ -116,9 +116,12 @@ private struct SearchableCompatModifier: ViewModifier {
         if #available(iOS 26.0, macOS 26.0, *), usesToolbarSearchField {
             content
                 .modifier(SearchKeyboardDismissal(isPresented: isPresented))
-        } else if #available(iOS 17.0, macOS 14.0, *) {
+        } else if #available(iOS 17.1, macOS 14.1, *) {
+            // The bar stays up while searching: hiding it under the iPad's
+            // drawer field and bringing it back on exit made the page jump (#1100).
             content
                 .searchable(text: text, isPresented: isPresented, placement: placement, prompt: prompt)
+                .searchPresentationToolbarBehavior(.avoidHidingContent)
                 .modifier(SearchKeyboardDismissal(isPresented: isPresented))
         } else {
             content
