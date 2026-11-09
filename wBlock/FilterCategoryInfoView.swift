@@ -10,10 +10,11 @@ struct FilterCategoryInfoView: View {
 
     // Picking languages only previews their lists; Enable Recommended applies
     // them, so a tap in the picker can't switch lists on behind the sheet (#1087).
+    // The picks are saved as made, so closing the sheet keeps them (#1100).
     @State private var selectedLanguages = Set(
-        ((UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard)
-            .stringArray(forKey: OnboardingView.selectedLanguagesDefaultsKey) ?? []).map { $0.lowercased() }
+        (Self.defaults.stringArray(forKey: OnboardingView.selectedLanguagesDefaultsKey) ?? []).map { $0.lowercased() }
     )
+    private static var defaults: UserDefaults { UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard }
     /// Untouched, the picker shows the choices already on, or Cookie Notices
     /// when none is.
     @State private var pickedChoices: Set<AnnoyanceChoice>?
@@ -62,6 +63,9 @@ struct FilterCategoryInfoView: View {
                     selectedLanguages: $selectedLanguages,
                     options: languageOptions
                 )
+                .onChangeCompat(of: selectedLanguages) { languages in
+                    Self.defaults.set(Array(languages).sorted(), forKey: OnboardingView.selectedLanguagesDefaultsKey)
+                }
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Lists for Your Languages")
                         .font(.headline)
@@ -79,7 +83,7 @@ struct FilterCategoryInfoView: View {
             }
 
             Button("Enable Recommended") {
-                enableRecommended()
+                onEnableRecommended(Set(recommendedFilters.map(\.id)))
                 dismiss()
             }
             .buttonStyle(.borderedProminent)
@@ -88,14 +92,6 @@ struct FilterCategoryInfoView: View {
         #if os(macOS)
         .frame(width: 420)
         #endif
-    }
-
-    private func enableRecommended() {
-        if category == .foreign {
-            (UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard)
-                .set(Array(selectedLanguages).sorted(), forKey: OnboardingView.selectedLanguagesDefaultsKey)
-        }
-        onEnableRecommended(Set(recommendedFilters.map(\.id)))
     }
 }
 
