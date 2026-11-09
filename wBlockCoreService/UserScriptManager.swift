@@ -2261,6 +2261,9 @@ public class UserScriptManager: ObservableObject {
             )
             let targetID = existingIndex.map { mergedScripts[$0].id } ?? restoredScript.id
             let scriptToRestore = backupCopy(of: restoredScript, id: targetID)
+            // The backup is now the latest choice; an earlier toggle in this
+            // session must not be replayed over it by the next disk sync.
+            latestUserScriptIntentValues[targetID] = scriptToRestore.isEnabled
 
             if let existingIndex {
                 mergedScripts[existingIndex] = scriptToRestore
