@@ -249,7 +249,20 @@ extension AppFilterManager {
         limitPreviewTask?.cancel()
         limitPreviewTask = nil
         isApplyInFlight = true
-        await SharedAutoUpdateManager.shared.setForegroundApplyInProgress(true)
+        // An auto-update run in this process holds no lease on iOS; this claim
+        // is what keeps the two from rebuilding the same targets at once.
+        guard await SharedAutoUpdateManager.shared.beginForegroundWork() else {
+            isApplyInFlight = false
+            await ConcurrentLogManager.shared.warning(
+                .filterApply,
+                LocalizedStrings.text(
+                    "Skipped overlapping apply request",
+                    comment: "Apply pipeline concurrency guard"
+                ),
+                metadata: ["reason": "auto_update_running"]
+            )
+            return false
+        }
         #if os(macOS)
         // Keep FilterUpdateAgent from rebuilding the same targets mid-apply.
         // Await without blocking the main actor; refuse the apply if ownership
@@ -263,7 +276,7 @@ extension AppFilterManager {
             timeout: 60
         ) else {
             isApplyInFlight = false
-            await SharedAutoUpdateManager.shared.setForegroundApplyInProgress(false)
+            await SharedAutoUpdateManager.shared.endForegroundWork()
             await ConcurrentLogManager.shared.warning(
                 .filterApply,
                 LocalizedStrings.text(
@@ -278,7 +291,7 @@ extension AppFilterManager {
         #endif
         defer {
             isApplyInFlight = false
-            Task { await SharedAutoUpdateManager.shared.setForegroundApplyInProgress(false) }
+            Task { await SharedAutoUpdateManager.shared.endForegroundWork() }
         }
         ApplyCancellation.reset()
         let applyTask = Task {

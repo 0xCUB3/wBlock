@@ -238,12 +238,17 @@ public actor SharedAutoUpdateManager {
     private var lastStatusCheck: Date?
     private let statusCacheTTL: TimeInterval = 5.0 // 5 seconds cache
     private var runInProgress = false
-    /// Set by the app around its own apply so an in-process auto-update run
-    /// does not rebuild the same targets concurrently (#821).
-    private var foregroundApplyInProgress = false
+    /// Held by the app around its own update check and apply so an in-process
+    /// run does not rebuild the same targets concurrently (#821), and the app
+    /// does not check or apply on top of a run that has started.
+    private var foregroundGate = ForegroundRunGate()
 
-    public func setForegroundApplyInProgress(_ active: Bool) {
-        foregroundApplyInProgress = active
+    public func beginForegroundWork() -> Bool {
+        foregroundGate.beginForegroundWork()
+    }
+
+    public func endForegroundWork() {
+        foregroundGate.endForegroundWork()
     }
 
     /// Stage of a run in this process, so the app can show a run it did not start.
@@ -722,7 +727,10 @@ public actor SharedAutoUpdateManager {
             return .skipped(reason: "already_running")
         }
         runInProgress = true
-        defer { runInProgress = false }
+        defer {
+            runInProgress = false
+            foregroundGate.finishRun()
+        }
 
         await ProtobufDataManager.shared.waitUntilLoaded()
 
@@ -734,7 +742,7 @@ public actor SharedAutoUpdateManager {
             appendSkipTelemetry(trigger: trigger, reason: "onboarding_incomplete")
             return .skipped(reason: "onboarding_incomplete")
         }
-        if foregroundApplyInProgress {
+        if foregroundGate.foregroundWork > 0 {
             appendSkipTelemetry(trigger: trigger, reason: "foreground_apply")
             return .skipped(reason: "foreground_apply")
         }
@@ -877,6 +885,13 @@ public actor SharedAutoUpdateManager {
             }
         }
 
+        // The checks above await, so app work may have begun since the first
+        // look; claiming here leaves no suspension between check and start.
+        guard foregroundGate.startRun() else {
+            appendSkipTelemetry(trigger: trigger, reason: "foreground_apply")
+            return .skipped(reason: "foreground_apply")
+        }
+
         if forceFlag {
             await ProtobufDataManager.shared.setAutoUpdateForceNext(false)
         }
@@ -900,6 +915,8 @@ public actor SharedAutoUpdateManager {
 
         func finishStartedRun(_ outcome: AutoUpdateRunOutcome) async -> AutoUpdateRunOutcome {
             await ProtobufDataManager.shared.setAutoUpdateIsRunning(false)
+            // Before reporting, so the app's follow-up apply is not refused.
+            foregroundGate.finishRun()
             await reportRunProgress(.finished)
             let didPersistCleanup = await ProtobufDataManager.shared.saveDataImmediately()
             invalidateStatusCache()

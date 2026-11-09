@@ -49,8 +49,12 @@ extension AppFilterManager {
         scope: UpdateCheckScope = .all,
         presentation: UpdateCheckPresentation = .blocking
     ) async {
-        // A running auto-update is already checking and applying the same lists.
-        guard !isAutoUpdateRunning else { return }
+        // A running auto-update is already checking and applying the same lists;
+        // show its progress instead of ignoring the request.
+        guard !isAutoUpdateRunning else {
+            showBackgroundApplyProgress()
+            return
+        }
         if presentation == .refresh {
             suppressBlockingOverlay = true
         }
@@ -64,6 +68,11 @@ extension AppFilterManager {
                 suppressBlockingOverlay = false
             }
         }
+
+        // Holds off an auto-update run until the check ends. One that started
+        // alongside it closed the review sheet when it finished.
+        guard await SharedAutoUpdateManager.shared.beginForegroundWork() else { return }
+        defer { Task { await SharedAutoUpdateManager.shared.endForegroundWork() } }
 
         statusDescription = LocalizedStrings.text("Checking for updates...", comment: "Update check status")
         progress = 0

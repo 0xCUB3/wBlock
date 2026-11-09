@@ -148,6 +148,8 @@ compile_direct_test userscript-world-isolation scripts/test_userscript_world_iso
 compile_direct_test tab-selection-isolation wBlock/AppTabView.swift scripts/test_tab_selection_isolation.swift
 compile_direct_test shared-auto-update-lease \
   wBlockCoreService/SharedAutoUpdateLease.swift scripts/test_shared_auto_update_lease.swift
+compile_direct_test foreground-run-gate \
+  wBlockCoreService/ForegroundRunGate.swift scripts/test_foreground_run_gate.swift
 
 # Core-module API tests. Source-only wBlock tests add their production source
 # explicitly; the remaining tests use the freshly built core framework.
