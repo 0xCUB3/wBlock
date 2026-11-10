@@ -263,9 +263,11 @@ impl Emitted {
                 if let Some(span) = entry.domain.as_deref().filter(|s| s.top) {
                     entry.shape.set_page(prune::Page::If(span.domains.iter().map(|d| prune::domain_host(d)).collect()));
                 }
-                if !entry.shape.ignore {
+                if tier == Tier::GenericHide {
+                    seen.add_hide(&entry.shape);
+                } else if !entry.shape.ignore {
                     seen.add(&entry.shape);
-                } else if !seen.overlaps(&entry.shape) {
+                } else if !seen.overlaps(&entry.shape, matches!(tier, Tier::HideException | Tier::DocumentException)) {
                     continue;
                 }
                 order.push(i);

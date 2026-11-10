@@ -252,6 +252,8 @@ pub(crate) struct Seen {
     all: FxHashSet<Sig>,
     /// Rules not anchored at a host.
     floating: FxHashSet<Sig>,
+    /// Cosmetic hides, which only the page exceptions meant for them cancel.
+    hides: FxHashSet<Sig>,
     /// Host -> (subdomains too, signature) of the rules anchored there.
     hosts: FxHashMap<Box<str>, FxHashSet<(bool, Sig)>>,
     /// Host -> signatures of the rules anchored strictly below it.
@@ -276,10 +278,24 @@ impl Seen {
         }
     }
 
-    /// Whether some rule seen so far can match a load `ignore` matches.
-    pub(crate) fn overlaps(&mut self, ignore: &Shape) -> bool {
-        let Seen { pages, all, floating, hosts, below } = self;
+    /// Records a cosmetic hide. A network exception on a load of the page
+    /// also keeps that load from adding the hides, which uBO's exception
+    /// does not do and every other load of the page undoes, so a hide alone
+    /// keeps no network exception (`overlaps`).
+    pub(crate) fn add_hide(&mut self, shape: &Shape) {
+        let sig = self.pages.sig(shape);
+        self.hides.insert(sig);
+    }
+
+    /// Whether some rule seen so far can match a load `ignore` matches. The
+    /// hides count when `hides`: for `$generichide`, `$elemhide` and
+    /// `$document` exceptions.
+    pub(crate) fn overlaps(&mut self, ignore: &Shape, hides: bool) -> bool {
+        let Seen { pages, all, floating, hosts, below, hides: hidden } = self;
         let sig = pages.sig(ignore);
+        if hides && hidden.iter().any(|&s| pages.meet(sig, s)) {
+            return true;
+        }
         let Some(host) = &ignore.url else {
             return all.iter().any(|&s| pages.meet(sig, s));
         };
@@ -313,7 +329,7 @@ mod tests {
         ignore.ignore = true;
         let mut seen = Seen::default();
         seen.add(&block);
-        seen.overlaps(&ignore)
+        seen.overlaps(&ignore, false)
     }
 
     const HS: &str = "^[^:]+://+([^:/]+\\.)?";
@@ -411,10 +427,10 @@ mod tests {
         let mut seen = Seen::default();
         let mut ignore = url(&format!("{HS}ads\\.com/"));
         ignore.ignore = true;
-        assert!(!seen.overlaps(&ignore));
+        assert!(!seen.overlaps(&ignore, false));
         seen.add(&url(&format!("{HS}other\\.com[/:?#]")));
-        assert!(!seen.overlaps(&ignore));
+        assert!(!seen.overlaps(&ignore, false));
         seen.add(&url(&format!("{HS}com/x")));
-        assert!(seen.overlaps(&ignore));
+        assert!(seen.overlaps(&ignore, false));
     }
 }
