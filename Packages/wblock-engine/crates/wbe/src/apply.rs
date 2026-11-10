@@ -1408,7 +1408,7 @@ fn ignore_rule(site: &str) -> Option<WkRule> {
     match site.strip_suffix(".*") {
         Some(name) => {
             let pattern = format!(
-                r"^[^:]+://+([^:/]+\.)?{}\.[^/:]+([/:?#].*)?$",
+                r"^[a-z]+://([a-z0-9._-]+\.)?{}\.[^/:]+([/:?#].*)?$",
                 regex_escape(name)
             );
             trigger.if_top_url = Some(vec![pattern]);
@@ -2082,7 +2082,7 @@ mod tests {
             json!([{"slot":1,"lists":[{"list":0}]}, {"slot":2,"lists":[{"list":1}]}, {"slot":3,"lists":[{"list":2}]}]),
             json!({}),
         );
-        let shared = ["^[^:]+://+([^:/]+\\.)?", ".*", ""];
+        let shared = ["^[a-z]+://([a-z0-9._-]+\\.)?", ".*", ""];
         let automata = |t| -> FxHashSet<String> {
             let rules = rules(&plan, t);
             let prefixes = rules.iter().map(|r| crate::compile::regex::automaton_prefix(r["trigger"]["url-filter"].as_str().unwrap()));

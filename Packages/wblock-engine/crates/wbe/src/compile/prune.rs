@@ -10,7 +10,7 @@
 //! at hosts that cannot be the same. Everything else, including any
 //! url-filter not anchored at a whole host, overlaps.
 //!
-//! Host anchors: `^[^:]+://+([^:/]+\.)?host` or `^[^:]+://+host`, then `/`,
+//! Host anchors: `^[a-z]+://([a-z0-9._-]+\.)?host` or `^[a-z]+://host`, then `/`,
 //! `:`, `[/:?#]`, `\?` or `$`. In an http, https, ws or wss URL the text
 //! between `//` and the first `/` or `:` (the authority, up to a port or
 //! password) holds no `?` or `#`, so such a filter matches only when that
@@ -25,8 +25,7 @@
 use crate::webkit::{WkLoadContext, WkLoadType, WkResourceType, WkTrigger};
 use rustc_hash::{FxHashMap, FxHashSet};
 
-const HOST_START: &str = "^[^:]+://+([^:/]+\\.)?";
-const EXACT_START: &str = "^[^:]+://+";
+use super::regex::{EXACT_START, HOST_START};
 /// What may follow a host for the filter to end the host there.
 const HOST_ENDS: [&str; 5] = ["[/:?#]", "/", ":", "\\?", "$"];
 
@@ -332,7 +331,7 @@ mod tests {
         seen.overlaps(&ignore, false)
     }
 
-    const HS: &str = "^[^:]+://+([^:/]+\\.)?";
+    const HS: &str = "^[a-z]+://([a-z0-9._-]+\\.)?";
 
     #[test]
     fn anchors_are_whole_hosts_only() {
@@ -340,7 +339,7 @@ mod tests {
         assert_eq!(a(&format!("{HS}ads\\.com[/:?#]")), Some(("ads.com".into(), true, true)));
         assert_eq!(a(&format!("{HS}ads\\.com/x\\.js")), Some(("ads.com".into(), true, false)));
         assert_eq!(a(&format!("{HS}ads\\.com:8080")), Some(("ads.com".into(), true, false)));
-        assert_eq!(a("^[^:]+://+ads\\.com[/:?#]"), Some(("ads.com".into(), false, true)));
+        assert_eq!(a("^[a-z]+://ads\\.com[/:?#]"), Some(("ads.com".into(), false, true)));
         assert_eq!(a(&format!("{HS}Ads\\.com/")), Some(("ads.com".into(), true, false)));
         // A host prefix, a wildcard, a separator class or an entity is not one.
         assert_eq!(a(&format!("{HS}ads\\.com")), None);
@@ -374,8 +373,8 @@ mod tests {
         // An unanchored exception meets any block.
         assert!(overlaps(url(&other), url("/x\\.js")));
         // Exact hosts do not reach subdomains.
-        assert!(!overlaps(url("^[^:]+://+cdn\\.ads\\.com/"), url("^[^:]+://+ads\\.com/")));
-        assert!(overlaps(url("^[^:]+://+cdn\\.ads\\.com/"), url(&ads)));
+        assert!(!overlaps(url("^[a-z]+://cdn\\.ads\\.com/"), url("^[a-z]+://ads\\.com/")));
+        assert!(overlaps(url("^[a-z]+://cdn\\.ads\\.com/"), url(&ads)));
     }
 
     #[test]

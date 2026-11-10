@@ -888,7 +888,7 @@ example.com##+js(set-constant, adsEnabled, false)
     #[test]
     fn popup_prefilter_literal_is_required_by_every_match() {
         for (pattern, literal) in [
-            (r"^[^:]+://+([^:/]+\.)?ads\.example[/:?#]", "ads.example"),
+            (r"^[a-z]+://([a-z0-9._-]+\.)?ads\.example[/:?#]", "ads.example"),
             (r"/pop\.php\?id=[0-9]+", "/pop.php?id="),
             (r"adsx?y{0,3}zzzz", "zzzz"),
             (r"(foo)?barbaz", "barbaz"),
