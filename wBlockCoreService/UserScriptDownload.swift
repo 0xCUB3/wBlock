@@ -10,9 +10,7 @@ enum UserScriptDownload {
 
     static func fallbackURLs(for primary: URL) -> [URL] {
         guard BuiltInUserScripts.protectedURLs.contains(primary.absoluteString),
-              primary.host == "raw.githubusercontent.com",
-              primary.path.hasPrefix("/ryanbr/TwitchAdSolutions/")
-                || primary.path.hasPrefix("/0xCUB3/wBlock-userscripts/")
+              primary.host == "raw.githubusercontent.com"
         else { return [] }
         return FilterListURLMirror.fallbackURLs(for: primary).filter {
             $0.scheme == "https" && $0.host == "cdn.jsdelivr.net"

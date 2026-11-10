@@ -45,9 +45,10 @@ struct UserScriptDownloadTests {
     @MainActor
     static func main() async throws {
         let twitch = URL(string: "https://raw.githubusercontent.com/ryanbr/TwitchAdSolutions/master/vaft/vaft.user.js")!
-        let allowed = [twitch, URL(string: BuiltInUserScripts.darkReaderURL)!,
-                       URL(string: BuiltInUserScripts.deArrowURL)!, URL(string: BuiltInUserScripts.playerCleanerURL)!,
-                       URL(string: BuiltInUserScripts.tubeCleanerURL)!]
+        // Every built-in served from GitHub, including Return YouTube Dislike's encoded path (#1106).
+        let allowed = BuiltInUserScripts.definitions.compactMap { URL(string: $0.url) }
+            .filter { $0.host == "raw.githubusercontent.com" }
+        expect(allowed.contains(twitch) && allowed.contains { $0.path.hasPrefix("/Anarios/") }, "GitHub built-ins are covered")
         for primary in allowed {
             let parts = URLComponents(url: primary, resolvingAgainstBaseURL: false)!.percentEncodedPath.split(separator: "/")
             let expected = URL(string: "https://cdn.jsdelivr.net/gh/\(parts[0])/\(parts[1])@\(parts[2])/\(parts.dropFirst(3).joined(separator: "/"))")!
