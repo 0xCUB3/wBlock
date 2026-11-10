@@ -30,14 +30,6 @@
     "message": "지우기",
     "description": "Button label to clear all zapper rules for the current site."
   },
-  "popup_hint_tap_to_hide": {
-    "message": "페이지의 요소를 탭한 다음 \"규칙 추가\"를 선택하면 계속 숨겨지고, \"한 번만 숨기기\"를 선택하면 새로 고침할 때까지 숨겨집니다.",
-    "description": "Help text shown in the popup for how to use the element zapper."
-  },
-  "popup_hint_click_to_hide": {
-    "message": "페이지의 요소를 클릭한 다음 \"규칙 추가\"를 선택하면 계속 숨겨지고, \"한 번만 숨기기\"를 선택하면 새로 고침할 때까지 숨겨집니다.",
-    "description": "Help text shown in the popup on the Mac for how to use the element zapper."
-  },
   "popup_rules": {
     "message": "규칙",
     "description": "Label for the disclosure button that expands saved zapper rules."
@@ -285,9 +277,5 @@
   "popup_autoplay_site": {
     "message": "이 사이트에서 자동 재생",
     "description": "Label for the per-site autoplay switch; overrides the global default either way."
-  },
-  "popup_autoplay_hint": {
-    "message": "끄면 탭하거나 클릭할 때까지 미디어가 일시정지 상태로 유지됩니다. 사이트 스위치가 기본값보다 우선합니다.",
-    "description": "Hint explaining the Autoplay switches."
   }
 }

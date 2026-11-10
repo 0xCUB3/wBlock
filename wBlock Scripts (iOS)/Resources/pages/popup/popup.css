@@ -425,11 +425,6 @@ body {
   padding: 2px 0 0;
 }
 
-.popup-body > .hint {
-  padding: 6px 16px 12px;
-  margin-top: -2px;
-}
-
 .disclosure {
   width: 100%;
   margin: 0;

@@ -30,14 +30,6 @@
     "message": "クリア",
     "description": "Button label to clear all zapper rules for the current site."
   },
-  "popup_hint_tap_to_hide": {
-    "message": "ページ上の要素をタップし、「ルール追加」で非表示を維持するか、「一度だけ非表示」で再読み込みまで非表示にします。",
-    "description": "Help text shown in the popup for how to use the element zapper."
-  },
-  "popup_hint_click_to_hide": {
-    "message": "ページ上の要素をクリックし、「ルール追加」で非表示を維持するか、「一度だけ非表示」で再読み込みまで非表示にします。",
-    "description": "Help text shown in the popup on the Mac for how to use the element zapper."
-  },
   "popup_rules": {
     "message": "ルール",
     "description": "Label for the disclosure button that expands saved zapper rules."
@@ -285,9 +277,5 @@
   "popup_autoplay_site": {
     "message": "このサイトで自動再生",
     "description": "Label for the per-site autoplay switch; overrides the global default either way."
-  },
-  "popup_autoplay_hint": {
-    "message": "オフの場合、タップまたはクリックするまでメディアは一時停止のままです。サイトのスイッチが既定を上書きします。",
-    "description": "Hint explaining the Autoplay switches."
   }
 }

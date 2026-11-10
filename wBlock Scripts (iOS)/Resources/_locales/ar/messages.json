@@ -30,14 +30,6 @@
     "message": "مسح",
     "description": "Button label to clear all zapper rules for the current site."
   },
-  "popup_hint_tap_to_hide": {
-    "message": "اضغط على عنصر في الصفحة، ثم اختر \"إضافة قاعدة\" للإبقاء على إخفائه، أو \"إخفاء مرة واحدة\" لإخفائه حتى إعادة التحميل.",
-    "description": "Help text shown in the popup for how to use the element zapper."
-  },
-  "popup_hint_click_to_hide": {
-    "message": "انقر على عنصر في الصفحة، ثم اختر \"إضافة قاعدة\" للإبقاء على إخفائه، أو \"إخفاء مرة واحدة\" لإخفائه حتى إعادة التحميل.",
-    "description": "Help text shown in the popup on the Mac for how to use the element zapper."
-  },
   "popup_rules": {
     "message": "القواعد",
     "description": "Label for the disclosure button that expands saved zapper rules."
@@ -285,9 +277,5 @@
   "popup_autoplay_site": {
     "message": "التشغيل التلقائي في هذا الموقع",
     "description": "Label for the per-site autoplay switch; overrides the global default either way."
-  },
-  "popup_autoplay_hint": {
-    "message": "عند الإيقاف، تبقى الوسائط متوقفة حتى تنقر عليها. مفتاح الموقع يتجاوز الإعداد الافتراضي.",
-    "description": "Hint explaining the Autoplay switches."
   }
 }

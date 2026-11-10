@@ -45,11 +45,9 @@ function t(key, substitutions, fallback = '') {
 }
 
 function localizeStaticPopupText() {
-    // Say "click" where the main pointer is a mouse or trackpad, "tap" on touch.
-    const prefersClick = window.matchMedia('(pointer: fine)').matches;
     const nodes = document.querySelectorAll('[data-i18n]');
     for (const node of nodes) {
-        const key = (prefersClick && node.getAttribute('data-i18n-click')) || node.getAttribute('data-i18n');
+        const key = node.getAttribute('data-i18n');
         if (!key) continue;
         const localized = t(key, undefined, '');
         if (!localized) continue;

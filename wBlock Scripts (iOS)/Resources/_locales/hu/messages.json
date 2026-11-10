@@ -30,14 +30,6 @@
     "message": "Törlés",
     "description": "Button label to clear all zapper rules for the current site."
   },
-  "popup_hint_tap_to_hide": {
-    "message": "Koppints az oldalon egy elemre, majd válaszd a „Szabály hozzáadása” opciót, ha véglegesen el szeretnéd rejteni, vagy az „Elrejtés egyszer” opciót, ha csak az oldal újratöltéséig.",
-    "description": "Help text shown in the popup for how to use the element zapper."
-  },
-  "popup_hint_click_to_hide": {
-    "message": "Kattints az oldalon egy elemre, majd válaszd a „Szabály hozzáadása” opciót, ha véglegesen el szeretnéd rejteni, vagy az „Elrejtés egyszer” opciót, ha csak az oldal újratöltéséig.",
-    "description": "Help text shown in the popup on the Mac for how to use the element zapper."
-  },
   "popup_rules": {
     "message": "Szabályok",
     "description": "Label for the disclosure button that expands saved zapper rules."
@@ -285,9 +277,5 @@
   "popup_autoplay_site": {
     "message": "Automatikus lejátszás ezen a webhelyen",
     "description": "Label for the per-site autoplay switch; overrides the global default either way."
-  },
-  "popup_autoplay_hint": {
-    "message": "Kikapcsolva a média szünetel, amíg rá nem koppintasz vagy kattintasz. A webhely kapcsolója felülírja az alapértelmezést.",
-    "description": "Hint explaining the Autoplay switches."
   }
 }

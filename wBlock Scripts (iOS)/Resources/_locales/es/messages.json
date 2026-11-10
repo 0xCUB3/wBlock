@@ -30,14 +30,6 @@
     "message": "Borrar",
     "description": "Button label to clear all zapper rules for the current site."
   },
-  "popup_hint_tap_to_hide": {
-    "message": "Toca un elemento de la página y luego elige «Agregar regla» para mantenerlo oculto o «Ocultar una vez» para ocultarlo hasta que recargues.",
-    "description": "Help text shown in the popup for how to use the element zapper."
-  },
-  "popup_hint_click_to_hide": {
-    "message": "Haz clic en un elemento de la página y luego elige «Agregar regla» para mantenerlo oculto o «Ocultar una vez» para ocultarlo hasta que recargues.",
-    "description": "Help text shown in the popup on the Mac for how to use the element zapper."
-  },
   "popup_rules": {
     "message": "Reglas",
     "description": "Label for the disclosure button that expands saved zapper rules."
@@ -285,9 +277,5 @@
   "popup_autoplay_site": {
     "message": "Reproducción automática en este sitio",
     "description": "Label for the per-site autoplay switch; overrides the global default either way."
-  },
-  "popup_autoplay_hint": {
-    "message": "Cuando está desactivado, los medios permanecen en pausa hasta que los toques o hagas clic. El interruptor del sitio anula el valor predeterminado.",
-    "description": "Hint explaining the Autoplay switches."
   }
 }

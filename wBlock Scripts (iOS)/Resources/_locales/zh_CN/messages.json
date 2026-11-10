@@ -30,14 +30,6 @@
     "message": "清除",
     "description": "Button label to clear all zapper rules for the current site."
   },
-  "popup_hint_tap_to_hide": {
-    "message": "点按页面上的元素，然后选择“添加规则”永久隐藏，或选择“仅隐藏一次”在重新加载前隐藏。",
-    "description": "Help text shown in the popup for how to use the element zapper."
-  },
-  "popup_hint_click_to_hide": {
-    "message": "点击页面上的元素，然后选择“添加规则”永久隐藏，或选择“仅隐藏一次”在重新加载前隐藏。",
-    "description": "Help text shown in the popup on the Mac for how to use the element zapper."
-  },
   "popup_rules": {
     "message": "规则",
     "description": "Label for the disclosure button that expands saved zapper rules."
@@ -285,9 +277,5 @@
   "popup_autoplay_site": {
     "message": "在此网站自动播放",
     "description": "Label for the per-site autoplay switch; overrides the global default either way."
-  },
-  "popup_autoplay_hint": {
-    "message": "关闭后，媒体会保持暂停，直到你点按或点击。网站开关会覆盖默认设置。",
-    "description": "Hint explaining the Autoplay switches."
   }
 }

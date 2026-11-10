@@ -30,14 +30,6 @@
     "message": "Εκκαθάριση",
     "description": "Button label to clear all zapper rules for the current site."
   },
-  "popup_hint_tap_to_hide": {
-    "message": "Πατήστε ένα στοιχείο στη σελίδα και μετά επιλέξτε «Προσθήκη κανόνα» για να παραμένει κρυφό ή «Απόκρυψη μία φορά» για να κρύβεται μέχρι την επαναφόρτωση.",
-    "description": "Help text shown in the popup for how to use the element zapper."
-  },
-  "popup_hint_click_to_hide": {
-    "message": "Κάντε κλικ σε ένα στοιχείο στη σελίδα και μετά επιλέξτε «Προσθήκη κανόνα» για να παραμένει κρυφό ή «Απόκρυψη μία φορά» για να κρύβεται μέχρι την επαναφόρτωση.",
-    "description": "Help text shown in the popup on the Mac for how to use the element zapper."
-  },
   "popup_rules": {
     "message": "Κανόνες",
     "description": "Label for the disclosure button that expands saved zapper rules."
@@ -285,9 +277,5 @@
   "popup_autoplay_site": {
     "message": "Αυτόματη αναπαραγωγή σε αυτόν τον ιστότοπο",
     "description": "Label for the per-site autoplay switch; overrides the global default either way."
-  },
-  "popup_autoplay_hint": {
-    "message": "Όταν είναι απενεργοποιημένο, τα μέσα μένουν σε παύση μέχρι να τα πατήσετε. Ο διακόπτης ιστότοπου υπερισχύει της προεπιλογής.",
-    "description": "Hint explaining the Autoplay switches."
   }
 }
