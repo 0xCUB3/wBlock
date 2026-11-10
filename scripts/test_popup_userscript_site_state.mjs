@@ -190,6 +190,8 @@ let relayAsleep = false;
 let failAfterCombinedSave = false;
 let combinedApplyWarning = false;
 let zapperMutationResponse = { ok: true, disabled: true };
+let siteStateHook = null;
+const tabListeners = { activated: [], updated: [] };
 const sandbox = {
   browser: {
     i18n: { getMessage: () => "" },
@@ -217,6 +219,7 @@ const sandbox = {
         if (message?.action === "getBlockingPausedState") {
           return { paused, filtersPaused: paused, userScriptsPaused: paused, elementZapperPaused: paused, resumeAvailable: false };
         }
+        if (message?.action === "getSiteFilterDisabledState" && siteStateHook) return siteStateHook(message);
         if (message?.action === "getSiteFilterDisabledState") return { disabled: filterDisabled, whitelisted, allDisabled: whitelisted || componentsDisabled };
         if (message?.action === "getPageUserScripts") return { siteDisabled: componentsDisabled, userScripts: siteScripts.map((script) => ({ ...script })) };
         if (message?.action === "getZapperRules") return { ok: true, rules: [], disabled: componentsDisabled };
@@ -246,6 +249,8 @@ const sandbox = {
         return { ok: true };
       },
       reload: async (tabId, options) => { reloads.push({ tabId, options }); },
+      onActivated: { addListener: (listener) => tabListeners.activated.push(listener) },
+      onUpdated: { addListener: (listener) => tabListeners.updated.push(listener) },
     },
     storage: {
       local: {
@@ -397,5 +402,69 @@ sandbox.browser.tabs.query = async () => [{ id: 9, url: "about:blank", active: t
 sandbox.browser.tabs.get = async () => ({ id: 9, url: "about:blank", active: true });
 await sandbox.__refreshPopupForTest();
 check("unsupported pages lock the combined switch", elements.get("site-enabled-toggle").disabled);
+
+// An open popup follows the tab it belongs to.
+const settle = () => new Promise((resolve) => setTimeout(resolve, 250));
+const showTab = (url, id = 9, windowId = 1) => {
+  sandbox.browser.tabs.query = async () => [{ id, url, active: true, windowId }];
+  sandbox.browser.tabs.get = async () => ({ id, url, active: true, windowId });
+};
+const fireUpdated = (tabId, changeInfo, url) => {
+  for (const listener of tabListeners.updated) listener(tabId, changeInfo, { id: tabId, url, active: true, windowId: 1 });
+};
+const fireActivated = (tabId, windowId) => {
+  for (const listener of tabListeners.activated) listener({ tabId, windowId });
+};
+
+showTab("https://example.com/page");
+await sandbox.__refreshPopupForTest();
+showTab("https://other.test/a");
+fireUpdated(9, { url: "https://other.test/a" }, "https://other.test/a");
+await settle();
+check("navigating the tab reloads the popup for the new host", elements.get("site-host").textContent === "other.test");
+check("the reload asks native about the new page", nativeMessages.some((m) => m.action === "getPageUserScripts" && m.url === "https://other.test/a"));
+
+const loadsBefore = nativeMessages.filter((m) => m.action === "getBlockingPausedState").length;
+fireUpdated(42, { url: "https://elsewhere.test/" }, "https://elsewhere.test/");
+fireActivated(43, 2);
+fireUpdated(9, { title: "Title only" }, "https://other.test/a");
+await settle();
+check("other tabs, other windows, and title changes leave the popup alone",
+  nativeMessages.filter((m) => m.action === "getBlockingPausedState").length === loadsBefore);
+
+showTab("https://switched.test/", 10);
+fireActivated(10, 1);
+await settle();
+check("switching tabs in the popup's window reloads it", elements.get("site-host").textContent === "switched.test");
+
+// A slow answer for the previous page must not overwrite the current one.
+let releaseSlow;
+siteStateHook = (message) => message.host === "slow.test"
+  ? new Promise((resolve) => { releaseSlow = () => resolve({ disabled: true, whitelisted: true, allDisabled: true }); })
+  : { disabled: false, whitelisted: false, allDisabled: false };
+showTab("https://slow.test/", 10);
+fireUpdated(10, { url: "https://slow.test/" }, "https://slow.test/");
+await settle();
+check("the controls stay locked while the new site's state loads", elements.get("enable-toggle").disabled && elements.get("zapper-enabled-toggle").disabled);
+showTab("https://fast.test/", 10);
+fireUpdated(10, { url: "https://fast.test/" }, "https://fast.test/");
+await settle();
+releaseSlow();
+await settle();
+check("a stale load cannot overwrite the newer host", elements.get("site-host").textContent === "fast.test");
+check("a stale load cannot overwrite the newer site state", elements.get("enable-toggle").checked
+  && !elements.get("enable-toggle").disabled && !elements.get("zapper-enabled-toggle").disabled
+  && elements.get("blocking-status").textContent === "Active");
+siteStateHook = null;
+
+sandbox.document.hidden = true;
+showTab("https://background.test/", 10);
+fireUpdated(10, { status: "complete" }, "https://background.test/");
+await settle();
+check("a hidden popup does not reload", elements.get("site-host").textContent === "fast.test");
+sandbox.document.hidden = false;
+for (const listener of documentListeners.get("visibilitychange") || []) listener();
+await settle();
+check("a hidden popup catches up once shown", elements.get("site-host").textContent === "background.test");
 
 if (failures > 0) process.exitCode = 1;

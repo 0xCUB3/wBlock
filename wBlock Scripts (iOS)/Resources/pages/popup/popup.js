@@ -640,20 +640,23 @@ function zapperStorageKey(host) {
     return `${ZAPPER_STORAGE_PREFIX}${host}`;
 }
 
-async function updateZapperCount(host) {
-    const countEl = document.getElementById('zapper-count');
-    const clearBtn = document.getElementById('zapper-clear');
-    if (!host) {
-        if (countEl) countEl.textContent = '—';
-        if (clearBtn) clearBtn.disabled = true;
-        return 0;
-    }
+async function getZapperCount(host) {
+    if (!host) return 0;
     const key = zapperStorageKey(host);
     const result = await browser.storage.local.get(key);
-    const rules = Array.isArray(result[key]) ? result[key] : [];
-    const count = rules.length;
-    if (countEl) countEl.textContent = String(count);
+    return Array.isArray(result[key]) ? result[key].length : 0;
+}
+
+function renderZapperCount(host, count) {
+    const countEl = document.getElementById('zapper-count');
+    const clearBtn = document.getElementById('zapper-clear');
+    if (countEl) countEl.textContent = host ? String(count) : '—';
     if (clearBtn) clearBtn.disabled = count === 0;
+}
+
+async function updateZapperCount(host) {
+    const count = await getZapperCount(host);
+    renderZapperCount(host, count);
     return count;
 }
 
@@ -935,30 +938,34 @@ async function resumeBlocking() {
 let siteWhitelisted = false;
 let allSiteComponentsDisabled = null;
 
+// `disabled` and `allDisabled` are null when the state could not be read.
 async function getSiteDisabledState(host) {
-    if (!host) return false;
+    if (!host) return { disabled: false, whitelisted: false, allDisabled: null };
     try {
         const response = await sendNativeMessage({
             action: 'getSiteFilterDisabledState',
             host,
         });
-        siteWhitelisted = Boolean(response && response.whitelisted);
-        allSiteComponentsDisabled = typeof response?.allDisabled === 'boolean' ? response.allDisabled : null;
-        return Boolean(response && (response.disabled || response.whitelisted));
+        const whitelisted = Boolean(response && response.whitelisted);
+        return {
+            disabled: Boolean(response && (response.disabled || whitelisted)),
+            whitelisted,
+            allDisabled: typeof response?.allDisabled === 'boolean' ? response.allDisabled : null,
+        };
     } catch (error) {
         console.error('[wBlock] Failed to get disabled state:', error);
-        allSiteComponentsDisabled = null;
-        return null;
+        return { disabled: null, whitelisted: false, allDisabled: null };
     }
 }
 
 async function readSiteDisabledStateAfterTimeout(targetHost, allComponents = false) {
-    let actuallyDisabled = await getSiteDisabledState(targetHost);
-    for (let attempt = 0; attempt < 2 && typeof (allComponents ? allSiteComponentsDisabled : actuallyDisabled) !== 'boolean'; attempt += 1) {
+    const field = allComponents ? 'allDisabled' : 'disabled';
+    let state = await getSiteDisabledState(targetHost);
+    for (let attempt = 0; attempt < 2 && typeof state[field] !== 'boolean'; attempt += 1) {
         await sleep(300);
-        actuallyDisabled = await getSiteDisabledState(targetHost);
+        state = await getSiteDisabledState(targetHost);
     }
-    return allComponents ? allSiteComponentsDisabled : actuallyDisabled;
+    return state[field];
 }
 
 async function setSiteDisabledState(host, disabled, allComponents = false) {
@@ -1115,25 +1122,28 @@ async function fetchUserscriptCommands(tabId) {
 let userScriptsSiteDisabled = false;
 
 async function fetchPageUserScripts(url) {
-    if (!url) return [];
+    const none = { scripts: [], siteDisabled: false };
+    if (!url) return none;
     try {
         const response = await sendNativeMessage({
             action: 'getPageUserScripts',
             url,
         });
         if (!response || !Array.isArray(response.userScripts)) {
-            return [];
+            return none;
         }
-        userScriptsSiteDisabled = response.siteDisabled === true;
-        return response.userScripts.filter((script) => (
-            script
-            && typeof script.id === 'string'
-            && typeof script.name === 'string'
-            && script.name.trim().length > 0
-        ));
+        return {
+            siteDisabled: response.siteDisabled === true,
+            scripts: response.userScripts.filter((script) => (
+                script
+                && typeof script.id === 'string'
+                && typeof script.name === 'string'
+                && script.name.trim().length > 0
+            )),
+        };
     } catch (error) {
         console.warn('[wBlock] Failed to fetch page userscripts:', error);
-        return [];
+        return none;
     }
 }
 
@@ -1459,6 +1469,15 @@ function updateNoAutoplayControls(state, options = {}) {
     }
 }
 
+// The per-site switches act on `host`, so they stay locked until the
+// current site's state is on screen.
+function lockSiteControls() {
+    for (const id of ['site-enabled-toggle', 'enable-toggle', 'userscripts-site-toggle', 'zapper-enabled-toggle', 'no-autoplay-site-toggle', 'zapper-activate', 'zapper-rules-toggle', 'zapper-clear']) {
+        const control = document.getElementById(id);
+        if (control) control.disabled = true;
+    }
+}
+
 function setupListeners() {
     const rulesToggle = document.getElementById('zapper-rules-toggle');
     const rulesContainer = document.getElementById('zapper-rules');
@@ -1573,10 +1592,7 @@ function setupListeners() {
                 }
 
                 setError('');
-                for (const id of ['site-enabled-toggle', 'enable-toggle', 'userscripts-site-toggle', 'zapper-enabled-toggle', 'no-autoplay-site-toggle']) {
-                    const control = document.getElementById(id);
-                    if (control) control.disabled = true;
-                }
+                lockSiteControls();
                 setStatus(next
                     ? t('popup_status_disabling', undefined, 'Disabling…')
                     : t('popup_status_enabling', undefined, 'Enabling…'), 'neutral');
@@ -1671,10 +1687,10 @@ function setupListeners() {
             try {
                 setError('');
                 userscriptsSiteToggle.disabled = true;
-                const response = await setUserScriptsSiteDisabled(host, nextDisabled);
-                userScriptsSiteDisabled = response.disabled;
-                const scripts = await fetchPageUserScripts(tab && tab.url);
-                renderPageUserScripts(scripts, false);
+                await setUserScriptsSiteDisabled(host, nextDisabled);
+                const page = await fetchPageUserScripts(tab && tab.url);
+                userScriptsSiteDisabled = page.siteDisabled;
+                renderPageUserScripts(page.scripts, false);
                 await reloadActiveTab(tab && tab.id);
             } catch (error) {
                 console.error('[wBlock] Failed to update userscripts site setting:', error);
@@ -1836,12 +1852,19 @@ function scheduleResumeRecheck(resuming) {
     resumeRecheckTimer = resuming ? setTimeout(() => { refreshUi().catch(() => {}); }, 2000) : null;
 }
 
+// Each load supersedes the ones before it, so a slow answer for the
+// previous page cannot overwrite the page the tab shows now.
+let popupLoadGeneration = 0;
+
 async function refreshUi(options = {}) {
     const generationAtStart = siteToggleGeneration;
+    const load = ++popupLoadGeneration;
+    const stale = () => load !== popupLoadGeneration;
     if (!siteToggleInFlight && !options.preserveError) {
         setError('');
     }
     const isMac = await isMacPlatform();
+    if (stale()) return;
     const updateFiltersButton = document.getElementById('update-filters');
     if (updateFiltersButton) {
         updateFiltersButton.hidden = false;
@@ -1869,18 +1892,22 @@ async function refreshUi(options = {}) {
     const pausedPromptMessage = document.getElementById('paused-prompt-message');
     const resumeButton = document.getElementById('resume-blocking');
 
-    tab = await getActiveTabWithRetry();
-    let pageSupport = getPageSupport(tab);
+    const activeTab = await getActiveTabWithRetry();
+    if (stale()) return;
+    let pageSupport = getPageSupport(activeTab);
     let supportProbe = null;
-    const tabUrlMissing = hasTabId(tab) && (
-        typeof tab.url !== 'string' || tab.url.length === 0
+    const tabUrlMissing = hasTabId(activeTab) && (
+        typeof activeTab.url !== 'string' || activeTab.url.length === 0
     );
     if (!pageSupport.supported && tabUrlMissing) {
-        supportProbe = await probeTabSupport(tab.id);
+        supportProbe = await probeTabSupport(activeTab.id);
+        if (stale()) return;
         if (supportProbe) {
             pageSupport = { supported: true, host: supportProbe.host };
         }
     }
+    tab = activeTab;
+    if (pageSupport.host !== host) lockSiteControls();
     host = pageSupport.host;
 
     if (hostEl) hostEl.textContent = host || '—';
@@ -1907,35 +1934,43 @@ async function refreshUi(options = {}) {
             url: tab && typeof tab.url === 'string' ? tab.url : '',
             host: pageSupport.host,
         });
-        await updateZapperCount('');
+        if (stale()) return;
+        renderZapperCount('', 0);
         setRulesExpanded(false);
-        updateNoAutoplayControls(await getNoAutoplayState(''), { host: '', locked: true });
+        const noAutoplayState = await getNoAutoplayState('');
+        if (stale()) return;
+        updateNoAutoplayControls(noAutoplayState, { host: '', locked: true });
         return;
     }
 
     const blockingPausedPromise = getBlockingPausedState();
     const pageUserScriptsPromise = fetchPageUserScripts(tab.url);
-    const renderPageUserScriptsPromise = pageUserScriptsPromise.then((scripts) => {
-        renderPageUserScripts(scripts, false);
-        return scripts;
+    pageUserScriptsPromise.then((page) => {
+        if (stale()) return;
+        userScriptsSiteDisabled = page.siteDisabled;
+        renderPageUserScripts(page.scripts, false);
     });
     const disabledPromise = getSiteDisabledState(host);
     const contentScriptReachablePromise = supportProbe
         ? Promise.resolve(supportProbe)
         : probeTabSupport(tab.id);
     const zapperStatePromise = getAuthoritativeZapperState(host);
-    const zapperCountPromise = updateZapperCount(host);
+    const zapperCountPromise = getZapperCount(host);
     const noAutoplayStatePromise = getNoAutoplayState(host);
 
     setStatus(t('popup_status_checking', undefined, 'Checking…'), 'neutral');
 
-    const [pauseState, disabled, zapperState, contentScriptReachable, noAutoplayState] = await Promise.all([
+    const [pauseState, siteState, zapperState, contentScriptReachable, noAutoplayState] = await Promise.all([
         blockingPausedPromise,
         disabledPromise,
         zapperStatePromise,
         contentScriptReachablePromise,
         noAutoplayStatePromise,
     ]);
+    if (stale()) return;
+    const disabled = siteState.disabled;
+    siteWhitelisted = siteState.whitelisted;
+    allSiteComponentsDisabled = siteState.allDisabled;
     if (pauseState.error !== undefined) {
         setStatus(t('popup_status_error', undefined, 'Error'), 'disabled');
         // The raw reason is what tells a support screenshot apart from #896.
@@ -2030,23 +2065,62 @@ async function refreshUi(options = {}) {
     if (rulesToggle) {
         rulesToggle.disabled = zapperPaused;
     }
-    await renderPageUserScriptsPromise;
-    renderPageUserScripts(currentPageUserScripts, siteWhitelisted || userScriptsPaused || siteToggleInFlight);
+    const [page, zapperCount, commands] = await Promise.all([
+        pageUserScriptsPromise,
+        zapperCountPromise,
+        contentScriptReachable ? fetchUserscriptCommands(tab.id) : [],
+    ]);
+    if (stale()) return;
+    userScriptsSiteDisabled = page.siteDisabled;
+    renderPageUserScripts(page.scripts, siteWhitelisted || userScriptsPaused || siteToggleInFlight);
     currentZapperRules = zapperState.rules;
-    const zapperCount = await zapperCountPromise;
+    renderZapperCount(host, zapperCount);
     const zapperClear = document.getElementById('zapper-clear');
     if (zapperClear) zapperClear.disabled = zapperPaused || zapperCount === 0;
-    renderUserscriptCommands(contentScriptReachable ? await fetchUserscriptCommands(tab.id) : []);
+    renderUserscriptCommands(commands);
     if (zapperRulesExpanded) {
         renderZapperRules(currentZapperRules);
     }
 }
 
+function loadPopup() {
+    return refreshUi().catch((error) => {
+        console.error('[wBlock] Popup load failed:', error);
+        setError(t('popup_error_load_popup', undefined, 'Failed to load popup.'));
+    });
+}
+
+// An open popup follows its window's tab when that tab navigates or the user
+// switches tabs. A hidden popup waits and loads once it is shown again.
+let followTabTimer = null;
+let followTabPending = false;
+function scheduleTabReload() {
+    clearTimeout(followTabTimer);
+    if (document.hidden) {
+        followTabPending = true;
+        return;
+    }
+    followTabTimer = setTimeout(loadPopup, 100);
+}
+
+function followActiveTab() {
+    browser.tabs.onActivated.addListener((info) => {
+        if (!tab || tab.windowId === undefined || info.windowId === tab.windowId) scheduleTabReload();
+    });
+    browser.tabs.onUpdated.addListener((tabId, changeInfo, updatedTab) => {
+        const followed = tab ? tabId === tab.id : Boolean(updatedTab && updatedTab.active);
+        if (followed && (changeInfo.url || changeInfo.status === 'complete')) scheduleTabReload();
+    });
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden || !followTabPending) return;
+        followTabPending = false;
+        scheduleTabReload();
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     localizeStaticPopupText();
     setupListeners();
-    refreshUi().catch((error) => {
-        console.error('[wBlock] Popup init failed:', error);
-        setError(t('popup_error_load_popup', undefined, 'Failed to load popup.'));
-    });
+    followActiveTab();
+    loadPopup();
 });
