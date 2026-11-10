@@ -1759,6 +1759,7 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         let safari = SafariVersionDetection.current
         let request: [String: Any] = ["safari": [safari.major, safari.minor], "lists": lists, "targets": targets,
             "retain": CompilationScope.keepsParsedLists,
+            "limits": ["rules": safariContentBlockerRuleLimit, "bytes": safariContentBlockerJSONSizeLimit],
             "cosmetics": ["exclude": cosmeticSites.excludedSites,
                           "only": cosmeticSites.onlySelectedSites ? (cosmeticSites.selectedSites ?? []) as Any : NSNull(),
                           "generic": cosmeticSites.includesGeneric]]

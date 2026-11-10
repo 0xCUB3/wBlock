@@ -630,6 +630,38 @@ fn repeat(atom: &str, min: u32, max: Option<u32>, out: &mut String) {
     }
 }
 
+/// The part of an emitted url-filter up to its last quantified term. WebKit
+/// builds one automaton for the filters of a list that share it and runs
+/// every automaton over every URL (CombinedURLFilters::processNFAs), merging
+/// only those under a hundred states (DFACombiner), so the distinct values in
+/// a list bound what a URL costs there. A filter not anchored with `^` starts
+/// with an implied `.*`, written here.
+#[cfg(test)]
+pub(crate) fn automaton_prefix(filter: &str) -> String {
+    let b = filter.as_bytes();
+    // `varies`: the group being read holds a quantifier, so it has no fixed length.
+    let (mut i, mut depth, mut last, mut varies) = (0, 0usize, 0, false);
+    while i < b.len() {
+        match b[i] {
+            b'\\' => i += 1,
+            b'[' => i = class_end(b, i).expect("an emitted filter"),
+            b'(' => depth += 1,
+            b')' => depth -= 1,
+            _ => {}
+        }
+        i += 1;
+        let quantified = i < b.len() && matches!(b[i], b'*' | b'+' | b'?');
+        i += usize::from(quantified);
+        if depth > 0 {
+            varies |= quantified;
+        } else if std::mem::take(&mut varies) | quantified {
+            last = i;
+        }
+    }
+    let implied = if filter.starts_with('^') { "" } else { ".*" };
+    format!("{implied}{}", &filter[..last])
+}
+
 #[cfg(test)]
 mod emitted_filter_tests {
     use super::*;
@@ -685,6 +717,21 @@ mod emitted_filter_tests {
             ] {
                 assert_eq!(a.is_match(url), b.is_match(url), "{f} {url}");
             }
+        }
+    }
+
+    #[test]
+    fn automaton_prefix_ends_at_the_last_quantifier() {
+        for (filter, want) in [
+            ("^[^:]+://+([^:/]+\\.)?ads\\.com[/:?#]", "^[^:]+://+([^:/]+\\.)?"),
+            ("^[^:]+://+([^:/]+\\.)?ads\\.com/a.*/b\\.js$", "^[^:]+://+([^:/]+\\.)?ads\\.com/a.*"),
+            ("/ads/banner\\.", ".*"),
+            ("/ads/.*/banner[^a-z*]x", ".*/ads/.*"),
+            ("^https://a\\.com/[0-9]", ""),
+            ("x(a+b)c", ".*x(a+b)"),
+            ("x(a+b)?c", ".*x(a+b)?"),
+        ] {
+            assert_eq!(automaton_prefix(filter), want, "{filter}");
         }
     }
 

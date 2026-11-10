@@ -142,7 +142,7 @@ impl DomainSpan {
     }
 }
 
-pub(crate) use network::{surviving, Context as NetworkContext};
+pub(crate) use network::{split_host, surviving, Context as NetworkContext};
 
 /// Tiers in output order.
 const TIERS: [Tier; 13] = [

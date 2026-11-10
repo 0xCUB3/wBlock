@@ -97,6 +97,8 @@ pub struct PlanRequest {
     pub targets: Vec<TargetSpec>,
     #[serde(default)]
     pub cosmetics: CosmeticScope,
+    #[serde(default)]
+    pub limits: Limits,
 }
 
 /// Extra text one blocker compiles after its lists (zapper rules, wBlock's
@@ -139,6 +141,8 @@ struct Parsed {
     in_context: bool,
     /// `is_plain_block`, which the segment of #925 compiles unscoped.
     plain: bool,
+    /// What decides the rule's blocker.
+    route: Route,
     /// Affinity types of the enclosing `!#safari_cb_affinity` block.
     affinity: Option<u8>,
 }
@@ -280,10 +284,74 @@ pub struct Plan {
     parsed: Vec<Arc<ParsedList>>,
     targets: Vec<TargetSpec>,
     cosmetics: CosmeticScope,
+    limits: Limits,
     /// List index -> rule identities a blocker other than this one owns (#681).
     duplicates: Vec<Vec<FxHashSet<u64>>>,
     /// Hash of each list's text, for `fingerprint`.
     text_hashes: Vec<u64>,
+    /// Where the blocks exceptions can reach go, when they go to one blocker.
+    wide: Option<Wide>,
+}
+
+/// What one blocker may hold. The wide blocker gains rules from every list,
+/// so a plan has one only while its estimated output stays within these.
+#[derive(Debug, Clone, Copy, Deserialize)]
+#[serde(default)]
+pub struct Limits {
+    /// Safari's rule limit per content blocker.
+    pub rules: usize,
+    /// The app's budget for a blocker's JSON.
+    pub bytes: usize,
+}
+
+impl Default for Limits {
+    fn default() -> Self {
+        Limits { rules: 150_000, bytes: 19_000_000 }
+    }
+}
+
+/// The blocker that takes the blocks exceptions can reach (`Route`) from
+/// every list. Safari applies an exception only in its own blocker, so each
+/// blocker keeps a copy of every exception that can match a load one of its
+/// blocks matches (#836, `prune`), and an exception with a wildcard is one
+/// more automaton WebKit runs over every URL. With those blocks in one
+/// blocker, the others keep only the few exceptions not anchored at a host.
+#[derive(Debug, Hash)]
+struct Wide {
+    target: usize,
+    /// The sites (`Route::Site`) the plan's host exceptions name, sorted.
+    excepted: Vec<u64>,
+    /// Per list: whether some blocker compiles it.
+    selected: Vec<bool>,
+    /// Per list split into shards, one of them the wide blocker's: that
+    /// shard, and the part (of 2^32) of the list's other blocks that it also
+    /// holds, which evens the shards out. The other shards split the rest.
+    fill: Vec<Option<(u32, u64)>>,
+}
+
+impl Wide {
+    /// Whether the block at `p` goes to the wide blocker: one that is not
+    /// anchored at a host, or one on a site an exception names.
+    fn takes(&self, p: &Parsed) -> bool {
+        match p.route {
+            Route::Wide => true,
+            Route::Site(site) => !p.shared && self.excepted.binary_search(&site).is_ok(),
+            Route::Identity => false,
+        }
+    }
+
+    /// The shard, of `count`, of a rule of `list` the wide blocker does not take.
+    fn shard(&self, list: usize, p: &Parsed, count: u32) -> u32 {
+        let identity = p.identity;
+        match self.fill[list].filter(|_| p.network) {
+            Some((own, part)) if identity >> 32 < part => own,
+            Some((own, _)) => {
+                let other = (identity % (count as u64 - 1).max(1)) as u32;
+                other + u32::from(other >= own)
+            }
+            None => (identity % count as u64) as u32,
+        }
+    }
 }
 
 impl Plan {
@@ -311,9 +379,12 @@ impl Plan {
             parsed,
             targets: request.targets,
             cosmetics: request.cosmetics,
+            limits: request.limits,
             duplicates: Vec::new(),
             text_hashes,
+            wide: None,
         };
+        plan.wide = plan.wide();
         plan.duplicates = plan.duplicate_rules();
         plan
     }
@@ -341,20 +412,84 @@ impl Plan {
         self.targets[target].lists.iter().find(|l| l.list == list)
     }
 
-    /// Whether blocker `target` keeps the rule at `p` of `list`: its shard or
-    /// affinity types, and no #681 duplicate of another blocker's.
-    fn keeps(&self, target: usize, list: usize, p: &Parsed) -> bool {
-        let types = slot_types(self.targets[target].slot);
-        let assignment = self.assigned(target, list);
-        let parsed = &self.parsed[list];
-        let keep = match (parsed.has_affinity, p.affinity, assignment) {
-            (true, Some(mask), _) => mask & types != 0,
-            (_, _, Some(a)) => {
-                p.shared || a.shard.map_or(true, |(i, n)| p.identity % n as u64 == i as u64)
-            }
-            _ => false,
+    /// The wide blocker: the first of those with the fewest rules assigned.
+    /// None for a single blocker, or when the blocks it would gain do not
+    /// fit it.
+    fn wide(&self) -> Option<Wide> {
+        let load = |t: &TargetSpec| -> usize {
+            t.lists.iter().map(|a| self.parsed[a.list].count() / a.shard.map_or(1, |(_, n)| n as usize)).sum()
         };
-        keep && !self.duplicates[target][list].contains(&p.identity)
+        // In steps of 16,384 rules, so that an update moving two blockers'
+        // sizes past each other seldom moves the wide blocker, which would
+        // change every blocker's output.
+        let target = (0..self.targets.len()).min_by_key(|&t| load(&self.targets[t]) >> 14).filter(|_| self.targets.len() > 1)?;
+        let mut excepted: Vec<u64> = self
+            .parsed
+            .iter()
+            .flat_map(|list| list.records())
+            .filter_map(|p| match p.route {
+                Route::Site(site) if p.shared => Some(site),
+                _ => None,
+            })
+            .collect();
+        excepted.sort_unstable();
+        excepted.dedup();
+        let selected = (0..self.lists.len()).map(|l| self.targets.iter().any(|t| t.lists.iter().any(|a| a.list == l))).collect();
+        let mut wide = Wide { target, excepted, selected, fill: vec![None; self.lists.len()] };
+        for (list, parsed) in self.parsed.iter().enumerate() {
+            let Some((own, count)) = self.assigned(target, list).and_then(|a| a.shard).filter(|&(_, n)| n > 1) else {
+                continue;
+            };
+            // The wide shard holds the blocks it takes and the list's
+            // exceptions, which the other shards mostly drop (`prune`). The
+            // part `f` of the `rest` evens the shards out:
+            // fixed + f * rest = (1 - f) * rest / (count - 1).
+            let network = || parsed.records().filter(|p| p.network && !(parsed.has_affinity && p.affinity.is_some()));
+            let fixed = network().filter(|p| p.shared || wide.takes(p)).count() as f64;
+            let rest = network().count() as f64 - fixed;
+            let others = count as f64 - 1.0;
+            let part = if rest > 0.0 { ((rest - others * fixed) / (count as f64 * rest)).clamp(0.0, 1.0) } else { 0.0 };
+            wide.fill[list] = Some((own, (part * (1u64 << 32) as f64) as u64));
+        }
+        // Every exception of the plan stays in the wide blocker too. A rule
+        // line compiled to at most 1.2 rules and 6.2 times its bytes of JSON
+        // in the blockers measured.
+        let gains = |l: usize, p: &Parsed| p.network && (self.held(Some(&wide), target, l, p) || p.shared && wide.selected[l]);
+        let (mut rules, mut bytes) = (0, 0);
+        for (l, parsed) in self.parsed.iter().enumerate() {
+            for p in parsed.records().filter(|p| gains(l, p)) {
+                rules += 1;
+                bytes += self.line(l, p).len();
+            }
+        }
+        (rules * 3 / 2 <= self.limits.rules && bytes * 7 <= self.limits.bytes).then_some(wide)
+    }
+
+    /// Whether blocker `target` holds the rule at `p` of `list`: its affinity
+    /// types, the wide blocker for a block it takes, or else its shard.
+    fn holds(&self, target: usize, list: usize, p: &Parsed) -> bool {
+        self.held(self.wide.as_ref(), target, list, p)
+    }
+
+    /// `holds`, for a plan whose wide blocker is `wide`.
+    fn held(&self, wide: Option<&Wide>, target: usize, list: usize, p: &Parsed) -> bool {
+        if let (true, Some(mask)) = (self.parsed[list].has_affinity, p.affinity) {
+            return mask & slot_types(self.targets[target].slot) != 0;
+        }
+        if let Some(wide) = wide.filter(|w| w.takes(p)) {
+            return target == wide.target && wide.selected[list];
+        }
+        let shard = |count: u32| match wide {
+            Some(wide) => wide.shard(list, p, count),
+            None => (p.identity % count as u64) as u32,
+        };
+        self.assigned(target, list).is_some_and(|a| p.shared || a.shard.map_or(true, |(i, n)| shard(n) == i))
+    }
+
+    /// Whether blocker `target` keeps the rule at `p` of `list`: it holds the
+    /// rule, and it is no #681 duplicate of another blocker's.
+    fn keeps(&self, target: usize, list: usize, p: &Parsed) -> bool {
+        self.holds(target, list, p) && !self.duplicates[target][list].contains(&p.identity)
     }
 
     /// One pass over records `range` of `list` for blocker `target`, which
@@ -490,16 +625,8 @@ impl Plan {
             if parsed.has_affinity || parsed.has_directive {
                 continue;
             }
-            for (t, target) in self.targets.iter().enumerate() {
-                let Some(assignment) = target.lists.iter().find(|l| l.list == list) else {
-                    continue;
-                };
-                for p in parsed.records().filter(|p| !p.shared) {
-                    if let Some((i, n)) = assignment.shard {
-                        if p.identity % n as u64 != i as u64 {
-                            continue;
-                        }
-                    }
+            for t in 0..self.targets.len() {
+                for p in parsed.records().filter(|p| !p.shared && self.holds(t, list, p)) {
                     match owner.get(&(contexts[t], p.identity)) {
                         Some(&first) if first != t => {
                             // Swift crossTargetDuplicateRules removes only the losing target's copy.
@@ -537,12 +664,24 @@ impl Plan {
         let mut h = DefaultHasher::new();
         crate::OUTPUT_VERSION.hash(&mut h);
         format!("{:?}{:?}", self.opts, self.cosmetics).hash(&mut h);
+        // Which blocks this blocker holds follows from the wide blocker.
+        self.wide.hash(&mut h);
         self.targets[target].slot.hash(&mut h);
         self.segment_list(target).hash(&mut h);
         for (list, spec) in self.lists.iter().enumerate() {
             let assignment = self.assigned(target, list);
-            if assignment.is_some() || self.parsed[list].has_affinity {
-                (list, self.text_hashes[list], spec.trusted, &spec.id).hash(&mut h);
+            // The wide blocker takes blocks from every list a blocker compiles.
+            let wide = self.wide.as_ref().filter(|w| w.target == target && w.selected[list]);
+            let whole = assignment.is_some() || self.parsed[list].has_affinity;
+            if whole || wide.is_some() {
+                if whole {
+                    self.text_hashes[list].hash(&mut h);
+                } else {
+                    for p in self.parsed[list].records().filter(|p| wide.is_some_and(|w| w.takes(p))) {
+                        self.line(list, p).hash(&mut h);
+                    }
+                }
+                (list, spec.trusted, &spec.id).hash(&mut h);
                 format!("{:?}", spec.scope).hash(&mut h);
                 assignment.map(|a| a.shard).hash(&mut h);
                 let owned = &self.duplicates[target][list];
@@ -862,6 +1001,7 @@ fn parse_lines(list: &ListSpec, span: Range<usize>, lines_before: u32, mut affin
                 network: matches!(rule, Rule::Network(_)),
                 in_context: matches!(rule, Rule::Network(r) if NetworkContext::holds(r)),
                 plain: is_plain_block(rule),
+                route: Route::of(rule),
                 affinity,
             });
         }
@@ -1179,6 +1319,43 @@ fn scoped(rule: Rule, scope: &SiteScope, out: &mut Vec<Rule>) {
 
 /// A block Safari enforces natively with no positive page domain, which an
 /// ignore rule placed after it can cancel for excluded sites (#925).
+/// What decides the blocker of a rule (`Wide`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Route {
+    /// The list's assignment and the rule's identity.
+    Identity,
+    /// A block or exception anchored at a whole host, with the hash of the
+    /// host's registrable domain. A block goes to the wide blocker when an
+    /// exception names its site.
+    Site(u64),
+    /// A block not anchored at a whole host (`/ads/`, `||ads`, `||google.*^`),
+    /// which can match a load that any exception matches.
+    Wide,
+}
+
+impl Route {
+    fn of(rule: &Rule) -> Route {
+        let Rule::Network(r) = rule else {
+            return Route::Identity;
+        };
+        // A page exception (`$document`, `$generichide`) names its page, not
+        // the loads it lifts.
+        if r.badfilter || !r.scope.is_empty() {
+            return Route::Identity;
+        }
+        // `prune::anchor` reads the compiled filter the same way.
+        let host = crate::compile::split_host(&r.pattern).filter(|(_, rest)| {
+            rest.starts_with(['^', '/', ':', '?']) || rest.is_empty() && r.pattern.right_anchored
+        });
+        // A public suffix (`||com/ads.js`) is every site under it.
+        match host.as_ref().and_then(|(host, _)| crate::registrable_domain(host)) {
+            Some(site) => Route::Site(hash(site)),
+            None if r.exception => Route::Identity,
+            None => Route::Wide,
+        }
+    }
+}
+
 fn is_plain_block(rule: &Rule) -> bool {
     const NATIVE: ResourceTypes = ResourceTypes::SCRIPT
         .union(ResourceTypes::IMAGE)
@@ -1834,7 +2011,7 @@ mod tests {
     #[test]
     fn distinct_exception_contexts_keep_both_blocks() {
         let plan = plan(
-            json!([{ "id":"left", "text":"||ads.example^\n@@||ads.example^" }, {"id":"right", "text":"||ads.example^"}]),
+            json!([{ "id":"left", "text":"||ads.example^\n@@||other.example^" }, {"id":"right", "text":"||ads.example^"}]),
             json!([{"slot":1,"lists":[{"list":0}]},{"slot":2,"lists":[{"list":1}]}]),
             json!({}),
         );
@@ -1844,6 +2021,114 @@ mod tests {
         assert!(rules(&plan, 1)
             .iter()
             .any(|rule| rule["action"]["type"] == "block"));
+    }
+
+    fn actions(plan: &Plan, target: usize) -> Vec<String> {
+        rules(plan, target).iter().map(|rule| rule["action"]["type"].as_str().unwrap().to_owned()).collect()
+    }
+
+    /// The blocks an exception can reach go to one blocker with it: those not
+    /// anchored at a host and those on the site the exception names. The
+    /// other blocker then needs no copy of the exception.
+    #[test]
+    fn blocks_exceptions_reach_share_one_blocker() {
+        let plan = plan(
+            json!([{ "id":"left", "text":"||plain.example^\n@@||cdn.ads.example/ok.js" },
+                   { "id":"right", "text":"||ads.example^\n/banner.\n||other.example^\n||com/track.js" }]),
+            json!([{"slot":1,"lists":[{"list":0}]},{"slot":2,"lists":[{"list":1}]}]),
+            json!({}),
+        );
+        let filters = |t| rules(&plan, t).iter().map(|rule| rule["trigger"]["url-filter"].as_str().unwrap().to_owned()).collect::<Vec<_>>().join(" ");
+        let (wide, other) = (filters(0), filters(1));
+        for taken in ["plain", "ads\\.example[", "banner", "com/track", "ok\\.js"] {
+            assert!(wide.contains(taken), "{taken}: {wide}");
+        }
+        assert_eq!(other.matches("example").count(), 1, "{other}");
+        assert!(other.contains("other\\.example"), "{other}");
+        assert_eq!(actions(&plan, 1), ["block"]);
+        // A list whose blocks moved is still counted where they went.
+        assert_eq!(plan.compile_target(0, &[]).admitted["right"], 3);
+        assert_eq!(plan.compile_target(1, &[]).admitted["right"], 1);
+    }
+
+    /// What a URL costs in Safari follows the automata of each blocker
+    /// (`regex::automaton_prefix`), and before the wide blocker every blocker
+    /// held one per wildcard exception of the plan. Three lists of the usual
+    /// shapes in three blockers: each wildcard filter is in one blocker, but
+    /// for the exception not anchored at a host, which a blocker with a block
+    /// it can lift keeps too.
+    #[test]
+    fn a_wildcard_filter_is_an_automaton_in_one_blocker() {
+        let lines = |make: &dyn Fn(usize) -> String| (0..40).map(make).collect::<String>();
+        let ads = lines(&|i| format!("||ads{i}.example^\n||cdn{i}.example/ad/*/banner.\n/ads{i}/*/pixel.\n@@||ads{i}.example/ok/*.js$domain=news{i}.example\n"));
+        let privacy = lines(&|i| format!("||track{i}.example^\n||ads{i}.example/t/*.gif\n@@||track{i}.example/sdk/*/core.js\n@@||cdn{i}.example/ad/*/banner.png\n"));
+        let unbreak = lines(&|i| format!("||log{i}.example^$third-party\n||log{i}.example/v*/beacon\n")) + "@@/player/*/ads.js$domain=video.example\n";
+        let plan = plan(
+            json!([{"id":"ads", "text":ads}, {"id":"privacy", "text":privacy}, {"id":"unbreak", "text":unbreak}]),
+            json!([{"slot":1,"lists":[{"list":0}]}, {"slot":2,"lists":[{"list":1}]}, {"slot":3,"lists":[{"list":2}]}]),
+            json!({}),
+        );
+        let shared = ["^[^:]+://+([^:/]+\\.)?", ".*", ""];
+        let automata = |t| -> FxHashSet<String> {
+            let rules = rules(&plan, t);
+            let prefixes = rules.iter().map(|r| crate::compile::regex::automaton_prefix(r["trigger"]["url-filter"].as_str().unwrap()));
+            prefixes.filter(|p| !shared.contains(&p.as_str())).collect()
+        };
+        let per_blocker: Vec<FxHashSet<String>> = (0..3).map(automata).collect();
+        let all: FxHashSet<&String> = per_blocker.iter().flatten().collect();
+        // 40 each of `cdn/ad/*` (a block and its exception), `/ads/*`,
+        // `ads/ok/*`, `track/sdk/*` and `log/v*`, and the one exception not
+        // anchored at a host. The bare `||ads1.example^` covers `ads1/t/*`.
+        assert_eq!(all.len(), 201);
+        let counts: Vec<usize> = per_blocker.iter().map(FxHashSet::len).collect();
+        // The first blocker is the wide one, and `privacy`'s blocks all went
+        // there. `unbreak`'s blocker keeps its own wildcard blocks and the one
+        // exception that can lift them.
+        assert_eq!(counts, [161, 0, 41]);
+    }
+
+    /// Without room in the wide blocker, every blocker keeps its own lists.
+    #[test]
+    fn no_wide_blocker_past_the_limits() {
+        let mut request: PlanRequest = serde_json::from_value(json!({
+            "safari": [18, 0],
+            "lists": [{ "id":"left", "text":"||plain.example^" }, { "id":"right", "text":"/banner." }],
+            "targets": [{"slot":1,"lists":[{"list":0}]},{"slot":2,"lists":[{"list":1}]}],
+        }))
+        .unwrap();
+        request.limits.rules = 1;
+        let plan = Plan::new(request);
+        assert!(serde_json::to_string(&rules(&plan, 0)).unwrap().contains("plain"));
+        assert!(serde_json::to_string(&rules(&plan, 1)).unwrap().contains("banner"));
+    }
+
+    /// A split list keeps its shards even: the wide blocker's shard holds the
+    /// blocks it takes and fewer of the rest.
+    #[test]
+    fn wide_shard_stays_its_share_of_a_split_list() {
+        let text: String = (0..3000)
+            .map(|i| match i % 10 {
+                0 => format!("/wide{i}/\n"),
+                1 => format!("||site{i}.example/ad\n@@||site{i}.example/ad/ok\n"),
+                _ => format!("||host{i}.example^\n"),
+            })
+            .collect();
+        let plan = plan(
+            json!([{ "id":"list", "text":text }]),
+            json!([{"slot":1,"lists":[{"list":0,"shard":[0,3]}]}, {"slot":2,"lists":[{"list":0,"shard":[1,3]}]},
+                   {"slot":3,"lists":[{"list":0,"shard":[2,3]}]}]),
+            json!({}),
+        );
+        // Rule lines per shard; the other shards drop the exceptions they hold.
+        let held = |t| plan.parsed[0].records().filter(|p| plan.holds(t, 0, p) && (t == 0 || !p.shared)).count();
+        let counts: Vec<usize> = (0..3).map(held).collect();
+        assert_eq!(counts.iter().sum::<usize>(), 3300);
+        assert!(counts.iter().all(|c| (1000..1200).contains(c)), "{counts:?}");
+        // The others hold no wide block, excepted site or exception.
+        for t in 1..3 {
+            let other = serde_json::to_string(&rules(&plan, t)).unwrap();
+            assert!(!other.contains("wide") && !other.contains("site") && !other.contains("ignore-previous-rules"));
+        }
     }
 
     #[test]
@@ -2040,6 +2325,7 @@ mod tests {
             lists,
             targets,
             cosmetics,
+            limits: Limits::default(),
         })
     }
 
