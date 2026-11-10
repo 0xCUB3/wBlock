@@ -1,12 +1,16 @@
 //! `wbe compile [--safari 18.0] [--runtime-out FILE] [--trusted] LIST...`
 //! writes Safari JSON to stdout and stats JSON to stderr. `--trusted` marks
 //! the list after it as trusted (may use `trusted-*` scriptlets).
+//! `wbe plan REQUEST.json OUTDIR` compiles every blocker of an apply request
+//! (the JSON of `apply::PlanRequest`) to `OUTDIR/blocker-N.json` and prints
+//! each one's rule count and compile time.
 //! `wbe engine-build --out FILE RUNTIME.txt` serializes a runtime engine.
 //! `wbe lookup [--bench N] ENGINE URL...`
 //! prints PagePayload JSON per URL; with `--bench` it prints p50/p99 JSON for
 //! N lookups over the URLs in the file.
 
 use std::time::Instant;
+use wbe::apply::{Plan, PlanRequest};
 use wbe::runtime::Engine;
 use wbe::webkit::{to_json, SafariVersion};
 use wbe::{compile, CompileOptions, ListInput};
@@ -15,12 +19,14 @@ fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
     match args.first().map(String::as_str) {
         Some("compile") => compile_cmd(&args[1..]),
+        Some("plan") => plan_cmd(&args[1..]),
         Some("engine-build") => engine_build_cmd(&args[1..]),
         Some("lookup") => lookup_cmd(&args[1..]),
         _ => {
             eprintln!(
                 "usage: wbe compile [--safari 18.0] [--runtime-out FILE] [--trusted] LIST..."
             );
+            eprintln!("       wbe plan REQUEST.json OUTDIR");
             eprintln!("       wbe engine-build --out FILE RUNTIME.txt");
             eprintln!("       wbe lookup [--bench N] ENGINE URL|URLFILE...");
             std::process::exit(2);
@@ -30,6 +36,34 @@ fn main() {
 
 fn read(path: &str) -> String {
     std::fs::read_to_string(path).unwrap_or_else(|e| panic!("{path}: {e}"))
+}
+
+fn plan_cmd(args: &[String]) {
+    let [request, out] = args else {
+        eprintln!("usage: wbe plan REQUEST.json OUTDIR");
+        std::process::exit(2);
+    };
+    let mut request: PlanRequest = serde_json::from_str(&read(request)).expect("request JSON");
+    for list in &mut request.lists {
+        if let Some(path) = &list.path {
+            list.text = read(path);
+        }
+    }
+    let start = Instant::now();
+    let plan = Plan::new(request);
+    let plan_ms = start.elapsed().as_secs_f64() * 1000.0;
+    for target in 0..plan.target_count() {
+        let start = Instant::now();
+        let compiled = plan.compile_target(target, &[]);
+        let compile_ms = start.elapsed().as_secs_f64() * 1000.0;
+        let rules = compiled.output.webkit.rules();
+        let path = format!("{out}/blocker-{}.json", target + 1);
+        std::fs::write(&path, compiled.output.webkit.as_str()).unwrap_or_else(|e| panic!("{path}: {e}"));
+        std::fs::write(format!("{out}/runtime-{}.txt", target + 1), compiled.output.runtime.join("\n"))
+            .expect("write runtime rules");
+        println!("{}", serde_json::json!({ "blocker": target + 1, "rules": rules, "compile_ms": compile_ms }));
+    }
+    println!("{}", serde_json::json!({ "plan_ms": plan_ms }));
 }
 
 fn engine_build_cmd(args: &[String]) {
