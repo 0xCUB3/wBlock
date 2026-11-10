@@ -108,6 +108,10 @@ pub struct Extra {
     pub text: String,
     #[serde(default)]
     pub trusted: bool,
+    /// Every blocker of the plan is given this text. Its blocks that
+    /// exceptions can reach then compile in the wide blocker alone (`Wide`).
+    #[serde(default)]
+    pub every_blocker: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -333,9 +337,14 @@ impl Wide {
     /// Whether the block at `p` goes to the wide blocker: one that is not
     /// anchored at a host, or one on a site an exception names.
     fn takes(&self, p: &Parsed) -> bool {
-        match p.route {
+        self.takes_route(p.route, p.shared)
+    }
+
+    /// `takes`, for a rule with this route; `shared` for an exception.
+    fn takes_route(&self, route: Route, shared: bool) -> bool {
+        match route {
             Route::Wide => true,
-            Route::Site(site) => !p.shared && self.excepted.binary_search(&site).is_ok(),
+            Route::Site(site) => !shared && self.excepted.binary_search(&site).is_ok(),
             Route::Identity => false,
         }
     }
@@ -699,7 +708,7 @@ impl Plan {
             h.write_u8(0xff);
         }
         for extra in extras {
-            (&extra.text, extra.trusted).hash(&mut h);
+            (&extra.text, extra.trusted, extra.every_blocker).hash(&mut h);
         }
         h.finish()
     }
@@ -760,6 +769,11 @@ impl Plan {
                 extra.trusted,
                 &mut extra_stats,
             ) {
+                // The wide blocker compiles the same rule from its own copy.
+                let elsewhere = self.wide.as_ref().filter(|w| extra.every_blocker && w.target != target);
+                if elsewhere.is_some_and(|w| w.takes_route(Route::of(&rule), is_shared(&rule))) {
+                    continue;
+                }
                 match self.cosmetic_scoped(rule) {
                     Some(Rule::Network(r)) => {
                         ctx.add(&r);
@@ -1712,7 +1726,7 @@ mod tests {
             json!([{"slot":1,"lists":[{"list":0},{"list":1}]},{"slot":2,"lists":[{"list":2}]}]),
             json!({}),
         );
-        let extra = Extra { text: "||extra.example^\n/extra-ad.".into(), trusted: true };
+        let extra = Extra { text: "||extra.example^\n/extra-ad.".into(), trusted: true, every_blocker: false };
         let output = plan.compile_target(0, &[extra]).output.webkit;
         let rules: Vec<Value> = serde_json::from_str(output.as_str()).unwrap();
         let hide_exception = |r: &Value| {
@@ -2087,6 +2101,25 @@ mod tests {
         assert_eq!(counts, [161, 0, 41]);
     }
 
+    /// Text given to every blocker compiles its wide blocks in the wide one
+    /// only; its exceptions and other blocks stay in each.
+    #[test]
+    fn text_for_every_blocker_keeps_wide_blocks_in_one() {
+        let plan = plan(
+            json!([{ "id":"left", "text":"||left.example^" }, { "id":"right", "text":"||right.example^" }]),
+            json!([{"slot":1,"lists":[{"list":0}]},{"slot":2,"lists":[{"list":1}]}]),
+            json!({}),
+        );
+        let text = "/pagead.js$script\n||extra.example^\n@@||right.example/ok.js";
+        let compiled = |t, every_blocker| {
+            let extra = Extra { text: text.into(), trusted: true, every_blocker };
+            plan.compile_target(t, &[extra]).output.webkit.into_string()
+        };
+        assert!(compiled(0, true).contains("pagead") && compiled(1, false).contains("pagead"));
+        let other = compiled(1, true);
+        assert!(!other.contains("pagead") && other.contains("extra") && other.contains("ok"), "{other}");
+    }
+
     /// Without room in the wide blocker, every blocker keeps its own lists.
     #[test]
     fn no_wide_blocker_past_the_limits() {
@@ -2371,6 +2404,7 @@ mod tests {
         let extra = Extra {
             text: "example.com##.wbe-extra\n||extra-check.example^\n@@||extra-check.example/ok^$image\nexample.com##+js(set, wbe, 1)\n".into(),
             trusted: false,
+            every_blocker: false,
         };
         let cases = [
             ("plain", "plain", Vec::new()),

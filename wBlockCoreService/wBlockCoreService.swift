@@ -1759,7 +1759,9 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         let safari = SafariVersionDetection.current
         let request: [String: Any] = ["safari": [safari.major, safari.minor], "lists": lists, "targets": targets,
             "retain": CompilationScope.keepsParsedLists,
-            "limits": ["rules": safariContentBlockerRuleLimit, "bytes": safariContentBlockerJSONSizeLimit],
+            // The engine moves blocks between blockers only when every blocker
+            // is built from this same plan.
+            "limits": ["rules": followsPlan ? safariContentBlockerRuleLimit : 0, "bytes": safariContentBlockerJSONSizeLimit],
             "cosmetics": ["exclude": cosmeticSites.excludedSites,
                           "only": cosmeticSites.onlySelectedSites ? (cosmeticSites.selectedSites ?? []) as Any : NSNull(),
                           "generic": cosmeticSites.includesGeneric]]
@@ -1773,7 +1775,7 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         let makePlan = { try WBEngine.Plan(requestJSON: requestJSON) }
         let plan = try CompilationScope.current.map { try $0.memoized(planKey, makePlan) } ?? makePlan()
         let extras: [[String: Any]] = [
-            ["text": embeddedCompatibilityRules, "trusted": true],
+            ["text": embeddedCompatibilityRules, "trusted": true, "every_blocker": true],
             ["text": extraRulesText ?? "", "trusted": true],
             ["text": RemoveParamDNRRuleGenerator.savedRedirectCarveOuts(containerURL: containerURL), "trusted": false]
         ]
