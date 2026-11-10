@@ -317,7 +317,8 @@ public actor SharedAutoUpdateManager {
 
     private enum AutoUpdateError: LocalizedError {
         case sharedContainerUnavailable
-        case contentBlockerReloadFailed(identifiers: [String], names: [String])
+        /// Each entry names the blocker and Safari's reason.
+        case contentBlockerReloadFailed(failures: [String])
         case advancedEngineOperationFailed(phase: String, underlying: Error)
         case backgroundBudgetExpired(phase: String, remainingSeconds: Int)
         case backgroundFullRebuildDeferred(phase: String)
@@ -356,10 +357,10 @@ public actor SharedAutoUpdateManager {
             switch self {
             case .sharedContainerUnavailable:
                 return "Shared app group container unavailable."
-            case let .contentBlockerReloadFailed(_, names):
-                return "Failed to reload \(names.joined(separator: ", "))."
+            case let .contentBlockerReloadFailed(failures):
+                return "Failed to reload \(failures.joined(separator: ", "))."
             case let .advancedEngineOperationFailed(_, underlying):
-                return underlying.localizedDescription
+                return LogErrorDescriber.describe(underlying)
             case let .backgroundBudgetExpired(phase, remainingSeconds):
                 return "Background budget expired before \(phase) with \(remainingSeconds)s remaining."
             case let .backgroundFullRebuildDeferred(phase):
@@ -1372,7 +1373,7 @@ public actor SharedAutoUpdateManager {
             await scheduleAfterFailure(overLimit: error is ContentBlockerLimitError)
             return await finishStartedRun(error is ContentBlockerLimitError
                 ? .overLimit(message: error.localizedDescription)
-                : .failed(message: error.localizedDescription))
+                : .failed(message: LogErrorDescriber.describe(error)))
         }
     }
 
@@ -1937,17 +1938,20 @@ public actor SharedAutoUpdateManager {
 
         let counts = await MainActor.run { ProtobufDataManager.shared.ruleCountsByCategory.mapValues { Int($0) } }
         let reloadResults = try await reloadTargets(targets, ruleCounts: counts, policy: policy, force: true)
-        let failedTargets = targets.filter { reloadResults[$0.bundleIdentifier]?.success == false }.map(\.displayName)
-
-        if !failedTargets.isEmpty {
-            appendSharedLog(
-                "Reload failures while reusing existing outputs: \(failedTargets.prefix(3).joined(separator: ", "))"
-            )
-            throw AutoUpdateError.contentBlockerReloadFailed(
-                identifiers: [],
-                names: failedTargets
-            )
+        let failures = targets.compactMap { target in
+            reloadResults[target.bundleIdentifier].flatMap { Self.reloadFailure(target, $0) }
         }
+        if !failures.isEmpty {
+            appendSharedLog("Reload failures while reusing existing outputs: \(failures.joined(separator: ", "))")
+            throw AutoUpdateError.contentBlockerReloadFailed(failures: failures)
+        }
+    }
+
+    /// "wBlock 1 (reason)" for a failed reload, nil for a successful one.
+    private static func reloadFailure(
+        _ target: ContentBlockerTargetInfo, _ reload: ContentBlockerService.ReloadAttemptResult
+    ) -> String? {
+        reload.success ? nil : "\(target.displayName) (\(reload.failureReason ?? "no reason given"))"
     }
 
     /// Reloads each blocker in order, reporting progress. Work still follows the
@@ -2178,8 +2182,7 @@ public actor SharedAutoUpdateManager {
         }
         var metrics: [RebuildTargetMetrics] = []
         var appliedSourceRuleCountsByFilterID: [UUID: Int] = [:]
-        var failedIDs: [String] = []
-        var failedNames: [String] = []
+        var failures: [String] = []
         for target in targets {
             try Task.checkCancellation()
             guard let result = results[target.bundleIdentifier],
@@ -2192,10 +2195,7 @@ public actor SharedAutoUpdateManager {
             if let reload = reloadResults[target.bundleIdentifier] {
                 reloadMs = reload.durationMs
                 reloadAttempts = reload.attempts
-                if !reload.success {
-                    failedIDs.append(target.bundleIdentifier)
-                    failedNames.append(target.displayName)
-                }
+                if let failure = Self.reloadFailure(target, reload) { failures.append(failure) }
             }
             for (filterID, count) in conversion.admittedSourceRuleCountsByFilterID {
                 appliedSourceRuleCountsByFilterID[filterID, default: 0] += count
@@ -2213,9 +2213,9 @@ public actor SharedAutoUpdateManager {
                 )
             )
         }
-        if !failedIDs.isEmpty {
-            appendSharedLog("Rebuild reload failures: \(failedNames.joined(separator: ", "))")
-            throw AutoUpdateError.contentBlockerReloadFailed(identifiers: failedIDs, names: failedNames)
+        if !failures.isEmpty {
+            appendSharedLog("Rebuild reload failures: \(failures.joined(separator: ", "))")
+            throw AutoUpdateError.contentBlockerReloadFailed(failures: failures)
         }
         let hits = metrics.filter(\.cacheHit).count
         let writes = metrics.reduce(0) { $0 + $1.inputWriteMs }

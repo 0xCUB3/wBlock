@@ -89,8 +89,10 @@ extension AppFilterManager {
             metadata: metadata
         )
 
-        let resolvedStatusMessage = statusMessage
-            ?? LocalizedStrings.text("Failed", comment: "Generic failure status")
+        // The sheet shows this. A bare "Failed" left the reason in the logs.
+        let resolvedStatusMessage = statusMessage ?? metadata["error"].map {
+            LocalizedStrings.format("%@: %@", comment: "Apply failed: what failed, then why", logMessage, $0)
+        } ?? logMessage
         await MainActor.run {
             self.autoApplyTask?.cancel()
             self.autoApplyTask = nil
