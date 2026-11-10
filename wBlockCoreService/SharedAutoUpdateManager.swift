@@ -238,6 +238,8 @@ public actor SharedAutoUpdateManager {
     private var lastStatusCheck: Date?
     private let statusCacheTTL: TimeInterval = 5.0 // 5 seconds cache
     private var runInProgress = false
+    /// Forced requests that arrived during a run; that run's outcome answers them.
+    private var joinedRuns: [CheckedContinuation<AutoUpdateRunOutcome, Never>] = []
     /// Held by the app around its own update check and apply so an in-process
     /// run does not rebuild the same targets concurrently (#821), and the app
     /// does not check or apply on top of a run that has started.
@@ -731,16 +733,37 @@ public actor SharedAutoUpdateManager {
         policy: AutoUpdateExecutionPolicy
     ) async -> AutoUpdateRunOutcome {
         guard !runInProgress else {
+            // A forced request, such as the popup's Update Filters, wants a run
+            // now and one is under way, so that run's outcome answers it.
+            // Skipping showed "already_running" in the popup as a failure.
+            if force {
+                appendTelemetry("run_join", fields: ["trigger": trigger])
+                let outcome = await withCheckedContinuation { joinedRuns.append($0) }
+                // The run never started (throttled, say), so start one now.
+                if case .skipped = outcome {
+                    return await runIfNeeded(trigger: trigger, force: force, policy: policy)
+                }
+                return outcome
+            }
             os_log("Auto-update already running, skipping trigger: %{public}@", log: log, type: .info, trigger)
             appendSkipTelemetry(trigger: trigger, reason: "already_running")
             return .skipped(reason: "already_running")
         }
         runInProgress = true
-        defer {
-            runInProgress = false
-            finishForegroundRun()
-        }
+        let outcome = await runOnce(trigger: trigger, force: force, policy: policy)
+        runInProgress = false
+        finishForegroundRun()
+        let joined = joinedRuns
+        joinedRuns = []
+        joined.forEach { $0.resume(returning: outcome) }
+        return outcome
+    }
 
+    private func runOnce(
+        trigger: String,
+        force: Bool,
+        policy: AutoUpdateExecutionPolicy
+    ) async -> AutoUpdateRunOutcome {
         await ProtobufDataManager.shared.waitUntilLoaded()
 
         // Onboarding owns the first download and apply; a rebuild racing it
