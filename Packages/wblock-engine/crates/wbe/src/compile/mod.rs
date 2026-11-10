@@ -24,23 +24,28 @@ pub enum Tier {
     GenericHide = 0,
     /// `$generichide` and `$elemhide`: cancel the native hides.
     HideException = 1,
+    /// `$denyallow`: the block, then its exclusions.
+    DenyallowBlock = 2,
+    /// The exclusions of a `$denyallow` block. Each cancels only the blocks
+    /// before it, so they sit ahead of every other block.
+    DenyallowException = 3,
     /// Blocks with no page domains, which `$genericblock` lifts.
-    GenericBlock = 2,
+    GenericBlock = 4,
     /// `$genericblock`: cancels the generic blocks before it on the page's
     /// subresources, leaving its hides and the blocks after it in place.
-    GenericBlockException = 3,
-    Block = 4,
-    Exception = 5,
+    GenericBlockException = 5,
+    Block = 6,
+    Exception = 7,
     /// `$important` with `$denyallow`: the block, then its exclusions.
-    ImportantDenyallowBlock = 6,
-    /// The exclusions of an important `$denyallow` block. Each cancels only
-    /// the blocks before it, so they sit ahead of every other important block.
-    ImportantDenyallowException = 7,
-    ImportantBlock = 8,
+    ImportantDenyallowBlock = 8,
+    /// The exclusions of an important `$denyallow` block, ahead of every
+    /// other important block for the same reason.
+    ImportantDenyallowException = 9,
+    ImportantBlock = 10,
     /// AdGuard `$important` exceptions override important blocks.
-    ImportantException = 9,
+    ImportantException = 11,
     /// `@@...$document`: cancels everything on the page.
-    DocumentException = 10,
+    DocumentException = 12,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -140,9 +145,11 @@ impl DomainSpan {
 pub(crate) use network::{surviving, Context as NetworkContext};
 
 /// Tiers in output order.
-const TIERS: [Tier; 11] = [
+const TIERS: [Tier; 13] = [
     Tier::GenericHide,
     Tier::HideException,
+    Tier::DenyallowBlock,
+    Tier::DenyallowException,
     Tier::GenericBlock,
     Tier::GenericBlockException,
     Tier::Block,
@@ -249,7 +256,7 @@ impl Emitted {
         let mut order = Vec::with_capacity(self.entries.len());
         let mut front_at = 0;
         for tier in TIERS {
-            if tier == Tier::GenericBlock {
+            if tier == Tier::DenyallowBlock {
                 front_at = order.len();
             }
             for (i, entry) in self.entries.iter_mut().enumerate().filter(|(_, e)| e.tier == tier) {

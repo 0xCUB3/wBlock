@@ -26,11 +26,14 @@ const WBE = process.env.WBE_BIN ?? path.join(ROOT, 'target/release/wbe');
 const TIERS = [
   ['genericHide', { add: 'generic' }],
   ['hideException', {}],
+  // `$denyallow`: the block, then its exclusions, both ahead of every other
+  // block. An exclusion matches subresource loads only, so it cancels blocks
+  // and no hides.
+  ['denyallowBlock', { add: 'blocked' }],
+  ['denyallowException', { cancel: ['blocked'] }],
   ['block', { add: 'blocked' }],
   ['exception', {}],
-  // `$important,$denyallow`: the block, then its exclusions, both ahead of the
-  // other important blocks. An exclusion matches subresource loads only, so it
-  // cancels blocks and no hides.
+  // `$important,$denyallow`: the same, ahead of the other important blocks.
   ['importantDenyallowBlock', { add: 'blocked' }],
   ['importantDenyallowException', { cancel: ['blocked'] }],
   ['importantBlock', { add: 'blocked' }],
@@ -65,7 +68,7 @@ const laws = (m: any) => [
   m.law('an important block beats exceptions', (e: any) => e.importantBlock.and(e.documentException.not(), e.importantException.not()), (o: any) => o.blocked),
   m.law('an important exception lifts every block', (e: any) => e.importantException, (o: any) => o.blocked.not()),
   m.law('an exception lifts an ordinary block', (e: any) => e.exception.and(e.importantBlock.not(), e.importantDenyallowBlock.not()), (o: any) => o.blocked.not()),
-  m.law('nothing is blocked without a blocking filter', (e: any) => e.block.not().and(e.importantBlock.not(), e.importantDenyallowBlock.not()), (o: any) => o.blocked.not()),
+  m.law('nothing is blocked without a blocking filter', (e: any) => e.block.not().and(e.denyallowBlock.not(), e.importantBlock.not(), e.importantDenyallowBlock.not()), (o: any) => o.blocked.not()),
   m.law('$document lifts everything on the page', (e: any) => e.documentException, (o: any) => o.blocked.not().and(o.generic.not())),
   // WebKit limit, not uBO: an exception matching the page load itself also lifts
   // its hides. network.rs gives exceptions a page-load trigger only where one
@@ -73,7 +76,9 @@ const laws = (m: any) => [
   m.law('a page-load exception lifts the page hides', (e: any) => e.exception, (o: any) => o.generic.not()),
   m.law('$generichide and $elemhide lift the native hides', (e: any) => e.hideException, (o: any) => o.generic.not()),
   // A `$denyallow` exclusion lifts its own block (and the blocks above it),
-  // but not an important block placed after it.
+  // but no block placed after it.
+  m.law('a denyallow exclusion lifts its own block', (e: any) => e.denyallowBlock.and(e.denyallowException, e.block.not(), e.importantBlock.not(), e.importantDenyallowBlock.not()), (o: any) => o.blocked.not()),
+  m.law('a denyallow exclusion does not lift an unrelated block', (e: any) => e.denyallowException.and(e.block, e.exception.not(), e.importantDenyallowException.not(), e.importantException.not(), e.documentException.not()), (o: any) => o.blocked),
   m.law('a denyallow exclusion lifts its own important block', (e: any) => e.importantDenyallowBlock.and(e.importantDenyallowException, e.importantBlock.not(), e.importantException.not(), e.documentException.not()), (o: any) => o.blocked.not()),
   m.law('a denyallow exclusion does not lift an unrelated important block', (e: any) => e.importantDenyallowException.and(e.importantBlock, e.importantException.not(), e.documentException.not()), (o: any) => o.blocked),
 ];
@@ -104,6 +109,13 @@ const earlyRefusal = proveDecision(laws(model('early exclusions', early)).at(-2)
 assert.equal(earlyRefusal.proven, false, 'exclusions ahead of their block must be refused');
 assert.equal(earlyRefusal.stuck, 'sat', JSON.stringify(earlyRefusal));
 
+// The same for an ordinary `$denyallow` rule whose block and exclusions sit in
+// the block and exception tiers: the exclusion lifts other rules' blocks.
+const late = moved(moved(TIERS, 'denyallowBlock', 'exception'), 'denyallowException', 'importantDenyallowBlock');
+const lateRefusal = proveDecision(laws(model('late exclusions', late)).at(-3)!);
+assert.equal(lateRefusal.proven, false, 'exclusions after other blocks must be refused');
+assert.equal(lateRefusal.stuck, 'sat', JSON.stringify(lateRefusal));
+
 // Every combination through wbe and the WebKit simulator. An exclusion comes
 // only with its block (both are one `$denyallow` rule), so an exclusion without
 // a block is not a combination the compiler can produce.
@@ -118,8 +130,8 @@ const FILTERS: Partial<Record<Input, string>> = {
 };
 // The denyallow rule: the exclusion covers the tested host only when `excluded`.
 const DENYALLOW = {
-  block: '*$script,domain=page.example,denyallow=other.example,important',
-  excluded: '*$script,domain=page.example,denyallow=t.example,important',
+  block: '*$script,domain=page.example,denyallow=other.example',
+  excluded: '*$script,domain=page.example,denyallow=t.example',
 };
 const names = TIERS.map(([n]) => n);
 const dir = mkdtempSync(path.join(tmpdir(), 'wbe-precedence-'));
@@ -129,8 +141,10 @@ let checked = 0;
 for (let mask = 0; mask < 1 << names.length; mask++) {
   const env = Object.fromEntries(names.map((n, k) => [n, Boolean(mask & (1 << k))])) as Record<Input, boolean>;
   if (env.importantDenyallowException && !env.importantDenyallowBlock) continue;
+  if (env.denyallowException && !env.denyallowBlock) continue;
   const lines = names.filter((n) => env[n]).flatMap((n) => {
-    if (n === 'importantDenyallowBlock') return [env.importantDenyallowException ? DENYALLOW.excluded : DENYALLOW.block];
+    if (n === 'denyallowBlock') return [env.denyallowException ? DENYALLOW.excluded : DENYALLOW.block];
+    if (n === 'importantDenyallowBlock') return [`${env.importantDenyallowException ? DENYALLOW.excluded : DENYALLOW.block},important`];
     const filter = FILTERS[n];
     return filter === undefined ? [] : [filter];
   });
@@ -148,4 +162,4 @@ for (let mask = 0; mask < 1 << names.length; mask++) {
   assert.deepEqual(actual, expected, `combination ${JSON.stringify(env)}`);
   checked++;
 }
-console.log(`precedence: ${laws(precedence).length} laws proven, swapped and early-exclusion orders refused, ${checked} combinations match wbe`);
+console.log(`precedence: ${laws(precedence).length} laws proven, swapped, early-exclusion and late-exclusion orders refused, ${checked} combinations match wbe`);

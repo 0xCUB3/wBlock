@@ -37,6 +37,8 @@ pub(crate) struct Context {
     strict: StrictHosts,
     /// `$badfilter` rules by pattern body.
     bad: FxHashMap<String, Vec<Bad>>,
+    /// The pages of `$genericblock` exceptions (`genericblock_host`).
+    generic_pages: Vec<String>,
 }
 
 /// A `$badfilter` rule with the shapes `surviving` compares, made once.
@@ -51,6 +53,7 @@ struct Bad {
 impl Context {
     pub(crate) fn add(&mut self, rule: &NetworkRule) {
         self.strict.add(rule);
+        self.generic_pages.extend(genericblock_host(rule));
         if rule.badfilter {
             let bad = Bad {
                 types: rule.types,
@@ -64,12 +67,22 @@ impl Context {
 
     /// Whether `add` keeps anything of `rule`.
     pub(crate) fn holds(rule: &NetworkRule) -> bool {
-        rule.badfilter || StrictHosts::host(rule).is_some()
+        rule.badfilter || StrictHosts::host(rule).is_some() || genericblock_host(rule).is_some()
+    }
+
+    /// Whether a `$genericblock` exception covers pages of `domain`.
+    fn generic_page(&self, domain: &DomainMatcher) -> bool {
+        let DomainMatcher::Hostname(host) = domain else {
+            return !self.generic_pages.is_empty();
+        };
+        let under = |a: &str, b: &str| a.strip_suffix(b).is_some_and(|rest| rest.is_empty() || rest.ends_with('.'));
+        self.generic_pages.iter().any(|page| under(host, page) || under(page, host))
     }
 
     pub(crate) fn merge(&mut self, other: Context) {
         self.strict.hosts.extend(other.strict.hosts);
         self.strict.parents.extend(other.strict.parents);
+        self.generic_pages.extend(other.generic_pages);
         for (body, bad) in other.bad {
             self.bad.entry(body).or_default().extend(bad);
         }
@@ -336,12 +349,15 @@ fn compile_rule(
 
 /// uBO blocks what the rule matches except requests to the `$denyallow`
 /// hosts. For a match-all rule scoped to pages that is the block plus one
-/// exception per allowed host under the same options. The exceptions also
-/// lift other lists' blocks of those hosts on those pages (under-blocking);
-/// with a pattern they would lift more, so only match-all rules expand.
-/// An important block takes its exclusions in the tiers just before the
-/// important blocks: an exception there lifts this block and no other
-/// important block, and it cannot follow the block without lifting them.
+/// exception per allowed host under the same options. The block and its
+/// exclusions go ahead of every other block, and an important block's ahead
+/// of every other important block: an exclusion there lifts this block and
+/// no other, and it cannot follow the block without lifting those between.
+/// A `$genericblock` exception would then lift the block on its pages, which
+/// uBO's does not for a rule naming pages, so on such pages the block stays
+/// in the ordinary tiers, where its exclusions also lift other rules' blocks
+/// of those hosts (under-blocking). With a pattern the exclusions would lift
+/// more, so only match-all rules expand.
 fn compile_denyallow(
     r: &NetworkRule,
     v: SafariVersion,
@@ -353,8 +369,10 @@ fn compile_denyallow(
     }
     let (block_tier, allow_tier) = if r.important {
         (Tier::ImportantDenyallowBlock, Tier::ImportantDenyallowException)
-    } else {
+    } else if r.from.include.iter().any(|d| ctx.generic_page(d)) {
         (Tier::Block, Tier::Exception)
+    } else {
+        (Tier::DenyallowBlock, Tier::DenyallowException)
     };
     let block = NetworkRule {
         denyallow: Vec::new(),
@@ -1846,9 +1864,14 @@ mod tests {
             denyallow: vec!["a.net".into(), "b.com".into()],
             ..net("*")
         };
-        let (out, stats) = run(&[rule], V15);
+        let (out, stats) = run(std::slice::from_ref(&rule), V15);
         assert!(stats.dropped.is_empty());
-        assert_eq!(tiers(&out), [Tier::Block, Tier::Exception, Tier::Exception]);
+        // Ahead of every other block, so the exclusions lift only this one.
+        assert_eq!(tiers(&out), [Tier::DenyallowBlock, Tier::DenyallowException, Tier::DenyallowException]);
+        // A `$genericblock` exception there would lift the block on its page.
+        let generic = NetworkRule { scope: ExceptionScope::GENERICBLOCK, ..exc("@@||sub.s.com^$genericblock") };
+        let out_generic = run(&[rule.clone(), generic], V15).0;
+        assert_eq!(tiers(&out_generic)[..3], [Tier::Block, Tier::Exception, Tier::Exception]);
         assert!(out
             .iter()
             .all(|t| t.rule.trigger.if_top_url == host_top_url("*s.com").map(|u| vec![u])));
