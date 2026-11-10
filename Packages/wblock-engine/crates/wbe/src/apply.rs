@@ -375,8 +375,10 @@ impl Size {
     const SHARED: (f64, f64, f64) = (1.5, 100.0, 8.5);
     const TAKEN: (f64, f64, f64) = (1.7, 100.0, 3.0);
     const REST: (f64, f64, f64) = (1.0, 100.0, 1.5);
-    /// The part of a limit an estimate may fill.
-    const ROOM: f64 = 0.85;
+    /// The part of a limit an estimate may fill. The estimate is calibrated on
+    /// two setups and nothing re-plans a blocker that compiles over its limit,
+    /// so leave room for list mixes that compile fatter than estimated.
+    const ROOM: f64 = 0.7;
 
     fn add(&mut self, line: &str, (rules, each, bytes): (f64, f64, f64)) {
         self.rules += rules;
@@ -2088,7 +2090,7 @@ mod tests {
     fn blocks_exceptions_reach_share_one_blocker() {
         // Room in the wide blocker for what it takes and no more.
         let plan = plan_within(
-            9,
+            11,
             json!([{ "id":"left", "text":"||plain.example^\n@@||cdn.ads.example/ok.js" },
                    { "id":"right", "text":"||ads.example^\n/banner.\n||other.example^\n||com/track.js" }]),
             json!([{"slot":1,"lists":[{"list":0}]},{"slot":2,"lists":[{"list":1}]}]),
@@ -2124,7 +2126,7 @@ mod tests {
         assert_eq!(held(&one), [302, 0, 0, 0, 0]);
         assert!((1..5).all(|t| actions(&one, t).is_empty()));
         // Room for 170 rules each: two blockers, as full as each other.
-        let two = plan_within(200, lists.clone(), targets.clone());
+        let two = plan_within(243, lists.clone(), targets.clone());
         let counts = held(&two);
         assert_eq!(counts.iter().sum::<usize>(), 302);
         assert!(counts[..2].iter().all(|c| (130..170).contains(c)) && counts[2..] == [0, 0, 0], "{counts:?}");
