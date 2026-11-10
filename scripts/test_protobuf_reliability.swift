@@ -383,6 +383,14 @@ struct ProtobufReliabilityTests {
         let replacement = replaced.getUserScripts().first { $0.id == script.id }!
         expect(replacement.metadataAuthorOverride == "Replacement author" && replacement.author == "Replacement author", "author override must survive replacement restart")
         expect(replacement.metadataHomepageOverride == "https://example.com/replacement-home" && replacement.homepage == "https://example.com/replacement-home", "homepage override must survive replacement restart")
+
+        // An undownloaded built-in has no header to parse, so its catalog credits must survive a reload (#1106).
+        let builtIn = UserScript(name: "Return YouTube Dislike", url: URL(string: "https://raw.githubusercontent.com/Anarios/return-youtube-dislike/main/Extensions/UserScript/Return%20Youtube%20Dislike.user.js"))
+        _ = await replaced.updateUserScripts([builtIn])
+        let reloaded = await makeManager(root: root)
+        await reloaded.loadData()
+        let credited = reloaded.getUserScripts().first { $0.id == builtIn.id }!
+        expect(credited.author == "Anarios & JRWR" && credited.homepage == "https://www.returnyoutubedislike.com/", "built-in credits must survive a store reload")
     }
 
     private static func testSelectedSites(root: URL) async {

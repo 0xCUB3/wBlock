@@ -169,6 +169,7 @@ extension ProtobufDataManager {
             script.metadataHomepageOverride = protoData.hasMetadataHomepageOverride ? protoData.metadataHomepageOverride : nil
             script.author = script.metadataAuthorOverride
             script.homepage = script.metadataHomepageOverride
+            BuiltInUserScripts.applyCredits(to: &script)
             return script
         }
     }

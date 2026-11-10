@@ -6,6 +6,10 @@ struct UserScriptDisplayMetadataTests {
         for definition in BuiltInUserScripts.definitions {
             var script = UserScript(name: definition.name, url: URL(string: definition.url))
             script.description = definition.description
+            // Startup fills credits before the script has ever downloaded (#1106).
+            BuiltInUserScripts.applyDisplayMetadata(to: &script)
+            expect(script.author == definition.author && script.homepage == definition.homepage,
+                   "undownloaded built-ins show catalog credits")
             let originalID = script.id
             let originalURL = script.url
             let expectedDescription = definition.description == "Default userscript"
@@ -21,7 +25,7 @@ struct UserScriptDisplayMetadataTests {
                 let previous = script
                 script.replaceContentAndParseMetadata(content)
                 script.restoreDisplayMetadata(from: previous)
-                expect(script.version == version && script.author == "Header author", "runtime metadata still refreshes")
+                expect(script.version == version && script.author == definition.author, "runtime metadata refreshes; credits stay curated")
                 expect(script.matches == ["*://example.com/*"], "match directives still refresh")
                 expect(script.updateURL == "https://example.com/script.meta.js", "header update URL still parses")
                 expect(script.description == expectedDescription, "download keeps curated descriptions")
