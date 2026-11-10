@@ -251,18 +251,7 @@ extension AppFilterManager {
         isApplyInFlight = true
         // An auto-update run in this process holds no lease on iOS; this claim
         // is what keeps the two from rebuilding the same targets at once.
-        guard await SharedAutoUpdateManager.shared.beginForegroundWork() else {
-            isApplyInFlight = false
-            await ConcurrentLogManager.shared.warning(
-                .filterApply,
-                LocalizedStrings.text(
-                    "Skipped overlapping apply request",
-                    comment: "Apply pipeline concurrency guard"
-                ),
-                metadata: ["reason": "auto_update_running"]
-            )
-            return false
-        }
+        await SharedAutoUpdateManager.shared.beginForegroundWork()
         #if os(macOS)
         // Keep FilterUpdateAgent from rebuilding the same targets mid-apply.
         // Await without blocking the main actor; refuse the apply if ownership

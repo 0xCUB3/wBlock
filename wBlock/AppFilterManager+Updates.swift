@@ -69,9 +69,10 @@ extension AppFilterManager {
             }
         }
 
-        // Holds off an auto-update run until the check ends. One that started
-        // alongside it closed the review sheet when it finished.
-        guard await SharedAutoUpdateManager.shared.beginForegroundWork() else { return }
+        // Holds off an auto-update run until the check ends, after waiting out
+        // one that already started. One that ran alongside the check closed
+        // the review sheet when it finished.
+        await SharedAutoUpdateManager.shared.beginForegroundWork()
         defer { Task { await SharedAutoUpdateManager.shared.endForegroundWork() } }
 
         statusDescription = LocalizedStrings.text("Checking for updates...", comment: "Update check status")

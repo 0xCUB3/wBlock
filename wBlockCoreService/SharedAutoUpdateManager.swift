@@ -243,12 +243,21 @@ public actor SharedAutoUpdateManager {
     /// does not check or apply on top of a run that has started.
     private var foregroundGate = ForegroundRunGate()
 
-    public func beginForegroundWork() -> Bool {
-        foregroundGate.beginForegroundWork()
+    /// Claims app work, first waiting out a run that has started.
+    public func beginForegroundWork() async {
+        while await withCheckedContinuation({ (claimed: CheckedContinuation<Bool, Never>) in
+            if foregroundGate.beginForegroundWork(orWait: { claimed.resume(returning: false) }) {
+                claimed.resume(returning: true)
+            }
+        }) == false {}
     }
 
     public func endForegroundWork() {
         foregroundGate.endForegroundWork()
+    }
+
+    private func finishForegroundRun() {
+        foregroundGate.finishRun().forEach { $0() }
     }
 
     /// Stage of a run in this process, so the app can show a run it did not start.
@@ -729,7 +738,7 @@ public actor SharedAutoUpdateManager {
         runInProgress = true
         defer {
             runInProgress = false
-            foregroundGate.finishRun()
+            finishForegroundRun()
         }
 
         await ProtobufDataManager.shared.waitUntilLoaded()
@@ -915,8 +924,8 @@ public actor SharedAutoUpdateManager {
 
         func finishStartedRun(_ outcome: AutoUpdateRunOutcome) async -> AutoUpdateRunOutcome {
             await ProtobufDataManager.shared.setAutoUpdateIsRunning(false)
-            // Before reporting, so the app's follow-up apply is not refused.
-            foregroundGate.finishRun()
+            // Before reporting, so the app's follow-up apply does not wait.
+            finishForegroundRun()
             await reportRunProgress(.finished)
             let didPersistCleanup = await ProtobufDataManager.shared.saveDataImmediately()
             invalidateStatusCache()
