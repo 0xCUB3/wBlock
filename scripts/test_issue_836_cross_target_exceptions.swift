@@ -1,6 +1,6 @@
 // Behavioural check for #836: an `@@` exception that lives in a list compiled
-// into another content blocker must be replicated next to the block it
-// can cancel, including generic blocks that name no host.
+// into another content blocker must still lift the blocks it can cancel,
+// wherever the engine places them, including generic blocks that name no host.
 import Foundation
 import wBlockCoreService
 
@@ -42,75 +42,61 @@ struct Main {
         let selection = [blocker, excepter]
         let ordered = ContentBlockerMappingService.orderedForCompilation(selection)
         let mapping = ContentBlockerMappingService.distribute(selectedFilters: selection, across: targets)
-        guard let blockerSlot = mapping.first(where: { $0.value.contains(where: { $0.id == blocker.id }) })?.key,
-              let excepterSlot = mapping.first(where: { $0.value.contains(where: { $0.id == excepter.id }) })?.key,
-              blockerSlot != excepterSlot
+        let slotOf = { (list: FilterList) in mapping.first(where: { $0.value.contains(where: { $0.id == list.id }) })?.key }
+        guard let blockerSlot = slotOf(blocker), blockerSlot != slotOf(excepter)
         else { fail("the two lists must be assigned to different blockers") }
 
-        func compile(_ slot: ContentBlockerTargetInfo) throws -> [[String: Any]] {
-            _ = try ContentBlockerService.compileTargetRules(
-                filters: mapping[slot] ?? [], orderedSelectedFilters: ordered,
-                targetInfo: slot, allTargets: targets,
-                disabledSites: [], extraRulesText: nil, groupIdentifier: groupIdentifier,
-                containerURL: container
-            )
-            let data = try Data(contentsOf: container.appendingPathComponent(slot.rulesFilename))
-            return try JSONSerialization.jsonObject(with: data) as? [[String: Any]] ?? []
-        }
-        // A rule may compile to several triggers; only the order of actions matters.
-        func runs(_ actions: [String]) -> [String] {
-            actions.reduce(into: []) { if $0.last != $1 { $0.append($1) } }
-        }
-        func actions(_ rules: [[String: Any]], containing fragment: String) -> [String] {
-            rules.compactMap { rule in
-                guard let trigger = rule["trigger"] as? [String: Any],
-                      let filter = trigger["url-filter"] as? String, filter.lowercased().contains(fragment.lowercased()),
-                      let action = rule["action"] as? [String: Any]
-                else { return nil }
-                return action["type"] as? String
+        // Every blocker, compiled as the app applies them; true where the
+        // blocker reused its cached output.
+        func compileAll() throws -> (blockers: [[[String: Any]]], reused: [Bool]) {
+            var blockers: [[[String: Any]]] = []
+            var reused: [Bool] = []
+            for slot in targets {
+                let outcome = try ContentBlockerService.compileTargetRules(
+                    filters: mapping[slot] ?? [], orderedSelectedFilters: ordered,
+                    targetInfo: slot, allTargets: targets,
+                    disabledSites: [], extraRulesText: nil, groupIdentifier: groupIdentifier,
+                    containerURL: container
+                )
+                let data = try Data(contentsOf: container.appendingPathComponent(slot.rulesFilename))
+                blockers.append(try JSONSerialization.jsonObject(with: data) as? [[String: Any]] ?? [])
+                reused.append(outcome.reusedCachedBase)
             }
+            return (blockers, reused)
         }
 
-        let blockerRules = try compile(blockerSlot)
-        if runs(actions(blockerRules, containing: "GLinkPing")) != ["block", "ignore-previous-rules"] {
-            fail("exception for a block in another slot must be replicated after that block; got \(actions(blockerRules, containing: "GLinkPing"))")
+        let glinkPing = "https://www.bing.com/fd/ls/GLinkPing.aspx?IG=1"
+        let first = try compileAll()
+        func blocks(_ url: String, on host: String = "page.example", type: String = "script") -> Bool {
+            safariBlocks(url, on: host, type: type, in: first.blockers)
         }
-        if actions(blockerRules, containing: "tracker").last != "ignore-previous-rules" {
-            fail("an exception narrower than a whole-host block must be replicated")
+        if !blocks("https://site1.example/x.js") || !blocks("https://tracker.example/x.js") {
+            fail("the blocker list's blocks must apply")
         }
-        // Every slot compiles the compatibility rules' path blocks (`/js/widget/ads.js`),
-        // which match URLs on any host, so a host exception lifts them there too.
-        if actions(blockerRules, containing: "unrelated").last != "ignore-previous-rules" {
-            fail("an exception must reach a slot whose generic blocks match its URLs")
+        if blocks(glinkPing) { fail("an exception in another list must lift a block it matches") }
+        if blocks("https://sub.tracker.example/path/x.js") || !blocks("https://sub.tracker.example/path/x.js", type: "image") {
+            fail("an exception narrower than a whole-host block must lift only the loads it names")
+        }
+        // The compatibility rules' path blocks match URLs on any host, so a
+        // host exception lifts them there too.
+        if !blocks("https://cdn.example/js/widget/ads.js") || blocks("https://unrelated.example/js/widget/ads.js") {
+            fail("an exception must reach generic blocks that match its URLs")
+        }
+        if !blocks("https://ads.example/a.js") || blocks("https://ads.example/a.js", on: "news.example") {
+            fail("an exception in the block's own list must keep working")
         }
 
-        let excepterRules = try compile(excepterSlot)
-        if runs(actions(excepterRules, containing: "ads\\.example")) != ["block", "ignore-previous-rules"] {
-            fail("same-slot exceptions must keep working")
-        }
-        if actions(excepterRules, containing: "GLinkPing").contains("block") {
-            fail("the excepter's own slot must not gain the other slot's block")
-        }
-
-        // Cache identity must cover the other slot's exceptions.
-        let cached = try ContentBlockerService.compileTargetRules(
-            filters: mapping[blockerSlot] ?? [], orderedSelectedFilters: ordered,
-            targetInfo: blockerSlot, allTargets: targets,
-            disabledSites: [], extraRulesText: nil, groupIdentifier: groupIdentifier, containerURL: container
-        )
-        if !cached.reusedCachedBase { fail("unchanged inputs must hit the cache") }
+        // Cache identity must cover the other list's exceptions, wherever
+        // they were compiled.
+        if !(try compileAll()).reused.allSatisfy({ $0 }) { fail("unchanged inputs must hit the cache") }
         sleep(1)
         try write(excepter, "||ads.example^\n@@||unrelated.example^\n")
-        let rebuilt = try ContentBlockerService.compileTargetRules(
-            filters: mapping[blockerSlot] ?? [], orderedSelectedFilters: ordered,
-            targetInfo: blockerSlot, allTargets: targets,
-            disabledSites: [], extraRulesText: nil, groupIdentifier: groupIdentifier, containerURL: container
-        )
-        if rebuilt.reusedCachedBase { fail("changing another slot's exceptions must rebuild this slot") }
-        let data = try Data(contentsOf: container.appendingPathComponent(blockerSlot.rulesFilename))
-        let after = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] ?? []
-        if runs(actions(after, containing: "GLinkPing")) != ["block"] {
-            fail("a removed exception must disappear from the other slot")
+        let rebuilt = try compileAll()
+        if !safariBlocks(glinkPing, on: "page.example", in: rebuilt.blockers) {
+            fail("a removed exception must stop lifting the block in every blocker")
+        }
+        if safariBlocks("https://unrelated.example/js/widget/ads.js", on: "page.example", in: rebuilt.blockers) {
+            fail("the remaining exception must keep working")
         }
 
         print("PASS")

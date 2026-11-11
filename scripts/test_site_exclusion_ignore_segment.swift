@@ -32,26 +32,7 @@ struct SiteExclusionIgnoreSegmentTests {
         let rules = try JSONSerialization.jsonObject(with: data) as? [[String: Any]] ?? []
 
         func blocked(_ url: String, on host: String) -> Bool {
-            var state = false
-            for rule in rules {
-                let trigger = rule["trigger"] as? [String: Any] ?? [:]
-                guard let filter = trigger["url-filter"] as? String,
-                      url.range(of: filter, options: .regularExpression) != nil else { continue }
-                let matches: ([String]) -> Bool = { $0.contains { d in
-                    let site = d.hasPrefix("*") ? String(d.dropFirst()) : d
-                    return host == site || host.hasSuffix("." + site)
-                } }
-                if let only = trigger["if-domain"] as? [String], !matches(only) { continue }
-                if let except = trigger["unless-domain"] as? [String], matches(except) { continue }
-                if let pages = trigger["if-top-url"] as? [String],
-                   !pages.contains(where: { "https://\(host)/".range(of: $0, options: .regularExpression) != nil }) { continue }
-                switch (rule["action"] as? [String: Any])?["type"] as? String {
-                case "block": state = true
-                case "ignore-previous-rules": state = false
-                default: break
-                }
-            }
-            return state
+            safariBlocks(url, on: host, in: [rules])
         }
 
         let conditioned = rules.filter { (($0["trigger"] as? [String: Any])?["unless-domain"]) != nil }.count

@@ -57,7 +57,7 @@ struct Main {
         }
         try write(left, content)
         try write(right, content.uppercased())
-        func compileSlots(_ selection: [FilterList]) throws -> [ContentBlockerService.ContentBlockerTargetOutcome] {
+        func compileSlots(_ selection: [FilterList], in folder: URL = container) throws -> [ContentBlockerService.ContentBlockerTargetOutcome] {
             let ordered = ContentBlockerMappingService.orderedForCompilation(selection)
             let mapping = ContentBlockerMappingService.distribute(selectedFilters: selection, across: targets)
             return try targets.map { slot in
@@ -65,8 +65,25 @@ struct Main {
                     filters: mapping[slot] ?? [], orderedSelectedFilters: ordered,
                     targetInfo: slot, allTargets: targets,
                     disabledSites: [], extraRulesText: nil, groupIdentifier: groupIdentifier,
-                    containerURL: container
+                    containerURL: folder
                 )
+            }
+        }
+        // Every blocker must hold what a build without any cache makes of the
+        // same lists: a blocker whose output depends on a changed list, by its
+        // own lists, the blocks it holds for others or their exceptions, is
+        // never left stale.
+        func expectCurrent(_ selection: [FilterList], _ message: String) throws {
+            let fresh = container.appendingPathComponent("fresh-\(UUID().uuidString)", isDirectory: true)
+            try FileManager.default.createDirectory(at: fresh, withIntermediateDirectories: true)
+            for filter in selection {
+                let name = ContentBlockerIncrementalCache.localFilename(for: filter)
+                try FileManager.default.copyItem(at: container.appendingPathComponent(name), to: fresh.appendingPathComponent(name))
+            }
+            _ = try compileSlots(selection, in: fresh)
+            for slot in targets {
+                let output = { (folder: URL) in try Data(contentsOf: folder.appendingPathComponent(slot.rulesFilename)) }
+                if try output(container) != output(fresh) { fail("\(message): \(slot.displayName) is stale") }
             }
         }
         let baseline = try compileSlots([left]).reduce(0) { $0 + $1.safariRulesCount }
@@ -76,14 +93,17 @@ struct Main {
         let ordered = ContentBlockerIncrementalCache.canonicalFilterOrder([left, right])
         try write(ordered[0], "! emptied owner\n")
         let moved = try compileSlots([left, right])
-        let mapping = ContentBlockerMappingService.distribute(selectedFilters: [left, right], across: targets)
-        let dependent = targets.indices.filter { !(mapping[targets[$0]] ?? []).isEmpty }
-        if dependent.contains(where: { moved[$0].reusedCachedBase }) { fail("changing an owner must invalidate dependent slots") }
+        try expectCurrent([left, right], "changing an owner must invalidate dependent slots")
         if moved.reduce(0, { $0 + $1.safariRulesCount }) != baseline { fail("later copy must take ownership when first copy disappears") }
+        // A list's blocks may sit in a blocker another list is assigned to.
+        try write(ordered[1], content.uppercased() + "||added.example^\n")
+        _ = try compileSlots([left, right])
+        try expectCurrent([left, right], "a new block must reach the blocker that holds it")
 
         try write(left, content + "@@||site1.example^\n")
         try write(right, content)
         let exceptions = try compileSlots([left, right])
+        try expectCurrent([left, right], "an exception must reach the blocker that holds its block")
         if exceptions.reduce(0, { $0 + $1.safariRulesCount }) <= baseline { fail("different slot-local exceptions require separate blocking copies") }
 
         print("PASS")

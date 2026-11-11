@@ -42,11 +42,12 @@ struct Main {
             try text.write(to: container.appendingPathComponent(ContentBlockerIncrementalCache.localFilename(for: filter)), atomically: true, encoding: .utf8)
             return filter
         }
-        func compile(_ filters: [FilterList], _ selection: [FilterList], _ slot: ContentBlockerTargetInfo) throws -> ContentBlockerService.ContentBlockerTargetOutcome {
+        func compile(_ filters: [FilterList], _ selection: [FilterList], _ slot: ContentBlockerTargetInfo,
+                     among blockers: [ContentBlockerTargetInfo] = targets) throws -> ContentBlockerService.ContentBlockerTargetOutcome {
             let ordered = ContentBlockerMappingService.orderedForCompilation(selection)
             return try ContentBlockerService.compileTargetRules(
                 filters: filters, orderedSelectedFilters: ordered,
-                targetInfo: slot, allTargets: targets, disabledSites: [], extraRulesText: nil,
+                targetInfo: slot, allTargets: blockers, disabledSites: [], extraRulesText: nil,
                 groupIdentifier: groupIdentifier, containerURL: container
             )
         }
@@ -57,23 +58,28 @@ struct Main {
         let bigSlots = targets.filter { mapping[$0]?.contains { $0.id == big.id } == true }
         if bigSlots.count != 2 { fail("a 170k list must be split across two blockers, got \(bigSlots.count)") }
         var compiled = 0
-        for slot in bigSlots {
+        var blockers: [[[String: Any]]] = []
+        for slot in targets {
             let outcome = try compile(mapping[slot] ?? [], selection, slot)
             if outcome.truncatedRuleCount > 0 { fail("\(slot.displayName) still overflows") }
-            let json = try String(contentsOf: container.appendingPathComponent(slot.rulesFilename), encoding: .utf8)
-            if !json.contains("ignore-previous-rules") { fail("every part of a split list keeps its exceptions") }
+            let data = try Data(contentsOf: container.appendingPathComponent(slot.rulesFilename))
+            blockers.append(try JSONSerialization.jsonObject(with: data) as? [[String: Any]] ?? [])
             compiled += outcome.safariRulesCount
         }
         if compiled < 170_000 { fail("split parts must keep every rule, got \(compiled)") }
+        // The list's exception lifts its block wherever the block landed.
+        let hosts = ["big-0", "big-169999", "small-0"].map { "https://\($0).example/x.js" }
+        if !hosts.allSatisfy({ safariBlocks($0, on: "page.example", in: blockers) }) { fail("every part of a split list must block") }
+        if safariBlocks("https://big-7.example/x.js", on: "page.example", in: blockers) { fail("a split list keeps its exceptions") }
 
-        // Underestimated, so not split: the converter's own cut must surface.
+        // Underestimated, with no other blocker to take part of it: the
+        // converter's own cut must surface.
         var hidden = try list("hidden", 170_000)
         hidden.sourceRuleCount = 50_000
         let lone = [hidden]
-        let loneMapping = ContentBlockerMappingService.distribute(selectedFilters: lone, across: targets)
-        guard let slot = targets.first(where: { loneMapping[$0]?.isEmpty == false }) else { fail("no blocker for the list") }
+        let slot = targets[0]
         for attempt in 1...2 {
-            let outcome = try compile(loneMapping[slot] ?? [], lone, slot)
+            let outcome = try compile(lone, lone, slot, among: [slot])
             if outcome.truncatedRuleCount == 0 { fail("converter overflow went unreported on attempt \(attempt)") }
         }
 

@@ -165,8 +165,10 @@ compile_core_test issue-675-rule-analysis scripts/test_issue_675_rule_analysis.s
 compile_core_test issue-679-affinity-cache-behavior scripts/test_issue_679_affinity_cache_behavior.swift
 compile_core_test issue-681-dedup-behavior scripts/test_issue_681_dedup_behavior.swift
 compile_core_test zapper-rule-editing scripts/test_zapper_rule_editing.swift
-compile_core_test issue-836-cross-target-exceptions scripts/test_issue_836_cross_target_exceptions.swift
-compile_core_test content-blocker-slot-overflow scripts/test_content_blocker_slot_overflow.swift
+compile_core_test issue-836-cross-target-exceptions scripts/test_issue_836_cross_target_exceptions.swift \
+  scripts/helpers/content_blocker_verdict.swift
+compile_core_test content-blocker-slot-overflow scripts/test_content_blocker_slot_overflow.swift \
+  scripts/helpers/content_blocker_verdict.swift
 compile_core_test issue-681-url-identity scripts/test_issue_681_url_identity.swift
 compile_core_test issue-683-reorder-cache scripts/test_issue_683_reorder_cache.swift \
   wBlock/ListDisplayOrder.swift
@@ -220,7 +222,8 @@ compile_core_test filter-list-setup scripts/test_filter_list_setup.swift wBlock/
 compile_core_test apply-baseline-acknowledgement scripts/test_apply_baseline_acknowledgement.swift \
   wBlock/ApplyFilterConfiguration.swift
 compile_core_test filter-list-site-exclusion scripts/test_filter_list_site_exclusion.swift
-compile_core_test site-exclusion-ignore-segment scripts/test_site_exclusion_ignore_segment.swift
+compile_core_test site-exclusion-ignore-segment scripts/test_site_exclusion_ignore_segment.swift \
+  scripts/helpers/content_blocker_verdict.swift
 compile_core_test userscript-pattern-budget scripts/test_userscript_pattern_budget.swift
 compile_core_test userscript-stale-extension-cleanup scripts/test_userscript_stale_extension_cleanup.swift
 compile_core_test userscript-update-unchanged-source scripts/test_userscript_update_unchanged_source.swift
