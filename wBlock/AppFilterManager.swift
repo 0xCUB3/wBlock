@@ -734,7 +734,8 @@ class AppFilterManager: ObservableObject {
         var selectedDeprecatedListWasRemoved = false
 
         // Built-in lists wBlock no longer ships. A selected one becomes a custom
-        // list so the user keeps it, unless it's purged; the rest are deleted.
+        // list so the user keeps it, unless it's purged (with any copy an
+        // earlier release kept); the rest are deleted.
         let deprecatedFilterLists = storedFilterLists.filter(FilterListLoader.isRetiredBuiltIn)
         if !deprecatedFilterLists.isEmpty {
             let removedFilters = deprecatedFilterLists.filter {

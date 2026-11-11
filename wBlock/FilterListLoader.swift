@@ -326,8 +326,6 @@ class FilterListLoader {
         "raw.githubusercontent.com/MasterKia/PersianBlocker/main/PersianBlocker.txt",  // Persian Blocker, maintainer passed away (#921)
         "secure.fanboy.co.nz/fanboy-antifacebook.txt",  // Fanboy – Anti-Facebook, unchanged since 2021 and breaks sites (#1079)
         "hole.cert.pl/domains/",  // CERT.PL's Warning List, almost all in KAD - Anti-Scam
-        "malware-filter/urlhaus-filter-vivaldi-online.txt",  // Online Malicious URL Blocklist, Safe Browsing covers it (#864, #1088)
-        "filters/208_optimized.txt",  // Online Malicious URL Blocklist, registry copy
         "extension/ublock/filters/25.txt",  // AdGuard Mail Tracking Protection Filter, uBlock filters – Privacy covers it (#1088)
         "filters/25_optimized.txt",  // AdGuard Mail Tracking Protection Filter, registry copy
         "extension/safari/filters/25.txt",  // AdGuard Mail Tracking Protection Filter, older address
@@ -336,14 +334,23 @@ class FilterListLoader {
     /// Retired built-ins deleted even when selected, instead of kept as custom lists.
     private static let purgedBuiltInURLFragments = [
         "hagezi/dns-blocklists@latest/adblock/pro.mini.txt",  // HaGeZi Multi Pro Mini, a DNS list (docs/HAGEZI.md)
+    ] + purgedKeptCopyURLFragments
+
+    /// Purged lists an earlier release kept as custom lists; those copies go too.
+    private static let purgedKeptCopyURLFragments = [
+        // Online Malicious URL Blocklist: 24k rules Safe Browsing covers (#864, #1088). 3.2.3 kept the registry copy.
+        "malware-filter/urlhaus-filter-vivaldi-online.txt",
+        "filters/208_optimized.txt",
     ]
 
     static func isRetiredBuiltIn(_ filter: FilterList) -> Bool {
-        !filter.isCustom && (filter.name == "d3Host List by d3ward" || isRetiredBuiltInURL(filter.url))
+        isPurgedBuiltIn(filter)
+            || !filter.isCustom && (filter.name == "d3Host List by d3ward" || isRetiredBuiltInURL(filter.url))
     }
 
     static func isPurgedBuiltIn(_ filter: FilterList) -> Bool {
-        !filter.isCustom && purgedBuiltInURLFragments.contains { filter.url.absoluteString.contains($0) }
+        let url = filter.url.absoluteString
+        return (filter.isCustom ? purgedKeptCopyURLFragments : purgedBuiltInURLFragments).contains { url.contains($0) }
     }
 
     /// A list whose address migrates to a catalog URL is still in the catalog, so it is never retired.

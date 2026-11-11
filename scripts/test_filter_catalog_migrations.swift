@@ -288,9 +288,7 @@ private final class TestLoader: FilterListLoader {
             ("\(registry)/extension/safari/filters/10_optimized.txt", "AdGuard Allowlist"),
             ("\(registry)/extension/safari/filters/10.txt", "AdGuard Allowlist"),
             ("https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/whitelist-referral.txt", "HaGeZi Referral Allowlist"),
-            // #1088: every address either list was ever stored under.
-            ("https://curbengh.github.io/malware-filter/urlhaus-filter-vivaldi-online.txt", "Online Malicious URL Blocklist"),
-            ("\(registry)/extension/safari/filters/208_optimized.txt", "Online Malicious URL Blocklist"),
+            // #1088: every address the list was ever stored under.
             ("https://filters.adtidy.org/extension/ublock/filters/25.txt", "AdGuard Mail Tracking Protection Filter"),
             ("\(registry)/extension/safari/filters/25_optimized.txt", "AdGuard Mail Tracking Protection Filter"),
             ("\(registry)/extension/safari/filters/25.txt", "AdGuard Mail Tracking Protection Filter"),
@@ -304,6 +302,21 @@ private final class TestLoader: FilterListLoader {
             let custom = FilterList(name: name, url: URL(string: url)!, category: .custom, isCustom: true, isSelected: true)
             precondition(!FilterListLoader.isRetiredBuiltIn(custom), "a custom copy of \(name) must stay")
         }
+
+        // Online Malicious URL Blocklist goes even when on, with the custom copy 3.2.3 kept (#1088).
+        for url in ["https://curbengh.github.io/malware-filter/urlhaus-filter-vivaldi-online.txt",
+                    "\(registry)/extension/safari/filters/208_optimized.txt"] {
+            precondition(!defaults.contains { $0.url.absoluteString == url }, "\(url) is still in the catalog")
+            for isCustom in [false, true] {
+                let filter = FilterList(name: "Online Malicious URL Blocklist", url: URL(string: url)!, category: .security,
+                                        isCustom: isCustom, isSelected: true)
+                precondition(FilterListLoader.isRetiredBuiltIn(filter) && FilterListLoader.isPurgedBuiltIn(filter),
+                             "\(url) custom:\(isCustom) is not purged")
+            }
+        }
+        let addedHaGeZi = FilterList(name: "Pro Mini", url: URL(string: "https://cdn.jsdelivr.net/gh/hagezi/dns-blocklists@latest/adblock/pro.mini.txt")!,
+                                     category: .custom, isCustom: true, isSelected: true)
+        precondition(!FilterListLoader.isRetiredBuiltIn(addedHaGeZi), "a HaGeZi list the user added must stay")
 
         // Quick fixes and Unbreak moved to Ads. A user's stored copy takes the catalog category and keeps its selection.
         for name in ["uBlock filters – Quick fixes", "uBlock filters – Unbreak"] {
