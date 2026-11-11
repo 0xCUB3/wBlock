@@ -169,22 +169,27 @@ struct SourceControlIcon: View {
 /// with the accent color, as Show Enabled Only does in the toolbar (#1091).
 struct SourceClusterItemStyle: ButtonStyle {
     var isOn = false
+    /// An item alone in its bubble fills it, so its hover and press reach the
+    /// bubble's edge (#1110); items sharing a bubble sit inset from it.
+    var fillsBubble = false
 
     func makeBody(configuration: Configuration) -> some View {
-        Item(label: configuration.label, isOn: isOn, isPressed: configuration.isPressed)
+        Item(label: configuration.label, isOn: isOn, isPressed: configuration.isPressed, inset: fillsBubble ? 0 : 2)
     }
 
     private struct Item: View {
         let label: Configuration.Label
         let isOn: Bool
         let isPressed: Bool
+        let inset: CGFloat
         @Environment(\.isEnabled) private var isEnabled
 
         var body: some View {
+            // The bubble's outer size stays the same either way.
             label
                 .font(.body.weight(.medium))
-                .padding(.horizontal, 8)
-                .frame(minWidth: 36, minHeight: SourceControlMetrics.clusterItemHeight)
+                .padding(.horizontal, 10 - inset)
+                .frame(minWidth: 40 - 2 * inset, minHeight: SourceControlMetrics.clusterItemHeight + 4 - 2 * inset)
                 .foregroundStyle(isOn ? Color.white : (isEnabled ? Color.primary : Color.secondary.opacity(0.5)))
                 .background {
                     if isOn {
@@ -193,7 +198,7 @@ struct SourceClusterItemStyle: ButtonStyle {
                         Capsule().fill(Color.primary.opacity(0.12))
                     }
                 }
-                .padding(2)
+                .padding(inset)
                 .contentShape(Capsule())
         }
     }
@@ -218,7 +223,7 @@ struct SourceMenuCapsule: ViewModifier {
                 .menuStyle(.button)
                 .menuIndicator(.hidden)
                 #endif
-                .buttonStyle(SourceClusterItemStyle(isOn: isActive))
+                .buttonStyle(SourceClusterItemStyle(isOn: isActive, fillsBubble: true))
                 .glassEffect(.regular.interactive(), in: Capsule())
         } else {
             fallback(content)
