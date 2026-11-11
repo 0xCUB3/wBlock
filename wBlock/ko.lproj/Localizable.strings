@@ -1117,3 +1117,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Cosmetic filtering skips these sites. Network blocking still applies." = "외형 필터링은 이 사이트들을 건너뜁니다. 네트워크 차단은 계속 적용됩니다.";
 "Sites include their subdomains. Use * for any top-level domain, as in amazon.*." = "사이트에는 하위 도메인이 포함됩니다. 모든 최상위 도메인에는 *를 사용하세요(예: amazon.*).";
 "Sites include their subdomains. Use * for any top-level domain, as in amazon.*. Reload the page after a change." = "사이트에는 하위 도메인이 포함됩니다. 모든 최상위 도메인에는 *를 사용하세요(예: amazon.*). 변경 후 페이지를 새로고침하세요.";
+"Status" = "상태";

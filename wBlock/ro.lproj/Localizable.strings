@@ -1117,3 +1117,4 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Cosmetic filtering skips these sites. Network blocking still applies." = "Filtrarea cosmetică omite aceste site-uri. Blocarea rețelei se aplică în continuare.";
 "Sites include their subdomains. Use * for any top-level domain, as in amazon.*." = "Site-urile includ subdomeniile lor. Folosește * pentru orice domeniu de nivel superior, ca în amazon.*.";
 "Sites include their subdomains. Use * for any top-level domain, as in amazon.*. Reload the page after a change." = "Site-urile includ subdomeniile lor. Folosește * pentru orice domeniu de nivel superior, ca în amazon.*. Reîncarcă pagina după o modificare.";
+"Status" = "Stare";

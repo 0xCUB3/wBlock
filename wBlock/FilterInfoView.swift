@@ -21,6 +21,7 @@ struct FilterInfoView: View {
     @State private var cachedByteCount: Int?
 
     private var isDownloaded: Bool { filterManager.loader.filterFileExists(liveFilter) }
+    private var isRemote: Bool { ["http", "https"].contains(liveFilter.url.scheme?.lowercased()) }
 
     private var liveFilter: FilterList {
         filterManager.filterLists.first(where: { $0.id == filter.id }) ?? filter
@@ -83,17 +84,10 @@ struct FilterInfoView: View {
     private var infoContent: some View {
         let credit = BuiltInFilterCredits.credit(for: liveFilter)
         return VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 8) {
-                if !liveFilter.localizedDisplayDescription.isEmpty {
-                    Text(liveFilter.localizedDisplayDescription)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                HStack(spacing: 8) {
-                    ForEach(Array(InfoBadgeSupport.filterBadges(liveFilter, isDownloaded: isDownloaded).enumerated()), id: \.offset) { _, badge in
-                        InfoBadgeView(kind: badge)
-                    }
-                }
+            if !liveFilter.localizedDisplayDescription.isEmpty {
+                Text(liveFilter.localizedDisplayDescription)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             InfoMetadataList {
                 InfoMetadataRow(title: "Type", value: NSLocalizedString("Filters", comment: "Content type"), valueStyle: .typeBadge)
@@ -106,8 +100,9 @@ struct FilterInfoView: View {
                 ForEach(credit?.homepages ?? cachedMetadata.homepage.map { [$0] } ?? [], id: \.self) { homepage in
                     InfoMetadataRow(title: "Homepage", value: homepage.absoluteString, url: homepage)
                 }
+                if isDownloaded || isRemote { InfoMetadataRow.downloadStatus(isDownloaded) }
                 if isDownloaded, !liveFilter.version.isEmpty { InfoMetadataRow(title: "Version", value: liveFilter.version) }
-                if liveFilter.url.scheme?.lowercased() == "http" || liveFilter.url.scheme?.lowercased() == "https" {
+                if isRemote {
                     VStack(alignment: .leading, spacing: 6) {
                         InfoMetadataRow(title: "Source URL", value: liveFilter.url.absoluteString, url: liveFilter.url)
                         HStack {

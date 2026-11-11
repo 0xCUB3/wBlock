@@ -1117,3 +1117,4 @@ Para reativá-los, desative outros filtros grandes e aplique as alterações nov
 "Cosmetic filtering skips these sites. Network blocking still applies." = "A filtragem cosmética ignora estes sites. O bloqueio de rede continua valendo.";
 "Sites include their subdomains. Use * for any top-level domain, as in amazon.*." = "Os sites incluem seus subdomínios. Use * para qualquer domínio de topo, como amazon.*.";
 "Sites include their subdomains. Use * for any top-level domain, as in amazon.*. Reload the page after a change." = "Os sites incluem seus subdomínios. Use * para qualquer domínio de topo, como amazon.*. Recarregue a página após uma mudança.";
+"Status" = "Status";

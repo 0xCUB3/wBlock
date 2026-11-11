@@ -1126,3 +1126,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Cosmetic filtering skips these sites. Network blocking still applies." = "Cosmetic filtering skips these sites. Network blocking still applies.";
 "Sites include their subdomains. Use * for any top-level domain, as in amazon.*." = "Sites include their subdomains. Use * for any top-level domain, as in amazon.*.";
 "Sites include their subdomains. Use * for any top-level domain, as in amazon.*. Reload the page after a change." = "Sites include their subdomains. Use * for any top-level domain, as in amazon.*. Reload the page after a change.";
+"Status" = "وضعیت";

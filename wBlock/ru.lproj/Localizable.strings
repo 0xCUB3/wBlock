@@ -1117,3 +1117,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Cosmetic filtering skips these sites. Network blocking still applies." = "Косметическая фильтрация пропускает эти сайты. Сетевая блокировка продолжает работать.";
 "Sites include their subdomains. Use * for any top-level domain, as in amazon.*." = "Сайты включают свои поддомены. Используйте * для любого домена верхнего уровня, например amazon.*.";
 "Sites include their subdomains. Use * for any top-level domain, as in amazon.*. Reload the page after a change." = "Сайты включают свои поддомены. Используйте * для любого домена верхнего уровня, например amazon.*. Перезагрузите страницу после изменения.";
+"Status" = "Статус";

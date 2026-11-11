@@ -1117,3 +1117,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Cosmetic filtering skips these sites. Network blocking still applies." = "Το κοσμητικό φιλτράρισμα παραλείπει αυτούς τους ιστότοπους. Ο αποκλεισμός δικτύου εξακολουθεί να ισχύει.";
 "Sites include their subdomains. Use * for any top-level domain, as in amazon.*." = "Οι ιστότοποι περιλαμβάνουν τους υποτομείς τους. Χρησιμοποιήστε * για οποιονδήποτε τομέα ανώτατου επιπέδου, όπως amazon.*.";
 "Sites include their subdomains. Use * for any top-level domain, as in amazon.*. Reload the page after a change." = "Οι ιστότοποι περιλαμβάνουν τους υποτομείς τους. Χρησιμοποιήστε * για οποιονδήποτε τομέα ανώτατου επιπέδου, όπως amazon.*. Φορτώστε ξανά τη σελίδα μετά από αλλαγή.";
+"Status" = "Κατάσταση";

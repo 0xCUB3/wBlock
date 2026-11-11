@@ -153,6 +153,16 @@ struct InfoMetadataList<Content: View>: View {
     }
 }
 
+extension InfoMetadataRow {
+    /// Whether a remote source has been fetched, as a details row (#1107).
+    static func downloadStatus(_ isDownloaded: Bool) -> InfoMetadataRow {
+        InfoMetadataRow(
+            title: "Status",
+            value: NSLocalizedString(isDownloaded ? "Downloaded" : "Not Downloaded", comment: "Info status")
+        )
+    }
+}
+
 struct InfoMetadataRow: View {
     let title: LocalizedStringKey
     let value: String

@@ -1117,3 +1117,4 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Cosmetic filtering skips these sites. Network blocking still applies." = "A kozmetikai szűrés kihagyja ezeket a webhelyeket. A hálózati blokkolás továbbra is érvényes.";
 "Sites include their subdomains. Use * for any top-level domain, as in amazon.*." = "A webhelyek az aldomainjeiket is tartalmazzák. A * bármely legfelső szintű domaint jelöli, például amazon.*.";
 "Sites include their subdomains. Use * for any top-level domain, as in amazon.*. Reload the page after a change." = "A webhelyek az aldomainjeiket is tartalmazzák. A * bármely legfelső szintű domaint jelöli, például amazon.*. Módosítás után töltsd újra az oldalt.";
+"Status" = "Állapot";

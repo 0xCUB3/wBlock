@@ -1117,3 +1117,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Cosmetic filtering skips these sites. Network blocking still applies." = "元素隱藏過濾會略過這些網站。網路封鎖仍然有效。";
 "Sites include their subdomains. Use * for any top-level domain, as in amazon.*." = "網站包含其子網域。使用 * 比對任何頂層網域，例如 amazon.*。";
 "Sites include their subdomains. Use * for any top-level domain, as in amazon.*. Reload the page after a change." = "網站包含其子網域。使用 * 比對任何頂層網域，例如 amazon.*。變更後請重新載入頁面。";
+"Status" = "狀態";

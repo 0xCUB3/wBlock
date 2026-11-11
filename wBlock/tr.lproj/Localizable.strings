@@ -1126,3 +1126,4 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Cosmetic filtering skips these sites. Network blocking still applies." = "Kozmetik filtreleme bu siteleri atlar. Ağ engelleme yine de geçerlidir.";
 "Sites include their subdomains. Use * for any top-level domain, as in amazon.*." = "Siteler alt alan adlarını da kapsar. Herhangi bir üst düzey alan adı için * kullanın, örneğin amazon.*.";
 "Sites include their subdomains. Use * for any top-level domain, as in amazon.*. Reload the page after a change." = "Siteler alt alan adlarını da kapsar. Herhangi bir üst düzey alan adı için * kullanın, örneğin amazon.*. Değişiklikten sonra sayfayı yenileyin.";
+"Status" = "Durum";

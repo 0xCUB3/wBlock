@@ -898,27 +898,6 @@ struct UserScriptManagerView: View {
 
 // MARK: - UserScriptInfoSidebar Subviews
 
-private struct ScriptStatusBadgesView: View {
-    let script: UserScript
-    let isDownloaded: Bool
-    let isBuiltIn: Bool
-    let isRecommended: Bool
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
-                ForEach(Array(InfoBadgeSupport.userScriptBadges(
-                    script,
-                    isDownloaded: isDownloaded,
-                    isBuiltIn: isBuiltIn,
-                    isRecommended: isRecommended
-                ).enumerated()), id: \.offset) { _, badge in
-                    InfoBadgeView(kind: badge)
-                }
-            }
-        }
-    }
-}
-
 private struct ScriptURLView: View {
     let script: UserScript
 
@@ -1069,12 +1048,10 @@ struct UserScriptSettingsView: View {
 
 
 struct UserScriptInfoSidebar: View {
-    let isRecommended: Bool
     let script: UserScript
     let contentLength: Int
     let isDownloaded: Bool
     let formatFileSize: (Int) -> String
-    let isBuiltIn: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -1083,15 +1060,12 @@ struct UserScriptInfoSidebar: View {
                 author: script.author ?? sourceMetadata.author,
                 homepage: script.homepage.flatMap(URL.init(string:)) ?? sourceMetadata.homepage
             )
-            VStack(alignment: .leading, spacing: 8) {
-                if !script.localizedDisplayDescription.isEmpty {
-                    Text(script.localizedDisplayDescription)
-                        .font(.body)
-                        .foregroundStyle(.secondary)
-                        .textSelection(.enabled)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                ScriptStatusBadgesView(script: script, isDownloaded: isDownloaded, isBuiltIn: isBuiltIn, isRecommended: isRecommended)
+            if !script.localizedDisplayDescription.isEmpty {
+                Text(script.localizedDisplayDescription)
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             InfoMetadataList {
                 InfoMetadataRow(title: "Type", value: NSLocalizedString(
@@ -1102,6 +1076,7 @@ struct UserScriptInfoSidebar: View {
                 if let homepage = metadata.homepage {
                     InfoMetadataRow(title: "Homepage", value: homepage.absoluteString, url: homepage)
                 }
+                if !script.isLocal { InfoMetadataRow.downloadStatus(isDownloaded) }
                 if isDownloaded, !script.version.isEmpty { InfoMetadataRow(title: "Version", value: script.version) }
                 if script.url != nil { ScriptURLView(script: script) }
                 if contentLength > 0 { InfoMetadataRow(title: "Size", value: formatFileSize(contentLength)) }
@@ -1150,12 +1125,10 @@ struct UserScriptInfoView: View {
                     } onDismiss: { dismiss() }
                 } content: {
                     UserScriptInfoSidebar(
-                        isRecommended: userScriptManager.isEnabledByDefault(script),
                         script: script,
                         contentLength: script.content.utf8.count,
                         isDownloaded: userScriptManager.hasDownloadedContent(for: script),
-                        formatFileSize: formatFileSize,
-                        isBuiltIn: userScriptManager.isDefaultUserScript(script)
+                        formatFileSize: formatFileSize
                     )
                     actionList(for: script)
                 }
