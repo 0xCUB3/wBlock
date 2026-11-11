@@ -208,7 +208,21 @@ struct LogsView: View {
         #endif
     }
 
+    /// The plain toolbar icon, filled with the accent color while a filter
+    /// is on (#1107).
+    @ViewBuilder
     private var filterMenu: some View {
+        if selectedLevel == nil && selectedCategory == nil {
+            filterMenuButton
+        } else if #available(iOS 16.0, macOS 13.0, *) {
+            // A toolbar draws a menu's button style only as a button menu.
+            filterMenuButton.menuStyle(.button).glassButtonStyleCompat(prominent: true)
+        } else {
+            filterMenuButton
+        }
+    }
+
+    private var filterMenuButton: some View {
         Menu {
             // Inline sections with checkmarks, as iOS draws them, on both.
             Group {
@@ -219,12 +233,7 @@ struct LogsView: View {
             .labelsHidden()
             timeZoneToggle
         } label: {
-            Label(
-                "Filter Logs",
-                systemImage: selectedLevel == nil && selectedCategory == nil
-                    ? "line.3.horizontal.decrease.circle"
-                    : "line.3.horizontal.decrease.circle.fill"
-            )
+            Label("Filter Logs", systemImage: "line.3.horizontal.decrease")
         }
         .help("Filter Logs")
     }
