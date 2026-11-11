@@ -501,7 +501,7 @@
 "Rule limit exceeded for blocker" = "Engelleleyici için kural sınırına ulaşıldı";
 "Rules" = "Kural";
 "Run on this site" = "Bu sitede çalıştır";
-"Safari limits each Content Blocker extension to 150,000 rules. wBlock automatically balances and compiles rules across all 5 slots." = "Safari her içerik engelleyici genişletmesini 150.000 kuralla sınırlar. wBlock, kuralları 5 genişletme modülünün tamamına otomatik olarak dağıtır ve derler.";
+"Safari allows 150,000 rules per content blocker. wBlock fills as few as it can, since each one in use makes Safari slower." = "Safari her içerik engelleyici için 150.000 kurala izin verir. Kullanılan her engelleyici Safari'yi yavaşlattığı için wBlock mümkün olduğunca azını doldurur.";
 "Safari Rule Capacity" = "Safari kural kapasitesi";
 "Safari Rules" = "Safari kuralı";
 "Safari → Settings → Extensions" = "Safari → Ayarlar → Genişletmeler";

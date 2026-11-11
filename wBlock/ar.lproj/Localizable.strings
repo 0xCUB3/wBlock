@@ -503,7 +503,7 @@
 "Rule limit exceeded for blocker" = "تم تجاوز حد القواعد لأداة الحظر";
 "Rules" = "القواعد";
 "Run on this site" = "تشغيل على هذا الموقع";
-"Safari limits each Content Blocker extension to 150,000 rules. wBlock automatically balances and compiles rules across all 5 slots." = "يحد Safari كل امتداد لحظر المحتوى بـ 150,000 قاعدة. يوازن wBlock القواعد ويجمّعها تلقائيًا عبر جميع الفتحات الخمس.";
+"Safari allows 150,000 rules per content blocker. wBlock fills as few as it can, since each one in use makes Safari slower." = "يسمح Safari بـ 150,000 قاعدة لكل أداة حظر محتوى. يملأ wBlock أقل عدد ممكن منها، لأن كل أداة مستخدمة تجعل Safari أبطأ.";
 "Safari Rule Capacity" = "سعة قواعد Safari";
 "Safari Rules" = "قواعد Safari";
 "Safari → Settings → Extensions" = "Safari → الإعدادات → الامتدادات";

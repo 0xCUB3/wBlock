@@ -501,7 +501,7 @@
 "Rule limit exceeded for blocker" = "تعداد قوانین از حد مجاز مسدودکننده فراتر رفته است";
 "Rules" = "قوانین";
 "Run on this site" = "اجرا در این سایت";
-"Safari limits each Content Blocker extension to 150,000 rules. wBlock automatically balances and compiles rules across all 5 slots." = "هر افزونهٔ مسدودکنندهٔ محتوا را Safari به 150,000 قانون محدود می‌کند. wBlock به‌طور خودکار قوانین را در هر 5 جایگاه متعادل و کامپایل می‌کند.";
+"Safari allows 150,000 rules per content blocker. wBlock fills as few as it can, since each one in use makes Safari slower." = "Safari برای هر مسدودکنندهٔ محتوا 150,000 قانون مجاز می‌داند. wBlock تا جای ممکن تعداد کمتری را پر می‌کند، چون هر مسدودکنندهٔ فعال Safari را کندتر می‌کند.";
 "Safari Rule Capacity" = "ظرفیت قوانین Safari";
 "Safari Rules" = "قوانین Safari";
 "Safari → Settings → Extensions" = "Safari → Settings → Extensions";

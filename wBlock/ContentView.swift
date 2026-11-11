@@ -2368,7 +2368,7 @@ struct RuleCapacityPopoverView: View {
                 }
             }
 
-            Text("Safari limits each Content Blocker extension to 150,000 rules. wBlock automatically balances and compiles rules across all 5 slots.")
+            Text("Safari allows 150,000 rules per content blocker. wBlock fills as few as it can, since each one in use makes Safari slower.")
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
                 .fixedSize(horizontal: false, vertical: true)

@@ -503,7 +503,7 @@
 "Rule limit exceeded for blocker" = "A blokkoló szabálykorlátja túllépve";
 "Rules" = "Szabályok";
 "Run on this site" = "Futtatás ezen a webhelyen";
-"Safari limits each Content Blocker extension to 150,000 rules. wBlock automatically balances and compiles rules across all 5 slots." = "A Safari minden tartalomblokkoló bővítményt 150 000 szabályra korlátoz. A wBlock automatikusan kiegyensúlyozza és lefordítja a szabályokat mind az 5 helyen.";
+"Safari allows 150,000 rules per content blocker. wBlock fills as few as it can, since each one in use makes Safari slower." = "A Safari tartalomblokkolónként 150 000 szabályt enged. A wBlock a lehető legkevesebbet tölti meg, mert minden használt blokkoló lassítja a Safarit.";
 "Safari Rule Capacity" = "Safari szabálykapacitás";
 "Safari Rules" = "Safari szabályok";
 "Safari → Settings → Extensions" = "Safari → Beállítások → Bővítmények";

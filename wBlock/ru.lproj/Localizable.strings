@@ -503,7 +503,7 @@
 "Rule limit exceeded for blocker" = "Превышен лимит правил для блокировщика";
 "Rules" = "Правила";
 "Run on this site" = "Запускать на этом сайте";
-"Safari limits each Content Blocker extension to 150,000 rules. wBlock automatically balances and compiles rules across all 5 slots." = "Safari ограничивает каждое расширение блокировщика контента лимитом в 150 000 правил. wBlock автоматически распределяет и компилирует правила по всем 5 слотам.";
+"Safari allows 150,000 rules per content blocker. wBlock fills as few as it can, since each one in use makes Safari slower." = "Safari допускает 150 000 правил на один блокировщик контента. wBlock заполняет как можно меньше блокировщиков, потому что каждый используемый замедляет Safari.";
 "Safari Rule Capacity" = "Лимит правил Safari";
 "Safari Rules" = "Правила Safari";
 "Safari → Settings → Extensions" = "Safari → Настройки → Расширения";

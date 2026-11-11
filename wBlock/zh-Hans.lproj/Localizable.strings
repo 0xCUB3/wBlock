@@ -501,7 +501,7 @@
 "Rule limit exceeded for blocker" = "拦截器的规则上限已超出";
 "Rules" = "规则";
 "Run on this site" = "在此网站运行";
-"Safari limits each Content Blocker extension to 150,000 rules. wBlock automatically balances and compiles rules across all 5 slots." = "Safari 将每个内容拦截器扩展限制为 150,000 条规则。wBlock 会自动在所有 5 个槽位中平衡并编译规则。";
+"Safari allows 150,000 rules per content blocker. wBlock fills as few as it can, since each one in use makes Safari slower." = "Safari 允许每个内容拦截器包含 150,000 条规则。每多用一个都会让 Safari 变慢，所以 wBlock 会尽量少用。";
 "Safari Rule Capacity" = "Safari 规则容量";
 "Safari Rules" = "Safari 规则";
 "Safari → Settings → Extensions" = "Safari → 设置 → 扩展";

@@ -503,7 +503,7 @@
 "Rule limit exceeded for blocker" = "차단기의 규칙 한도를 초과했습니다";
 "Rules" = "규칙";
 "Run on this site" = "이 사이트에서 실행";
-"Safari limits each Content Blocker extension to 150,000 rules. wBlock automatically balances and compiles rules across all 5 slots." = "Safari는 각 콘텐츠 차단기 확장 프로그램을 150,000개 규칙으로 제한합니다. wBlock은 5개 슬롯 전체에서 규칙을 자동으로 균형 있게 조절하고 컴파일합니다.";
+"Safari allows 150,000 rules per content blocker. wBlock fills as few as it can, since each one in use makes Safari slower." = "Safari는 콘텐츠 차단기마다 150,000개의 규칙을 허용합니다. 사용하는 차단기가 늘수록 Safari가 느려지므로 wBlock은 가능한 한 적은 수만 채웁니다.";
 "Safari Rule Capacity" = "Safari 규칙 용량";
 "Safari Rules" = "Safari 규칙";
 "Safari → Settings → Extensions" = "Safari → 설정 → 확장 프로그램";
