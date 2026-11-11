@@ -1089,7 +1089,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Tests new rules before they reach the main lists, from the AdGuard project. It may break sites." = "Testează reguli noi înainte ca acestea să ajungă în listele principale. Din proiectul AdGuard. Poate defecta site-uri.";
 "Tests new rules before they reach the main lists, from the uBlock Origin project. It may break sites." = "Testează reguli noi înainte ca acestea să ajungă în listele principale. Din proiectul uBlock Origin. Poate defecta site-uri.";
 "Makes websites dark by restyling their colors, from the Dark Reader project. Some sites may look off, since it doesn't include Dark Reader's site fixes." = "Face site-urile web întunecate prin modificarea culorilor. Din proiectul Dark Reader. Unele site-uri pot arăta ciudat, deoarece nu include corecțiile Dark Reader pentru site-uri.";
-"Blocks Twitch ads and handles complicated anti-adblock cases, but it slows page loads." = "Blochează reclamele Twitch și gestionează cazurile complicate de anti-adblock, dar încetinește încărcarea paginilor.";
+"Blocks Twitch ads and handles complicated anti-adblock cases, from the AdGuard project. It slows page loads." = "Blochează reclamele Twitch și gestionează cazurile complicate de anti-adblock. Din proiectul AdGuard. Încetinește încărcarea paginilor.";
 "Shows dislike counts on YouTube again, using data from the Return YouTube Dislike community." = "Afișează din nou numărul de dislike-uri de pe YouTube, folosind date de la comunitatea Return YouTube Dislike.";
 "Gets past paywalls on English-language news sites, and some in other languages." = "Ocolește paywall-urile de pe site-urile de știri în limba engleză și pe unele în alte limbi.";
 "Blocks Twitch ads." = "Blochează reclamele Twitch.";
@@ -1102,7 +1102,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Bypass Paywalls of English (& other) language news sites" = "Ocolește paywall-urile de pe site-urile de știri în limba engleză și pe unele în alte limbi.";
 "Multiple solutions for blocking Twitch ads (vaft)" = "Blochează reclamele Twitch.";
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "Face site-urile web întunecate prin modificarea culorilor. Din proiectul Dark Reader. Unele site-uri pot arăta ciudat, deoarece nu include corecțiile Dark Reader pentru site-uri.";
-"Opens the publisher's regular page instead of its AMP version." = "Deschide pagina obișnuită a editorului în locul versiunii AMP.";
+"Opens the publisher's regular page instead of its AMP version, from the AdGuard project." = "Deschide pagina obișnuită a editorului în locul versiunii AMP. Din proiectul AdGuard.";
 "Disable AMP" = "Disable AMP";
 "wBlock on this site" = "wBlock pe acest site";
 "Autoplay on this site" = "Redare automată pe acest site";

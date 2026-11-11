@@ -1089,7 +1089,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Tests new rules before they reach the main lists, from the AdGuard project. It may break sites." = "주요 목록에 반영되기 전에 새 규칙을 테스트합니다. AdGuard 프로젝트에서 제공합니다. 사이트가 깨질 수 있습니다.";
 "Tests new rules before they reach the main lists, from the uBlock Origin project. It may break sites." = "주요 목록에 반영되기 전에 새 규칙을 테스트합니다. uBlock Origin 프로젝트에서 제공합니다. 사이트가 깨질 수 있습니다.";
 "Makes websites dark by restyling their colors, from the Dark Reader project. Some sites may look off, since it doesn't include Dark Reader's site fixes." = "웹사이트의 색상을 바꿔 어둡게 표시합니다. Dark Reader 프로젝트에서 제공합니다. Dark Reader의 사이트별 수정 사항은 포함되지 않으므로 일부 사이트가 어색하게 보일 수 있습니다.";
-"Blocks Twitch ads and handles complicated anti-adblock cases, but it slows page loads." = "Twitch 광고를 차단하고 복잡한 광고 차단 방지 사례도 처리하지만 페이지 로드 속도가 느려집니다.";
+"Blocks Twitch ads and handles complicated anti-adblock cases, from the AdGuard project. It slows page loads." = "Twitch 광고를 차단하고 복잡한 광고 차단 방지 사례도 처리합니다. AdGuard 프로젝트에서 제공합니다. 페이지 로드 속도가 느려집니다.";
 "Shows dislike counts on YouTube again, using data from the Return YouTube Dislike community." = "Return YouTube Dislike 커뮤니티의 데이터를 사용하여 YouTube에 싫어요 수를 다시 표시합니다.";
 "Gets past paywalls on English-language news sites, and some in other languages." = "영어 뉴스 사이트와 일부 다른 언어의 뉴스 사이트에서 유료 구독 장벽을 우회합니다.";
 "Blocks Twitch ads." = "Twitch 광고를 차단합니다.";
@@ -1102,7 +1102,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Bypass Paywalls of English (& other) language news sites" = "영어 뉴스 사이트와 일부 다른 언어의 뉴스 사이트에서 유료 구독 장벽을 우회합니다.";
 "Multiple solutions for blocking Twitch ads (vaft)" = "Twitch 광고를 차단합니다.";
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "웹사이트의 색상을 바꿔 어둡게 표시합니다. Dark Reader 프로젝트에서 제공합니다. Dark Reader의 사이트별 수정 사항은 포함되지 않으므로 일부 사이트가 어색하게 보일 수 있습니다.";
-"Opens the publisher's regular page instead of its AMP version." = "AMP 버전 대신 게시자의 일반 페이지를 엽니다.";
+"Opens the publisher's regular page instead of its AMP version, from the AdGuard project." = "AMP 버전 대신 게시자의 일반 페이지를 엽니다. AdGuard 프로젝트에서 제공합니다.";
 "Disable AMP" = "Disable AMP";
 "wBlock on this site" = "이 사이트에서 wBlock 사용";
 "Autoplay on this site" = "이 사이트에서 자동 재생";

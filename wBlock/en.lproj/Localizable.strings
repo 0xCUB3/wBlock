@@ -1098,7 +1098,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Tests new rules before they reach the main lists, from the AdGuard project. It may break sites." = "Tests new rules before they reach the main lists, from the AdGuard project. It may break sites.";
 "Tests new rules before they reach the main lists, from the uBlock Origin project. It may break sites." = "Tests new rules before they reach the main lists, from the uBlock Origin project. It may break sites.";
 "Makes websites dark by restyling their colors, from the Dark Reader project. Some sites may look off, since it doesn't include Dark Reader's site fixes." = "Makes websites dark by restyling their colors, from the Dark Reader project. Some sites may look off, since it doesn't include Dark Reader's site fixes.";
-"Blocks Twitch ads and handles complicated anti-adblock cases, but it slows page loads." = "Blocks Twitch ads and handles complicated anti-adblock cases, but it slows page loads.";
+"Blocks Twitch ads and handles complicated anti-adblock cases, from the AdGuard project. It slows page loads." = "Blocks Twitch ads and handles complicated anti-adblock cases, from the AdGuard project. It slows page loads.";
 "Shows dislike counts on YouTube again, using data from the Return YouTube Dislike community." = "Shows dislike counts on YouTube again, using data from the Return YouTube Dislike community.";
 "Gets past paywalls on English-language news sites, and some in other languages." = "Gets past paywalls on English-language news sites, and some in other languages.";
 "Blocks Twitch ads." = "Blocks Twitch ads.";
@@ -1111,7 +1111,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Bypass Paywalls of English (& other) language news sites" = "Gets past paywalls on English-language news sites, and some in other languages.";
 "Multiple solutions for blocking Twitch ads (vaft)" = "Blocks Twitch ads.";
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "Makes websites dark by restyling their colors, from the Dark Reader project. Some sites may look off, since it doesn't include Dark Reader's site fixes.";
-"Opens the publisher's regular page instead of its AMP version." = "Opens the publisher's regular page instead of its AMP version.";
+"Opens the publisher's regular page instead of its AMP version, from the AdGuard project." = "Opens the publisher's regular page instead of its AMP version, from the AdGuard project.";
 "Disable AMP" = "Disable AMP";
 "wBlock on this site" = "wBlock on this site";
 "Autoplay on this site" = "Autoplay on this site";

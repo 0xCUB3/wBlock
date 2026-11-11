@@ -1089,7 +1089,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Tests new rules before they reach the main lists, from the AdGuard project. It may break sites." = "يختبر القواعد الجديدة قبل وصولها إلى القوائم الرئيسية، من مشروع AdGuard. وقد يعطّل بعض المواقع.";
 "Tests new rules before they reach the main lists, from the uBlock Origin project. It may break sites." = "يختبر القواعد الجديدة قبل وصولها إلى القوائم الرئيسية، من مشروع uBlock Origin. وقد يعطّل بعض المواقع.";
 "Makes websites dark by restyling their colors, from the Dark Reader project. Some sites may look off, since it doesn't include Dark Reader's site fixes." = "يجعل مواقع الويب داكنة بإعادة تنسيق ألوانها، من مشروع Dark Reader. قد تبدو بعض المواقع غير طبيعية، لأنه لا يتضمن إصلاحات المواقع الخاصة بـ Dark Reader.";
-"Blocks Twitch ads and handles complicated anti-adblock cases, but it slows page loads." = "يحظر إعلانات Twitch ويعالج حالات معقدة لمكافحة مانعات الإعلانات، لكنه يبطئ تحميل الصفحات.";
+"Blocks Twitch ads and handles complicated anti-adblock cases, from the AdGuard project. It slows page loads." = "يحظر إعلانات Twitch ويعالج حالات معقدة لمكافحة مانعات الإعلانات، من مشروع AdGuard. وهو يبطئ تحميل الصفحات.";
 "Shows dislike counts on YouTube again, using data from the Return YouTube Dislike community." = "يعرض أعداد «عدم الإعجاب» على YouTube مرة أخرى، باستخدام بيانات من مجتمع Return YouTube Dislike.";
 "Gets past paywalls on English-language news sites, and some in other languages." = "يتجاوز جدران الدفع في مواقع الأخبار الإنجليزية، وبعضها بلغات أخرى.";
 "Blocks Twitch ads." = "يحظر إعلانات Twitch.";
@@ -1102,7 +1102,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Bypass Paywalls of English (& other) language news sites" = "يتجاوز جدران الدفع في مواقع الأخبار الإنجليزية، وبعضها بلغات أخرى.";
 "Multiple solutions for blocking Twitch ads (vaft)" = "يحظر إعلانات Twitch.";
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "يجعل مواقع الويب داكنة بإعادة تنسيق ألوانها، من مشروع Dark Reader. قد تبدو بعض المواقع غير طبيعية، لأنه لا يتضمن إصلاحات المواقع الخاصة بـ Dark Reader.";
-"Opens the publisher's regular page instead of its AMP version." = "يفتح صفحة الناشر العادية بدلًا من نسخة AMP.";
+"Opens the publisher's regular page instead of its AMP version, from the AdGuard project." = "يفتح صفحة الناشر العادية بدلًا من نسخة AMP، من مشروع AdGuard.";
 "Disable AMP" = "Disable AMP";
 "wBlock on this site" = "wBlock على هذا الموقع";
 "Autoplay on this site" = "التشغيل التلقائي في هذا الموقع";

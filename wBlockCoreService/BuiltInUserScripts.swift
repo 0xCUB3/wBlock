@@ -54,7 +54,7 @@ enum BuiltInUserScripts {
     static let darkReaderDescription =
         "Makes websites dark by restyling their colors, from the Dark Reader project. Some sites may look off, since it doesn't include Dark Reader's site fixes."
     static let disableAMPURL = "https://userscripts.adtidy.org/release/disable-amp/1.0/disable-amp.user.js"
-    static let disableAMPDescription = "Opens the publisher's regular page instead of its AMP version."
+    static let disableAMPDescription = "Opens the publisher's regular page instead of its AMP version, from the AdGuard project."
     static let tubeCleanerDescription =
         "Blocks YouTube's ads and web player and plays videos in Safari's native player, with chapters, picture-in-picture, background playback, and audio-only mode. Includes SponsorBlock, which skips sponsored segments."
     static let playerCleanerDescription =
@@ -132,7 +132,7 @@ enum BuiltInUserScripts {
             name: "AdGuard Extra",
             url: "https://userscripts.adtidy.org/release/adguard-extra/1.0/adguard-extra.user.js",
             isEnabledByDefault: false,
-            description: "Blocks Twitch ads and handles complicated anti-adblock cases, but it slows page loads.",
+            description: "Blocks Twitch ads and handles complicated anti-adblock cases, from the AdGuard project. It slows page loads.",
             displayRole: .functionality,
             author: "AdGuard",
             homepage: "https://adguard.com/"

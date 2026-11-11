@@ -1089,7 +1089,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Tests new rules before they reach the main lists, from the AdGuard project. It may break sites." = "在新规则进入主列表之前进行测试，来自 AdGuard 项目。可能会导致网站出现问题。";
 "Tests new rules before they reach the main lists, from the uBlock Origin project. It may break sites." = "在新规则进入主列表之前进行测试，来自 uBlock Origin 项目。可能会导致网站出现问题。";
 "Makes websites dark by restyling their colors, from the Dark Reader project. Some sites may look off, since it doesn't include Dark Reader's site fixes." = "通过重新设置颜色使网站变暗，来自 Dark Reader 项目。由于不包含 Dark Reader 的网站修复，部分网站显示可能不正常。";
-"Blocks Twitch ads and handles complicated anti-adblock cases, but it slows page loads." = "拦截 Twitch 广告并处理复杂的反广告拦截情况，但会减慢页面加载速度。";
+"Blocks Twitch ads and handles complicated anti-adblock cases, from the AdGuard project. It slows page loads." = "拦截 Twitch 广告并处理复杂的反广告拦截情况，来自 AdGuard 项目。会减慢页面加载速度。";
 "Shows dislike counts on YouTube again, using data from the Return YouTube Dislike community." = "重新在 YouTube 上显示不喜欢数，数据来自 Return YouTube Dislike 社区。";
 "Gets past paywalls on English-language news sites, and some in other languages." = "绕过英语新闻网站的付费墙，以及部分其他语言网站的付费墙。";
 "Blocks Twitch ads." = "拦截 Twitch 广告。";
@@ -1102,7 +1102,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Bypass Paywalls of English (& other) language news sites" = "绕过英语新闻网站的付费墙，以及部分其他语言网站的付费墙。";
 "Multiple solutions for blocking Twitch ads (vaft)" = "拦截 Twitch 广告。";
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "通过重新设置颜色使网站变暗，来自 Dark Reader 项目。由于不包含 Dark Reader 的网站修复，部分网站显示可能不正常。";
-"Opens the publisher's regular page instead of its AMP version." = "打开发布者的常规页面，而不是 AMP 版本。";
+"Opens the publisher's regular page instead of its AMP version, from the AdGuard project." = "打开发布者的常规页面，而不是 AMP 版本，来自 AdGuard 项目。";
 "Disable AMP" = "Disable AMP";
 "wBlock on this site" = "在此网站上启用 wBlock";
 "Autoplay on this site" = "在此网站自动播放";

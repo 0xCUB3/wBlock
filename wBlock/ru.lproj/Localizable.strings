@@ -1089,7 +1089,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Tests new rules before they reach the main lists, from the AdGuard project. It may break sites." = "Тестирует новые правила перед их добавлением в основные списки, из проекта AdGuard. Может ломать сайты.";
 "Tests new rules before they reach the main lists, from the uBlock Origin project. It may break sites." = "Тестирует новые правила перед их добавлением в основные списки, из проекта uBlock Origin. Может ломать сайты.";
 "Makes websites dark by restyling their colors, from the Dark Reader project. Some sites may look off, since it doesn't include Dark Reader's site fixes." = "Делает сайты тёмными, меняя их цвета, из проекта Dark Reader. Некоторые сайты могут выглядеть неправильно, так как здесь нет исправлений Dark Reader для отдельных сайтов.";
-"Blocks Twitch ads and handles complicated anti-adblock cases, but it slows page loads." = "Блокирует рекламу на Twitch и обрабатывает сложные случаи защиты от блокировщиков рекламы, но замедляет загрузку страниц.";
+"Blocks Twitch ads and handles complicated anti-adblock cases, from the AdGuard project. It slows page loads." = "Блокирует рекламу на Twitch и обрабатывает сложные случаи защиты от блокировщиков рекламы, из проекта AdGuard. Замедляет загрузку страниц.";
 "Shows dislike counts on YouTube again, using data from the Return YouTube Dislike community." = "Снова показывает количество дизлайков на YouTube, используя данные сообщества Return YouTube Dislike.";
 "Gets past paywalls on English-language news sites, and some in other languages." = "Обходит платные подписки на англоязычных новостных сайтах и некоторых сайтах на других языках.";
 "Blocks Twitch ads." = "Блокирует рекламу на Twitch.";
@@ -1102,7 +1102,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Bypass Paywalls of English (& other) language news sites" = "Обходит платные подписки на англоязычных новостных сайтах и некоторых сайтах на других языках.";
 "Multiple solutions for blocking Twitch ads (vaft)" = "Блокирует рекламу на Twitch.";
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "Делает сайты тёмными, меняя их цвета, из проекта Dark Reader. Некоторые сайты могут выглядеть неправильно, так как здесь нет исправлений Dark Reader для отдельных сайтов.";
-"Opens the publisher's regular page instead of its AMP version." = "Открывает обычную страницу издателя вместо её AMP-версии.";
+"Opens the publisher's regular page instead of its AMP version, from the AdGuard project." = "Открывает обычную страницу издателя вместо её AMP-версии, из проекта AdGuard.";
 "Disable AMP" = "Disable AMP";
 "wBlock on this site" = "wBlock на этом сайте";
 "Autoplay on this site" = "Автовоспроизведение на этом сайте";

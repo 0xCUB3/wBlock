@@ -1089,7 +1089,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Tests new rules before they reach the main lists, from the AdGuard project. It may break sites." = "Δοκιμάζει νέους κανόνες προτού φτάσουν στις κύριες λίστες, από το έργο AdGuard. Ενδέχεται να χαλάσει ιστότοπους.";
 "Tests new rules before they reach the main lists, from the uBlock Origin project. It may break sites." = "Δοκιμάζει νέους κανόνες προτού φτάσουν στις κύριες λίστες, από το έργο uBlock Origin. Ενδέχεται να χαλάσει ιστότοπους.";
 "Makes websites dark by restyling their colors, from the Dark Reader project. Some sites may look off, since it doesn't include Dark Reader's site fixes." = "Κάνει τους ιστότοπους σκούρους αλλάζοντας τα χρώματά τους, από το έργο Dark Reader. Ορισμένοι ιστότοποι μπορεί να φαίνονται περίεργα, καθώς δεν περιλαμβάνει τις διορθώσεις ιστοτόπων του Dark Reader.";
-"Blocks Twitch ads and handles complicated anti-adblock cases, but it slows page loads." = "Αποκλείει διαφημίσεις του Twitch και χειρίζεται πολύπλοκες περιπτώσεις anti-adblock, αλλά επιβραδύνει τη φόρτωση σελίδων.";
+"Blocks Twitch ads and handles complicated anti-adblock cases, from the AdGuard project. It slows page loads." = "Αποκλείει διαφημίσεις του Twitch και χειρίζεται πολύπλοκες περιπτώσεις anti-adblock, από το έργο AdGuard. Επιβραδύνει τη φόρτωση σελίδων.";
 "Shows dislike counts on YouTube again, using data from the Return YouTube Dislike community." = "Εμφανίζει ξανά τις καταμετρήσεις “δεν μου αρέσει” στο YouTube, με δεδομένα από την κοινότητα Return YouTube Dislike.";
 "Gets past paywalls on English-language news sites, and some in other languages." = "Παρακάμπτει τα paywall σε αγγλόφωνους ειδησεογραφικούς ιστότοπους και σε ορισμένους σε άλλες γλώσσες.";
 "Blocks Twitch ads." = "Αποκλείει διαφημίσεις του Twitch.";
@@ -1102,7 +1102,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Bypass Paywalls of English (& other) language news sites" = "Παρακάμπτει τα paywall σε αγγλόφωνους ειδησεογραφικούς ιστότοπους και σε ορισμένους σε άλλες γλώσσες.";
 "Multiple solutions for blocking Twitch ads (vaft)" = "Αποκλείει διαφημίσεις του Twitch.";
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "Κάνει τους ιστότοπους σκούρους αλλάζοντας τα χρώματά τους, από το έργο Dark Reader. Ορισμένοι ιστότοποι μπορεί να φαίνονται περίεργα, καθώς δεν περιλαμβάνει τις διορθώσεις ιστοτόπων του Dark Reader.";
-"Opens the publisher's regular page instead of its AMP version." = "Ανοίγει την κανονική σελίδα του εκδότη αντί για την έκδοση AMP.";
+"Opens the publisher's regular page instead of its AMP version, from the AdGuard project." = "Ανοίγει την κανονική σελίδα του εκδότη αντί για την έκδοση AMP, από το έργο AdGuard.";
 "Disable AMP" = "Disable AMP";
 "wBlock on this site" = "wBlock σε αυτόν τον ιστότοπο";
 "Autoplay on this site" = "Αυτόματη αναπαραγωγή σε αυτόν τον ιστότοπο";

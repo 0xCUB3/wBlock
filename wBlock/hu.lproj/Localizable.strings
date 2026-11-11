@@ -1089,7 +1089,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Tests new rules before they reach the main lists, from the AdGuard project. It may break sites." = "Új szabályokat tesztel, mielőtt azok eljutnának a főbb listákba. Az AdGuard projekt listája. Előfordulhat, hogy egyes webhelyeket elronthat.";
 "Tests new rules before they reach the main lists, from the uBlock Origin project. It may break sites." = "Új szabályokat tesztel, mielőtt azok eljutnának a főbb listákba. Az uBlock Origin projekt listája. Előfordulhat, hogy egyes webhelyeket elronthat.";
 "Makes websites dark by restyling their colors, from the Dark Reader project. Some sites may look off, since it doesn't include Dark Reader's site fixes." = "Sötétté teszi a webhelyeket a színeik átalakításával. A Dark Reader projektből. Egyes webhelyek furcsán nézhetnek ki, mivel nem tartalmazza a Dark Reader webhelyjavításait.";
-"Blocks Twitch ads and handles complicated anti-adblock cases, but it slows page loads." = "Blokkolja a Twitch-hirdetéseket, és kezeli a bonyolult adblock-ellenes eseteket, de lassítja az oldalbetöltést.";
+"Blocks Twitch ads and handles complicated anti-adblock cases, from the AdGuard project. It slows page loads." = "Blokkolja a Twitch-hirdetéseket, és kezeli a bonyolult adblock-ellenes eseteket. Az AdGuard projekt szkriptje. Lassítja az oldalbetöltést.";
 "Shows dislike counts on YouTube again, using data from the Return YouTube Dislike community." = "Ismét megjeleníti a nem tetszik-számlálót a YouTube-on, a Return YouTube Dislike közösség adatait használva.";
 "Gets past paywalls on English-language news sites, and some in other languages." = "Megkerüli a fizetősfal-védelmet az angol nyelvű hírportálokon, és néhányon más nyelveken is.";
 "Blocks Twitch ads." = "Blokkolja a Twitch-hirdetéseket.";
@@ -1102,7 +1102,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Bypass Paywalls of English (& other) language news sites" = "Megkerüli a fizetősfal-védelmet az angol nyelvű hírportálokon, és néhányon más nyelveken is.";
 "Multiple solutions for blocking Twitch ads (vaft)" = "Blokkolja a Twitch-hirdetéseket.";
 "Dark Reader's MIT-licensed API engine for wBlock (beta; without the full site-fix database)." = "Sötétté teszi a webhelyeket a színeik átalakításával. A Dark Reader projektből. Egyes webhelyek furcsán nézhetnek ki, mivel nem tartalmazza a Dark Reader webhelyjavításait.";
-"Opens the publisher's regular page instead of its AMP version." = "A kiadó normál oldalát nyitja meg az AMP-változat helyett.";
+"Opens the publisher's regular page instead of its AMP version, from the AdGuard project." = "A kiadó normál oldalát nyitja meg az AMP-változat helyett. Az AdGuard projekt szkriptje.";
 "Disable AMP" = "Disable AMP";
 "wBlock on this site" = "wBlock ezen a webhelyen";
 "Autoplay on this site" = "Automatikus lejátszás ezen a webhelyen";
