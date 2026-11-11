@@ -178,10 +178,16 @@ public enum FilterListContentProcessing {
         let lines = RuleText.lines(content, emptyLines: .kept)
             .map { ($0, String(RuleText.trimmed($0, newlines: true))) }
         // Converted as-is, a bare hostname is a substring match anywhere in the URL.
-        // Only anchor it when the whole list is hostnames, since ABP lists use
-        // hostname-shaped substrings such as `_werbung.php` on purpose.
+        // Only anchor it when every rule is a domain, since ABP lists use
+        // hostname-shaped substrings such as `_werbung.php` on purpose. Rules
+        // already anchored count as domains, so domains added while editing a
+        // converted list are anchored too (#1107).
         let isDomainList = lines.contains { matches(hostsHostname, $0.1) }
-            && lines.allSatisfy { $0.1.isEmpty || "!#[".contains($0.1.first!) || matches(hostsHostname, $0.1) }
+            && lines.allSatisfy { line in
+                line.1.isEmpty || "!#[".contains(line.1.first!) || matches(hostsHostname, line.1)
+                    || (line.1.hasPrefix("||") && line.1.hasSuffix("^")
+                        && matches(hostsHostname, String(line.1.dropFirst(2).dropLast())))
+            }
         var result: [String] = []
         for (line, trimmed) in lines {
             if isDomainList, matches(hostsHostname, trimmed) {

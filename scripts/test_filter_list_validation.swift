@@ -155,9 +155,14 @@ struct FilterListValidationTests {
         precondition(
             FilterListContentProcessing.normalizedContent(from: "! Title: Domains\nAds.example\n\nb.example")
                 == "! Title: Domains\n||ads.example^\n\n||b.example^"
-                && FilterListContentProcessing.normalizedContent(from: "||a.example^\n_werbung.php")
-                == "||a.example^\n_werbung.php",
+                && FilterListContentProcessing.normalizedContent(from: "||a.example^\n_werbung.php\nexample.com##.ad")
+                == "||a.example^\n_werbung.php\nexample.com##.ad",
             "expected only domain-only lists to become domain rules"
+        )
+        precondition(
+            FilterListContentProcessing.normalizedContent(from: "||a.example^\n||b.example^\nC.example")
+                == "||a.example^\n||b.example^\n||c.example^",
+            "expected domains added to a converted domain list to become domain rules"
         )
         for pasted in [
             "a.example\r\nb.example\n", "  ||a.example^\n##.ad  \n\n", "0.0.0.0 a.example b.example",
