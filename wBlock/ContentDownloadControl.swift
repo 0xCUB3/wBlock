@@ -15,13 +15,12 @@ struct ContentDownloadControl: View {
             .toggleStyle(.switch)
             .fixedSize()
             .disabled(isDownloading)
-            // The spinner sits outside the switch's frame so the row doesn't shift.
-            .overlay(alignment: .leading) {
-                if isDownloading {
-                    ProgressView()
-                        .controlSize(.small)
-                        .alignmentGuide(.leading) { $0[.trailing] + 8 }
-                }
+            // The spinner takes the switch's place, which keeps its size so the
+            // row doesn't shift. Beside it, the iOS 26 glass thumb slid over
+            // the spinner as the switch animated (#1111).
+            .opacity(isDownloading ? 0 : 1)
+            .overlay {
+                if isDownloading { ProgressView().controlSize(.small) }
             }
             .accessibilityLabel(
                 isDownloading
