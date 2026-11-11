@@ -647,6 +647,11 @@ fn parse_domain(entry: &str) -> Result<(bool, DomainMatcher), Reject> {
             _ => Err(Reject::Invalid("unterminated domain regex".into())),
         };
     }
+    // uBO 1.64 matches `host/path` when the page's path starts with `path`,
+    // so a lone `/` is the host itself (BPC: `irishexaminer.com/##+js(...)`).
+    if let Some(host) = p.strip_suffix('/').filter(|h| !h.contains(['/', '>'])) {
+        return parse_domain(&entry[..entry.len() - 1]).map_err(|_| Reject::Invalid(format!("bad domain '{host}/'")));
+    }
     if p.contains(">>") || p.contains('/') {
         let host = p.split(['/', '>']).next().unwrap_or(p);
         return match hostname(host.strip_suffix(".*").unwrap_or(host)) {
@@ -1094,6 +1099,8 @@ mod tests {
             ("a.com>>,~b.com##.x", "unsupported: domain ancestor or path"),
             ("~a.com>>,b.com##.x", "unsupported: domain ancestor or path"),
             ("a.*>>,b.com/p,c.com##.x", "[h:c.com] hide .x"),
+            // A lone `/` is the whole site (uBO matches the path as a prefix).
+            ("a.com/,~b.com/##.x", "[h:a.com,~h:b.com] hide .x"),
             // uBO keeps ~b.com: it is an exception for .x on b.com.
             ("a.com,~b.com##.x", "[h:a.com,~h:b.com] hide .x"),
             (
