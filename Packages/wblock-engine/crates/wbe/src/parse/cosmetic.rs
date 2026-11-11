@@ -210,13 +210,8 @@ pub(crate) fn with_domains(raw: &str, domains: &DomainList) -> String {
 
 /// Each domain of `domains` as filter text, includes first, excludes with `~`.
 pub(crate) fn domain_texts(domains: &DomainList) -> Vec<String> {
-    let one = |m: &DomainMatcher| match m {
-        DomainMatcher::Hostname(h) => h.clone(),
-        DomainMatcher::Entity(e) => format!("{e}.*"),
-        DomainMatcher::Regex(r) => format!("/{r}/"),
-    };
-    let mut parts: Vec<String> = domains.include.iter().map(one).collect();
-    parts.extend(domains.exclude.iter().map(|m| format!("~{}", one(m))));
+    let mut parts: Vec<String> = domains.include.iter().map(DomainMatcher::text).collect();
+    parts.extend(domains.exclude.iter().map(|m| format!("~{}", m.text())));
     parts
 }
 
@@ -260,11 +255,11 @@ pub(super) fn parse(line: &str, source: SourceRef) -> Option<ParsedLine> {
         return line.starts_with('#').then_some(ParsedLine::Ignored);
     };
     let exception = marker.starts_with("#@") || marker.starts_with("$@");
-    let domains = match parse_domains(&line[..at]) {
+    let body = &line[at + marker.len()..];
+    let domains = match parse_domains(&line[..at], body.starts_with("+js(")) {
         Ok(domains) => domains,
         Err(reject) => return Some(reject.into()),
     };
-    let body = &line[at + marker.len()..];
     match marker {
         "$$" | "$@$" => return Some(unsupported("AdGuard HTML filtering")),
         // AdGuard scriptlets with no uBO equivalent (the rest were rewritten
@@ -561,8 +556,9 @@ impl From<Reject> for ParsedLine {
 }
 
 /// uBO's `parseDomainList` with the ext-list flags: `,` separated, `~` to
-/// exclude, `google.*` entities, `/regex/` (and `[$domain=/regex/]`).
-fn parse_domains(list: &str) -> Result<DomainList, Reject> {
+/// exclude, `google.*` entities, `/regex/` (and `[$domain=/regex/]`), and
+/// with `ancestors`, `name>>`.
+fn parse_domains(list: &str, ancestors: bool) -> Result<DomainList, Reject> {
     let mut out = DomainList::default();
     let mut rest = list;
     let mut universal = false;
@@ -577,7 +573,7 @@ fn parse_domains(list: &str) -> Result<DomainList, Reject> {
         if entry == "*" {
             universal = true;
         } else {
-            match parse_domain(entry) {
+            match parse_domain(entry, ancestors) {
                 Ok((true, matcher)) => out.exclude.push(matcher),
                 Ok((false, matcher)) => out.include.push(matcher),
                 Err(reject @ Reject::Unsupported(_)) if !entry.starts_with('~') => skipped = Some(reject),
@@ -627,7 +623,7 @@ fn take_entry(s: &str) -> (&str, Option<&str>) {
     (&s[..end], next)
 }
 
-fn parse_domain(entry: &str) -> Result<(bool, DomainMatcher), Reject> {
+fn parse_domain(entry: &str, ancestors: bool) -> Result<(bool, DomainMatcher), Reject> {
     let (negated, p) = match entry.strip_prefix('~') {
         Some(p) => (true, p),
         None => (false, entry),
@@ -650,7 +646,14 @@ fn parse_domain(entry: &str) -> Result<(bool, DomainMatcher), Reject> {
     // uBO 1.64 matches `host/path` when the page's path starts with `path`,
     // so a lone `/` is the host itself (BPC: `irishexaminer.com/##+js(...)`).
     if let Some(host) = p.strip_suffix('/').filter(|h| !h.contains(['/', '>'])) {
-        return parse_domain(&entry[..entry.len() - 1]).map_err(|_| Reject::Invalid(format!("bad domain '{host}/'")));
+        return parse_domain(&entry[..entry.len() - 1], false).map_err(|_| Reject::Invalid(format!("bad domain '{host}/'")));
+    }
+    // uBO tests `name>>` against each ancestor frame, in its scriptlet lookup only.
+    if let Some(host) = p.strip_suffix(">>").filter(|h| ancestors && !h.contains(['/', '>', '~'])) {
+        return match parse_domain(host, false) {
+            Ok((_, m @ (DomainMatcher::Hostname(_) | DomainMatcher::Entity(_)))) => Ok((negated, DomainMatcher::Ancestor(Box::new(m)))),
+            _ => Err(Reject::Invalid(format!("bad domain '{p}'"))),
+        };
     }
     if p.contains(">>") || p.contains('/') {
         let host = p.split(['/', '>']).next().unwrap_or(p);
@@ -1011,6 +1014,7 @@ mod tests {
             DomainMatcher::Hostname(h) => format!("h:{h}"),
             DomainMatcher::Entity(e) => format!("e:{e}"),
             DomainMatcher::Regex(r) => format!("r:{r}"),
+            DomainMatcher::Ancestor(m) => format!("{}>>", matcher(m)),
         }
     }
 
@@ -1099,6 +1103,9 @@ mod tests {
             ("a.com>>,~b.com##.x", "unsupported: domain ancestor or path"),
             ("~a.com>>,b.com##.x", "unsupported: domain ancestor or path"),
             ("a.*>>,b.com/p,c.com##.x", "[h:c.com] hide .x"),
+            // Only scriptlets read ancestors, in uBO as here.
+            ("a.com>>,~b.*>>##+js(noeval)", "[h:a.com>>,~e:b>>] js adg:ubo-noeval.js[]"),
+            ("/a/>>##+js(noeval)", "invalid: unterminated domain regex"),
             // A lone `/` is the whole site (uBO matches the path as a prefix).
             ("a.com/,~b.com/##.x", "[h:a.com,~h:b.com] hide .x"),
             // uBO keeps ~b.com: it is an exception for .x on b.com.

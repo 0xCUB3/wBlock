@@ -60,6 +60,22 @@ pub enum DomainMatcher {
     Entity(String),
     /// `/regex/` (uBO extension), source without slashes.
     Regex(String),
+    /// `name>>` (uBO 1.64): a frame with the hostname or entity as an
+    /// ancestor. Only scriptlets accept it, as only uBO's scriptlet lookup
+    /// reads ancestors.
+    Ancestor(Box<DomainMatcher>),
+}
+
+impl DomainMatcher {
+    /// The entry as filter text, which is also its runtime host key.
+    pub fn text(&self) -> String {
+        match self {
+            Self::Hostname(h) => h.clone(),
+            Self::Entity(e) => format!("{e}.*"),
+            Self::Regex(r) => format!("/{r}/"),
+            Self::Ancestor(m) => format!("{}>>", m.text()),
+        }
+    }
 }
 
 /// Include and exclude lists. Empty `include` means "everywhere".

@@ -65,8 +65,9 @@ void wbe_bytes_free(uint8_t *bytes, size_t len);
 
 /* Maps the engine at offset in the file at path; replace the file by rename, never write it in place. */
 WbeEngine *wbe_engine_open(const char *path, size_t offset);
-/* PagePayload JSON: {"hide":[..],"procedural":[..],"scriptlets":[[name,args..],..],"generichide":bool}. */
-char *wbe_engine_lookup(const WbeEngine *engine, const char *url);
+/* PagePayload JSON: {"hide":[..],"procedural":[..],"scriptlets":[[name,args..],..],"generichide":bool}.
+   top_url is NULL for a top frame, else the page embedding the frame (for `name>>` scriptlets). */
+char *wbe_engine_lookup(const WbeEngine *engine, const char *url, const char *top_url);
 void wbe_engine_free(WbeEngine *engine);
 
 /* Registrable domain (eTLD+1) of host, or NULL for a public suffix; free with wbe_string_free. */

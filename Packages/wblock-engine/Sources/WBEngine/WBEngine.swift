@@ -103,8 +103,9 @@ public enum WBEngine {
         deinit { wbe_engine_free(handle) }
 
         /// `{"hide":[..],"procedural":[..],"scriptlets":[[name, args..]],"generichide":bool}`.
-        public func lookup(url: String) throws -> Data {
-            guard let json = wbe_engine_lookup(handle, url) else { throw EngineError.last() }
+        /// `topUrl` is the page embedding a subframe, nil for a top frame.
+        public func lookup(url: String, topUrl: String? = nil) throws -> Data {
+            guard let json = wbe_engine_lookup(handle, url, topUrl) else { throw EngineError.last() }
             defer { wbe_string_free(json) }
             return Data(bytes: json, count: strlen(json))
         }

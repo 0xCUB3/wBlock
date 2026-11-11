@@ -83,8 +83,9 @@ enum FilterEngineStore {
     }
 
     /// The per-page payload for `url` (see Packages/wblock-engine/docs/BRIEF.md),
-    /// or nil when no engine has been published.
-    static func lookup(url: URL, groupIdentifier: String) throws -> [String: Any]? {
+    /// or nil when no engine has been published. `topURL` is the page embedding
+    /// a subframe, nil for a top frame.
+    static func lookup(url: URL, topURL: URL?, groupIdentifier: String) throws -> [String: Any]? {
         try WebExtensionGate.shared.withLock {
             guard let containerURL = FileManager.default.containerURL(
                 forSecurityApplicationGroupIdentifier: groupIdentifier
@@ -100,7 +101,7 @@ enum FilterEngineStore {
                 cached = (fileNumber, snapshot.timestamp, try WBEngine.Engine(path: file.path, offset: headerLength))
             }
             guard let (_, timestamp, engine) = cached,
-                  var payload = try JSONSerialization.jsonObject(with: engine.lookup(url: url.absoluteString)) as? [String: Any]
+                  var payload = try JSONSerialization.jsonObject(with: engine.lookup(url: url.absoluteString, topUrl: topURL?.absoluteString)) as? [String: Any]
             else { return nil }
             payload["css"] = payload.removeValue(forKey: "hide")
             payload["engineTimestamp"] = timestamp

@@ -258,17 +258,18 @@ public enum WebExtensionRequestHandler {
                         // A cold engine load reads a file; keep it off the main
                         // actor so state and userscript requests are not stuck
                         // behind it, and overlap it with loading the site state.
-                        // Cosmetic rules follow the frame URL, as in uBO, so the
-                        // top URL is not needed.
+                        // Cosmetic rules follow the frame URL, as in uBO; the
+                        // top URL only selects `name>>` scriptlets.
+                        let topURL = (payload["topUrl"] as? String).flatMap(URL.init(string:))
                         let lookupTask = Task.detached(priority: .userInitiated) {
-                            lookupEnginePayload(url: url)
+                            lookupEnginePayload(url: url, topURL: topURL)
                         }
                         // Advanced rules are a filtering component, so a filter-only
                         // exception must silence them too (issue #652). Like the
                         // native if-domain rule and uBO's per-site switch, it
                         // covers the site's frames too.
                         let disabledSites = await currentFilterDisabledSites()
-                        let site = (payload["topUrl"] as? String).flatMap(URL.init(string:)) ?? url
+                        let site = topURL ?? url
                         let disabled = HostMatcher.isHostDisabled(host: site.host ?? "", disabledSites: disabledSites)
                         if disabled {
                             message?["payload"] = emptyRulesPayload(disabled: true, paused: false)
@@ -339,9 +340,9 @@ public enum WebExtensionRequestHandler {
 
     // The engine is replaced by atomic rename, so reading it takes no app group
     // flock and needs no suspension shield.
-    private static func lookupEnginePayload(url: URL) -> (payload: [String: Any]?, error: String?) {
+    private static func lookupEnginePayload(url: URL, topURL: URL?) -> (payload: [String: Any]?, error: String?) {
         do {
-            guard var payload = try FilterEngineStore.lookup(url: url, groupIdentifier: GroupIdentifier.shared.value) else {
+            guard var payload = try FilterEngineStore.lookup(url: url, topURL: topURL, groupIdentifier: GroupIdentifier.shared.value) else {
                 return (nil, "No filter engine published")
             }
             payload["disabled"] = false

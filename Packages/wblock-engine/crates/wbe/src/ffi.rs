@@ -253,16 +253,19 @@ pub unsafe extern "C" fn wbe_engine_open(path: *const c_char, offset: usize) -> 
 
 /// # Safety
 /// `engine` must be NULL or a live handle from `wbe_engine_open`; `url` a
-/// valid NUL-terminated string. Free the result with `wbe_string_free`.
+/// valid NUL-terminated string, `top_url` NULL (a top frame) or one. Free the
+/// result with `wbe_string_free`.
 #[no_mangle]
 pub unsafe extern "C" fn wbe_engine_lookup(
     engine: *const Engine,
     url: *const c_char,
+    top_url: *const c_char,
 ) -> *mut c_char {
     guard(ptr::null_mut(), || {
         let engine = engine.as_ref().ok_or("engine is NULL")?;
         let url = cstr(url, "url")?;
-        let json = serde_json::to_string(&engine.lookup(url)).map_err(|e| e.to_string())?;
+        let top_url = if top_url.is_null() { None } else { Some(cstr(top_url, "top_url")?) };
+        let json = serde_json::to_string(&engine.lookup_frame(url, top_url)).map_err(|e| e.to_string())?;
         Ok(to_c(json)?.into_raw())
     })
 }
@@ -364,7 +367,7 @@ mod tests {
             // A publish replaces the file; the open engine keeps its mapping.
             std::fs::remove_file(path.to_str().unwrap()).unwrap();
             let url = c("https://example.com/");
-            let json = take(wbe_engine_lookup(engine, url.as_ptr()));
+            let json = take(wbe_engine_lookup(engine, url.as_ptr(), ptr::null()));
             assert!(json.contains(r#""hide":[".ad"]"#), "{json}");
             assert!(
                 json.contains(r#""scriptlets":[["set-constant","a","true"]]"#),
@@ -388,10 +391,10 @@ mod tests {
             assert!(last_error().contains("engine"));
             assert!(wbe_engine_open(c("/nonexistent/engine").as_ptr(), 0).is_null());
 
-            assert!(wbe_engine_lookup(ptr::null(), c("https://a/").as_ptr()).is_null());
+            assert!(wbe_engine_lookup(ptr::null(), c("https://a/").as_ptr(), ptr::null()).is_null());
             let (empty, offset) = build_file("empty", b"", "");
             let engine = wbe_engine_open(empty.as_ptr(), offset);
-            assert!(wbe_engine_lookup(engine, ptr::null()).is_null());
+            assert!(wbe_engine_lookup(engine, ptr::null(), ptr::null()).is_null());
             assert!(last_error().contains("url is NULL"));
             wbe_engine_free(engine);
 

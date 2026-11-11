@@ -58,6 +58,8 @@ struct Scriptlets {
     // Global calls are consulted on every lookup; their scopes are decoded on
     // the first, so an engine that only answers pages never decodes popups'.
     generic_rules: OnceLock<Vec<(u32, Box<[String]>)>>,
+    /// Whether any key is `name>>`; a subframe lookup tries ancestor keys only then.
+    ancestors: OnceLock<bool>,
 }
 
 /// Scriptlet rules as `Engine::build` collects them.
@@ -136,6 +138,7 @@ impl ScriptletRules {
         let regexes = regex::RegexSet::new(self.regexes.keys()).expect("validated domain regexes");
         Scriptlets {
             generic_rules: OnceLock::new(),
+            ancestors: OnceLock::new(),
             calls: Table::encode(self.calls.iter().map(|call| {
                 let mut value = Vec::new();
                 put_strs(&mut value, call);
@@ -387,8 +390,14 @@ impl Scriptlets {
         (ids, excepted, all_scriptlets_excepted)
     }
 
-    fn lookup(&self, host: &str, site_cosmetic: bool, generic_hides: bool) -> Vec<Vec<&str>> {
-        let (ids, excepted, all_scriptlets_excepted) = self.ids(host, site_cosmetic, generic_hides);
+    /// `top`, the host of a subframe's top page, also selects `name>>` rules.
+    fn lookup(&self, host: &str, top: Option<&str>, site_cosmetic: bool, generic_hides: bool) -> Vec<Vec<&str>> {
+        let mut keys = self.keys(host);
+        if let Some(top) = top.filter(|_| *self.ancestors.get_or_init(|| [&self.rules, &self.exceptions].iter()
+            .any(|t| (0..t.len()).any(|i| t.key_value(i).0.ends_with(b">>"))))) {
+            keys.extend(host_keys(top).into_iter().skip(1).map(|k| k + ">>"));
+        }
+        let (ids, excepted, all_scriptlets_excepted) = self.ids_for(&keys, site_cosmetic, generic_hides);
         let mut calls: Vec<Vec<&str>> = ids.into_iter().map(|id| self.call(id)).collect();
         // Pair matched response rules with Safari's player requests and watch mode.
         const REQUEST: &str = "trusted-youtube-player-request";
@@ -424,14 +433,9 @@ impl Scriptlets {
     }
 }
 
-/// The host key a domain matcher selects: the hostname, `name.*` for an
-/// entity, `/regex/` for a regex.
+/// The host key a domain matcher selects: its filter text.
 fn key(m: &DomainMatcher) -> String {
-    match m {
-        DomainMatcher::Hostname(h) => h.clone(),
-        DomainMatcher::Entity(e) => format!("{e}.*"),
-        DomainMatcher::Regex(r) => format!("/{r}/"),
-    }
+    m.text()
 }
 
 /// `""`, the host and each parent, and the entity form (`label.*`) of each of
@@ -584,7 +588,7 @@ impl Engine {
             let (calls, rules, exceptions) = (Table::parse(&blob, take()?)?, Table::parse(&blob, take()?)?, Table::parse(&blob, take()?)?);
             let patterns = serde_json::from_slice::<Vec<String>>(&bytes[take()?]).map_err(|e| e.to_string())?;
             let regexes = regex::RegexSet::new(patterns).map_err(|e| e.to_string())?;
-            Ok(Scriptlets { calls, generic_rules: OnceLock::new(), rules, exceptions, regexes })
+            Ok(Scriptlets { calls, generic_rules: OnceLock::new(), ancestors: OnceLock::new(), rules, exceptions, regexes })
         };
         let (scriptlets, popups, pages) = (index()?, index()?, index()?);
         Ok(Self { scriptlets, popups, pages, popup_regexes: Default::default(), page_regexes: Default::default() })
@@ -620,6 +624,13 @@ impl Engine {
     /// `wbe-popup-https://opener/path#https://target/` URIs ask the same engine
     /// for a popup verdict while retaining the opener host for native site state.
     pub fn lookup(&self, url: &str) -> PagePayload {
+        self.lookup_frame(url, None)
+    }
+
+    /// `lookup` for a frame embedded in `top_url`: scriptlets scoped to an
+    /// ancestor (`name>>`) also apply. Safari names only the top page, so an
+    /// intermediate frame's host is not an ancestor here.
+    pub fn lookup_frame(&self, url: &str, top_url: Option<&str>) -> PagePayload {
         if let Some((source, target)) = url.strip_prefix("wbe-popup-").and_then(|query| query.split_once('#')) {
             let scope = self.page_scope(source);
             let blocked = !scope.contains(ExceptionScope::DOC)
@@ -632,7 +643,8 @@ impl Engine {
         let document = scope.contains(ExceptionScope::DOC);
         let elemhide = scope.intersects(ExceptionScope::DOC | ExceptionScope::EHIDE);
         let calls = if document { Vec::new() } else {
-            self.scriptlets.lookup(&host_of(url).to_ascii_lowercase(), !specific_off, !generic_off)
+            let top = top_url.map(|t| host_of(t).to_ascii_lowercase());
+            self.scriptlets.lookup(&host_of(url).to_ascii_lowercase(), top.as_deref(), !specific_off, !generic_off)
         };
         let (mut hide, mut styles, mut procedural, mut scriptlets) = (Vec::new(), Vec::new(), Vec::new(), Vec::new());
         for call in calls {
@@ -954,6 +966,20 @@ example.com##+js(set-constant, adsEnabled, false)
         let url = "https://awstrack.me/x?auth.coindesk.com";
         assert!(engine.lookup(url).scriptlets.is_empty());
         assert_eq!(engine.lookup(&format!("wbe-popup-https://news.example/#{url}")).popup_blocked, Some(false));
+    }
+
+    #[test]
+    fn ancestor_scriptlets_follow_the_top_page() {
+        let text = "a.com>>##+js(set, x, 1)\nb.*>>##+js(set, y, 1)\nc.a.com>>#@#+js(set, x, 1)\n";
+        let out = crate::compile(&[crate::ListInput { text, trusted: false }], &crate::CompileOptions { safari: crate::webkit::SafariVersion::new(18, 0) });
+        assert!(out.stats.dropped.is_empty(), "{:?}", out.stats.dropped);
+        let engine = Engine::deserialize(&Engine::build(&out.runtime).serialize()).unwrap();
+        let names = |url: &str, top: Option<&str>| engine.lookup_frame(url, top).scriptlets.concat();
+        assert_eq!(names("https://player.test/", Some("https://www.a.com/p")), ["set-constant", "x", "1"]);
+        assert_eq!(names("https://player.test/", Some("https://b.co.uk/")), ["set-constant", "y", "1"]);
+        assert!(names("https://player.test/", Some("https://c.a.com/")).is_empty());
+        // The page itself is no ancestor.
+        assert!(names("https://www.a.com/", None).is_empty());
     }
 
     #[test]

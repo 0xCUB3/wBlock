@@ -1197,12 +1197,9 @@ fn matcher(site: &str) -> DomainMatcher {
     }
 }
 
+/// `None` for a regex or ancestor, which name no site to narrow.
 fn site(m: &DomainMatcher) -> Option<String> {
-    match m {
-        DomainMatcher::Hostname(h) => Some(h.clone()),
-        DomainMatcher::Entity(e) => Some(format!("{e}.*")),
-        DomainMatcher::Regex(_) => None,
-    }
+    matches!(m, DomainMatcher::Hostname(_) | DomainMatcher::Entity(_)).then(|| m.text())
 }
 
 /// Whether `host` matches everything `site` does. `name.*` covers each
@@ -1240,7 +1237,7 @@ fn restrict(domains: &DomainList, scope: &SiteScope) -> Option<Restricted> {
     let regex_includes: Vec<DomainMatcher> = domains
         .include
         .iter()
-        .filter(|m| matches!(m, DomainMatcher::Regex(_)))
+        .filter(|m| site(m).is_none())
         .cloned()
         .collect();
     let negated: Vec<String> = domains.exclude.iter().filter_map(site).collect();

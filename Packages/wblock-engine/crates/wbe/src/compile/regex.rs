@@ -292,6 +292,8 @@ fn top_url(m: &DomainMatcher) -> Option<Vec<String>> {
                 })
                 .collect(),
         ),
+        // Scriptlet-only; a frame's ancestors have no top-url form.
+        DomainMatcher::Ancestor(_) => None,
     }
 }
 

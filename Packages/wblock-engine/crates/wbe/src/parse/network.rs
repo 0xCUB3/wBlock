@@ -1717,13 +1717,8 @@ mod tests {
     }
 
     fn domains(list: &DomainList) -> String {
-        let one = |m: &DomainMatcher| match m {
-            DomainMatcher::Hostname(h) => h.clone(),
-            DomainMatcher::Entity(e) => format!("{e}.*"),
-            DomainMatcher::Regex(r) => format!("/{r}/"),
-        };
-        let mut parts: Vec<String> = list.include.iter().map(one).collect();
-        parts.extend(list.exclude.iter().map(|m| format!("~{}", one(m))));
+        let mut parts: Vec<String> = list.include.iter().map(DomainMatcher::text).collect();
+        parts.extend(list.exclude.iter().map(|m| format!("~{}", m.text())));
         parts.join("|")
     }
 
