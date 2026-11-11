@@ -1127,3 +1127,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Sites include their subdomains. Use * for any top-level domain, as in amazon.*." = "Sites include their subdomains. Use * for any top-level domain, as in amazon.*.";
 "Sites include their subdomains. Use * for any top-level domain, as in amazon.*. Reload the page after a change." = "Sites include their subdomains. Use * for any top-level domain, as in amazon.*. Reload the page after a change.";
 "Status" = "وضعیت";
+"Filter list too large to convert" = "فهرست فیلتر برای تبدیل بیش از حد بزرگ است";
+"Too many rules to convert" = "قوانین بیش از حد برای تبدیل";
+"This list is too large for wBlock to convert. Lists can have up to %@ rules, and Safari holds 150,000 per blocker." = "این فهرست برای تبدیل توسط wBlock بیش از حد بزرگ است. فهرست‌ها می‌توانند تا %@ قانون داشته باشند و Safari برای هر مسدودکننده ۱۵۰٬۰۰۰ قانون نگه می‌دارد.";
+"This list has %@ rules, more than wBlock can convert. Lists can have up to %@ rules, and Safari holds 150,000 per blocker." = "این فهرست %@ قانون دارد، بیشتر از آنچه wBlock می‌تواند تبدیل کند. فهرست‌ها می‌توانند تا %@ قانون داشته باشند و Safari برای هر مسدودکننده ۱۵۰٬۰۰۰ قانون نگه می‌دارد.";
+"The enabled lists have %@ rules, more than wBlock can convert at once (%@). Turn off some lists and apply again." = "فهرست‌های فعال %@ قانون دارند، بیشتر از آنچه wBlock یک‌باره می‌تواند تبدیل کند (%@). چند فهرست را خاموش کنید و دوباره اعمال کنید.";

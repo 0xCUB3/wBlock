@@ -1118,3 +1118,8 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Sites include their subdomains. Use * for any top-level domain, as in amazon.*." = "A webhelyek az aldomainjeiket is tartalmazzák. A * bármely legfelső szintű domaint jelöli, például amazon.*.";
 "Sites include their subdomains. Use * for any top-level domain, as in amazon.*. Reload the page after a change." = "A webhelyek az aldomainjeiket is tartalmazzák. A * bármely legfelső szintű domaint jelöli, például amazon.*. Módosítás után töltsd újra az oldalt.";
 "Status" = "Állapot";
+"Filter list too large to convert" = "A szűrőlista túl nagy az átalakításhoz";
+"Too many rules to convert" = "Túl sok átalakítandó szabály";
+"This list is too large for wBlock to convert. Lists can have up to %@ rules, and Safari holds 150,000 per blocker." = "Ez a lista túl nagy ahhoz, hogy a wBlock átalakítsa. Egy lista legfeljebb %@ szabályt tartalmazhat, a Safari pedig blokkolónként 150 000-et kezel.";
+"This list has %@ rules, more than wBlock can convert. Lists can have up to %@ rules, and Safari holds 150,000 per blocker." = "Ez a lista %@ szabályt tartalmaz, többet, mint amennyit a wBlock át tud alakítani. Egy lista legfeljebb %@ szabályt tartalmazhat, a Safari pedig blokkolónként 150 000-et kezel.";
+"The enabled lists have %@ rules, more than wBlock can convert at once (%@). Turn off some lists and apply again." = "A bekapcsolt listák %@ szabályt tartalmaznak, többet, mint amennyit a wBlock egyszerre át tud alakítani (%@). Kapcsolj ki néhány listát, és alkalmazd újra.";

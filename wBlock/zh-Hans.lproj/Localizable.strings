@@ -1118,3 +1118,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Sites include their subdomains. Use * for any top-level domain, as in amazon.*." = "网站包含其子域名。使用 * 匹配任意顶级域名，例如 amazon.*。";
 "Sites include their subdomains. Use * for any top-level domain, as in amazon.*. Reload the page after a change." = "网站包含其子域名。使用 * 匹配任意顶级域名，例如 amazon.*。更改后请重新加载页面。";
 "Status" = "状态";
+"Filter list too large to convert" = "过滤列表太大，无法转换";
+"Too many rules to convert" = "要转换的规则太多";
+"This list is too large for wBlock to convert. Lists can have up to %@ rules, and Safari holds 150,000 per blocker." = "此列表太大，wBlock 无法转换。每个列表最多可有 %@ 条规则，Safari 每个拦截器可容纳 150,000 条。";
+"This list has %@ rules, more than wBlock can convert. Lists can have up to %@ rules, and Safari holds 150,000 per blocker." = "此列表有 %@ 条规则，超出 wBlock 可转换的数量。每个列表最多可有 %@ 条规则，Safari 每个拦截器可容纳 150,000 条。";
+"The enabled lists have %@ rules, more than wBlock can convert at once (%@). Turn off some lists and apply again." = "已启用的列表共有 %@ 条规则，超出 wBlock 一次可转换的数量（%@）。请关闭部分列表后重新应用。";

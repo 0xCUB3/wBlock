@@ -1118,3 +1118,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Sites include their subdomains. Use * for any top-level domain, as in amazon.*." = "사이트에는 하위 도메인이 포함됩니다. 모든 최상위 도메인에는 *를 사용하세요(예: amazon.*).";
 "Sites include their subdomains. Use * for any top-level domain, as in amazon.*. Reload the page after a change." = "사이트에는 하위 도메인이 포함됩니다. 모든 최상위 도메인에는 *를 사용하세요(예: amazon.*). 변경 후 페이지를 새로고침하세요.";
 "Status" = "상태";
+"Filter list too large to convert" = "필터 목록이 너무 커서 변환할 수 없음";
+"Too many rules to convert" = "변환할 규칙이 너무 많음";
+"This list is too large for wBlock to convert. Lists can have up to %@ rules, and Safari holds 150,000 per blocker." = "이 목록은 너무 커서 wBlock이 변환할 수 없습니다. 목록에는 최대 %@개의 규칙을 넣을 수 있으며, Safari는 차단기당 150,000개를 담습니다.";
+"This list has %@ rules, more than wBlock can convert. Lists can have up to %@ rules, and Safari holds 150,000 per blocker." = "이 목록에는 %@개의 규칙이 있어 wBlock이 변환할 수 있는 양을 넘습니다. 목록에는 최대 %@개의 규칙을 넣을 수 있으며, Safari는 차단기당 150,000개를 담습니다.";
+"The enabled lists have %@ rules, more than wBlock can convert at once (%@). Turn off some lists and apply again." = "켜진 목록의 규칙이 %@개로, wBlock이 한 번에 변환할 수 있는 양(%@)을 넘습니다. 일부 목록을 끄고 다시 적용하세요.";

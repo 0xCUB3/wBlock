@@ -571,6 +571,20 @@ extension AppFilterManager {
         let allSelectedFilters = pausedComponents.contains(.filters)
             ? []
             : compilationFilters.filter { $0.isSelected }
+        // Past this the engine runs the device out of memory and the app is
+        // killed mid-apply; stop with the reason instead.
+        let selectedSourceRules = allSelectedFilters.reduce(0) { $0 + ($1.sourceRuleCount ?? 0) }
+        if selectedSourceRules > FilterListTooLargeError.maxApplyRules {
+            await failApplyRun(
+                logMessage: LocalizedStrings.text("Too many rules to convert"),
+                metadata: ["rules": "\(selectedSourceRules)", "limit": "\(FilterListTooLargeError.maxApplyRules)"],
+                statusMessage: LocalizedStrings.format(
+                    "The enabled lists have %@ rules, more than wBlock can convert at once (%@). Turn off some lists and apply again.",
+                    comment: "Apply refused: too many rules across enabled lists",
+                    selectedSourceRules.formatted(), FilterListTooLargeError.maxApplyRules.formatted())
+            )
+            return
+        }
         let generatedZapperRules = pausedComponents.contains(.elementZapper)
             ? []
             : ZapperContentBlockerRuleGenerator.generatedRules(

@@ -1118,3 +1118,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Sites include their subdomains. Use * for any top-level domain, as in amazon.*." = "Οι ιστότοποι περιλαμβάνουν τους υποτομείς τους. Χρησιμοποιήστε * για οποιονδήποτε τομέα ανώτατου επιπέδου, όπως amazon.*.";
 "Sites include their subdomains. Use * for any top-level domain, as in amazon.*. Reload the page after a change." = "Οι ιστότοποι περιλαμβάνουν τους υποτομείς τους. Χρησιμοποιήστε * για οποιονδήποτε τομέα ανώτατου επιπέδου, όπως amazon.*. Φορτώστε ξανά τη σελίδα μετά από αλλαγή.";
 "Status" = "Κατάσταση";
+"Filter list too large to convert" = "Η λίστα φίλτρων είναι πολύ μεγάλη για μετατροπή";
+"Too many rules to convert" = "Πάρα πολλοί κανόνες για μετατροπή";
+"This list is too large for wBlock to convert. Lists can have up to %@ rules, and Safari holds 150,000 per blocker." = "Αυτή η λίστα είναι πολύ μεγάλη για να τη μετατρέψει το wBlock. Οι λίστες μπορούν να έχουν έως %@ κανόνες και το Safari χωράει 150.000 ανά αποκλειστή.";
+"This list has %@ rules, more than wBlock can convert. Lists can have up to %@ rules, and Safari holds 150,000 per blocker." = "Αυτή η λίστα έχει %@ κανόνες, περισσότερους από όσους μπορεί να μετατρέψει το wBlock. Οι λίστες μπορούν να έχουν έως %@ κανόνες και το Safari χωράει 150.000 ανά αποκλειστή.";
+"The enabled lists have %@ rules, more than wBlock can convert at once (%@). Turn off some lists and apply again." = "Οι ενεργές λίστες έχουν %@ κανόνες, περισσότερους από όσους μπορεί να μετατρέψει το wBlock μονομιάς (%@). Απενεργοποιήστε μερικές λίστες και εφαρμόστε ξανά.";

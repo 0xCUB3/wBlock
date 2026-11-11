@@ -1127,3 +1127,8 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Sites include their subdomains. Use * for any top-level domain, as in amazon.*." = "Siteler alt alan adlarını da kapsar. Herhangi bir üst düzey alan adı için * kullanın, örneğin amazon.*.";
 "Sites include their subdomains. Use * for any top-level domain, as in amazon.*. Reload the page after a change." = "Siteler alt alan adlarını da kapsar. Herhangi bir üst düzey alan adı için * kullanın, örneğin amazon.*. Değişiklikten sonra sayfayı yenileyin.";
 "Status" = "Durum";
+"Filter list too large to convert" = "Filtre listesi dönüştürmek için çok büyük";
+"Too many rules to convert" = "Dönüştürülecek çok fazla kural var";
+"This list is too large for wBlock to convert. Lists can have up to %@ rules, and Safari holds 150,000 per blocker." = "Bu liste wBlock'un dönüştüremeyeceği kadar büyük. Listeler en fazla %@ kural içerebilir ve Safari engelleyici başına 150.000 kural tutar.";
+"This list has %@ rules, more than wBlock can convert. Lists can have up to %@ rules, and Safari holds 150,000 per blocker." = "Bu listede %@ kural var, wBlock'un dönüştürebileceğinden fazla. Listeler en fazla %@ kural içerebilir ve Safari engelleyici başına 150.000 kural tutar.";
+"The enabled lists have %@ rules, more than wBlock can convert at once (%@). Turn off some lists and apply again." = "Etkin listelerde %@ kural var, wBlock'un tek seferde dönüştürebileceğinden fazla (%@). Bazı listeleri kapatıp yeniden uygula.";

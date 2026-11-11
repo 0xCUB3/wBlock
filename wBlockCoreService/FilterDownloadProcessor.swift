@@ -1,6 +1,24 @@
 import Foundation
 import CryptoKit
 
+/// A list too big to convert. The engine needs about 1.4 GB per million
+/// rules, so a 40-million-rule list got the app killed, and Safari holds
+/// 150,000 rules per blocker anyway. Refused before decoding when the body
+/// alone is too big, so the download can't exhaust memory either.
+public struct FilterListTooLargeError: Error, Equatable {
+    public static let maxBytes = 64 << 20
+    public static let maxRules = 1_000_000
+    /// Rules all selected lists may add up to before Apply refuses, well
+    /// past real setups and short of what the device's memory can't hold.
+    #if os(iOS)
+    public static let maxApplyRules = 2_000_000
+    #else
+    public static let maxApplyRules = 4_000_000
+    #endif
+    /// Nil when the body was refused by size before its rules were counted.
+    public let ruleCount: Int?
+}
+
 public enum FilterDownloadProcessor {
     private actor IncludeFailureTracker {
         private(set) var failed = false
@@ -26,6 +44,9 @@ public enum FilterDownloadProcessor {
         urlSession: URLSession,
         onIncludeFetchError: IncludeResolver.FetchErrorHandler? = nil
     ) async throws -> (filter: FilterList, strippedDirectives: [String]) {
+        guard data.count <= FilterListTooLargeError.maxBytes else {
+            throw FilterListTooLargeError(ruleCount: nil)
+        }
         guard FilterUpdateResponseClassifier.looksLikeFilterListData(data),
               let rawContent = String(data: data, encoding: .utf8) else {
             throw ProcessingError.decodingFailed
@@ -36,6 +57,9 @@ public enum FilterDownloadProcessor {
             if !strippedDirectives.contains($0) { strippedDirectives.append($0) }
         }
         let rawCount = FilterList.countRules(in: processedContent)
+        guard rawCount <= FilterListTooLargeError.maxRules else {
+            throw FilterListTooLargeError(ruleCount: rawCount)
+        }
 
         let finalContent: String
         if filter.isOptimizedBuiltin {

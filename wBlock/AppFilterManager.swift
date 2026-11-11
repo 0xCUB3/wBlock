@@ -34,6 +34,8 @@ class AppFilterManager: ObservableObject {
         // presentation sees one input change instead of two per frame.
         didSet { if filterLists.map(\.id) != oldValue.map(\.id) { refreshDownloadedFilterIDs() } }
     }
+    /// Set when a download was refused as too large, for the download alert.
+    @Published var downloadTooLarge: FilterListTooLargeError?
     @Published var isLoading: Bool = false {
         didSet { if oldValue && !isLoading { refreshDownloadedFilterIDs() } }
     }

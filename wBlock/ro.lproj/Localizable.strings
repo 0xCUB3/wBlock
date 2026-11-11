@@ -1118,3 +1118,8 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Sites include their subdomains. Use * for any top-level domain, as in amazon.*." = "Site-urile includ subdomeniile lor. Folosește * pentru orice domeniu de nivel superior, ca în amazon.*.";
 "Sites include their subdomains. Use * for any top-level domain, as in amazon.*. Reload the page after a change." = "Site-urile includ subdomeniile lor. Folosește * pentru orice domeniu de nivel superior, ca în amazon.*. Reîncarcă pagina după o modificare.";
 "Status" = "Stare";
+"Filter list too large to convert" = "Listă de filtre prea mare pentru conversie";
+"Too many rules to convert" = "Prea multe reguli de convertit";
+"This list is too large for wBlock to convert. Lists can have up to %@ rules, and Safari holds 150,000 per blocker." = "Această listă este prea mare pentru ca wBlock să o convertească. Listele pot avea până la %@ reguli, iar Safari acceptă 150.000 pe blocant.";
+"This list has %@ rules, more than wBlock can convert. Lists can have up to %@ rules, and Safari holds 150,000 per blocker." = "Această listă are %@ reguli, mai multe decât poate converti wBlock. Listele pot avea până la %@ reguli, iar Safari acceptă 150.000 pe blocant.";
+"The enabled lists have %@ rules, more than wBlock can convert at once (%@). Turn off some lists and apply again." = "Listele activate au %@ reguli, mai multe decât poate converti wBlock deodată (%@). Dezactivează câteva liste și aplică din nou.";

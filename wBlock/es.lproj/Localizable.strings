@@ -1118,3 +1118,8 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Sites include their subdomains. Use * for any top-level domain, as in amazon.*." = "Los sitios incluyen sus subdominios. Usa * para cualquier dominio de nivel superior, como amazon.*.";
 "Sites include their subdomains. Use * for any top-level domain, as in amazon.*. Reload the page after a change." = "Los sitios incluyen sus subdominios. Usa * para cualquier dominio de nivel superior, como amazon.*. Recarga la página después de un cambio.";
 "Status" = "Estado";
+"Filter list too large to convert" = "Lista de filtros demasiado grande para convertir";
+"Too many rules to convert" = "Demasiadas reglas para convertir";
+"This list is too large for wBlock to convert. Lists can have up to %@ rules, and Safari holds 150,000 per blocker." = "Esta lista es demasiado grande para que wBlock la convierta. Las listas pueden tener hasta %@ reglas, y Safari admite 150.000 por bloqueador.";
+"This list has %@ rules, more than wBlock can convert. Lists can have up to %@ rules, and Safari holds 150,000 per blocker." = "Esta lista tiene %@ reglas, más de las que wBlock puede convertir. Las listas pueden tener hasta %@ reglas, y Safari admite 150.000 por bloqueador.";
+"The enabled lists have %@ rules, more than wBlock can convert at once (%@). Turn off some lists and apply again." = "Las listas activadas tienen %@ reglas, más de las que wBlock puede convertir a la vez (%@). Desactiva algunas listas y vuelve a aplicar.";

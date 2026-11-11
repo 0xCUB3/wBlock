@@ -300,9 +300,13 @@ struct ContentView: View {
             #endif
         }
         .alert("Error", isPresented: $showingFilterDownloadError) {
-            Button("OK", role: .cancel) {}
+            Button("OK", role: .cancel) { filterManager.downloadTooLarge = nil }
         } message: {
-            Text("Couldn't download this filter list. It was kept as not downloaded.")
+            if let tooLarge = filterManager.downloadTooLarge {
+                Text(Self.tooLargeMessage(tooLarge))
+            } else {
+                Text("Couldn't download this filter list. It was kept as not downloaded.")
+            }
         }
         .alert("Disable Essential Filter?", isPresented: Binding(
             get: { pendingEssentialFilter != nil },
@@ -699,6 +703,20 @@ struct ContentView: View {
                 showingFilterDownloadError = true
             }
         }
+    }
+
+    /// Why a list was refused, with the limits, so a huge list gets an answer
+    /// instead of a crash.
+    static func tooLargeMessage(_ error: FilterListTooLargeError) -> String {
+        let limit = FilterListTooLargeError.maxRules.formatted()
+        guard let count = error.ruleCount else {
+            return LocalizedStrings.format(
+                "This list is too large for wBlock to convert. Lists can have up to %@ rules, and Safari holds 150,000 per blocker.",
+                comment: "Download refused: list over the size limit", limit)
+        }
+        return LocalizedStrings.format(
+            "This list has %@ rules, more than wBlock can convert. Lists can have up to %@ rules, and Safari holds 150,000 per blocker.",
+            comment: "Download refused: list over the rule limit", count.formatted(), limit)
     }
 
     private var orderedFilters: [FilterList] {

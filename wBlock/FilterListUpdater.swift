@@ -484,6 +484,14 @@ final class FilterListUpdater: @unchecked Sendable {
                     )
                 }
             )
+        } catch let tooLarge as FilterListTooLargeError {
+            await ConcurrentLogManager.shared.error(
+                .filterUpdate,
+                LocalizedStrings.text("Filter list too large to convert"),
+                metadata: ["filter": filter.name, "rules": tooLarge.ruleCount.map(String.init) ?? "over 64 MB"]
+            )
+            await MainActor.run { filterListManager?.downloadTooLarge = tooLarge }
+            return .failed
         } catch {
             await ConcurrentLogManager.shared.error(
                 .system,

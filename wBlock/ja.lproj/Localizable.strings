@@ -1087,3 +1087,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Sites include their subdomains. Use * for any top-level domain, as in amazon.*." = "サイトにはサブドメインも含まれます。* は任意のトップレベルドメインを表します（例: amazon.*）。";
 "Sites include their subdomains. Use * for any top-level domain, as in amazon.*. Reload the page after a change." = "サイトにはサブドメインも含まれます。* は任意のトップレベルドメインを表します（例: amazon.*）。変更後はページを再読み込みしてください。";
 "Status" = "状態";
+"Filter list too large to convert" = "フィルタリストが大きすぎて変換できません";
+"Too many rules to convert" = "変換するルールが多すぎます";
+"This list is too large for wBlock to convert. Lists can have up to %@ rules, and Safari holds 150,000 per blocker." = "このリストは大きすぎて wBlock で変換できません。リストに含められるルールは %@ 件までで、Safari はブロッカーごとに 150,000 件まで保持します。";
+"This list has %@ rules, more than wBlock can convert. Lists can have up to %@ rules, and Safari holds 150,000 per blocker." = "このリストには %@ 件のルールがあり、wBlock が変換できる数を超えています。リストに含められるルールは %@ 件までで、Safari はブロッカーごとに 150,000 件まで保持します。";
+"The enabled lists have %@ rules, more than wBlock can convert at once (%@). Turn off some lists and apply again." = "有効なリストのルールは %@ 件で、wBlock が一度に変換できる数（%@）を超えています。いくつかのリストをオフにして、もう一度適用してください。";

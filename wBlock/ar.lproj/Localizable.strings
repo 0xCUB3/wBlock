@@ -1118,3 +1118,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Sites include their subdomains. Use * for any top-level domain, as in amazon.*." = "تشمل المواقع نطاقاتها الفرعية. استخدم * لأي نطاق من المستوى الأعلى، مثل amazon.*.";
 "Sites include their subdomains. Use * for any top-level domain, as in amazon.*. Reload the page after a change." = "تشمل المواقع نطاقاتها الفرعية. استخدم * لأي نطاق من المستوى الأعلى، مثل amazon.*. أعد تحميل الصفحة بعد أي تغيير.";
 "Status" = "الحالة";
+"Filter list too large to convert" = "قائمة الفلاتر أكبر من أن تُحوَّل";
+"Too many rules to convert" = "قواعد أكثر من أن تُحوَّل";
+"This list is too large for wBlock to convert. Lists can have up to %@ rules, and Safari holds 150,000 per blocker." = "هذه القائمة أكبر من أن يحولها wBlock. يمكن أن تحتوي القوائم على %@ قاعدة كحد أقصى، ويتسع Safari لـ 150,000 قاعدة لكل أداة حظر.";
+"This list has %@ rules, more than wBlock can convert. Lists can have up to %@ rules, and Safari holds 150,000 per blocker." = "تحتوي هذه القائمة على %@ قاعدة، وهو أكثر مما يستطيع wBlock تحويله. يمكن أن تحتوي القوائم على %@ قاعدة كحد أقصى، ويتسع Safari لـ 150,000 قاعدة لكل أداة حظر.";
+"The enabled lists have %@ rules, more than wBlock can convert at once (%@). Turn off some lists and apply again." = "تحتوي القوائم المفعلة على %@ قاعدة، وهو أكثر مما يستطيع wBlock تحويله دفعة واحدة (%@). أوقف بعض القوائم وطبّق مرة أخرى.";

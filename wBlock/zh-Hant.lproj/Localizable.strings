@@ -1118,3 +1118,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Sites include their subdomains. Use * for any top-level domain, as in amazon.*." = "網站包含其子網域。使用 * 比對任何頂層網域，例如 amazon.*。";
 "Sites include their subdomains. Use * for any top-level domain, as in amazon.*. Reload the page after a change." = "網站包含其子網域。使用 * 比對任何頂層網域，例如 amazon.*。變更後請重新載入頁面。";
 "Status" = "狀態";
+"Filter list too large to convert" = "過濾列表太大，無法轉換";
+"Too many rules to convert" = "要轉換的規則太多";
+"This list is too large for wBlock to convert. Lists can have up to %@ rules, and Safari holds 150,000 per blocker." = "此列表太大，wBlock 無法轉換。每個列表最多可有 %@ 條規則，Safari 每個阻擋器可容納 150,000 條。";
+"This list has %@ rules, more than wBlock can convert. Lists can have up to %@ rules, and Safari holds 150,000 per blocker." = "此列表有 %@ 條規則，超出 wBlock 可轉換的數量。每個列表最多可有 %@ 條規則，Safari 每個阻擋器可容納 150,000 條。";
+"The enabled lists have %@ rules, more than wBlock can convert at once (%@). Turn off some lists and apply again." = "已啟用的列表共有 %@ 條規則，超出 wBlock 一次可轉換的數量（%@）。請關閉部分列表後重新套用。";
