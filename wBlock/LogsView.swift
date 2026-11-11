@@ -90,8 +90,8 @@ struct LogsView: View {
         }
         .task {
             await loadLogs()
-            hasLoadedLogs = true
             updateFilteredEntries()
+            hasLoadedLogs = true
         }
         .onChangeCompat(of: entries) { _, _ in
             updateFilteredEntries()
@@ -132,21 +132,26 @@ struct LogsView: View {
     /// holding level, category and time zone, then Export and Clear. The
     /// count scrolls with the entries instead of sitting under the bar.
     private var content: some View {
-        Group {
-            if filteredEntries.isEmpty {
+        // One List throughout: swapping in an empty state while the entries
+        // loaded showed "No logs found" on every push, then the list.
+        List {
+            if !filteredEntries.isEmpty {
+                statsLabel
+                    .listRowInsets(rowInsets(vertical: 6))
+                    .hiddenListRowSeparatorCompat()
+            }
+            ForEach(filteredEntries) { entry in
+                LogEntryRow(entry: entry)
+                    .listRowInsets(rowInsets(vertical: 8))
+            }
+        }
+        .listStyle(.plain)
+        .environment(\.defaultMinListRowHeight, 0)
+        .overlay {
+            if !hasLoadedLogs {
+                ProgressView()
+            } else if filteredEntries.isEmpty {
                 emptyStateView
-            } else {
-                List {
-                    statsLabel
-                        .listRowInsets(rowInsets(vertical: 6))
-                        .hiddenListRowSeparatorCompat()
-                    ForEach(filteredEntries) { entry in
-                        LogEntryRow(entry: entry)
-                            .listRowInsets(rowInsets(vertical: 8))
-                    }
-                }
-                .listStyle(.plain)
-                .environment(\.defaultMinListRowHeight, 0)
             }
         }
         #if os(iOS)
