@@ -302,7 +302,8 @@ pub struct Plan {
 #[derive(Debug, Clone, Copy, Deserialize)]
 #[serde(default)]
 pub struct Limits {
-    /// Safari's rule limit per content blocker.
+    /// Safari's rule limit per content blocker. 0 for a blocker built outside
+    /// the shared plan: every blocker then keeps its own lists' blocks.
     pub rules: usize,
     /// The app's budget for a blocker's JSON.
     pub bytes: usize,
@@ -453,9 +454,13 @@ impl Plan {
     }
 
     /// The wide blocker: the first of those with the fewest rules assigned.
-    /// None for a single blocker, or when the blocks it would gain do not
-    /// fit it.
+    /// None for a single blocker, for a zero rule limit, or when the blocks
+    /// it would gain do not fit it.
     fn wide(&self) -> Option<Wide> {
+        // Nothing fits a zero limit, not even a plan with no exceptions.
+        if self.limits.rules == 0 {
+            return None;
+        }
         let load = |t: &TargetSpec| -> usize {
             t.lists.iter().map(|a| self.parsed[a.list].count() / a.shard.map_or(1, |(_, n)| n as usize)).sum()
         };
@@ -2201,9 +2206,16 @@ mod tests {
         }))
         .unwrap();
         request.limits.rules = 1;
-        let plan = Plan::new(request);
+        let plan = Plan::new(request.clone());
         assert!(serde_json::to_string(&rules(&plan, 0)).unwrap().contains("plain"));
         assert!(serde_json::to_string(&rules(&plan, 1)).unwrap().contains("banner"));
+        // A zero limit marks a blocker built outside the plan, even when no
+        // block would go to the wide blocker.
+        request.lists[1].text = "||other.example^".into();
+        request.limits.rules = 0;
+        let plan = Plan::new(request);
+        assert!(serde_json::to_string(&rules(&plan, 0)).unwrap().contains("plain"));
+        assert!(serde_json::to_string(&rules(&plan, 1)).unwrap().contains("other"));
     }
 
     #[test]
