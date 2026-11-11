@@ -218,15 +218,23 @@ struct LogsView: View {
     /// is on (#1107).
     @ViewBuilder
     private var filterMenu: some View {
+        #if os(iOS)
         if selectedLevel == nil && selectedCategory == nil {
             filterMenuButton
-        } else if #available(iOS 16.0, macOS 13.0, *) {
+        } else if #available(iOS 16.0, *) {
             // A toolbar draws a menu's button style only as a button menu.
             filterMenuButton.menuStyle(.button).glassButtonStyleCompat(prominent: true)
         } else {
             filterMenuButton
         }
+        #else
+        // AppKit toolbars ignore a prominent style, so the Mac fills the icon
+        // blue instead, as Mail does (#1109).
+        filterMenuButton
+        #endif
     }
+
+    private var isFiltering: Bool { selectedLevel != nil || selectedCategory != nil }
 
     private var filterMenuButton: some View {
         Menu {
@@ -239,7 +247,12 @@ struct LogsView: View {
             .labelsHidden()
             timeZoneToggle
         } label: {
+            #if os(macOS)
+            Label("Filter Logs", systemImage: isFiltering ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease")
+                .foregroundStyle(isFiltering ? AnyShapeStyle(.tint) : AnyShapeStyle(.primary))
+            #else
             Label("Filter Logs", systemImage: "line.3.horizontal.decrease")
+            #endif
         }
         .help("Filter Logs")
     }
@@ -455,7 +468,8 @@ struct LogEntryRow: View {
                     .font(.footnote.weight(.semibold))
                     .foregroundStyle(.tertiary)
                     .rotationEffect(.degrees(isExpanded ? 90 : 0))
-                    .padding(.top, 2)
+                    // Centered on the summary, as iOS draws its disclosure chevron (#1109).
+                    .frame(maxHeight: .infinity)
                     .accessibilityHidden(true)
             }
             #endif

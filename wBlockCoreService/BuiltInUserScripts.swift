@@ -143,7 +143,7 @@ enum BuiltInUserScripts {
             isEnabledByDefault: false,
             description: "Blocks Twitch ads with the vaft script from TwitchAdSolutions.",
             displayRole: .blocking,
-            author: "ryanbr",
+            author: "ryanbr (Fanboy)",
             homepage: "https://github.com/ryanbr/TwitchAdSolutions"
         ),
         BuiltInUserScriptDefinition(
