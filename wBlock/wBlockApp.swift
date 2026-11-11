@@ -160,6 +160,11 @@ struct wBlockApp: App {
                     .keyboardShortcut("e", modifiers: [.command, .option])
                 Button("Logs") { post(.wBlockShowLogsRequest) }
                     .keyboardShortcut("l", modifiers: [.command, .option])
+                #if os(macOS)
+                // AppKit keeps a toolbar item's right-click for the toolbar's
+                // own menu, so the Mac picks components here (#1110).
+                Menu("Pause Blocking") { PauseBlockingControls(filterManager: filterManager) }
+                #endif
                 Divider()
             }
             CommandGroup(replacing: .help) {

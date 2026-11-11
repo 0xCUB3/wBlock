@@ -1439,7 +1439,8 @@ struct PauseBlockingBanner: View {
 }
 
 /// The pause control every tab shows in the same leading spot. A tap pauses or
-/// resumes everything; holding it (or its arrow on macOS) picks components.
+/// resumes everything; holding it picks components on iOS, and the Mac picks
+/// them from View > Pause Blocking.
 struct PauseBlockingToolbarItem: ToolbarContent {
     @ObservedObject var filterManager: AppFilterManager
 
@@ -1463,9 +1464,6 @@ struct PauseBlockingButton: View {
             Task { await filterManager.setBlockingPaused(!isPaused) }
         } label: {
             Label(title, systemImage: isPaused ? "pause.circle.fill" : "pause.circle")
-        }
-        .contextMenu {
-            Section("Pause Blocking") { PauseBlockingControls(filterManager: filterManager) }
         }
         .help(title)
         .disabled(filterManager.isReloadBusy)
