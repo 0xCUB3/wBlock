@@ -112,6 +112,7 @@ private struct RegionalLanguageList: View {
         CompatibleNavigationStack {
         list
             .searchable(text: $query, prompt: Text("Search languages"))
+            .searchKeepsBarCompat()
             .navigationTitle(Text("Languages"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

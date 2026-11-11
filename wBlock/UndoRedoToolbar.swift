@@ -64,6 +64,7 @@ struct SitePageToolbar: ViewModifier {
         content
             .toolbar { UndoRedoToolbar(canUndo: canUndo, canRedo: canRedo, undo: undo, redo: redo) }
             .searchable(text: $searchText, prompt: "Search")
+            .searchKeepsBarCompat()
         #else
         content
             .modifier(MacPushedActionsToolbar {

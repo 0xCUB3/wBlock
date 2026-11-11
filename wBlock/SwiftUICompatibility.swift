@@ -117,11 +117,9 @@ private struct SearchableCompatModifier: ViewModifier {
             content
                 .modifier(SearchKeyboardDismissal(isPresented: isPresented))
         } else if #available(iOS 17.1, macOS 14.1, *) {
-            // The bar stays up while searching: hiding it under the iPad's
-            // drawer field and bringing it back on exit made the page jump (#1100).
             content
                 .searchable(text: text, isPresented: isPresented, placement: placement, prompt: prompt)
-                .searchPresentationToolbarBehavior(.avoidHidingContent)
+                .searchKeepsBarCompat()
                 .modifier(SearchKeyboardDismissal(isPresented: isPresented))
         } else {
             content
@@ -181,6 +179,17 @@ extension View {
         #else
         safeAreaInset(edge: .top) { bar().background(.bar) }
         #endif
+    }
+
+    /// The bar stays up while searching: hiding it on focus and bringing it
+    /// back on exit made the page jump (#1100).
+    @ViewBuilder
+    func searchKeepsBarCompat() -> some View {
+        if #available(iOS 17.1, macOS 14.1, *) {
+            searchPresentationToolbarBehavior(.avoidHidingContent)
+        } else {
+            self
+        }
     }
 
     func searchableCompat(

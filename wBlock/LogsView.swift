@@ -178,6 +178,7 @@ struct LogsView: View {
             }
         }
         .searchable(text: $searchText, prompt: "Search logs")
+        .searchKeepsBarCompat()
         #else
         .modifier(MacPushedActionsToolbar {
             filterMenu
