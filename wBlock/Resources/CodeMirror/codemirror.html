@@ -103,9 +103,8 @@ input {
   opacity: 0.55 !important;
 }
 
-/* One centered row of controls (#921). Mobile WebKit draws native checkboxes
-   and form fonts that don't line up with the buttons, so every control gets
-   the same height and the checkboxes are drawn here. */
+/* One centered row of controls (#921). Mobile WebKit draws form fonts that
+   don't line up with the buttons, so every control gets the same height. */
 .cm-panel.cm-search {
   display: flex !important;
   flex-wrap: wrap;
@@ -146,31 +145,21 @@ input {
   height: 26px;
   color: var(--cm-foreground);
 }
+/* WebKit draws the options as the app's own choices do: checkboxes on macOS
+   and, from the switch attribute set below, switches on iOS (#1107). */
 .cm-panel.cm-search input[type=checkbox] {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 16px;
-  height: 16px;
-  /* The theme pads search inputs, which stretched the box on macOS (#943). */
+  /* The theme pads and borders search inputs, which stretched the box on
+     macOS (#943). */
   padding: 0 !important;
+  border: none;
+  border-radius: 0;
+  background: none;
   flex: none;
-  border: 1.5px solid var(--cm-gutter-foreground);
-  border-radius: 5px;
-  background: var(--cm-input-background);
-  display: inline-grid;
-  place-content: center;
 }
-.cm-panel.cm-search input[type=checkbox]:checked {
-  background: var(--cm-caret);
-  border-color: var(--cm-caret);
-}
-.cm-panel.cm-search input[type=checkbox]:checked::after {
-  content: "";
-  width: 9px;
-  height: 5px;
-  border-left: 2px solid #fff;
-  border-bottom: 2px solid #fff;
-  transform: translateY(-1px) rotate(-45deg);
+/* Small enough to keep the options on one row. */
+.cm-panel.cm-search input[switch] {
+  width: 36px;
+  height: 22px;
 }
 .cm-panels .cm-search button[name=close] {
   position: absolute !important;
@@ -240,5 +229,15 @@ for (const eventName of ["gesturestart", "gesturechange", "gestureend"]) {
 }
 </script>
 <script src="codemirror.bundle.js"></script>
+<script>
+// Touch devices show search options as switches, like the app's own (#1107).
+if (navigator.maxTouchPoints > 0) {
+  new MutationObserver(() => {
+    for (const box of document.querySelectorAll(".cm-search input[type=checkbox]:not([switch])")) {
+      box.setAttribute("switch", "");
+    }
+  }).observe(document.body, { childList: true, subtree: true });
+}
+</script>
 </body>
 </html>
