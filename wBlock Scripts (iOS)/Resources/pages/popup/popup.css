@@ -191,18 +191,23 @@ body {
   outline-offset: 2px;
 }
 
+/* The status stays beside the host; a long host wraps in its own column, so
+   a wider status ("Disabling…") doesn't drop under it. */
 .title-row {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
 }
 
+.title-row > .pill {
+  flex-shrink: 0;
+}
+
 .title-group {
   display: flex;
   align-items: center;
-  flex: 1 1 180px;
+  flex: 1 1 0;
   flex-wrap: wrap;
   gap: 6px 8px;
   min-width: 0;
