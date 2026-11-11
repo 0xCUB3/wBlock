@@ -159,6 +159,16 @@ struct FilterListValidationTests {
                 == "||a.example^\n_werbung.php",
             "expected only domain-only lists to become domain rules"
         )
+        for pasted in [
+            "a.example\r\nb.example\n", "  ||a.example^\n##.ad  \n\n", "0.0.0.0 a.example b.example",
+            "!#if adguard\n||a.example^\n!#endif\nc.example",
+        ] {
+            let saved = FilterListContentProcessing.userListContent(from: pasted)
+            precondition(
+                FilterListContentProcessing.userListContent(from: saved + "\n") == saved,
+                "expected Done on an unchanged user list to save the same content: \(pasted.debugDescription)"
+            )
+        }
         precondition(
             FilterListMetadataParser.parse(from: "# Note: prose\n# Title: Hosts").title == "Hosts",
             "expected # Title headers to be read"

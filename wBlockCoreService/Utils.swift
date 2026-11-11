@@ -197,6 +197,12 @@ public enum FilterListContentProcessing {
         return result.joined(separator: "\n")
     }
 
+    /// The text a pasted or edited user list saves as. Saving the same text
+    /// again yields the same content, so an unchanged edit is a no-op (#1107).
+    public static func userListContent(from text: String) -> String {
+        normalizedContent(from: text.trimmingCharacters(in: .whitespacesAndNewlines))
+    }
+
     private static let hostsAddress = try! NSRegularExpression(
         pattern: "^(?:\\d{1,3}(?:\\.\\d{1,3}){3}|[0-9A-Fa-f]*:[0-9A-Fa-f]*:[0-9A-Fa-f:.]*(?:%\\w+)?)$"
     )

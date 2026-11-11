@@ -90,9 +90,7 @@ extension AppFilterManager {
     ) {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedDescription = description?.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedContent = FilterListContentProcessing.normalizedContent(
-            from: content.trimmingCharacters(in: .whitespacesAndNewlines)
-        )
+        let trimmedContent = FilterListContentProcessing.userListContent(from: content)
 
         guard !trimmedName.isEmpty else {
             statusDescription = LocalizedStrings.text("Title is required.", comment: "User list validation error")
@@ -452,9 +450,7 @@ extension AppFilterManager {
         }
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedDescription = description.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedContent = FilterListContentProcessing.normalizedContent(
-            from: content.trimmingCharacters(in: .whitespacesAndNewlines)
-        )
+        let trimmedContent = FilterListContentProcessing.userListContent(from: content)
 
         guard !trimmedName.isEmpty else {
             statusDescription = LocalizedStrings.text("Title is required.", comment: "User list validation error")
@@ -498,6 +494,13 @@ extension AppFilterManager {
                 comment: "Custom filter duplicate name error"
             )
             hasError = true
+            return
+        }
+
+        if trimmedName == filter.name, trimmedDescription == filter.description, category == filter.category,
+           loader.readLocalFilterContent(filter) == trimmedContent
+        {
+            hasError = false
             return
         }
 
