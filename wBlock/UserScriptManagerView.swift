@@ -1137,7 +1137,7 @@ struct UserScriptInfoView: View {
             if let script = liveScript {
                 InfoSheetContainer {
                     InfoSheetHeader {
-                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        HStack(spacing: 8) {
                             Text(script.localizedDisplayName)
                                 .font(.title2.weight(.semibold))
                                 .foregroundStyle(.primary)
