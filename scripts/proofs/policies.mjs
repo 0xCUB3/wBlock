@@ -115,6 +115,58 @@ decision('localSets', booleans('tomb','local','remote','remoteTomb'),
     m.law('local re-adds defeat merge tombstones', e=>e.local, o=>o.mergeUpload.not().and(o.mergeApply.not())),
   ], e=>({clearApply:e.tomb.or(e.tomb.not())}));
 
+// One built-in list, at its current address here, against a remote payload:
+// the three-way merge, the payload's custom lists, and what it knows. A 3.x
+// device names some lists by an old address ("Legacy"). For those 3.x maps
+// back ("reconciled") it follows this device's choice, so the entry counts as
+// the current address; for the rest it never does, so the entry must not count.
+const iff = (a, b) => a.implies(b).and(b.implies(a));
+const selection = (e, legacyAlwaysCounts=false) => {
+  const counts = legacyAlwaysCounts ? e.reconciled.or(e.reconciled.not()) : e.reconciled;
+  const at = (cur, legacy) => cur.or(legacy.and(counts)).and(e.custom.not());
+  const local = e.local.and(e.custom.not()), base = at(e.base, e.baseLegacy), remote = at(e.remote, e.remoteLegacy);
+  const merged = remote.and(base.and(local.not()).not()).or(local.and(base.not()));
+  const known = e.knownNil.and(merged).or(e.knownNil.not().and(at(e.knownCur, e.knownLegacy)));
+  return {selected: known.and(merged).or(known.not().and(e.local))};
+};
+const baseAt = e => e.base.or(e.baseLegacy.and(e.reconciled));
+decision('selection', booleans('local','base','baseLegacy','remote','remoteLegacy','knownNil','knownCur','knownLegacy','custom','reconciled'),
+  e => selection(e), m => [
+    m.law('an old address 3.x cannot reconcile never switches a list', e => e.remote.not().and(e.knownCur.not(), e.reconciled.not()), (o,e) => iff(o.selected, e.local)),
+    m.law('a change made here since the last sync wins', e => e.custom.not().and(iff(e.local, baseAt(e)).not()), (o,e) => iff(o.selected, e.local)),
+    m.law('an unchanged list follows the remote', e => iff(e.local, baseAt(e)).and(e.custom.not(), e.knownNil.not(), e.knownCur.or(e.knownLegacy.and(e.reconciled))),
+      (o,e) => iff(o.selected, e.remote.or(e.remoteLegacy.and(e.reconciled)))),
+    m.law('a list the remote also has as custom keeps its selection', e => e.custom, (o,e) => iff(o.selected, e.local)),
+  ], e => selection(e, true));
+
+// Two syncs of one list. The first payload may not name it usably ("named1"
+// false: a 3.x payload); the baseline kept after it must still tell a change
+// made here from one made elsewhere in the second sync.
+const twoSyncs = (e, forgetful=false) => {
+  const merge = (local, base, remote) => remote.and(base.and(local.not()).not()).or(local.and(base.not()));
+  const pick = (named, value, other) => named.and(value).or(named.not().and(other));
+  // A custom list at the same address makes the first payload's entry ambiguous, so it names nothing.
+  const named1 = e.named1.and(e.custom1.not());
+  const after1 = pick(named1, merge(e.localStart.and(e.custom1.not()), e.prevNamed.and(e.prevSel, e.custom1.not()), named1.and(e.sel1)), e.localStart);
+  const base1 = forgetful ? named1.and(e.sel1) : pick(named1, e.sel1, pick(e.prevNamed, e.prevSel, e.localStart));
+  const local2 = after1.and(e.toggled.not()).or(after1.not().and(e.toggled));
+  return {result: pick(e.named2, merge(local2, base1, e.named2.and(e.sel2)), local2), local2};
+};
+decision('twoSyncs', booleans('prevNamed','prevSel','localStart','named1','sel1','custom1','toggled','named2','sel2'),
+  e => ({result: twoSyncs(e).result}), m => [
+    m.law('a change made elsewhere applies after a sync that could not name the list',
+      e => e.toggled.not().and(e.named1.not().or(e.custom1), e.named2, e.prevNamed, iff(e.localStart, e.prevSel)), (o,e) => iff(o.result, e.sel2)),
+    m.law('a change made here survives a sync that could not name the list',
+      e => e.toggled.and(e.named1.not().or(e.custom1), e.named2, e.prevNamed, iff(e.localStart, e.prevSel), iff(e.sel2, e.prevSel)),
+      (o,e) => iff(o.result, twoSyncs(e).local2)),
+  ], e => ({result: twoSyncs(e, true).result}));
+
+decision('customImport', booleans('builtInCurrent','builtInLegacy','variant'),
+  ({builtInCurrent, builtInLegacy}) => ({import: builtInCurrent.or(builtInLegacy).not()}), m => [
+    m.law('a copy of a built-in list is never imported', e => e.builtInLegacy.or(e.builtInCurrent), o => o.import.not()),
+    m.law('other custom lists are imported', e => e.builtInLegacy.or(e.builtInCurrent).not(), o => o.import),
+  ], e => ({import: e.builtInCurrent.not()}));
+
 export const upload = rule('deferred uploads').inputs({take:bool,syncing:bool,trigger:nat}).state({pending:0,kind:0,value:0});
 const uploadStep = ({take,syncing,trigger,pending}) => ({
   pending:when(take,0,when(syncing,trigger.plus(1),pending)), kind:when(take,2,when(syncing,1,0)),

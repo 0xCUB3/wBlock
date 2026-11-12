@@ -17,12 +17,16 @@ public struct FilterListURLParseResult: Equatable {
 
 public enum FilterListURLSupport {
     /// Key under which two list URLs count as the same list. Scheme, host
-    /// case, a default port and a trailing slash do not make a different list,
+    /// case, a default port, a trailing slash, a fragment, dot segments and
+    /// percent-encoded unreserved characters do not make a different list,
     /// so http and https variants of one address are duplicates (#681).
     public static func identityKey(for url: URL) -> String {
         guard var components = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
             return url.absoluteString.lowercased()
         }
+        // Unreserved escapes first, so an encoded dot segment (%2E%2E) is removed too.
+        components.percentEncodedPath = removingDotSegments(decodingUnreserved(components.percentEncodedPath))
+        components.percentEncodedQuery = components.percentEncodedQuery.map(decodingUnreserved)
         components.scheme = nil
         components.host = components.host?.lowercased()
         if components.port == 80 || components.port == 443 {
@@ -33,6 +37,43 @@ public enum FilterListURLSupport {
         while path.hasSuffix("/") { path.removeLast() }
         components.percentEncodedPath = path
         return components.string ?? url.absoluteString.lowercased()
+    }
+
+    /// RFC 3986 section 5.2.4: `.` segments go, and `..` removes the one before
+    /// it, never past the root.
+    private static func removingDotSegments(_ path: String) -> String {
+        let segments = path.split(separator: "/", omittingEmptySubsequences: false)
+        var output: [Substring] = []
+        for (index, segment) in segments.enumerated() {
+            let isLast = index == segments.count - 1
+            if segment == "." || segment == ".." {
+                if segment == "..", output.count > 1 { output.removeLast() }
+                if isLast { output.append("") }
+            } else {
+                output.append(segment)
+            }
+        }
+        return output.joined(separator: "/")
+    }
+
+    /// Decodes percent-encoded unreserved characters, which name the same
+    /// resource either way (RFC 3986 section 6.2.2.2).
+    private static func decodingUnreserved(_ encoded: String) -> String {
+        let unreserved = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~")
+        var result = ""
+        var rest = Substring(encoded)
+        while let percent = rest.firstIndex(of: "%") {
+            result += rest[..<percent]
+            let hex = rest[rest.index(after: percent)...].prefix(2)
+            if hex.count == 2, let byte = UInt8(hex, radix: 16), let scalar = Unicode.Scalar(Int(byte)),
+               byte < 0x80, unreserved.contains(scalar) {
+                result.unicodeScalars.append(scalar)
+            } else {
+                result += rest[percent..<rest.index(percent, offsetBy: 1 + hex.count)]
+            }
+            rest = rest[rest.index(percent, offsetBy: 1 + hex.count)...]
+        }
+        return result + rest
     }
 
     public static func isSameList(_ lhs: URL, _ rhs: URL) -> Bool {

@@ -67,6 +67,10 @@ for (const e of flags(["remote", "inline", "custom", "downloaded", "builtIn", "l
     ],
   }));
 }
+for (const e of flags(["local", "base", "baseLegacy", "remote", "remoteLegacy", "knownNil", "knownCur", "knownLegacy", "custom", "reconciled"]))
+  decision("selection", [e]);
+for (const e of flags(["builtInCurrent", "builtInLegacy", "variant"])) decision("customImport", [e]);
+for (const e of flags(["prevNamed", "prevSel", "localStart", "named1", "sel1", "custom1", "toggled", "named2", "sel2"])) decision("twoSyncs", [e]);
 for (const e of flags(["tomb", "local", "remote", "existed"]))
   for (const deletedAt of [0, 99, 100, 101])
     for (const remoteAt of [0, 99, 100, 101]) decision("custom", [{ ...e, deletedAt, remoteAt }]);

@@ -39,6 +39,7 @@ struct FilterListLoader {
         guard !Self.unavailableIDs.contains(filter.id) else { return nil }
         return Self.directory.appendingPathComponent(ContentBlockerIncrementalCache.localFilename(for: filter))
     }
+    static func migratedURL(for urlString: String) -> URL? { nil }
 }
 actor ConcurrentLogManager {
     static let shared = ConcurrentLogManager()
@@ -400,13 +401,20 @@ enum AppAppearance: String {
                                 category: .ads, isCustom: true, uniqueRuleCount: 500)
         let remoteEntry = WBlockBackup.CustomFilterEntry(name: "Restored", url: remote.url.absoluteString,
             category: FilterListCategory.privacy.rawValue, isSelected: true, description: "Restored description")
-        let restored = try BackupCustomFilterRestorer.restoreWithReceipt([remoteEntry], into: [remote], localFileURL: { _ in nil }).lists
+        let restored = try BackupCustomFilterRestorer.restoreWithReceipt([remoteEntry], into: [remote], localFileURL: { _ in nil }, currentAddress: { $0 }).lists
         precondition(restored.count == 1 && restored[0].id == remoteID && restored[0].name == "Restored")
         precondition(restored[0].category == .privacy && restored[0].uniqueRuleCount == nil)
         // Custom lists added after the backup was taken don't survive restoring it (#938).
         let added = FilterList(name: "Added later", url: URL(string: "https://example.com/added.txt")!, category: .custom, isCustom: true)
-        let replaced = try BackupCustomFilterRestorer.restoreWithReceipt([remoteEntry], into: [remote, added], localFileURL: { _ in nil }).lists
+        let replaced = try BackupCustomFilterRestorer.restoreWithReceipt([remoteEntry], into: [remote, added], localFileURL: { _ in nil }, currentAddress: { $0 }).lists
         precondition(replaced.map(\.id) == [remoteID], "restore must drop custom lists the backup doesn't have")
+        // A custom copy of a built-in list restores onto that list, not as a second one.
+        let builtIn = FilterList(name: "uBlock filters – Ads", url: URL(string: "https://example.com/builtin.txt")!, category: .ads)
+        let copy = WBlockBackup.CustomFilterEntry(name: "Copy", url: "https://example.com/old-builtin.txt",
+            category: FilterListCategory.custom.rawValue, isSelected: true, description: "")
+        let folded = try BackupCustomFilterRestorer.restoreWithReceipt([copy], into: [builtIn, remote], localFileURL: { _ in nil },
+            currentAddress: { $0.absoluteString.hasSuffix("old-builtin.txt") ? builtIn.url : $0 }).lists
+        precondition(folded.map(\.id) == [builtIn.id] && folded[0].isSelected && !folded[0].isCustom)
 
         // A failure after the first inline publish must roll back every file and
         // leave the caller's metadata untouched because restore never returned.
@@ -429,6 +437,7 @@ enum AppAppearance: String {
                 entries,
                 into: originals,
                 localFileURL: FilterListLoader().localFileURL(for:),
+                currentAddress: { $0 },
                 writeData: { data, destination in
                     writes += 1
                     if writes == 2 { throw CocoaError(.fileWriteUnknown) }
@@ -454,6 +463,7 @@ enum AppAppearance: String {
                 entries,
                 into: originals,
                 localFileURL: FilterListLoader().localFileURL(for:),
+                currentAddress: { $0 },
                 writeData: { data, destination in
                     concurrentWriteCount += 1
                     if concurrentWriteCount == 1 {

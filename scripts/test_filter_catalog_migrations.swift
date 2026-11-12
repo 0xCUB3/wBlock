@@ -274,6 +274,22 @@ private final class TestLoader: FilterListLoader {
         // URL Tracking Protection is uBO's own fork, and the AdGuard copy moves to it.
         precondition(byName["AdGuard URL Tracking Protection Filter"]?.url == urlTracking)
         precondition(FilterListLoader.migratedURL(for: "https://filters.adtidy.org/extension/ublock/filters/17.txt") == urlTracking)
+        // Payloads name the lists 3.x maps back by 3.x's address, and read it back as the catalog list.
+        let catalogAddresses = Set(defaults.map(\.url.absoluteString))
+        for (current, old) in FilterListLoader.threeXAddresses {
+            precondition(catalogAddresses.contains(current), "\(current) is not in the catalog")
+            precondition(FilterListLoader.canonicalFilterURLString(old) == current, "\(old) does not migrate to \(current)")
+            precondition(FilterListLoader.syncAddress(current) == old && FilterListLoader.syncAddress(old) == old)
+        }
+        // 3.x saved AdGuard Mobile at its registry source address too, and any spelling of an old address migrates.
+        precondition(FilterListLoader.migratedURL(
+            for: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_11_Mobile/filter.txt")
+            == byName["AdGuard Mobile Filter"]?.url)
+        precondition(FilterListLoader.migratedURL(for: "\(registry)/extension/safari/filters/%34_optimized.txt/#copy")
+            == byName["AdGuard Social Media Filter"]?.url)
+        precondition(FilterListLoader.migratedURL(
+            for: "https://raw.githubusercontent.com/./AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/4_optimized.txt")
+            == byName["AdGuard Social Media Filter"]?.url)
         // A custom copy of a catalog list folds into the catalog entry, whatever registry address it was saved with.
         let registryCustom = FilterList(name: "AdGuard Social Media Filter", url: URL(string: "\(registry)/extension/safari/filters/4_optimized.txt")!,
                                         category: .annoyances, isCustom: true, isSelected: true)

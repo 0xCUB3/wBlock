@@ -29,7 +29,7 @@ extension AppFilterManager {
             return
         }
 
-        if filterLists.contains(where: { FilterListURLSupport.isSameList($0.url, url) }) {
+        if hasFilterList(at: url) {
             statusDescription = LocalizedStrings.format(
                 "Filter list with this URL already exists: %@",
                 comment: "Custom filter duplicate URL error",
@@ -157,12 +157,21 @@ extension AppFilterManager {
         hasError = false
     }
 
+    /// Whether a list at `url` exists, under any spelling of its address or an
+    /// old address of a built-in list (FilterListLoader.migratedURL).
+    func hasFilterList(at url: URL) -> Bool {
+        let address = FilterListLoader.migratedURL(for: url.absoluteString) ?? url
+        return filterLists.contains {
+            FilterListURLSupport.isSameList($0.url, url) || FilterListURLSupport.isSameList($0.url, address)
+        }
+    }
+
     func removeFilterList(_ listToRemove: FilterList) {
         removeCustomFilterList(listToRemove)
     }
 
     func addCustomFilterList(_ filter: FilterList) {
-        if !filterLists.contains(where: { FilterListURLSupport.isSameList($0.url, filter.url) }) {
+        if !hasFilterList(at: filter.url) {
             let newFilterToAdd = filter
 
             filterLists.append(newFilterToAdd)
@@ -222,7 +231,7 @@ extension AppFilterManager {
     }
 
     internal func addCustomFilterListWithoutFetch(_ filter: FilterList) {
-        guard !filterLists.contains(where: { FilterListURLSupport.isSameList($0.url, filter.url) }) else { return }
+        guard !hasFilterList(at: filter.url) else { return }
         filterLists.append(filter)
         filterLists = deduplicateFilterIDs(filterLists)
         saveFilterListsCoalesced()

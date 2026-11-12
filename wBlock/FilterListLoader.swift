@@ -430,12 +430,67 @@ class FilterListLoader {
     }
 
     private static func resolvedURL(for urlString: String) -> URL? {
-        if let url = URL(string: urlString), let id = FilterListURLMirror.adGuardFilterID(for: url) {
+        // The ID is read from the normalized address, so any spelling of it counts.
+        if let url = URL(string: urlString).flatMap({ URL(string: "https:" + FilterListURLSupport.identityKey(for: $0)) }),
+           let id = FilterListURLMirror.adGuardFilterID(for: url) {
             if adGuardUBlockIDs.contains(id) { return adGuardUBlockURL(id) }
             // Any platform's address for an AdGuard list resolves through its ID to the safari entry.
             if let target = filterURLMigrations[registryURL(id)] { return target }
         }
-        return filterURLMigrations[urlString]
+        return URL(string: urlString).flatMap { migrationsByIdentity[FilterListURLSupport.identityKey(for: $0)] }
+    }
+
+    /// filterURLMigrations by list identity, so another spelling of an old
+    /// address (a fragment, a trailing slash) migrates too.
+    private static let migrationsByIdentity = Dictionary(
+        filterURLMigrations.compactMap { old, new in URL(string: old).map { (FilterListURLSupport.identityKey(for: $0), new) } },
+        uniquingKeysWith: { first, _ in first })
+
+    /// The old address 3.x stores a list under, by current address, for the
+    /// lists 3.x (3.2.3's filterURLMigrations) maps back from the current one.
+    /// A 3.x device follows this device's choice for them, and its own entry for
+    /// them syncs back. Sync payloads name them by the old address
+    /// (syncAddress): 3.x merges raw addresses, so the current one would read as
+    /// a different list. 3.x cannot match the other moved lists
+    /// (CloudSyncCustomFilterReconciler.remoteBuiltInSelection).
+    static let threeXAddresses: [String: String] = [
+        "https://easylist-downloads.adblockplus.org/Liste_AR.txt":
+            "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/112_optimized.txt",
+        "https://easylist-downloads.adblockplus.org/indianlist.txt":
+            "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/253_optimized.txt",
+        "https://raw.githubusercontent.com/ABPindo/indonesianadblockrules/master/subscriptions/abpindo.txt":
+            "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/102_optimized.txt",
+        "https://raw.githubusercontent.com/DandelionSprout/adfilt/master/LegitimateURLShortener.txt":
+            "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/mac_v3/filters/251_optimized.txt",
+        "https://raw.githubusercontent.com/DandelionSprout/adfilt/master/SerboCroatianList.txt":
+            "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/252_optimized.txt",
+        "https://raw.githubusercontent.com/FiltersHeroes/KAD/master/KAD.txt":
+            "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/232_optimized.txt",
+        "https://raw.githubusercontent.com/Latvian-List/adblock-latvian/master/lists/latvian-list.txt":
+            "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/111_optimized.txt",
+        "https://raw.githubusercontent.com/easylist-thailand/easylist-thailand/master/subscription/easylist-thailand.txt":
+            "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/202_optimized.txt",
+        "https://raw.githubusercontent.com/easylist/EasyListHebrew/master/EasyListHebrew.txt":
+            "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/108_optimized.txt",
+        "https://raw.githubusercontent.com/finnish-easylist-addition/finnish-easylist-addition/gh-pages/Finland_adb.txt":
+            "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/233_optimized.txt",
+        "https://raw.githubusercontent.com/realodix/AdBlockID/main/dist/adblockid.adfl.txt":
+            "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/120_optimized.txt",
+        "https://raw.githubusercontent.com/tcptomato/ROad-Block/master/road-block-filters-light.txt":
+            "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/236_optimized.txt",
+        "https://raw.githubusercontent.com/tomasko126/easylistczechandslovak/master/filters.txt":
+            "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/105_optimized.txt",
+        "https://stanev.org/abp/adblock_bg.txt":
+            "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/103_optimized.txt",
+        "https://www.void.gr/kargig/void-gr-filters.txt":
+            "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/121_optimized.txt",
+    ]
+
+    /// The address a sync payload names a built-in list by: its current one, or
+    /// for lists 3.x maps back, the old address 3.x stores (threeXAddresses).
+    static func syncAddress(_ urlString: String) -> String {
+        let current = canonicalFilterURLString(urlString)
+        return threeXAddresses[current] ?? current
     }
 
     static func canonicalFilterURLString(_ urlString: String) -> String {

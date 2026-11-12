@@ -35,9 +35,17 @@ public enum FilterListURLMirror {
     /// AdGuard's ID for a list at any registry or CDN address, such as 11 for
     /// .../ios/filters/11_optimized.txt, whatever the platform.
     public static func adGuardFilterID(for url: URL) -> Int? {
-        registryPath(for: url).flatMap { path in
-            path.split(separator: "/").last.flatMap { Int($0.prefix { $0.isNumber }) }
+        if let path = registryPath(for: url) {
+            return path.split(separator: "/").last.flatMap { Int($0.prefix { $0.isNumber }) }
         }
+        // The registry's source tree: .../filters/filter_11_Mobile/filter.txt.
+        guard url.host?.lowercased() == "raw.githubusercontent.com",
+              url.path.lowercased().hasPrefix("/adguardteam/filtersregistry/") else { return nil }
+        return url.pathComponents.lazy.compactMap { component -> Int? in
+            guard component.hasPrefix("filter_") else { return nil }
+            let digits = component.dropFirst("filter_".count).prefix { $0.isNumber }
+            return digits.isEmpty ? nil : Int(digits)
+        }.first
     }
 
     /// R2 public bucket for the Bypass Paywalls Clean list; the worker serves the

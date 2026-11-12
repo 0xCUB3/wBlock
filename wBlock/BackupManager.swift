@@ -390,6 +390,7 @@ enum BackupCustomFilterRestorer {
         _ entries: [WBlockBackup.CustomFilterEntry],
         into existing: [FilterList],
         localFileURL: (FilterList) -> URL?,
+        currentAddress: (URL) -> URL,
         readData: (URL) throws -> Data? = { url in
             guard FileManager.default.fileExists(atPath: url.path) else { return nil }
             return try Data(contentsOf: url)
@@ -437,6 +438,13 @@ enum BackupCustomFilterRestorer {
                 }
                 inlineID = nil
                 url = remoteURL
+                // A custom copy of a built-in list is that list, as loading folds
+                // it (FilterListSetup.hydrate); restoring it must not add it again.
+                let address = currentAddress(remoteURL)
+                if let index = lists.firstIndex(where: { !$0.isCustom && FilterListURLSupport.isSameList($0.url, address) }) {
+                    lists[index].isSelected = lists[index].isSelected || entry.isSelected
+                    continue
+                }
             }
             func matches(_ filter: FilterList) -> Bool {
                 guard filter.isCustom, filter.isInlineUserList == inline else { return false }
@@ -650,7 +658,8 @@ enum BackupManager {
         let restored = try BackupCustomFilterRestorer.restoreWithReceipt(
             backup.customFilterLists,
             into: originalLists,
-            localFileURL: loader.localFileURL(for:)
+            localFileURL: loader.localFileURL(for:),
+            currentAddress: { FilterListLoader.migratedURL(for: $0.absoluteString) ?? $0 }
         )
         var lists = restored.lists
         // 1. Restore built-in filter selections by URL

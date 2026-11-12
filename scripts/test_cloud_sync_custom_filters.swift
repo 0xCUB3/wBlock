@@ -6,10 +6,13 @@ import Foundation
     // Keep canonicalization and real file reads outside that abstract model.
     let gitflic = "https://gitflic.ru/bpc.txt"
     let mirror = "https://r2.example/bpc.txt"
-    let selection = CloudSyncCustomFilterReconciler.builtInSelection(
-      selectedURLs: [gitflic, "https://example.com/base.txt"], knownURLs: [mirror, "https://example.com/base.txt"],
-      customURLs: [gitflic], canonicalize: { $0 == gitflic ? mirror : $0 })
-    precondition(selection.selected == ["https://example.com/base.txt"] && selection.known.contains(mirror))
+    // A pre-3.1.3 payload lists a custom list in selectedURLs (#871): the built-in
+    // list it canonicalizes to is neither selected nor deselected.
+    let selection = CloudSyncCustomFilterReconciler.remoteBuiltInSelection(
+      local: [], baseline: [], remote: [gitflic, "https://example.com/base.txt"],
+      remoteKnown: [mirror, "https://example.com/base.txt"],
+      remoteCustomURLs: [gitflic], canonicalize: { $0 == gitflic ? mirror : $0 }, olderVersionsReconcile: { _ in true })
+    precondition(selection.selected == ["https://example.com/base.txt"] && !selection.known.contains(mirror))
     precondition(
       CloudSyncCustomFilterReconciler.deletedURLsToMergeDuringUploadReconciliation(
         remoteDeletedURLs: [" https://example.com/list ", ""], localCustomURLs: ["https://example.com/list"]

@@ -4,6 +4,8 @@ import wBlockCoreService
 enum FilterListSetup {
     static func hydrate(_ filters: [FilterList], defaults: [FilterList]) -> [FilterList] {
         let defaultsByURL = Dictionary(defaults.map { ($0.url, $0) }, uniquingKeysWith: { first, _ in first })
+        let defaultsByIdentity = Dictionary(
+            defaults.map { (FilterListURLSupport.identityKey(for: $0.url), $0.url) }, uniquingKeysWith: { first, _ in first })
         var result: [FilterList] = []
         for var filter in filters {
             // A custom copy of a catalog list is that list again, e.g. a retired list that came back,
@@ -11,8 +13,8 @@ enum FilterListSetup {
             // entry and keeps its ID and selection.
             if filter.isCustom {
                 let address = FilterListLoader.migratedURL(for: filter.url.absoluteString) ?? filter.url
-                if defaultsByURL[address] != nil {
-                    filter.url = address
+                if let catalogURL = defaultsByIdentity[FilterListURLSupport.identityKey(for: address)] {
+                    filter.url = catalogURL
                     filter.etag = nil
                     filter.serverLastModified = nil
                     filter.isCustom = false

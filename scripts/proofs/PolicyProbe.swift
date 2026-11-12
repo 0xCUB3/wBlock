@@ -67,6 +67,62 @@ extension Dictionary where Key == String, Value == Any {
           },
           interval: Double(first.n("interval")), now: Date(timeIntervalSince1970: Double(first.n("now"))))
         return result.map { Int($0.name)! }
+      case "twoSyncs":
+        // One built-in list at `current`; `old` is a moved list's address only 3.x uses, which this device leaves out.
+        let current = "https://example.com/current", old = "https://example.com/old"
+        let canonicalize = { (u: String) in u == old ? current : u }
+        let reconcile = { (_: String) in false }
+        func payload(_ named: Bool, _ selected: Bool) -> (selected: [String], known: [String]?) {
+          let address = named ? current : old
+          return (selected ? [address] : [], [address])
+        }
+        return values.map { e -> Values in
+          let previous = payload(e.b("prevNamed"), e.b("prevSel")), first = payload(e.b("named1"), e.b("sel1"))
+          let second = payload(e.b("named2"), e.b("sel2"))
+          let localStart = e.b("localStart") ? [current] : []
+          let customs1: Set<String> = e.b("custom1") ? [current] : []
+          func apply(_ local: [String], _ baseline: [String], _ remote: (selected: [String], known: [String]?),
+                     _ customs: Set<String> = []) -> Bool {
+            let (selected, known) = CloudSyncCustomFilterReconciler.remoteBuiltInSelection(
+              local: local, baseline: baseline, remote: remote.selected, remoteKnown: remote.known,
+              remoteCustomURLs: customs, canonicalize: canonicalize, olderVersionsReconcile: reconcile)
+            // As CloudSyncManager.applyRemoteFilters applies it to the list.
+            return known.contains(current) ? selected.contains(current) : local.contains(current)
+          }
+          let after1 = apply(localStart, previous.selected, first, customs1)
+          // As CloudSyncManager.applyRemotePayload saves the baseline after the first apply.
+          let base1 = CloudSyncCustomFilterReconciler.baselineSelection(
+            remote: first, previous: previous, local: (localStart, [current]), remoteCustomURLs: customs1,
+            canonicalize: canonicalize, olderVersionsReconcile: reconcile)
+          let local2 = after1 != e.b("toggled")
+          return ["result": apply(local2 ? [current] : [], base1.selected, second)]
+        }
+      case "selection", "customImport":
+        // One built-in list at `current`; `old` is an address only a 3.x device uses for it.
+        let current = "https://example.com/current", old = "https://example.com/old"
+        // Like FilterListLoader.migratedURL, which matches old addresses by list identity.
+        let oldKey = FilterListURLSupport.identityKey(for: URL(string: old)!)
+        let canonicalize = { (u: String) in URL(string: u).map(FilterListURLSupport.identityKey) == oldKey ? current : u }
+        func list(_ e: Values, _ cur: String, _ legacy: String) -> [String] {
+          (e.b(cur) ? [current] : []) + (e.b(legacy) ? [old] : [])
+        }
+        return values.map { e -> Values in
+          if suite == "customImport" {
+            let url = e.b("builtInCurrent") ? current : e.b("builtInLegacy") ? old : "https://example.com/other"
+            // The same list under another spelling of its address.
+            let spelled = e.b("variant") ? url.replacingOccurrences(of: "example.com", with: "EXAMPLE.com").replacingOccurrences(of: "/o", with: "/%6F").replacingOccurrences(of: "/c", with: "/%63") + "/#copy" : url
+            return ["import": !CloudSyncCustomFilterReconciler.isBuiltInCopy(
+              spelled, builtInURLs: [current], canonicalize: canonicalize)]
+          }
+          let (selected, known) = CloudSyncCustomFilterReconciler.remoteBuiltInSelection(
+            local: e.b("local") ? [current] : [], baseline: list(e, "base", "baseLegacy"),
+            remote: list(e, "remote", "remoteLegacy"),
+            remoteKnown: e.b("knownNil") ? nil : list(e, "knownCur", "knownLegacy"),
+            remoteCustomURLs: e.b("custom") ? [current] : [], canonicalize: canonicalize,
+            olderVersionsReconcile: { $0 == current && e.b("reconciled") })
+          // As CloudSyncManager.applyRemoteFilters applies it to the list.
+          return ["selected": known.contains(current) ? selected.contains(current) : e.b("local")]
+        }
       case "custom", "remote":
         return values.map { e -> Values in
           if suite == "custom" {

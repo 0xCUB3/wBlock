@@ -815,7 +815,7 @@ final class CloudSyncManager: ObservableObject {
            currentSettings.playerCleanerFeatures == settingsBaseline.playerCleanerFeatures {
             userScriptManager.setPlayerCleanerFeatures(remote)
         }
-        let mergedExcluded = Self.mergeStringSet(
+        let mergedExcluded = CloudSyncMerge.strings(
             local: currentSettings.excludedDefaultUserScriptURLs,
             baseline: settingsBaseline.excludedDefaultUserScriptURLs,
             remote: payload.settings.excludedDefaultUserScriptURLs
@@ -832,7 +832,7 @@ final class CloudSyncManager: ObservableObject {
 
         // Merge domain sets independently so a local whitelist edit does not discard a
         // simultaneous remote filter-only exception (or vice versa).
-        await dataManager.setWhitelistedDomains(Self.mergeStringSet(
+        await dataManager.setWhitelistedDomains(CloudSyncMerge.strings(
             local: currentContent.whitelistDomains,
             baseline: whitelistBaseline,
             remote: payload.whitelistDomains
@@ -840,7 +840,7 @@ final class CloudSyncManager: ObservableObject {
         // A 2.2.0 payload omits these 3.0.0-only keys. Nil means no remote opinion:
         // keep local. A present empty collection still means remote cleared the set.
         if let remoteFilterDisabledDomains = payload.filterDisabledDomains {
-            await dataManager.setFilterDisabledDomains(Self.mergeStringSet(
+            await dataManager.setFilterDisabledDomains(CloudSyncMerge.strings(
                 local: currentContent.filterDisabledDomains ?? [],
                 baseline: filterDisabledBaseline ?? [],
                 remote: remoteFilterDisabledDomains
@@ -860,7 +860,7 @@ final class CloudSyncManager: ObservableObject {
             await dataManager.setGlobalPrivacyControlEnabled(remoteGPCEnabled)
         }
         if let remoteNoAutoplayAllowedSites = payload.noAutoplayAllowedSites {
-            await dataManager.setNoAutoplayAllowedSites(Self.mergeStringSet(
+            await dataManager.setNoAutoplayAllowedSites(CloudSyncMerge.strings(
                 local: currentContent.noAutoplayAllowedSites ?? [],
                 baseline: noAutoplayAllowedBaseline ?? [],
                 remote: remoteNoAutoplayAllowedSites
@@ -880,7 +880,7 @@ final class CloudSyncManager: ObservableObject {
         }
         let mergedZapperDisabled: [String]
         if let remoteZapperDisabledDomains = payload.zapperDisabledDomains {
-            mergedZapperDisabled = Self.mergeStringSet(
+            mergedZapperDisabled = CloudSyncMerge.strings(
                 local: currentContent.zapperDisabledDomains ?? [],
                 baseline: zapperDisabledBaseline ?? [],
                 remote: remoteZapperDisabledDomains
@@ -946,8 +946,19 @@ final class CloudSyncManager: ObservableObject {
             refreshStatusFromDefaults()
         }
         // Remote is merged in even when local kept its own edits, so the next upload
-        // carries those edits on top of it.
-        saveSyncBase(payload)
+        // carries those edits on top of it. Built-in lists it can't name keep their
+        // previous baseline (CloudSyncCustomFilterReconciler.baselineSelection).
+        var base = payload
+        let baseSelection = CloudSyncCustomFilterReconciler.baselineSelection(
+            remote: (payload.filters.selectedURLs, payload.filters.knownURLs),
+            previous: (filtersBaseline.selectedURLs, filtersBaseline.knownURLs),
+            local: (currentContent.filters.selectedURLs, currentContent.filters.knownURLs ?? []),
+            remoteCustomURLs: Set(payload.filters.customLists.map(\.url)),
+            canonicalize: FilterListLoader.canonicalFilterURLString,
+            olderVersionsReconcile: { FilterListLoader.threeXAddresses[$0] != nil })
+        base.filters.selectedURLs = baseSelection.selected
+        base.filters.knownURLs = baseSelection.known
+        saveSyncBase(base)
 
         // A local userscript that was never synced, or a local toggle made during apply, needs
         // a follow-up upload after the current sync becomes idle.
@@ -980,19 +991,6 @@ final class CloudSyncManager: ObservableObject {
         }
     }
 
-    private static func mergeStringSet(
-        local: [String],
-        baseline: [String],
-        remote: [String]
-    ) -> [String] {
-        let baselineSet = Set(baseline)
-        let localSet = Set(local)
-        var merged = Set(remote)
-        merged.subtract(baselineSet.subtracting(localSet))
-        merged.formUnion(localSet.subtracting(baselineSet))
-        return merged.sorted()
-    }
-
     private static func mergeDictionary<Key: Hashable, Value: Equatable>(
         local: [Key: Value],
         baseline: [Key: Value],
@@ -1014,7 +1012,7 @@ final class CloudSyncManager: ObservableObject {
     ) -> [String: [String]] {
         var merged: [String: [String]] = [:]
         for host in Set(local.keys).union(baseline.keys).union(remote.keys) {
-            let rules = mergeStringSet(local: local[host] ?? [], baseline: baseline[host] ?? [], remote: remote[host] ?? [])
+            let rules = CloudSyncMerge.strings(local: local[host] ?? [], baseline: baseline[host] ?? [], remote: remote[host] ?? [])
             if !rules.isEmpty { merged[host] = rules }
         }
         return merged
@@ -1076,7 +1074,7 @@ final class CloudSyncManager: ObservableObject {
         })
 
         let currentDeleted = Set(currentFilters.deletedCustomURLs ?? [])
-        var mergedDeleted = Set(Self.mergeStringSet(
+        var mergedDeleted = Set(CloudSyncMerge.strings(
             local: Array(currentDeleted),
             baseline: baselineFilters.deletedCustomURLs ?? [],
             remote: filters.deletedCustomURLs ?? []
@@ -1087,15 +1085,14 @@ final class CloudSyncManager: ObservableObject {
         clearDeletedCustomListURLs(currentDeleted.subtracting(mergedDeleted))
         mergeDeletedCustomListURLs(mergedDeleted.subtracting(currentDeleted))
 
-        let (desiredSelected, knownURLs) = CloudSyncCustomFilterReconciler.builtInSelection(
-            selectedURLs: Self.mergeStringSet(
-                local: currentFilters.selectedURLs,
-                baseline: baselineFilters.selectedURLs,
-                remote: filters.selectedURLs
-            ),
-            knownURLs: filters.knownURLs,
-            customURLs: Set(filters.customLists.map(\.url)),
-            canonicalize: FilterListLoader.canonicalFilterURLString
+        let (desiredSelected, knownURLs) = CloudSyncCustomFilterReconciler.remoteBuiltInSelection(
+            local: currentFilters.selectedURLs,
+            baseline: baselineFilters.selectedURLs,
+            remote: filters.selectedURLs,
+            remoteKnown: filters.knownURLs,
+            remoteCustomURLs: Set(filters.customLists.map(\.url)),
+            canonicalize: FilterListLoader.canonicalFilterURLString,
+            olderVersionsReconcile: { FilterListLoader.threeXAddresses[$0] != nil }
         )
         let storage = CloudSyncFilterStorageAdapter(filterManager: filterManager, dataManager: dataManager)
         var filterLists = storage.filterLists
@@ -1138,7 +1135,7 @@ final class CloudSyncManager: ObservableObject {
             }
         }
 
-        for remoteCustom in filters.customLists {
+        for remoteCustom in customListsOutsideBuiltIns(filters.customLists, builtIns: filterLists) {
             guard !locallyChangedCustomURLs.contains(remoteCustom.url),
                   !mergedDeleted.contains(remoteCustom.url),
                   let url = URL(string: remoteCustom.url),
@@ -1224,6 +1221,17 @@ final class CloudSyncManager: ObservableObject {
             selectionChanged: selectionChanged,
             nonSelectionChanged: nonSelectionChanged
         )
+    }
+
+    /// Remote custom lists, less copies of a built-in list (isBuiltInCopy).
+    private func customListsOutsideBuiltIns(
+        _ lists: [SyncPayload.CustomFilterList], builtIns: [FilterList]
+    ) -> [SyncPayload.CustomFilterList] {
+        let builtInURLs = Set(builtIns.filter { !$0.isCustom }.map(Self.filterOrderKey))
+        return lists.filter {
+            !CloudSyncCustomFilterReconciler.isBuiltInCopy(
+                $0.url, builtInURLs: builtInURLs, canonicalize: FilterListLoader.canonicalFilterURLString)
+        }
     }
 
     private static func builtInAutomaticUpdates(_ filters: [FilterList]) -> [String: Bool] {
@@ -1724,7 +1732,7 @@ final class CloudSyncManager: ObservableObject {
             }
         }
 
-        let remoteCustoms = remotePayload.filters.customLists
+        let remoteCustoms = customListsOutsideBuiltIns(remotePayload.filters.customLists, builtIns: currentFilterLists())
         let missingCustoms = remoteCustoms.filter {
             !deletedCustomURLs.contains($0.url) && !localCustomURLs.contains($0.url)
         }
@@ -1933,12 +1941,12 @@ final class CloudSyncManager: ObservableObject {
         let filterLists = currentFilterLists()
         let knownURLs = filterLists
             .filter { !$0.isCustom }
-            .map { FilterListLoader.canonicalFilterURLString($0.url.absoluteString) }
+            .map { FilterListLoader.syncAddress($0.url.absoluteString) }
             .sorted()
 
         let selectedURLs = filterLists
             .filter { $0.isSelected && !$0.isCustom }
-            .map { FilterListLoader.canonicalFilterURLString($0.url.absoluteString) }
+            .map { FilterListLoader.syncAddress($0.url.absoluteString) }
             .sorted()
 
         let customListURLs = filterLists
@@ -2657,8 +2665,8 @@ private struct SyncPayload: Codable {
     struct Filters: Codable {
         /// All non-custom filters known on the uploading device. Used to avoid cross-platform
         /// state overrides for platform-only filters when syncing.
-        let knownURLs: [String]?
-        let selectedURLs: [String]
+        var knownURLs: [String]?
+        var selectedURLs: [String]
         let customLists: [CustomFilterList]
         /// Custom list URLs deleted by the user. Used to prevent resurrection during sync.
         let deletedCustomURLs: [String]?
@@ -2719,7 +2727,7 @@ private struct SyncPayload: Codable {
     let updatedAt: TimeInterval
     let contentHash: String
     let settings: Settings
-    let filters: Filters
+    var filters: Filters
     let userScripts: UserScripts
     let whitelistDomains: [String]
     let filterDisabledDomains: [String]?
