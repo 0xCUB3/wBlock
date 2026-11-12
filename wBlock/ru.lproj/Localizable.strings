@@ -1122,3 +1122,16 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This list is too large for wBlock to convert. Lists can have up to %@ rules, and Safari holds 150,000 per blocker." = "Этот список слишком велик, чтобы wBlock мог его преобразовать. В списке может быть до %@ правил, а Safari вмещает 150 000 на блокировщик.";
 "This list has %@ rules, more than wBlock can convert. Lists can have up to %@ rules, and Safari holds 150,000 per blocker." = "В этом списке %@ правил — больше, чем может преобразовать wBlock. В списке может быть до %@ правил, а Safari вмещает 150 000 на блокировщик.";
 "The enabled lists have %@ rules, more than wBlock can convert at once (%@). Turn off some lists and apply again." = "Во включённых списках %@ правил — больше, чем wBlock может преобразовать за раз (%@). Отключите некоторые списки и примените снова.";
+
+/* 4.0 upgrade notice */
+"Welcome to wBlock 4.0" = "Добро пожаловать в wBlock 4.0";
+"Thanks for sticking with wBlock,\nAlexander" = "Спасибо, что остаёшься с wBlock,\nAlexander";
+"Got It" = "Понятно";
+"Why things changed" = "Почему всё изменилось";
+"wBlock used AdGuard's converter to turn filter lists into Safari rules. It skips rules written only for uBlock Origin. That meant many uBO lists didn't work fully in wBlock." = "wBlock использовал конвертер AdGuard, чтобы превращать списки фильтров в правила для Safari. Он пропускал правила, написанные только для uBlock Origin, из-за чего многие списки uBO в wBlock работали не полностью.";
+"A new engine" = "Новый движок";
+"I built a new engine that reads lists like uBlock Origin. wBlock starts from uBO's lists now. Your enabled AdGuard lists were swapped for matching uBO lists." = "Я создал новый движок, который читает списки так же, как uBlock Origin. Теперь wBlock начинает со списков uBO. Включённые списки AdGuard заменены соответствующими списками uBO.";
+"What stays the same" = "Что осталось прежним";
+"Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. AdGuard lists are still in Filters if you want them back." = "Твои списки, userscript'ы, правила Element Zapper и настройки сайтов не изменились. Списки AdGuard по-прежнему есть в разделе «Фильтры», если захочешь вернуть их.";
+"If a site breaks" = "Если сайт перестал работать";
+"Turn wBlock off for that site using the wBlock button in Safari. Then let me know on GitHub." = "Выключи wBlock для этого сайта кнопкой wBlock в Safari. Потом напиши мне на GitHub.";

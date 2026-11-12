@@ -1091,3 +1091,16 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This list is too large for wBlock to convert. Lists can have up to %@ rules, and Safari holds 150,000 per blocker." = "このリストは大きすぎて wBlock で変換できません。リストに含められるルールは %@ 件までで、Safari はブロッカーごとに 150,000 件まで保持します。";
 "This list has %@ rules, more than wBlock can convert. Lists can have up to %@ rules, and Safari holds 150,000 per blocker." = "このリストには %@ 件のルールがあり、wBlock が変換できる数を超えています。リストに含められるルールは %@ 件までで、Safari はブロッカーごとに 150,000 件まで保持します。";
 "The enabled lists have %@ rules, more than wBlock can convert at once (%@). Turn off some lists and apply again." = "有効なリストのルールは %@ 件で、wBlock が一度に変換できる数（%@）を超えています。いくつかのリストをオフにして、もう一度適用してください。";
+
+/* 4.0 upgrade notice */
+"Welcome to wBlock 4.0" = "wBlock 4.0へようこそ";
+"Thanks for sticking with wBlock,\nAlexander" = "wBlockを使い続けてくださり、ありがとうございます。\nAlexander";
+"Got It" = "OK";
+"Why things changed" = "変更の理由";
+"wBlock used AdGuard's converter to turn filter lists into Safari rules. It skips rules written only for uBlock Origin. That meant many uBO lists didn't work fully in wBlock." = "wBlockはAdGuardのコンバーターを使って、フィルタリストをSafariのルールに変換していました。その際、uBlock Origin専用に書かれたルールは飛ばされていたため、多くのuBOリストがwBlockで完全には動作していませんでした。";
+"A new engine" = "新しいエンジン";
+"I built a new engine that reads lists like uBlock Origin. wBlock starts from uBO's lists now. Your enabled AdGuard lists were swapped for matching uBO lists." = "uBlock Originと同じようにリストを読み取る新しいエンジンを作りました。wBlockは今後、uBOのリストから始まります。有効になっていたAdGuardのリストは、対応するuBOのリストに置き換えられました。";
+"What stays the same" = "変わらないもの";
+"Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. AdGuard lists are still in Filters if you want them back." = "カスタムリスト、ユーザースクリプト、Element Zapperのルール、サイトごとの設定はそのままです。AdGuardのリストも必要であれば、フィルタに残っています。";
+"If a site breaks" = "サイトが壊れたら";
+"Turn wBlock off for that site using the wBlock button in Safari. Then let me know on GitHub." = "SafariのwBlockボタンで、そのサイトのwBlockをオフにしてください。その後、GitHubで教えてください。";

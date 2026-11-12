@@ -1122,3 +1122,16 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "This list is too large for wBlock to convert. Lists can have up to %@ rules, and Safari holds 150,000 per blocker." = "Diese Liste ist zu groß, als dass wBlock sie konvertieren könnte. Listen dürfen bis zu %@ Regeln haben, und Safari fasst 150.000 pro Blocker.";
 "This list has %@ rules, more than wBlock can convert. Lists can have up to %@ rules, and Safari holds 150,000 per blocker." = "Diese Liste hat %@ Regeln, mehr als wBlock konvertieren kann. Listen dürfen bis zu %@ Regeln haben, und Safari fasst 150.000 pro Blocker.";
 "The enabled lists have %@ rules, more than wBlock can convert at once (%@). Turn off some lists and apply again." = "Die aktivierten Listen haben %@ Regeln, mehr als wBlock auf einmal konvertieren kann (%@). Deaktiviere einige Listen und wende sie erneut an.";
+
+/* 4.0 upgrade notice */
+"Welcome to wBlock 4.0" = "Willkommen bei wBlock 4.0";
+"Thanks for sticking with wBlock,\nAlexander" = "Danke, dass du wBlock treu geblieben bist,\nAlexander";
+"Got It" = "OK";
+"Why things changed" = "Warum sich etwas geändert hat";
+"wBlock used AdGuard's converter to turn filter lists into Safari rules. It skips rules written only for uBlock Origin. That meant many uBO lists didn't work fully in wBlock." = "wBlock hat den Konverter von AdGuard genutzt, um Filterlisten in Safari-Regeln umzuwandeln. Dabei wurden Regeln übersprungen, die nur für uBlock Origin geschrieben sind. Deshalb funktionierten viele uBO-Listen in wBlock nicht vollständig.";
+"A new engine" = "Eine neue Engine";
+"I built a new engine that reads lists like uBlock Origin. wBlock starts from uBO's lists now. Your enabled AdGuard lists were swapped for matching uBO lists." = "Ich habe eine neue Engine gebaut, die Listen so liest wie uBlock Origin. wBlock startet jetzt mit den uBO-Listen. Deine aktivierten AdGuard-Listen wurden durch passende uBO-Listen ersetzt.";
+"What stays the same" = "Was gleich bleibt";
+"Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. AdGuard lists are still in Filters if you want them back." = "Deine eigenen Listen, Userscripts, Element Zapper-Regeln und Website-Einstellungen bleiben unverändert. Die AdGuard-Listen findest du weiterhin unter Filter, falls du sie zurückhaben willst.";
+"If a site breaks" = "Wenn eine Website kaputtgeht";
+"Turn wBlock off for that site using the wBlock button in Safari. Then let me know on GitHub." = "Schalte wBlock für diese Website über die wBlock-Taste in Safari aus. Sag mir danach auf GitHub Bescheid.";

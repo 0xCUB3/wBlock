@@ -1131,3 +1131,16 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "This list is too large for wBlock to convert. Lists can have up to %@ rules, and Safari holds 150,000 per blocker." = "Bu liste wBlock'un dönüştüremeyeceği kadar büyük. Listeler en fazla %@ kural içerebilir ve Safari engelleyici başına 150.000 kural tutar.";
 "This list has %@ rules, more than wBlock can convert. Lists can have up to %@ rules, and Safari holds 150,000 per blocker." = "Bu listede %@ kural var, wBlock'un dönüştürebileceğinden fazla. Listeler en fazla %@ kural içerebilir ve Safari engelleyici başına 150.000 kural tutar.";
 "The enabled lists have %@ rules, more than wBlock can convert at once (%@). Turn off some lists and apply again." = "Etkin listelerde %@ kural var, wBlock'un tek seferde dönüştürebileceğinden fazla (%@). Bazı listeleri kapatıp yeniden uygula.";
+
+/* 4.0 upgrade notice */
+"Welcome to wBlock 4.0" = "wBlock 4.0'a hoş geldin";
+"Thanks for sticking with wBlock,\nAlexander" = "wBlock'ta kalmaya devam ettiğin için teşekkürler,\nAlexander";
+"Got It" = "Tamam";
+"Why things changed" = "Neler neden değişti";
+"wBlock used AdGuard's converter to turn filter lists into Safari rules. It skips rules written only for uBlock Origin. That meant many uBO lists didn't work fully in wBlock." = "wBlock, filtre listelerini Safari kurallarına dönüştürmek için AdGuard'ın dönüştürücüsünü kullanıyordu. uBlock Origin için yazılmış kuralları atlıyordu. Bu yüzden birçok uBO listesi wBlock'ta tam olarak çalışmıyordu.";
+"A new engine" = "Yeni bir motor";
+"I built a new engine that reads lists like uBlock Origin. wBlock starts from uBO's lists now. Your enabled AdGuard lists were swapped for matching uBO lists." = "uBlock Origin gibi listeleri okuyan yeni bir motor yaptım. wBlock artık uBO listelerinden başlıyor. Etkin olan AdGuard listelerin yerine karşılık gelen uBO listeleri geçirildi.";
+"What stays the same" = "Değişmeyenler";
+"Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. AdGuard lists are still in Filters if you want them back." = "Özel listelerin, userscript'lerin, Element Zapper kuralların ve site ayarların değişmedi. İstersen AdGuard listeleri hâlâ Filtreler içinde duruyor.";
+"If a site breaks" = "Bir site bozulursa";
+"Turn wBlock off for that site using the wBlock button in Safari. Then let me know on GitHub." = "Safari'deki wBlock düğmesini kullanarak o site için wBlock'u kapat. Sonra GitHub'da bana haber ver.";

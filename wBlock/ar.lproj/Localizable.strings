@@ -1122,3 +1122,16 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This list is too large for wBlock to convert. Lists can have up to %@ rules, and Safari holds 150,000 per blocker." = "هذه القائمة أكبر من أن يحولها wBlock. يمكن أن تحتوي القوائم على %@ قاعدة كحد أقصى، ويتسع Safari لـ 150,000 قاعدة لكل أداة حظر.";
 "This list has %@ rules, more than wBlock can convert. Lists can have up to %@ rules, and Safari holds 150,000 per blocker." = "تحتوي هذه القائمة على %@ قاعدة، وهو أكثر مما يستطيع wBlock تحويله. يمكن أن تحتوي القوائم على %@ قاعدة كحد أقصى، ويتسع Safari لـ 150,000 قاعدة لكل أداة حظر.";
 "The enabled lists have %@ rules, more than wBlock can convert at once (%@). Turn off some lists and apply again." = "تحتوي القوائم المفعلة على %@ قاعدة، وهو أكثر مما يستطيع wBlock تحويله دفعة واحدة (%@). أوقف بعض القوائم وطبّق مرة أخرى.";
+
+/* 4.0 upgrade notice */
+"Welcome to wBlock 4.0" = "مرحبًا بك في wBlock 4.0";
+"Thanks for sticking with wBlock,\nAlexander" = "شكرًا لبقائك مع wBlock،\nAlexander";
+"Got It" = "حسنًا";
+"Why things changed" = "لماذا تغيّر كل شيء";
+"wBlock used AdGuard's converter to turn filter lists into Safari rules. It skips rules written only for uBlock Origin. That meant many uBO lists didn't work fully in wBlock." = "كان wBlock يستخدم محوّل AdGuard لتحويل قوائم الفلاتر إلى قواعد Safari. وكان يتجاهل القواعد المكتوبة لـ uBlock Origin فقط، لذلك لم تعمل كثير من قوائم uBO بشكل كامل في wBlock.";
+"A new engine" = "محرك جديد";
+"I built a new engine that reads lists like uBlock Origin. wBlock starts from uBO's lists now. Your enabled AdGuard lists were swapped for matching uBO lists." = "بنيتُ محركًا جديدًا يقرأ القوائم كما يفعل uBlock Origin. يبدأ wBlock الآن من قوائم uBO، وقد استُبدلت قوائم AdGuard المفعّلة لديك بقوائم uBO المقابلة لها.";
+"What stays the same" = "ما الذي بقي كما هو";
+"Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. AdGuard lists are still in Filters if you want them back." = "قوائمك المخصصة وبرامج userscripts وقواعد Element Zapper وإعدادات المواقع لم تتغير. ما زالت قوائم AdGuard موجودة في الفلاتر إن أردت استعادتها.";
+"If a site breaks" = "إذا تعطّل موقع";
+"Turn wBlock off for that site using the wBlock button in Safari. Then let me know on GitHub." = "أوقف wBlock لذلك الموقع من زر wBlock في Safari، ثم أخبرني على GitHub.";

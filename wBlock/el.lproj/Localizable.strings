@@ -1122,3 +1122,16 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This list is too large for wBlock to convert. Lists can have up to %@ rules, and Safari holds 150,000 per blocker." = "Αυτή η λίστα είναι πολύ μεγάλη για να τη μετατρέψει το wBlock. Οι λίστες μπορούν να έχουν έως %@ κανόνες και το Safari χωράει 150.000 ανά αποκλειστή.";
 "This list has %@ rules, more than wBlock can convert. Lists can have up to %@ rules, and Safari holds 150,000 per blocker." = "Αυτή η λίστα έχει %@ κανόνες, περισσότερους από όσους μπορεί να μετατρέψει το wBlock. Οι λίστες μπορούν να έχουν έως %@ κανόνες και το Safari χωράει 150.000 ανά αποκλειστή.";
 "The enabled lists have %@ rules, more than wBlock can convert at once (%@). Turn off some lists and apply again." = "Οι ενεργές λίστες έχουν %@ κανόνες, περισσότερους από όσους μπορεί να μετατρέψει το wBlock μονομιάς (%@). Απενεργοποιήστε μερικές λίστες και εφαρμόστε ξανά.";
+
+/* 4.0 upgrade notice */
+"Welcome to wBlock 4.0" = "Καλώς ήρθατε στο wBlock 4.0";
+"Thanks for sticking with wBlock,\nAlexander" = "Σας ευχαριστώ που μείνατε με το wBlock,\nAlexander";
+"Got It" = "OK";
+"Why things changed" = "Γιατί άλλαξαν τα πράγματα";
+"wBlock used AdGuard's converter to turn filter lists into Safari rules. It skips rules written only for uBlock Origin. That meant many uBO lists didn't work fully in wBlock." = "Το wBlock χρησιμοποιούσε τον μετατροπέα της AdGuard για να μετατρέπει τις λίστες φίλτρων σε κανόνες για το Safari. Παρέλειπε τους κανόνες γραμμένους μόνο για το uBlock Origin, γι' αυτό πολλές λίστες του uBO δεν λειτουργούσαν πλήρως στο wBlock.";
+"A new engine" = "Μια νέα μηχανή";
+"I built a new engine that reads lists like uBlock Origin. wBlock starts from uBO's lists now. Your enabled AdGuard lists were swapped for matching uBO lists." = "Δημιούργησα μια νέα μηχανή που διαβάζει τις λίστες όπως το uBlock Origin. Το wBlock ξεκινά πλέον από τις λίστες του uBO. Οι ενεργοποιημένες λίστες της AdGuard αντικαταστάθηκαν με αντίστοιχες λίστες του uBO.";
+"What stays the same" = "Τι μένει ίδιο";
+"Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. AdGuard lists are still in Filters if you want them back." = "Οι προσαρμοσμένες λίστες, τα userscripts, οι κανόνες του Element Zapper και οι ρυθμίσεις των ιστότοπων δεν άλλαξαν. Οι λίστες της AdGuard εξακολουθούν να υπάρχουν στα Φίλτρα, αν θέλετε να τις ξαναχρησιμοποιήσετε.";
+"If a site breaks" = "Αν ένας ιστότοπος χαλάσει";
+"Turn wBlock off for that site using the wBlock button in Safari. Then let me know on GitHub." = "Απενεργοποιήστε το wBlock για αυτόν τον ιστότοπο με το κουμπί wBlock στο Safari. Μετά ενημερώστε με στο GitHub.";

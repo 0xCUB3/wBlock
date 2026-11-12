@@ -1122,3 +1122,16 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "This list is too large for wBlock to convert. Lists can have up to %@ rules, and Safari holds 150,000 per blocker." = "Această listă este prea mare pentru ca wBlock să o convertească. Listele pot avea până la %@ reguli, iar Safari acceptă 150.000 pe blocant.";
 "This list has %@ rules, more than wBlock can convert. Lists can have up to %@ rules, and Safari holds 150,000 per blocker." = "Această listă are %@ reguli, mai multe decât poate converti wBlock. Listele pot avea până la %@ reguli, iar Safari acceptă 150.000 pe blocant.";
 "The enabled lists have %@ rules, more than wBlock can convert at once (%@). Turn off some lists and apply again." = "Listele activate au %@ reguli, mai multe decât poate converti wBlock deodată (%@). Dezactivează câteva liste și aplică din nou.";
+
+/* 4.0 upgrade notice */
+"Welcome to wBlock 4.0" = "Bine ai venit la wBlock 4.0";
+"Thanks for sticking with wBlock,\nAlexander" = "Mulțumesc că ai rămas cu wBlock,\nAlexander";
+"Got It" = "OK";
+"Why things changed" = "De ce s-au schimbat lucrurile";
+"wBlock used AdGuard's converter to turn filter lists into Safari rules. It skips rules written only for uBlock Origin. That meant many uBO lists didn't work fully in wBlock." = "wBlock folosea convertorul AdGuard ca să transforme listele de filtre în reguli pentru Safari. Sărea peste regulile scrise doar pentru uBlock Origin, așa că multe liste uBO nu funcționau complet în wBlock.";
+"A new engine" = "Un motor nou";
+"I built a new engine that reads lists like uBlock Origin. wBlock starts from uBO's lists now. Your enabled AdGuard lists were swapped for matching uBO lists." = "Am construit un motor nou care citește listele ca uBlock Origin. wBlock pornește acum de la listele uBO. Listele AdGuard activate au fost înlocuite cu listele uBO corespunzătoare.";
+"What stays the same" = "Ce rămâne la fel";
+"Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. AdGuard lists are still in Filters if you want them back." = "Listele tale personalizate, userscripturile, regulile Element Zapper și setările pentru site-uri nu se schimbă. Listele AdGuard sunt încă în Filtre, dacă vrei să le revii.";
+"If a site breaks" = "Dacă un site nu mai merge";
+"Turn wBlock off for that site using the wBlock button in Safari. Then let me know on GitHub." = "Oprește wBlock pentru acel site cu butonul wBlock din Safari. Apoi spune-mi pe GitHub.";

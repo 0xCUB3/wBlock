@@ -1122,3 +1122,16 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This list is too large for wBlock to convert. Lists can have up to %@ rules, and Safari holds 150,000 per blocker." = "此列表太大，wBlock 無法轉換。每個列表最多可有 %@ 條規則，Safari 每個阻擋器可容納 150,000 條。";
 "This list has %@ rules, more than wBlock can convert. Lists can have up to %@ rules, and Safari holds 150,000 per blocker." = "此列表有 %@ 條規則，超出 wBlock 可轉換的數量。每個列表最多可有 %@ 條規則，Safari 每個阻擋器可容納 150,000 條。";
 "The enabled lists have %@ rules, more than wBlock can convert at once (%@). Turn off some lists and apply again." = "已啟用的列表共有 %@ 條規則，超出 wBlock 一次可轉換的數量（%@）。請關閉部分列表後重新套用。";
+
+/* 4.0 upgrade notice */
+"Welcome to wBlock 4.0" = "歡迎使用 wBlock 4.0";
+"Thanks for sticking with wBlock,\nAlexander" = "感謝你一直陪伴 wBlock，\nAlexander";
+"Got It" = "好";
+"Why things changed" = "為什麼會有這些改變";
+"wBlock used AdGuard's converter to turn filter lists into Safari rules. It skips rules written only for uBlock Origin. That meant many uBO lists didn't work fully in wBlock." = "wBlock 過去使用 AdGuard 的轉換器，把過濾清單轉換為 Safari 規則。轉換器會略過只為 uBlock Origin 撰寫的規則，所以很多 uBO 清單在 wBlock 中無法完整運作。";
+"A new engine" = "全新引擎";
+"I built a new engine that reads lists like uBlock Origin. wBlock starts from uBO's lists now. Your enabled AdGuard lists were swapped for matching uBO lists." = "我開發了一個新引擎，可以像 uBlock Origin 一樣讀取清單。wBlock 現在以 uBO 的清單為起點。你啟用的 AdGuard 清單已換成對應的 uBO 清單。";
+"What stays the same" = "維持不變的部分";
+"Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. AdGuard lists are still in Filters if you want them back." = "你的自訂清單、使用者腳本、Element Zapper 規則和網站設定都沒有改變。如果你想換回 AdGuard 清單，它們仍在「過濾器」中。";
+"If a site breaks" = "如果網站出了問題";
+"Turn wBlock off for that site using the wBlock button in Safari. Then let me know on GitHub." = "在 Safari 中點按 wBlock 按鈕，為該網站關閉 wBlock。然後請在 GitHub 上告訴我。";
