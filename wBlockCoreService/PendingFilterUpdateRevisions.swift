@@ -64,7 +64,6 @@ public enum PendingFilterUpdateRevisions {
 
     private static let lock = NSLock()
     private static let fileLockTimeoutSeconds: TimeInterval = 2
-    private static let fileLockRetryMicroseconds: useconds_t = 20_000
 
     public static func storeURL(groupIdentifier: String = GroupIdentifier.shared.value) -> URL? {
         FileManager.default
@@ -373,43 +372,7 @@ public enum PendingFilterUpdateRevisions {
     private static func withFileLock<T>(for storeURL: URL, _ body: () throws -> T) throws -> T {
         let lockURL = storeURL.deletingLastPathComponent()
             .appendingPathComponent(".\(filename).lock", isDirectory: false)
-        try FileManager.default.createDirectory(
-            at: lockURL.deletingLastPathComponent(),
-            withIntermediateDirectories: true
-        )
-        let descriptor = open(lockURL.path, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR)
-        guard descriptor >= 0 else {
-            let error = errno
-            throw POSIXError(POSIXErrorCode(rawValue: error) ?? .EIO)
-        }
-        do {
-            try lockDescriptor(descriptor)
-        } catch {
-            close(descriptor)
-            throw error
-        }
-        defer {
-            _ = flock(descriptor, LOCK_UN)
-            close(descriptor)
-        }
-        return try body()
-    }
-
-    private static func lockDescriptor(_ descriptor: Int32) throws {
-        let deadline = Date().timeIntervalSince1970 + fileLockTimeoutSeconds
-        while true {
-            if flock(descriptor, LOCK_EX | LOCK_NB) == 0 {
-                return
-            }
-            let error = errno
-            guard error == EWOULDBLOCK || error == EAGAIN else {
-                throw POSIXError(POSIXErrorCode(rawValue: error) ?? .EIO)
-            }
-            guard Date().timeIntervalSince1970 < deadline else {
-                throw POSIXError(.ETIMEDOUT)
-            }
-            usleep(fileLockRetryMicroseconds)
-        }
+        return try FileLock.withLock(at: lockURL, timeout: fileLockTimeoutSeconds, body)
     }
 
     private static func loadStateUnlocked(from url: URL) -> State {

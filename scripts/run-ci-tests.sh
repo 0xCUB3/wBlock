@@ -137,6 +137,8 @@ compile_direct_test popover-window-shield \
   wBlock/InfoPresentation.swift wBlock/MacReorderableList.swift scripts/test_popover_window_shield.swift
 compile_direct_test info-popover-state \
   wBlock/InfoPresentation.swift scripts/test_info_popover_state.swift
+compile_direct_test file-lock-suspension \
+  wBlockCoreService/FileLock.swift scripts/test_file_lock_suspension.swift
 compile_direct_test main-window-frame-restore \
   wBlock/MainWindowFrameRestorer.swift scripts/test_main_window_frame_restore.swift
 compile_direct_test retired-userscript-sources \
@@ -147,7 +149,7 @@ compile_direct_test userscript-update-operation \
 compile_direct_test userscript-world-isolation scripts/test_userscript_world_isolation.swift
 compile_direct_test tab-selection-isolation wBlock/AppTabView.swift scripts/test_tab_selection_isolation.swift
 compile_direct_test shared-auto-update-lease \
-  wBlockCoreService/SharedAutoUpdateLease.swift scripts/test_shared_auto_update_lease.swift
+  wBlockCoreService/FileLock.swift wBlockCoreService/SharedAutoUpdateLease.swift scripts/test_shared_auto_update_lease.swift
 compile_direct_test foreground-run-gate \
   wBlockCoreService/ForegroundRunGate.swift scripts/test_foreground_run_gate.swift
 
@@ -215,6 +217,7 @@ compile_core_test tube-cleaner-dearrow scripts/test_tube_cleaner_dearrow_prefere
 compile_core_test sponsorblock-settings-transfer scripts/test_sponsorblock_settings_transfer.swift
 compile_core_test disabled-sites-normalization scripts/test_disabled_sites_normalization.swift
 compile_direct_test filter-update-popup-status \
+  wBlockCoreService/FileLock.swift \
   wBlockCoreService/FilterUpdatePopupStatus.swift \
   scripts/test_filter_update_popup_status.swift
 compile_core_test filter-list-setup scripts/test_filter_list_setup.swift wBlock/FilterListSetup.swift \
@@ -416,11 +419,13 @@ compile_direct_test pause-store \
 
 compile_direct_test pending-filter-update-revisions \
   wBlockCoreService/GroupIdentifier.swift \
+  wBlockCoreService/FileLock.swift \
   wBlockCoreService/PendingFilterUpdateRevisions.swift \
   scripts/test_pending_filter_update_revisions.swift
 
 compile_direct_test staged-filter-downloads \
   wBlockCoreService/GroupIdentifier.swift \
+  wBlockCoreService/FileLock.swift \
   wBlockCoreService/StagedFilterDownloads.swift \
   scripts/test_staged_filter_downloads.swift
 

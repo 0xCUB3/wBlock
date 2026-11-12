@@ -255,18 +255,8 @@ public enum FilterUpdatePopupStatus {
         let directory = lockDirectory
             ?? FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier)
         guard let directory else { return nil }
-        do {
-            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        } catch {
-            return nil
-        }
         let lockURL = directory.appendingPathComponent(lockFilename, isDirectory: false)
-        let descriptor = open(lockURL.path, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR)
-        guard descriptor >= 0 else { return nil }
-        defer { close(descriptor) }
-        guard flock(descriptor, LOCK_EX) == 0 else { return nil }
-        defer { _ = flock(descriptor, LOCK_UN) }
-        return operation()
+        return try? FileLock.withLock(at: lockURL, timeout: .infinity, operation)
         #else
         return operation()
         #endif

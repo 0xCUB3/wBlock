@@ -121,19 +121,6 @@ public enum StagedFilterDownloads {
         defer { lock.unlock() }
         let lockURL = storeURL.deletingLastPathComponent()
             .appendingPathComponent(".\(filename).lock", isDirectory: false)
-        try? FileManager.default.createDirectory(
-            at: lockURL.deletingLastPathComponent(),
-            withIntermediateDirectories: true
-        )
-        let descriptor = open(lockURL.path, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR)
-        guard descriptor >= 0, flock(descriptor, LOCK_EX) == 0 else {
-            if descriptor >= 0 { close(descriptor) }
-            return nil
-        }
-        defer {
-            _ = flock(descriptor, LOCK_UN)
-            close(descriptor)
-        }
-        return try? operation()
+        return try? FileLock.withLock(at: lockURL, timeout: .infinity, operation)
     }
 }

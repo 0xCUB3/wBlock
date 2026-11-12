@@ -38,7 +38,6 @@ public enum HeadlessLaunch {
     public static let autoRebuildGateFilename = "headless-auto-rebuild-gate.json"
     private static let autoRebuildGateLockFilename = "headless-auto-rebuild-gate.lock"
     private static let autoRebuildGateLockTimeoutSeconds: TimeInterval = 2
-    private static let autoRebuildGateLockRetryMicroseconds: UInt32 = 20_000
 
     public enum Reason: String, Sendable {
         case popupUpdate = "popup-update"
@@ -225,42 +224,8 @@ public enum HeadlessLaunch {
         gateDirectory: URL,
         _ operation: () throws -> T
     ) throws -> T {
-        let fileManager = FileManager.default
-        try fileManager.createDirectory(at: gateDirectory, withIntermediateDirectories: true)
         let lockURL = gateDirectory.appendingPathComponent(autoRebuildGateLockFilename, isDirectory: false)
-        let descriptor = open(lockURL.path, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR)
-        guard descriptor >= 0 else {
-            let error = errno
-            throw POSIXError(POSIXErrorCode(rawValue: error) ?? .EIO)
-        }
-        do {
-            try lockAutoRebuildGate(descriptor: descriptor)
-        } catch {
-            close(descriptor)
-            throw error
-        }
-        defer {
-            _ = flock(descriptor, LOCK_UN)
-            close(descriptor)
-        }
-        return try operation()
-    }
-
-    private static func lockAutoRebuildGate(descriptor: Int32) throws {
-        let deadline = Date().timeIntervalSince1970 + autoRebuildGateLockTimeoutSeconds
-        while true {
-            if flock(descriptor, LOCK_EX | LOCK_NB) == 0 {
-                return
-            }
-            let error = errno
-            guard error == EWOULDBLOCK || error == EAGAIN else {
-                throw POSIXError(POSIXErrorCode(rawValue: error) ?? .EIO)
-            }
-            guard Date().timeIntervalSince1970 < deadline else {
-                throw POSIXError(.ETIMEDOUT)
-            }
-            usleep(autoRebuildGateLockRetryMicroseconds)
-        }
+        return try FileLock.withLock(at: lockURL, timeout: autoRebuildGateLockTimeoutSeconds, operation)
     }
 
     public static func isContainingAppRunning() -> Bool {
