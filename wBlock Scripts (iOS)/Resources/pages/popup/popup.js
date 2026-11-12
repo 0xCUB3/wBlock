@@ -507,28 +507,23 @@ function hasUsableHttpUrl(tab) {
     }
 }
 
+// Wider queries are only for when the popup's own window reports no active tab
+// (iPad popovers). A tab that hasn't reported its URL yet is still the right tab:
+// another window's tab would point the popup and the zapper at the wrong page.
 async function getActiveTab() {
     const queries = [
         { active: true, currentWindow: true },
         { active: true, lastFocusedWindow: true },
         { active: true },
     ];
-    let fallbackTab = null;
-
     for (const query of queries) {
-        const tabs = await browser.tabs.query(query);
-        for (const candidate of tabs || []) {
-            if (!hasTabId(candidate)) continue;
-            if (!fallbackTab) fallbackTab = candidate;
-            if (hasUsableHttpUrl(candidate)) return candidate;
-        }
-    }
-
-    if (hasTabId(fallbackTab)) {
+        const tab = ((await browser.tabs.query(query)) || []).find(hasTabId);
+        if (!tab) continue;
+        if (hasUsableHttpUrl(tab)) return tab;
         try {
-            return await browser.tabs.get(fallbackTab.id);
+            return await browser.tabs.get(tab.id);
         } catch {
-            return fallbackTab;
+            return tab;
         }
     }
     return null;
