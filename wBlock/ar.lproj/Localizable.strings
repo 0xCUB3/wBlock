@@ -641,7 +641,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "User list not found." = "لم يتم العثور على قائمة المستخدم.";
 "User list updated. Apply changes to enable it." = "تم تحديث قائمة المستخدم. طبّق التغييرات لتفعيلها.";
 "User list." = "قائمة المستخدم.";
-"User-added filter list." = "قائمة فلاتر أضافها المستخدم.";
 "Userscript" = "سكربت مستخدم";
 "UserScript" = "سكربت مستخدم";
 "Userscripts" = "سكربتات المستخدم";

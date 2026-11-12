@@ -641,7 +641,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "User list not found." = "找不到使用者清單。";
 "User list updated. Apply changes to enable it." = "使用者清單已更新。請套用變更以啟用。";
 "User list." = "使用者清單。";
-"User-added filter list." = "使用者新增的過濾器清單。";
 "Userscript" = "使用者腳本";
 "UserScript" = "使用者腳本";
 "Userscripts" = "使用者腳本";

@@ -641,7 +641,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "User list not found." = "사용자 목록을 찾을 수 없습니다.";
 "User list updated. Apply changes to enable it." = "사용자 목록이 업데이트되었습니다. 활성화하려면 변경 사항을 적용하세요.";
 "User list." = "사용자 목록.";
-"User-added filter list." = "사용자가 추가한 필터 목록입니다.";
 "Userscript" = "유저스크립트";
 "UserScript" = "유저스크립트";
 "Userscripts" = "유저스크립트";

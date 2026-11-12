@@ -641,7 +641,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "User list not found." = "ユーザーリストが見つかりません。";
 "User list updated. Apply changes to enable it." = "ユーザーリストをアップデートしました。変更を適用して有効にします。";
 "User list." = "ユーザーリスト。";
-"User-added filter list." = "ユーザーが追加したフィルターのリスト。";
 "Userscript" = "ユーザースクリプト";
 "UserScript" = "ユーザースクリプト";
 "Userscripts" = "ユーザースクリプト";

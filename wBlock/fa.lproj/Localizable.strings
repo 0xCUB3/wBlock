@@ -639,7 +639,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "User list not found." = "فهرست کاربر یافت نشد.";
 "User list updated. Apply changes to enable it." = "فهرست کاربر به‌روزرسانی شد. برای فعال‌سازی آن تغییرات را اعمال کنید.";
 "User list." = "فهرست کاربر.";
-"User-added filter list." = "فهرست فیلتر افزوده‌شده توسط کاربر.";
 "Userscript" = "اسکریپت کاربر";
 "UserScript" = "اسکریپت کاربر";
 "Userscripts" = "اسکریپت‌های کاربر";

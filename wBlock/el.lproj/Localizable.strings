@@ -641,7 +641,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "User list not found." = "Η λίστα χρήστη δεν βρέθηκε.";
 "User list updated. Apply changes to enable it." = "Η λίστα χρήστη ενημερώθηκε. Εφαρμόστε τις αλλαγές για να την ενεργοποιήσετε.";
 "User list." = "Λίστα χρήστη.";
-"User-added filter list." = "Λίστα φίλτρων που προστέθηκε από τον χρήστη.";
 "Userscript" = "Κώδικας χρήστη";
 "UserScript" = "Κώδικας χρήστη";
 "Userscripts" = "Κώδικες χρήστη";

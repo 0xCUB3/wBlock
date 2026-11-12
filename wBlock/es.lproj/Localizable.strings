@@ -639,7 +639,6 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "User list not found." = "Lista de usuario no encontrada.";
 "User list updated. Apply changes to enable it." = "Lista de usuario actualizada. Aplica los cambios para activarla.";
 "User list." = "Lista de usuario.";
-"User-added filter list." = "Lista de filtros añadida por el usuario.";
 "Userscript" = "Script de usuario";
 "UserScript" = "Script de usuario";
 "Userscripts" = "Scripts de usuario";

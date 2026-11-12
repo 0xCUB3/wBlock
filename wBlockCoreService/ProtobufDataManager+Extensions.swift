@@ -86,7 +86,8 @@ extension ProtobufDataManager {
                 isCustom: isCustom,
                 isSelected: protoData.isSelected && storedURL.isUsable,
                 updatesAutomatically: protoData.hasUpdatesAutomatically ? protoData.updatesAutomatically : true,
-                description: protoData.description_p,
+                // Earlier builds stored a placeholder for lists added without one.
+                description: hasLegacyCustomDescription(protoData.description_p) ? "" : protoData.description_p,
                 version: protoData.version,
                 sourceRuleCount: protoData.hasSourceRuleCount ? Int(protoData.sourceRuleCount) : nil,
                 lastUpdated: protoData.lastUpdated > 0 ? Date(timeIntervalSince1970: TimeInterval(protoData.lastUpdated)) : nil,
@@ -145,7 +146,8 @@ extension ProtobufDataManager {
             script.isEnabled = protoData.isEnabled
             script.lastUpdated = protoData.lastUpdated > 0
                 ? Date(timeIntervalSince1970: TimeInterval(protoData.lastUpdated)) : nil
-            script.description = protoData.description_p
+            // Earlier builds stored "Ready to enable" for scripts without a description.
+            script.description = protoData.description_p == "Ready to enable" ? "" : protoData.description_p
             script.version = protoData.version
             script.matches = protoData.matches
             script.excludeMatches = protoData.excludeMatches

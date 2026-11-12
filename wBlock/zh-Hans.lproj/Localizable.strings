@@ -639,7 +639,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "User list not found." = "未找到用户列表。";
 "User list updated. Apply changes to enable it." = "用户列表已更新。应用更改以启用它。";
 "User list." = "用户列表。";
-"User-added filter list." = "用户添加的过滤器列表。";
 "Userscript" = "用户脚本";
 "UserScript" = "用户脚本";
 "Userscripts" = "用户脚本";

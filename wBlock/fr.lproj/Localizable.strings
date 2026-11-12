@@ -639,7 +639,6 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "User list not found." = "Liste utilisateur introuvable.";
 "User list updated. Apply changes to enable it." = "Liste utilisateur mise à jour. Appliquez les modifications pour l’activer.";
 "User list." = "Liste utilisateur.";
-"User-added filter list." = "Liste de filtres ajoutée par l'utilisateur.";
 "Userscript" = "Script utilisateur";
 "UserScript" = "Script utilisateur";
 "Userscripts" = "Scripts utilisateur";

@@ -1892,11 +1892,8 @@ public class UserScriptManager: ObservableObject {
                         resources: prepared.resources,
                         preserveDisplayMetadata: false
                     )
-                    if updated.description.isEmpty
-                        || updated.description == "Default userscript - downloading..."
-                    {
-                        updated.description = updated.description.isEmpty
-                            ? "Ready to enable" : updated.description
+                    if updated.description == "Default userscript - downloading..." {
+                        updated.description = ""
                     }
                     if updated.version == "Downloading..." {
                         updated.version = updated.version.isEmpty ? "Downloaded" : updated.version

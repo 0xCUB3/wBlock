@@ -639,7 +639,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "User list not found." = "User list not found.";
 "User list updated. Apply changes to enable it." = "List updated. Apply changes to use it.";
 "User list." = "User list.";
-"User-added filter list." = "User-added filter list.";
 "Userscript" = "Userscript";
 "UserScript" = "UserScript";
 "Userscripts" = "Userscripts";

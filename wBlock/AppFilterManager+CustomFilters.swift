@@ -55,10 +55,7 @@ extension AppFilterManager {
             category: category,
             isCustom: true,
             isSelected: isSelected,
-            // A user-provided empty description is an intentional choice.
-            description: trimmedDescription?.isEmpty == false || hasUserProvidedDescription
-                ? trimmedDescription ?? ""
-                : LocalizedStrings.text("User-added filter list.", comment: "Default custom filter description"),
+            description: trimmedDescription ?? "",
             sourceRuleCount: nil,
             languages: Self.regionalLanguages(languages, category: category),
             hasUserProvidedName: hasUserProvidedName,

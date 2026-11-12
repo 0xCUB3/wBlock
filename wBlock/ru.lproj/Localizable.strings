@@ -641,7 +641,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "User list not found." = "Пользовательский список не найден.";
 "User list updated. Apply changes to enable it." = "Пользовательский список обновлён. Примените изменения, чтобы включить его.";
 "User list." = "Пользовательский список.";
-"User-added filter list." = "Список фильтров, добавленный пользователем.";
 "Userscript" = "Пользовательский скрипт";
 "UserScript" = "Пользовательский скрипт";
 "Userscripts" = "Пользовательские скрипты";

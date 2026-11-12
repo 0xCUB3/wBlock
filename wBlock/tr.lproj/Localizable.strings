@@ -639,7 +639,6 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "User list not found." = "Kullanıcı listesi bulunamadı.";
 "User list updated. Apply changes to enable it." = "Kullanıcı listesi güncellendi. Etkinleştirmek için değişiklikleri uygulayın.";
 "User list." = "Kullanıcı listesi.";
-"User-added filter list." = "Kullanıcının eklediği filtre listesi.";
 "Userscript" = "Kullanıcı betiği";
 "UserScript" = "Kullanıcı betiği";
 "Userscripts" = "Kullanıcı betikleri";
