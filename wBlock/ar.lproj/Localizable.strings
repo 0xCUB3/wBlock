@@ -1125,7 +1125,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 /* 4.0 upgrade notice */
 "Welcome to wBlock 4.0" = "مرحبًا بك في wBlock 4.0";
-"Thanks for sticking with wBlock,\nAlexander" = "شكرًا لبقائك مع wBlock،\nAlexander";
 "Got It" = "حسنًا";
 "Why things changed" = "لماذا تغيّر كل شيء";
 "wBlock used AdGuard's converter to turn filter lists into Safari rules. It skips rules written only for uBlock Origin. That meant many uBO lists didn't work fully in wBlock." = "كان wBlock يستخدم محوّل AdGuard لتحويل قوائم الفلاتر إلى قواعد Safari. وكان يتجاهل القواعد المكتوبة لـ uBlock Origin فقط، لذلك لم تعمل كثير من قوائم uBO بشكل كامل في wBlock.";
@@ -1134,4 +1133,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "What stays the same" = "ما الذي بقي كما هو";
 "Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. AdGuard lists are still in Filters if you want them back." = "قوائمك المخصصة وبرامج userscripts وقواعد Element Zapper وإعدادات المواقع لم تتغير. ما زالت قوائم AdGuard موجودة في الفلاتر إن أردت استعادتها.";
 "If a site breaks" = "إذا تعطّل موقع";
-"Turn wBlock off for that site using the wBlock button in Safari. Then let me know on GitHub." = "أوقف wBlock لذلك الموقع من زر wBlock في Safari، ثم أخبرني على GitHub.";
+"Turn wBlock off for that site using the wBlock button in Safari. Then let me know on [GitHub](https://github.com/0xCUB3/wBlock/issues)." = "أوقف wBlock لذلك الموقع من زر wBlock في Safari، ثم أخبرني على [GitHub](https://github.com/0xCUB3/wBlock/issues).";

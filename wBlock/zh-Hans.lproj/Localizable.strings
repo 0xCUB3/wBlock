@@ -1125,7 +1125,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 /* 4.0 upgrade notice */
 "Welcome to wBlock 4.0" = "欢迎使用 wBlock 4.0";
-"Thanks for sticking with wBlock,\nAlexander" = "感谢你一直支持 wBlock，\nAlexander";
 "Got It" = "好";
 "Why things changed" = "为什么会有这些改变";
 "wBlock used AdGuard's converter to turn filter lists into Safari rules. It skips rules written only for uBlock Origin. That meant many uBO lists didn't work fully in wBlock." = "wBlock 过去使用 AdGuard 的转换器，把过滤列表转换为 Safari 规则。转换器会跳过只为 uBlock Origin 编写的规则，所以很多 uBO 列表在 wBlock 中无法完整生效。";
@@ -1134,4 +1133,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "What stays the same" = "保持不变的内容";
 "Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. AdGuard lists are still in Filters if you want them back." = "你的自定义列表、用户脚本、Element Zapper 规则和网站设置都没有改变。如果你想换回 AdGuard 列表，它们仍在“过滤器”中。";
 "If a site breaks" = "如果网站出现问题";
-"Turn wBlock off for that site using the wBlock button in Safari. Then let me know on GitHub." = "在 Safari 中点按 wBlock 按钮，为该网站关闭 wBlock。然后请在 GitHub 上告诉我。";
+"Turn wBlock off for that site using the wBlock button in Safari. Then let me know on [GitHub](https://github.com/0xCUB3/wBlock/issues)." = "在 Safari 中点按 wBlock 按钮，为该网站关闭 wBlock。然后请在 [GitHub](https://github.com/0xCUB3/wBlock/issues) 上告诉我。";

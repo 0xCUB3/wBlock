@@ -27,7 +27,7 @@ struct UpgradeNoticeView: View {
         ("checkmark.circle", "What stays the same",
          "Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. AdGuard lists are still in Filters if you want them back."),
         ("wrench.and.screwdriver", "If a site breaks",
-         "Turn wBlock off for that site using the wBlock button in Safari. Then let me know on GitHub."),
+         "Turn wBlock off for that site using the wBlock button in Safari. Then let me know on [GitHub](https://github.com/0xCUB3/wBlock/issues)."),
     ]
 
     var body: some View {
@@ -51,9 +51,6 @@ struct UpgradeNoticeView: View {
                             }
                         }
                     }
-                    Text("Thanks for sticking with wBlock,\nAlexander")
-                        .foregroundStyle(.secondary)
-                        .padding(.leading, 46)
                 }
                 .padding(SheetDesign.contentHorizontalPadding)
             }

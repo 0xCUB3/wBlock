@@ -1125,7 +1125,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 /* 4.0 upgrade notice */
 "Welcome to wBlock 4.0" = "wBlock 4.0에 오신 것을 환영합니다";
-"Thanks for sticking with wBlock,\nAlexander" = "wBlock과 함께해 주셔서 감사합니다.\nAlexander";
 "Got It" = "확인";
 "Why things changed" = "바뀐 이유";
 "wBlock used AdGuard's converter to turn filter lists into Safari rules. It skips rules written only for uBlock Origin. That meant many uBO lists didn't work fully in wBlock." = "wBlock은 AdGuard의 변환기를 사용해 필터 목록을 Safari 규칙으로 바꿨습니다. 이 과정에서 uBlock Origin용으로만 작성된 규칙은 건너뛰었습니다. 그래서 많은 uBO 목록이 wBlock에서 완전히 작동하지 않았습니다.";
@@ -1134,4 +1133,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "What stays the same" = "그대로인 것";
 "Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. AdGuard lists are still in Filters if you want them back." = "사용자 목록, 사용자 스크립트, Element Zapper 규칙, 사이트별 설정은 그대로입니다. AdGuard 목록도 필요하면 다시 쓸 수 있도록 필터에 남아 있습니다.";
 "If a site breaks" = "사이트가 깨진다면";
-"Turn wBlock off for that site using the wBlock button in Safari. Then let me know on GitHub." = "Safari에서 wBlock 버튼을 눌러 해당 사이트에서 wBlock을 끄세요. 그런 다음 GitHub에 알려 주세요.";
+"Turn wBlock off for that site using the wBlock button in Safari. Then let me know on [GitHub](https://github.com/0xCUB3/wBlock/issues)." = "Safari에서 wBlock 버튼을 눌러 해당 사이트에서 wBlock을 끄세요. 그런 다음 [GitHub](https://github.com/0xCUB3/wBlock/issues)에 알려 주세요.";

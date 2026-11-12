@@ -1134,7 +1134,6 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 
 /* 4.0 upgrade notice */
 "Welcome to wBlock 4.0" = "wBlock 4.0'a hoş geldin";
-"Thanks for sticking with wBlock,\nAlexander" = "wBlock'ta kalmaya devam ettiğin için teşekkürler,\nAlexander";
 "Got It" = "Tamam";
 "Why things changed" = "Neler neden değişti";
 "wBlock used AdGuard's converter to turn filter lists into Safari rules. It skips rules written only for uBlock Origin. That meant many uBO lists didn't work fully in wBlock." = "wBlock, filtre listelerini Safari kurallarına dönüştürmek için AdGuard'ın dönüştürücüsünü kullanıyordu. uBlock Origin için yazılmış kuralları atlıyordu. Bu yüzden birçok uBO listesi wBlock'ta tam olarak çalışmıyordu.";
@@ -1143,4 +1142,4 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "What stays the same" = "Değişmeyenler";
 "Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. AdGuard lists are still in Filters if you want them back." = "Özel listelerin, userscript'lerin, Element Zapper kuralların ve site ayarların değişmedi. İstersen AdGuard listeleri hâlâ Filtreler içinde duruyor.";
 "If a site breaks" = "Bir site bozulursa";
-"Turn wBlock off for that site using the wBlock button in Safari. Then let me know on GitHub." = "Safari'deki wBlock düğmesini kullanarak o site için wBlock'u kapat. Sonra GitHub'da bana haber ver.";
+"Turn wBlock off for that site using the wBlock button in Safari. Then let me know on [GitHub](https://github.com/0xCUB3/wBlock/issues)." = "Safari'deki wBlock düğmesini kullanarak o site için wBlock'u kapat. Sonra [GitHub](https://github.com/0xCUB3/wBlock/issues)'da bana haber ver.";

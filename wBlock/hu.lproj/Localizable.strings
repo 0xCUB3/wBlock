@@ -1125,7 +1125,6 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 
 /* 4.0 upgrade notice */
 "Welcome to wBlock 4.0" = "Üdvözlünk a wBlock 4.0-ban";
-"Thanks for sticking with wBlock,\nAlexander" = "Köszönöm, hogy kitartottál a wBlock mellett,\nAlexander";
 "Got It" = "OK";
 "Why things changed" = "Miért változott minden";
 "wBlock used AdGuard's converter to turn filter lists into Safari rules. It skips rules written only for uBlock Origin. That meant many uBO lists didn't work fully in wBlock." = "A wBlock az AdGuard konverterét használta a szűrőlisták Safari-szabályokká alakításához. Kihagyta azokat a szabályokat, amelyeket csak az uBlock Origin-hez írtak, így sok uBO-lista nem működött teljesen a wBlockban.";
@@ -1134,4 +1133,4 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "What stays the same" = "Ami nem változik";
 "Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. AdGuard lists are still in Filters if you want them back." = "Az egyéni listáid, userscriptjeid, Element Zapper szabályaid és oldalbeállításaid nem változtak. Az AdGuard-listák továbbra is megvannak a Szűrők között, ha vissza akarod kapcsolni őket.";
 "If a site breaks" = "Ha egy oldal elromlik";
-"Turn wBlock off for that site using the wBlock button in Safari. Then let me know on GitHub." = "Kapcsold ki a wBlockot az adott oldalon a Safari wBlock gombjával. Utána szólj nekem a GitHubon.";
+"Turn wBlock off for that site using the wBlock button in Safari. Then let me know on [GitHub](https://github.com/0xCUB3/wBlock/issues)." = "Kapcsold ki a wBlockot az adott oldalon a Safari wBlock gombjával. Utána szólj nekem a [GitHub](https://github.com/0xCUB3/wBlock/issues)on.";

@@ -1125,7 +1125,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 
 /* 4.0 upgrade notice */
 "Welcome to wBlock 4.0" = "Καλώς ήρθατε στο wBlock 4.0";
-"Thanks for sticking with wBlock,\nAlexander" = "Σας ευχαριστώ που μείνατε με το wBlock,\nAlexander";
 "Got It" = "OK";
 "Why things changed" = "Γιατί άλλαξαν τα πράγματα";
 "wBlock used AdGuard's converter to turn filter lists into Safari rules. It skips rules written only for uBlock Origin. That meant many uBO lists didn't work fully in wBlock." = "Το wBlock χρησιμοποιούσε τον μετατροπέα της AdGuard για να μετατρέπει τις λίστες φίλτρων σε κανόνες για το Safari. Παρέλειπε τους κανόνες γραμμένους μόνο για το uBlock Origin, γι' αυτό πολλές λίστες του uBO δεν λειτουργούσαν πλήρως στο wBlock.";
@@ -1134,4 +1133,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "What stays the same" = "Τι μένει ίδιο";
 "Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. AdGuard lists are still in Filters if you want them back." = "Οι προσαρμοσμένες λίστες, τα userscripts, οι κανόνες του Element Zapper και οι ρυθμίσεις των ιστότοπων δεν άλλαξαν. Οι λίστες της AdGuard εξακολουθούν να υπάρχουν στα Φίλτρα, αν θέλετε να τις ξαναχρησιμοποιήσετε.";
 "If a site breaks" = "Αν ένας ιστότοπος χαλάσει";
-"Turn wBlock off for that site using the wBlock button in Safari. Then let me know on GitHub." = "Απενεργοποιήστε το wBlock για αυτόν τον ιστότοπο με το κουμπί wBlock στο Safari. Μετά ενημερώστε με στο GitHub.";
+"Turn wBlock off for that site using the wBlock button in Safari. Then let me know on [GitHub](https://github.com/0xCUB3/wBlock/issues)." = "Απενεργοποιήστε το wBlock για αυτόν τον ιστότοπο με το κουμπί wBlock στο Safari. Μετά ενημερώστε με στο [GitHub](https://github.com/0xCUB3/wBlock/issues).";
