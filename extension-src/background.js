@@ -33,7 +33,10 @@
   // page script element. Runs as a function, so it must not close over anything.
   const queueScriptletCalls = calls => {
     const queue = globalThis.__wbeScriptletCalls || (globalThis.__wbeScriptletCalls = {});
-    for (const [name, ...args] of calls) (queue[name] || (queue[name] = [])).push(args);
+    for (const [name, ...args] of calls) {
+      const pending = queue[name] || (queue[name] = []);
+      if (!pending.some(call => call.length === args.length && call.every((value, i) => value === args[i]))) pending.push(args);
+    }
   };
   // AdGuard-syntax rules with no uBO equivalent arrive as `adg:<name>` calls,
   // raw `#%#` scripts as `adg:js`; both run the way AdGuard runs them.
@@ -63,7 +66,7 @@
   };
   const runAdguardCalls = async (target, calls) => {
     const library = calls.some(([name]) => name !== 'adg:js') ? await loadAdguardScriptlets() : null;
-    await Promise.all(calls.map(([prefixed, ...args]) => {
+    return Promise.all(calls.map(([prefixed, ...args]) => {
       const name = prefixed.slice(ADGUARD_PREFIX.length);
       if (name === 'js') return executeInFrame({ target, world: 'MAIN', injectImmediately: true, func: runPageScript, args });
       const func = library && library.getScriptletFunction(name);
@@ -75,16 +78,19 @@
   const runScriptlets = async (target, calls) => {
     const adguard = calls.filter(([name]) => name.startsWith(ADGUARD_PREFIX));
     const ubo = adguard.length > 0 ? calls.filter(([name]) => !name.startsWith(ADGUARD_PREFIX)) : calls;
-    const pending = [];
-    if (adguard.length > 0) pending.push(runAdguardCalls(target, adguard));
+    const pending = adguard.map(async call => {
+      const [result] = await runAdguardCalls(target, [call]);
+      return result ? [] : [call];
+    });
     if (ubo.length > 0) {
-      pending.push((async () => {
-        await executeInFrame({ target, world: 'MAIN', injectImmediately: true, func: queueScriptletCalls, args: [ubo] });
-        const files = [...new Set(ubo.map(([name]) => `scriptlets/${name}.js`))];
-        await executeInFrame({ target, world: 'MAIN', injectImmediately: true, files });
-      })());
+      const queued = await executeInFrame({ target, world: 'MAIN', injectImmediately: true, func: queueScriptletCalls, args: [ubo] });
+      if (!queued) pending.push(ubo);
+      else for (const name of new Set(ubo.map(([name]) => name))) {
+        const result = await executeInFrame({ target, world: 'MAIN', injectImmediately: true, files: [`scriptlets/${name}.js`] });
+        pending.push(result ? [] : ubo.filter(call => call[0] === name));
+      }
     }
-    await Promise.all(pending);
+    return (await Promise.all(pending)).flat();
   };
   // Safari's extension error summary shows only the first console argument, so
   // each line is one string with its details folded in.
@@ -115,10 +121,13 @@
       }
       return;
     }
-    if (results && results.length > 0 && results[0].error) {
-      logError('[wBlock] Failed to execute script in target', injection.target, 'error', results[0].error);
+    if (results?.[0]?.error) {
+      if (!isSkippedTarget(results[0].error)) {
+        logError('[wBlock] Failed to execute script in target', injection.target, 'error', results[0].error);
+      }
+      return;
     }
-    return results && results.length > 0 ? results[0].result : undefined;
+    return results?.[0];
   };
   /**
    * Applies a per-page payload to one frame. Scriptlets are queued first so
@@ -127,17 +136,13 @@
    * @param tabId ID of the tab to apply the configuration to.
    * @param frameId ID of the frame to apply the configuration to.
    * @param configuration Payload from the native handler.
-   * @returns Promise that resolves when the injections have settled.
+   * @returns Promise resolving to the scriptlets that still need injection.
    */
   const applyConfiguration = (tabId, frameId, configuration) => {
     const target = { tabId, frameIds: [frameId] };
     const selectors = configuration.css || [];
     const procedural = configuration.procedural || [];
-    const pending = [];
-    const scriptlets = configuration.scriptlets || [];
-    if (scriptlets.length > 0) {
-      pending.push(runScriptlets(target, scriptlets));
-    }
+    const pending = [runScriptlets(target, configuration.scriptlets || [])];
     // One stylesheet for the page's styles and hides, which include the hides
     // scoped to its site. One rule per selector: a selector the engine
     // rejects drops only itself.
@@ -154,12 +159,19 @@
           globalThis.wbeProcedural.apply(filters);
           return true;
         }, args: [filters] });
-        if (applied) return;
+        if (applied?.result) return;
         await executeInFrame({ target, world, files: ['procedural.js'], injectImmediately: true });
         await executeInFrame({ target, world, func: filters => wbeProcedural.apply(filters), args: [filters] });
       })());
     }
-    return Promise.all(pending);
+    return Promise.allSettled(pending).then(results => {
+      for (const result of results) {
+        if (result.status === 'rejected' && !isSkippedTarget(result.reason)) {
+          logError('[wBlock] Failed to apply configuration in target', target, 'error', result.reason);
+        }
+      }
+      return results[0].status === 'fulfilled' ? results[0].value : (configuration.scriptlets || []);
+    });
   };
   /**
    * Cache to store the rules for a given URL. The key is a URL (string) and
@@ -1374,8 +1386,8 @@
     if (message && message.action === "wblock:injectScriptlets") {
       const tabId = sender.tab && sender.tab.id;
       if (!tabId || !Array.isArray(message.scriptlets)) return { injected: false };
-      await runScriptlets({ tabId, frameIds: [sender.frameId ?? 0] }, message.scriptlets);
-      return { injected: true };
+      const failedScriptlets = await runScriptlets({ tabId, frameIds: [sender.frameId ?? 0] }, message.scriptlets);
+      return { injected: failedScriptlets.length === 0, failedScriptlets };
     }
     if (message && message.action === "validateUserScriptExecutions") {
       try {
@@ -1511,10 +1523,10 @@
     // tab) has no injection target either, so it takes the same path.
     if (!blankFrame && tabId) {
       if (!fromCache || !(cachedBlockingState.disabled || cachedBlockingState.paused)) {
-        // Injection may have partly landed; an error here would make the
-        // content script retry and inject twice.
+        // Retry only failed scriptlets; CSS and completed hooks stay applied.
         try {
-          await applyConfiguration(tabId, frameId, configuration);
+          const failedScriptlets = await applyConfiguration(tabId, frameId, configuration);
+          if (failedScriptlets.length > 0) response.payload = { scriptlets: failedScriptlets };
         } catch (error) {
           if (!isSkippedTarget(error)) {
             logError('[wBlock] Failed to apply configuration for ', url, String(error && error.message ? error.message : error));

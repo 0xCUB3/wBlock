@@ -9,6 +9,7 @@
 import { readFileSync } from "node:fs";
 import { runtimeMessageListener } from "./helpers/runtime-message.mjs";
 import assert from "node:assert/strict";
+import vm from "node:vm";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -551,20 +552,22 @@ const runScriptInjectionScenario = async executeScript => {
   const errors = [];
   const originalConsoleError = console.error;
   let rejected = false;
+  let response;
   console.error = (...args) => { errors.push(args); };
   try {
-    await state.onMessage({ type: "InitContentScript" }, topFrameSender(pageUrl));
+    response = await state.onMessage({ type: "InitContentScript" }, topFrameSender(pageUrl));
   } catch {
     rejected = true;
   } finally {
     console.error = originalConsoleError;
   }
-  return { errors, rejected };
+  return { errors, rejected, response };
 };
 
 {
   const outcome = await runScriptInjectionScenario(async () => []);
   check("empty executeScript results are skipped without an error", !outcome.rejected && outcome.errors.length === 0);
+  check("empty execution results keep scriptlets pending", outcome.response?.payload?.scriptlets.length === 1);
 }
 
 for (const message of [
@@ -575,6 +578,9 @@ for (const message of [
     throw new Error(message);
   });
   check(`executeScript rejection "${message}" is skipped without an error`, !outcome.rejected && outcome.errors.length === 0);
+  check(`executeScript rejection "${message}" keeps scriptlets pending`, outcome.response?.payload?.scriptlets.length === 1);
+  const result = await runScriptInjectionScenario(async () => [{ error: message }]);
+  check(`executeScript result "${message}" stays pending without an error log`, !result.rejected && result.errors.length === 0 && result.response?.payload?.scriptlets.length === 1);
 }
 
 {
@@ -597,6 +603,56 @@ for (const message of [
       && args[0].includes("Failed to execute script in target")
       && args[0].includes("Unexpected script injection result"))
   );
+}
+
+// A failed file must remain retryable without replaying completed scriptlets.
+{
+  const scriptlets = [["set-constant", "probe", "1"], ["prevent-fetch", "adsbygoogle"]];
+  const page = vm.createContext({});
+  const installed = [];
+  let firstCompleted = false;
+  let secondStartedAfterFirst;
+  let unavailable = true;
+  const state = loadBackground({
+    nativeHandler: () => ({ payload: makeConfig([], 19, [], scriptlets) }),
+    executeScript: async injection => {
+      if (injection.func) vm.runInContext(`(${injection.func})(...${JSON.stringify(injection.args)})`, page);
+      if (injection.files?.includes("scriptlets/set-constant.js")) {
+        await sleep(5);
+        firstCompleted = true;
+      }
+      if (injection.files?.includes("scriptlets/prevent-fetch.js")) secondStartedAfterFirst ??= firstCompleted;
+      if (unavailable && injection.files?.includes("scriptlets/prevent-fetch.js")) {
+        return [{ error: "Script execution target not found" }];
+      }
+      for (const file of injection.files || []) {
+        const name = file.slice("scriptlets/".length, -3);
+        for (const args of page.__wbeScriptletCalls?.[name] || []) installed.push([name, ...args]);
+        delete page.__wbeScriptletCalls?.[name];
+      }
+      return [{}];
+    }
+  });
+  const sender = topFrameSender("https://injection.example/");
+  const response = await state.onMessage({ type: "InitContentScript" }, sender);
+  check("scriptlet files retain their execution order", secondStartedAfterFirst === true);
+  check("normal frame hands back only failed scriptlets", JSON.stringify(response?.payload?.scriptlets) === JSON.stringify([scriptlets[1]]));
+  const failed = await state.onMessage({ action: "wblock:injectScriptlets", scriptlets: [scriptlets[1]] }, sender);
+  check("failed scriptlet execution is not acknowledged", failed?.injected === false && JSON.stringify(failed.failedScriptlets) === JSON.stringify([scriptlets[1]]));
+  unavailable = false;
+  const recovered = await state.onMessage({ action: "wblock:injectScriptlets", scriptlets: [scriptlets[1]] }, sender);
+  check("scriptlet injection recovers when its target becomes available", recovered?.injected === true);
+  check("retries neither duplicate pending arguments nor replay successful files", JSON.stringify(installed) === JSON.stringify(scriptlets));
+}
+
+{
+  const calls = [["adg:js", "window.first = true"], ["adg:js", "window.second = true"]];
+  const state = loadBackground({
+    nativeHandler: () => ({ payload: makeConfig([], 19) }),
+    executeScript: async injection => injection.args?.[0] === calls[1][1] ? [] : [{}]
+  });
+  const response = await state.onMessage({ action: "wblock:injectScriptlets", scriptlets: calls }, topFrameSender("https://injection.example/"));
+  check("AdGuard calls report only failed injections", response?.injected === false && JSON.stringify(response.failedScriptlets) === JSON.stringify([calls[1]]));
 }
 
 // Scenario I: blank frames receive the payload back so the content script can
@@ -638,7 +694,7 @@ for (const message of [
   check("HTTP frame does not receive fallback payload", !(httpResponse && httpResponse.payload));
   check("HTTP frame hides selectors one rule each", httpState.cssInserted.some(injection => injection.css === "#http-probe { display: none !important; }"));
   check("HTTP frame queues scriptlet calls in the MAIN world", httpState.executed.some(injection => injection.world === "MAIN" && typeof injection.func === "function" && injection.args[0] === scriptlets));
-  check("HTTP frame injects each scriptlet file once in the MAIN world", httpState.executed.some(injection => injection.world === "MAIN" && JSON.stringify(injection.files) === JSON.stringify(["scriptlets/set-constant.js", "scriptlets/abort-on-property-read.js"])));
+  check("HTTP frame injects each scriptlet file once in the MAIN world", JSON.stringify(httpState.executed.filter(injection => injection.world === "MAIN" && injection.files).flatMap(injection => injection.files)) === JSON.stringify(["scriptlets/set-constant.js", "scriptlets/abort-on-property-read.js"]));
   check("HTTP frame loads procedural.js into the ISOLATED world", httpState.executed.some(injection => injection.files && injection.files[0] === "procedural.js" && (injection.world === undefined || injection.world === "ISOLATED")));
   check("HTTP frame applies procedural filters after loading them", httpState.executed.some(injection => typeof injection.func === "function" && injection.args && injection.args[0][0] === '{"selector":[{"type":"css","arg":"div"}]}'));
   const propertyRule = '{"selector":[{"type":"css-selector","arg":"img"},{"type":"matches-property","arg":"ad=true"}]}';

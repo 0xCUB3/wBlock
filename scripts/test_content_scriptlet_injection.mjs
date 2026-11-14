@@ -109,7 +109,7 @@ const frameGlobals = document => ({
   MutationObserver: class { observe() {} disconnect() {} },
   getComputedStyle: () => ({}),
   navigator: { userAgent: "test" },
-  location: { href: "about:blank", hostname: "" },
+  location: { href: "about:blank", hostname: "", protocol: "about:" },
   Event: class Event { constructor(name) { this.name = name; } },
   CustomEvent: class CustomEvent { constructor(name) { this.name = name; } },
   CSS: { supports: () => false },
@@ -124,7 +124,7 @@ const runBlankFrameWithPayload = async payload => {
     addEventListener() {},
     removeEventListener() {},
     dispatchEvent() { return true; },
-    location: { href: "about:blank", hostname: "" },
+    location: { href: "about:blank", hostname: "", protocol: "about:" },
     wbeProcedural: { apply: filters => applied.push(filters) },
   };
   const browserPayload = {
@@ -594,6 +594,31 @@ try {
 } catch (error) {
   check("tracking cleanup non-reload checks ran without throwing", false);
   console.error(error);
+}
+
+// Retry only the scriptlets that the background could not execute.
+{
+  const calls = [["set-constant", "probe", "1"], ["prevent-fetch", "adsbygoogle"]];
+  const requests = [];
+  const location = { href: "https://example.com/", hostname: "example.com", protocol: "https:" };
+  const win = { ...windowStub, location };
+  win.top = win;
+  await withGlobals({ ...frameGlobals(documentStub), location }, async () => {
+    new Function("browser", "window", "self", source)({ runtime: {
+      onMessage: { addListener() {} },
+      sendMessage: async message => {
+        if (message.type === "InitContentScript") return { disabled: false, paused: false, payload: { scriptlets: calls } };
+        if (message.action === "wblock:injectScriptlets") {
+          requests.push(message.scriptlets);
+          return requests.length === 1 ? { injected: false, failedScriptlets: [calls[1]] } : { injected: true };
+        }
+        return {};
+      }
+    } }, win, win);
+    await sleep(100);
+  });
+  check("failed scriptlet handoff retries until acknowledged", requests.length === 2);
+  check("scriptlet retry excludes already successful calls", JSON.stringify(requests[1]) === JSON.stringify([calls[1]]));
 }
 
 if (failures > 0) {

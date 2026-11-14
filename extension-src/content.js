@@ -124,7 +124,8 @@
     for (const delay of SCRIPTLET_RETRY_DELAYS_MS) {
       if (delay) await new Promise(resolve => setTimeout(resolve, delay));
       const response = await browser.runtime.sendMessage({ action: 'wblock:injectScriptlets', scriptlets }).catch(() => null);
-      if (response && response.injected) return;
+      if (response?.injected) return;
+      if (Array.isArray(response?.failedScriptlets)) scriptlets = response.failedScriptlets;
     }
   };
   const applyConfiguration = configuration => {
