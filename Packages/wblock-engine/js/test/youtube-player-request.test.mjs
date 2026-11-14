@@ -38,6 +38,13 @@ run('existing YAHI parameters are preserved',({w,stringify})=>{
     assert.equal(w.JSON.stringify(input),stringify(input));
     assert.equal(input.context.client.configInfo.appInstallData,'fixture');
 });
+run('nested YAHI parameters are preserved',({w,stringify})=>{
+    const input=fixture();
+    input.playerRequest={params:'YAHI-existing',playbackContext:input.playbackContext};
+    delete input.playbackContext;
+    assert.equal(w.JSON.stringify(input),stringify(input));
+    assert.equal(input.context.client.configInfo.appInstallData,'fixture');
+});
 run('unrelated values retain normal serialization',({w,stringify})=>{
     for(const input of [null,123,'text',{hello:'world'},{context:{client:{clientName:'WEB'}}}])assert.equal(w.JSON.stringify(input),stringify(input));
     const circular={};circular.self=circular;
@@ -56,6 +63,12 @@ for(const path of ['/shorts/video','/tv#/watch?v=video']) {
 for(const status of ['LOGIN_REQUIRED','CONTENT_CHECK_REQUIRED'])run('account gate is not bypassed '+status,({w,stringify})=>{
     const input=fixture();assert.equal(w.JSON.stringify(input),stringify(input));
 },{status});
+run('excluded SPA routes regain actual document visibility',({dom,w})=>{
+    w.JSON.stringify(fixture());
+    assert.equal(w.document.visibilityState,'visible');
+    dom.reconfigure({url:'https://www.youtube.com/shorts/video'});
+    assert.equal(w.document.visibilityState,w.document.hidden?'hidden':'visible');
+});
 run('Request preserves init, headers, and subclass semantics',async({w,stringify})=>{
     const body=stringify(fixture());const init=Object.freeze({method:'POST',body,headers:{'X-Test':'keep'},credentials:'include'});
     class Child extends w.Request {}
@@ -88,3 +101,41 @@ run('handler never installs on another origin',async({w,stringify})=>{
     const req=new w.Request('https://example.com/youtubei/v1/player',{method:'POST',body});
     assert.equal(await req.text(),body);
 },{host:'example.com'});
+
+run('mobile updates direct and nested content contexts without desktop changes',({w})=>{
+    const input=fixture();input.params='original';input.playerRequest={params:'nested',playbackContext:{contentPlaybackContext:{}}};
+    const out=JSON.parse(w.JSON.stringify(input));
+    const direct=out.playbackContext.contentPlaybackContext.lactMilliseconds;
+    assert.match(direct,/^\d+$/);assert.equal(out.playerRequest.playbackContext.contentPlaybackContext.lactMilliseconds,direct);
+    assert.equal(out.params,'original');assert.equal(out.playerRequest.params,'nested');
+    assert.equal(out.playbackContext.params,undefined);assert.equal(out.context.client.clientScreen,'WATCH');
+    assert.equal(out.context.client.configInfo.appInstallData,'fixture');assert.equal(w.document.visibilityState,'prerender');
+},{host:'m.youtube.com'});
+run('mobile leaves ad contexts untouched and processes eligible siblings',({w})=>{
+    for(const ad of [null,{},false])for(const nestedAd of [true,false]) {
+        const input=fixture();input.playerRequest={playbackContext:{contentPlaybackContext:{}}};
+        const blocked=nestedAd?input.playerRequest.playbackContext:input.playbackContext;
+        const eligible=nestedAd?input.playbackContext:input.playerRequest.playbackContext;
+        blocked.adPlaybackContext=ad;
+        w.JSON.stringify(input);
+        assert.equal(blocked.contentPlaybackContext.lactMilliseconds,undefined);
+        assert.match(eligible.contentPlaybackContext.lactMilliseconds,/^\d+$/);
+    }
+},{host:'m.youtube.com'});
+for(const path of ['/shorts/video','/tv#/watch?v=video','/embed/video'])run('mobile route exclusions follow SPA navigation '+path,({dom,w,stringify})=>{
+    dom.reconfigure({url:'https://m.youtube.com'+path});const input=fixture();assert.equal(w.JSON.stringify(input),stringify(input));
+    dom.reconfigure({url:'https://m.youtube.com/watch?v=video'});assert.match(JSON.parse(w.JSON.stringify(input)).playbackContext.contentPlaybackContext.lactMilliseconds,/^\d+$/);
+},{host:'m.youtube.com'});
+run('mobile ignores unrelated and incomplete objects',({w,stringify})=>{
+    for(const input of [null,123,{playbackContext:{contentPlaybackContext:{}}},{context:{client:{}},playbackContext:{}},{context:{client:{}},playerRequest:{}}])assert.equal(w.JSON.stringify(input),stringify(input));
+},{host:'m.youtube.com'});
+run('mobile serialized bodies and API transports follow the same policy',async({w,stringify})=>{
+    const body=stringify(fixture());
+    const encoded=JSON.parse(new TextDecoder().decode(new w.TextEncoder().encode(body)));
+    const req=new w.Request('https://m.youtube.com/youtubei/v1/player',{method:'POST',body});
+    for(const out of [encoded,JSON.parse(await req.text())]){
+        assert.match(out.playbackContext.contentPlaybackContext.lactMilliseconds,/^\d+$/);
+        assert.equal(out.params,undefined);assert.equal(out.context.client.configInfo.appInstallData,'fixture');
+    }
+    const unrelated=new w.Request('https://example.com/youtubei/v1/player',{method:'POST',body});assert.equal(await unrelated.text(),body);
+},{host:'m.youtube.com'});

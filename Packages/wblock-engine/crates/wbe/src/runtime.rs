@@ -1139,6 +1139,31 @@ example.com##+js(set-constant, adsEnabled, false)
     }
 
     #[test]
+    fn embedded_mobile_youtube_request_rule_respects_exceptions() {
+        let source = include_str!("../../../../../wBlockCoreService/wBlockCoreService.swift");
+        let rules = source.split("private static let embeddedCompatibilityRules = \"\"\"").nth(1).unwrap().split("\"\"").next().unwrap();
+        let wanted = call(&["trusted-youtube-player-request"]);
+        let opts = crate::CompileOptions { safari: crate::webkit::SafariVersion::new(18, 0) };
+        let lookup = |exception: &str, url: &str| {
+            let output = crate::compile(&[
+                crate::ListInput { text: rules, trusted: true },
+                crate::ListInput { text: exception, trusted: false },
+            ], &opts);
+            Engine::deserialize(&Engine::build(&output.runtime).serialize()).unwrap().lookup(url)
+        };
+        let url = "https://m.youtube.com/watch?v=video";
+        assert!(lookup("", url).scriptlets.contains(&wanted));
+        assert!(!lookup("", "https://music.youtube.com/").scriptlets.contains(&wanted));
+        let untrusted = crate::compile(&[crate::ListInput {
+            text: "m.youtube.com##+js(trusted-youtube-player-request)", trusted: false,
+        }], &opts);
+        assert!(!Engine::build(&untrusted.runtime).lookup(url).scriptlets.contains(&wanted));
+        for exception in ["m.youtube.com#@#+js()", "m.youtube.com#@#+js(trusted-youtube-player-request)", "@@||m.youtube.com^$document"] {
+            assert!(!lookup(exception, url).scriptlets.contains(&wanted), "{exception}");
+        }
+    }
+
+    #[test]
     fn youtube_request_policy_follows_matching_rules_and_exceptions() {
         let rule = r#"www.youtube.com,example.com##+js(trusted-replace-fetch-response, '"adSlots"', '"no_ads"', get_watch?)"#;
         let url = "https://www.youtube.com/watch?v=video";

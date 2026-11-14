@@ -2,7 +2,8 @@ function youtubePlayerRequest() {
     // Safari can bypass JSON.stringify by encoding a body or constructing a Request.
     // Keep all three paths on the same request policy.
     'use strict';
-    if (!['www.youtube.com', 'youtube.com'].includes(location.hostname)) return;
+    const mobile = location.hostname === 'm.youtube.com';
+    if (!mobile && !['www.youtube.com', 'youtube.com'].includes(location.hostname)) return;
     const installed = Symbol.for('wBlock.youtubePlayerRequest');
     if (globalThis[installed]) return;
     Object.defineProperty(globalThis, installed, { value: true });
@@ -13,9 +14,19 @@ function youtubePlayerRequest() {
     const mutate = data => {
         if (excluded() || !data || typeof data !== 'object') return false;
         const client = data.context?.client;
+        if (mobile) {
+            if (location.pathname.startsWith('/embed/') || !client) return false;
+            const contexts = [data.playbackContext, data.playerRequest?.playbackContext]
+                .filter(context => context?.contentPlaybackContext && context.adPlaybackContext === undefined);
+            if (!contexts.length) return false;
+            const now = String(Date.now());
+            for (const context of contexts) context.contentPlaybackContext.lactMilliseconds = now;
+            return true;
+        }
         const contexts = [data.playbackContext, data.playerRequest?.playbackContext]
             .filter(context => context?.contentPlaybackContext);
-        if (!client || contexts.length === 0 || data.params?.startsWith('YAHI')) return false;
+        if (!client || contexts.length === 0 || data.params?.startsWith('YAHI')
+            || data.playerRequest?.params?.startsWith('YAHI')) return false;
         const status = document.getElementById('movie_player')?.getPlayerResponse?.()?.playabilityStatus?.status;
         if (status === 'LOGIN_REQUIRED' || status === 'CONTENT_CHECK_REQUIRED') return false;
         if (locked) {
@@ -33,7 +44,9 @@ function youtubePlayerRequest() {
         if (client.configInfo) delete client.configInfo.appInstallData;
         // The alternate playback context otherwise backs off in background tabs.
         try {
-            Object.defineProperty(document, 'visibilityState', { get: () => 'visible', configurable: true });
+            Object.defineProperty(document, 'visibilityState', {
+                get: () => excluded() && document.hidden ? 'hidden' : 'visible', configurable: true,
+            });
         } catch (_) {}
         return true;
     };

@@ -369,7 +369,7 @@ impl RuleSet {
     }
 }
 
-/// Parses one list. Untrusted lists lose `trusted-*` scriptlets, as in uBO.
+/// Parses one list. Untrusted lists cannot inject `trusted-*` scriptlets.
 pub fn parse_list(text: &str, list: u32, trusted: bool, stats: &mut Stats) -> Vec<Rule> {
     let mut rules = Vec::new();
     for (i, line) in text.lines().enumerate() {
@@ -385,7 +385,7 @@ pub fn parse_list(text: &str, list: u32, trusted: bool, stats: &mut Stats) -> Ve
                 stats.drop(&reason)
             }
             ParsedLine::Rule(Rule::Scriptlet(r))
-                if !trusted && crate::parse::cosmetic::is_trusted_only(&r.name) =>
+                if !trusted && !r.exception && crate::parse::cosmetic::is_trusted_only(&r.name) =>
             {
                 stats.drop("untrusted trusted-* scriptlet")
             }

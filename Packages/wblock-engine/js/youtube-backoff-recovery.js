@@ -1,13 +1,22 @@
 function youtubeBackoffRecovery() {
-    // When YouTube answers the first stream request with a backoff (an
-    // ad-block penalty), the player sits with an empty buffer for several
-    // seconds. Watch the stream snapshots for a `backoffTimeMs`, and if one
-    // shows up (or none was seen at all), reload the video once the page is
-    // ready, which starts a fresh stream right away.
-    // From AdGuard Base (AdguardFilters, GPL-3.0), where it ships as a raw
-    // `#%#` script that wBlock's engine does not run.
+    // Recover an idle initial player from a positive stream backoff. The
+    // early-install fallback covers snapshots missed before DOM readiness.
+    // From AdGuard Base (AdguardFilters, GPL-3.0), also used with uBO lists.
     'use strict';
     if (location.hostname !== 'www.youtube.com') return;
+    const key = Symbol.for('wblock.youtubeBackoffRecovery');
+    const state = window[key] || (window[key] = { active: false, reloaded: false });
+    if (state.active || state.reloaded) return;
+    state.active = true;
+    const late = document.readyState !== 'loading';
+    const params = new URLSearchParams(location.search);
+    const videoId = params.get('v');
+    const sameVideo = () => {
+        const current = new URLSearchParams(location.search);
+        return videoId && current.get('v') === videoId && current.get('t') === params.get('t')
+            && current.get('start') === params.get('start')
+            && !/^\/(?:shorts|tv|embed)(?:\/|$)/.test(location.pathname || '');
+    };
     const call = Function.prototype.call;
     let sawSnapshot = false, backoff = false, missing = false;
     const hasBackoff = (root, maxDepth = 5) => {
@@ -21,7 +30,7 @@ function youtubeBackoffRecovery() {
             let own;
             try { own = Object.hasOwn(obj, 'backoffTimeMs'); } catch (_) {}
             if (own) {
-                if (obj.backoffTimeMs !== undefined) return true;
+                if (Number.isFinite(obj.backoffTimeMs) && obj.backoffTimeMs > 0) return true;
                 missing = true;
                 return false;
             }
@@ -36,36 +45,73 @@ function youtubeBackoffRecovery() {
         }
         return false;
     };
-    window.Function.prototype.call = new Proxy(window.Function.prototype.call, {
+    let watching = true;
+    const stopWatching = () => {
+        watching = false;
+        clearTimeout(watchTimer);
+        if (Function.prototype.call === hook) Function.prototype.call = call;
+    };
+    const hook = new Proxy(call, {
         apply(target, thisArg, args) {
-            const snapshot = args[0];
-            if (snapshot?.requestNumber && snapshot?.snapshot) {
-                try {
+            try {
+                const snapshot = args[0];
+                if (watching && snapshot?.requestNumber && snapshot?.snapshot) {
                     backoff = hasBackoff(snapshot);
                     sawSnapshot = true;
-                    if (backoff || missing) Function.prototype.call = call;
-                } catch (_) {}
-            }
+                    if (backoff || missing) {
+                        stopWatching();
+                        if (late) {
+                            if (backoff) setTimeout(recover, 0);
+                            else state.active = false;
+                        }
+                    }
+                }
+            } catch (_) {}
             return Reflect.apply(target, thisArg, args);
         },
     });
-    window.addEventListener('DOMContentLoaded', async () => {
-        Function.prototype.call = call;
-        if (!backoff && sawSnapshot) return;
-        const params = new URLSearchParams(location.search);
-        const videoId = params.get('v');
-        if (!videoId) return;
+    const watchTimer = setTimeout(() => {
+        stopWatching();
+        if (late) state.active = false;
+    }, 10000);
+    window.Function.prototype.call = hook;
+    const recover = () => {
+        stopWatching();
+        if ((!backoff && sawSnapshot) || (late && !backoff)) {
+            state.active = false;
+            return;
+        }
+        if (!sameVideo()) { state.active = false; return; }
+        const time = params.get('t') || params.get('start') || '0';
+        const parts = /^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$/.exec(time);
+        const start = /^\d+(?:\.\d+)?$/.test(time) ? Number(time)
+            : parts ? Number(parts[1] || 0) * 3600 + Number(parts[2] || 0) * 60 + Number(parts[3] || 0) : 0;
         const deadline = Date.now() + 10000;
-        const player = await new Promise(resolve => {
-            const poll = () => {
-                const found = document.querySelector('#movie_player');
-                if (found) resolve(found);
-                else if (Date.now() > deadline) resolve(null);
-                else setTimeout(poll, 200);
-            };
-            poll();
-        });
-        if (typeof player?.loadVideoById !== 'function') return;
-        try { player.loadVideoById(videoId, parseInt(params.get('t') ?? '0', 10)); } catch (_) {}
-    });
+        const poll = () => {
+            if (state.reloaded || Date.now() >= deadline || !sameVideo()) { state.active = false; return; }
+            try {
+                const player = document.querySelector('#movie_player');
+                if (typeof player?.loadVideoById === 'function') {
+                    const status = player.getPlayerResponse?.()?.playabilityStatus?.status;
+                    const playingId = player.getVideoData?.()?.video_id;
+                    const playerState = player.getPlayerState?.();
+                    const media = player.querySelector?.('video');
+                    if ((status && status !== 'OK') || (playingId && playingId !== videoId)
+                        || ![1, 3].includes(playerState) || !media || media.paused
+                        || !Number.isFinite(media.currentTime) || media.currentTime > start + 0.1) {
+                        state.active = false;
+                        return;
+                    }
+                    state.reloaded = true;
+                    state.active = false;
+                    try { player.loadVideoById(videoId, start); } catch (_) {}
+                    return;
+                }
+            } catch (_) {}
+            if (Date.now() > deadline) state.active = false;
+            else setTimeout(poll, 200);
+        };
+        poll();
+    };
+    if (!late) window.addEventListener('DOMContentLoaded', recover, { once: true });
 }

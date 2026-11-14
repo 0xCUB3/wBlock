@@ -140,7 +140,8 @@ private struct StoredTargetSourceRuleProvenance: Codable {
     // 10: restart YouTube videos that the server backs off for blocking ads.
     // 11: collapse Pornhub's mobile top ad slot, whose padding outlives a hidden ad.
     // 12: hide Pornhub's ad boxes, from AdGuard Base and Mobile Ads.
-    public static let embeddedCompatibilityRulesVersion = "12"
+    // 13: restore mobile YouTube request timing and guard initial backoff recovery.
+    public static let embeddedCompatibilityRulesVersion = "13"
     /// The engine and Safari level outputs are compiled for; see SafariVersionDetection.
     public static var compilerIdentity: String { SafariVersionDetection.compilerIdentity }
     public static var upgradeSignature: String {
@@ -383,6 +384,7 @@ m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,y
 m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,youtube-nocookie.com#%#//scriptlet('set-constant', 'playerResponse.playerAds', 'undefined')
 m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,youtube-nocookie.com#%#//scriptlet('set-constant', 'playerResponse.adPlacements', 'undefined')
 m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,youtube-nocookie.com#%#//scriptlet('set-constant', 'playerResponse.adSlots', 'undefined')
+m.youtube.com#%#//scriptlet('trusted-youtube-player-request')
 www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
 """
 
