@@ -895,6 +895,9 @@ for (const maintenanceAction of ["maybeUpdateUserScripts", "maybeStageFilterUpda
       return { updated: 0, staged: 0 };
     }
     if (message.action === "getBlockingState") return { disabled: false, paused: false };
+    if (["getUserScriptContentChunk", "getUserScriptResourceChunk"].includes(message.action)) {
+      return { ok: true, data: message.action };
+    }
     if (message.payload?.url === pageUrl) return heldPage;
     return { payload: makeConfig([], 1) };
   }});
@@ -925,8 +928,19 @@ for (const maintenanceAction of ["maybeUpdateUserScripts", "maybeStageFilterUpda
   check(`page rules apply before ${maintenanceAction} finishes`, completed &&
     state.cssInserted.some(injection => injection.css.includes("#fresh-page-ad")));
 
+  let chunksCompleted = false;
+  const actions = ["getUserScriptContentChunk", "getUserScriptResourceChunk"];
+  const chunks = Promise.all(actions.map(action => state.onMessage({
+    action, scriptId: "large-script", chunkIndex: 0, chunkSize: 65536,
+    payloadRevision: 1, resourceName: "resource"
+  }, topFrameSender(pageUrl)))).then(replies => {
+    chunksCompleted = replies.every((reply, index) => reply.data === actions[index]);
+  });
+  await Promise.race([chunks, sleep(500)]);
+  check(`script and resource chunks bypass ${maintenanceAction}`, chunksCompleted);
+
   releaseMaintenance({ updated: 0, staged: 0 });
-  await requests;
+  await Promise.all([requests, chunks]);
 }
 
 

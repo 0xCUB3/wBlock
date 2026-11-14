@@ -682,11 +682,8 @@ if (window.wBlockUserscriptInjectorHasRun) {
             }
             chunks[0] = first.chunk;
 
-            // Request the remaining chunks with bounded concurrency instead of strictly
-            // sequentially. On the Safari App Extension path these run in parallel; on the
-            // browser.runtime path the background serializes native messages anyway, but
-            // issuing them together avoids per-chunk JS await stalls. Either way this
-            // shortens hydration so even chunked document-start scripts inject sooner.
+            // Read remaining chunks concurrently, with six workers per transfer.
+            // Responses are assembled by index regardless of completion order.
             const maxConcurrentChunkRequests = 6;
             let nextChunkIndex = 1;
             const fetchChunkWorker = async () => {

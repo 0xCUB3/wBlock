@@ -1409,7 +1409,8 @@
       }
 
       try {
-        const response = await sendQueuedNativeMessage(chunkRequest);
+        // Page hydration must not wait for background update downloads.
+        const response = await sendPriorityNativeMessage(chunkRequest);
         return response || { error: "Empty response from native host" };
       } catch (error) {
         const errorMessage = String(error && error.message ? error.message : error);

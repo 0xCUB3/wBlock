@@ -420,6 +420,10 @@
       state.shadowStyles.delete(root);
       state.shadowRoots.delete(root);
     }
+    // Nonmatching and nonstyling rules discover roots without creating sheets.
+    for (const root of state.shadowRoots) {
+      if (!root.host.isConnected) state.shadowRoots.delete(root);
+    }
   };
 
   // Disconnecting first drops the records caused by our own attribute and style writes.
