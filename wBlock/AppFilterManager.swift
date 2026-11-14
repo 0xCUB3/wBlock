@@ -77,6 +77,8 @@ class AppFilterManager: ObservableObject {
     @Published var pausedComponents: BlockingPauseComponents = []
     @Published var autoDisabledFilters: [FilterList] = []  // Filters auto-disabled due to rule limits
     @Published var showingAutoDisabledAlert = false
+    /// A custom list that copies another one, asked about once (FilterListDuplicates).
+    @Published var duplicateListPair: FilterListDuplicates.Pair?
 
     // Per-extension rule count tracking (extension bundle ID -> Safari rule count)
     // This is the source of truth since extensions can serve multiple categories
@@ -869,7 +871,10 @@ class AppFilterManager: ObservableObject {
             filterLists.count
         )
         // Update versions and counts in background without applying changes
-        Task { await updateVersionsAndCounts() }
+        Task {
+            await updateVersionsAndCounts()
+            await checkForDuplicateLists()
+        }
     }
 
 

@@ -1134,3 +1134,7 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. AdGuard lists are still in Filters if you want them back." = "Le tue liste personalizzate, gli userscript, le regole di Element Zapper e le impostazioni dei siti restano invariate. Le liste AdGuard sono ancora in Filtri, se le vuoi di nuovo.";
 "If a site breaks" = "Se un sito si blocca";
 "Turn wBlock off for that site using the wBlock button in Safari. Then let me know on [GitHub](https://github.com/0xCUB3/wBlock/issues)." = "Disattiva wBlock per quel sito con il pulsante wBlock in Safari. Poi fammelo sapere su [GitHub](https://github.com/0xCUB3/wBlock/issues).";
+"Duplicate Filter Lists" = "Elenchi di filtri duplicati";
+"Remove Copy" = "Rimuovi copia";
+"Keep Both" = "Mantieni entrambi";
+"\"%@\" has almost the same rules as \"%@\", so wBlock is applying them twice. Remove the copy?" = "\"%1$@\" ha quasi le stesse regole di \"%2$@\", quindi wBlock le applica due volte. Rimuovere la copia?";

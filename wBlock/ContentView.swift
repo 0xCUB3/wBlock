@@ -1179,6 +1179,32 @@ struct ContentModifiers: ViewModifier {
             } message: {
                 Text(userScriptManager.duplicatesMessage)
             }
+            .alert(
+                "Duplicate Filter Lists",
+                isPresented: Binding(
+                    get: { filterManager.duplicateListPair != nil },
+                    set: { if !$0 { filterManager.duplicateListPair = nil } }
+                ),
+                presenting: filterManager.duplicateListPair
+            ) { pair in
+                Button("Remove Copy", role: .destructive) {
+                    filterManager.resolveDuplicateLists(pair, removeCopy: true)
+                }
+                Button("Keep Both", role: .cancel) {
+                    filterManager.resolveDuplicateLists(pair, removeCopy: false)
+                }
+            } message: { pair in
+                Text(
+                    String.localizedStringWithFormat(
+                        NSLocalizedString(
+                            "\"%@\" has almost the same rules as \"%@\", so wBlock is applying them twice. Remove the copy?",
+                            comment: "Duplicate filter lists alert"
+                        ),
+                        pair.copy.localizedDisplayName,
+                        pair.original.localizedDisplayName
+                    )
+                )
+            }
             .onAppear {
                 filterManager.setUserScriptManager(userScriptManager)
             }

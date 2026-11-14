@@ -1134,3 +1134,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. AdGuard lists are still in Filters if you want them back." = "Οι προσαρμοσμένες λίστες, τα userscripts, οι κανόνες του Element Zapper και οι ρυθμίσεις των ιστότοπων δεν άλλαξαν. Οι λίστες της AdGuard εξακολουθούν να υπάρχουν στα Φίλτρα, αν θέλετε να τις ξαναχρησιμοποιήσετε.";
 "If a site breaks" = "Αν ένας ιστότοπος χαλάσει";
 "Turn wBlock off for that site using the wBlock button in Safari. Then let me know on [GitHub](https://github.com/0xCUB3/wBlock/issues)." = "Απενεργοποιήστε το wBlock για αυτόν τον ιστότοπο με το κουμπί wBlock στο Safari. Μετά ενημερώστε με στο [GitHub](https://github.com/0xCUB3/wBlock/issues).";
+"Duplicate Filter Lists" = "Διπλότυπες λίστες φίλτρων";
+"Remove Copy" = "Αφαίρεση αντιγράφου";
+"Keep Both" = "Διατήρηση και των δύο";
+"\"%@\" has almost the same rules as \"%@\", so wBlock is applying them twice. Remove the copy?" = "Η λίστα \"%1$@\" έχει σχεδόν τους ίδιους κανόνες με τη \"%2$@\", οπότε το wBlock τους εφαρμόζει δύο φορές. Αφαίρεση του αντιγράφου;";

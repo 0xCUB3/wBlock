@@ -1134,3 +1134,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. AdGuard lists are still in Filters if you want them back." = "사용자 목록, 사용자 스크립트, Element Zapper 규칙, 사이트별 설정은 그대로입니다. AdGuard 목록도 필요하면 다시 쓸 수 있도록 필터에 남아 있습니다.";
 "If a site breaks" = "사이트가 깨진다면";
 "Turn wBlock off for that site using the wBlock button in Safari. Then let me know on [GitHub](https://github.com/0xCUB3/wBlock/issues)." = "Safari에서 wBlock 버튼을 눌러 해당 사이트에서 wBlock을 끄세요. 그런 다음 [GitHub](https://github.com/0xCUB3/wBlock/issues)에 알려 주세요.";
+"Duplicate Filter Lists" = "중복된 필터 목록";
+"Remove Copy" = "사본 제거";
+"Keep Both" = "둘 다 유지";
+"\"%@\" has almost the same rules as \"%@\", so wBlock is applying them twice. Remove the copy?" = "'%1$@'의 규칙이 '%2$@'와 거의 같아 wBlock이 같은 규칙을 두 번 적용하고 있습니다. 사본을 제거할까요?";

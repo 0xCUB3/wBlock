@@ -1134,3 +1134,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. AdGuard lists are still in Filters if you want them back." = "你的自定义列表、用户脚本、Element Zapper 规则和网站设置都没有改变。如果你想换回 AdGuard 列表，它们仍在“过滤器”中。";
 "If a site breaks" = "如果网站出现问题";
 "Turn wBlock off for that site using the wBlock button in Safari. Then let me know on [GitHub](https://github.com/0xCUB3/wBlock/issues)." = "在 Safari 中点按 wBlock 按钮，为该网站关闭 wBlock。然后请在 [GitHub](https://github.com/0xCUB3/wBlock/issues) 上告诉我。";
+"Duplicate Filter Lists" = "重复的过滤列表";
+"Remove Copy" = "移除副本";
+"Keep Both" = "全部保留";
+"\"%@\" has almost the same rules as \"%@\", so wBlock is applying them twice. Remove the copy?" = "“%1$@”与“%2$@”的规则几乎相同，因此 wBlock 会重复应用这些规则。要移除副本吗？";

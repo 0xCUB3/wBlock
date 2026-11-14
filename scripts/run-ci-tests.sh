@@ -245,6 +245,8 @@ compile_core_test filter-list-presentation scripts/test_filter_list_presentation
   wBlock/FilterListPresentation.swift wBlock/ListDisplayOrder.swift wBlock/ContentRowMetadata.swift \
   wBlock/LocalizationHelpers.swift wBlock/FilterListLoader.swift wBlock/ConcurrentLogManager.swift wBlock/LogTimeZone.swift
 compile_core_test filter-url-mirrors scripts/test_filter_url_mirrors.swift
+compile_core_test filter-list-duplicates scripts/test_filter_list_duplicates.swift \
+  wBlock/FilterListDuplicates.swift
 compile_core_test filter-catalog-migrations scripts/test_filter_catalog_migrations.swift \
   wBlock/AnnoyanceTopic.swift wBlock/FilterListLoader.swift wBlock/FilterListSetup.swift wBlock/LocalizationHelpers.swift \
   wBlock/ConcurrentLogManager.swift wBlock/LogTimeZone.swift

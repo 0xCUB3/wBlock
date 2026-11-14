@@ -1134,3 +1134,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. AdGuard lists are still in Filters if you want them back." = "Az egyéni listáid, userscriptjeid, Element Zapper szabályaid és oldalbeállításaid nem változtak. Az AdGuard-listák továbbra is megvannak a Szűrők között, ha vissza akarod kapcsolni őket.";
 "If a site breaks" = "Ha egy oldal elromlik";
 "Turn wBlock off for that site using the wBlock button in Safari. Then let me know on [GitHub](https://github.com/0xCUB3/wBlock/issues)." = "Kapcsold ki a wBlockot az adott oldalon a Safari wBlock gombjával. Utána szólj nekem a [GitHub](https://github.com/0xCUB3/wBlock/issues)on.";
+"Duplicate Filter Lists" = "Ismétlődő szűrőlisták";
+"Remove Copy" = "Másolat eltávolítása";
+"Keep Both" = "Mindkettő megtartása";
+"\"%@\" has almost the same rules as \"%@\", so wBlock is applying them twice. Remove the copy?" = "A(z) „%1$@” szinte ugyanazokat a szabályokat tartalmazza, mint a(z) „%2$@”, így a wBlock kétszer alkalmazza őket. Eltávolítod a másolatot?";

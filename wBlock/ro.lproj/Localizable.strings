@@ -1134,3 +1134,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. AdGuard lists are still in Filters if you want them back." = "Listele tale personalizate, userscripturile, regulile Element Zapper și setările pentru site-uri nu se schimbă. Listele AdGuard sunt încă în Filtre, dacă vrei să le revii.";
 "If a site breaks" = "Dacă un site nu mai merge";
 "Turn wBlock off for that site using the wBlock button in Safari. Then let me know on [GitHub](https://github.com/0xCUB3/wBlock/issues)." = "Oprește wBlock pentru acel site cu butonul wBlock din Safari. Apoi spune-mi pe [GitHub](https://github.com/0xCUB3/wBlock/issues).";
+"Duplicate Filter Lists" = "Liste de filtre duplicate";
+"Remove Copy" = "Elimină copia";
+"Keep Both" = "Păstrează-le pe amândouă";
+"\"%@\" has almost the same rules as \"%@\", so wBlock is applying them twice. Remove the copy?" = "„%1$@” are aproape aceleași reguli ca „%2$@”, așa că wBlock le aplică de două ori. Elimini copia?";

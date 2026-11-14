@@ -203,6 +203,7 @@ extension AppFilterManager {
                             self.hasError = false
                         }
                     saveFilterListsCoalesced()
+                    await checkForDuplicateLists()
                 } else {
                     await ConcurrentLogManager.shared.error(
                         .filterUpdate, LocalizedStrings.text("Failed to download custom filter"),
