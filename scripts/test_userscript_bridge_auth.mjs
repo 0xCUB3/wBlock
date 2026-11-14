@@ -110,7 +110,15 @@ function buildContentScriptSandbox(
   sandbox.self = sandbox;
   const pageURL = new URL(href);
   sandbox.location = { href, hostname: pageURL.hostname, protocol: pageURL.protocol, pathname: pageURL.pathname };
-  sandbox.addEventListener = (type, fn) => { if (type === "message") windowMessageListeners.push(fn); };
+  const windowEvents = new Map();
+  sandbox.addEventListener = (type, fn) => {
+    if (type === "message") windowMessageListeners.push(fn);
+    if (!windowEvents.has(type)) windowEvents.set(type, new Set());
+    windowEvents.get(type).add(fn);
+  };
+  sandbox.__dispatchWindowEvent = (type, event = {}) => {
+    for (const fn of [...(windowEvents.get(type) || [])]) fn(event);
+  };
   sandbox.removeEventListener = () => {};
   sandbox.postMessage = () => {};
   sandbox.console = { log() {}, warn() {}, error() {}, info() {}, debug() {}, trace() {} };
@@ -169,6 +177,12 @@ function buildContentScriptSandbox(
     addEventListener: () => {},
     removeEventListener: () => {},
   };
+  sandbox.__runtimeListeners = new Set();
+  sandbox.__onMessage = async (message) => {
+    let response;
+    for (const listener of sandbox.__runtimeListeners) response = (await listener(message)) ?? response;
+    return response;
+  };
   sandbox.browser = {
     runtime: {
       sendMessage: async (msg) => {
@@ -194,13 +208,10 @@ function buildContentScriptSandbox(
         }
         return { ok: true };
       },
-      onMessage: { addListener: (fn) => {
-        const previous = sandbox.__onMessage;
-        sandbox.__onMessage = async (message) => {
-          const earlier = previous ? await previous(message) : undefined;
-          return (await fn(message)) ?? earlier;
-        };
-      } },
+      onMessage: {
+        addListener: (fn) => sandbox.__runtimeListeners.add(fn),
+        removeListener: (fn) => sandbox.__runtimeListeners.delete(fn),
+      },
       connect: () => ({ onMessage: { addListener() {} }, onDisconnect: { addListener() {} }, postMessage() {}, disconnect() {} }),
     },
   };
@@ -718,6 +729,55 @@ const deferred = () => {
   const promise = new Promise((r) => { resolve = r; });
   return { promise, resolve };
 };
+// A native reply, chunk, or validation may settle after pagehide. None may
+// execute code or reattach runtime listeners; BFCache restoration must retry.
+for (const stage of ['metadata', 'payload', 'validation']) {
+  for (const [persisted, restoreBeforeCompletion] of [[false, false], [true, false], [true, true]]) {
+    const held = deferred();
+    let intercepted = false;
+    const content = 'window.__lateInjectionRuns = (window.__lateInjectionRuns || 0) + 1;';
+    const script = { ...fakeScript, injectInto: 'content', content: stage === 'payload' ? '' : content };
+    const chunk = { chunk: Buffer.from(content).toString('base64'), totalChunks: 1, payloadRevision: 0 };
+    const reply = { userScripts: [script] };
+    const sandbox = buildContentScriptSandbox(null, [], 'https://example.com/page', [], true, (message) => {
+      const response = message.action === 'getUserScripts' ? reply
+        : message.action === 'getUserScriptContentChunk' ? chunk : { ok: true };
+      const target = { metadata: 'getUserScripts', payload: 'getUserScriptContentChunk', validation: 'validateUserScriptExecutions' }[stage];
+      if (!intercepted && message.action === target) {
+        intercepted = true;
+        return held.promise;
+      }
+      return response;
+    });
+    vm.createContext(sandbox);
+    vm.runInContext(source, sandbox);
+    await tick(); await tick();
+    check(`${stage}: request reaches the delayed stage`, intercepted);
+    sandbox.__dispatchWindowEvent('pagehide', { persisted });
+    if (restoreBeforeCompletion) {
+      sandbox.__dispatchWindowEvent('pageshow', { persisted: true });
+      await tick(); await tick();
+      check(`${stage}: restoration does not wait on abandoned work`, sandbox.__lateInjectionRuns === 1);
+    }
+    held.resolve(stage === 'metadata' ? reply : stage === 'payload' ? chunk : { ok: true });
+    await tick(); await tick();
+    check(`${stage}: late completion after pagehide (${persisted}, restored=${restoreBeforeCompletion}) adds no execution or listeners`,
+      restoreBeforeCompletion ? sandbox.__lateInjectionRuns === 1 && sandbox.__runtimeListeners.size === 2
+        : !sandbox.__lateInjectionRuns && sandbox.__runtimeListeners.size === 0);
+    if (persisted) {
+      if (!restoreBeforeCompletion) sandbox.__dispatchWindowEvent('pageshow', { persisted: true });
+      await tick(); await tick();
+      check(`${stage}: BFCache restoration runs the unfinished script once`, sandbox.__lateInjectionRuns === 1);
+      sandbox.__dispatchWindowEvent('pagehide', { persisted: true });
+      check(`${stage}: restored listeners detach again`, sandbox.__runtimeListeners.size === 0);
+      sandbox.__dispatchWindowEvent('pageshow', { persisted: true });
+      await tick(); await tick();
+      check(`${stage}: another restoration never duplicates execution or listeners`,
+        sandbox.__lateInjectionRuns === 1 && sandbox.__runtimeListeners.size === 2);
+      sandbox.__dispatchWindowEvent('pagehide', { persisted: false });
+    }
+  }
+}
 const oldFreshReply = deferred();
 const authoritativeReply = deferred();
 let freshRequestCount = 0;

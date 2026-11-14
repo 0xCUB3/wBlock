@@ -220,6 +220,16 @@ if (window.wBlockUserscriptInjectorHasRun) {
             // wait for an 8 s slot. The old 0.5/1.5/4/8 s ladder turned four
             // quick failures into a 14 s late injection (#991).
             this.userScriptRequestRetryDelays = [250, 500, 1000, 1000, 1000, 1000, 2000, 2000, 2000, 2000, 2000];
+            this.pageHidden = false;
+            window.addEventListener('pagehide', () => {
+                this.pageHidden = true;
+                this.invalidatePendingScripts();
+            });
+            window.addEventListener('pageshow', (event) => {
+                if (!event.persisted) return;
+                this.pageHidden = false;
+                this.requestUserScripts();
+            });
             wBlockLog('[wBlock] UserScriptEngine constructor called.');
             this.init();
         }
@@ -243,18 +253,23 @@ if (window.wBlockUserscriptInjectorHasRun) {
             }
         }
 
+        invalidatePendingScripts() {
+            this.pendingScripts = [];
+            this.scriptPayloadPromises.clear();
+            this.warmStartValidationPromises.clear();
+            this.validationPrefetches.clear();
+            this.injectingScripts.clear();
+            return ++this.documentStartRequestGeneration;
+        }
+
         invalidateDocumentStartSessionCache() {
             // Revoke privileges and every in-flight result from the previous
             // generation, then fetch one new authoritative result. Completed
             // execution keys stay intact so scripts are never hot-run twice.
-            const generation = ++this.documentStartRequestGeneration;
-            this.pendingScripts = [];
+            const generation = this.invalidatePendingScripts();
             this.tubeCleanerSettingsScript = null;
             this.popupBlockerScript = null;
             this.pendingPageWrites?.clear();
-            this.scriptPayloadPromises.clear();
-            this.warmStartValidationPromises.clear();
-            this.injectingScripts.clear();
             this.requestUserScripts(0, generation);
         }
 
@@ -1021,7 +1036,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
         }
 
         requestUserScripts(attempt = 0, generation = this.documentStartRequestGeneration) {
-            if (generation !== this.documentStartRequestGeneration) return;
+            if (this.pageHidden || generation !== this.documentStartRequestGeneration) return;
             const url = window.location.href;
             wBlockLog(`[wBlock] Requesting userscripts for URL: ${url}`);
 
@@ -1191,7 +1206,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
         }
 
         injectUserScripts(userScripts, generation = this.documentStartRequestGeneration) {
-            if (generation !== this.documentStartRequestGeneration) return;
+            if (this.pageHidden || generation !== this.documentStartRequestGeneration) return;
             wBlockLog('[wBlock] injectUserScripts called with:', userScripts);
             if (!Array.isArray(userScripts)) {
                 wBlockWarn('[wBlock] injectUserScripts called with non-array:', userScripts);
