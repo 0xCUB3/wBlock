@@ -226,7 +226,10 @@ struct UserScriptMatchingAndPayloadTests {
             (["example.org"], "https://evil-example.org/x", false),
             (["example.org"], "https://example.org.evil/x", false),
             (["self"], "https://page.invalid:8443/x", true),
-            (["self"], "https://sub.page.invalid/x", false),
+            (["self"], "https://sub.page.invalid/x", true),
+            (["mediafin.be"], "https://apps.page.invalid/x", true),
+            (["mediafin.be"], "https://otherpage.invalid/x", false),
+            (["mediafin.be"], "https://invalid/x", false),
             (["localhost"], "http://localhost:8080/x", true),
             (["*"], "file:///etc/passwd", false),
             (["*"], "https://user:secret@example.org/", false),
@@ -234,7 +237,19 @@ struct UserScriptMatchingAndPayloadTests {
             (["https://example.org"], "https://example.org/", false),
             ([String](), "https://page.invalid/", false)
         ] {
-            expectEqual(UserScriptConnectPolicy(entries: entries, pageURL: page).allows(URL(string: target)!), allowed, "connect policy for \(target) with \(entries)")
+            expectEqual(UserScriptConnectPolicy(entries: entries, pageURL: page, pageSite: "page.invalid").allows(URL(string: target)!), allowed, "connect policy for \(target) with \(entries)")
+        }
+        // Sites as WBEngine.registrableDomain resolves them; nil is a public suffix.
+        for (pageURL, site, target, allowed) in [
+            ("https://www.telerama.fr/a", "telerama.fr", "https://apps.telerama.fr/tlr/v1", true),
+            ("https://news.bbc.co.uk/", "bbc.co.uk", "https://www.bbc.co.uk/", true),
+            ("https://news.bbc.co.uk/", "bbc.co.uk", "https://evil.co.uk/", false),
+            ("https://github.io/", nil, "https://me.github.io/", false),
+            ("https://github.io/", nil, "https://github.io/x", true),
+            ("http://10.0.1.1/", "1.1", "http://10.0.1.1/x", true),
+            ("http://10.0.1.1/", "1.1", "http://192.168.1.1/x", false)
+        ] as [(String, String?, String, Bool)] {
+            expectEqual(UserScriptConnectPolicy(entries: ["mediafin.be"], pageURL: URL(string: pageURL)!, pageSite: site).allows(URL(string: target)!), allowed, "same-site connect for \(target) from \(pageURL)")
         }
 
         let session = URLSession(configuration: .ephemeral)
@@ -242,7 +257,7 @@ struct UserScriptMatchingAndPayloadTests {
         let redirectResponse = HTTPURLResponse(url: page, statusCode: 302, httpVersion: nil, headerFields: nil)!
         for (mode, target, allowed) in [("follow", page, true), ("follow", URL(string: "https://outside.invalid/")!, false), ("manual", page, false), ("error", page, false)] {
             let task = session.dataTask(with: page)
-            let delegate = GMRedirectPolicyDelegate(policy: UserScriptConnectPolicy(entries: ["self"], pageURL: page), redirect: mode)
+            let delegate = GMRedirectPolicyDelegate(policy: UserScriptConnectPolicy(entries: ["self"], pageURL: page, pageSite: "page.invalid"), redirect: mode)
             var called = false
             delegate.urlSession(session, task: task, willPerformHTTPRedirection: redirectResponse, newRequest: URLRequest(url: target)) { request in
                 called = true
@@ -257,7 +272,7 @@ struct UserScriptMatchingAndPayloadTests {
         authenticated.setValue("secret", forHTTPHeaderField: "Authorization")
         authenticated.setValue("session=secret", forHTTPHeaderField: "Cookie")
         let redirectTask = session.dataTask(with: page)
-        GMRedirectPolicyDelegate(policy: UserScriptConnectPolicy(entries: ["*"], pageURL: page), redirect: "follow")
+        GMRedirectPolicyDelegate(policy: UserScriptConnectPolicy(entries: ["*"], pageURL: page, pageSite: "page.invalid"), redirect: "follow")
             .urlSession(session, task: redirectTask, willPerformHTTPRedirection: redirectResponse, newRequest: authenticated) { request in
                 expectEqual(request?.url, crossHost, "approved cross-host redirect may proceed")
                 expect(request?.value(forHTTPHeaderField: "Authorization") == nil, "native redirect strips cross-host authorization")

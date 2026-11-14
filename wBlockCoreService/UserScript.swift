@@ -267,8 +267,17 @@ public struct UserScriptConnectPolicy: Sendable {
     public let entries: [String]
     public let pageURL: URL
 
-    public init(entries: [String], pageURL: URL) {
-        self.entries = entries
+    /// A script that declares any `@connect` may also reach the page's own
+    /// site (`pageSite`, its registrable domain, and subdomains), so `self`
+    /// covers the whole site. Paywall scripts fetch `apps.<site>` APIs they
+    /// don't declare, and Stay allows them (#1114). An empty declaration still fails closed, and IP
+    /// or public suffix pages (nil `pageSite`) keep the exact-host `self`.
+    public init(entries: [String], pageURL: URL, pageSite: String?) {
+        let declared = entries.filter { $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() != "self" }
+        let host = pageURL.host ?? ""
+        let isIP = host.contains(":") || host.allSatisfy { $0.isNumber || $0 == "." }
+        let site = isIP ? nil : pageSite?.lowercased()
+        self.entries = entries.isEmpty ? [] : declared + [site ?? "self"]
         self.pageURL = pageURL
     }
 

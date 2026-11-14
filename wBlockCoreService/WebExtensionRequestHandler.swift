@@ -6,6 +6,7 @@
 //
 
 import Foundation
+internal import WBEngine
 #if os(macOS)
 import AppKit
 #endif
@@ -1518,7 +1519,10 @@ public enum WebExtensionRequestHandler {
         guard let script = manager.userScript(withId: scriptID),
               !script.isUserStyle, script.allowsGMXMLHttpRequest,
               scriptAllowsFrame(script, message: message, manager: manager) else { return nil }
-        return UserScriptConnectPolicy(entries: script.connect, pageURL: page)
+        return UserScriptConnectPolicy(
+            entries: script.connect, pageURL: page,
+            pageSite: page.host.flatMap { WBEngine.registrableDomain(of: $0) }
+        )
     }
 
     private static func handleUserScriptRequestPolicy(message: [String: Any?], context: NSExtensionContext) {
