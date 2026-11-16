@@ -11,7 +11,7 @@ enum SafariVersionDetection {
     /// AdGuard's converter before wBlock 4) or for another Safari is reused.
     static var compilerIdentity: String {
         let safari = current
-        return "wbe-\(WBEngine.outputVersion)|slots-2|safari-\(safari.major).\(safari.minor)"
+        return "wbe-\(WBEngine.outputVersion)|slots-3|safari-\(safari.major).\(safari.minor)"
     }
 
     static var current: (major: UInt16, minor: UInt16) {

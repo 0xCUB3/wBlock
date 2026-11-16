@@ -50,7 +50,9 @@ pub unsafe extern "C" fn wbe_plan_new(request_json: *const c_char) -> *mut WbePl
                 return Err("invalid target shard".into());
             }
         }
-        Ok(Box::into_raw(Box::new(WbePlan(Plan::new(request)))))
+        let plan = Plan::new(request);
+        plan.check_capacity()?;
+        Ok(Box::into_raw(Box::new(WbePlan(plan))))
     })
 }
 
@@ -85,6 +87,7 @@ pub unsafe extern "C" fn wbe_plan_compile_target(
                 unchanged: true,
             })));
         };
+        plan.0.check_output(&compiled.output)?;
         let mut stats =
             serde_json::to_value(&compiled.output.stats).map_err(|error| error.to_string())?;
         stats["admitted"] =
@@ -447,6 +450,25 @@ mod tests {
             wbe_compile_free(result);
             assert!(wbe_plan_compile_target(plan, 1, c("[]").as_ptr(), false, 0).is_null());
             assert!(last_error().contains("target index out of bounds"));
+            wbe_plan_free(plan);
+        }
+    }
+
+    #[test]
+    fn plan_reports_capacity_errors_before_returning_output() {
+        unsafe {
+            let request = |text: &str| c(&serde_json::json!({
+                "safari": [18, 0], "limits": {"rules": 1},
+                "lists": [{"id": "list", "text": text}],
+                "targets": [{"slot": 1, "lists": [{"list": 0}]}]
+            }).to_string());
+            assert!(wbe_plan_new(request("||one.example^\n||two.example^").as_ptr()).is_null());
+            assert!(last_error().contains("budgets"));
+            let plan = wbe_plan_new(request("||one.example^").as_ptr());
+            assert!(!plan.is_null(), "{}", last_error());
+            let extras = c(r#"[{"text":"||two.example^"}]"#);
+            assert!(wbe_plan_compile_target(plan, 0, extras.as_ptr(), false, 0).is_null());
+            assert!(last_error().contains("capacity exceeded"));
             wbe_plan_free(plan);
         }
     }

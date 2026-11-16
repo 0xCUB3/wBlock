@@ -984,15 +984,15 @@ To re-enable these filters, disable other large filters and apply changes again.
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "自訂 URL";
 
-"Too many lists are on for %1$@. They need %2$@ MB, and Safari on iOS fails to load a content blocker over about %3$@ MB. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "%1$@ 開啟的列表太多。它們需要 %2$@ MB，而 iOS 上的 Safari 無法載入超過約 %3$@ MB 的內容阻擋器。這是 Safari 的限制，不是 wBlock 的錯誤。請關閉下方的部分列表後再試一次。";
-"Too many lists are on. %1$@ of wBlock's %2$@ content blockers are over Safari's limit, even with the lists spread across all of them. The fullest, %3$@, needs %4$@ MB, and Safari on iOS fails to load a content blocker over about %5$@ MB. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "開啟的列表太多。即使列表已分散到全部內容阻擋器，wBlock 的 %2$@ 個內容阻擋器中仍有 %1$@ 個超出 Safari 的限制。最滿的 %3$@ 需要 %4$@ MB，而 iOS 上的 Safari 無法載入超過約 %5$@ MB 的內容阻擋器。這是 Safari 的限制，不是 wBlock 的錯誤。請關閉下方的部分列表後再試一次。";
-"Too many lists are on for %1$@. They need %2$@ rules, and Safari allows %3$@ per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "%1$@ 開啟的列表太多。它們需要 %2$@ 條規則，而 Safari 每個內容阻擋器最多允許 %3$@ 條。這是 Safari 的限制，不是 wBlock 的錯誤。請關閉下方的部分列表後再試一次。";
+"The current allocation for %1$@ needs %2$@ MB. wBlock's size budget is %3$@ MB per content blocker on this version of iOS. Turn off some lists below and try again." = "%1$@ 的目前分配需要 %2$@ MB。在此 iOS 版本上，wBlock 為每個內容阻擋器設定的大小預算為 %3$@ MB。請關閉下方的部分列表，然後再試一次。";
+"The current allocation exceeds wBlock's size budget in %1$@ of %2$@ content blockers. The largest, %3$@, needs %4$@ MB; the budget is %5$@ MB per blocker on this version of iOS. Turn off some lists below and try again." = "目前分配在 %1$@ 個內容阻擋器（共 %2$@ 個）上超出了 wBlock 的大小預算。最大的 %3$@ 需要 %4$@ MB；在此 iOS 版本上，每個阻擋器的預算為 %5$@ MB。請關閉下方的部分列表，然後再試一次。";
+"The current allocation for %1$@ needs %2$@ rules. Safari allows %3$@ per content blocker. Turn off some lists below and try again." = "%1$@ 的目前分配需要 %2$@ 條規則。Safari 允許每個內容阻擋器最多包含 %3$@ 條規則。請關閉下方的部分列表，然後再試一次。";
 "Turning it off is enough. The largest blocker would be %@ MB." = "關閉它就夠了。最大的阻擋器將為 %@ MB。";
 "Turning it off isn't enough. The largest blocker would be %@ MB." = "僅關閉它還不夠。最大的阻擋器將為 %@ MB。";
 "Turning it off is enough. The largest blocker would have %@ rules." = "關閉它就夠了。最大的阻擋器將有 %@ 條規則。";
 "Turning it off isn't enough. The largest blocker would have %@ rules." = "僅關閉它還不夠。最大的阻擋器將有 %@ 條規則。";
-"Size: %@ MB" = "大小：%@ MB";
-"Size: %@ rules" = "大小：%@ 條規則";
+"Across all blockers: %@ MB" = "所有阻擋器合計：%@ MB";
+"Across all blockers: %@ rules" = "所有阻擋器合計：%@ 條規則";
 "Turn Off" = "關閉";
 "Turn off %@ and apply" = "關閉 %@ 並套用";
 

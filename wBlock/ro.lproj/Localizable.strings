@@ -984,15 +984,15 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "URL personalizat";
 
-"Too many lists are on for %1$@. They need %2$@ MB, and Safari on iOS fails to load a content blocker over about %3$@ MB. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "Prea multe liste sunt activate pentru %1$@. Au nevoie de %2$@ MB, iar Safari pe iOS nu poate încărca un blocant de conținut mai mare de aproximativ %3$@ MB. Aceasta este o limită Safari, nu o eroare wBlock. Dezactivează câteva dintre listele de mai jos și încearcă din nou.";
-"Too many lists are on. %1$@ of wBlock's %2$@ content blockers are over Safari's limit, even with the lists spread across all of them. The fullest, %3$@, needs %4$@ MB, and Safari on iOS fails to load a content blocker over about %5$@ MB. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "Prea multe liste sunt activate. %1$@ din cele %2$@ blocante de conținut wBlock depășesc limita Safari, deși listele sunt împărțite între toate. Cel mai plin, %3$@, are nevoie de %4$@ MB, iar Safari pe iOS nu poate încărca un blocant de conținut mai mare de aproximativ %5$@ MB. Aceasta este o limită Safari, nu o eroare wBlock. Dezactivează câteva dintre listele de mai jos și încearcă din nou.";
-"Too many lists are on for %1$@. They need %2$@ rules, and Safari allows %3$@ per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "Prea multe liste sunt activate pentru %1$@. Au nevoie de %2$@ reguli, iar Safari permite %3$@ per blocant de conținut. Aceasta este o limită Safari, nu o eroare wBlock. Dezactivează câteva dintre listele de mai jos și încearcă din nou.";
+"The current allocation for %1$@ needs %2$@ MB. wBlock's size budget is %3$@ MB per content blocker on this version of iOS. Turn off some lists below and try again." = "Alocarea curentă pentru %1$@ necesită %2$@ MB. Bugetul de dimensiune al wBlock este de %3$@ MB per blocator de conținut pe această versiune de iOS. Dezactivați câteva liste de mai jos și încercați din nou.";
+"The current allocation exceeds wBlock's size budget in %1$@ of %2$@ content blockers. The largest, %3$@, needs %4$@ MB; the budget is %5$@ MB per blocker on this version of iOS. Turn off some lists below and try again." = "Alocarea curentă depășește bugetul de dimensiune al wBlock în %1$@ din cele %2$@ blocatoare de conținut. Cel mai mare, %3$@, necesită %4$@ MB; bugetul este de %5$@ MB per blocator pe această versiune de iOS. Dezactivați câteva liste de mai jos și încercați din nou.";
+"The current allocation for %1$@ needs %2$@ rules. Safari allows %3$@ per content blocker. Turn off some lists below and try again." = "Alocarea curentă pentru %1$@ necesită %2$@ reguli. Safari permite %3$@ per blocator de conținut. Dezactivați câteva liste de mai jos și încercați din nou.";
 "Turning it off is enough. The largest blocker would be %@ MB." = "Dezactivarea ei ajunge. Cel mai mare blocant ar avea %@ MB.";
 "Turning it off isn't enough. The largest blocker would be %@ MB." = "Dezactivarea ei nu ajunge. Cel mai mare blocant ar avea %@ MB.";
 "Turning it off is enough. The largest blocker would have %@ rules." = "Dezactivarea ei ajunge. Cel mai mare blocant ar avea %@ reguli.";
 "Turning it off isn't enough. The largest blocker would have %@ rules." = "Dezactivarea ei nu ajunge. Cel mai mare blocant ar avea %@ reguli.";
-"Size: %@ MB" = "Dimensiune: %@ MB";
-"Size: %@ rules" = "Dimensiune: %@ reguli";
+"Across all blockers: %@ MB" = "Total pentru toate blocatoarele: %@ MB";
+"Across all blockers: %@ rules" = "Total pentru toate blocatoarele: %@ reguli";
 "Turn Off" = "Dezactivează";
 "Turn off %@ and apply" = "Dezactivează %@ și aplică";
 

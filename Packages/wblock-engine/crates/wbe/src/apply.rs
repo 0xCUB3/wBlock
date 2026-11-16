@@ -295,10 +295,11 @@ pub struct Plan {
     text_hashes: Vec<u64>,
     /// Where the blocks exceptions can reach go, when they go to one blocker.
     wide: Option<Wide>,
+    capacity_error: Option<String>,
 }
 
 /// What one blocker may hold. The wide blocker gains rules from every list,
-/// so a plan has one only while its estimated output stays within these.
+/// so a plan has one only while its measured output stays within these.
 #[derive(Debug, Clone, Copy, Deserialize)]
 #[serde(default)]
 pub struct Limits {
@@ -335,6 +336,9 @@ struct Wide {
     own: u64,
     /// The blockers that hold the rest of them.
     rest: Vec<usize>,
+    /// Cumulative hash-space boundaries after measured repacking. Empty
+    /// during the fixed-occupancy probe: movable blocks have no holder.
+    shares: Option<Vec<(usize, u64)>>,
 }
 
 impl Wide {
@@ -355,7 +359,14 @@ impl Wide {
 
     /// The blocker that holds a block with this route and identity.
     fn holder(&self, route: Route, identity: u64) -> usize {
-        if self.rest.is_empty() || self.takes_route(route, false) || identity >> 32 < self.own {
+        if self.takes_route(route, false) {
+            return self.target;
+        }
+        if let Some(shares) = &self.shares {
+            return shares.iter().find(|(_, end)| identity >> 32 < *end)
+                .map_or(usize::MAX, |(target, _)| *target);
+        }
+        if self.rest.is_empty() || identity >> 32 < self.own {
             return self.target;
         }
         self.rest[(identity % self.rest.len() as u64) as usize]
@@ -373,12 +384,19 @@ struct Size {
 }
 
 impl Size {
+    fn of(output: &CompileOutput) -> Self {
+        Self { rules: output.webkit.rules() as f64, bytes: output.webkit.as_str().len() as f64 }
+    }
+
+    fn within(self, limits: &Limits) -> bool {
+        self.rules <= limits.rules as f64 && self.bytes <= limits.bytes as f64
+    }
+
     const SHARED: (f64, f64, f64) = (1.5, 100.0, 8.5);
     const TAKEN: (f64, f64, f64) = (1.7, 100.0, 3.0);
     const REST: (f64, f64, f64) = (1.0, 100.0, 1.5);
     /// The part of a limit an estimate may fill. The estimate is calibrated on
-    /// two setups and nothing re-plans a blocker that compiles over its limit,
-    /// so leave room for list mixes that compile fatter than estimated.
+    /// two setups; measured output decides whether the allocation is usable.
     const ROOM: f64 = 0.7;
 
     fn add(&mut self, line: &str, (rules, each, bytes): (f64, f64, f64)) {
@@ -424,10 +442,107 @@ impl Plan {
             duplicates: Vec::new(),
             text_hashes,
             wide: None,
+            capacity_error: None,
         };
         plan.wide = plan.wide();
         plan.duplicates = plan.duplicate_rules();
+        plan.capacity_error = plan.pack().err();
         plan
+    }
+
+    /// Verifies the measured list packing. Callers must reject a failed plan;
+    /// no rule is truncated or discarded to satisfy a budget.
+    pub fn check_capacity(&self) -> Result<(), String> {
+        self.capacity_error.clone().map_or(Ok(()), Err)
+    }
+
+    /// Extras are supplied after planning, so their final output needs its own
+    /// check too. The caller's byte budget must reserve its finalization extras.
+    pub fn check_output(&self, output: &CompileOutput) -> Result<(), String> {
+        let size = Size::of(output);
+        if self.limits.rules == 0 || size.within(&self.limits) {
+            Ok(())
+        } else {
+            Err(format!("content blocker capacity exceeded: {} rules, {} bytes (budgets: {} rules, {} bytes)",
+                size.rules, size.bytes, self.limits.rules, self.limits.bytes))
+        }
+    }
+
+    fn sizes(&self) -> Vec<Size> {
+        (0..self.targets.len()).map(|t| Size::of(&self.compile_target(t, &[]).output)).collect()
+    }
+
+    /// Estimates choose the initial packing, never whether it can ship. If it
+    /// overflows, measure fixed occupancy (including affinity outside the shared
+    /// pool), then distribute movable blocks into the remaining capacity.
+    fn pack(&mut self) -> Result<(), String> {
+        if self.limits.rules == 0 {
+            return Ok(());
+        }
+        let mut sizes = self.sizes();
+        if sizes.iter().all(|s| s.within(&self.limits)) {
+            return Ok(());
+        }
+        if let Some(wide) = &mut self.wide {
+            wide.shares = Some(Vec::new());
+            self.duplicates = self.duplicate_rules();
+            let fixed = self.sizes();
+            let mut movable = Size::default();
+            for (size, base) in sizes.iter().zip(&fixed) {
+                movable.rules += (size.rules - base.rules).max(0.0);
+                movable.bytes += (size.bytes - base.bytes).max(0.0);
+            }
+            // Every attempt uses all supplied slots. Correct measured density
+            // after each attempt; the bounded loop also covers indivisible rules
+            // and hash skew near a hard limit without an endless retry.
+            for _ in 0..8 {
+                if fixed.iter().any(|s| !s.within(&self.limits)) {
+                    break;
+                }
+                let weights: Vec<f64> = fixed.iter().map(|base| {
+                    let rules = (self.limits.rules as f64 - base.rules) / movable.rules.max(1.0);
+                    let bytes = (self.limits.bytes as f64 - base.bytes) / movable.bytes.max(1.0);
+                    rules.min(bytes).max(0.0)
+                }).collect();
+                let total: f64 = weights.iter().sum();
+                if total == 0.0 { break; }
+                let mut end = 0.0;
+                let mut shares: Vec<_> = weights.iter().enumerate().map(|(t, weight)| {
+                    end += weight / total;
+                    (t, (end * (1u64 << 32) as f64).round() as u64)
+                }).collect();
+                // The final interval always includes the top of hash space.
+                shares.last_mut().unwrap().1 = 1u64 << 32;
+                if self.wide.as_ref().unwrap().shares.as_ref() == Some(&shares) {
+                    break;
+                }
+                self.wide.as_mut().unwrap().shares = Some(shares);
+                self.duplicates = self.duplicate_rules();
+                sizes = self.sizes();
+                if sizes.iter().all(|s| s.within(&self.limits)) {
+                    return Ok(());
+                }
+                // Use the largest observed cost per unit of hash space. Pruned
+                // exceptions and segment optimizations can change with routing.
+                for ((size, base), weight) in sizes.iter().zip(&fixed).zip(weights) {
+                    if weight > 0.0 {
+                        movable.rules = movable.rules.max((size.rules - base.rules) * total / weight);
+                        movable.bytes = movable.bytes.max((size.bytes - base.bytes) * total / weight);
+                    }
+                }
+            }
+        }
+        // The original shard assignments can split blocks the wide optimization
+        // keeps together. Compile that valid fallback before declaring failure.
+        self.wide = None;
+        self.duplicates = self.duplicate_rules();
+        sizes = self.sizes();
+        if sizes.iter().all(|s| s.within(&self.limits)) {
+            return Ok(());
+        }
+        Err(format!("selection exceeds content blocker budgets after bounded repacking ({} rules, {} bytes per slot); measured slots: {}",
+            self.limits.rules, self.limits.bytes,
+            sizes.iter().map(|s| format!("{} rules/{} bytes", s.rules, s.bytes)).collect::<Vec<_>>().join(", ")))
     }
 
     /// The rule a record stands for, parsed again from its line exactly as
@@ -454,8 +569,8 @@ impl Plan {
     }
 
     /// The wide blocker: the first of those with the fewest rules assigned.
-    /// None for a single blocker, for a zero rule limit, or when the blocks
-    /// it would gain do not fit it.
+    /// None for a single blocker or for a zero rule limit. Measured output
+    /// decides whether this optimization fits, not the estimate.
     fn wide(&self) -> Option<Wide> {
         // Nothing fits a zero limit, not even a plan with no exceptions.
         if self.limits.rules == 0 {
@@ -480,7 +595,7 @@ impl Plan {
         excepted.sort_unstable();
         excepted.dedup();
         let selected = (0..self.lists.len()).map(|l| self.targets.iter().any(|t| t.lists.iter().any(|a| a.list == l))).collect();
-        let mut wide = Wide { target, excepted, selected, own: 0, rest: Vec::new() };
+        let mut wide = Wide { target, excepted, selected, own: 0, rest: Vec::new(), shares: None };
         // The wide blocker holds every exception of the plan and the blocks
         // it takes. A blocker of the rest keeps the exceptions that are not
         // anchored at a site, whose blocks are all in the wide one.
@@ -500,9 +615,6 @@ impl Plan {
                     rest.add(line, Size::REST);
                 }
             }
-        }
-        if !taken.fits(&self.limits) {
-            return None;
         }
         // The fewest blockers the rest fits, the wide one's part of it
         // leaving every blocker as full as the others, in 64ths so that an
@@ -2110,6 +2222,81 @@ mod tests {
         // A list whose blocks moved is still counted where they went.
         let admitted = |t: usize| plan.compile_target(t, &[]).admitted.values().sum::<u64>();
         assert_eq!(admitted(0) + admitted(1), 6);
+    }
+
+    fn packing_request(affinity: usize, ordinary: usize, bytes: usize, limit: usize) -> PlanRequest {
+        let fixed: String = (0..affinity).map(|i| format!("||fixed{i}.example^\n")).collect();
+        let moving: String = (0..ordinary).map(|i| format!("||host{i}.example/download/{}^$document\n", "a".repeat(200))).collect();
+        serde_json::from_value(json!({
+            "safari": [18, 0], "limits": {"rules": limit, "bytes": bytes},
+            "lists": [
+                {"id": "fixed", "text": format!("!#safari_cb_affinity(security)\n{fixed}")},
+                {"id": "moving", "text": moving},
+                {"id": "exceptions", "text": "@@||host1.example/download/$document\n@@/download/*allowed$document\n||host1.example/download/$document,badfilter"}
+            ],
+            "targets": (0..5).map(|t| json!({"slot": t + 1, "lists": [
+                {"list": 0, "shard": [t, 5]}, {"list": 1, "shard": [t, 5]}, {"list": 2}
+            ]})).collect::<Vec<_>>()
+        })).unwrap()
+    }
+
+    fn union(plan: &Plan) -> HashSet<String> {
+        (0..plan.target_count()).flat_map(|t| rules(plan, t)).map(|r| r.to_string()).collect()
+    }
+
+    #[test]
+    fn measured_bytes_repack_and_preserve_union_and_exceptions() {
+        let mut request = packing_request(0, 300, 75_000, 150_000);
+        request.lists[1].scope.exclude.push("bypass.example".into());
+        let mut reference = request.clone();
+        reference.limits.rules = 0;
+        let reference = Plan::new(reference);
+        let mut packed = Plan::new(request);
+        packed.check_capacity().unwrap();
+        let actual = union(&packed);
+        assert!(actual.iter().any(|rule| rule.contains("ignore-previous-rules")));
+        assert_eq!(actual, union(&reference));
+        assert!((0..5).all(|t| packed.check_output(&packed.compile_target(t, &[]).output).is_ok()));
+        // Recreate the estimator's allocation to show the failure this protects.
+        packed.wide = packed.wide();
+        packed.duplicates = packed.duplicate_rules();
+        assert!(packed.sizes().iter().any(|s| !s.within(&packed.limits)));
+    }
+
+    #[test]
+    fn fixed_affinity_occupancy_reduces_shared_capacity() {
+        let mut request = packing_request(100, 400, 1_000_000, 150);
+        request.lists[1].text = (0..400).map(|i| format!("||moving{i}.example^\n")).collect();
+        let mut reference = request.clone();
+        reference.limits.rules = 0;
+        let reference = Plan::new(reference);
+        let mut packed = Plan::new(request);
+        packed.check_capacity().unwrap();
+        assert_eq!(union(&packed), union(&reference));
+        for t in 0..5 {
+            let output = packed.compile_target(t, &[]);
+            packed.check_output(&output.output).unwrap();
+            assert_eq!(rules(&packed, t).iter().filter(|r| r.to_string().contains("fixed")).count(), if t == 2 {100} else {0});
+        }
+        packed.wide = packed.wide();
+        packed.duplicates = packed.duplicate_rules();
+        assert!(packed.sizes()[2].rules > 150.0);
+    }
+
+    #[test]
+    fn affinity_outside_shared_pool_and_impossible_selections() {
+        // Ordinary rules initially occupy slot 1, with fixed security in slot 3.
+        let packed = Plan::new(packing_request(100, 10, 1_000_000, 150));
+        packed.check_capacity().unwrap();
+        assert_eq!(rules(&packed, 2).iter().filter(|r| r.to_string().contains("fixed")).count(), 100);
+        // The retry is finite and reports failure, retaining every fixed rule.
+        let impossible = Plan::new(packing_request(151, 10, 1_000_000, 150));
+        assert!(impossible.check_capacity().is_err());
+        assert!(impossible.compile_target(2, &[]).output.webkit.rules() >= 151);
+        let impossible = Plan::new(packing_request(0, 400, 1_000_000, 100));
+        assert!(impossible.check_capacity().is_err());
+        let impossible = Plan::new(packing_request(0, 400, 100, 150));
+        assert!(impossible.check_capacity().is_err());
     }
 
     /// Each blocker with a block keeps the exceptions not anchored at a host,

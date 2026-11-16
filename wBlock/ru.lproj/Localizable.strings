@@ -984,15 +984,15 @@ To re-enable these filters, disable other large filters and apply changes again.
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "Свой URL";
 
-"Too many lists are on for %1$@. They need %2$@ MB, and Safari on iOS fails to load a content blocker over about %3$@ MB. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "Для %1$@ включено слишком много списков. Им нужно %2$@ МБ, а Safari в iOS не может загрузить блокировщик контента больше примерно %3$@ МБ. Это ограничение Safari, а не ошибка wBlock. Отключите некоторые списки ниже и повторите попытку.";
-"Too many lists are on. %1$@ of wBlock's %2$@ content blockers are over Safari's limit, even with the lists spread across all of them. The fullest, %3$@, needs %4$@ MB, and Safari on iOS fails to load a content blocker over about %5$@ MB. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "Включено слишком много списков. %1$@ из %2$@ блокировщиков контента wBlock превышают ограничение Safari, хотя списки распределены по всем. Самому заполненному, %3$@, нужно %4$@ МБ, а Safari в iOS не может загрузить блокировщик контента больше примерно %5$@ МБ. Это ограничение Safari, а не ошибка wBlock. Отключите некоторые списки ниже и повторите попытку.";
-"Too many lists are on for %1$@. They need %2$@ rules, and Safari allows %3$@ per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "Для %1$@ включено слишком много списков. Им нужно правил: %2$@, а Safari допускает %3$@ на один блокировщик контента. Это ограничение Safari, а не ошибка wBlock. Отключите некоторые списки ниже и повторите попытку.";
+"The current allocation for %1$@ needs %2$@ MB. wBlock's size budget is %3$@ MB per content blocker on this version of iOS. Turn off some lists below and try again." = "Текущее распределение для %1$@ требует %2$@ МБ. В этой версии iOS бюджет размера wBlock составляет %3$@ МБ на блокировщик контента. Отключите некоторые списки ниже и повторите попытку.";
+"The current allocation exceeds wBlock's size budget in %1$@ of %2$@ content blockers. The largest, %3$@, needs %4$@ MB; the budget is %5$@ MB per blocker on this version of iOS. Turn off some lists below and try again." = "Текущее распределение превышает бюджет размера wBlock в %1$@ из %2$@ блокировщиков контента. Самому большому, %3$@, требуется %4$@ МБ; в этой версии iOS бюджет составляет %5$@ МБ на блокировщик. Отключите некоторые списки ниже и повторите попытку.";
+"The current allocation for %1$@ needs %2$@ rules. Safari allows %3$@ per content blocker. Turn off some lists below and try again." = "Текущее распределение для %1$@ требует %2$@ правил. Safari допускает %3$@ на блокировщик контента. Отключите некоторые списки ниже и повторите попытку.";
 "Turning it off is enough. The largest blocker would be %@ MB." = "Отключения хватит. Самый большой блокировщик будет %@ МБ.";
 "Turning it off isn't enough. The largest blocker would be %@ MB." = "Отключения не хватит. Самый большой блокировщик будет %@ МБ.";
 "Turning it off is enough. The largest blocker would have %@ rules." = "Отключения хватит. В самом большом блокировщике будет правил: %@.";
 "Turning it off isn't enough. The largest blocker would have %@ rules." = "Отключения не хватит. В самом большом блокировщике будет правил: %@.";
-"Size: %@ MB" = "Размер: %@ МБ";
-"Size: %@ rules" = "Размер: %@ правил";
+"Across all blockers: %@ MB" = "Суммарно по всем блокировщикам: %@ МБ";
+"Across all blockers: %@ rules" = "Суммарно по всем блокировщикам: %@ правил";
 "Turn Off" = "Отключить";
 "Turn off %@ and apply" = "Отключить %@ и применить";
 

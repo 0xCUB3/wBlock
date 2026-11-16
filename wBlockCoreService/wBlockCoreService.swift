@@ -121,6 +121,17 @@ private struct StoredTargetSourceRuleProvenance: Codable {
         return 19_000_000
     }()
 
+    /// Leave exact room for the site exceptions Swift appends after compilation.
+    static func nativePlanLimits(disabledSites: [String]) -> (rules: Int, bytes: Int) {
+        let reserved = finalizeContentBlockerJSON(baseJSON: Data("[]".utf8), disabledSites: disabledSites,
+                                                knownBaseCount: 0, ruleLimit: .max)
+        // Joining two nonempty arrays adds one comma in place of their brackets.
+        let bytes = reserved.ruleCount == 0 ? 0 : reserved.json.count - 1
+        // Zero disables engine limits; an exhausted budget must stay bounded.
+        return (max(1, safariContentBlockerRuleLimit - reserved.ruleCount),
+                max(1, safariContentBlockerJSONSizeLimit - bytes))
+    }
+
     public struct ContentBlockerSizeLimitError: Error, Sendable {
         public let byteCount: Int
         public let limit: Int
@@ -1532,7 +1543,7 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         }
         let inputs = try enginePlanInputs(
             filters: filters, orderedSelectedFilters: orderedSelectedFilters, targetInfo: targetInfo,
-            allTargets: allTargets, extraRulesText: extraRulesText, cosmeticSites: cosmeticSites, containerURL: containerURL
+            allTargets: allTargets, disabledSites: disabledSites, extraRulesText: extraRulesText, cosmeticSites: cosmeticSites, containerURL: containerURL
         )
         let (plan, targetIndex, requestJSON, extrasJSON, fingerprints) =
             (inputs.plan, inputs.targetIndex, inputs.requestJSON, inputs.extrasJSON, inputs.fingerprints)
@@ -1727,6 +1738,7 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         orderedSelectedFilters: [FilterList],
         targetInfo: ContentBlockerTargetInfo,
         allTargets: [ContentBlockerTargetInfo],
+        disabledSites: [String],
         extraRulesText: String?,
         cosmeticSites: CosmeticFilteringPreference.Sites,
         containerURL: URL
@@ -1759,11 +1771,12 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
             return ["slot": target.slot, "lists": targetLists]
         }
         let safari = SafariVersionDetection.current
+        let limits = nativePlanLimits(disabledSites: disabledSites)
         let request: [String: Any] = ["safari": [safari.major, safari.minor], "lists": lists, "targets": targets,
             "retain": CompilationScope.keepsParsedLists,
             // The engine moves blocks between blockers only when every blocker
             // is built from this same plan.
-            "limits": ["rules": followsPlan ? safariContentBlockerRuleLimit : 0, "bytes": safariContentBlockerJSONSizeLimit],
+            "limits": ["rules": followsPlan ? limits.rules : 0, "bytes": limits.bytes],
             "cosmetics": ["exclude": cosmeticSites.excludedSites,
                           "only": cosmeticSites.onlySelectedSites ? (cosmeticSites.selectedSites ?? []) as Any : NSNull(),
                           "generic": cosmeticSites.includesGeneric]]
@@ -1816,7 +1829,7 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
             let inputs = try enginePlanInputs(
                 filters: ContentBlockerIncrementalCache.canonicalFilterOrder(distribution.filtersByTarget[target] ?? []),
                 orderedSelectedFilters: ordered, targetInfo: target, allTargets: targets,
-                extraRulesText: extraRulesText(target), cosmeticSites: cosmeticSites, containerURL: containerURL
+                disabledSites: disabledSites, extraRulesText: extraRulesText(target), cosmeticSites: cosmeticSites, containerURL: containerURL
             )
             guard let compiled = try inputs.plan.compileTarget(inputs.targetIndex, extras: inputs.extrasJSON, knownFingerprint: nil) else {
                 throw CocoaError(.fileReadCorruptFile)

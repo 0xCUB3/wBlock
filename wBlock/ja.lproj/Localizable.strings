@@ -953,15 +953,15 @@ To re-enable these filters, disable other large filters and apply changes again.
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "カスタムURL";
 
-"Too many lists are on for %1$@. They need %2$@ MB, and Safari on iOS fails to load a content blocker over about %3$@ MB. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "%1$@ でオンにしているリストが多すぎます。%2$@ MB が必要ですが、iOS の Safari は約 %3$@ MB を超えるコンテンツブロッカーを読み込めません。これは Safari の制限で、wBlock の不具合ではありません。下のリストのいくつかをオフにしてもう一度お試しください。";
-"Too many lists are on. %1$@ of wBlock's %2$@ content blockers are over Safari's limit, even with the lists spread across all of them. The fullest, %3$@, needs %4$@ MB, and Safari on iOS fails to load a content blocker over about %5$@ MB. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "オンにしているリストが多すぎます。リストはすべてのコンテンツブロッカーに分けていますが、wBlock の %2$@ 個のコンテンツブロッカーのうち %1$@ 個が Safari の上限を超えています。最も大きい %3$@ は %4$@ MB が必要ですが、iOS の Safari は約 %5$@ MB を超えるコンテンツブロッカーを読み込めません。これは Safari の制限で、wBlock の不具合ではありません。下のリストのいくつかをオフにしてもう一度お試しください。";
-"Too many lists are on for %1$@. They need %2$@ rules, and Safari allows %3$@ per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "%1$@ でオンにしているリストが多すぎます。%2$@ 件のルールが必要ですが、Safari が 1 つのコンテンツブロッカーに許可するのは %3$@ 件までです。これは Safari の制限で、wBlock の不具合ではありません。下のリストのいくつかをオフにしてもう一度お試しください。";
+"The current allocation for %1$@ needs %2$@ MB. wBlock's size budget is %3$@ MB per content blocker on this version of iOS. Turn off some lists below and try again." = "%1$@ の現在の割り当てには %2$@ MB が必要です。このバージョンの iOS では、wBlock のサイズ予算はコンテンツブロッカーごとに %3$@ MB です。以下のリストをいくつかオフにして、もう一度お試しください。";
+"The current allocation exceeds wBlock's size budget in %1$@ of %2$@ content blockers. The largest, %3$@, needs %4$@ MB; the budget is %5$@ MB per blocker on this version of iOS. Turn off some lists below and try again." = "現在の割り当ては、%1$@ 個のコンテンツブロッカー（全 %2$@ 個）で wBlock のサイズ予算を超えています。最大の %3$@ には %4$@ MB が必要です。このバージョンの iOS では、予算はブロッカーごとに %5$@ MB です。以下のリストをいくつかオフにして、もう一度お試しください。";
+"The current allocation for %1$@ needs %2$@ rules. Safari allows %3$@ per content blocker. Turn off some lists below and try again." = "%1$@ の現在の割り当てには %2$@ 件のルールが必要です。Safari ではコンテンツブロッカーごとに %3$@ 件まで許可されています。以下のリストをいくつかオフにして、もう一度お試しください。";
 "Turning it off is enough. The largest blocker would be %@ MB." = "これをオフにすれば足ります。最大のブロッカーは %@ MB になります。";
 "Turning it off isn't enough. The largest blocker would be %@ MB." = "これをオフにするだけでは足りません。最大のブロッカーは %@ MB になります。";
 "Turning it off is enough. The largest blocker would have %@ rules." = "これをオフにすれば足ります。最大のブロッカーは %@ 件のルールになります。";
 "Turning it off isn't enough. The largest blocker would have %@ rules." = "これをオフにするだけでは足りません。最大のブロッカーは %@ 件のルールになります。";
-"Size: %@ MB" = "サイズ: %@ MB";
-"Size: %@ rules" = "サイズ: %@ 件のルール";
+"Across all blockers: %@ MB" = "すべてのブロッカーの合計：%@ MB";
+"Across all blockers: %@ rules" = "すべてのブロッカーの合計：%@ 件のルール";
 "Turn Off" = "オフにする";
 "Turn off %@ and apply" = "%@ をオフにして適用";
 

@@ -984,15 +984,15 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "Egyéni URL";
 
-"Too many lists are on for %1$@. They need %2$@ MB, and Safari on iOS fails to load a content blocker over about %3$@ MB. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "Túl sok lista van bekapcsolva ehhez: %1$@. %2$@ MB-ot igényelnek, és az iOS-es Safari nem tud betölteni nagyjából %3$@ MB-nál nagyobb tartalomblokkolót. Ez a Safari korlátja, nem a wBlock hibája. Kapcsolj ki néhányat az alábbi listák közül, és próbáld újra.";
-"Too many lists are on. %1$@ of wBlock's %2$@ content blockers are over Safari's limit, even with the lists spread across all of them. The fullest, %3$@, needs %4$@ MB, and Safari on iOS fails to load a content blocker over about %5$@ MB. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "Túl sok lista van bekapcsolva. A wBlock %2$@ tartalomblokkolójából %1$@ túllépi a Safari korlátját, pedig a listák mindegyik között el vannak osztva. A legteljesebb, %3$@, %4$@ MB-ot igényel, és az iOS-es Safari nem tud betölteni nagyjából %5$@ MB-nál nagyobb tartalomblokkolót. Ez a Safari korlátja, nem a wBlock hibája. Kapcsolj ki néhányat az alábbi listák közül, és próbáld újra.";
-"Too many lists are on for %1$@. They need %2$@ rules, and Safari allows %3$@ per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "Túl sok lista van bekapcsolva ehhez: %1$@. %2$@ szabályt igényelnek, a Safari tartalomblokkolónként %3$@ szabályt enged. Ez a Safari korlátja, nem a wBlock hibája. Kapcsolj ki néhányat az alábbi listák közül, és próbáld újra.";
+"The current allocation for %1$@ needs %2$@ MB. wBlock's size budget is %3$@ MB per content blocker on this version of iOS. Turn off some lists below and try again." = "A(z) %1$@ jelenlegi kiosztása %2$@ MB-ot igényel. Az iOS ezen verzióján a wBlock méretkerete tartalomblokkolónként %3$@ MB. Kapcsoljon ki néhány alábbi listát, és próbálja újra.";
+"The current allocation exceeds wBlock's size budget in %1$@ of %2$@ content blockers. The largest, %3$@, needs %4$@ MB; the budget is %5$@ MB per blocker on this version of iOS. Turn off some lists below and try again." = "A jelenlegi kiosztás %1$@ tartalomblokkolónál lépi túl a wBlock méretkeretét az összesen %2$@ közül. A legnagyobb, %3$@, %4$@ MB-ot igényel; az iOS ezen verzióján a keret blokkolónként %5$@ MB. Kapcsoljon ki néhány alábbi listát, és próbálja újra.";
+"The current allocation for %1$@ needs %2$@ rules. Safari allows %3$@ per content blocker. Turn off some lists below and try again." = "A(z) %1$@ jelenlegi kiosztása %2$@ szabályt igényel. A Safari tartalomblokkolónként %3$@ szabályt engedélyez. Kapcsoljon ki néhány alábbi listát, és próbálja újra.";
 "Turning it off is enough. The largest blocker would be %@ MB." = "A kikapcsolása elég. A legnagyobb blokkoló %@ MB lenne.";
 "Turning it off isn't enough. The largest blocker would be %@ MB." = "A kikapcsolása nem elég. A legnagyobb blokkoló %@ MB lenne.";
 "Turning it off is enough. The largest blocker would have %@ rules." = "A kikapcsolása elég. A legnagyobb blokkolóban %@ szabály lenne.";
 "Turning it off isn't enough. The largest blocker would have %@ rules." = "A kikapcsolása nem elég. A legnagyobb blokkolóban %@ szabály lenne.";
-"Size: %@ MB" = "Méret: %@ MB";
-"Size: %@ rules" = "Méret: %@ szabály";
+"Across all blockers: %@ MB" = "Az összes blokkolóban összesen: %@ MB";
+"Across all blockers: %@ rules" = "Az összes blokkolóban összesen: %@ szabály";
 "Turn Off" = "Kikapcsolás";
 "Turn off %@ and apply" = "%@ kikapcsolása és alkalmazás";
 

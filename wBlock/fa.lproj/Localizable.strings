@@ -993,15 +993,15 @@ To re-enable these filters, disable other large filters and apply changes again.
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "نشانی سفارشی";
 
-"Too many lists are on for %1$@. They need %2$@ MB, and Safari on iOS fails to load a content blocker over about %3$@ MB. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "فهرست‌های زیادی برای %1$@ روشن است. آن‌ها به %2$@ مگابایت نیاز دارند، و Safari در iOS نمی‌تواند مسدودکننده محتوای بزرگ‌تر از حدود %3$@ مگابایت را بارگیری کند. این محدودیت Safari است، نه اشکال wBlock. برخی از فهرست‌های زیر را خاموش کنید و دوباره امتحان کنید.";
-"Too many lists are on. %1$@ of wBlock's %2$@ content blockers are over Safari's limit, even with the lists spread across all of them. The fullest, %3$@, needs %4$@ MB, and Safari on iOS fails to load a content blocker over about %5$@ MB. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "فهرست‌های زیادی روشن است. %1$@ از %2$@ مسدودکننده محتوای wBlock از محدودیت Safari بزرگ‌ترند، با اینکه فهرست‌ها میان همه آن‌ها پخش شده‌اند. پرترین آن‌ها، %3$@، به %4$@ مگابایت نیاز دارد، و Safari در iOS نمی‌تواند مسدودکننده محتوای بزرگ‌تر از حدود %5$@ مگابایت را بارگیری کند. این محدودیت Safari است، نه اشکال wBlock. برخی از فهرست‌های زیر را خاموش کنید و دوباره امتحان کنید.";
-"Too many lists are on for %1$@. They need %2$@ rules, and Safari allows %3$@ per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "فهرست‌های زیادی برای %1$@ روشن است. آن‌ها به %2$@ قانون نیاز دارند، اما Safari برای هر مسدودکننده محتوا %3$@ قانون اجازه می‌دهد. این محدودیت Safari است، نه اشکال wBlock. برخی از فهرست‌های زیر را خاموش کنید و دوباره امتحان کنید.";
+"The current allocation for %1$@ needs %2$@ MB. wBlock's size budget is %3$@ MB per content blocker on this version of iOS. Turn off some lists below and try again." = "تخصیص فعلی برای %1$@ به %2$@ MB نیاز دارد. بودجهٔ حجم wBlock در این نسخه از iOS برای هر مسدودکنندهٔ محتوا %3$@ MB است. برخی از فهرست‌های زیر را غیرفعال کنید و دوباره تلاش کنید.";
+"The current allocation exceeds wBlock's size budget in %1$@ of %2$@ content blockers. The largest, %3$@, needs %4$@ MB; the budget is %5$@ MB per blocker on this version of iOS. Turn off some lists below and try again." = "تخصیص فعلی در %1$@ مورد از %2$@ مسدودکنندهٔ محتوا از بودجهٔ حجم wBlock فراتر می‌رود. بزرگ‌ترین مورد، %3$@، به %4$@ MB نیاز دارد؛ بودجه در این نسخه از iOS برای هر مسدودکننده %5$@ MB است. برخی از فهرست‌های زیر را غیرفعال کنید و دوباره تلاش کنید.";
+"The current allocation for %1$@ needs %2$@ rules. Safari allows %3$@ per content blocker. Turn off some lists below and try again." = "تخصیص فعلی برای %1$@ به %2$@ قانون نیاز دارد. Safari برای هر مسدودکنندهٔ محتوا %3$@ قانون اجازه می‌دهد. برخی از فهرست‌های زیر را غیرفعال کنید و دوباره تلاش کنید.";
 "Turning it off is enough. The largest blocker would be %@ MB." = "خاموش کردن آن کافی است. بزرگ‌ترین مسدودکننده %@ مگابایت می‌شود.";
 "Turning it off isn't enough. The largest blocker would be %@ MB." = "خاموش کردن آن کافی نیست. بزرگ‌ترین مسدودکننده %@ مگابایت می‌شود.";
 "Turning it off is enough. The largest blocker would have %@ rules." = "خاموش کردن آن کافی است. بزرگ‌ترین مسدودکننده %@ قانون خواهد داشت.";
 "Turning it off isn't enough. The largest blocker would have %@ rules." = "خاموش کردن آن کافی نیست. بزرگ‌ترین مسدودکننده %@ قانون خواهد داشت.";
-"Size: %@ MB" = "اندازه: %@ مگابایت";
-"Size: %@ rules" = "اندازه: %@ قانون";
+"Across all blockers: %@ MB" = "در مجموعِ همهٔ مسدودکننده‌ها: %@ MB";
+"Across all blockers: %@ rules" = "در مجموعِ همهٔ مسدودکننده‌ها: %@ قانون";
 "Turn Off" = "خاموش کردن";
 "Turn off %@ and apply" = "خاموش کردن %@ و اعمال";
 

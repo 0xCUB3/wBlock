@@ -124,11 +124,8 @@ extension AppFilterManager {
         }
     }
 
-    /// Safari refuses a content blocker past its rule or size limit. The counts
-    /// are the compiled blocker's own, so the message names what is really full.
-    /// `blockersOver` of `blockerCount` blockers are over the limit and
-    /// `target` is the fullest. With more than one over, the message says so:
-    /// naming one blocker read as if the others had room left.
+    /// Reports the compiled allocation, distinguishing Safari's rule-count cap
+    /// from wBlock's loader byte budget. `target` is the fullest blocker.
     private static func overLimitStatus(
         _ target: ContentBlockerTargetInfo,
         needed: String, allowed: String, inMegabytes: Bool,
@@ -136,17 +133,17 @@ extension AppFilterManager {
     ) -> String {
         if inMegabytes, blockersOver > 1 {
             return LocalizedStrings.format(
-                "Too many lists are on. %1$@ of wBlock's %2$@ content blockers are over Safari's limit, even with the lists spread across all of them. The fullest, %3$@, needs %4$@ MB, and Safari on iOS fails to load a content blocker over about %5$@ MB. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again.",
-                comment: "Apply failed: several content blockers are over Safari's size limit",
+                "The current allocation exceeds wBlock's size budget in %1$@ of %2$@ content blockers. The largest, %3$@, needs %4$@ MB; the budget is %5$@ MB per blocker on this version of iOS. Turn off some lists below and try again.",
+                comment: "Apply failed: several allocations exceed the loader size budget",
                 blockersOver.formatted(), blockerCount.formatted(), target.displayName, needed, allowed)
         }
         return inMegabytes
             ? LocalizedStrings.format(
-                "Too many lists are on for %1$@. They need %2$@ MB, and Safari on iOS fails to load a content blocker over about %3$@ MB. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again.",
-                comment: "Apply failed: a content blocker is over Safari's size limit",
+                "The current allocation for %1$@ needs %2$@ MB. wBlock's size budget is %3$@ MB per content blocker on this version of iOS. Turn off some lists below and try again.",
+                comment: "Apply failed: an allocation exceeds the loader size budget",
                 target.displayName, needed, allowed)
             : LocalizedStrings.format(
-                "Too many lists are on for %1$@. They need %2$@ rules, and Safari allows %3$@ per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again.",
+                "The current allocation for %1$@ needs %2$@ rules. Safari allows %3$@ per content blocker. Turn off some lists below and try again.",
                 comment: "Apply failed: a content blocker is over Safari's rule limit",
                 target.displayName, needed, allowed)
     }
@@ -155,15 +152,15 @@ extension AppFilterManager {
         (Double(bytes) / 1_000_000).formatted(.number.precision(.fractionLength(0...1)).locale(.appCurrent))
     }
 
-    /// Lists the full blocker's lists in the failure sheet, then measures in
-    /// the background each one's own size and what every blocker comes to once
-    /// it is off. Rows fill in as results arrive; the next apply cancels it.
+    /// Measures each selected list across the shared blocker pool and previews
+    /// removing it. Rows fill in as results arrive; the next apply cancels it.
     private func showListRemovalPreviews(
-        over target: ContentBlockerTargetInfo, inMegabytes: Bool,
-        filtersByTarget: [ContentBlockerTargetInfo: [FilterList]], selected: [FilterList],
+        inMegabytes: Bool, selected: [FilterList],
         targets: [ContentBlockerTargetInfo], disabledSites: [String], zapperRulesText: String?
     ) async {
-        let candidates = (filtersByTarget[target] ?? []).sorted { ($0.sourceRuleCount ?? 0) > ($1.sourceRuleCount ?? 0) }
+        // The engine can route any selected list into the full blocker, not
+        // just the lists in the earlier category-based mapping.
+        let candidates = selected.sorted { ($0.sourceRuleCount ?? 0) > ($1.sourceRuleCount ?? 0) }
         let model = applyProgressViewModel
         let amount: (Int, Int) -> String = { bytes, rules in inMegabytes ? Self.megabytes(bytes) : rules.formatted() }
         await MainActor.run {
@@ -181,8 +178,8 @@ extension AppFilterManager {
                 ) { id, bytes, rules in
                     sizes[id] = inMegabytes ? bytes : rules
                     let text = inMegabytes
-                        ? LocalizedStrings.format("Size: %@ MB", comment: "Over-limit fix row: the list's own size", amount(bytes, rules))
-                        : LocalizedStrings.format("Size: %@ rules", comment: "Over-limit fix row: the list's own size", amount(bytes, rules))
+                        ? LocalizedStrings.format("Across all blockers: %@ MB", comment: "Over-limit fix row: generated JSON size across all blockers", amount(bytes, rules))
+                        : LocalizedStrings.format("Across all blockers: %@ rules", comment: "Over-limit fix row: emitted rules across all blockers", amount(bytes, rules))
                     Task { @MainActor in model.updateLimitFix(id) { $0.size = text } }
                 }
                 // Biggest first, then measure what turning each one off gives.
@@ -771,7 +768,6 @@ extension AppFilterManager {
         }
         var conversionCompletions: [ContentBlockerTargetInfo: SharedAutoUpdateManager.TargetCompilationResult] = [:]
         var overLimitStatus: String?
-        var overLimitTarget: ContentBlockerTargetInfo?
         var appliedSourceRuleCountsByFilterID: [UUID: Int] = [:]
 
         _ = await SharedAutoUpdateManager.compileTargets(compilationRequests, interactive: true) { completion in
@@ -804,7 +800,6 @@ extension AppFilterManager {
                         allowed: ruleLimit.formatted(), inMegabytes: false
                     )
                     overLimitStatus = overLimitStatus ?? status
-                    overLimitTarget = overLimitTarget ?? targetInfo
                     self.statusDescription = status
                 } else if ruleCountForThisTarget >= warningThreshold {
                     self.extensionsApproachingLimit.insert(targetInfo.bundleIdentifier)
@@ -861,10 +856,9 @@ extension AppFilterManager {
                     )
                 }
             )
-            if let fullest {
+            if fullest != nil {
                 await showListRemovalPreviews(
-                    over: fullest.target, inMegabytes: true, filtersByTarget: filtersByTargetInfo,
-                    selected: allSelectedFilters, targets: platformTargets,
+                    inMegabytes: true, selected: allSelectedFilters, targets: platformTargets,
                     disabledSites: disabledSites, zapperRulesText: generatedZapperRulesText
                 )
             }
@@ -946,13 +940,10 @@ extension AppFilterManager {
                 metadata: ["truncatedRules": "\(totalTruncatedRules)", "ruleLimit": "\(ruleLimit)"],
                 statusMessage: overLimitStatus
             )
-            if let overLimitTarget {
-                await showListRemovalPreviews(
-                    over: overLimitTarget, inMegabytes: false, filtersByTarget: filtersByTargetInfo,
-                    selected: allSelectedFilters, targets: platformTargets,
-                    disabledSites: disabledSites, zapperRulesText: generatedZapperRulesText
-                )
-            }
+            await showListRemovalPreviews(
+                inMegabytes: false, selected: allSelectedFilters, targets: platformTargets,
+                disabledSites: disabledSites, zapperRulesText: generatedZapperRulesText
+            )
             return
         }
 

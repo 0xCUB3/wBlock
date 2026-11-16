@@ -993,15 +993,15 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "Özel URL";
 
-"Too many lists are on for %1$@. They need %2$@ MB, and Safari on iOS fails to load a content blocker over about %3$@ MB. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "%1$@ için çok fazla liste açık. %2$@ MB gerekiyor ve iOS’taki Safari yaklaşık %3$@ MB’ın üzerindeki bir içerik engelleyiciyi yükleyemiyor. Bu bir Safari sınırıdır, wBlock hatası değildir. Aşağıdaki listelerden bazılarını kapatıp yeniden deneyin.";
-"Too many lists are on. %1$@ of wBlock's %2$@ content blockers are over Safari's limit, even with the lists spread across all of them. The fullest, %3$@, needs %4$@ MB, and Safari on iOS fails to load a content blocker over about %5$@ MB. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "Çok fazla liste açık. Listeler hepsine dağıtılmış olsa da wBlock’un %2$@ içerik engelleyicisinden %1$@ tanesi Safari sınırını aşıyor. En dolu olan %3$@ için %4$@ MB gerekiyor ve iOS’taki Safari yaklaşık %5$@ MB’ın üzerindeki bir içerik engelleyiciyi yükleyemiyor. Bu bir Safari sınırıdır, wBlock hatası değildir. Aşağıdaki listelerden bazılarını kapatıp yeniden deneyin.";
-"Too many lists are on for %1$@. They need %2$@ rules, and Safari allows %3$@ per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "%1$@ için çok fazla liste açık. %2$@ kural gerekiyor, Safari ise içerik engelleyici başına %3$@ kurala izin veriyor. Bu bir Safari sınırıdır, wBlock hatası değildir. Aşağıdaki listelerden bazılarını kapatıp yeniden deneyin.";
+"The current allocation for %1$@ needs %2$@ MB. wBlock's size budget is %3$@ MB per content blocker on this version of iOS. Turn off some lists below and try again." = "%1$@ için mevcut dağılım %2$@ MB gerektiriyor. Bu iOS sürümünde wBlock’un boyut bütçesi içerik engelleyici başına %3$@ MB’tır. Aşağıdaki listelerden bazılarını kapatıp tekrar deneyin.";
+"The current allocation exceeds wBlock's size budget in %1$@ of %2$@ content blockers. The largest, %3$@, needs %4$@ MB; the budget is %5$@ MB per blocker on this version of iOS. Turn off some lists below and try again." = "Mevcut dağılım, %1$@ içerik engelleyicide (toplam %2$@) wBlock’un boyut bütçesini aşıyor. En büyüğü olan %3$@, %4$@ MB gerektiriyor; bu iOS sürümünde bütçe engelleyici başına %5$@ MB’tır. Aşağıdaki listelerden bazılarını kapatıp tekrar deneyin.";
+"The current allocation for %1$@ needs %2$@ rules. Safari allows %3$@ per content blocker. Turn off some lists below and try again." = "%1$@ için mevcut dağılım %2$@ kural gerektiriyor. Safari, içerik engelleyici başına %3$@ kurala izin veriyor. Aşağıdaki listelerden bazılarını kapatıp tekrar deneyin.";
 "Turning it off is enough. The largest blocker would be %@ MB." = "Kapatmak yeterli. En büyük engelleyici %@ MB olur.";
 "Turning it off isn't enough. The largest blocker would be %@ MB." = "Kapatmak yeterli değil. En büyük engelleyici %@ MB olur.";
 "Turning it off is enough. The largest blocker would have %@ rules." = "Kapatmak yeterli. En büyük engelleyicide %@ kural olur.";
 "Turning it off isn't enough. The largest blocker would have %@ rules." = "Kapatmak yeterli değil. En büyük engelleyicide %@ kural olur.";
-"Size: %@ MB" = "Boyut: %@ MB";
-"Size: %@ rules" = "Boyut: %@ kural";
+"Across all blockers: %@ MB" = "Tüm engelleyiciler toplamı: %@ MB";
+"Across all blockers: %@ rules" = "Tüm engelleyiciler toplamı: %@ kural";
 "Turn Off" = "Kapat";
 "Turn off %@ and apply" = "%@ listesini kapat ve uygula";
 

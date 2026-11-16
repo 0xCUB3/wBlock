@@ -984,15 +984,15 @@ To re-enable these filters, disable other large filters and apply changes again.
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "自定义 URL";
 
-"Too many lists are on for %1$@. They need %2$@ MB, and Safari on iOS fails to load a content blocker over about %3$@ MB. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "%1$@ 开启的列表太多。它们需要 %2$@ MB，而 iOS 上的 Safari 无法加载超过约 %3$@ MB 的内容拦截器。这是 Safari 的限制，不是 wBlock 的错误。请关闭下面的部分列表后重试。";
-"Too many lists are on. %1$@ of wBlock's %2$@ content blockers are over Safari's limit, even with the lists spread across all of them. The fullest, %3$@, needs %4$@ MB, and Safari on iOS fails to load a content blocker over about %5$@ MB. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "开启的列表太多。即使列表已分布到全部内容拦截器，wBlock 的 %2$@ 个内容拦截器中仍有 %1$@ 个超出 Safari 的限制。最满的 %3$@ 需要 %4$@ MB，而 iOS 上的 Safari 无法加载超过约 %5$@ MB 的内容拦截器。这是 Safari 的限制，不是 wBlock 的错误。请关闭下面的部分列表后重试。";
-"Too many lists are on for %1$@. They need %2$@ rules, and Safari allows %3$@ per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "%1$@ 开启的列表太多。它们需要 %2$@ 条规则，而 Safari 每个内容拦截器最多允许 %3$@ 条。这是 Safari 的限制，不是 wBlock 的错误。请关闭下面的部分列表后重试。";
+"The current allocation for %1$@ needs %2$@ MB. wBlock's size budget is %3$@ MB per content blocker on this version of iOS. Turn off some lists below and try again." = "%1$@ 的当前分配需要 %2$@ MB。在此 iOS 版本上，wBlock 为每个内容拦截器设置的大小预算为 %3$@ MB。请关闭下方的部分列表，然后重试。";
+"The current allocation exceeds wBlock's size budget in %1$@ of %2$@ content blockers. The largest, %3$@, needs %4$@ MB; the budget is %5$@ MB per blocker on this version of iOS. Turn off some lists below and try again." = "当前分配在 %1$@ 个内容拦截器（共 %2$@ 个）上超出了 wBlock 的大小预算。最大的 %3$@ 需要 %4$@ MB；在此 iOS 版本上，每个拦截器的预算为 %5$@ MB。请关闭下方的部分列表，然后重试。";
+"The current allocation for %1$@ needs %2$@ rules. Safari allows %3$@ per content blocker. Turn off some lists below and try again." = "%1$@ 的当前分配需要 %2$@ 条规则。Safari 允许每个内容拦截器最多包含 %3$@ 条规则。请关闭下方的部分列表，然后重试。";
 "Turning it off is enough. The largest blocker would be %@ MB." = "关闭它就够了。最大的拦截器将为 %@ MB。";
 "Turning it off isn't enough. The largest blocker would be %@ MB." = "仅关闭它还不够。最大的拦截器将为 %@ MB。";
 "Turning it off is enough. The largest blocker would have %@ rules." = "关闭它就够了。最大的拦截器将有 %@ 条规则。";
 "Turning it off isn't enough. The largest blocker would have %@ rules." = "仅关闭它还不够。最大的拦截器将有 %@ 条规则。";
-"Size: %@ MB" = "大小：%@ MB";
-"Size: %@ rules" = "大小：%@ 条规则";
+"Across all blockers: %@ MB" = "所有拦截器合计：%@ MB";
+"Across all blockers: %@ rules" = "所有拦截器合计：%@ 条规则";
 "Turn Off" = "关闭";
 "Turn off %@ and apply" = "关闭 %@ 并应用";
 

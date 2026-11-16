@@ -51,6 +51,7 @@ fn plan_cmd(args: &[String]) {
     }
     let start = Instant::now();
     let plan = Plan::new(request);
+    plan.check_capacity().unwrap_or_else(|error| panic!("{error}"));
     let plan_ms = start.elapsed().as_secs_f64() * 1000.0;
     for target in 0..plan.target_count() {
         let start = Instant::now();

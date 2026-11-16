@@ -984,15 +984,15 @@ To re-enable these filters, disable other large filters and apply changes again.
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "사용자 지정 URL";
 
-"Too many lists are on for %1$@. They need %2$@ MB, and Safari on iOS fails to load a content blocker over about %3$@ MB. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "%1$@에 켜진 목록이 너무 많습니다. %2$@MB가 필요하지만 iOS의 Safari는 약 %3$@MB가 넘는 콘텐츠 차단기를 불러오지 못합니다. 이는 Safari의 제한이며 wBlock의 버그가 아닙니다. 아래 목록 중 일부를 끄고 다시 시도하세요.";
-"Too many lists are on. %1$@ of wBlock's %2$@ content blockers are over Safari's limit, even with the lists spread across all of them. The fullest, %3$@, needs %4$@ MB, and Safari on iOS fails to load a content blocker over about %5$@ MB. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "켜진 목록이 너무 많습니다. 목록을 모든 콘텐츠 차단기에 나눠 담았지만 wBlock의 콘텐츠 차단기 %2$@개 중 %1$@개가 Safari의 제한을 넘습니다. 가장 큰 %3$@에는 %4$@MB가 필요하지만 iOS의 Safari는 약 %5$@MB가 넘는 콘텐츠 차단기를 불러오지 못합니다. 이는 Safari의 제한이며 wBlock의 버그가 아닙니다. 아래 목록 중 일부를 끄고 다시 시도하세요.";
-"Too many lists are on for %1$@. They need %2$@ rules, and Safari allows %3$@ per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "%1$@에 켜진 목록이 너무 많습니다. 규칙 %2$@개가 필요하지만 Safari는 콘텐츠 차단기 하나에 %3$@개까지 허용합니다. 이는 Safari의 제한이며 wBlock의 버그가 아닙니다. 아래 목록 중 일부를 끄고 다시 시도하세요.";
+"The current allocation for %1$@ needs %2$@ MB. wBlock's size budget is %3$@ MB per content blocker on this version of iOS. Turn off some lists below and try again." = "%1$@의 현재 할당에는 %2$@ MB가 필요합니다. 이 iOS 버전에서 wBlock의 크기 예산은 콘텐츠 차단기당 %3$@ MB입니다. 아래 목록 중 일부를 끄고 다시 시도하세요.";
+"The current allocation exceeds wBlock's size budget in %1$@ of %2$@ content blockers. The largest, %3$@, needs %4$@ MB; the budget is %5$@ MB per blocker on this version of iOS. Turn off some lists below and try again." = "현재 할당이 콘텐츠 차단기 %1$@개(전체 %2$@개)에서 wBlock의 크기 예산을 초과합니다. 가장 큰 %3$@에는 %4$@ MB가 필요하며, 이 iOS 버전의 예산은 차단기당 %5$@ MB입니다. 아래 목록 중 일부를 끄고 다시 시도하세요.";
+"The current allocation for %1$@ needs %2$@ rules. Safari allows %3$@ per content blocker. Turn off some lists below and try again." = "%1$@의 현재 할당에는 규칙 %2$@개가 필요합니다. Safari는 콘텐츠 차단기당 %3$@개를 허용합니다. 아래 목록 중 일부를 끄고 다시 시도하세요.";
 "Turning it off is enough. The largest blocker would be %@ MB." = "이 목록을 끄면 충분합니다. 가장 큰 차단기는 %@MB가 됩니다.";
 "Turning it off isn't enough. The largest blocker would be %@ MB." = "이 목록을 끄는 것만으로는 부족합니다. 가장 큰 차단기는 %@MB가 됩니다.";
 "Turning it off is enough. The largest blocker would have %@ rules." = "이 목록을 끄면 충분합니다. 가장 큰 차단기의 규칙은 %@개가 됩니다.";
 "Turning it off isn't enough. The largest blocker would have %@ rules." = "이 목록을 끄는 것만으로는 부족합니다. 가장 큰 차단기의 규칙은 %@개가 됩니다.";
-"Size: %@ MB" = "크기: %@MB";
-"Size: %@ rules" = "크기: 규칙 %@개";
+"Across all blockers: %@ MB" = "모든 차단기 합계: %@ MB";
+"Across all blockers: %@ rules" = "모든 차단기 합계: 규칙 %@개";
 "Turn Off" = "끄기";
 "Turn off %@ and apply" = "%@ 끄고 적용";
 

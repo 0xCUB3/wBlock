@@ -1,5 +1,5 @@
 import Foundation
-import wBlockCoreService
+@testable import wBlockCoreService
 
 @main
 struct SafariRuleLimitCapTests {
@@ -9,6 +9,17 @@ struct SafariRuleLimitCapTests {
             150_000,
             "Safari per-extension limit must stay at 150,000"
         )
+
+        for sites in [[], [" Example.com ", "EXAMPLE.com", "other.example", "not a host"]] {
+            let reserved = ContentBlockerService.finalizeContentBlockerJSON(
+                baseJSON: Data("[]".utf8), disabledSites: sites, knownBaseCount: 0, ruleLimit: .max)
+            let limits = ContentBlockerService.nativePlanLimits(disabledSites: sites)
+            expectEqual(limits.rules + reserved.ruleCount, ContentBlockerService.safariContentBlockerRuleLimit,
+                        "planning reserves exactly the normalized site-exception rule count")
+            expectEqual(limits.bytes + (reserved.ruleCount == 0 ? 0 : reserved.json.count - 1),
+                        ContentBlockerService.safariContentBlockerJSONSizeLimit,
+                        "planning reserves the serialized exceptions and join comma")
+        }
 
         let threeRuleJSON = compactJSON([
             blockRule("a"),

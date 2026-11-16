@@ -984,15 +984,15 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "RU AdList: Counters" = "RU AdList: Counters";
 "Custom URL" = "URL personalizzato";
 
-"Too many lists are on for %1$@. They need %2$@ MB, and Safari on iOS fails to load a content blocker over about %3$@ MB. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "Ci sono troppe liste attive per %1$@. Richiedono %2$@ MB, e Safari su iOS non riesce a caricare un blocco contenuti oltre circa %3$@ MB. È un limite di Safari, non un bug di wBlock. Disattiva alcune delle liste qui sotto e riprova.";
-"Too many lists are on. %1$@ of wBlock's %2$@ content blockers are over Safari's limit, even with the lists spread across all of them. The fullest, %3$@, needs %4$@ MB, and Safari on iOS fails to load a content blocker over about %5$@ MB. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "Ci sono troppe liste attive. %1$@ dei %2$@ blocchi contenuti di wBlock superano il limite di Safari, anche se le liste sono distribuite su tutti. Il più pieno, %3$@, richiede %4$@ MB, e Safari su iOS non riesce a caricare un blocco contenuti oltre circa %5$@ MB. È un limite di Safari, non un bug di wBlock. Disattiva alcune delle liste qui sotto e riprova.";
-"Too many lists are on for %1$@. They need %2$@ rules, and Safari allows %3$@ per content blocker. This is a Safari limit, not a wBlock bug. Turn off some of the lists below and try again." = "Ci sono troppe liste attive per %1$@. Richiedono %2$@ regole, ma Safari ne consente %3$@ per blocco contenuti. È un limite di Safari, non un bug di wBlock. Disattiva alcune delle liste qui sotto e riprova.";
+"The current allocation for %1$@ needs %2$@ MB. wBlock's size budget is %3$@ MB per content blocker on this version of iOS. Turn off some lists below and try again." = "L’allocazione attuale per %1$@ richiede %2$@ MB. Il budget di dimensione di wBlock è di %3$@ MB per blocco dei contenuti su questa versione di iOS. Disattiva alcuni elenchi qui sotto e riprova.";
+"The current allocation exceeds wBlock's size budget in %1$@ of %2$@ content blockers. The largest, %3$@, needs %4$@ MB; the budget is %5$@ MB per blocker on this version of iOS. Turn off some lists below and try again." = "L’allocazione attuale supera il budget di dimensione di wBlock in %1$@ dei %2$@ blocchi dei contenuti. Il più grande, %3$@, richiede %4$@ MB; il budget è di %5$@ MB per blocco su questa versione di iOS. Disattiva alcuni elenchi qui sotto e riprova.";
+"The current allocation for %1$@ needs %2$@ rules. Safari allows %3$@ per content blocker. Turn off some lists below and try again." = "L’allocazione attuale per %1$@ richiede %2$@ regole. Safari ne consente %3$@ per blocco dei contenuti. Disattiva alcuni elenchi qui sotto e riprova.";
 "Turning it off is enough. The largest blocker would be %@ MB." = "Disattivarla basta. Il blocco più grande sarebbe di %@ MB.";
 "Turning it off isn't enough. The largest blocker would be %@ MB." = "Disattivarla non basta. Il blocco più grande sarebbe di %@ MB.";
 "Turning it off is enough. The largest blocker would have %@ rules." = "Disattivarla basta. Il blocco più grande avrebbe %@ regole.";
 "Turning it off isn't enough. The largest blocker would have %@ rules." = "Disattivarla non basta. Il blocco più grande avrebbe %@ regole.";
-"Size: %@ MB" = "Dimensione: %@ MB";
-"Size: %@ rules" = "Dimensione: %@ regole";
+"Across all blockers: %@ MB" = "Totale di tutti i blocchi: %@ MB";
+"Across all blockers: %@ rules" = "Totale di tutti i blocchi: %@ regole";
 "Turn Off" = "Disattiva";
 "Turn off %@ and apply" = "Disattiva %@ e applica";
 
