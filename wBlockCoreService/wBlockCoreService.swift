@@ -153,7 +153,9 @@ private struct StoredTargetSourceRuleProvenance: Codable {
     // 12: hide Pornhub's ad boxes, from AdGuard Base and Mobile Ads.
     // 13: restore mobile YouTube request timing and guard initial backoff recovery.
     // 14: keep Spotify FairPlay song segments out of media ad replacements.
-    public static let embeddedCompatibilityRulesVersion = "14"
+    // 15: swap Spotify ad tracks for a silent in-page stand-in.
+    // 16: let Spotify ad media play audibly when the in-page stand-in misses.
+    public static let embeddedCompatibilityRulesVersion = "16"
     /// The engine and Safari level outputs are compiled for; see SafariVersionDetection.
     public static var compilerIdentity: String { SafariVersionDetection.compilerIdentity }
     public static var upgradeSignature: String {
@@ -191,6 +193,19 @@ private struct StoredTargetSourceRuleProvenance: Codable {
 @@||scdn.co/audio/$media,domain=open.spotify.com
 @@||spotifycdn.com/audio/$media,domain=open.spotify.com
 @@||akamaized.net/audio/$media,domain=open.spotify.com
+
+! Spotify ad tracks load a silent stand-in in the page, so no ad request leaves the player.
+open.spotify.com#%#//scriptlet('trusted-spotify-ad-media')
+
+! If that stand-in misses, these ad hosts play audibly instead of stalling the player.
+! They are the uBO redirect and block targets for the same hosts, limited to media.
+@@||scdn.co/mp3-ad/$media,domain=open.spotify.com
+@@||scdn.co/mp3/$media,domain=open.spotify.com
+@@||adstudio-assets.scdn.co^$media,domain=open.spotify.com
+@@||amillionads.com^$media,domain=open.spotify.com
+@@||2mdn.net^$media,domain=open.spotify.com
+@@||adxcel.com^$media,domain=open.spotify.com
+@@||spotify.com/ad-logic/$media,domain=open.spotify.com
 
 ! Common synthetic ad bait paths
 /js/widget/ads.js$script

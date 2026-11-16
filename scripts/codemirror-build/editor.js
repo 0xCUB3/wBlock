@@ -92,7 +92,7 @@ function theme() {
     ".cm-search input": { backgroundColor: "var(--cm-input-background)", color: "var(--cm-foreground)", border: "1px solid var(--cm-border)", borderRadius: "8px", padding: "6px 8px" },
     ".cm-search button": { backgroundColor: "var(--cm-button-background)", color: "var(--cm-foreground)", border: "1px solid var(--cm-border)", borderRadius: "8px", padding: "6px 10px" },
     ".cm-search button:hover": { backgroundColor: "var(--cm-button-hover)" },
-    ".cm-wblock-match-count": { margin: "0 6px", color: "var(--cm-gutter-foreground)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" },
+    ".cm-wblock-match-count": { color: "var(--cm-gutter-foreground)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" },
     ".cm-panels": { backgroundColor: "var(--cm-panel-background)", color: "var(--cm-foreground)" },
     ".cm-matchingBracket": { backgroundColor: "var(--cm-bracket-match)", outline: "1px solid var(--cm-border)" },
   });
@@ -270,6 +270,13 @@ const matchCounter = ViewPlugin.fromClass(class {
       label = document.createElement("span");
       label.className = "cm-wblock-match-count";
       field.after(label);
+      // Previous and next wrap as one unit, so they never split across rows.
+      const next = editorView.dom.querySelector(".cm-search button[name=next]");
+      const prev = editorView.dom.querySelector(".cm-search button[name=prev]");
+      const pair = document.createElement("span");
+      pair.className = "cm-wblock-nav";
+      next.before(pair);
+      pair.append(next, prev);
     }
     const { state } = editorView;
     const query = getSearchQuery(state);

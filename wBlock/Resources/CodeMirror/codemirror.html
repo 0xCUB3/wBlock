@@ -138,6 +138,19 @@ input {
   height: 26px;
   padding: 0 8px !important;
 }
+/* The field gives up width before the row wraps, so the match count stays
+   beside it at phone widths. */
+.cm-panel.cm-search .cm-textfield {
+  flex: 1 1 0;
+  min-width: 76px;
+  max-width: 170px;
+}
+/* Previous and next wrap as one unit; see the match counter in the editor. */
+.cm-panel.cm-search .cm-wblock-nav {
+  display: inline-flex;
+  flex: none;
+  gap: 6px;
+}
 .cm-panel.cm-search label {
   display: inline-flex !important;
   align-items: center;

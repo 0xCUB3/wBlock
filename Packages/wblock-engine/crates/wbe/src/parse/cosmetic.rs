@@ -166,6 +166,7 @@ pub(crate) const SCRIPTLETS: &[(&str, &[&str])] = &[
     ("trusted-suppress-native-method", &[]),
     ("trusted-youtube-player-request", &[]),
     ("trusted-youtube-backoff-recovery", &[]),
+    ("trusted-spotify-ad-media", &[]),
     ("webrtc-if", &[]),
     ("window.name-defuser", &[]),
     ("xml-prune", &[]),

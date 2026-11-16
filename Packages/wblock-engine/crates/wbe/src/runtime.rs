@@ -1138,10 +1138,15 @@ example.com##+js(set-constant, adsEnabled, false)
         assert!(!page.generichide);
     }
 
+    /// The shipped compatibility rules, read from the Swift source they live in.
+    fn embedded_compatibility_rules() -> &'static str {
+        let source = include_str!("../../../../../wBlockCoreService/wBlockCoreService.swift");
+        source.split("static let embeddedCompatibilityRules = \"\"\"").nth(1).unwrap().split("\"\"").next().unwrap()
+    }
+
     #[test]
     fn embedded_mobile_youtube_request_rule_respects_exceptions() {
-        let source = include_str!("../../../../../wBlockCoreService/wBlockCoreService.swift");
-        let rules = source.split("private static let embeddedCompatibilityRules = \"\"\"").nth(1).unwrap().split("\"\"").next().unwrap();
+        let rules = embedded_compatibility_rules();
         let wanted = call(&["trusted-youtube-player-request"]);
         let opts = crate::CompileOptions { safari: crate::webkit::SafariVersion::new(18, 0) };
         let lookup = |exception: &str, url: &str| {
@@ -1161,6 +1166,17 @@ example.com##+js(set-constant, adsEnabled, false)
         for exception in ["m.youtube.com#@#+js()", "m.youtube.com#@#+js(trusted-youtube-player-request)", "@@||m.youtube.com^$document"] {
             assert!(!lookup(exception, url).scriptlets.contains(&wanted), "{exception}");
         }
+    }
+
+    #[test]
+    fn embedded_spotify_ad_media_rule_is_limited_to_spotify_web() {
+        let wanted = call(&["trusted-spotify-ad-media"]);
+        let output = crate::compile(&[crate::ListInput { text: embedded_compatibility_rules(), trusted: true }], &crate::CompileOptions {
+            safari: crate::webkit::SafariVersion::new(18, 0),
+        });
+        let engine = Engine::deserialize(&Engine::build(&output.runtime).serialize()).unwrap();
+        assert!(engine.lookup("https://open.spotify.com/").scriptlets.contains(&wanted));
+        assert!(!engine.lookup("https://example.com/").scriptlets.contains(&wanted));
     }
 
     #[test]

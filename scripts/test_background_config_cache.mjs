@@ -692,7 +692,7 @@ for (const message of [
   });
   const httpResponse = await httpState.onMessage({ type: "InitContentScript" }, topFrameSender(pageUrl));
   check("HTTP frame does not receive fallback payload", !(httpResponse && httpResponse.payload));
-  check("HTTP frame hides selectors one rule each", httpState.cssInserted.some(injection => injection.css === "#http-probe { display: none !important; }"));
+  check("HTTP frame hides selectors one rule each", httpState.cssInserted.some(injection => injection.css.split("\n").includes("#http-probe { display: none !important; }")));
   check("HTTP frame queues scriptlet calls in the MAIN world", httpState.executed.some(injection => injection.world === "MAIN" && typeof injection.func === "function" && injection.args[0] === scriptlets));
   check("HTTP frame injects each scriptlet file once in the MAIN world", JSON.stringify(httpState.executed.filter(injection => injection.world === "MAIN" && injection.files).flatMap(injection => injection.files)) === JSON.stringify(["scriptlets/set-constant.js", "scriptlets/abort-on-property-read.js"]));
   check("HTTP frame loads procedural.js into the ISOLATED world", httpState.executed.some(injection => injection.files && injection.files[0] === "procedural.js" && (injection.world === undefined || injection.world === "ISOLATED")));

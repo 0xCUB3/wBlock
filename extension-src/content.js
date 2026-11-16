@@ -128,6 +128,9 @@
       if (Array.isArray(response?.failedScriptlets)) scriptlets = response.failedScriptlets;
     }
   };
+  // Set once this frame's styles live in the page itself. Those survive a bfcache
+  // restore, so they must not be restored again.
+  let pageStyleApplied = false;
   const applyConfiguration = configuration => {
     try {
       const selectors = configuration.css || [];
@@ -138,6 +141,7 @@
         style.textContent = [...styles, ...selectors.map(selector => `${selector} { display: none !important; }`)].join('\n');
         (document.head || document.documentElement).appendChild(style);
         protectStyleElementContent(style);
+        pageStyleApplied = true;
       }
       if (configuration.procedural && configuration.procedural.length > 0) {
         window.wbeProcedural.apply(configuration.procedural.filter(rule => !/"type"\s*:\s*"matches-(?:prop|property)"/.test(rule)));
@@ -215,6 +219,33 @@
       applyConfiguration(response.payload);
     }
   };
+  /**
+   * WebKit drops the sheets the background inserted when a page leaves through a
+   * cross-site commit, so a bfcache restore comes back unstyled. Ask the background
+   * to insert them again. The background answers from native state, so a site
+   * disabled or paused while the page was cached stays unstyled.
+   */
+  let frameStylesRestore;
+  const frameStylesApplied = () => getComputedStyle(document.documentElement).getPropertyValue('--wblock-frame-styles').trim() !== '';
+  const restoreFrameStyles = () => {
+    if (!frameStylesRestore) {
+      frameStylesRestore = (async () => {
+        for (let attempt = 0; ; attempt += 1) {
+          if (pageStyleApplied || frameStylesApplied() || isCloudflareChallenge(true)) return;
+          const response = await browser.runtime.sendMessage({ action: 'wblock:restoreFrameStyles' })
+            .catch(error => ({ state: 'error', error: String(error && error.message ? error.message : error) }));
+          if (!(response && response.state === 'error') || attempt >= INIT_RETRY_DELAYS_MS.length) return;
+          await new Promise(resolve => setTimeout(resolve, INIT_RETRY_DELAYS_MS[attempt]));
+        }
+      })().finally(() => {
+        frameStylesRestore = undefined;
+      });
+    }
+    return frameStylesRestore;
+  };
+  window.addEventListener('pageshow', event => {
+    if (event.persisted) void restoreFrameStyles();
+  });
   // Execute the main function and catch any runtime errors.
   main().catch(error => {
     console.error(`[wBlock] Error in content script: ${(error && error.stack) || error}`);

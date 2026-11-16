@@ -138,18 +138,39 @@
    * @param configuration Payload from the native handler.
    * @returns Promise resolving to the scriptlets that still need injection.
    */
+  // Marks a frame whose page styles are all in place. WebKit drops inserted sheets
+  // when a page leaves through a cross-site commit; after a bfcache restore the
+  // content script reads this property to see whether they survived. The marker
+  // goes in last, only after every chunk succeeded, so it never stands for a
+  // partial set. !important keeps the page's ordinary rules from covering it. Keep
+  // the name in sync with content.js.
+  const FRAME_STYLES_MARKER = ':root { --wblock-frame-styles: 1 !important; }';
+  // Inserts the page's styles and hides into one frame, one chunk at a time. One
+  // rule per selector: a selector the engine rejects drops only itself. A failed
+  // chunk stops the set. Chunks already inserted stay, since they are correct
+  // hides, and the caller's retry adds the rest. Nothing is removed, so live CSS
+  // is never disturbed.
+  const insertFrameStyles = async (target, configuration) => {
+    const rules = [...(configuration.styles || []), ...(configuration.css || []).map(selector => `${selector} { display: none !important; }`)];
+    if (rules.length === 0) return { state: "empty" };
+    // The marker is the last rule, so it lands in the last chunk and only after
+    // every chunk before it succeeded. Chunks stay within CSS_RULES_PER_INSERT.
+    rules.push(FRAME_STYLES_MARKER);
+    try {
+      for (let i = 0; i < rules.length; i += CSS_RULES_PER_INSERT) {
+        await browser.scripting.insertCSS({ target, origin: 'USER', css: rules.slice(i, i + CSS_RULES_PER_INSERT).join('\n') });
+      }
+    } catch (error) {
+      if (isSkippedTarget(error)) return { state: "skipped" };
+      logError('[wBlock] Failed to insert styles in target', target, 'error', error);
+      return { state: "error", error: String(error && error.message ? error.message : error) };
+    }
+    return { state: "applied" };
+  };
   const applyConfiguration = (tabId, frameId, configuration) => {
     const target = { tabId, frameIds: [frameId] };
-    const selectors = configuration.css || [];
     const procedural = configuration.procedural || [];
-    const pending = [runScriptlets(target, configuration.scriptlets || [])];
-    // One stylesheet for the page's styles and hides, which include the hides
-    // scoped to its site. One rule per selector: a selector the engine
-    // rejects drops only itself.
-    const css = [...(configuration.styles || []), ...selectors.map(selector => `${selector} { display: none !important; }`)];
-    for (let i = 0; i < css.length; i += CSS_RULES_PER_INSERT) {
-      pending.push(browser.scripting.insertCSS({ target, origin: 'USER', css: css.slice(i, i + CSS_RULES_PER_INSERT).join('\n') }));
-    }
+    const pending = [runScriptlets(target, configuration.scriptlets || []), insertFrameStyles(target, configuration)];
     for (const world of ['ISOLATED', 'MAIN']) {
       const filters = procedural.filter(rule => /"type"\s*:\s*"matches-(?:prop|property)"/.test(rule) === (world === 'MAIN'));
       if (!filters.length) continue;
@@ -554,10 +575,12 @@
     pendingConfigurationRequests.set(key, requestPromise);
     return requestPromise;
   };
-  const getConfiguration = async (message, url, topUrl) => {
-    // An authoritative userscript reply is needed even when rules are cached.
-    // Carry both in one native request; cache only the configuration.
-    if (message.includeUserScripts) {
+  const getConfiguration = async (message, url, topUrl, authoritative = false) => {
+    // Userscript replies need a native answer even when rules are cached. Carry
+    // both in one native request; cache only the configuration. A bfcache restore
+    // takes the same path, so a page cached before a settings change does not
+    // bring back rules the change has already retired.
+    if (message.includeUserScripts || authoritative) {
       return { configuration: await requestConfiguration(message, url, topUrl), fromCache: false };
     }
     await configCacheHydration;
@@ -585,6 +608,112 @@
     disabled,
     paused
   });
+  const frameLookupMessage = (sender, includeUserScripts) => ({
+    type: MessageType.InitContentScript,
+    includeUserScripts,
+    url: sender.url,
+    isTopFrame: sender.frameId === 0,
+    includeContent: true,
+    maxInlineContentBytes: 512 * 1024
+  });
+  // Native configuration and site state for one frame. Page loads and bfcache
+  // restores both read through here so the state checks cannot drift apart.
+  const resolveFrameConfiguration = async (message, url, topUrl, authoritative = false) => {
+    let configurationResult;
+    try {
+      configurationResult = await getConfiguration(message, url, topUrl, authoritative);
+    } catch (error) {
+      const errorMessage = String(error && error.message ? error.message : error);
+      logError('[wBlock] Native configuration lookup failed for ', url, errorMessage);
+      return { error: errorMessage };
+    }
+    if (!configurationResult || !configurationResult.configuration) {
+      const errorMessage = "Native configuration unavailable";
+      logError('[wBlock]', errorMessage, url);
+      return { error: errorMessage };
+    }
+    const { configuration: cachedConfiguration, fromCache, fresh } = configurationResult;
+    let configuration = cachedConfiguration;
+    let cachedBlockingState = null;
+    if (fresh) {
+      cachedBlockingState = { disabled: false, paused: false };
+      configuration = { ...cachedConfiguration, disabled: false, paused: false };
+    } else if (fromCache) {
+      // Site state covers the whole tab, as native if-domain rules do.
+      let host = "";
+      try {
+        host = new URL(topUrl ?? url).hostname;
+      } catch {}
+      try {
+        const state = await requestBlockingState(host);
+        if (!state || typeof state.disabled !== "boolean" || typeof state.paused !== "boolean") {
+          throw new Error("Invalid blocking state from native host");
+        }
+        cachedBlockingState = state;
+      } catch (error) {
+        const errorMessage = String(error && error.message ? error.message : error);
+        logError('[wBlock] Cached configuration state lookup failed for ', url, errorMessage);
+        return { error: errorMessage };
+      }
+      if (cachedBlockingState.disabled || cachedBlockingState.paused) {
+        forgetRecentNativeState();
+        configuration = emptyConfigurationForState(
+          cachedBlockingState.disabled,
+          cachedBlockingState.paused
+        );
+      } else {
+        configuration = {
+          ...cachedConfiguration,
+          disabled: false,
+          paused: false
+        };
+      }
+    } else if (configuration.disabled === true || configuration.paused === true) {
+      configuration = emptyConfigurationForState(configuration.disabled === true, configuration.paused === true);
+    }
+    // Preserve native state on both response paths. Cached state is never used;
+    // it is replaced with the result of the priority state lookup above.
+    const response = {
+      type: MessageType.InitContentScript,
+      ...(message.includeUserScripts ? { userScripts: message.userScripts, userScriptsError: message.userScriptsError, zapper: message.zapper } : {}),
+      ...(fromCache
+        ? cachedBlockingState
+        : typeof configuration.disabled === "boolean"
+          && typeof configuration.paused === "boolean"
+          ? { disabled: configuration.disabled, paused: configuration.paused }
+          : {})
+    };
+    // Rules served from cache under an inert state are not applied.
+    const applies = !fromCache || !(cachedBlockingState.disabled || cachedBlockingState.paused);
+    return { configuration, response, applies };
+  };
+  // Re-applies only the page's styles and hides to a restored bfcache page. No
+  // scriptlets, procedural filters, userscripts or no-autoplay: those are still live
+  // in the restored page.
+  const restoreFrameStyles = async sender => {
+    const tabId = sender.tab && sender.tab.id;
+    const frameId = sender.frameId;
+    const url = sender.url || '';
+    if (!Number.isInteger(tabId) || !Number.isSafeInteger(frameId) || frameId < 0 || !/^https?:\/\//.test(url)) {
+      return { restored: false, state: "invalid" };
+    }
+    const topUrl = frameId === 0 ? undefined : sender.tab.url;
+    const resolved = await resolveFrameConfiguration(frameLookupMessage(sender, false), url, topUrl, true);
+    if (resolved.error) return { restored: false, state: "error", error: resolved.error };
+    const { configuration } = resolved;
+    if (configuration.disabled === true || configuration.paused === true) return { restored: false, state: "inactive" };
+    // The lookup can finish after the tab moved on. Its rules belong to the page
+    // that asked, so a newer top-level document must not receive them. The URL
+    // check cannot see a same-URL reload; the stale insert then duplicates one
+    // set of hides in the new document, which is harmless. A subframe has no such
+    // check: the tab reports only its top-level URL.
+    if (frameId === 0) {
+      const current = await browser.tabs.get(tabId).catch(() => null);
+      if (!current || current.url !== url) return { restored: false, state: "stale" };
+    }
+    const { state, error } = await insertFrameStyles({ tabId, frameIds: [frameId] }, configuration);
+    return { restored: state === "applied", state, error };
+  };
   /**
    * Message listener that intercepts messages sent to the background script.
    *
@@ -1383,6 +1512,9 @@
     // A page that loaded before joining its tab got its payload back (see the
     // InitContentScript handler) and asks for its scriptlets once it can be
     // targeted, since only the background can inject them past the page's CSP.
+    if (message && message.action === "wblock:restoreFrameStyles") {
+      return restoreFrameStyles(sender);
+    }
     if (message && message.action === "wblock:injectScriptlets") {
       const tabId = sender.tab && sender.tab.id;
       if (!tabId || !Array.isArray(message.scriptlets)) return { injected: false };
@@ -1436,11 +1568,8 @@
     const tabId = ((_sender$tab = sender.tab) === null || _sender$tab === void 0 ? void 0 : _sender$tab.id) ?? 0;
     const frameId = sender.frameId ?? 0;
     // Only browser-supplied frame identity can authorize startup userscripts.
-    message = { type: MessageType.InitContentScript,
-      includeUserScripts: request.includeUserScripts === true && Number.isSafeInteger(sender.frameId)
-        && sender.frameId >= 0 && /^https?:\/\//.test(sender.url || ''),
-      url: sender.url, isTopFrame: sender.frameId === 0,
-      includeContent: true, maxInlineContentBytes: 512 * 1024 };
+    const lookup = frameLookupMessage(sender, request.includeUserScripts === true && Number.isSafeInteger(sender.frameId)
+      && sender.frameId >= 0 && /^https?:\/\//.test(sender.url || ''));
     let blankFrame = false;
     let url = sender.url || '';
     const topUrl = frameId === 0 ? undefined : (_sender$tab2 = sender.tab) === null || _sender$tab2 === void 0 ? void 0 : _sender$tab2.url;
@@ -1450,70 +1579,9 @@
       url = topUrl;
       blankFrame = true;
     }
-    let configurationResult;
-    try {
-      configurationResult = await getConfiguration(message, url, topUrl);
-    } catch (error) {
-      const errorMessage = String(error && error.message ? error.message : error);
-      logError('[wBlock] Native configuration lookup failed for ', url, errorMessage);
-      return { type: MessageType.InitContentScript, state: "error", error: errorMessage };
-    }
-    if (!configurationResult || !configurationResult.configuration) {
-      const errorMessage = "Native configuration unavailable";
-      logError('[wBlock]', errorMessage, url);
-      return { type: MessageType.InitContentScript, state: "error", error: errorMessage };
-    }
-    const { configuration: cachedConfiguration, fromCache, fresh } = configurationResult;
-    let configuration = cachedConfiguration;
-    let cachedBlockingState = null;
-    if (fresh) {
-      cachedBlockingState = { disabled: false, paused: false };
-      configuration = { ...cachedConfiguration, disabled: false, paused: false };
-    } else if (fromCache) {
-      // Site state covers the whole tab, as native if-domain rules do.
-      let host = "";
-      try {
-        host = new URL(topUrl ?? url).hostname;
-      } catch {}
-      try {
-        const state = await requestBlockingState(host);
-        if (!state || typeof state.disabled !== "boolean" || typeof state.paused !== "boolean") {
-          throw new Error("Invalid blocking state from native host");
-        }
-        cachedBlockingState = state;
-      } catch (error) {
-        const errorMessage = String(error && error.message ? error.message : error);
-        logError('[wBlock] Cached configuration state lookup failed for ', url, errorMessage);
-        return { type: MessageType.InitContentScript, state: "error", error: errorMessage };
-      }
-      if (cachedBlockingState.disabled || cachedBlockingState.paused) {
-        forgetRecentNativeState();
-        configuration = emptyConfigurationForState(
-          cachedBlockingState.disabled,
-          cachedBlockingState.paused
-        );
-      } else {
-        configuration = {
-          ...cachedConfiguration,
-          disabled: false,
-          paused: false
-        };
-      }
-    } else if (configuration.disabled === true || configuration.paused === true) {
-      configuration = emptyConfigurationForState(configuration.disabled === true, configuration.paused === true);
-    }
-    // Preserve native state on both response paths. Cached state is never used;
-    // it is replaced with the result of the priority state lookup above.
-    const response = {
-      type: MessageType.InitContentScript,
-      ...(message.includeUserScripts ? { userScripts: message.userScripts, userScriptsError: message.userScriptsError, zapper: message.zapper } : {}),
-      ...(fromCache
-        ? cachedBlockingState
-        : typeof configuration.disabled === "boolean"
-          && typeof configuration.paused === "boolean"
-          ? { disabled: configuration.disabled, paused: configuration.paused }
-          : {})
-    };
+    const resolved = await resolveFrameConfiguration(lookup, url, topUrl);
+    if (resolved.error) return { type: MessageType.InitContentScript, state: "error", error: resolved.error };
+    const { configuration, response, applies } = resolved;
     // In the current Safari version we cannot apply rules to blank frames from
     // the background: https://bugs.webkit.org/show_bug.cgi?id=296702
     //
@@ -1522,7 +1590,7 @@
     // CSPs. A sender without a tab (e.g. a page Safari loads before it joins a
     // tab) has no injection target either, so it takes the same path.
     if (!blankFrame && tabId) {
-      if (!fromCache || !(cachedBlockingState.disabled || cachedBlockingState.paused)) {
+      if (applies) {
         // Retry only failed scriptlets; CSS and completed hooks stay applied.
         try {
           const failedScriptlets = await applyConfiguration(tabId, frameId, configuration);

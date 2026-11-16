@@ -330,6 +330,8 @@ try {
 
 // --- Lifecycle event fidelity ---
 // Configuration latency must not install listeners that replace native events.
+// The one window listener allowed is a passive pageshow observer that restores
+// page styles after a bfcache restore; it reads the event and never stops it.
 const runLifecycleScenario = async ({ href, readyState, topLevel = true, title = "", pendingInit = false }) => {
   const documentListeners = [];
   const windowListeners = [];
@@ -412,25 +414,25 @@ const runLifecycleScenario = async ({ href, readyState, topLevel = true, title =
 
 try {
   const loading = await runLifecycleScenario({ href: "https://example.com/", readyState: "loading", pendingInit: true });
-  check("top-level HTTP(S) documents preserve native lifecycle events", loading.documentListeners.length === 0 && loading.windowListeners.length === 0);
+  check("top-level HTTP(S) documents preserve native lifecycle events", loading.documentListeners.length === 0 && loading.windowListeners.every(name => name === "pageshow"));
 
   const subframe = await runLifecycleScenario({ href: "https://example.com/frame", readyState: "loading", topLevel: false, pendingInit: true });
-  check("HTTP(S) subframes preserve native lifecycle events", subframe.documentListeners.length === 0 && subframe.windowListeners.length === 0);
+  check("HTTP(S) subframes preserve native lifecycle events", subframe.documentListeners.length === 0 && subframe.windowListeners.every(name => name === "pageshow"));
 
   const blankTop = await runLifecycleScenario({ href: "about:blank", readyState: "loading" });
-  check("top-level blank documents preserve native lifecycle events", blankTop.documentListeners.length === 0 && blankTop.windowListeners.length === 0);
+  check("top-level blank documents preserve native lifecycle events", blankTop.documentListeners.length === 0 && blankTop.windowListeners.every(name => name === "pageshow"));
 
   const blankFrame = await runLifecycleScenario({ href: "about:blank", readyState: "loading", topLevel: false, pendingInit: true });
-  check("blank frames preserve native lifecycle events", blankFrame.documentListeners.length === 0 && blankFrame.windowListeners.length === 0);
+  check("blank frames preserve native lifecycle events", blankFrame.documentListeners.length === 0 && blankFrame.windowListeners.every(name => name === "pageshow"));
 
   const dataFrame = await runLifecycleScenario({ href: "data:text/html,frame", readyState: "loading", topLevel: false });
-  check("data frames preserve native lifecycle events", dataFrame.documentListeners.length === 0 && dataFrame.windowListeners.length === 0);
+  check("data frames preserve native lifecycle events", dataFrame.documentListeners.length === 0 && dataFrame.windowListeners.every(name => name === "pageshow"));
 
   const interactive = await runLifecycleScenario({ href: "https://example.com/interactive", readyState: "interactive" });
-  check("interactive HTTP(S) documents do not add lifecycle listeners", interactive.documentListeners.length === 0 && interactive.windowListeners.length === 0);
+  check("interactive HTTP(S) documents do not add lifecycle listeners", interactive.documentListeners.length === 0 && interactive.windowListeners.every(name => name === "pageshow"));
 
   const complete = await runLifecycleScenario({ href: "https://example.com/complete", readyState: "complete" });
-  check("complete documents do not add lifecycle listeners", complete.documentListeners.length === 0 && complete.windowListeners.length === 0);
+  check("complete documents do not add lifecycle listeners", complete.documentListeners.length === 0 && complete.windowListeners.every(name => name === "pageshow"));
 
   const cloudflareFrame = await runLifecycleScenario({ href: "https://challenges.cloudflare.com/turnstile", readyState: "loading", topLevel: false });
   check("Cloudflare frames still skip initialization", !cloudflareFrame.sentMessages.some(message => message && message.type === "InitContentScript"));

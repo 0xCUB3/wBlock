@@ -197,7 +197,8 @@ struct RedirectDNRRuleTests {
             return Set(try JSONDecoder().decode([Rule].self, from: data)
                 .filter { $0.action.redirect?.extensionPath != nil }.compactMap(\.condition.urlFilter))
         }
-        let expected: Set = ["||scdn.co/mp3-ad/", "||adstudio-assets.scdn.co^"]
+        // Every Spotify ad redirect is excepted for open.spotify.com media, so none is saved.
+        let expected: Set<String> = []
         expectEqual(try savedFilters(), expected, "compatibility exceptions stop the redirect of the audio they allow")
 
         // The cache as an earlier build left it: no format, and no plain exception.

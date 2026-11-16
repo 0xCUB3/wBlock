@@ -25,6 +25,14 @@ resources.push({
   name: 'trusted-youtube-backoff-recovery.js',
   content: readFileSync(path.join(here, 'youtube-backoff-recovery.js'), 'utf8'),
 });
+// The silent stand-ins are the bundled noop files, so the page and the redirect rules share one copy of each.
+const bundledRedirect = name => readFileSync(path.join(here, '../../../wBlock Scripts (iOS)/Resources/redirects', name)).toString('base64');
+resources.push({
+  name: 'trusted-spotify-ad-media.js',
+  content: readFileSync(path.join(here, 'spotify-ad-media.js'), 'utf8')
+    .replace('__SILENT_MP4__', bundledRedirect('noopmp4.mp4'))
+    .replace('__SILENT_MP3__', bundledRedirect('noopmp3.mp3')),
+});
 const byName = new Map(resources.map(r => [r.name, r]));
 // Keep literal response replacements streaming; full-body predicates still use uBO's path.
 const responseHook = byName.get('replace-fetch-response.fn');

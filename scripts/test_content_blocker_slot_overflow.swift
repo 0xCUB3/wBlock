@@ -72,15 +72,24 @@ struct Main {
         if !hosts.allSatisfy({ safariBlocks($0, on: "page.example", in: blockers) }) { fail("every part of a split list must block") }
         if safariBlocks("https://big-7.example/x.js", on: "page.example", in: blockers) { fail("a split list keeps its exceptions") }
 
-        // Underestimated, with no other blocker to take part of it: the
-        // converter's own cut must surface.
+        // Underestimated, with no other blocker to take part of it: measured
+        // output is over budget, so the plan is rejected instead of truncated,
+        // and the blocker's saved rules stay as they were.
         var hidden = try list("hidden", 170_000)
         hidden.sourceRuleCount = 50_000
         let lone = [hidden]
         let slot = targets[0]
+        let saved = try Data(contentsOf: container.appendingPathComponent(slot.rulesFilename))
         for attempt in 1...2 {
-            let outcome = try compile(lone, lone, slot, among: [slot])
-            if outcome.truncatedRuleCount == 0 { fail("converter overflow went unreported on attempt \(attempt)") }
+            do {
+                let outcome = try compile(lone, lone, slot, among: [slot])
+                fail("converter overflow was not rejected on attempt \(attempt), truncated \(outcome.truncatedRuleCount)")
+            } catch {
+                if !"\(error)".contains("exceeds content blocker budgets") { fail("unexpected error on attempt \(attempt): \(error)") }
+            }
+            if try Data(contentsOf: container.appendingPathComponent(slot.rulesFilename)) != saved {
+                fail("rejected overflow changed the saved blocker on attempt \(attempt)")
+            }
         }
 
         print("PASS")
