@@ -2000,7 +2000,8 @@
   // supported dynamic DNR but did not expose their quota, so keep a
   // conservative compatibility ceiling only for that legacy tier.
   const REMOVE_PARAM_DNR_OLD_SAFARI_FALLBACK_LIMIT = 5000;
-  const REDIRECT_DNR_STATUS_REPORT_KEY = "wblockRedirectDNRStatusReport";
+  // Old entries could claim success after native rejected the report.
+  const REDIRECT_DNR_STATUS_REPORT_KEY = "wblockRedirectDNRStatusReportV2";
   const REDIRECT_DNR_STATUS_REPORT_THROTTLE_MS = 6 * 60 * 60 * 1000;
   let removeParamDNRInstallPromise = null;
   let removeParamDNRRulesCache = null;
@@ -2163,12 +2164,13 @@
       if (shouldReport) {
         // Priority path: a slow queued request (script updates wait up to
         // two minutes) must not hold this report until the page suspends.
-        await sendPriorityNativeMessage({
+        const response = await sendPriorityNativeMessage({
           action: "reportRedirectDNRStatus",
           installedRedirects,
           hostAccess,
           privateAccess
         });
+        if (response?.ok !== true) throw new Error("Native host did not save redirect status");
         await browser.storage.local.set({ [REDIRECT_DNR_STATUS_REPORT_KEY]: status });
       }
     } catch (error) {

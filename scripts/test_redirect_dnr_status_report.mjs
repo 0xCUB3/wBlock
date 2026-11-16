@@ -125,6 +125,7 @@ const loadBackground = ({
           { id: 1500001, priority: 15100, action: { type: "redirect", redirect: { extensionPath: "/redirects/noop.html" } }, condition: {} }
         ], ruleIdBase: 1500000, ruleIdLimit: 1650000 };
       }
+      if (message?.action === "reportRedirectDNRStatus") return { ok: true };
       return { payload: { css: [], procedural: [], scriptlets: [], engineTimestamp: 1 } };
     },
     permissions: { '{\"origins\":[\"*://*/*\"]}': true },
@@ -139,7 +140,7 @@ const loadBackground = ({
   check("report has correct installedRedirects count", statusReport && statusReport.installedRedirects === 2);
   check("report has correct hostAccess", statusReport && statusReport.hostAccess === true);
   check("report has correct privateAccess", statusReport && statusReport.privateAccess === false);
-  check("status is persisted in storage", state.storage.wblockRedirectDNRStatusReport && state.storage.wblockRedirectDNRStatusReport.installedRedirects === 2);
+  check("status is persisted in storage", state.storage.wblockRedirectDNRStatusReportV2 && state.storage.wblockRedirectDNRStatusReportV2.installedRedirects === 2);
 }
 
 // Scenario B: second run within 6 hours with unchanged values sends nothing
@@ -148,7 +149,7 @@ const loadBackground = ({
   const state = loadBackground({
     storage: {
       wblockRemoveParamDNRVersion: { version: "test", count: 2 },
-      wblockRedirectDNRStatusReport: previousReport
+      wblockRedirectDNRStatusReportV2: previousReport
     },
     nativeHandler: message => {
       if (message && message.action === "getRemoveParamDNRRules") {
@@ -157,6 +158,7 @@ const loadBackground = ({
           { id: 1500001, priority: 15100, action: { type: "redirect", redirect: { extensionPath: "/redirects/noop.html" } }, condition: {} }
         ], ruleIdBase: 1500000, ruleIdLimit: 1650000 };
       }
+      if (message?.action === "reportRedirectDNRStatus") return { ok: true };
       return { payload: { css: [], procedural: [], scriptlets: [], engineTimestamp: 1 } };
     },
     permissions: { '{\"origins\":[\"*://*/*\"]}': true },
@@ -179,7 +181,7 @@ const loadBackground = ({
   const state = loadBackground({
     storage: {
       wblockRemoveParamDNRVersion: { version: "test", count: 2 },
-      wblockRedirectDNRStatusReport: previousReport
+      wblockRedirectDNRStatusReportV2: previousReport
     },
     nativeHandler: message => {
       if (message && message.action === "getRemoveParamDNRRules") {
@@ -188,6 +190,7 @@ const loadBackground = ({
           { id: 1500001, priority: 15100, action: { type: "redirect", redirect: { extensionPath: "/redirects/noop.html" } }, condition: {} }
         ], ruleIdBase: 1500000, ruleIdLimit: 1650000 };
       }
+      if (message?.action === "reportRedirectDNRStatus") return { ok: true };
       return { payload: { css: [], procedural: [], scriptlets: [], engineTimestamp: 1 } };
     },
     permissions: { '{\"origins\":[\"*://*/*\"]}': false },
@@ -214,6 +217,7 @@ const loadBackground = ({
           { id: 1500000, priority: 15000, action: { type: "redirect", redirect: { extensionPath: "/redirects/noopjs.js" } }, condition: {} }
         ], ruleIdBase: 1500000, ruleIdLimit: 1650000 };
       }
+      if (message?.action === "reportRedirectDNRStatus") return { ok: true };
       return { payload: { css: [], procedural: [], scriptlets: [], engineTimestamp: 1 } };
     },
     permissions: { '{\"origins\":[\"*://*/*\"]}': true },
@@ -240,7 +244,8 @@ const loadBackground = ({
             { id: 1500000, priority: 15000, action: { type: "redirect", redirect: { extensionPath: "/redirects/noopjs.js" } }, condition: {} }
           ], ruleIdBase: 1500000, ruleIdLimit: 1650000 };
         }
-        return { payload: { css: [], procedural: [], scriptlets: [], engineTimestamp: 1 } };
+        if (message?.action === "reportRedirectDNRStatus") return { ok: true };
+      return { payload: { css: [], procedural: [], scriptlets: [], engineTimestamp: 1 } };
       },
       onMessage: { addListener: () => {} },
       connectNative: () => ({ onMessage: { addListener: () => {} }, onDisconnect: { addListener: () => {} } }),
@@ -305,6 +310,7 @@ const loadBackground = ({
           { id: 1500003, priority: 1, action: { type: "allow" }, condition: {} }
         ], ruleIdBase: 1500000, ruleIdLimit: 1650000 };
       }
+      if (message?.action === "reportRedirectDNRStatus") return { ok: true };
       return { payload: { css: [], procedural: [], scriptlets: [], engineTimestamp: 1 } };
     },
     permissions: { '{\"origins\":[\"*://*/*\"]}': true },
@@ -316,6 +322,36 @@ const loadBackground = ({
   await sleep(50);
   const statusReport = state.nativeMessages.find(m => m && m.action === "reportRedirectDNRStatus");
   check("counts only extension path redirects", statusReport && statusReport.installedRedirects === 2);
+}
+
+// A rejected or missing acknowledgement must not throttle the next attempt.
+for (const acknowledgement of [{ ok: false }, undefined]) {
+  let response = acknowledgement;
+  const redirect = { id: 1500000, priority: 15000,
+    action: { type: "redirect", redirect: { extensionPath: "/redirects/noopmp4.mp4" } },
+    condition: { domains: ["open.spotify.com"], resourceTypes: ["media"] } };
+  const options = {
+    permissions: { '{"origins":["*://*/*"]}': true }, isAllowedIncognito: true,
+    dynamicRules: [redirect],
+    nativeHandler: message => message.action === "getRemoveParamDNRRules"
+      ? { ok: true, version: "ack-test", count: 1, rules: [redirect] }
+      : message.action === "reportRedirectDNRStatus" ? response
+      : { payload: { css: [], procedural: [], scriptlets: [], engineTimestamp: 1 } }
+  };
+  const failed = loadBackground({ ...options, storage: {
+    wblockRedirectDNRStatusReport: { installedRedirects: 1, hostAccess: true,
+      privateAccess: true, at: Date.now() }
+  } });
+  await sleep(50);
+  check("old unverified cache does not suppress the first report",
+    failed.nativeMessages.some(message => message.action === "reportRedirectDNRStatus"));
+  check("unacknowledged report is not cached", !failed.storage.wblockRedirectDNRStatusReportV2);
+  response = { ok: true };
+  const retry = loadBackground({ ...options, storage: failed.storage });
+  await sleep(50);
+  check("next startup retries an unacknowledged report",
+    retry.nativeMessages.some(message => message.action === "reportRedirectDNRStatus"));
+  check("acknowledged retry is cached", !!retry.storage.wblockRedirectDNRStatusReportV2);
 }
 
 if (failures === 0) {

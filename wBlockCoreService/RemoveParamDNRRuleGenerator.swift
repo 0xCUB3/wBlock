@@ -213,9 +213,10 @@ public enum RemoveParamDNRRuleGenerator {
     public static func generateRules(
         from rulesText: String,
         redirectSources: [String] = [],
+        scopedRedirectSources: Set<Int> = [],
         disabledSites: [String] = []
     ) -> (rules: [DeclarativeRule], summary: Summary) {
-        let resolvedRedirects = resourceRedirectRules(fromSources: redirectSources)
+        let resolvedRedirects = resourceRedirectRules(fromSources: redirectSources, scopedSources: scopedRedirectSources)
         let disabledRules = makeDisabledSiteAllowRules(
             disabledSites,
             startingID: ruleIDBase,
@@ -357,6 +358,7 @@ public enum RemoveParamDNRRuleGenerator {
         let generated = generateRules(
             from: extracted.removeParam,
             redirectSources: extracted.redirectSources,
+            scopedRedirectSources: extracted.scopedRedirectSources,
             disabledSites: disabledSites
         )
         try? FileManager.default.removeItem(at: containerURL.appendingPathComponent(generationStateFilename))
@@ -411,7 +413,7 @@ public enum RemoveParamDNRRuleGenerator {
     }
 
     /// Bump when the generator's output changes for the same inputs.
-    private static let generationSchema = 8
+    private static let generationSchema = 9
     private static let generationStateFilename = "dnr-generation-state.json"
 
     private final class BuildMarker {}
@@ -427,6 +429,7 @@ public enum RemoveParamDNRRuleGenerator {
         var canonical = "schema=\(generationSchema)\nbuild=\(bundle.infoDictionary?["CFBundleShortVersionString"] ?? "")"
         canonical += "|\(bundle.infoDictionary?["CFBundleVersion"] ?? "")\n"
         canonical += "blocked=\(blockedCount ? blockedCountExtractionFormat : 0)\n"
+        canonical += "redirect=\(redirectExtractionFormat)|\(compatibilityRedirectLines)\n"
         canonical += "disabled=\(disabledSites.joined(separator: "\n"))\n"
         for filter in filters {
             guard let sourceURL = ContentBlockerIncrementalCache.existingLocalFileURL(
@@ -470,6 +473,8 @@ public enum RemoveParamDNRRuleGenerator {
         var fingerprint: String
         var lines: String
         var redirectLines: String
+        /// Missing in caches written before plain exceptions were kept.
+        var redirectFormat: Int?
         /// Missing in caches written before the blocked-request count.
         var blockedCountLines: String?
         var blockedCountFormat: Int?
@@ -482,7 +487,7 @@ public enum RemoveParamDNRRuleGenerator {
         for filters: [FilterList],
         containerURL: URL,
         includeBlockedCount: Bool
-    ) -> (removeParam: String, redirectSources: [String], blockedCount: String, pageRules: [PageRule]) {
+    ) -> (removeParam: String, redirectSources: [String], scopedRedirectSources: Set<Int>, blockedCount: String, pageRules: [PageRule]) {
         try? FileManager.default.removeItem(
             at: containerURL.appendingPathComponent(legacyExtractionCacheFilename)
         )
@@ -504,7 +509,7 @@ public enum RemoveParamDNRRuleGenerator {
             let key = sourceURL.lastPathComponent
             let fingerprint = fileFingerprint(at: sourceURL) ?? "missing"
             let cached = cache[key].flatMap { entry in
-                entry.fingerprint == fingerprint
+                entry.fingerprint == fingerprint && entry.redirectFormat == redirectExtractionFormat
                     && (!includeBlockedCount || entry.blockedCountFormat == blockedCountExtractionFormat)
                     ? entry : nil
             }
@@ -518,6 +523,7 @@ public enum RemoveParamDNRRuleGenerator {
                     fingerprint: sources[index].fingerprint,
                     lines: extractRemoveParamLines(from: contents),
                     redirectLines: extractRedirectLines(from: contents),
+                    redirectFormat: redirectExtractionFormat,
                     blockedCountLines: includeBlockedCount ? extractBlockedCountLines(from: contents) : nil,
                     blockedCountFormat: includeBlockedCount ? blockedCountExtractionFormat : nil
                 )
@@ -529,7 +535,8 @@ public enum RemoveParamDNRRuleGenerator {
         var pageRules: [PageRule] = []
         var scopedExceptions = Set<String>()
         var blockedCount = ""
-        var redirectSources: [String] = []
+        var redirectSources = [compatibilityRedirectLines].filter { !$0.isEmpty }
+        var scopedRedirectSources = Set<Int>()
         var updated: [String: ExtractionEntry] = [:]
         var cacheChanged = false
         for (index, source) in sources.enumerated() {
@@ -548,7 +555,10 @@ public enum RemoveParamDNRRuleGenerator {
                 return page
             }
             if includeBlockedCount { blockedCount.append(entry.blockedCountLines ?? "") }
-            if !entry.redirectLines.isEmpty { redirectSources.append(entry.redirectLines) }
+            if !entry.redirectLines.isEmpty {
+                if scoped { scopedRedirectSources.insert(redirectSources.count) }
+                redirectSources.append(entry.redirectLines)
+            }
         }
 
         if cacheChanged || updated.count != cache.count {
@@ -563,7 +573,7 @@ public enum RemoveParamDNRRuleGenerator {
             return rule.isException || rule.options.contains("important") ||
                 (!scopedExceptions.contains("") && !scopedExceptions.contains(rule.removeParamValue ?? ""))
         }.joined(separator: "\n")
-        return (combined, redirectSources, blockedCount, pageRules)
+        return (combined, redirectSources, scopedRedirectSources, blockedCount, pageRules)
     }
 
     /// Scans lists in parallel on macOS. Phones scan one at a time, since each

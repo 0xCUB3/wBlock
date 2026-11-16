@@ -152,7 +152,8 @@ private struct StoredTargetSourceRuleProvenance: Codable {
     // 11: collapse Pornhub's mobile top ad slot, whose padding outlives a hidden ad.
     // 12: hide Pornhub's ad boxes, from AdGuard Base and Mobile Ads.
     // 13: restore mobile YouTube request timing and guard initial backoff recovery.
-    public static let embeddedCompatibilityRulesVersion = "13"
+    // 14: keep Spotify FairPlay song segments out of media ad replacements.
+    public static let embeddedCompatibilityRulesVersion = "14"
     /// The engine and Safari level outputs are compiled for; see SafariVersionDetection.
     public static var compilerIdentity: String { SafariVersionDetection.compilerIdentity }
     public static var upgradeSignature: String {
@@ -184,7 +185,13 @@ private struct StoredTargetSourceRuleProvenance: Codable {
     ///
     /// Diagnostic-site rules are scoped to their hostnames so they do not affect
     /// normal browsing.
-    private static let embeddedCompatibilityRules = """
+    static let embeddedCompatibilityRules = """
+! Spotify FairPlay uses native HLS media for songs, unlike Chromium's fetch/MSE path.
+! These audio paths carry music in Safari and must not become silent ad replacements.
+@@||scdn.co/audio/$media,domain=open.spotify.com
+@@||spotifycdn.com/audio/$media,domain=open.spotify.com
+@@||akamaized.net/audio/$media,domain=open.spotify.com
+
 ! Common synthetic ad bait paths
 /js/widget/ads.js$script
 /js/pagead.js$script
