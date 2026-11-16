@@ -38,6 +38,7 @@ struct FilterCategoryInfoView: View {
         if category == .annoyances {
             return AnnoyanceChoice.filters(for: annoyanceChoices.wrappedValue, in: filterLists)
         }
+        let selectedLanguages = RegionalLanguageOption.expanding(selectedLanguages)
         let matching = filterLists.filter {
             $0.category == .foreign
                 && !Set($0.languages.map { $0.lowercased() }).isDisjoint(with: selectedLanguages)

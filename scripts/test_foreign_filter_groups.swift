@@ -24,6 +24,31 @@ import wBlockCoreService
         let subset = Array(catalog.enumerated().filter { $0.offset.isMultiple(of: 3) }.map(\.element))
         check(ForeignFilterOrganizer.sortedFilters(subset.reversed()).map(\.url) == subset.map(\.url),
               "filtered regional display preserves catalog order")
-        print("PASS: foreign filter groups")
+        check(RegionalLanguageOption.fromForeignFilters(catalog).contains { $0.code == "gsw" },
+              "Swiss German can select German regional recommendations")
+        let covered = Set(catalog.flatMap(\.languages))
+        let selections = catalog.map(\.isSelected)
+        for (language, targets) in RegionalLanguageOption.regionalFallbacks {
+            check(!covered.contains(language), "fallback \(language) stays separate from declared coverage")
+            check(!targets.isEmpty && targets.isSubset(of: covered), "fallback targets exist in the catalog")
+            check(targets.isDisjoint(with: ["tr", "th"]), "unsupported Turkish and Thai associations stay out")
+            check(RegionalLanguageOption.expanding([language]) == targets.union([language]), "expansion preserves the selected language")
+        }
+        func matching(_ languages: Set<String>) -> Set<String> {
+            let expanded = RegionalLanguageOption.expanding(languages)
+            return Set(catalog.filter { !Set($0.languages).isDisjoint(with: expanded) }.map(\.name))
+        }
+        check(matching(["lb"]) == ["AdGuard German filter", "AdGuard French filter"], "Luxembourgish recommends both languages")
+        check(matching(["gsw"]) == matching(["de"]), "Swiss German uses existing German recommendations")
+        check(matching(["jv"]) == matching(["id"]), "Javanese preserves Indonesian list choices")
+        check(matching(["yue"]) == matching(["zh"]), "Cantonese keeps its existing Chinese canonicalization")
+        check(RegionalLanguageOption.expanding([]).isEmpty, "no selected language adds no recommendations")
+        let expanded = RegionalLanguageOption.expanding(["GSW", "lb", "en"])
+        check(RegionalLanguageOption.expanding(expanded) == expanded && expanded.contains("en"), "expansion is idempotent and keeps unrelated selections")
+        check(RegionalLanguageOption.fromForeignFilters([german]).contains { $0.code == "gsw" }, "fallbacks work with custom lists")
+        check(!RegionalLanguageOption.fromForeignFilters([icelandic]).contains { $0.code == "gsw" }, "fallbacks need an available target list")
+        check(german.nativeLanguageNames(among: RegionalLanguageOption.expanding(["gsw"])) == german.nativeLanguageNames(), "card captions name actual coverage")
+        check(catalog.map(\.isSelected) == selections, "recommendation lookup never enables lists")
+        print("PASS: foreign filter groups and \(RegionalLanguageOption.regionalFallbacks.count) regional language fallbacks")
     }
 }

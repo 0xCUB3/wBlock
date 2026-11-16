@@ -95,18 +95,50 @@ struct RegionalLanguageOption: Identifiable, Hashable {
         Locale(identifier: Bundle.main.preferredLocalizations.first ?? Locale.current.identifier)
     }
 
-    /// Every language that at least one regional filter list covers.
+    /// Covered languages and the languages that can recommend them.
     static func fromForeignFilters(
         _ filters: [FilterList],
         locale: Locale = displayLocale
     ) -> [RegionalLanguageOption] {
-        options(for: filters.filter { $0.category == .foreign }.flatMap(\.languages), locale: locale)
+        let covered = Set(filters.filter { $0.category == .foreign }.flatMap(\.languages).map(canonicalCode))
+        let fallbacks = regionalFallbacks.filter { !covered.isDisjoint(with: $0.value) }.map(\.key)
+        return options(for: Array(covered) + fallbacks, locale: locale)
     }
 
     /// Chinese varieties share Chinese regional lists, so they pick Chinese
     /// rather than listing separately (#951). Distinct languages such as the
     /// Sámi ones stay separate.
     private static let chineseVarieties: Set<String> = ["cdo", "cjy", "cmn", "cpx", "czh", "gan", "hak", "hsn", "lzh", "mnp", "nan", "wuu", "yue"]
+
+    /// Recommendation fallbacks, not claims that a list covers these languages.
+    /// uBO's regional defaults and languages local to the target lists' countries.
+    static let regionalFallbacks: [String: Set<String>] = {
+        let groups: [String: [String]] = [
+            "de": ["gsw", "ksh", "nds", "wae", "dsb", "hsb", "rm", "lb"],
+            "fr": ["lb", "br", "oc", "co", "gcf", "ff", "ses", "khq", "dje"],
+            "ar": ["kab", "zgh", "tzm", "shi"],
+            "zh": ["ug", "bo", "ii", "za"],
+            "it": ["fur", "lij", "sc", "scn", "vec", "lmo", "pms"],
+            "nl": ["fy"],
+            "pl": ["szl"],
+            "ru": ["be", "tt", "ba", "cv", "ce", "inh", "os", "sah", "tyv", "bua"],
+            "es": ["ast", "ca", "eu", "gl", "gn", "qu", "arn"],
+            "pt": ["yrl"],
+            "hi": ["sat", "brx", "bho", "doi", "bgc", "xnr", "ks", "kok", "mni", "raj"],
+            "id": ["jv"],
+            "fa": ["mzn", "lrc"],
+        ]
+        var result: [String: Set<String>] = [:]
+        for (target, languages) in groups {
+            for language in languages { result[language, default: []].insert(target) }
+        }
+        return result
+    }()
+
+    static func expanding(_ selected: Set<String>) -> Set<String> {
+        let selected = Set(selected.map(canonicalCode))
+        return selected.union(selected.flatMap { regionalFallbacks[$0] ?? [] })
+    }
 
     static func canonicalCode(_ code: String) -> String {
         let code = code.lowercased()

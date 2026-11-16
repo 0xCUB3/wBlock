@@ -82,9 +82,8 @@ struct OnboardingView: View {
             let systemLangs = Locale.preferredLanguages.compactMap {
                 Locale(identifier: $0).languageCode.map(RegionalLanguageOption.canonicalCode)
             }
-            // A system language no regional list covers is picked as Other (#935).
-            let covered = Set(filterManager.filterLists.filter { $0.category == .foreign }
-                .flatMap { $0.languages.map { $0.lowercased() } })
+            // Languages without a regional list or recommendation fallback stay Other (#935).
+            let covered = Set(RegionalLanguageOption.fromForeignFilters(filterManager.filterLists).map(\.code))
             _selectedLanguages = State(initialValue: Set(systemLangs.map {
                 $0 == Self.englishLanguageCode || covered.contains($0) ? $0 : Self.otherLanguagesCode
             }))
@@ -533,7 +532,7 @@ struct OnboardingView: View {
     private func regionalToggle(for filter: FilterList) -> some View {
         let isSelected = selectedRegionalFilters.contains(filter.id)
 
-        let languages = filter.nativeLanguageNames(among: selectedLanguages).joined(separator: ", ")
+        let languages = filter.nativeLanguageNames(among: RegionalLanguageOption.expanding(selectedLanguages)).joined(separator: ", ")
         return SelectableRow(
             title: Text(filter.localizedDisplayName),
             caption: languages,
@@ -1003,6 +1002,7 @@ struct OnboardingView: View {
             return
         }
 
+        let languages = RegionalLanguageOption.expanding(languages)
         let foreignFilters = filterManager.filterLists.filter { $0.category == .foreign }
         let matchingFilters = foreignFilters.compactMap { filter -> FilterList? in
             let filterLanguages = resolvedLanguages(for: filter)
