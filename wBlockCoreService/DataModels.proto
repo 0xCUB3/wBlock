@@ -160,6 +160,9 @@ message RuleCountData {
   map<string, int32> rule_counts_by_category = 2;
   repeated string categories_approaching_limit = 3;
   int64 last_updated = 4;
+  // Incremented by every committed count write, even when the totals are unchanged.
+  // Whole-second last_updated can repeat across two rebuilds, so readers compare this.
+  int64 revision = 5;
 }
 
 // Performance and timing data

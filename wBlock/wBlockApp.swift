@@ -82,6 +82,7 @@ struct wBlockApp: App {
                 }
                 .onChangeCompat(of: scenePhase) { _, newPhase in
                     guard newPhase == .active, hasCompletedLaunchSetup else { return }
+                    Task { await filterManager.refreshRuleCountsOnForeground() }
                     Task { await CloudSyncManager.shared.syncNow(trigger: "AppActive") }
                 }
                 #if os(iOS)

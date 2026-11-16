@@ -1873,7 +1873,9 @@ public actor SharedAutoUpdateManager {
             return false
         }
 
-        for target in ContentBlockerTargetManager.shared.allTargets(forPlatform: platform) {
+        let targets = ContentBlockerTargetManager.shared.allTargets(forPlatform: platform)
+        var uncleared: Set<String> = []
+        for target in targets {
             let saveResult = try? ContentBlockerService.saveContentBlockerIfChanged(
                 jsonRules: Data(ContentBlockerService.inertContentBlockerRulesJSON.utf8),
                 groupIdentifier: groupIdentifier,
@@ -1881,6 +1883,7 @@ public actor SharedAutoUpdateManager {
             )
             if saveResult?.ruleCount != ContentBlockerService.inertContentBlockerRuleCount {
                 failedTargets.append(target.displayName)
+                uncleared.insert(target.bundleIdentifier)
                 continue
             }
 
@@ -1892,7 +1895,18 @@ public actor SharedAutoUpdateManager {
                 )
                 if !reloadResult.success {
                     failedTargets.append(target.displayName)
+                    uncleared.insert(target.bundleIdentifier)
                 }
+            }
+        }
+
+        // Only a blocker whose inert output was written and reloaded is recorded as zero. A blocker
+        // that failed keeps its stored count, since Safari may still hold its previous rules. Staged
+        // outputs (no reload) leave the counts alone.
+        if reloadContentBlockers {
+            let dataManager = await getDataManager()
+            if !(await Self.recordClearedRuleCounts(targets: targets, keepingStored: uncleared, dataManager: dataManager)) {
+                appendSharedLog("Failed to record cleared rule counts while paused")
             }
         }
 
@@ -1945,6 +1959,37 @@ public actor SharedAutoUpdateManager {
             appendSharedLog("Reload failures while reusing existing outputs: \(failures.joined(separator: ", "))")
             throw AutoUpdateError.contentBlockerReloadFailed(failures: failures)
         }
+    }
+
+    /// Commits the Safari counts of a rebuild whose blocker outputs Safari has loaded. Writes
+    /// nothing unless every blocker has an outcome. Returns `false` when the commit was not
+    /// confirmed (see `updateAppliedRuleCounts`). Callers pass only compiles that were not truncated.
+    @discardableResult
+    public static func recordRebuiltRuleCounts(
+        targets: [ContentBlockerTargetInfo],
+        outcomes: [String: ContentBlockerService.ContentBlockerTargetOutcome],
+        dataManager: ProtobufDataManager
+    ) async -> Bool {
+        let counts = outcomes.mapValues(\.safariRulesCount)
+        guard targets.allSatisfy({ counts[$0.bundleIdentifier] != nil }) else { return false }
+        let approaching = Set(counts.filter { $0.value >= ContentBlockerService.approachingRuleLimitThreshold }.keys)
+        return await dataManager.updateAppliedRuleCounts(
+            countsByBundleIdentifier: counts, approachingIdentifiers: approaching, targets: targets
+        )
+    }
+
+    /// Commits zero counts for every blocker that Safari holds only inert placeholder rules for, as
+    /// after a pause or an empty selection. Blockers in `keepingStored` were not cleared, so they keep
+    /// their stored count and flag instead of a zero claim.
+    @discardableResult
+    public static func recordClearedRuleCounts(
+        targets: [ContentBlockerTargetInfo],
+        keepingStored: Set<String> = [],
+        dataManager: ProtobufDataManager
+    ) async -> Bool {
+        await dataManager.updateAppliedRuleCounts(
+            countsByBundleIdentifier: [:], approachingIdentifiers: [], targets: targets, keepingStored: keepingStored
+        )
     }
 
     /// "wBlock 1 (reason)" for a failed reload, nil for a successful one.
@@ -2179,6 +2224,20 @@ public actor SharedAutoUpdateManager {
         if reloadContentBlockers {
             let counts = results.mapValues { $0.outcome?.safariRulesCount ?? 0 }
             reloadResults = try await reloadTargets(targets, ruleCounts: counts, policy: policy, force: false)
+        }
+        // Counts describe what Safari has loaded, as the app's apply records them after its reload
+        // phase. A reload failure still records, as it does there; a cancelled run records nothing.
+        // A staged rebuild (no reload) leaves the counts of the last loaded state in place. An empty
+        // selection records zeros, as the app's empty apply does. A refused commit is logged, not
+        // thrown, as in the app, because Safari has already loaded these rules.
+        if reloadContentBlockers {
+            try Task.checkCancellation()
+            let recorded = selectedFilters.isEmpty
+                ? await Self.recordClearedRuleCounts(targets: targets, dataManager: dataManager)
+                : await Self.recordRebuiltRuleCounts(
+                    targets: targets, outcomes: results.compactMapValues(\.outcome), dataManager: dataManager
+                )
+            if !recorded { appendSharedLog("Failed to record rule counts for rebuilt blocker outputs") }
         }
         var metrics: [RebuildTargetMetrics] = []
         var appliedSourceRuleCountsByFilterID: [UUID: Int] = [:]

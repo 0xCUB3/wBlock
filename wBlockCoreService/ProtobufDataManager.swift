@@ -333,6 +333,7 @@ private func mergePersistedChanges(
     )
     mergeField(&counts.categoriesApproachingLimit, baseline: previous.ruleCounts.categoriesApproachingLimit, persisted: persisted.ruleCounts.categoriesApproachingLimit)
     mergeField(&counts.lastUpdated, baseline: previous.ruleCounts.lastUpdated, persisted: persisted.ruleCounts.lastUpdated)
+    mergeField(&counts.revision, baseline: previous.ruleCounts.revision, persisted: persisted.ruleCounts.revision)
     mergeField(&counts.unknownFields, baseline: previous.ruleCounts.unknownFields, persisted: persisted.ruleCounts.unknownFields)
     snapshot.ruleCounts = counts
 
@@ -812,6 +813,12 @@ public class ProtobufDataManager: ObservableObject {
 
     public var categoriesApproachingLimit: [String] {
         appData.ruleCounts.categoriesApproachingLimit
+    }
+
+    /// Changes on every count write. Unlike `lastUpdated`, which is whole seconds, two
+    /// rebuilds in one second still differ here.
+    public var ruleCountsRevision: Int64 {
+        appData.ruleCounts.revision
     }
 
     public var disabledSites: [String] {
@@ -1947,6 +1954,10 @@ public class ProtobufDataManager: ObservableObject {
     @discardableResult
     public func resetToDefaultData(preservingOnboardingCompletion: Bool = false) async -> Bool {
         logger.info("🔄 Resetting protobuf data to default state")
+        // The reset deletes the store, which holds the rule-count revision readers compare against.
+        // Carry it over, one past the value this process last saw, so the new store never reuses it.
+        _ = await refreshFromDiskIfModified()
+        let carriedRuleCountsRevision = appData.ruleCounts.revision &+ 1
         storageGeneration &+= 1
         let resetGeneration = storageGeneration
         pendingSaveTask?.cancel()
@@ -1980,7 +1991,8 @@ public class ProtobufDataManager: ObservableObject {
         }
 
         let createdDefaults = await createDefaultData(
-            hasCompletedOnboarding: preservingOnboardingCompletion
+            hasCompletedOnboarding: preservingOnboardingCompletion,
+            ruleCountsRevision: carriedRuleCountsRevision
         )
         if let storageResetError { lastError = storageResetError }
         return storageGeneration == resetGeneration && createdDefaults && storageResetError == nil
@@ -1999,8 +2011,9 @@ public class ProtobufDataManager: ObservableObject {
     }
 
     @discardableResult
-    private func createDefaultData(hasCompletedOnboarding: Bool = false) async -> Bool {
-        let defaultData = makeDefaultData(hasCompletedOnboarding: hasCompletedOnboarding)
+    private func createDefaultData(hasCompletedOnboarding: Bool = false, ruleCountsRevision: Int64 = 0) async -> Bool {
+        var defaultData = makeDefaultData(hasCompletedOnboarding: hasCompletedOnboarding)
+        defaultData.ruleCounts.revision = ruleCountsRevision
         appData = defaultData
         let saved = await saveDataImmediately()
         if saved {

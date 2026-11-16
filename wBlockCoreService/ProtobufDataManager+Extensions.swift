@@ -404,34 +404,80 @@ extension ProtobufDataManager {
     }
 
     // MARK: - Rule Count Management
-    public func updateRuleCounts(
-        lastRuleCount: Int? = nil,
-        ruleCountsByIdentifier: [String: Int]? = nil,
-        identifiersApproachingLimit: Set<String>? = nil
-    ) async {
-        var updatedData = appData
-        
-        if let lastRuleCount = lastRuleCount {
-            updatedData.ruleCounts.lastRuleCount = Int32(lastRuleCount)
-        }
-        
-        if let ruleCountsByIdentifier = ruleCountsByIdentifier {
-            updatedData.ruleCounts.ruleCountsByCategory.removeAll()
-            for (identifier, count) in ruleCountsByIdentifier {
-                updatedData.ruleCounts.ruleCountsByCategory[identifier] = Int32(count)
+
+    /// Commits the Safari counts of a compile. A target missing from `countsByBundleIdentifier`
+    /// counts as 0, and the total is the sum over `targets`. `approachingIdentifiers` is the
+    /// caller's flag set, so a target the caller excluded (a truncated one) stays unflagged.
+    /// A target in `keepingStored` takes the count and flag already in the store instead, read
+    /// under the same lock, so a blocker whose state is unknown is never claimed as zero.
+    ///
+    /// The read, the revision bump and the write run under the store's file lock. The revision
+    /// is therefore unique across managers and processes, and the write keeps every change another
+    /// writer committed. `true` means the commit reached disk. `false` means the commit was not
+    /// confirmed: a failure after the file write can still leave the new counts on disk.
+    @discardableResult
+    public func updateAppliedRuleCounts(
+        countsByBundleIdentifier: [String: Int],
+        approachingIdentifiers: Set<String>,
+        targets: [ContentBlockerTargetInfo],
+        keepingStored: Set<String> = []
+    ) async -> Bool {
+        let identifiers = targets.map(\.bundleIdentifier)
+        let stamp = Int64(Date().timeIntervalSince1970)
+        return await updateDataImmediately { data in
+            let stored = data.ruleCounts.ruleCountsByCategory
+            let storedApproaching = Set(data.ruleCounts.categoriesApproachingLimit)
+            var counts: [String: Int32] = [:]
+            var approaching: Set<String> = []
+            for id in identifiers {
+                if keepingStored.contains(id) {
+                    counts[id] = stored[id] ?? 0
+                    if storedApproaching.contains(id) { approaching.insert(id) }
+                } else {
+                    counts[id] = Int32(countsByBundleIdentifier[id] ?? 0)
+                    if approachingIdentifiers.contains(id) { approaching.insert(id) }
+                }
             }
+            data.ruleCounts.lastRuleCount = Int32(counts.values.reduce(0) { $0 + Int($1) })
+            data.ruleCounts.ruleCountsByCategory = counts
+            data.ruleCounts.categoriesApproachingLimit = approaching.sorted()
+            data.ruleCounts.lastUpdated = stamp
+            data.ruleCounts.revision += 1
         }
-        
-        if let identifiersApproachingLimit = identifiersApproachingLimit {
-            updatedData.ruleCounts.categoriesApproachingLimit = Array(identifiersApproachingLimit)
-        }
-        
-        updatedData.ruleCounts.lastUpdated = Int64(Date().timeIntervalSince1970)
-        
-        appData = updatedData
-        saveData()
     }
-    
+
+    /// Tells the app when its in-memory Safari counts may be replaced by the store's. Only the
+    /// store revision decides: a rebuild in the same second can change the split without moving
+    /// `lastUpdated`. Pure, so the app and the core test run the same rule.
+    public struct AppliedRuleCountsSync: Equatable, Sendable {
+        /// Store revision the in-memory counts last matched.
+        public private(set) var matchedRevision: Int64?
+        /// Store revision seen when a commit was refused. Non-nil while the in-memory counts are unsaved.
+        public private(set) var refusedAtRevision: Int64?
+
+        public init() {}
+
+        public var isUnsaved: Bool { refusedAtRevision != nil }
+
+        /// Whether the store's current revision should replace the in-memory counts. A run in
+        /// progress owns them. While unsaved, the refused revision is not foreign: an echo of an
+        /// earlier notification, or a refused write that never reached disk, must not clear the flag.
+        public func shouldAdopt(storeRevision: Int64, runInProgress: Bool) -> Bool {
+            !runInProgress && storeRevision != (refusedAtRevision ?? matchedRevision)
+        }
+
+        /// The in-memory counts now equal the store at this revision: adopted or committed.
+        public mutating func matched(storeRevision: Int64) {
+            matchedRevision = storeRevision
+            refusedAtRevision = nil
+        }
+
+        /// A commit was refused. The in-memory counts stay on screen and are unsaved from here.
+        public mutating func refused(storeRevision: Int64) {
+            refusedAtRevision = storeRevision
+        }
+    }
+
     // MARK: - Helper Methods
     private func normalizedCustomStatus(for protoData: Wblock_Data_FilterListData) -> Bool {
         // Current saves include metadata flags and explicit ownership. Only legacy

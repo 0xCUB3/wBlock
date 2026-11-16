@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine
 import CoreFoundation
 import wBlockCoreService
 
@@ -42,9 +43,7 @@ class AppFilterManager: ObservableObject {
     @Published var statusDescription: String = LocalizedStrings.text("Ready.", comment: "Filter manager idle status")
     @Published var lastConversionTime: String = LocalizedStrings.text("N/A", comment: "Unavailable metric placeholder")
     @Published var lastReloadTime: String = LocalizedStrings.text("N/A", comment: "Unavailable metric placeholder")
-    @Published var lastRuleCount: Int = 0 {
-        didSet { if lastRuleCount != oldValue { refreshAppliedRuleCounts() } }
-    }
+    @Published var lastRuleCount: Int = 0
     @Published var hasError: Bool = false
     /// Content blockers that did not reload on the last apply (#648). Cleared on
     /// the next apply and once a targeted retry succeeds.
@@ -87,6 +86,11 @@ class AppFilterManager: ObservableObject {
     /// the sheet on every app switch, and view state would reset and make it flicker.
     @Published var appliedRuleCounts: AppliedRuleCounts?
     @Published var extensionsApproachingLimit: Set<String> = []
+    /// Which store revision the in-memory counts match, and whether a refused commit left them unsaved.
+    var ruleCountsSync = ProtobufDataManager.AppliedRuleCountsSync()
+    /// Latest breakdown request; an older load that finishes late is dropped.
+    var appliedRuleCountsRequest = 0
+    var ruleCountStoreObserver: AnyCancellable?
 
     // Performance tracking
     @Published var lastFastUpdateTime: String = LocalizedStrings.text("N/A", comment: "Unavailable metric placeholder")
@@ -596,11 +600,8 @@ class AppFilterManager: ObservableObject {
             cacheCleanupError = CocoaError(.fileNoSuchFile)
         }
 
-        await dataManager.updateRuleCounts(
-            lastRuleCount: 0,
-            ruleCountsByIdentifier: [:],
-            identifiersApproachingLimit: []
-        )
+        // The in-memory counts were zeroed above, so this stores zero totals and no flags.
+        await saveRuleCounts()
 
         let groupIdentifier = GroupIdentifier.shared.value
         do {
@@ -841,7 +842,14 @@ class AppFilterManager: ObservableObject {
         }
 
         // Load saved rule counts from protobuf data
-        loadSavedRuleCounts()
+        refreshRuleCountsFromStore()
+
+        // Every save of the store, from this process or another, reloads the counts.
+        ruleCountStoreObserver = dataManager.didSaveData
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] in
+                Task { @MainActor in self?.refreshRuleCountsFromStore() }
+            }
 
         // Set up observer for disabled sites changes
         setupDisabledSitesObserver()
@@ -1071,6 +1079,7 @@ class AppFilterManager: ObservableObject {
         if progress == .finished {
             guard isAutoUpdateRunning else { return }
             isAutoUpdateRunning = false
+            refreshRuleCountsFromStore()
             Task { await adoptPersistedDownloadMetadata() }
             if autoApplyWaitingForAutoUpdate {
                 // Hand the open sheet to the rebuild instead of closing it and

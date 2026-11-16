@@ -279,6 +279,11 @@ extension AppFilterManager {
         #endif
         defer {
             isApplyInFlight = false
+            // Store notifications that arrived during the apply were skipped. One reconcile
+            // here shows the store: the counts this run committed, or the previous ones
+            // when the run was cancelled before it committed. A refused commit keeps the
+            // run's counts on screen instead (see saveRuleCounts).
+            refreshRuleCountsFromStore()
             Task { await SharedAutoUpdateManager.shared.endForegroundWork() }
         }
         ApplyCancellation.reset()
@@ -409,7 +414,9 @@ extension AppFilterManager {
                 self.lastRuleCount = 0
                 self.ruleCountsByExtension.removeAll()
                 self.extensionsApproachingLimit.removeAll()
-                self.saveRuleCounts()
+            }
+            await saveRuleCounts()
+            await MainActor.run {
                 self.isLoading = false
                 self.showingApplyProgressSheet = !(cleared && cleanupSucceeded)
                 if cleared && cleanupSucceeded {
@@ -632,10 +639,10 @@ extension AppFilterManager {
                     for index in self.filterLists.indices {
                         self.filterLists[index].uniqueRuleCount = nil
                     }
-                    self.saveRuleCounts()
                 }
             }
             if cleared && cleanupSucceeded {
+                await saveRuleCounts()
                 await saveFilterLists()
             }
             return
@@ -682,17 +689,19 @@ extension AppFilterManager {
 
         await MainActor.run {
             self.processedFiltersCount = 0
-            self.ruleCountsByExtension = [:]
-            self.extensionsApproachingLimit = []
 
             self.applyProgressViewModel.updateConvertingDone(0)
         }
+        // Per-blocker counts of this run. They are staged here and shown only with the total,
+        // at the point the run's rules reach Safari; a staged file that never loads is not shown.
+        var stagedRuleCounts: [String: Int] = [:]
+        var stagedApproachingLimit: Set<String> = []
 
         // Collect advanced rules by target bundle ID (single storage)
         var advancedRulesByTarget: [String: String] = [:]  // bundleIdentifier -> advanced rules
 
         let ruleLimit = ContentBlockerService.safariContentBlockerRuleLimit
-        let warningThreshold = Int(Double(ruleLimit) * 0.8)  // 80% threshold
+        let warningThreshold = ContentBlockerService.approachingRuleLimitThreshold
 
         let disabledSites = runSnapshot.disabledSites
         let blockedCount = await MainActor.run { dataManager.isBlockedRequestCountEnabled }
@@ -780,6 +789,12 @@ extension AppFilterManager {
             let blockerName = targetInfo.displayName
             let ruleCountForThisTarget = conversionResult.safariRulesCount
             let truncatedRuleCount = conversionResult.truncatedRuleCount
+            stagedRuleCounts[targetInfo.bundleIdentifier] = ruleCountForThisTarget
+            if truncatedRuleCount == 0 && ruleCountForThisTarget >= warningThreshold {
+                stagedApproachingLimit.insert(targetInfo.bundleIdentifier)
+            } else {
+                stagedApproachingLimit.remove(targetInfo.bundleIdentifier)
+            }
 
             await MainActor.run {
                 self.applyProgressViewModel.updateStageDescription(
@@ -789,10 +804,8 @@ extension AppFilterManager {
                 self.progress = Float(self.processedFiltersCount) / Float(totalFiltersCount) * 0.7
                 self.applyProgressViewModel.updateConvertingDone(self.processedFiltersCount)
                 self.applyProgressViewModel.updateCurrentFilter(blockerName)
-                self.ruleCountsByExtension[targetInfo.bundleIdentifier] = ruleCountForThisTarget
 
                 if truncatedRuleCount > 0 {
-                    self.extensionsApproachingLimit.remove(targetInfo.bundleIdentifier)
                     self.hasError = true
                     let status = Self.overLimitStatus(
                         targetInfo,
@@ -801,10 +814,6 @@ extension AppFilterManager {
                     )
                     overLimitStatus = overLimitStatus ?? status
                     self.statusDescription = status
-                } else if ruleCountForThisTarget >= warningThreshold {
-                    self.extensionsApproachingLimit.insert(targetInfo.bundleIdentifier)
-                } else {
-                    self.extensionsApproachingLimit.remove(targetInfo.bundleIdentifier)
                 }
             }
 
@@ -947,8 +956,12 @@ extension AppFilterManager {
             return
         }
 
+        let publishedRuleCounts = stagedRuleCounts
+        let publishedApproachingLimit = stagedApproachingLimit
         await MainActor.run {
             self.lastRuleCount = overallSafariRulesApplied
+            self.ruleCountsByExtension = publishedRuleCounts
+            self.extensionsApproachingLimit = publishedApproachingLimit
             self.progress = 0.7
             self.applyProgressViewModel.updatePhaseCompletion(converting: true, reloading: false)
         }
@@ -1175,8 +1188,12 @@ extension AppFilterManager {
 
         await saveFilterLists()
 
-        // Persist rule counts (protobuf store) for next app launch
-        saveRuleCounts()
+        // Persist the counts this run loaded into Safari. A run cancelled before here
+        // returned above and commits nothing, so the counts fall back to the stored ones.
+        // Limit: a cancel during the reload phase can leave Safari holding new rules for
+        // blockers that reloaded before the cancel, and their counts lag until the next apply.
+        // Reload failures still commit, as before.
+        await saveRuleCounts()
 
         // Final summary log
         let (hasErrorValueForLog, statusDesc) = await MainActor.run { (self.hasError, self.statusDescription) }
@@ -1320,7 +1337,9 @@ extension AppFilterManager {
                     self.lastRuleCount = 0
                     self.ruleCountsByExtension.removeAll()
                     self.extensionsApproachingLimit.removeAll()
-                    self.saveRuleCounts()
+                }
+                await self.saveRuleCounts()
+                await MainActor.run {
                     self.isLoading = false
                     self.showingApplyProgressSheet = false
                     if cleared {

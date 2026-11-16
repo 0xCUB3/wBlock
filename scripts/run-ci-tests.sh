@@ -257,6 +257,7 @@ compile_core_test filter-download-processor scripts/test_filter_download_process
 compile_core_test issue-508-backup scripts/test_issue_508_backup_userscript.swift
 compile_core_test backup-restore scripts/test_backup_restore.swift wBlock/BackupManager.swift
 compile_core_test protobuf-reliability scripts/test_protobuf_reliability.swift
+compile_core_test auto-update-rule-counts scripts/test_auto_update_rule_counts.swift
 compile_core_test filter-update-work-lifetime scripts/test_filter_update_work_lifetime.swift
 compile_core_test issue-508-import-identity scripts/test_issue_508_import_identity.swift
 compile_core_test issue-508-oversized-import scripts/test_issue_508_oversized_import.swift

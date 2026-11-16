@@ -110,6 +110,9 @@ private struct StoredTargetSourceRuleProvenance: Codable {
     /// Safari's documented per-extension content blocker rule limit.
     public static let safariContentBlockerRuleLimit = 150_000
 
+    /// Blockers at or above this many rules are flagged as approaching the limit.
+    public static let approachingRuleLimitThreshold = Int(Double(safariContentBlockerRuleLimit) * 0.8)
+
     /// AdGuard for iOS uses these loader-memory budgets (SafariConverterLib #56).
     /// This is a byte budget, not Safari's documented rule-count limit.
     public static let safariContentBlockerJSONSizeLimit: Int = {

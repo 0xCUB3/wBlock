@@ -664,6 +664,10 @@ nonisolated struct Wblock_Data_RuleCountData: Sendable {
 
   var lastUpdated: Int64 = 0
 
+  /// Incremented by every committed count write, even when the totals are unchanged.
+  /// Whole-second last_updated can repeat across two rebuilds, so readers compare this.
+  var revision: Int64 = 0
+
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
   init() {}
@@ -1701,7 +1705,7 @@ nonisolated extension Wblock_Data_WhitelistData: SwiftProtobuf.Message, SwiftPro
 
 nonisolated extension Wblock_Data_RuleCountData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".RuleCountData"
-  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}last_rule_count\0\u{3}rule_counts_by_category\0\u{3}categories_approaching_limit\0\u{3}last_updated\0")
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{3}last_rule_count\0\u{3}rule_counts_by_category\0\u{3}categories_approaching_limit\0\u{3}last_updated\0\u{1}revision\0")
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
     while let fieldNumber = try decoder.nextFieldNumber() {
@@ -1713,6 +1717,7 @@ nonisolated extension Wblock_Data_RuleCountData: SwiftProtobuf.Message, SwiftPro
       case 2: try { try decoder.decodeMapField(fieldType: SwiftProtobuf._ProtobufMap<SwiftProtobuf.ProtobufString,SwiftProtobuf.ProtobufInt32>.self, value: &self.ruleCountsByCategory) }()
       case 3: try { try decoder.decodeRepeatedStringField(value: &self.categoriesApproachingLimit) }()
       case 4: try { try decoder.decodeSingularInt64Field(value: &self.lastUpdated) }()
+      case 5: try { try decoder.decodeSingularInt64Field(value: &self.revision) }()
       default: break
       }
     }
@@ -1731,6 +1736,9 @@ nonisolated extension Wblock_Data_RuleCountData: SwiftProtobuf.Message, SwiftPro
     if self.lastUpdated != 0 {
       try visitor.visitSingularInt64Field(value: self.lastUpdated, fieldNumber: 4)
     }
+    if self.revision != 0 {
+      try visitor.visitSingularInt64Field(value: self.revision, fieldNumber: 5)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -1739,6 +1747,7 @@ nonisolated extension Wblock_Data_RuleCountData: SwiftProtobuf.Message, SwiftPro
     if lhs.ruleCountsByCategory != rhs.ruleCountsByCategory {return false}
     if lhs.categoriesApproachingLimit != rhs.categoriesApproachingLimit {return false}
     if lhs.lastUpdated != rhs.lastUpdated {return false}
+    if lhs.revision != rhs.revision {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
