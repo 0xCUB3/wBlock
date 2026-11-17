@@ -209,7 +209,7 @@ compile_core_test foreign-filter-groups scripts/test_foreign_filter_groups.swift
   wBlock/LocalizationHelpers.swift wBlock/FilterListLoader.swift wBlock/ConcurrentLogManager.swift wBlock/LogTimeZone.swift
 compile_core_test filter-list-presentation scripts/test_filter_list_presentation.swift \
   wBlock/FilterListPresentation.swift wBlock/ListDisplayOrder.swift wBlock/ContentRowMetadata.swift \
-  wBlock/LocalizationHelpers.swift wBlock/FilterListLoader.swift wBlock/ConcurrentLogManager.swift wBlock/LogTimeZone.swift
+  wBlock/SwiftUICompatibility.swift wBlock/LocalizationHelpers.swift wBlock/FilterListLoader.swift wBlock/ConcurrentLogManager.swift wBlock/LogTimeZone.swift
 compile_core_test filter-url-mirrors scripts/test_filter_url_mirrors.swift
 compile_core_test filter-list-duplicates scripts/test_filter_list_duplicates.swift \
   wBlock/FilterListDuplicates.swift
