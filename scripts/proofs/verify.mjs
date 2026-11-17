@@ -4,7 +4,7 @@ import { mkdtempSync, readFileSync, writeFileSync, rmSync, readdirSync, existsSy
 import { tmpdir, homedir } from "node:os";
 import { join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { decisions, uploadRule, revisionRule, railRule, gateRule, infoRule, verifyProofs } from "./policies.mjs";
+import { decisions, uploadRule, revisionRule, railRule, gateRule, infoRule, headlessGateRule, headlessOps, verifyProofs } from "./policies.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url)),
   root = resolve(here, "../..");
@@ -238,6 +238,33 @@ machine(
     return [d.pres, result];
   },
 );
+
+for (const f of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 99])
+  for (const g of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 99]) decision("headlessBackoff", [{ f, g }]);
+// Gate traces: exhaustive short ones over boundary times (900/901 and 1801/1802 bracket the first two cooldowns),
+// then seeded long ones whose clock steps through every cooldown and backoff edge. Recorded outcomes never move the clock back.
+let headlessTraces = [[]];
+const headlessAlphabet = headlessOps.flatMap((op) => [1, 900, 901, 902, 1801, 22000].map((now) => ({ op, now })));
+for (let i = 0; i < 3; i++) headlessTraces = headlessTraces.flatMap((t) => headlessAlphabet.map((e) => [...t, e]));
+headlessTraces = headlessTraces.filter((t) =>
+  t.every((e, i) => e.op === "consume" || e.now >= Math.max(0, ...t.slice(0, i).map((x) => x.now))),
+);
+const clockSteps = [0, 1, 899, 900, 901, 1799, 1800, 1801, 3599, 3600, 3601, 7199, 7200, 7201, 14399, 14400, 14401, 21599, 21600, 21601, 30000];
+for (let t = 0; t < 32; t++) {
+  let clock = 1000;
+  headlessTraces.push(
+    Array.from({ length: 64 }, () => {
+      clock += clockSteps[rand(clockSteps.length)];
+      const op = headlessOps[rand(headlessOps.length)];
+      return { op, now: op === "consume" && rand(4) === 0 ? clock - 1 : clock };
+    }),
+  );
+}
+machine("headlessGate", headlessGateRule, headlessTraces, (s) => {
+  const d = headlessGateRule.decode(s);
+  return { granted: d.granted, last: d.last, failures: d.failures, outcome: d.outcome };
+});
+add("headlessGateBlocked", [{ op: "consume", now: 1000 }, { op: "consume", now: 5000 }], [{ granted: false }, { granted: false }]);
 
 const temp = mkdtempSync(join(tmpdir(), "wblock-policy-proofs-"));
 try {

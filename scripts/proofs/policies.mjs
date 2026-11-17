@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { bool, nat, upTo, oneOf, fun, rule, when, forall, proveDecision, proveSteps, crossCheckDecision } from 'gdp-wired';
+import { bool, nat, upTo, oneOf, min, max, fun, rule, when, forall, proveDecision, proveSteps, crossCheckDecision } from 'gdp-wired';
 
 // These are specifications, not Swift proofs. verify.mjs compares their outputs
 // with production Swift; neither a proof failure nor a disagreement may pass CI.
@@ -334,8 +334,51 @@ const infoSteps = [
     c.op.is('clicked').and(s.op.is('anchor'), s.fromKb.not(), idOf(c.tok).eq(s.id), t.op.is('anchor'), t.id.eq(s.id)).implies(l.pick.eq(topmost(t.id)))),
 ];
 
+// Headless rebuild gate (HeadlessLaunch.swift): a 900 s cooldown, doubled per failure up to 21600 s.
+// Times are seconds; the clock is positive, and a recorded outcome never moves the stamp backwards.
+export const headlessOps = ['consume', 'launched', 'launchFailed', 'rebuildSucceeded', 'rebuildFailed'];
+const cooldown = 900, maxBackoff = 21600, maxFailures = 9;
+// delay(f) is 900 for f <= 1, else 900 * 2^(f-1) capped at 21600: a finite chain, since failures stay within 0...9.
+const delayOf = f => when(f.lt(2), cooldown, when(f.lt(3), 1800, when(f.lt(4), 3600, when(f.lt(5), 7200, when(f.lt(6), 14400, maxBackoff)))));
+decision('headlessBackoff', {f: nat, g: nat}, ({f, g}) => ({d: delayOf(f), next: delayOf(g)}), m => [
+  m.law('the backoff is at most six hours', () => [], o => o.d.atMost(maxBackoff)),
+  m.law('the backoff never shrinks as failures rise', ({f, g}) => [f.atMost(g)], o => o.d.atMost(o.next)),
+  m.law('the backoff is at least the base cooldown', () => [], o => o.d.atLeast(cooldown)),
+], ({f}) => ({d: when(f.lt(6), 14400, 28800)}));
+const headlessBase = rule('headless rebuild gate')
+  .inputs({op: oneOf(...headlessOps), now: nat})
+  .state({last: 0, failures: 0, outcome: oneOf('none', 'launched', 'launchFailed', 'rebuildSucceeded', 'rebuildFailed').from('none'), granted: bool.from(false), grantedAt: 0})
+  .assume(({op, now, last}) => now.atLeast(1).and(op.is('consume').or(now.atLeast(last))));
+function headlessStep({op, now, last, failures, outcome, grantedAt}, broken = {}) {
+  const bump = min(failures.plus(1), maxFailures);
+  const due = broken.noCooldown ? op.is('consume') : last.eq(0).or(now.atLeast(last.plus(delayOf(failures))));
+  const grant = op.is('consume').and(due);
+  const reserved = when(last.eq(0).or(outcome.is('rebuildSucceeded')), 1, bump);
+  const completed = broken.doubleCount ? bump : when(outcome.is('launched'), max(failures, 1), bump);
+  return {
+    granted: grant,
+    last: when(op.is('consume').and(grant.not()), last, now),
+    failures: when(op.is('consume'), when(grant, reserved, failures), when(op.is('launched'), reserved, when(op.is('rebuildSucceeded'), 0, completed))),
+    outcome: when(op.is('consume'), when(grant, outcome.of('launched'), outcome), when(op.is('launched'), outcome.of('launched'), when(op.is('launchFailed'), outcome.of('launchFailed'), when(op.is('rebuildSucceeded'), outcome.of('rebuildSucceeded'), outcome.of('rebuildFailed'))))),
+    grantedAt: when(grant, now, grantedAt),
+  };
+}
+export const headlessGateRule = headlessBase.step(e => headlessStep(e));
+const headlessInvariants = [
+  headlessGateRule.law('failures stay within the tracked bound', ({failures}) => failures.atMost(maxFailures)),
+  headlessGateRule.law('a launched gate has counted a failure', ({outcome, failures}) => outcome.is('launched').implies(failures.atLeast(1))),
+  headlessGateRule.law('the grant stamp never passes the last attempt', ({grantedAt, last}) => grantedAt.atMost(last)),
+];
+const headlessSteps = [
+  headlessGateRule.stepLaw('a grant follows the previous grant by one cooldown', ({grantedAt, now}, a) => a.granted.implies(grantedAt.eq(0).or(now.atLeast(grantedAt.plus(cooldown))))),
+  headlessGateRule.stepLaw('a clock earlier than the last attempt never grants', ({now, last}, a) => now.lt(last).implies(a.granted.not())),
+  headlessGateRule.stepLaw('a grant is recorded as a launch', ({now}, a) => a.granted.implies(a.last.eq(now).and(a.outcome.is('launched')))),
+  headlessGateRule.stepLaw('a successful rebuild returns to the base cooldown', (_, a) => a.failures.eq(0), ({op}) => op.is('rebuildSucceeded')),
+  headlessGateRule.stepLaw('a failure after a launch is not counted twice', ({failures}, a) => a.failures.eq(failures), ({op, outcome}) => op.is('launchFailed').or(op.is('rebuildFailed')).and(outcome.is('launched'))),
+];
+
 export function verifyProofs() {
-  for (const [r, invariants, steps] of [[uploadRule,[],uploadLaws],[revisionRule,[],revisionLaws],[railRule,railLaws,railSteps],[gateRule,gateLaws,gateSteps],[infoRule,infoInvariants,infoSteps]]) {
+  for (const [r, invariants, steps] of [[uploadRule,[],uploadLaws],[revisionRule,[],revisionLaws],[railRule,railLaws,railSteps],[gateRule,gateLaws,gateSteps],[infoRule,infoInvariants,infoSteps],[headlessGateRule,headlessInvariants,headlessSteps]]) {
     verdict(proveSteps(r,invariants,steps,{search:false}), invariants.length + steps.length); checked(r.crossCheck(invariants,steps,{rand:draw}));
   }
   for (const [r,invariants,steps] of [
@@ -356,6 +399,11 @@ export function verifyProofs() {
     assert.equal(v.proven,false,'info broken transition escaped');
     assert.equal(v.stuck,'sat',JSON.stringify(v));
     assert.ok(v.witness || v.run,'info mutation must have counterexample evidence'); mutations++;
+  }
+  for (const broken of [{doubleCount: true}, {noCooldown: true}]) {
+    const v = proveSteps(headlessBase.step(e => headlessStep(e, broken)), headlessInvariants, headlessSteps, {search:false});
+    assert.equal(v.proven, false, 'broken gate escaped'); assert.equal(v.stuck, 'sat', JSON.stringify(v));
+    assert.ok(v.witness || v.run, 'mutation must have counterexample evidence'); mutations++;
   }
   return {proven,mutations,concrete};
 }

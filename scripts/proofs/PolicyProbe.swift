@@ -409,6 +409,39 @@ final class ResumeCount: @unchecked Sendable { var count = 0 }
           }
           return [slot(state.presented), result]
         }
+      case "headlessBackoff":
+        return values.map { e -> Values in
+          ["d": Int(HeadlessLaunch.autoRebuildDelay(forFailureCount: e.n("f"))),
+           "next": Int(HeadlessLaunch.autoRebuildDelay(forFailureCount: e.n("g")))]
+        }
+      case "headlessGate":
+        // One gate directory per trace; each step makes the production consume or record call on it.
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try! FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        return values.map { e -> Values in
+          let now = TimeInterval(e.n("now")), op = e["op"] as! String
+          var granted = false
+          if op == "consume" {
+            granted = HeadlessLaunch.consumeAutoRebuildLaunchSlot(now: now, gateDirectory: directory)
+          } else {
+            precondition(HeadlessLaunch.recordAutoRebuildLaunchOutcome(
+              HeadlessLaunch.AutoRebuildLaunchOutcome(rawValue: op)!, now: now, gateDirectory: directory))
+          }
+          let state = HeadlessLaunch.loadAutoRebuildGateState(gateDirectory: directory) ?? .init()
+          return [
+            "granted": granted, "last": Int(state.lastAttemptAt), "failures": state.failureCount,
+            "outcome": state.lastOutcome.isEmpty ? "none" : state.lastOutcome,
+          ]
+        }
+      case "headlessGateBlocked":
+        // The gate directory is a file, so the lock and the write both fail and no slot is granted.
+        let blocked = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try! Data().write(to: blocked)
+        defer { try? FileManager.default.removeItem(at: blocked) }
+        return values.map { e -> Values in
+          ["granted": HeadlessLaunch.consumeAutoRebuildLaunchSlot(now: TimeInterval(e.n("now")), gateDirectory: blocked)]
+        }
       default: preconditionFailure("unknown policy suite \(suite)")
       }
     }
