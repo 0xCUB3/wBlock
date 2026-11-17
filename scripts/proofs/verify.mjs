@@ -70,7 +70,7 @@ for (const e of flags(["remote", "inline", "custom", "downloaded", "builtIn", "l
 }
 for (const e of flags(["local", "base", "baseLegacy", "remote", "remoteLegacy", "knownNil", "knownCur", "knownLegacy", "custom", "reconciled"]))
   decision("selection", [e]);
-for (const e of flags(["builtInCurrent", "builtInLegacy", "variant"])) decision("customImport", [e]);
+for (const e of flags(["builtInCurrent", "builtInLegacy", "purged", "variant"])) decision("customImport", [e]);
 for (const e of flags(["prevNamed", "prevSel", "localStart", "named1", "sel1", "custom1", "toggled", "named2", "sel2"])) decision("twoSyncs", [e]);
 for (const e of flags(["paused", "disabledOnSite", "enabled", "webURL", "noframes", "top", "matched", "excluded", "otherHost", "hostless"])) decision("frame", [e]);
 // The model's booleans become the strings FilterListRemoteMetadataPolicy.applying yields: an unchanged name or description, or the header's text.

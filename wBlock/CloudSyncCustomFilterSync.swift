@@ -147,13 +147,16 @@ enum CloudSyncCustomFilterReconciler {
         return (selected.sorted(), lists.sorted())
     }
 
-    /// A custom list at a built-in list's address is that list: 4.0 folds such
-    /// copies into the catalog entry (FilterListSetup.hydrate), and a 3.x device
-    /// still sends them as custom. Importing one would add it again.
-    static func isBuiltInCopy(_ url: String, builtInURLs: Set<String>, canonicalize: (String) -> String) -> Bool {
+    /// A remote custom list this device may import. A custom list at a built-in
+    /// list's address is that list: 4.0 folds such copies into the catalog entry
+    /// (FilterListSetup.hydrate), and a 3.x device still sends them as custom.
+    /// A purged list is never imported either, or a device that still has its
+    /// copy would bring back one this device removed (FilterListLoader.setup).
+    static func isImportable(_ url: String, builtInURLs: Set<String>, canonicalize: (String) -> String) -> Bool {
         guard let address = URL(string: canonicalize(url)) else { return false }
         let key = FilterListURLSupport.identityKey(for: address)
-        return builtInURLs.contains { URL(string: $0).map(FilterListURLSupport.identityKey) == key }
+        let isBuiltInCopy = builtInURLs.contains { URL(string: $0).map(FilterListURLSupport.identityKey) == key }
+        return !isBuiltInCopy && !PurgedFilterLists.contains(address, isCustom: true)
     }
 
     private static func deletedURLsToMerge(

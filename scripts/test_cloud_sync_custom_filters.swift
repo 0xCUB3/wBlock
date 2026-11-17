@@ -17,6 +17,14 @@ import Foundation
       CloudSyncCustomFilterReconciler.deletedURLsToMergeDuringUploadReconciliation(
         remoteDeletedURLs: [" https://example.com/list ", ""], localCustomURLs: ["https://example.com/list"]
       ).isEmpty)
+    // A purged list's kept copy is never imported, at the address the 3.2.3 registry gave it or another spelling of it.
+    let purgedCopy = "https://curbengh.github.io/malware-filter/urlhaus-filter-vivaldi-online.txt"
+    precondition(!CloudSyncCustomFilterReconciler.isImportable(
+      purgedCopy, builtInURLs: [], canonicalize: { $0 }))
+    precondition(!CloudSyncCustomFilterReconciler.isImportable(
+      "https://CURBENGH.github.io/malware-filter/urlhaus-filter-vivaldi-online.txt/#copy", builtInURLs: [], canonicalize: { $0 }))
+    precondition(CloudSyncCustomFilterReconciler.isImportable(
+      "https://curbengh.github.io/malware-filter/other.txt", builtInURLs: [], canonicalize: { $0 }))
     let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
     try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
     defer { try? FileManager.default.removeItem(at: directory) }

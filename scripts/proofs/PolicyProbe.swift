@@ -114,10 +114,12 @@ final class ResumeCount: @unchecked Sendable { var count = 0 }
         }
         return values.map { e -> Values in
           if suite == "customImport" {
-            let url = e.b("builtInCurrent") ? current : e.b("builtInLegacy") ? old : "https://example.com/other"
+            // A kept copy of a purged list (PurgedFilterLists), at an address that is not a built-in's.
+            let purged = "https://example.com/malware-filter/urlhaus-filter-vivaldi-online.txt"
+            let url = e.b("builtInCurrent") ? current : e.b("builtInLegacy") ? old : e.b("purged") ? purged : "https://example.com/other"
             // The same list under another spelling of its address.
             let spelled = e.b("variant") ? url.replacingOccurrences(of: "example.com", with: "EXAMPLE.com").replacingOccurrences(of: "/o", with: "/%6F").replacingOccurrences(of: "/c", with: "/%63") + "/#copy" : url
-            return ["import": !CloudSyncCustomFilterReconciler.isBuiltInCopy(
+            return ["import": CloudSyncCustomFilterReconciler.isImportable(
               spelled, builtInURLs: [current], canonicalize: canonicalize)]
           }
           let (selected, known) = CloudSyncCustomFilterReconciler.remoteBuiltInSelection(

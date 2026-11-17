@@ -1135,7 +1135,7 @@ final class CloudSyncManager: ObservableObject {
             }
         }
 
-        for remoteCustom in customListsOutsideBuiltIns(filters.customLists, builtIns: filterLists) {
+        for remoteCustom in importableCustomLists(filters.customLists, builtIns: filterLists) {
             guard !locallyChangedCustomURLs.contains(remoteCustom.url),
                   !mergedDeleted.contains(remoteCustom.url),
                   let url = URL(string: remoteCustom.url),
@@ -1223,13 +1223,13 @@ final class CloudSyncManager: ObservableObject {
         )
     }
 
-    /// Remote custom lists, less copies of a built-in list (isBuiltInCopy).
-    private func customListsOutsideBuiltIns(
+    /// Remote custom lists this device may import (CloudSyncCustomFilterReconciler.isImportable).
+    private func importableCustomLists(
         _ lists: [SyncPayload.CustomFilterList], builtIns: [FilterList]
     ) -> [SyncPayload.CustomFilterList] {
         let builtInURLs = Set(builtIns.filter { !$0.isCustom }.map(Self.filterOrderKey))
         return lists.filter {
-            !CloudSyncCustomFilterReconciler.isBuiltInCopy(
+            CloudSyncCustomFilterReconciler.isImportable(
                 $0.url, builtInURLs: builtInURLs, canonicalize: FilterListLoader.canonicalFilterURLString)
         }
     }
@@ -1732,7 +1732,7 @@ final class CloudSyncManager: ObservableObject {
             }
         }
 
-        let remoteCustoms = customListsOutsideBuiltIns(remotePayload.filters.customLists, builtIns: currentFilterLists())
+        let remoteCustoms = importableCustomLists(remotePayload.filters.customLists, builtIns: currentFilterLists())
         let missingCustoms = remoteCustoms.filter {
             !deletedCustomURLs.contains($0.url) && !localCustomURLs.contains($0.url)
         }

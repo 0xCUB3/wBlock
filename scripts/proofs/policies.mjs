@@ -17,15 +17,18 @@ function checked(v) {
   assert.ok(v.checked > 0);
   concrete += v.checked;
 }
+// `broken` is one mutant, or one per law in order: mutant i must be refuted by law i.
 function decision(name, inputs, outputs, laws, broken) {
   const model = fun(name).inputs(inputs).returns(outputs);
   const claims = laws(model);
   for (const claim of claims) { verdict(proveDecision(claim)); checked(crossCheckDecision(claim, {rand:draw})); }
-  const mutant = fun(name).inputs(inputs).returns(e => ({...outputs(e), ...broken(e)}));
-  const refusal = proveDecision(laws(mutant)[0]);
-  assert.equal(refusal.proven, false, `${name} mutation escaped`);
-  assert.equal(refusal.stuck, 'sat', JSON.stringify(refusal));
-  mutations++;
+  [].concat(broken).forEach((breaks, i) => {
+    const mutant = fun(name).inputs(inputs).returns(e => ({...outputs(e), ...breaks(e)}));
+    const refusal = proveDecision(laws(mutant)[i]);
+    assert.equal(refusal.proven, false, `${name} mutation ${i} escaped`);
+    assert.equal(refusal.stuck, 'sat', JSON.stringify(refusal));
+    mutations++;
+  });
   decisions[name] = model;
 }
 const booleans = (...names) => Object.fromEntries(names.map(k => [k, bool]));
@@ -162,11 +165,16 @@ decision('twoSyncs', booleans('prevNamed','prevSel','localStart','named1','sel1'
       (o,e) => iff(o.result, twoSyncs(e).local2)),
   ], e => ({result: twoSyncs(e, true).result}));
 
-decision('customImport', booleans('builtInCurrent','builtInLegacy','variant'),
-  ({builtInCurrent, builtInLegacy}) => ({import: builtInCurrent.or(builtInLegacy).not()}), m => [
+// CloudSyncCustomFilterReconciler.isImportable: a copy of a built-in list, or a purged list (PurgedFilterLists), is never imported.
+decision('customImport', booleans('builtInCurrent','builtInLegacy','purged','variant'),
+  ({builtInCurrent, builtInLegacy, purged}) => ({import: builtInCurrent.or(builtInLegacy).or(purged).not()}), m => [
     m.law('a copy of a built-in list is never imported', e => e.builtInLegacy.or(e.builtInCurrent), o => o.import.not()),
-    m.law('other custom lists are imported', e => e.builtInLegacy.or(e.builtInCurrent).not(), o => o.import),
-  ], e => ({import: e.builtInCurrent.not()}));
+    m.law('a purged list is never imported', e => e.purged, o => o.import.not()),
+    m.law('other custom lists are imported', e => e.builtInLegacy.or(e.builtInCurrent).or(e.purged).not(), o => o.import),
+  ], [
+    e => ({import: e.builtInCurrent.not()}),
+    e => ({import: e.builtInCurrent.or(e.builtInLegacy).not()}),
+  ]);
 
 // Mirrors UserScriptFrameAuthorization.allows: unpaused, not disabled on the site, enabled, on an http(s) URL with a host,
 // a noframes script only in the top frame, and matched but not excluded. A page on another host is unmatched

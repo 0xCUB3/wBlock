@@ -15,6 +15,27 @@ public struct FilterListURLParseResult: Equatable {
     }
 }
 
+/// Built-in lists wBlock purges, and the copies an earlier release kept as custom lists.
+/// Matched by identity, so the scheme, host case, escapes and fragment of an address don't hide one.
+public enum PurgedFilterLists {
+    /// Deleted even when selected.
+    private static let builtInFragments = [
+        "hagezi/dns-blocklists@latest/adblock/pro.mini.txt",  // HaGeZi Multi Pro Mini, a DNS list (docs/HAGEZI.md)
+    ]
+
+    /// Online Malicious URL Blocklist: 24k rules Safe Browsing covers (#864, #1088). 3.2.3 kept the registry copy.
+    private static let keptCopyFragments = [
+        "malware-filter/urlhaus-filter-vivaldi-online.txt",
+        "filters/208_optimized.txt",
+    ]
+
+    /// A custom list matches only the kept copies, so a user's own custom list at a purged built-in address stays.
+    public static func contains(_ url: URL, isCustom: Bool) -> Bool {
+        let key = FilterListURLSupport.identityKey(for: url)
+        return (isCustom ? keptCopyFragments : builtInFragments + keptCopyFragments).contains { key.contains($0) }
+    }
+}
+
 public enum FilterListURLSupport {
     /// Key under which two list URLs count as the same list. Scheme, host
     /// case, a default port, a trailing slash, a fragment, dot segments and
