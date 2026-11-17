@@ -262,10 +262,15 @@ private final class TestLoader: FilterListLoader {
             let migrated = FilterListLoader.migratedURL(for: "\(registry)/extension/safari/filters/\(id)_optimized.txt")
             precondition(migrated.map(catalogURLs.contains) == true, "AdGuard \(id) does not migrate to a catalog URL")
         }
-        for id in [1, 3, 23] {
+        for id in [1, 23] {
             let migrated = FilterListLoader.migratedURL(for: "\(registry)/extension/safari/filters/\(id)_optimized.txt")
             precondition(migrated?.path.contains("/extension/ublock/filters/") == true, "replaced AdGuard \(id) must still load uBlock Origin's copy")
         }
+        // Tracking Protection's uBO copy compiles to over 50 MB, so a copy waiting to hand over keeps the Safari build.
+        let trackingSafari = "\(registry)/extension/safari/filters/3_optimized.txt"
+        precondition(FilterListLoader.migratedURL(for: trackingSafari) == nil, "Tracking Protection must keep its Safari build")
+        precondition(FilterListLoader.migratedURL(for: "https://filters.adtidy.org/extension/ublock/filters/3.txt")?.absoluteString
+                     == trackingSafari, "Tracking Protection's uBO copy must move back to the Safari build")
         let urlTracking = URL(string: "https://ublockorigin.github.io/uAssetsCDN/filters/privacy-removeparam.txt")!
         for list in defaults where list.name.hasPrefix("AdGuard ") && list.name != "AdGuard URL Tracking Protection Filter" {
             precondition(list.url.host == "filters.adtidy.org" && list.url.path.contains("/extension/ublock/filters/"),

@@ -175,9 +175,11 @@ class FilterListLoader {
 
     /// AdGuard lists wBlock keeps. Each loads uBlock Origin's copy at
     /// filters.adtidy.org instead of the registry, and any registry address of
-    /// one migrates there (migratedURL).
+    /// one migrates there (migratedURL). Not Tracking Protection (3): uBO's copy
+    /// carries about 300,000 CNAME tracker hosts, over 50 MB compiled, so a 3.x
+    /// copy still waiting to hand over keeps its Safari build.
     private static let adGuardUBlockIDs: Set<Int> = [
-        1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 13, 16, 17, 18, 19, 20, 21, 22, 23, 26, 27, 224,
+        1, 2, 4, 5, 6, 7, 8, 9, 11, 13, 16, 17, 18, 19, 20, 21, 22, 23, 26, 27, 224,
     ]
 
     /// uBlock Origin's copy of an AdGuard list. AdGuard Base uses the copy
@@ -194,6 +196,7 @@ class FilterListLoader {
 
     private static let filterURLMigrations: [String: URL] = [
         "https://filters.adtidy.org/extension/ublock/filters/17.txt": urlTrackingURL,
+        "https://filters.adtidy.org/extension/ublock/filters/3.txt": URL(string: registryURL(3))!,
         "https://raw.githubusercontent.com/Stevoisiak/Stevos-AI-Blocklist/refs/heads/main/GenAI-Blocklist.txt": stevoAIBlocklistURL,
         // EasyPrivacy and Peter Lowe's Blocklist now come from uBlock Origin's sources.
         registryURL(118):
