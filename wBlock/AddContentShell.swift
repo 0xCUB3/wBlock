@@ -30,7 +30,7 @@ struct AddContentSheet<Mode: AddContentMode, Content: View>: View {
         .largeSheetPresentationCompat()
         #else
         VStack(alignment: .leading, spacing: 12) {
-            Text(title).font(.headline).padding([.horizontal, .top], 20)
+            Text(title).font(.headline).padding([.horizontal, .top], SheetDesign.contentHorizontalPadding)
             Picker(selection: $mode) {
                 ForEach(Array(Mode.allCases)) { Text($0.localizedTitle).tag($0) }
             } label: {
@@ -39,7 +39,7 @@ struct AddContentSheet<Mode: AddContentMode, Content: View>: View {
             .pickerStyle(.segmented)
             .labelsHidden()
             .frame(maxWidth: .infinity)
-            .padding(.horizontal, 20)
+            .padding(.horizontal, SheetDesign.contentHorizontalPadding)
             page(mode)
             HStack {
                 if let onBack { backButton(onBack) }
@@ -51,7 +51,7 @@ struct AddContentSheet<Mode: AddContentMode, Content: View>: View {
             }
             // Regular size, so they're rounded rectangles like onboarding's;
             // macOS 26 draws large buttons as capsules (#1091).
-            .padding([.horizontal, .bottom], 20)
+            .padding([.horizontal, .bottom], SheetDesign.contentHorizontalPadding)
         }
         // A fixed size; the grouped form scrolls inside it (#971).
         .frame(width: 560, height: 520)

@@ -595,7 +595,6 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "This removes all settings for %@." = "Aceasta elimină toate setările pentru %@.";
 "This removes the whitelist entry, userscript exceptions, and zapper rules for %@." = "Aceasta elimină intrarea din lista de permisiuni, excepțiile pentru scripturi de utilizator și regulile Eliminatorului de elemente pentru %@.";
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "Aceasta va elimina toate filtrele, scripturile de utilizator și preferințele, apoi va relansa configurarea inițială.";
-"This will reset all filters, userscripts, and preferences." = "Acest lucru va reseta toate filtrele, scripturile de utilizator și preferințele.";
 "Timed out" = "Timp expirat";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield ajută la blocarea reclamelor reintroduse de Ad-Shield pe site-urile corespunzătoare.";
 "Lets ad blockers quickly resist Ad-Shield, which reinserts ads on matching sites after filter lists hide them." = "Permite blocantelor de reclame să reziste rapid la Ad-Shield, care reinserează reclame pe site-urile corespunzătoare după ce listele de filtre le ascund.";

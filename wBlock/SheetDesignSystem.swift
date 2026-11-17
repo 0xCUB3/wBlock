@@ -179,8 +179,8 @@ struct SheetHeader: View {
                 .accessibilityHidden(isLoading)
                 .transaction { $0.animation = nil }
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 20)
+        .padding(.horizontal, SheetDesign.contentHorizontalPadding)
+        .padding(.top, SheetDesign.contentHorizontalPadding)
         .background(Color.clear)
     }
 
@@ -202,7 +202,7 @@ struct SheetBottomToolbar<Content: View>: View {
         HStack(spacing: 16) {
             content
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, SheetDesign.contentHorizontalPadding)
         .padding(.vertical, 12)
         .background(Color.clear)
     }

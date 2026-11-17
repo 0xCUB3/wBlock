@@ -85,7 +85,7 @@ struct SiteSettingsView: View {
                             domain
                         )
                     ),
-                    primaryButton: .destructive(Text("Remove")) {
+                    primaryButton: .destructive(Text("Reset")) {
                         resetSite(domain)
                     },
                     secondaryButton: .cancel(Text("Cancel"))

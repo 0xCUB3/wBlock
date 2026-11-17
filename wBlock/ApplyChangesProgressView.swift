@@ -165,7 +165,7 @@ struct ApplyChangesProgressView: View {
 
     @ViewBuilder
     private func fittedContent<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        let measured = content().padding(20).measureApplySheetPart(.content)
+        let measured = content().padding(SheetDesign.contentHorizontalPadding).measureApplySheetPart(.content)
         if #available(iOS 16.0, macOS 13.0, *) {
             ViewThatFits(in: .vertical) {
                 measured.fixedSize(horizontal: false, vertical: true)
@@ -192,7 +192,7 @@ struct ApplyChangesProgressView: View {
             .font(.subheadline)
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 20)
+            .padding(.horizontal, SheetDesign.contentHorizontalPadding)
             .padding(.top, 8)
             .padding(.bottom, 12)
 

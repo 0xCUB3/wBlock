@@ -1147,7 +1147,7 @@ struct ContentModifiers: ViewModifier {
                 if presented { onboardingSettled = false }
             }
             .alert("Filters Auto-Disabled", isPresented: $filterManager.showingAutoDisabledAlert) {
-                Button("OK") {}
+                Button("OK", role: .cancel) {}
             } message: {
                 if filterManager.autoDisabledFilters.isEmpty {
                     Text("Some filters were automatically disabled because Safari's rule limits were exceeded.")
@@ -2124,8 +2124,8 @@ struct EditCustomFilterView: View {
                                         .foregroundStyle(.orange)
                                 }
                             }
-                            .padding(20)
-                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+                            .padding(SheetDesign.contentHorizontalPadding)
+                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                         }
                         .padding(.horizontal, SheetDesign.contentHorizontalPadding)
                         .padding(.top, 12)
@@ -2275,13 +2275,13 @@ struct RuleCapacityPopoverView: View {
     #if !os(macOS)
     private var capacityColumn: some View {
         capacityContent
-            .padding(20)
+            .padding(SheetDesign.contentHorizontalPadding)
             .frame(maxWidth: 560, alignment: .leading)
             .frame(maxWidth: .infinity)
             // The column stays readable in landscape, but the X sits in the
             // sheet's corner like every other sheet's (cameren, Discord).
             .overlay(alignment: .topTrailing) {
-                SheetDoneButton { dismiss() }.padding(20)
+                SheetDoneButton { dismiss() }.padding(SheetDesign.contentHorizontalPadding)
             }
     }
 
@@ -2312,7 +2312,7 @@ struct RuleCapacityPopoverView: View {
             HStack {
                 Label("Safari Rule Capacity", systemImage: "shield.lefthalf.filled")
                     .font(.headline)
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(Color.accentColor)
                 Spacer()
                 #if os(macOS)
                 SheetDoneButton { dismiss() }

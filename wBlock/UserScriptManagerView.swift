@@ -690,14 +690,7 @@ struct UserScriptManagerView: View {
                     .fixedSize(horizontal: false, vertical: true)
 
                 if displayedEnabled && !script.isDownloaded && script.isLocal {
-                    Text("Not Downloaded")
-                        .font(.caption2)
-                        .fontWeight(.medium)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.red.opacity(0.15))
-                        .foregroundStyle(.red)
-                        .cornerRadius(4)
+                    Badge(text: "Not Downloaded", color: .red)
                 }
 
                 if script.isDarkReader {
@@ -967,30 +960,6 @@ private extension UserScript {
 }
 
 /// Opens the pattern list in its own sheet, so long lists no longer stretch the info panel.
-private struct ScriptMatchPatternsButton: View {
-    let script: UserScript
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 12) {
-                Image(systemName: "list.bullet").frame(width: 22)
-                Text(script.matchPatternsTitle)
-                Spacer()
-                Image(systemName: "chevron.forward")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.tertiary)
-            }
-            .foregroundStyle(Color.accentColor)
-            .padding(.horizontal, 14)
-            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .noFocusRingCompat()
-    }
-}
-
 private struct ScriptMatchPatternsSheet: View {
     let script: UserScript
     @Environment(\.dismiss) private var dismiss
@@ -1135,21 +1104,17 @@ struct UserScriptInfoView: View {
                 #if os(macOS)
                 .frame(width: 460)
                 #endif
-            } else if isLoading {
-                VStack(spacing: 0) {
-                    InfoSheetHeader { EmptyView() } onDismiss: { dismiss() }
-                    ProgressView()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                }
-                #if os(macOS)
-                .frame(width: 460)
-                #endif
             } else {
                 VStack(spacing: 0) {
                     InfoSheetHeader { EmptyView() } onDismiss: { dismiss() }
-                    Text("Unable to load script")
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    Group {
+                        if isLoading {
+                            ProgressView()
+                        } else {
+                            Text("Unable to load script").foregroundStyle(.secondary)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
                 #if os(macOS)
                 .frame(width: 460)
@@ -1201,7 +1166,7 @@ struct UserScriptInfoView: View {
         )
         InfoActionList {
             if !script.matches.isEmpty {
-                ScriptMatchPatternsButton(script: script) { perform(.matchPatterns) { showingPatterns = true } }
+                InfoActionRow(LocalizedStringKey(script.matchPatternsTitle), systemImage: "list.bullet") { perform(.matchPatterns) { showingPatterns = true } }
             }
             if actions.contains(.settings) {
                 InfoActionRow("Settings", systemImage: "gearshape") { perform(.settings) { showingSettings = true } }
@@ -1389,18 +1354,8 @@ private struct UserScriptMetadataSheet: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 12) {
-                Text(script.localizedDisplayName).font(.headline).lineLimit(1)
-                Spacer()
-                Button("Save") { Task { await save() } }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(isSaving || !hasChanges || editedName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                SheetDoneButton { dismiss() }
-                    .disabled(isSaving)
-            }
-            .padding(16)
-            Divider()
+        SheetContainer {
+            SheetHeader(title: script.localizedDisplayName, isLoading: isSaving) { dismiss() }
             Form {
                 Section {
                     AddContentMetadataFields(name: $editedName, description: $editedDescription,
@@ -1413,6 +1368,13 @@ private struct UserScriptMetadataSheet: View {
             }
             .groupedFormStyleCompat()
             .disabled(isSaving)
+            SheetBottomToolbar {
+                Spacer()
+                Button("Save") { Task { await save() } }
+                    .primaryActionButtonStyle()
+                    .disabled(isSaving || !hasChanges || editedName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .keyboardShortcut(.defaultAction)
+            }
         }
         #if os(macOS)
         .frame(width: 460, height: 360)

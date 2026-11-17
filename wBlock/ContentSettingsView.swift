@@ -7,10 +7,10 @@ struct ContentSettingsView<Content: View>: View {
 
     var body: some View {
         #if os(macOS)
-        InfoContentScrollView { settingsContent.padding(20) }
+        InfoContentScrollView { settingsContent.padding(SheetDesign.contentHorizontalPadding) }
             .frame(width: 460)
         #else
-        settingsContent.padding(20).infoSheetChromeCompat { dismiss() }
+        settingsContent.padding(SheetDesign.contentHorizontalPadding).infoSheetChromeCompat { dismiss() }
         #endif
     }
 

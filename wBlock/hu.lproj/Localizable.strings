@@ -597,7 +597,6 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "This removes all settings for %@." = "Ez eltávolítja %@ összes beállítását.";
 "This removes the whitelist entry, userscript exceptions, and zapper rules for %@." = "Ez eltávolítja %@ engedélyezőlista-bejegyzését, felhasználói szkript kivételeit és elemeltávolító szabályait.";
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "Ez eltávolít minden szűrőt, felhasználói szkriptet és beállítást, majd újraindítja a kezdő beállítási folyamatot.";
-"This will reset all filters, userscripts, and preferences." = "Ez visszaállít minden szűrőt, felhasználói szkriptet és beállítást.";
 "Timed out" = "Időtúllépés";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "A tinyShield segít blokkolni az Ad-Shield által a megfelelő oldalakra újra beillesztett hirdetéseket.";
 "Lets ad blockers quickly resist Ad-Shield, which reinserts ads on matching sites after filter lists hide them." = "Lehetővé teszi, hogy a reklámblokkolók gyorsan ellenálljanak az Ad-Shieldnek, amely a szűrőlisták által elrejtett hirdetéseket visszahelyezi az érintett oldalakon.";

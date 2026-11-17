@@ -254,7 +254,7 @@ struct OnboardingView: View {
         }
         .alert("Restore Settings?", isPresented: $showingRestoreBackupConfirmation, presenting: pendingBackup) { _ in
             Button("Cancel", role: .cancel) { pendingBackup = nil }
-            Button("Restore") {
+            Button("Restore", role: .destructive) {
                 Task { await performBackupRestore() }
             }
         } message: { backup in
@@ -264,7 +264,7 @@ struct OnboardingView: View {
             get: { backupRestoreError != nil },
             set: { if !$0 { backupRestoreError = nil } }
         )) {
-            Button("OK") { backupRestoreError = nil }
+            Button("OK", role: .cancel) { backupRestoreError = nil }
         } message: {
             Text(backupRestoreError ?? "")
         }
@@ -670,7 +670,7 @@ struct OnboardingView: View {
                 }
             }
             .padding(14)
-            .liquidGlassCompat(cornerRadius: 16, material: .regularMaterial)
+            .liquidGlassCompat()
 
             Text("Already done this? Just check the boxes above.")
                 .font(.caption2)
@@ -810,7 +810,7 @@ struct OnboardingView: View {
         return SelectableRow(
             title: Text(script.name),
             subtitle: script.description,
-            badge: script.isBeta ? Text("Beta") : nil,
+            badge: script.isBeta ? "Beta" : nil,
             isSelected: isSelected
         ) {
             if isSelected {

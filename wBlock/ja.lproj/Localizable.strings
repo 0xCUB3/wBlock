@@ -597,7 +597,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This removes all settings for %@." = "%@ の全ての設定を削除します。";
 "This removes the whitelist entry, userscript exceptions, and zapper rules for %@." = "%@ の許可リスト登録、ユーザースクリプトの除外設定、要素ブロックのルールを削除します。";
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "これにより、全てのフィルター、ユーザースクリプト、設定が削除され、初期設定フローが再起動されます。";
-"This will reset all filters, userscripts, and preferences." = "これにより、全てのフィルター、ユーザースクリプト、設定がリセットされます。";
 "Timed out" = "タイムアウト";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield は、該当するサイト上で Ad-Shield によって再挿入された広告のブロックを支援します。";
 "Lets ad blockers quickly resist Ad-Shield, which reinserts ads on matching sites after filter lists hide them." = "フィルターリストで非表示にした広告を該当サイトで再挿入する Ad-Shield に、広告ブロッカーがすばやく対抗できるようにします。";

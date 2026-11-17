@@ -66,7 +66,7 @@ struct ElementZapperSettingsView: View {
                 return Alert(
                     title: Text("Clear Element Zapper Rules?"),
                     message: Text(domain),
-                    primaryButton: .destructive(Text("Remove")) {
+                    primaryButton: .destructive(Text("Clear")) {
                         clearRules(for: domain)
                     },
                     secondaryButton: .cancel(Text("Cancel"))
@@ -139,7 +139,7 @@ struct ElementZapperSettingsView: View {
         }
         // The note sits under the button the way Site Settings captions sit
         // under their titles.
-        Button {
+        Button(role: .destructive) {
             pendingConfirmation = .clear(domain: domain)
         } label: {
             clearRulesLabel
@@ -173,6 +173,12 @@ struct ElementZapperSettingsView: View {
                 Image(systemName: "pencil.circle.fill")
                     .foregroundStyle(Color.accentColor)
                     .scaledSystemFont(size: 18)
+                    #if os(macOS)
+                    .frame(minWidth: 28, minHeight: 32)
+                    #else
+                    .frame(minWidth: 44, minHeight: 44)
+                    #endif
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .noFocusRingCompat()
@@ -183,9 +189,17 @@ struct ElementZapperSettingsView: View {
                 Image(systemName: "xmark.circle.fill")
                     .foregroundStyle(.secondary)
                     .scaledSystemFont(size: 18)
+                    #if os(macOS)
+                    .frame(minWidth: 28, minHeight: 32)
+                    #else
+                    .frame(minWidth: 44, minHeight: 44)
+                    #endif
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .noFocusRingCompat()
+            .accessibilityLabel("Delete")
+            .accessibilityValue(rule)
         }
     }
 
@@ -388,8 +402,6 @@ struct ElementZapperRuleEditor: View {
             .padding(.horizontal, SheetDesign.contentHorizontalPadding)
             .padding(.vertical, 16)
             SheetBottomToolbar {
-                Button("Cancel") { dismiss() }
-                    .disabled(isSaving)
                 Spacer()
                 if isSaving { ProgressView().controlSize(.small) }
                 Button("Save") {
@@ -403,7 +415,7 @@ struct ElementZapperRuleEditor: View {
                         else { saveFailed = true }
                     }
                 }
-                .buttonStyle(.borderedProminent)
+                .primaryActionButtonStyle()
                 .keyboardShortcut(.defaultAction)
                 .disabled(isSaving || trimmedDraft.isEmpty || trimmedDraft == originalRule)
             }

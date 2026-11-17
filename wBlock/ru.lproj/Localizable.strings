@@ -597,7 +597,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This removes all settings for %@." = "Будут удалены все настройки для %@.";
 "This removes the whitelist entry, userscript exceptions, and zapper rules for %@." = "Это удалит запись в списке разрешённых, исключения пользовательских скриптов и правила скрытия элементов для %@.";
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "Это удалит все фильтры, пользовательские скрипты и настройки, а затем заново запустит начальную настройку.";
-"This will reset all filters, userscripts, and preferences." = "Это сбросит все фильтры, пользовательские скрипты и настройки.";
 "Timed out" = "Время ожидания истекло";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield помогает блокировать рекламу, повторно вставляемую Ad-Shield на подходящих сайтах.";
 "Lets ad blockers quickly resist Ad-Shield, which reinserts ads on matching sites after filter lists hide them." = "Позволяет блокировщикам рекламы быстро противостоять Ad-Shield, который возвращает рекламу на соответствующих сайтах после того, как списки фильтров её скрыли.";

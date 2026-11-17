@@ -25,7 +25,7 @@ struct DeArrowChannelSettingsView: View {
                     )
                 }
             }
-            .padding(20)
+            .padding(SheetDesign.contentHorizontalPadding)
         }
         #if os(macOS)
         .frame(minWidth: 480, idealWidth: 520, minHeight: 320, idealHeight: 420)

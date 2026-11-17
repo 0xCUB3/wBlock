@@ -595,7 +595,6 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "This removes all settings for %@." = "Bu, %@ için tüm ayarları kaldırır.";
 "This removes the whitelist entry, userscript exceptions, and zapper rules for %@." = "Bu işlem, %@ için izin listesi girdisini, kullanıcı betiği istisnalarını ve öğe gizleme kurallarını kaldırır.";
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "Bu işlem tüm filtreleri, kullanıcı betiklerini ve tercihleri kaldıracak, ardından kurulum sürecini yeniden başlatacaktır.";
-"This will reset all filters, userscripts, and preferences." = "Bu işlem tüm filtreleri, kullanıcı betiklerini ve tercihleri sıfırlayacaktır.";
 "Timed out" = "Zaman aşımı";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield, Ad-Shield tarafından eşleşen sitelerde yeniden eklenen reklamları engellemeye yardımcı olur.";
 "Lets ad blockers quickly resist Ad-Shield, which reinserts ads on matching sites after filter lists hide them." = "Filtre listeleri reklamları gizledikten sonra eşleşen sitelerde bunları tekrar görüntüleyen Ad-Shield'a karşı reklam engelleyicilerin hızlıca direnç göstermesini sağlar.";

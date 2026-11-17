@@ -81,7 +81,7 @@ struct SettingsView: View {
         }
         .alert("Restore Settings?", isPresented: $showingRestoreBackupConfirmation, presenting: pendingBackup) { _ in
             Button("Cancel", role: .cancel) { pendingBackup = nil }
-            Button("Restore") { performRestore() }
+            Button("Restore", role: .destructive) { performRestore() }
         } message: { backup in
             Text(backup.restoreConfirmation)
         }
@@ -97,7 +97,7 @@ struct SettingsView: View {
             Text("Safari doesn't tell extensions what content blockers block. To get a count, wBlock copies the filter rules that block one domain or a path on it (like ||example.com^ or ||example.com/ads/) into Safari's declarativeNetRequest engine, and Safari counts how often they match. Rules that can match any domain or only apply on certain sites aren't counted, and neither are hidden page elements. Safari also limits how many rules an extension can have, so with many filter lists some are left out. Blocking doesn't change, but the number will probably be a lot lower than you're used to. It counts requests, so a tracker that loads five times counts as five.")
         }
         .alert("Backup", isPresented: $showingBackupStatus) {
-            Button("OK") {}
+            Button("OK", role: .cancel) {}
         } message: {
             Text(backupStatusMessage ?? "")
         }

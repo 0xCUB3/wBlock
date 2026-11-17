@@ -597,7 +597,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This removes all settings for %@." = "Αυτό καταργεί όλες τις ρυθμίσεις για το %@.";
 "This removes the whitelist entry, userscript exceptions, and zapper rules for %@." = "Αυτό καταργεί την καταχώρηση της λίστας επιτρεπόμενων, τις εξαιρέσεις κωδίκων χρήστη και τους κανόνες του εργαλείου απόκρυψης στοιχείων για το %@.";
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "Αυτό θα αφαιρέσει όλα τα φίλτρα, τους κώδικες χρήστη και τις προτιμήσεις και έπειτα θα ξεκινήσει ξανά τη ροή αρχικής ρύθμισης.";
-"This will reset all filters, userscripts, and preferences." = "Αυτό θα επαναφέρει όλα τα φίλτρα, τους κώδικες χρήστη και τις προτιμήσεις.";
 "Timed out" = "Έληξε ο χρόνος";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "Το tinyShield βοηθά στον αποκλεισμό διαφημίσεων που επανεισάγονται από το Ad-Shield σε αντίστοιχους ιστότοπους.";
 "Lets ad blockers quickly resist Ad-Shield, which reinserts ads on matching sites after filter lists hide them." = "Επιτρέπει στους αποκλειστές διαφημίσεων να αντιστέκονται γρήγορα στο Ad-Shield, το οποίο επαναφέρει διαφημίσεις σε αντίστοιχους ιστότοπους αφού τις αποκρύψουν οι λίστες φίλτρων.";

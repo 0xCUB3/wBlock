@@ -114,7 +114,7 @@ private struct SponsorBlockTransferView: View {
             document = nil
         }
         .confirmationDialog("Replace SponsorBlock settings?", isPresented: $confirming, titleVisibility: .visible) {
-            Button("Import") {
+            Button("Import", role: .destructive) {
                 guard let settings = pending else { return }
                 pending = nil
                 busy = true
@@ -129,7 +129,7 @@ private struct SponsorBlockTransferView: View {
             Button("Cancel", role: .cancel) { pending = nil }
         }
         .alert("SponsorBlock Backups", isPresented: $showingStatus) {
-            Button("OK") {}
+            Button("OK", role: .cancel) {}
         } message: { Text(status) }
     }
 
