@@ -4,7 +4,7 @@ import { mkdtempSync, readFileSync, writeFileSync, rmSync, readdirSync, existsSy
 import { tmpdir, homedir } from "node:os";
 import { join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { decisions, uploadRule, revisionRule, railRule, gateRule, infoRule, headlessGateRule, headlessOps, verifyProofs } from "./policies.mjs";
+import { decisions, uploadRule, revisionRule, railRule, gateRule, infoRule, headlessGateRule, headlessOps, pauseRule, verifyProofs } from "./policies.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url)),
   root = resolve(here, "../..");
@@ -204,6 +204,25 @@ machine(
     };
   },
 );
+// Every letter names all inputs. The mask letters cover all eight component sets; op 11 is an install that
+// wrote only the legacy key. Depth 3 is exhaustive; the seeded long traces follow.
+const pauseAlphabet = [
+  ...Array.from({ length: 8 }, (_, m) => ({ op: 0, fMask: Boolean(m & 1), sMask: Boolean(m & 2), zMask: Boolean(m & 4), paused: false })),
+  ...[true, false].flatMap((paused) => [1, 11].map((op) => ({ op, fMask: false, sMask: false, zMask: false, paused }))),
+  ...[2, 3, 4, 5, 6, 7, 8, 9, 10].map((op) => ({ op, fMask: false, sMask: false, zMask: false, paused: false })),
+];
+machine("pauseStore", pauseRule, traces(pauseAlphabet, 3), (s) => {
+  const d = pauseRule.decode(s);
+  return [
+    d.legacy ? 1 : 0,
+    d.hasMask ? 1 : 0,
+    d.hasMask ? (d.filters ? 1 : 0) + (d.scripts ? 2 : 0) + (d.zapper ? 4 : 0) : 0,
+    d.requested ? 1 : 0,
+    d.status,
+    d.err ? 1 : 0,
+    d.out,
+  ];
+});
 
 machine(
   "gate",

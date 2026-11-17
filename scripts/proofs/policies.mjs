@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { bool, nat, upTo, oneOf, min, max, fun, rule, when, forall, proveDecision, proveSteps, crossCheckDecision } from 'gdp-wired';
+import { bool, nat, upTo, oneOf, min, max, fun, rule, when, forall, yes, no, proveDecision, proveSteps, crossCheckDecision } from 'gdp-wired';
 
 // These are specifications, not Swift proofs. verify.mjs compares their outputs
 // with production Swift; neither a proof failure nor a disagreement may pass CI.
@@ -377,8 +377,64 @@ const headlessSteps = [
   headlessGateRule.stepLaw('a failure after a launch is not counted twice', ({failures}, a) => a.failures.eq(failures), ({op, outcome}) => op.is('launchFailed').or(op.is('rebuildFailed')).and(outcome.is('launched'))),
 ];
 
+// The blocking pause store. Stored: the legacy bool, the component mask (absent until written), the request
+// bit, the status (idle 0, pending 1, applying 2, succeeded 3, failed 4) and whether an error is stored. `out`
+// is the operation's return value; `made` and `consumed` count accepted requests and consumptions (ghosts).
+// Ops: 0 set mask, 1 set paused, 2 read (migrates), 3 request, 4 consume, 5 applying, 6 succeeded, 7 failed,
+// 8 resumed scope (out: the mask inside), 9 scope whose body throws, 10 scope cancelled (out: 1, the body saw
+// the cancellation), 11 an install that wrote only the legacy key. Scope ops 8-10 end with the mask they began with.
+export const pause = rule('blocking pause store')
+  .inputs({op: upTo(11), fMask: bool, sMask: bool, zMask: bool, paused: bool})
+  .state({filters: bool.from(false), scripts: bool.from(false), zapper: bool.from(false), legacy: bool.from(false),
+    hasMask: bool.from(false), requested: bool.from(false), err: bool.from(false), status: 0, out: 0, made: 0, consumed: 0})
+  .flags(({op, filters, scripts, zapper, legacy, hasMask, status}) => ({
+    ef: when(hasMask, filters, legacy), es: when(hasMask, scripts, legacy), ez: when(hasMask, zapper, legacy),
+    busy: status.eq(1).or(status.eq(2)), migrates: op.eq(2).or(op.eq(8), op.eq(9), op.eq(10)),
+  }));
+const effBits = e => when(e.ef, 1, 0).plus(when(e.es, 2, 0)).plus(when(e.ez, 4, 0));
+function pauseStep(e) {
+  const isSet = e.op.eq(0), isPaused = e.op.eq(1), isLegacy = e.op.eq(11), request = e.op.eq(3), accept = request.and(e.busy.not());
+  return {
+    filters: when(isSet, e.fMask, when(isPaused, e.paused, when(e.migrates, e.ef, e.filters))),
+    scripts: when(isSet, e.sMask, when(isPaused, e.paused, when(e.migrates, e.es, e.scripts))),
+    zapper: when(isSet, e.zMask, when(isPaused, e.paused, when(e.migrates, e.ez, e.zapper))),
+    legacy: when(isSet, e.fMask.or(e.sMask, e.zMask), when(isPaused.or(isLegacy), e.paused, e.legacy)),
+    hasMask: when(isSet.or(isPaused, e.migrates), yes, when(isLegacy, no, e.hasMask)),
+    requested: when(accept, yes, when(e.op.eq(4), no, e.requested)),
+    err: when(accept.or(e.op.eq(6)), no, when(e.op.eq(7), yes, e.err)),
+    status: when(accept, 1, when(e.op.eq(5), 2, when(e.op.eq(6), 3, when(e.op.eq(7), 4, e.status)))),
+    out: when(e.op.eq(2), effBits(e), when(request, when(e.busy, e.status, 1), when(e.op.eq(4), when(e.requested, 1, 0),
+      when(e.op.eq(8), when(e.es, 2, 0), when(e.op.eq(10), 1, 0))))),
+    made: e.made.plus(when(accept, 1, 0)),
+    consumed: e.consumed.plus(when(e.op.eq(4).and(e.requested), 1, 0)),
+  };
+}
+export const pauseRule = pause.step(pauseStep);
+const pauseLaws = [
+  pauseRule.law('a stored mask agrees with the legacy bool', ({hasMask, legacy, filters, scripts, zapper}) => hasMask.implies(legacy.iff(filters.or(scripts, zapper)))),
+  pauseRule.law('a failed status keeps its error', ({status, err}) => status.eq(4).implies(err)),
+  pauseRule.law('every status is valid', ({status}) => status.atMost(4)),
+  pauseRule.law('a pending request is not yet consumed', ({requested, made, consumed}) => requested.implies(consumed.lt(made))),
+  pauseRule.law('every request is consumed at most once', ({made, consumed}) => consumed.atMost(made)),
+];
+const pauseSteps = [
+  pauseRule.stepLaw('a set stores exactly the requested components', (b, a) => a.filters.iff(b.fMask).and(a.scripts.iff(b.sMask), a.zapper.iff(b.zMask)), b => b.op.eq(0)),
+  pauseRule.stepLaw('after a set, legacy is true exactly when the mask is non-empty', (b, a) => a.legacy.iff(a.filters.or(a.scripts, a.zapper)), b => b.op.eq(0).or(b.op.eq(1))),
+  pauseRule.stepLaw('legacy alone migrates to all components', (b, a) => a.filters.and(a.scripts, a.zapper, a.hasMask), b => b.op.eq(2).and(b.hasMask.not(), b.legacy)),
+  pauseRule.stepLaw('a request during pending or applying changes neither status nor request', (b, a) => a.status.eq(b.status).and(a.requested.iff(b.requested)), b => b.op.eq(3).and(b.busy)),
+  pauseRule.stepLaw('an accepted request is pending and requested', (_, a) => a.status.eq(1).and(a.requested), b => b.op.eq(3).and(b.busy.not())),
+  pauseRule.stepLaw('a consume returns the request bit and clears it', (b, a) => a.requested.not().and(a.out.eq(when(b.requested, 1, 0))), b => b.op.eq(4)),
+  pauseRule.stepLaw('a resumed scope shows only the scripts paused inside', (b, a) => a.out.eq(when(b.es, 2, 0)), b => b.op.eq(8)),
+  pauseRule.stepLaw('a resumed scope ends with the mask it began with', (b, a) => a.filters.iff(b.ef).and(a.scripts.iff(b.es), a.zapper.iff(b.ez)), b => b.op.eq(8).or(b.op.eq(9), b.op.eq(10))),
+  pauseRule.stepLaw('a failed resume records its error', (_, a) => a.err, b => b.op.eq(7)),
+  pauseRule.stepsLaw('a scope ends with the mask it began with, however it ends, read back by the next request', 2,
+    (f, l, [r1, r2]) => r1.op.eq(8).or(r1.op.eq(9), r1.op.eq(10)).and(r2.op.eq(2)).implies(l.out.eq(effBits(f)))),
+  pauseRule.stepsLaw('two consumes in a row: the second finds no request', 2,
+    (_, l, [r1, r2]) => r1.op.eq(4).and(r2.op.eq(4)).implies(l.out.eq(0))),
+];
+
 export function verifyProofs() {
-  for (const [r, invariants, steps] of [[uploadRule,[],uploadLaws],[revisionRule,[],revisionLaws],[railRule,railLaws,railSteps],[gateRule,gateLaws,gateSteps],[infoRule,infoInvariants,infoSteps],[headlessGateRule,headlessInvariants,headlessSteps]]) {
+  for (const [r, invariants, steps] of [[uploadRule,[],uploadLaws],[revisionRule,[],revisionLaws],[railRule,railLaws,railSteps],[gateRule,gateLaws,gateSteps],[infoRule,infoInvariants,infoSteps],[headlessGateRule,headlessInvariants,headlessSteps],[pauseRule,pauseLaws,pauseSteps]]) {
     verdict(proveSteps(r,invariants,steps,{search:false}), invariants.length + steps.length); checked(r.crossCheck(invariants,steps,{rand:draw}));
   }
   for (const [r,invariants,steps] of [
@@ -388,6 +444,14 @@ export function verifyProofs() {
     [gate.step(e=>gateStep(e,'claim')),gateLaws,gateSteps],
     [gate.step(e=>gateStep(e,'start')),gateLaws,gateSteps],
     [gate.step(e=>gateStep(e,'keep')),gateLaws,gateSteps],
+    // A throwing resume leaves the filters paused.
+    [pause.step(e=>({...pauseStep(e),filters:when(e.op.eq(9),no,pauseStep(e).filters)})),pauseLaws,pauseSteps],
+    // A request during apply restarts the status.
+    [pause.step(e=>({...pauseStep(e),status:when(e.op.eq(3),1,pauseStep(e).status)})),pauseLaws,pauseSteps],
+    // A consume keeps the request bit.
+    [pause.step(e=>({...pauseStep(e),requested:when(e.op.eq(4),e.requested,pauseStep(e).requested)})),pauseLaws,pauseSteps],
+    // A mask write leaves legacy stale.
+    [pause.step(e=>({...pauseStep(e),legacy:when(e.op.eq(0),e.legacy,pauseStep(e).legacy)})),pauseLaws,pauseSteps],
   ]) {
     const v=proveSteps(r,invariants,steps,{search:false});
     assert.equal(v.proven,false,'broken transition escaped');

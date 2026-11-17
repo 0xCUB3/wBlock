@@ -27,6 +27,8 @@ with the apply phase rail under out-of-order reports and failure/completion even
 The info popover state machine covers click, selection, and dismissal sequences.
 The headless rebuild gate's cooldowns, failure backoff and outcome recording are proven likewise, and
 verify.mjs drives its real gate file through the production consume and record calls.
+The blocking pause store covers its component mask, legacy migration, resume requests, and scoped reloads,
+checked through the production API on a fresh UserDefaults suite per trace.
 Zero denotes an absent revision/trigger; real identities are encoded as positive
 naturals. Rebase contracts operate on one record; the Swift comparisons additionally
 exercise duplicate snapshot IDs and last-persisted-record precedence.

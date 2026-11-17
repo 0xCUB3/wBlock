@@ -12,7 +12,7 @@ extension Dictionary where Key == String, Value == Any {
 final class ResumeCount: @unchecked Sendable { var count = 0 }
 
 @main struct PolicyProbe {
-  @MainActor static func main() throws {
+  @MainActor static func main() async throws {
     var pinned = FilterList(name: "pinned", url: URL(string: "https://example.com/list")!, category: .ads)
     pinned.updatesAutomatically = false
     let encoded = try JSONEncoder().encode(pinned)
@@ -25,7 +25,11 @@ final class ResumeCount: @unchecked Sendable { var count = 0 }
     let requests =
       try JSONSerialization.jsonObject(with: Data(contentsOf: URL(fileURLWithPath: CommandLine.arguments[1])))
       as! [Values]
-    let results = requests.map { request -> Any in
+    var pauseStore: [Int: [[Int]]] = [:]
+    for (index, request) in requests.enumerated() where request["suite"] as? String == "pauseStore" {
+      pauseStore[index] = await PauseStoreTrace.run(request["values"] as? [Values] ?? [])
+    }
+    let results = requests.enumerated().map { index, request -> Any in
       let suite = request["suite"] as! String
       let values = request["values"] as? [Values] ?? []
       let url = "https://example.com/item"
@@ -442,10 +446,84 @@ final class ResumeCount: @unchecked Sendable { var count = 0 }
         return values.map { e -> Values in
           ["granted": HeadlessLaunch.consumeAutoRebuildLaunchSlot(now: TimeInterval(e.n("now")), gateDirectory: blocked)]
         }
+      case "pauseStore": return pauseStore[index]!
       default: preconditionFailure("unknown policy suite \(suite)")
       }
     }
     try JSONSerialization.data(withJSONObject: results, options: [.sortedKeys]).write(
       to: URL(fileURLWithPath: CommandLine.arguments[2]))
+  }
+}
+
+// One trace per request, each from an empty store in its own UserDefaults suite. Stored state is read from the
+// raw keys, so observing a step never migrates the mask. Op numbers match `pause` in policies.mjs.
+@MainActor enum PauseStoreTrace {
+  enum ScopeFailure: Error { case body }
+  static let statuses: [BlockingPauseStore.ResumeStatus] = [.idle, .pending, .applying, .succeeded, .failed]
+
+  static func run(_ steps: [Values]) async -> [[Int]] {
+    let suite = "policy-probe-pause-\(UUID().uuidString)"
+    guard let defaults = UserDefaults(suiteName: suite) else { preconditionFailure("could not create suite") }
+    defer { defaults.removePersistentDomain(forName: suite) }
+    return await observe(steps, defaults: defaults, suite: suite)
+  }
+
+  static func observe(_ steps: [Values], defaults: UserDefaults, suite: String) async -> [[Int]] {
+    var observed: [[Int]] = []
+    for e in steps {
+      let mask = BlockingPauseComponents(
+        rawValue: (e.b("fMask") ? 1 : 0) | (e.b("sMask") ? 2 : 0) | (e.b("zMask") ? 4 : 0))
+      var out = 0
+      switch e.n("op") {
+      case 0: BlockingPauseStore.setPausedComponents(mask, groupIdentifier: suite)
+      case 1: BlockingPauseStore.setPaused(e.b("paused"), groupIdentifier: suite)
+      case 2: out = BlockingPauseStore.pausedComponents(groupIdentifier: suite).rawValue
+      case 3: out = statuses.firstIndex(of: BlockingPauseStore.requestResume(groupIdentifier: suite))!
+      case 4: out = BlockingPauseStore.consumeResumeRequest(groupIdentifier: suite) ? 1 : 0
+      case 5: BlockingPauseStore.setResumeApplying(groupIdentifier: suite)
+      case 6: BlockingPauseStore.setResumeSucceeded(groupIdentifier: suite)
+      case 7: BlockingPauseStore.setResumeFailed("failed", groupIdentifier: suite)
+      case 8:
+        out = await BlockingPauseStore.withContentBlockingResumed(groupIdentifier: suite) { () async -> Int in
+          insideMask(suite)
+        }
+      case 9:
+        do {
+          _ = try await BlockingPauseStore.withContentBlockingResumed(groupIdentifier: suite) { () async throws -> Int in
+            throw ScopeFailure.body
+          }
+          preconditionFailure("a failing resume must propagate its error")
+        } catch { out = 0 }
+      case 10:
+        out = await Task { @MainActor () async -> Int in
+          await BlockingPauseStore.withContentBlockingResumed(groupIdentifier: suite) { () async -> Int in
+            withUnsafeCurrentTask { $0?.cancel() }
+            await Task.yield()
+            return Task.isCancelled ? 1 : 0
+          }
+        }.value
+      default:
+        defaults.set(e.b("paused"), forKey: BlockingPauseStore.key)
+        defaults.removeObject(forKey: BlockingPauseStore.componentsKey)
+      }
+      let status = BlockingPauseStore.resumeStatus(groupIdentifier: suite)
+      let stored = defaults.object(forKey: BlockingPauseStore.componentsKey) != nil
+      observed.append([
+        defaults.bool(forKey: BlockingPauseStore.key) ? 1 : 0,
+        stored ? 1 : 0,
+        stored ? defaults.integer(forKey: BlockingPauseStore.componentsKey) : 0,
+        defaults.bool(forKey: BlockingPauseStore.resumeRequestKey) ? 1 : 0,
+        statuses.firstIndex(of: status.status)!,
+        status.error == nil ? 0 : 1,
+        out,
+      ])
+    }
+    return observed
+  }
+
+  static func insideMask(_ suite: String) -> Int {
+    [(BlockingPauseComponents.filters, 1), (.userScripts, 2), (.elementZapper, 4)].reduce(0) { bits, pair in
+      bits | (BlockingPauseStore.isPaused(pair.0, groupIdentifier: suite) ? pair.1 : 0)
+    }
   }
 }
