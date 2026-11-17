@@ -200,6 +200,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
         constructor() {
             this.injectedScripts = new Set();
             this.injectingScripts = new Map();
+            this.scriptInjections = new Map(); // execution key -> settled promise of its latest injection
             this.pendingScripts = []; // Scripts waiting for document to be ready
             this.messageListenerAttached = false; // Ensure listener is attached only once
             this.extensionContextAvailable = false;
@@ -259,6 +260,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
             this.warmStartValidationPromises.clear();
             this.validationPrefetches.clear();
             this.injectingScripts.clear();
+            this.scriptInjections.clear();
             return ++this.documentStartRequestGeneration;
         }
 
@@ -1265,12 +1267,18 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 wBlockLog(`[wBlock] Userscript ${script.name} already injected. Skipping.`);
                 return;
             }
-            if (this.injectingScripts.get(executionKey) === generation) {
-                wBlockLog(`[wBlock] Userscript ${script.name} is already being injected. Skipping.`);
-                return;
-            }
-
-            await this.injectSingleScriptAsync(script, generation);
+            // A copy of this script may still be in flight, usually a warm-start
+            // copy waiting on native validation. Run after it, not instead of
+            // it: native rejects a copy cached under an earlier native host
+            // (first page after Safari starts), and this one must then run.
+            const previous = this.scriptInjections.get(executionKey);
+            const injection = (async () => {
+                await previous;
+                if (generation !== this.documentStartRequestGeneration || this.injectedScripts.has(executionKey)) return;
+                await this.injectSingleScriptAsync(script, generation);
+            })();
+            this.scriptInjections.set(executionKey, injection.catch(() => {}));
+            await injection;
         }
 
         requestScriptValidation(script) {
