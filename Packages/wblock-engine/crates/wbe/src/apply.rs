@@ -979,15 +979,11 @@ impl Plan {
         // The rules are held through the compile; spare capacity would be too.
         others.cosmetic.shrink_to_fit();
         others.scriptlets.shrink_to_fit();
-        // The ignore rules also cancel the hides before them, so the segment is
-        // kept only where no hide can fire on one of its excluded sites.
-        let hides: Vec<_> = others.cosmetic.iter().filter(|r| !r.exception).collect();
-        // A hide naming no domain fires everywhere, so no site needs checking.
-        let everywhere = hides.iter().any(|r| r.domains.include.is_empty() && r.domains.exclude.is_empty());
-        let segment_list = segment_list.filter(|&list| {
-            let sites = &self.lists[list].scope.exclude;
-            !everywhere && !hides.iter().any(|r| sites.iter().any(|s| may_fire(&r.domains, s)))
-        });
+        // The segment's ignore rules also cancel hides before them on its
+        // excluded sites. It cannot lead the hides instead: a hide exception
+        // applies to every load of its page and would lift the segment's
+        // blocks. Dropping the segment wherever a hide can fire would drop it
+        // in nearly every blocker and bring back #925.
         // #925: the segment's blocks lead the network rules, then one ignore
         // rule per excluded site; the exceptions after them can lift those
         // blocks. Hides and their exceptions come before all of them.
@@ -1376,18 +1372,6 @@ fn covers(host: &str, site: &str) -> bool {
     }
 }
 
-/// Whether a hide on `domains` can fire on the excluded site `excluded`. An
-/// entry this cannot read (a regex) counts as overlapping.
-fn may_fire(domains: &DomainList, excluded: &str) -> bool {
-    if domains.exclude.iter().filter_map(site).any(|e| covers(&e, excluded)) {
-        return false;
-    }
-    domains.include.is_empty()
-        || domains.include.iter().any(|m| match site(m) {
-            Some(host) => covers(&host, excluded) || covers(excluded, &host),
-            None => true,
-        })
-}
 
 struct Restricted {
     list: DomainList,
@@ -2905,16 +2889,7 @@ mod tests {
         )
     }
 
-    #[test]
-    fn segment_ignore_spares_unrelated_hides() {
-        check_unrelated_hides(&excluded_segment_plan("##.unrelated\n/three/"), &[], ".unrelated");
-    }
 
-    #[test]
-    fn segment_ignore_spares_extra_hides() {
-        let extra = Extra { text: "##.zapped".into(), trusted: true, every_blocker: false };
-        check_unrelated_hides(&excluded_segment_plan("/three/"), &[extra], ".zapped");
-    }
 
     #[test]
     fn webkit_accepts_combined_fixture() {

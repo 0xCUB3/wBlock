@@ -35,7 +35,10 @@ struct SiteExclusionIgnoreSegmentTests {
             safariBlocks(url, on: host, in: [rules])
         }
 
-        let conditioned = rules.filter { (($0["trigger"] as? [String: Any])?["unless-domain"]) != nil }.count
+        let conditioned = rules.filter { rule in
+            let trigger = rule["trigger"] as? [String: Any] ?? [:]
+            return trigger["unless-domain"] != nil || trigger["unless-top-url"] != nil
+        }.count
         check(conditioned < 10, "unscoped rules carry no per-rule negation: \(conditioned)")
         check(blocked("https://tracker7.net/x.js", on: "news.org"), "excluded list still blocks elsewhere")
         check(!blocked("https://tracker7.net/x.js", on: "www.example.com"), "excluded list stops on the excluded site")
