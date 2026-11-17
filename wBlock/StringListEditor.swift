@@ -92,29 +92,27 @@ struct StringListEditor: View {
 }
 
 extension View {
-    /// The one site field, boxed with its placeholder inside, with the round +
-    /// to its right, in Site Settings, Cosmetic Filtering, and every list's
-    /// site settings alike (#1028, #1088). No autocorrection, and the URL
-    /// keyboard on iOS.
+    /// The one site field, with its placeholder inside and the round + to its
+    /// right, in Site Settings, Cosmetic Filtering, and every list's site
+    /// settings alike (#1028, #1088). No autocorrection, and the URL keyboard
+    /// on iOS.
     func siteEntryField() -> some View {
-        textFieldStyle(.plain)
-            .disableAutocorrection(true)
-            #if os(iOS)
-            .keyboardType(.URL)
-            .textInputAutocapitalization(.never)
-            #endif
+        disableAutocorrection(true)
             // A Form draws a field's title as a label at the leading edge,
             // so the title only serves as the placeholder.
             .labelsHidden()
-            .padding(12)
-            // A fill relative to what is behind it: a material vanished in a
-            // sheet's group, whose background is material too (#1096).
-            // On iOS the quaternary label gray read as a dark slab on white
-            // cells, so it uses the system fill a search field draws.
             #if os(iOS)
+            .textFieldStyle(.plain)
+            .keyboardType(.URL)
+            .textInputAutocapitalization(.never)
+            .padding(12)
+            // The system fill a search field draws, relative to what is behind
+            // it: a material vanished in a sheet's group (#1096), and the
+            // quaternary label gray read as a dark slab on white cells.
             .background(Color.groupFill, in: RoundedRectangle(cornerRadius: 8))
             #else
-            .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
+            // The system bezel; a padded gray fill read as a slab, not a field.
+            .textFieldStyle(.roundedBorder)
             #endif
     }
 }
