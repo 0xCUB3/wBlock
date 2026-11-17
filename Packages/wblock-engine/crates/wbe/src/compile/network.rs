@@ -707,13 +707,13 @@ fn domain_conds(
     if !exc_ok && !exception {
         return Err("dnr:domain".into());
     }
-    // From Safari 15 hostnames and entities are both top-URL regexes, one condition.
-    let top_hosts: Option<Vec<String>> = exc_hosts.iter().map(|d| host_top_url(d)).collect();
     Ok(match (exc_hosts.is_empty(), exc_tops.is_empty()) {
         (true, true) => vec![None],
         (false, true) => vec![Some(Cond::UnlessDomain(exc_hosts))],
         (true, false) => vec![Some(Cond::UnlessTopUrl(exc_tops))],
-        (false, false) => match top_hosts {
+        // From Safari 15 hostnames and entities are both top-URL regexes, one
+        // condition. Only mixed excludes build the host regexes.
+        (false, false) => match exc_hosts.iter().map(|d| host_top_url(d)).collect::<Option<Vec<String>>>() {
             Some(mut urls) if top => {
                 urls.extend(exc_tops);
                 vec![Some(Cond::UnlessTopUrl(urls))]

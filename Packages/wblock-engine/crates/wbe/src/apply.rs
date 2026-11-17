@@ -981,9 +981,12 @@ impl Plan {
         others.scriptlets.shrink_to_fit();
         // The ignore rules also cancel the hides before them, so the segment is
         // kept only where no hide can fire on one of its excluded sites.
+        let hides: Vec<_> = others.cosmetic.iter().filter(|r| !r.exception).collect();
+        // A hide naming no domain fires everywhere, so no site needs checking.
+        let everywhere = hides.iter().any(|r| r.domains.include.is_empty() && r.domains.exclude.is_empty());
         let segment_list = segment_list.filter(|&list| {
             let sites = &self.lists[list].scope.exclude;
-            !others.cosmetic.iter().any(|r| !r.exception && sites.iter().any(|s| may_fire(&r.domains, s)))
+            !everywhere && !hides.iter().any(|r| sites.iter().any(|s| may_fire(&r.domains, s)))
         });
         // #925: the segment's blocks lead the network rules, then one ignore
         // rule per excluded site; the exceptions after them can lift those
