@@ -4,7 +4,7 @@ import { mkdtempSync, readFileSync, writeFileSync, rmSync, readdirSync, existsSy
 import { tmpdir, homedir } from "node:os";
 import { join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { decisions, uploadRule, revisionRule, railRule, gateRule, infoRule, headlessGateRule, headlessOps, pauseRule, verifyProofs } from "./policies.mjs";
+import { decisions, uploadRule, revisionRule, railRule, gateRule, infoRule, headlessGateRule, headlessOps, pauseRule, popupRule, verifyProofs } from "./policies.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url)),
   root = resolve(here, "../..");
@@ -284,6 +284,23 @@ machine("headlessGate", headlessGateRule, headlessTraces, (s) => {
   return { granted: d.granted, last: d.last, failures: d.failures, outcome: d.outcome };
 });
 add("headlessGateBlocked", [{ op: "consume", now: 1000 }, { op: "consume", now: 5000 }], [{ granted: false }, { granted: false }]);
+
+// A claim at 1 s goes stale once now exceeds 301 s, so probes at 300, 301 and 302 cover elapsed 299, 300 and 301.
+const popupTimes = [1, 300, 301, 302];
+const popupAlphabet = [
+  ...[0, 1, 2, 4, 5].flatMap((op) => [1, 2].flatMap((claim) => popupTimes.map((now) => ({ op, claim, now, outcome: 0 })))),
+  ...[1, 2].flatMap((claim) => popupTimes.flatMap((now) => [0, 1, 2].map((outcome) => ({ op: 3, claim, now, outcome })))),
+];
+machine(
+  "popup",
+  popupRule,
+  traces(popupAlphabet, 2),
+  (s, b, e) => {
+    const view = (x, now) => [x.st === 1 && now - x.startedAt > 300 ? 4 : x.st, x.startedAt, x.finishedAt];
+    const d = popupRule.decode(s), old = popupRule.decode(b);
+    return [d.ok ? 1 : 0, ...(e.op === 5 ? view(old, e.now) : view(d, e.now))];
+  },
+);
 
 const temp = mkdtempSync(join(tmpdir(), "wblock-policy-proofs-"));
 try {

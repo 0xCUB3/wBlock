@@ -29,6 +29,10 @@ The headless rebuild gate's cooldowns, failure backoff and outcome recording are
 verify.mjs drives its real gate file through the production consume and record calls.
 The blocking pause store covers its component mask, legacy migration, resume requests, and scoped reloads,
 checked through the production API on a fresh UserDefaults suite per trace.
+with the apply phase rail under out-of-order reports and failure/completion events,
+and the filter update popup lifecycle (claims, expiry at 300 s, request bits,
+acknowledgment). The popup's result counts are outside the model and stay in
+`scripts/test_filter_update_popup_status.swift`, which also keeps the cross-process claim test.
 Zero denotes an absent revision/trigger; real identities are encoded as positive
 naturals. Rebase contracts operate on one record; the Swift comparisons additionally
 exercise duplicate snapshot IDs and last-persisted-record precedence.

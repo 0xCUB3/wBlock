@@ -447,6 +447,48 @@ final class ResumeCount: @unchecked Sendable { var count = 0 }
           ["granted": HeadlessLaunch.consumeAutoRebuildLaunchSlot(now: TimeInterval(e.n("now")), gateDirectory: blocked)]
         }
       case "pauseStore": return pauseStore[index]!
+      case "popup":
+        // Each trace starts from an empty store in its own suite and lock directory. Claim numbers name the
+        // tokens that claims won, so a finish by a model claim is a finish by the production token it won with.
+        let group = "test.wblock.policy-probe.popup.\(UUID().uuidString)"
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try! FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer {
+          UserDefaults(suiteName: group)?.removePersistentDomain(forName: group)
+          try? FileManager.default.removeItem(at: directory)
+        }
+        var tokens: [Int: FilterUpdatePopupStatus.ClaimToken] = [:]
+        let states: [FilterUpdatePopupStatus.State] = [.idle, .running, .succeeded, .noChange, .failed]
+        return values.map { e -> [Int] in
+          let now = Date(timeIntervalSince1970: Double(e.n("now")))
+          let claim = e.n("claim"), op = e.n("op")
+          var ok = false
+          switch op {
+          case 0, 1:
+            let token = op == 0
+              ? FilterUpdatePopupStatus.beginIfIdle(groupIdentifier: group, now: now, lockDirectory: directory)
+              : FilterUpdatePopupStatus.requestUpdate(groupIdentifier: group, now: now, lockDirectory: directory)
+            ok = token != nil
+            if let token { tokens[claim] = token }
+          case 2:
+            ok = FilterUpdatePopupStatus.consumeUpdateRequest(groupIdentifier: group, lockDirectory: directory) != nil
+          case 3:
+            let completion = SharedAutoUpdateManager.AutoUpdateCompletion(
+              result: e.n("outcome") == 1 ? .noFilterUpdates : .appliedUpdates,
+              checkedFilters: 1, updatedFilters: 1, updatedScripts: 0, failedScripts: 0)
+            let outcome: SharedAutoUpdateManager.AutoUpdateRunOutcome =
+              e.n("outcome") == 2 ? .failed(message: "failed") : .completed(completion)
+            ok = FilterUpdatePopupStatus.finish(
+              outcome, claim: tokens[claim] ?? .init(rawValue: "unclaimed"),
+              groupIdentifier: group, now: now, lockDirectory: directory)
+          default: break
+          }
+          // consumeSnapshot reports the state it clears; every other operation reports the state after it.
+          let view = op == 5
+            ? FilterUpdatePopupStatus.consumeSnapshot(groupIdentifier: group, now: now, lockDirectory: directory)
+            : FilterUpdatePopupStatus.snapshot(groupIdentifier: group, now: now, lockDirectory: directory)
+          return [ok ? 1 : 0, states.firstIndex(of: view.state)!, Int(view.startedAt ?? 0), Int(view.finishedAt ?? 0)]
+        }
       default: preconditionFailure("unknown policy suite \(suite)")
       }
     }

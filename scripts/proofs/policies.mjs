@@ -433,8 +433,63 @@ const pauseSteps = [
     (_, l, [r1, r2]) => r1.op.eq(4).and(r2.op.eq(4)).implies(l.out.eq(0))),
 ];
 
+// Filter update popup status (FilterUpdatePopupStatus.swift). Stored state: idle 0, running 1, succeeded 2,
+// noChange 3, failed 4. A running claim whose start is more than 300 s old reads as failed, so it is taken by the
+// next claim and acknowledged by consumeSnapshot. Claims and times are at least 1 (0 encodes none or nil).
+// op: 0 beginIfIdle, 1 requestUpdate, 2 consumeUpdateRequest, 3 finish, 4 snapshot, 5 consumeSnapshot.
+// outcome: 0 applied, 1 no change, 2 failed. ok: the claim, request consume or finish succeeded.
+export const popup = rule('filter update popup status')
+  .inputs({op: upTo(5), claim: nat, now: nat, outcome: upTo(2)})
+  .state({st: upTo(4).from(0), owner: 0, requested: bool.from(false), startedAt: 0, finishedAt: 0, ok: bool.from(false)})
+  .assume(({claim, now}) => claim.atLeast(1).and(now.atLeast(1)));
+// `broken` names one deliberate fault the proofs must refuse; '' is the shipped transition.
+function popupStep({op, claim, now, outcome, st, owner, requested, startedAt, finishedAt}, broken = '') {
+  const stale = st.eq(1).and(broken === 'boundary' ? startedAt.plus(300).atMost(now) : startedAt.plus(300).lt(now));
+  const live = st.eq(1).and(stale.not()), open = broken === 'claim' ? yes : live.not();
+  const terminal = stale.or(st.atLeast(2));
+  const claimed = op.eq(0).or(op.eq(1)).and(open), asked = op.eq(1).and(open);
+  const finished = op.eq(3).and(st.eq(1), broken === 'owner' ? yes : owner.eq(claim));
+  const taken = op.eq(2).and(requested, st.eq(1), owner.atLeast(1));
+  const acked = (broken === 'read' ? op.eq(4).or(op.eq(5)) : op.eq(5)).and(broken === 'ack' ? st.atLeast(1) : terminal);
+  const done = when(outcome.eq(0), 2, when(outcome.eq(1), broken === 'outcome' ? 2 : 3, 4));
+  return {
+    ok: claimed.or(taken, finished),
+    st: when(claimed, 1, when(finished, done, when(acked, 0, st))),
+    owner: when(claimed, claim, when(acked, 0, owner)),
+    requested: when(claimed, asked.or(broken === 'request' ? requested : no), when(finished.or(taken, acked), no, requested)),
+    startedAt: when(claimed, now, when(acked, 0, startedAt)),
+    finishedAt: when(claimed, 0, when(finished, now, when(acked, 0, finishedAt))),
+  };
+}
+export const popupRule = popup.step(e => popupStep(e));
+const frozen = (s, a) => a.st.eq(s.st).and(a.owner.eq(s.owner), a.requested.iff(s.requested), a.startedAt.eq(s.startedAt), a.finishedAt.eq(s.finishedAt));
+// Not running: idle, finished, or a running claim more than 300 s old. The spec's formula, not the rule's flags.
+const notLive = ({st, startedAt, now}) => st.eq(1).implies(startedAt.plus(300).lt(now));
+const popupInvariants = [
+  popupRule.law('a running claim has an owner', ({st, owner}) => st.eq(1).implies(owner.atLeast(1))),
+  popupRule.law('an idle store has no owner', ({st, owner}) => st.eq(0).implies(owner.eq(0))),
+  popupRule.law('a pending request belongs to a running claim', ({st, requested}) => requested.implies(st.eq(1))),
+];
+const popupSteps = [
+  popupRule.stepLaw('a live claim is refused and changes nothing', frozen, s => s.op.eq(0).or(s.op.eq(1)).and(notLive(s).not())),
+  popupRule.stepLaw('a claim takes an idle, finished or expired store', (s, a) => a.st.eq(1).and(a.owner.eq(s.claim), a.startedAt.eq(s.now), a.finishedAt.eq(0)),
+    s => s.op.eq(0).or(s.op.eq(1)).and(notLive(s))),
+  popupRule.stepLaw('a direct claim clears the request bit', (_, a) => a.requested.not(), s => s.op.eq(0).and(notLive(s))),
+  popupRule.stepLaw('a request claim sets the request bit', (_, a) => a.requested, s => s.op.eq(1).and(notLive(s))),
+  popupRule.stepLaw('a finish by a non-owner changes nothing', frozen, s => s.op.eq(3).and(s.owner.eq(s.claim).not())),
+  popupRule.stepLaw('a finish records its outcome', (s, a) => a.st.eq(when(s.outcome.eq(0), 2, when(s.outcome.eq(1), 3, 4))),
+    s => s.op.eq(3).and(s.owner.eq(s.claim), s.st.eq(1))),
+  popupRule.stepLaw('taking a request clears only its bit', (s, a) => a.requested.not().and(a.st.eq(s.st), a.owner.eq(s.owner), a.startedAt.eq(s.startedAt), a.finishedAt.eq(s.finishedAt)),
+    s => s.op.eq(2).and(s.requested, s.st.eq(1), s.owner.atLeast(1))),
+  popupRule.stepLaw('a snapshot changes nothing', frozen, s => s.op.eq(4)),
+  popupRule.stepLaw('acknowledging an idle store changes nothing', frozen, s => s.op.eq(5).and(s.st.eq(0))),
+  popupRule.stepLaw('acknowledging a running claim changes nothing', frozen, s => s.op.eq(5).and(notLive(s).not())),
+  popupRule.stepLaw('acknowledging a finished or expired claim clears the store', (_, a) => a.st.eq(0).and(a.owner.eq(0), a.requested.not(), a.startedAt.eq(0), a.finishedAt.eq(0)),
+    s => s.op.eq(5).and(s.st.ne(0), notLive(s))),
+];
+
 export function verifyProofs() {
-  for (const [r, invariants, steps] of [[uploadRule,[],uploadLaws],[revisionRule,[],revisionLaws],[railRule,railLaws,railSteps],[gateRule,gateLaws,gateSteps],[infoRule,infoInvariants,infoSteps],[headlessGateRule,headlessInvariants,headlessSteps],[pauseRule,pauseLaws,pauseSteps]]) {
+  for (const [r, invariants, steps] of [[uploadRule,[],uploadLaws],[revisionRule,[],revisionLaws],[railRule,railLaws,railSteps],[gateRule,gateLaws,gateSteps],[infoRule,infoInvariants,infoSteps],[headlessGateRule,headlessInvariants,headlessSteps],[pauseRule,pauseLaws,pauseSteps],[popupRule,popupInvariants,popupSteps]]) {
     verdict(proveSteps(r,invariants,steps,{search:false}), invariants.length + steps.length); checked(r.crossCheck(invariants,steps,{rand:draw}));
   }
   for (const [r,invariants,steps] of [
@@ -468,6 +523,12 @@ export function verifyProofs() {
     const v = proveSteps(headlessBase.step(e => headlessStep(e, broken)), headlessInvariants, headlessSteps, {search:false});
     assert.equal(v.proven, false, 'broken gate escaped'); assert.equal(v.stuck, 'sat', JSON.stringify(v));
     assert.ok(v.witness || v.run, 'mutation must have counterexample evidence'); mutations++;
+  }
+  for (const b of ['claim','boundary','owner','read','ack','outcome','request']) {
+    const v=proveSteps(popup.step(e=>popupStep(e,b)),popupInvariants,popupSteps,{search:false});
+    assert.equal(v.proven,false,`popup ${b} mutation escaped`);
+    assert.equal(v.stuck,'sat',JSON.stringify(v));
+    assert.ok(v.witness || v.run,'mutation must have counterexample evidence'); mutations++;
   }
   return {proven,mutations,concrete};
 }
