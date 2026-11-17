@@ -36,10 +36,12 @@ const hideShorts = {
   isEnabled: true,
 };
 
-// One page load against a native host whose revision counter is `hostRevision`.
-// The page cached the script under `cachedRevision`. Validation answers only
-// when the test releases it, as a host that is still starting does.
-function loadPage({ cachedRevision, hostRevision }) {
+// One page load against a native host at revision `hostRevision`. The page
+// cached the script under `cachedRevision` (null for no cache). Validation
+// answers only when the test releases it, as a host that is still starting
+// does. `staleReplies` is how many replies carry a revision that native has
+// already left behind, as when the script list changes right after the reply.
+function loadPage({ cachedRevision, hostRevision, staleReplies = 0 }) {
   const injected = [];
   const makeElement = tag => ({
     tagName: String(tag).toUpperCase(), textContent: "", attributes: {}, children: [], style: {},
@@ -72,7 +74,7 @@ function loadPage({ cachedRevision, hostRevision }) {
     location: { href: "https://www.youtube.com/", hostname: "www.youtube.com", protocol: "https:", pathname: "/" },
     addEventListener() {}, removeEventListener() {}, postMessage() {},
     sessionStorage: storage(new Map()),
-    localStorage: storage(new Map([["__wblock_warm_start_v1", JSON.stringify({
+    localStorage: storage(new Map(cachedRevision === null ? [] : [["__wblock_warm_start_v1", JSON.stringify({
       version: 1, savedAt: Date.now(), scripts: [{ ...hideShorts, payloadRevision: cachedRevision }],
     })]])),
     document: {
@@ -84,7 +86,8 @@ function loadPage({ cachedRevision, hostRevision }) {
       sendMessage: message => {
         sent.push(message.action);
         if (message.action === "getUserScripts") {
-          return Promise.resolve({ userScripts: [{ ...hideShorts, payloadRevision: hostRevision }] });
+          const payloadRevision = staleReplies-- > 0 ? hostRevision - 1 : hostRevision;
+          return Promise.resolve({ userScripts: [{ ...hideShorts, payloadRevision }] });
         }
         if (message.action === "validateUserScriptExecutions") {
           return new Promise(resolve => validations.push(() => resolve({
@@ -99,7 +102,17 @@ function loadPage({ cachedRevision, hostRevision }) {
   sandbox.window = sandbox.globalThis = sandbox.top = sandbox.self = sandbox;
   vm.createContext(sandbox);
   vm.runInContext(source, sandbox, { filename: "userscript-injector.js" });
-  return { injected, sent, releaseValidations: () => { while (validations.length) validations.shift()(); } };
+  const cachedRevisions = () => JSON.parse(sandbox.localStorage.getItem("__wblock_warm_start_v1") || '{"scripts":[]}')
+    .scripts.map(script => script.payloadRevision);
+  // Each round answers the validations asked so far and lets the page react.
+  const finish = async () => {
+    for (let round = 0; round < 4; round += 1) {
+      await settle();
+      while (validations.length) validations.shift()();
+    }
+    await settle();
+  };
+  return { injected, sent, cachedRevisions, finish, requests: () => sent.filter(action => action === "getUserScripts").length };
 }
 
 // The native host restarted: its revision counter no longer matches the cache.
@@ -108,21 +121,30 @@ await settle();
 check("cold start: the cached copy waits for native validation", cold.sent[0] === "validateUserScriptExecutions"
   && cold.injected.length === 0);
 check("cold start: the authoritative reply arrives while that validation is pending", cold.sent.includes("getUserScripts"));
-cold.releaseValidations();
-await settle();
-cold.releaseValidations();
-await settle();
+await cold.finish();
 check("cold start: the script runs once the stale cached copy is rejected", cold.injected.length === 1);
+check("cold start: the page cache now holds the copy the host accepts, so a reload starts warm",
+  cold.cachedRevisions().join() === "1");
 
 // The same host as before: the cached copy validates, and the authoritative
 // copy of the same script must not run as well.
 const warm = loadPage({ cachedRevision: 1, hostRevision: 1 });
-await settle();
-warm.releaseValidations();
-await settle();
-warm.releaseValidations();
-await settle();
+await warm.finish();
 check("warm start: a validated cached copy runs exactly once", warm.injected.length === 1);
+check("warm start: nothing is requested again", warm.requests() === 1);
+
+// The script list changed between the reply and its validation: the fresh copy
+// is rejected too, and the page must ask once more.
+const changed = loadPage({ cachedRevision: null, hostRevision: 2, staleReplies: 1 });
+await changed.finish();
+check("changed list: a rejected fresh copy is requested again and runs once",
+  changed.requests() === 2 && changed.injected.length === 1);
+
+// A host that keeps rejecting must not be asked forever.
+const rejecting = loadPage({ cachedRevision: null, hostRevision: 2, staleReplies: Infinity });
+await rejecting.finish();
+check("changed list: a copy rejected again is not requested a third time",
+  rejecting.requests() === 2 && rejecting.injected.length === 0);
 
 if (failures > 0) {
   console.error(`\n${failures} check(s) failed`);

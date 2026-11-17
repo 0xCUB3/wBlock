@@ -6,6 +6,7 @@
 //
 
 import Combine
+import CryptoKit
 import Foundation
 import os.log
 #if os(macOS)
@@ -141,7 +142,7 @@ public class UserScriptManager: ObservableObject {
     @Published public var userScripts: [UserScript] = [] {
         didSet {
             rebuildUserScriptIndex()
-            payloadMutationRevision &+= 1
+            cachedPayloadRevision = nil
         }
     }
     @Published public var isLoading: Bool = false
@@ -178,7 +179,22 @@ public class UserScriptManager: ObservableObject {
     /// Monotonic revision of local-only userscript mutations. CloudSync can persist this
     /// value to coalesce work; remote-origin changes deliberately do not advance it.
     public private(set) var localMutationRevision: UInt64 = 0
-    public private(set) var payloadMutationRevision: UInt64 = 0
+    /// Fingerprint of every script's authoritative state, the same fields
+    /// `hasSameAuthoritativeState` compares. A page's cached copy carries it and
+    /// is rejected once any script changes. It is derived from the state alone,
+    /// so a restarted native host accepts a copy that is still current.
+    public var payloadMutationRevision: UInt64 {
+        if let cachedPayloadRevision { return cachedPayloadRevision }
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .sortedKeys
+        // Scripts are plain Codable values; a failure here leaves revision 0.
+        let digest = SHA256.hash(data: (try? encoder.encode(userScripts)) ?? Data())
+        // 53 bits: the injector and JSON carry it as a safe integer.
+        let revision = digest.prefix(8).reduce(UInt64(0)) { $0 << 8 | UInt64($1) } >> 11
+        cachedPayloadRevision = revision
+        return revision
+    }
+    private var cachedPayloadRevision: UInt64?
     private var contentMutationRevisions: [UUID: UInt64] = [:]
     private var userScriptsPendingPersistence = Set<UUID>()
 

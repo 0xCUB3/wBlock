@@ -1323,7 +1323,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
             this.validationPrefetches.set(executionKey, { url, payloadRevision: script.payloadRevision, promise });
         }
 
-        async validateScriptForExecution(script) {
+        async validateScriptForExecution(script, generation) {
             if (!script || !script.id || !Number.isSafeInteger(script.payloadRevision) || script.payloadRevision < 0) {
                 return false;
             }
@@ -1350,6 +1350,14 @@ if (window.wBlockUserscriptInjectorHasRun) {
             }
             if (!result || result.ok !== true) {
                 if (result && result.error) wBlockLog(`[wBlock] Native execution validation rejected ${script.name}: ${result.error}`);
+                // The script list changed after native sent this copy. Ask for
+                // the current one, once: a copy from that request never asks again.
+                if (result && result.error === 'userscript-state-changed' && script.__wblockWarmStart !== true
+                    && generation === this.documentStartRequestGeneration
+                    && generation !== this.stateChangeRetryGeneration) {
+                    this.stateChangeRetryGeneration = generation + 1;
+                    this.invalidateDocumentStartSessionCache();
+                }
                 return false;
             }
             return true;
@@ -1383,7 +1391,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
                     if (css.length > 0) {
                         await this.waitForDocumentRoot();
                         if (generation !== this.documentStartRequestGeneration) return;
-                        const validated = await this.validateScriptForExecution(fullStyle);
+                        const validated = await this.validateScriptForExecution(fullStyle, generation);
                         if (generation !== this.documentStartRequestGeneration || !validated) return;
                         this.injectStyleElement(fullStyle, css);
                         if (generation === this.documentStartRequestGeneration) {
@@ -1462,7 +1470,7 @@ if (window.wBlockUserscriptInjectorHasRun) {
 
                 if (generation !== this.documentStartRequestGeneration) return;
                 // Cached code must obey current site permissions before it runs, too.
-                const validated = await this.validateScriptForExecution(fullScript);
+                const validated = await this.validateScriptForExecution(fullScript, generation);
                 if (generation !== this.documentStartRequestGeneration || !validated) return;
                 // Styles and scripts waiting for their run-at phase need no GM bridges.
                 if (!this.scriptRuntimeReady) {
