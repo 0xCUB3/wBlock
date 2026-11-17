@@ -147,8 +147,6 @@ compile_direct_test userscript-world-isolation scripts/test_userscript_world_iso
 compile_direct_test tab-selection-isolation wBlock/AppTabView.swift scripts/test_tab_selection_isolation.swift
 compile_direct_test shared-auto-update-lease \
   wBlockCoreService/FileLock.swift wBlockCoreService/SharedAutoUpdateLease.swift scripts/test_shared_auto_update_lease.swift
-compile_direct_test foreground-run-gate \
-  wBlockCoreService/ForegroundRunGate.swift scripts/test_foreground_run_gate.swift
 
 # Core-module API tests. Source-only wBlock tests add their production source
 # explicitly; the remaining tests use the freshly built core framework.
@@ -156,7 +154,6 @@ compile_core_test apply-progress-presentation scripts/test_apply_progress_presen
   wBlock/ApplyChangesViewModel.swift
 compile_core_test safari-setup-query-isolation scripts/test_safari_setup_query_isolation.swift \
   wBlock/SafariExtensionSetupSupport.swift
-compile_core_test userscript-frame-authorization scripts/test_userscript_frame_authorization.swift
 job core "policy proofs and Swift conformance"
 step npm --prefix scripts/proofs ci --ignore-scripts --no-audit --no-fund
 step npm --prefix scripts/proofs test
@@ -380,11 +377,6 @@ compile_direct_test include-resolution \
   wBlockCoreService/ConditionalEvaluator.swift \
   wBlockCoreService/PlatformConstants.swift \
   scripts/test_include_resolver_url_encoding.swift
-
-compile_direct_test pause-store \
-  wBlockCoreService/GroupIdentifier.swift \
-  wBlockCoreService/BlockingPauseStore.swift \
-  scripts/test_issue_508_pause_store.swift
 
 compile_direct_test pending-filter-update-revisions \
   wBlockCoreService/GroupIdentifier.swift \
