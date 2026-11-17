@@ -5,6 +5,9 @@ import WBE
 public enum WBEngine {
     public struct EngineError: LocalizedError {
         public let errorDescription: String?
+        public init(errorDescription: String?) {
+            self.errorDescription = errorDescription
+        }
         static func last() -> EngineError {
             EngineError(errorDescription: wbe_last_error().map { String(cString: $0) } ?? "wbe failed")
         }
@@ -43,12 +46,36 @@ public enum WBEngine {
         wbe_clear_parse_cache()
     }
 
+    /// A packing that exceeds the limits. `slots` are in target order.
+    public struct Capacity: Decodable {
+        public let rules: Int
+        public let bytes: Int
+        public let slots: [Slot]
+
+        public struct Slot: Decodable {
+            public let rules: Int
+            public let bytes: Int
+        }
+    }
+
     public final class Plan: @unchecked Sendable {
         private let handle: OpaquePointer
+        /// Nil when the packing fits. An over-capacity plan still compiles its
+        /// targets for measurement, but its output must not be shipped.
+        public let capacity: Capacity?
+        /// The engine's message for `capacity`, nil when the plan fits.
+        public let capacityMessage: String?
 
         public init(requestJSON: String) throws {
             guard let handle = wbe_plan_new(requestJSON) else { throw EngineError.last() }
             self.handle = handle
+            if let json = wbe_plan_capacity_json(handle) {
+                capacity = try JSONDecoder().decode(Capacity.self, from: Data(String(cString: json).utf8))
+                capacityMessage = wbe_plan_capacity_message(handle).map { String(cString: $0) }
+            } else {
+                capacity = nil
+                capacityMessage = nil
+            }
         }
 
         deinit { wbe_plan_free(handle) }

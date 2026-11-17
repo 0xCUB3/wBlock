@@ -38,6 +38,13 @@ uint32_t wbe_output_version(void);
 /* PlanRequest JSON contains safari, lists, targets, and optional cosmetics.
  * Each list may provide text or a UTF-8 file path. The plan owns its inputs. */
 WbePlan *wbe_plan_new(const char *request_json);
+/* When the packing exceeds the limits, these return the capacity JSON
+ * {"rules":L,"bytes":B,"slots":[{"rules":r,"bytes":b},..]} (slots in target
+ * order) and the message for it; otherwise NULL. An over-capacity plan still
+ * compiles targets for measurement, so its output must not be shipped. Owned
+ * by the plan. */
+const char *wbe_plan_capacity_json(const WbePlan *plan);
+const char *wbe_plan_capacity_message(const WbePlan *plan);
 /* extras_json is an array of {"text":..., "trusted":...}. The result's
  * stats JSON additionally contains admitted counts keyed by list ID. */
 /* Compiles blocker `target` unless has_known_fingerprint and its fingerprint is

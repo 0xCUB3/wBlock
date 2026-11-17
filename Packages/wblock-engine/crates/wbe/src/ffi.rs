@@ -19,7 +19,9 @@ pub struct WbeCompileResult {
     unchanged: bool,
 }
 
-pub struct WbePlan(Plan);
+/// The plan, and when its packing exceeds the limits, the capacity JSON and
+/// the `check_capacity` message.
+pub struct WbePlan(Plan, Option<(CString, CString)>);
 
 #[no_mangle]
 pub unsafe extern "C" fn wbe_plan_new(request_json: *const c_char) -> *mut WbePlan {
@@ -51,9 +53,37 @@ pub unsafe extern "C" fn wbe_plan_new(request_json: *const c_char) -> *mut WbePl
             }
         }
         let plan = Plan::new(request);
-        plan.check_capacity()?;
-        Ok(Box::into_raw(Box::new(WbePlan(plan))))
+        let capacity = match plan.capacity() {
+            Some(capacity) => {
+                let json = serde_json::to_string(capacity).map_err(|error| error.to_string())?;
+                Some((to_c(json)?, to_c(capacity.message())?))
+            }
+            None => None,
+        };
+        Ok(Box::into_raw(Box::new(WbePlan(plan, capacity))))
     })
+}
+
+/// The JSON `{"rules":L,"bytes":B,"slots":[{"rules":r,"bytes":b},..]}` when the
+/// plan's packing exceeds the limits, in target order; NULL when it fits. The
+/// plan owns the string.
+///
+/// # Safety
+/// `plan` must be NULL or a live pointer from `wbe_plan_new`. Pointers returned
+/// here become invalid when the plan is freed.
+#[no_mangle]
+pub unsafe extern "C" fn wbe_plan_capacity_json(plan: *const WbePlan) -> *const c_char {
+    plan.as_ref().and_then(|plan| plan.1.as_ref()).map_or(ptr::null(), |(json, _)| json.as_ptr())
+}
+
+/// The message `check_capacity` gives for an over-capacity plan, or NULL when it
+/// fits. The plan owns the string.
+///
+/// # Safety
+/// Same as `wbe_plan_capacity_json`.
+#[no_mangle]
+pub unsafe extern "C" fn wbe_plan_capacity_message(plan: *const WbePlan) -> *const c_char {
+    plan.as_ref().and_then(|plan| plan.1.as_ref()).map_or(ptr::null(), |(_, message)| message.as_ptr())
 }
 
 /// Compiles blocker `target` unless `has_known_fingerprint` and its fingerprint
@@ -87,7 +117,11 @@ pub unsafe extern "C" fn wbe_plan_compile_target(
                 unchanged: true,
             })));
         };
-        plan.0.check_output(&compiled.output)?;
+        // An over-capacity plan still compiles each target, so its sizes can be
+        // measured; callers must not ship its output (see wbe_plan_capacity_json).
+        if plan.1.is_none() {
+            plan.0.check_output(&compiled.output)?;
+        }
         let mut stats =
             serde_json::to_value(&compiled.output.stats).map_err(|error| error.to_string())?;
         stats["admitted"] =
@@ -460,12 +494,29 @@ mod tests {
             let request = |text: &str| c(&serde_json::json!({
                 "safari": [18, 0], "limits": {"rules": 1},
                 "lists": [{"id": "list", "text": text}],
-                "targets": [{"slot": 1, "lists": [{"list": 0}]}]
+                "targets": [{"slot": 1, "lists": [{"list": 0}]}, {"slot": 2, "lists": []}]
             }).to_string());
-            assert!(wbe_plan_new(request("||one.example^\n||two.example^").as_ptr()).is_null());
-            assert!(last_error().contains("budgets"));
-            let plan = wbe_plan_new(request("||one.example^").as_ptr());
+            let plan = wbe_plan_new(request("||one.example^\n||two.example^").as_ptr());
             assert!(!plan.is_null(), "{}", last_error());
+            let capacity = CStr::from_ptr(wbe_plan_capacity_json(plan)).to_str().unwrap();
+            let capacity: serde_json::Value = serde_json::from_str(capacity).unwrap();
+            assert_eq!(capacity["rules"], 1);
+            assert_eq!(capacity["slots"].as_array().unwrap().len(), 2);
+            assert_eq!(capacity["slots"][0]["rules"], 2);
+            assert!(capacity["slots"][0]["bytes"].as_u64().unwrap() > 0);
+            assert_eq!(capacity["slots"][1]["rules"], 0);
+            let message = CStr::from_ptr(wbe_plan_capacity_message(plan)).to_str().unwrap();
+            assert!(message.contains("exceeds content blocker budgets"), "{message}");
+            // Measuring an over-capacity selection still compiles each target.
+            let result = wbe_plan_compile_target(plan, 0, c("[]").as_ptr(), false, 0);
+            assert!(!result.is_null(), "{}", last_error());
+            wbe_compile_free(result);
+            wbe_plan_free(plan);
+
+            let request = c(r#"{"safari":[18,0],"limits":{"rules":1},"lists":[{"id":"list","text":"||one.example^"}],"targets":[{"slot":1,"lists":[{"list":0}]}]}"#);
+            let plan = wbe_plan_new(request.as_ptr());
+            assert!(!plan.is_null(), "{}", last_error());
+            assert!(wbe_plan_capacity_json(plan).is_null());
             let extras = c(r#"[{"text":"||two.example^"}]"#);
             assert!(wbe_plan_compile_target(plan, 0, extras.as_ptr(), false, 0).is_null());
             assert!(last_error().contains("capacity exceeded"));

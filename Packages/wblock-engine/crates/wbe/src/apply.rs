@@ -295,7 +295,30 @@ pub struct Plan {
     text_hashes: Vec<u64>,
     /// Where the blocks exceptions can reach go, when they go to one blocker.
     wide: Option<Wide>,
-    capacity_error: Option<String>,
+    capacity: Option<Capacity>,
+}
+
+/// A packing that exceeds the limits: the budgets, and each slot's measured
+/// size in target order.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct Capacity {
+    pub rules: usize,
+    pub bytes: usize,
+    pub slots: Vec<Slot>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Serialize)]
+pub struct Slot {
+    pub rules: usize,
+    pub bytes: usize,
+}
+
+impl Capacity {
+    pub fn message(&self) -> String {
+        format!("selection exceeds content blocker budgets after bounded repacking ({} rules, {} bytes per slot); measured slots: {}",
+            self.rules, self.bytes,
+            self.slots.iter().map(|s| format!("{} rules/{} bytes", s.rules, s.bytes)).collect::<Vec<_>>().join(", "))
+    }
 }
 
 /// What one blocker may hold. The wide blocker gains rules from every list,
@@ -442,18 +465,24 @@ impl Plan {
             duplicates: Vec::new(),
             text_hashes,
             wide: None,
-            capacity_error: None,
+            capacity: None,
         };
         plan.wide = plan.wide();
         plan.duplicates = plan.duplicate_rules();
-        plan.capacity_error = plan.pack().err();
+        plan.capacity = plan.pack().err();
         plan
     }
 
-    /// Verifies the measured list packing. Callers must reject a failed plan;
-    /// no rule is truncated or discarded to satisfy a budget.
+    /// The measured packing when it exceeds the limits, else None. The plan is
+    /// still usable: callers decide whether to reject it, and no rule is
+    /// truncated or discarded to satisfy a budget.
+    pub fn capacity(&self) -> Option<&Capacity> {
+        self.capacity.as_ref()
+    }
+
+    /// Verifies the measured list packing. Callers must reject a failed plan.
     pub fn check_capacity(&self) -> Result<(), String> {
-        self.capacity_error.clone().map_or(Ok(()), Err)
+        self.capacity.as_ref().map_or(Ok(()), |capacity| Err(capacity.message()))
     }
 
     /// Extras are supplied after planning, so their final output needs its own
@@ -475,7 +504,7 @@ impl Plan {
     /// Estimates choose the initial packing, never whether it can ship. If it
     /// overflows, measure fixed occupancy (including affinity outside the shared
     /// pool), then distribute movable blocks into the remaining capacity.
-    fn pack(&mut self) -> Result<(), String> {
+    fn pack(&mut self) -> Result<(), Capacity> {
         if self.limits.rules == 0 {
             return Ok(());
         }
@@ -540,9 +569,11 @@ impl Plan {
         if sizes.iter().all(|s| s.within(&self.limits)) {
             return Ok(());
         }
-        Err(format!("selection exceeds content blocker budgets after bounded repacking ({} rules, {} bytes per slot); measured slots: {}",
-            self.limits.rules, self.limits.bytes,
-            sizes.iter().map(|s| format!("{} rules/{} bytes", s.rules, s.bytes)).collect::<Vec<_>>().join(", ")))
+        Err(Capacity {
+            rules: self.limits.rules,
+            bytes: self.limits.bytes,
+            slots: sizes.iter().map(|s| Slot { rules: s.rules as usize, bytes: s.bytes as usize }).collect(),
+        })
     }
 
     /// The rule a record stands for, parsed again from its line exactly as

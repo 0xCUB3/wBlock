@@ -1572,6 +1572,15 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         )
         let (plan, targetIndex, requestJSON, extrasJSON, fingerprints) =
             (inputs.plan, inputs.targetIndex, inputs.requestJSON, inputs.extrasJSON, inputs.fingerprints)
+        // Every blocker is refused when the selection does not fit, so none is saved.
+        if let capacity = plan.capacity {
+            #if os(iOS)
+            throw ContentBlockerSizeLimitError(byteCount: capacity.slots[targetIndex].bytes,
+                                               limit: safariContentBlockerJSONSizeLimit)
+            #else
+            throw WBEngine.EngineError(errorDescription: plan.capacityMessage)
+            #endif
+        }
         if Task.isCancelled || isCancelled?() == true { throw CancellationError() }
         let fingerprintIdentity = "|\(SafariVersionDetection.compilerIdentity)"
         let fingerprintFilename = "\(ContentBlockerIncrementalCache.baseRulesFilename(for: rulesFilename)).plan-fingerprint"
