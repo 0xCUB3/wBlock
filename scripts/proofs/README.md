@@ -20,7 +20,8 @@ built. Revision traces use actual files in isolated temporary directories.
 Failures print the complete input trace. No fixture can substitute a Swift policy.
 
 The covered policies are menu action access, refresh scheduling, filter selection
-rebasing, cloud tombstone reconciliation, and local script identity decisions.
+rebasing, cloud tombstone reconciliation, local script identity decisions, remote filter
+metadata, and import metadata review.
 Stateful laws cover deferred uploads and per-key revision acknowledgment, along
 with the apply phase rail under out-of-order reports and failure/completion events.
 Zero denotes an absent revision/trigger; real identities are encoded as positive

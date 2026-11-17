@@ -72,6 +72,8 @@ for (const e of flags(["local", "base", "baseLegacy", "remote", "remoteLegacy", 
 for (const e of flags(["builtInCurrent", "builtInLegacy", "variant"])) decision("customImport", [e]);
 for (const e of flags(["prevNamed", "prevSel", "localStart", "named1", "sel1", "custom1", "toggled", "named2", "sel2"])) decision("twoSyncs", [e]);
 for (const e of flags(["paused", "disabledOnSite", "enabled", "webURL", "noframes", "top", "matched", "excluded"])) decision("frame", [e]);
+for (const e of flags(["custom", "userName", "titlePresent", "titleBlank", "userDescription", "descriptionPresent", "descriptionBlank", "versionPresent"])) decision("remoteMetadata", [e]);
+for (const e of flags(["present", "same", "blank"])) decision("importReview", [e]);
 for (const e of flags(["tomb", "local", "remote", "existed"]))
   for (const deletedAt of [0, 99, 100, 101])
     for (const remoteAt of [0, 99, 100, 101]) decision("custom", [{ ...e, deletedAt, remoteAt }]);

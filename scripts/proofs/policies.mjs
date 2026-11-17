@@ -178,6 +178,26 @@ decision('frame', booleans('paused','disabledOnSite','enabled','webURL','noframe
     m.law('an exclude beats a match', ({matched,excluded}) => matched.and(excluded), o => o.allowed.not()),
     m.law('an enabled, unpaused, matched top-frame page runs the script', e => e.paused.not().and(e.disabledOnSite.not(), e.enabled, e.webURL, e.noframes.not().or(e.top), e.matched, e.excluded.not()), o => o.allowed),
   ], e => ({allowed: e.disabledOnSite.not().and(e.enabled, e.webURL, e.noframes.not().or(e.top), e.matched, e.excluded.not())}));
+// FilterListRemoteMetadataPolicy.applying: each header value is nil, blank or text. A manual flag or a built-in list keeps its name and description; version is always replaced ("Unknown" when absent).
+decision('remoteMetadata', booleans('custom','userName','titlePresent','titleBlank','userDescription','descriptionPresent','descriptionBlank','versionPresent'),
+  ({custom,userName,titlePresent,titleBlank,userDescription,descriptionPresent,descriptionBlank,versionPresent}) => ({
+    takeTitle: custom.and(userName.not(), titlePresent, titleBlank.not()), takeDescription: custom.and(userDescription.not(), descriptionPresent, descriptionBlank.not()),
+    versionUnknown: versionPresent.not(),
+  }), m => [
+    m.law('a manual name survives remote metadata', ({userName}) => userName, o => o.takeTitle.not()),
+    m.law('a manual description survives remote metadata', ({userDescription}) => userDescription, o => o.takeDescription.not()),
+    m.law('built-in lists never take header title or description', ({custom}) => custom.not(), o => o.takeTitle.not().and(o.takeDescription.not())),
+    m.law('blank header values never replace metadata', () => [], (o,e) => e.titleBlank.implies(o.takeTitle.not()).and(e.descriptionBlank.implies(o.takeDescription.not()))),
+    m.law('version is always replaced', () => [], (o,e) => iff(o.versionUnknown, e.versionPresent.not())),
+  ], e => ({takeTitle: e.custom.and(e.titlePresent, e.titleBlank.not())}));
+
+// ImportMetadataReview.userProvided: an unchanged prefill stays automatic, a cleared prefill is an explicit empty override.
+decision('importReview', booleans('present','same','blank'),
+  ({present,same,blank}) => ({override: present.and(same.not()), cleared: present.and(same.not(), blank)}), m => [
+    m.law('an unchanged prefill stays automatic', ({present,same}) => present.and(same), o => o.override.not()),
+    m.law('a cleared prefill is an explicit empty override', ({present,same,blank}) => present.and(same.not(), blank), o => o.override.and(o.cleared)),
+    m.law('an untouched field stays automatic', ({present}) => present.not(), o => o.override.not().and(o.cleared.not())),
+  ], e => ({override: e.present}));
 
 export const upload = rule('deferred uploads').inputs({take:bool,syncing:bool,trigger:nat}).state({pending:0,kind:0,value:0});
 const uploadStep = ({take,syncing,trigger,pending}) => ({

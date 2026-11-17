@@ -134,6 +134,28 @@ extension Dictionary where Key == String, Value == Any {
             script, pageURL: e.b("webURL") ? "https://example.com/allowed/page" : "about:blank",
             isTopFrame: e.b("top"), disabledOnSite: e.b("disabledOnSite"), paused: e.b("paused"))]
         }
+      case "remoteMetadata":
+        return values.map { e -> Values in
+          let title = e.b("titlePresent") ? (e.b("titleBlank") ? " " : "Remote Title") : nil
+          let description = e.b("descriptionPresent") ? (e.b("descriptionBlank") ? " " : "Remote Description") : nil
+          let filter = FilterList(
+            name: "Original", url: URL(string: "https://example.com/filter.txt")!, category: .custom,
+            isCustom: e.b("custom"), description: "Original description",
+            hasUserProvidedName: e.b("userName"), hasUserProvidedDescription: e.b("userDescription"))
+          let result = FilterListRemoteMetadataPolicy.applying(
+            title: title, description: description, version: e.b("versionPresent") ? "2025.1" : nil, to: filter)
+          return [
+            "takeTitle": result.name == "Remote Title", "takeDescription": result.description == "Remote Description",
+            "versionUnknown": result.version == "Unknown",
+          ]
+        }
+      case "importReview":
+        return values.map { e -> Values in
+          let automatic = e.b("same") ? (e.b("blank") ? "" : "Remote") : "Other"
+          let edited = e.b("present") ? (e.b("blank") ? "  " : "Remote") : nil
+          let result = ImportMetadataReview.userProvided(edited, automatic: automatic)
+          return ["override": result != nil, "cleared": result == ""]
+        }
       case "custom", "remote":
         return values.map { e -> Values in
           if suite == "custom" {
