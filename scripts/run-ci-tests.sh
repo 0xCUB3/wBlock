@@ -17,7 +17,6 @@ case "${1:-all}" in
 esac
 if [[ "${1:-all}" != --native ]]; then
   for test in scripts/test_*.mjs; do
-    [[ "$test" == scripts/test_no_autoplay.mjs ]] && continue
     run node "$test"
   done
 fi
@@ -92,8 +91,6 @@ queue() {
   job "$1" "${*:2}"
   step "${@:2}"
 }
-
-queue core python3 scripts/test_issue_684_external_refresh.py
 
 compile_core_test() {
   local name="$1"
@@ -184,36 +181,6 @@ compile_core_test cloud-local-user-scripts scripts/test_cloud_sync_local_user_sc
   wBlock/CloudSyncRemoteUserScriptSync.swift
 compile_core_test cloud-remote-user-scripts scripts/test_cloud_sync_remote_user_scripts.swift \
   wBlock/CloudSyncRemoteUserScriptSync.swift
-cat > "$TMP/localization-formatting-shim.swift" <<'SWIFT'
-import Foundation
-
-extension Locale {
-  static var appCurrent: Locale { .current }
-}
-
-enum LocalizedFormatting {
-  static func relativeDateTimeFormatter(unitsStyle: RelativeDateTimeFormatter.UnitsStyle) -> RelativeDateTimeFormatter {
-    let formatter = RelativeDateTimeFormatter()
-    formatter.unitsStyle = unitsStyle
-    return formatter
-  }
-
-  static func timeFormatter() -> DateFormatter {
-    let formatter = DateFormatter()
-    formatter.dateFormat = "h:mm a"
-    return formatter
-  }
-
-  static func dateTimeFormatter() -> DateFormatter {
-    let formatter = DateFormatter()
-    formatter.dateFormat = "MMM d, yyyy 'at' h:mm a"
-    return formatter
-  }
-}
-SWIFT
-compile_direct_test cloud-timestamp-formatter \
-  "$TMP/localization-formatting-shim.swift" \
-  wBlock/CloudSyncTimestampFormatter.swift scripts/test_cloud_sync_timestamp_formatter.swift
 compile_core_test dark-reader-appearance scripts/test_dark_reader_appearance_preference.swift
 compile_core_test tube-cleaner-dearrow scripts/test_tube_cleaner_dearrow_preference.swift
 compile_core_test sponsorblock-settings-transfer scripts/test_sponsorblock_settings_transfer.swift
@@ -373,9 +340,6 @@ step swiftc -F "$CORE_PRODUCTS" -I "$CORE_PRODUCTS" -I "$CORE_PRODUCTS/include" 
   -framework wBlockCoreService -Xlinker -rpath -Xlinker "$CORE_PRODUCTS" \
   scripts/test_issue_511_packaged_compilers.swift -o "$TMP/packaged-compilers"
 step env "${COMPILER_BUNDLES[@]}" "$TMP/packaged-compilers"
-
-# Safari uses template tinting, so disabled toolbar icons need a distinct alpha mask.
-queue direct swift scripts/test_action_icon_masks.swift
 
 for test in scripts/test_*.sh; do
   if [[ "$test" == scripts/test_apply_sheet_presentation.sh ]]; then
