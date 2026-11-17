@@ -12,7 +12,9 @@ import UIKit
 import wBlockCoreService
 
 class FilterListLoader {
-    // Defaults mirror uBlock Origin's default-enabled lists, plus wBlock's own hosts list.
+    // Defaults mirror uBlock Origin's default-enabled lists, plus wBlock's own
+    // hosts list. Peter Lowe's hosts list is left off: its domains are mostly
+    // in EasyList and EasyPrivacy already, so it stays in the catalog only.
     /// uBlock Origin's own defaults, plus AdGuard – Mobile Ads, which uBO turns
     /// on for a mobile user agent (assets.json `ua`). Safari on iPad presents
     /// as a Mac, so that is iPhone only.
@@ -33,7 +35,6 @@ class FilterListLoader {
         "uBlock filters – Unbreak",
         "EasyList",
         "EasyPrivacy",
-        "Peter Lowe's Blocklist",
         "AdGuard URL Tracking Protection Filter",
         "Actually Legitimate URL Shortener Tool",
         "wBlock Ad and Tracking Hosts",
