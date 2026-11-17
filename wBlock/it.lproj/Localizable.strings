@@ -1128,11 +1128,11 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "Why things changed" = "Perché le cose sono cambiate";
 "wBlock used AdGuard's converter to turn filter lists into Safari rules. It skips rules written only for uBlock Origin. That meant many uBO lists didn't work fully in wBlock." = "wBlock usava il convertitore di AdGuard per trasformare le liste di filtri in regole per Safari. Ignorava le regole scritte solo per uBlock Origin, quindi molte liste uBO non funzionavano del tutto in wBlock.";
 "A new engine" = "Un nuovo motore";
-"I built a new engine that reads lists like uBlock Origin. wBlock starts from uBO's lists now. Your enabled AdGuard lists were swapped for matching uBO lists." = "Ho creato un nuovo motore che legge le liste come uBlock Origin. Ora wBlock parte dalle liste di uBO. Le tue liste AdGuard attive sono state sostituite con le liste uBO corrispondenti.";
+"wBlock's new engine reads lists like uBlock Origin. Your enabled AdGuard lists were swapped for matching uBO lists." = "Il nuovo motore di wBlock legge le liste come uBlock Origin. Le tue liste AdGuard attive sono state sostituite con le liste uBO corrispondenti.";
 "What stays the same" = "Cosa resta uguale";
 "Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. AdGuard lists are still in Filters if you want them back." = "Le tue liste personalizzate, gli userscript, le regole di Element Zapper e le impostazioni dei siti restano invariate. Le liste AdGuard sono ancora in Filtri, se le vuoi di nuovo.";
 "If a site breaks" = "Se un sito si blocca";
-"Turn wBlock off for that site using the wBlock button in Safari. Then let me know on [GitHub](https://github.com/0xCUB3/wBlock/issues)." = "Disattiva wBlock per quel sito con il pulsante wBlock in Safari. Poi fammelo sapere su [GitHub](https://github.com/0xCUB3/wBlock/issues).";
+"Turn wBlock off for that site using the wBlock button in Safari, then report it on [GitHub](https://github.com/0xCUB3/wBlock/issues)." = "Disattiva wBlock per quel sito con il pulsante wBlock in Safari, poi segnalalo su [GitHub](https://github.com/0xCUB3/wBlock/issues).";
 "Duplicate Filter Lists" = "Elenchi di filtri duplicati";
 "Remove Copy" = "Rimuovi copia";
 "Keep Both" = "Mantieni entrambi";

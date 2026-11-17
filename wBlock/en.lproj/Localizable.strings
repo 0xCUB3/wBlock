@@ -1137,11 +1137,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Why things changed" = "Why things changed";
 "wBlock used AdGuard's converter to turn filter lists into Safari rules. It skips rules written only for uBlock Origin. That meant many uBO lists didn't work fully in wBlock." = "wBlock used AdGuard's converter to turn filter lists into Safari rules. It skips rules written only for uBlock Origin. That meant many uBO lists didn't work fully in wBlock.";
 "A new engine" = "A new engine";
-"I built a new engine that reads lists like uBlock Origin. wBlock starts from uBO's lists now. Your enabled AdGuard lists were swapped for matching uBO lists." = "I built a new engine that reads lists like uBlock Origin. wBlock starts from uBO's lists now. Your enabled AdGuard lists were swapped for matching uBO lists.";
+"wBlock's new engine reads lists like uBlock Origin. Your enabled AdGuard lists were swapped for matching uBO lists." = "wBlock's new engine reads lists like uBlock Origin. Your enabled AdGuard lists were swapped for matching uBO lists.";
 "What stays the same" = "What stays the same";
 "Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. AdGuard lists are still in Filters if you want them back." = "Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. AdGuard lists are still in Filters if you want them back.";
 "If a site breaks" = "If a site breaks";
-"Turn wBlock off for that site using the wBlock button in Safari. Then let me know on [GitHub](https://github.com/0xCUB3/wBlock/issues)." = "Turn wBlock off for that site using the wBlock button in Safari. Then let me know on [GitHub](https://github.com/0xCUB3/wBlock/issues).";
+"Turn wBlock off for that site using the wBlock button in Safari, then report it on [GitHub](https://github.com/0xCUB3/wBlock/issues)." = "Turn wBlock off for that site using the wBlock button in Safari, then report it on [GitHub](https://github.com/0xCUB3/wBlock/issues).";
 "Duplicate Filter Lists" = "Duplicate Filter Lists";
 "Remove Copy" = "Remove Copy";
 "Keep Both" = "Keep Both";

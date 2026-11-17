@@ -1128,11 +1128,11 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Why things changed" = "Miért változott minden";
 "wBlock used AdGuard's converter to turn filter lists into Safari rules. It skips rules written only for uBlock Origin. That meant many uBO lists didn't work fully in wBlock." = "A wBlock az AdGuard konverterét használta a szűrőlisták Safari-szabályokká alakításához. Kihagyta azokat a szabályokat, amelyeket csak az uBlock Origin-hez írtak, így sok uBO-lista nem működött teljesen a wBlockban.";
 "A new engine" = "Új motor";
-"I built a new engine that reads lists like uBlock Origin. wBlock starts from uBO's lists now. Your enabled AdGuard lists were swapped for matching uBO lists." = "Készítettem egy új motort, amely úgy olvassa a listákat, mint az uBlock Origin. A wBlock mostantól az uBO listáival indul. A bekapcsolt AdGuard-listáidat a megfelelő uBO-listákra cseréltem.";
+"wBlock's new engine reads lists like uBlock Origin. Your enabled AdGuard lists were swapped for matching uBO lists." = "A wBlock új motorja úgy olvassa a listákat, mint az uBlock Origin. A bekapcsolt AdGuard-listáidat a megfelelő uBO-listákra cserélték.";
 "What stays the same" = "Ami nem változik";
 "Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. AdGuard lists are still in Filters if you want them back." = "Az egyéni listáid, userscriptjeid, Element Zapper szabályaid és oldalbeállításaid nem változtak. Az AdGuard-listák továbbra is megvannak a Szűrők között, ha vissza akarod kapcsolni őket.";
 "If a site breaks" = "Ha egy oldal elromlik";
-"Turn wBlock off for that site using the wBlock button in Safari. Then let me know on [GitHub](https://github.com/0xCUB3/wBlock/issues)." = "Kapcsold ki a wBlockot az adott oldalon a Safari wBlock gombjával. Utána szólj nekem a [GitHub](https://github.com/0xCUB3/wBlock/issues)on.";
+"Turn wBlock off for that site using the wBlock button in Safari, then report it on [GitHub](https://github.com/0xCUB3/wBlock/issues)." = "Kapcsold ki a wBlockot az adott oldalon a Safari wBlock gombjával, majd jelezd a [GitHub](https://github.com/0xCUB3/wBlock/issues)on.";
 "Duplicate Filter Lists" = "Ismétlődő szűrőlisták";
 "Remove Copy" = "Másolat eltávolítása";
 "Keep Both" = "Mindkettő megtartása";

@@ -1137,11 +1137,11 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Why things changed" = "Neler neden değişti";
 "wBlock used AdGuard's converter to turn filter lists into Safari rules. It skips rules written only for uBlock Origin. That meant many uBO lists didn't work fully in wBlock." = "wBlock, filtre listelerini Safari kurallarına dönüştürmek için AdGuard'ın dönüştürücüsünü kullanıyordu. uBlock Origin için yazılmış kuralları atlıyordu. Bu yüzden birçok uBO listesi wBlock'ta tam olarak çalışmıyordu.";
 "A new engine" = "Yeni bir motor";
-"I built a new engine that reads lists like uBlock Origin. wBlock starts from uBO's lists now. Your enabled AdGuard lists were swapped for matching uBO lists." = "uBlock Origin gibi listeleri okuyan yeni bir motor yaptım. wBlock artık uBO listelerinden başlıyor. Etkin olan AdGuard listelerin yerine karşılık gelen uBO listeleri geçirildi.";
+"wBlock's new engine reads lists like uBlock Origin. Your enabled AdGuard lists were swapped for matching uBO lists." = "wBlock'un yeni motoru listeleri uBlock Origin gibi okur. Etkin olan AdGuard listelerin yerine karşılık gelen uBO listeleri geçirildi.";
 "What stays the same" = "Değişmeyenler";
 "Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. AdGuard lists are still in Filters if you want them back." = "Özel listelerin, userscript'lerin, Element Zapper kuralların ve site ayarların değişmedi. İstersen AdGuard listeleri hâlâ Filtreler içinde duruyor.";
 "If a site breaks" = "Bir site bozulursa";
-"Turn wBlock off for that site using the wBlock button in Safari. Then let me know on [GitHub](https://github.com/0xCUB3/wBlock/issues)." = "Safari'deki wBlock düğmesini kullanarak o site için wBlock'u kapat. Sonra [GitHub](https://github.com/0xCUB3/wBlock/issues)'da bana haber ver.";
+"Turn wBlock off for that site using the wBlock button in Safari, then report it on [GitHub](https://github.com/0xCUB3/wBlock/issues)." = "Safari'deki wBlock düğmesini kullanarak o site için wBlock'u kapat ve [GitHub](https://github.com/0xCUB3/wBlock/issues)'da bildir.";
 "Duplicate Filter Lists" = "Yinelenen Filtre Listeleri";
 "Remove Copy" = "Kopyayı Kaldır";
 "Keep Both" = "İkisini de Tut";
