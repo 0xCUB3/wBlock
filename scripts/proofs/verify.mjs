@@ -4,7 +4,7 @@ import { mkdtempSync, readFileSync, writeFileSync, rmSync, readdirSync, existsSy
 import { tmpdir, homedir } from "node:os";
 import { join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { decisions, uploadRule, revisionRule, railRule, verifyProofs } from "./policies.mjs";
+import { decisions, uploadRule, revisionRule, railRule, gateRule, verifyProofs } from "./policies.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url)),
   root = resolve(here, "../..");
@@ -202,6 +202,19 @@ machine(
       focus: failed >= 0 ? failed : active >= 0 ? active : last >= 0 ? last : 0,
       cleared: e.op === 3 || (e.op === 0 && previous.indexOf(1) !== active),
     };
+  },
+);
+
+machine(
+  "gate",
+  gateRule,
+  traces(
+    [0, 1, 2, 3].map((op) => ({ op })),
+    6,
+  ),
+  (s) => {
+    const d = gateRule.decode(s);
+    return { granted: d.granted, work: d.work, running: d.running, resumed: d.resumed };
   },
 );
 

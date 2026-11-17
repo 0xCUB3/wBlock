@@ -9,6 +9,8 @@ extension Dictionary where Key == String, Value == Any {
   func n(_ key: String) -> Int { (self[key] as! NSNumber).intValue }
 }
 
+final class ResumeCount: @unchecked Sendable { var count = 0 }
+
 @main struct PolicyProbe {
   @MainActor static func main() throws {
     var pinned = FilterList(name: "pinned", url: URL(string: "https://example.com/list")!, category: .ads)
@@ -335,6 +337,23 @@ extension Dictionary where Key == String, Value == Any {
             (0..<3).map { current[String($0)].flatMap { Int($0.token) } ?? 0 },
             (0..<3).map { snapshot[String($0)].flatMap(Int.init) ?? 0 },
           ]
+        }
+      case "gate":
+        var gate = ForegroundRunGate()
+        let resumes = ResumeCount()
+        let wait: @Sendable () -> Void = { resumes.count += 1 }
+        return values.map { e -> Values in
+          var granted = false, resumed = 0
+          switch e.n("op") {
+          case 0: granted = gate.beginForegroundWork(orWait: wait)
+          case 1: gate.endForegroundWork()
+          case 2: granted = gate.startRun()
+          default:
+            let before = resumes.count
+            gate.finishRun().forEach { $0() }
+            resumed = resumes.count - before
+          }
+          return ["granted": granted, "work": gate.foregroundWork, "running": gate.runActive, "resumed": resumed]
         }
       case "rail":
         let vm = ApplyChangesViewModel()

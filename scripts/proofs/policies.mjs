@@ -261,16 +261,53 @@ const railLaws = [
 ];
 const railSteps = [railRule.stepLaw('failure survives later phase reports', (e,a) => fields.map(k => e[k].eq(3).implies(a[k].eq(3))).reduce((a,b)=>a.and(b)), e => e.op.eq(3).not())];
 
+// ForegroundRunGate. op: 0 begin, 1 end, 2 startRun, 3 finishRun. The shipped
+// startRun() checks only app work, not runActive, so a start during a run is
+// granted again; the model keeps that. A mutant names one broken transition.
+const gate = rule('foreground run gate').inputs({op:upTo(3)})
+  .state({work:0,running:bool.from(false),waiting:0,granted:bool.from(false),resumed:0});
+function gateStep(e, mutant='') {
+  const begin = e.op.eq(0), start = e.op.eq(2), finish = e.op.eq(3);
+  const enter = mutant === 'claim' ? begin : e.running.not().and(begin);
+  const run = mutant === 'start' ? start : start.and(e.work.eq(0));
+  return {
+    work: when(enter, e.work.plus(1), when(e.op.eq(1), e.work.minus(1), e.work)),
+    running: e.running.and(finish.not()).or(run),
+    waiting: when(begin.and(e.running), e.waiting.plus(1), mutant === 'keep' ? e.waiting : when(finish, 0, e.waiting)),
+    granted: enter.or(run),
+    resumed: when(finish, e.waiting, 0),
+  };
+}
+export const gateRule = gate.step(e => gateStep(e));
+const gateLaws = [
+  gateRule.law('a running gate holds no app work', ({running,work}) => running.implies(work.eq(0))),
+  gateRule.law('queued app work waits for a run', ({waiting,running}) => waiting.atLeast(1).implies(running)),
+  gateRule.law('app work never underflows', ({work}) => work.atLeast(0)),
+];
+const gateSteps = [
+  gateRule.stepLaw('a begin outside a run claims one unit', ({work},a) => a.work.eq(work.plus(1)).and(a.granted), e => e.op.eq(0).and(e.running.not())),
+  gateRule.stepLaw('a begin during a run holds nothing', ({work,waiting},a) => a.work.eq(work).and(a.waiting.eq(waiting.plus(1)), a.granted.not()), e => e.op.eq(0).and(e.running)),
+  gateRule.stepLaw('an end releases one unit, never below zero', ({work},a) => a.work.eq(work.minus(1)), e => e.op.eq(1)),
+  gateRule.stepLaw('a run starts only without app work', ({work},a) => a.granted.implies(work.eq(0)), e => e.op.eq(2)),
+  gateRule.stepLaw('a start without app work runs', (_,a) => a.running, e => e.op.eq(2).and(e.work.eq(0))),
+  gateRule.stepLaw('only a finish resumes app work', ({}, a) => a.resumed.eq(0), e => e.op.eq(3).not()),
+  gateRule.stepLaw('a finish hands back the queued waiters and clears the run', ({waiting},a) => a.resumed.eq(waiting).and(a.waiting.eq(0), a.running.not()), e => e.op.eq(3)),
+  gateRule.stepsLaw('a second finish resumes nothing', 2, (_,a,[,next]) => next.op.eq(3).implies(a.resumed.eq(0)), e => e.op.eq(3)),
+];
+
 export function verifyProofs() {
-  for (const [r, invariants, steps] of [[uploadRule,[],uploadLaws],[revisionRule,[],revisionLaws],[railRule,railLaws,railSteps]]) {
+  for (const [r, invariants, steps] of [[uploadRule,[],uploadLaws],[revisionRule,[],revisionLaws],[railRule,railLaws,railSteps],[gateRule,gateLaws,gateSteps]]) {
     verdict(proveSteps(r,invariants,steps,{search:false}), invariants.length + steps.length); checked(r.crossCheck(invariants,steps,{rand:draw}));
   }
-  for (const [r,laws] of [
-    [upload.step(e=>({...uploadStep(e),pending:when(e.take,0,e.pending)})),uploadLaws],
-    [revisions.step(e=>revisionStep(e,true)),revisionLaws],
-    [rail.step(e=>railStep(e,true)),railLaws],
+  for (const [r,invariants,steps] of [
+    [upload.step(e=>({...uploadStep(e),pending:when(e.take,0,e.pending)})),[],uploadLaws],
+    [revisions.step(e=>revisionStep(e,true)),[],revisionLaws],
+    [rail.step(e=>railStep(e,true)),railLaws,[]],
+    [gate.step(e=>gateStep(e,'claim')),gateLaws,gateSteps],
+    [gate.step(e=>gateStep(e,'start')),gateLaws,gateSteps],
+    [gate.step(e=>gateStep(e,'keep')),gateLaws,gateSteps],
   ]) {
-    const v=proveSteps(r,laws===railLaws ? laws : [],laws===railLaws ? [] : laws,{search:false});
+    const v=proveSteps(r,invariants,steps,{search:false});
     assert.equal(v.proven,false,'broken transition escaped');
     assert.equal(v.stuck,'sat',JSON.stringify(v));
     assert.ok(v.witness || v.run,'mutation must have counterexample evidence'); mutations++;
