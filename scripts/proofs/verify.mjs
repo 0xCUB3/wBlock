@@ -4,7 +4,7 @@ import { mkdtempSync, readFileSync, writeFileSync, rmSync, readdirSync, existsSy
 import { tmpdir, homedir } from "node:os";
 import { join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { decisions, uploadRule, revisionRule, railRule, gateRule, verifyProofs } from "./policies.mjs";
+import { decisions, uploadRule, revisionRule, railRule, gateRule, infoRule, verifyProofs } from "./policies.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url)),
   root = resolve(here, "../..");
@@ -217,6 +217,27 @@ machine(
     return { granted: d.granted, work: d.work, running: d.running, resumed: d.resumed };
   },
 );
+const infoInput = (op, o = {}) => ({ op, tok: 1, id: 1, ev: 1, mouse: false, fromKb: false, ...o });
+machine(
+  "infoPopover",
+  infoRule,
+  traces(
+    [
+      ...[1, 2, 3].map((tok) => infoInput("clicked", { tok })),
+      ...[1, 2, 3].flatMap((id) => [false, true].map((fromKb) => infoInput("anchor", { id, fromKb }))),
+      ...["request", "dismiss"].flatMap((op) =>
+        [1, 2, 3].flatMap((tok) => [infoInput(op, { tok }), ...[1, 2].map((ev) => infoInput(op, { tok, ev, mouse: true }))]),
+      ),
+      infoInput("clear"),
+    ],
+    3,
+  ),
+  (s, b, e) => {
+    const d = infoRule.decode(s), o = infoRule.decode(b);
+    const result = e.op === "anchor" ? d.pick : e.op === "request" ? Number(d.pres === e.tok) : e.op === "dismiss" ? Number(o.pres === e.tok) : 0;
+    return [d.pres, result];
+  },
+);
 
 const temp = mkdtempSync(join(tmpdir(), "wblock-policy-proofs-"));
 try {
@@ -239,6 +260,7 @@ try {
     "wBlock/CloudSyncRemoteUserScriptSync.swift",
     "wBlock/CloudSyncUserScriptSync.swift",
     "wBlock/ApplyChangesViewModel.swift",
+    "wBlock/InfoPresentation.swift",
     "scripts/proofs/PolicyProbe.swift",
   ];
   execFileSync(

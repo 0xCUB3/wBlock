@@ -24,6 +24,7 @@ rebasing, cloud tombstone reconciliation, local script identity decisions, remot
 metadata, and import metadata review.
 Stateful laws cover deferred uploads and per-key revision acknowledgment, along
 with the apply phase rail under out-of-order reports and failure/completion events.
+The info popover state machine covers click, selection, and dismissal sequences.
 Zero denotes an absent revision/trigger; real identities are encoded as positive
 naturals. Rebase contracts operate on one record; the Swift comparisons additionally
 exercise duplicate snapshot IDs and last-persisted-record precedence.

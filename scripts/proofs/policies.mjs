@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { bool, nat, upTo, fun, rule, when, forall, proveDecision, proveSteps, crossCheckDecision } from 'gdp-wired';
+import { bool, nat, upTo, oneOf, fun, rule, when, forall, proveDecision, proveSteps, crossCheckDecision } from 'gdp-wired';
 
 // These are specifications, not Swift proofs. verify.mjs compares their outputs
 // with production Swift; neither a proof failure nor a disagreement may pass CI.
@@ -295,8 +295,47 @@ const gateSteps = [
   gateRule.stepsLaw('a second finish resumes nothing', 2, (_,a,[,next]) => next.op.eq(3).implies(a.resumed.eq(0)), e => e.op.eq(3)),
 ];
 
+// InfoPopoverState. Tokens 1 and 2 are two rows of one list (id 1, token 1 on top); token 3 is another item (id 2);
+// id 3 names no item. Event numbers are 1 or 2; 0 means none (the mouse flag says whether an event is present).
+const idOf = t => when(t.eq(3), 2, 1), topmost = i => when(i.eq(1), 1, when(i.eq(2), 3, 0));
+const infoBase = rule('info popover')
+  .inputs({op: oneOf('clicked', 'anchor', 'request', 'dismiss', 'clear'), tok: nat, id: nat, ev: nat, mouse: bool, fromKb: bool})
+  .state({pres: 0, cTok: 0, cEv: 0, kTok: 0, pick: 0})
+  .assume(({tok, id, ev}) => tok.atLeast(1).and(tok.atMost(3), id.atLeast(1), id.atMost(3), ev.atLeast(1), ev.atMost(2)))
+  .flags(({op, tok, id, ev, mouse, fromKb, pres, cTok, cEv, kTok}) => ({
+    closingUp: op.is('request').and(mouse, cTok.eq(tok), cEv.eq(ev)),
+    closes: op.is('dismiss').and(pres.eq(tok)),
+    clickWins: op.is('anchor').and(fromKb.not(), kTok.atLeast(1), idOf(kTok).eq(id)),
+  }));
+const infoStep = (e, broken = '') => {
+  const closingUp = broken === 'reopen' ? e.closingUp.and(e.closingUp.not()) : e.closingUp;
+  const mouse = broken === 'unmouse' ? e.mouse.or(e.mouse.not()) : e.mouse;
+  return {
+    pres: when(e.op.is('request').and(closingUp.not()), e.tok, when(e.op.is('clear').or(e.closes), 0, e.pres)),
+    cTok: when(e.op.is('request'), 0, when(e.closes, when(mouse, e.tok, 0), e.cTok)),
+    cEv: when(e.op.is('request'), 0, when(e.closes, when(mouse, e.ev, 0), e.cEv)),
+    kTok: when(e.op.is('clicked'), e.tok, when(e.op.is('anchor').or(e.op.is('clear')), 0, e.kTok)),
+    pick: when(e.clickWins, e.kTok, when(e.op.is('anchor'), topmost(e.id), 0)),
+  };
+};
+export const infoRule = infoBase.step(e => infoStep(e));
+const infoInvariants = [infoRule.law('a closing click leaves nothing presented', ({cTok, pres}) => cTok.eq(0).or(pres.eq(0)))];
+const infoSteps = [
+  infoRule.stepLaw('a closing click cannot reopen its anchor', (_, a) => a.pres.eq(0), ({closingUp}) => closingUp),
+  infoRule.stepLaw('any other click reopens its anchor', ({tok}, a) => a.pres.eq(tok), ({op, closingUp}) => op.is('request').and(closingUp.not())),
+  infoRule.stepLaw('a late dismissal of another anchor changes nothing', (b, a) => a.pres.eq(b.pres).and(a.cTok.eq(b.cTok), a.cEv.eq(b.cEv), a.kTok.eq(b.kTok)),
+    ({op, tok, pres}) => op.is('dismiss').and(tok.eq(pres).not())),
+  infoRule.stepsLaw('a non-mouse dismissal never suppresses the next click', 2, (f, l, [d, r]) =>
+    d.op.is('dismiss').and(d.mouse.not(), f.pres.eq(d.tok), r.op.is('request'), r.mouse).implies(l.pres.eq(r.tok))),
+  infoRule.stepLaw('a selection consumes the click', (_, a) => a.kTok.eq(0), ({op}) => op.is('anchor')),
+  infoRule.stepLaw('a click wins its own selection', (b, a) => a.pick.eq(b.kTok), ({clickWins}) => clickWins),
+  infoRule.stepLaw('other selections show the topmost anchor', (b, a) => a.pick.eq(topmost(b.id)), ({op, clickWins}) => op.is('anchor').and(clickWins.not())),
+  infoRule.stepsLaw('a click is consumed by exactly one selection', 3, (_, l, [c, s, t]) =>
+    c.op.is('clicked').and(s.op.is('anchor'), s.fromKb.not(), idOf(c.tok).eq(s.id), t.op.is('anchor'), t.id.eq(s.id)).implies(l.pick.eq(topmost(t.id)))),
+];
+
 export function verifyProofs() {
-  for (const [r, invariants, steps] of [[uploadRule,[],uploadLaws],[revisionRule,[],revisionLaws],[railRule,railLaws,railSteps],[gateRule,gateLaws,gateSteps]]) {
+  for (const [r, invariants, steps] of [[uploadRule,[],uploadLaws],[revisionRule,[],revisionLaws],[railRule,railLaws,railSteps],[gateRule,gateLaws,gateSteps],[infoRule,infoInvariants,infoSteps]]) {
     verdict(proveSteps(r,invariants,steps,{search:false}), invariants.length + steps.length); checked(r.crossCheck(invariants,steps,{rand:draw}));
   }
   for (const [r,invariants,steps] of [
@@ -311,6 +350,12 @@ export function verifyProofs() {
     assert.equal(v.proven,false,'broken transition escaped');
     assert.equal(v.stuck,'sat',JSON.stringify(v));
     assert.ok(v.witness || v.run,'mutation must have counterexample evidence'); mutations++;
+  }
+  for (const r of [infoBase.step(e => infoStep(e, 'reopen')), infoBase.step(e => infoStep(e, 'unmouse'))]) {
+    const v = proveSteps(r, infoInvariants, infoSteps, {search:false});
+    assert.equal(v.proven,false,'info broken transition escaped');
+    assert.equal(v.stuck,'sat',JSON.stringify(v));
+    assert.ok(v.witness || v.run,'info mutation must have counterexample evidence'); mutations++;
   }
   return {proven,mutations,concrete};
 }

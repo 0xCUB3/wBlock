@@ -386,6 +386,29 @@ final class ResumeCount: @unchecked Sendable { var count = 0 }
             "cleared": vm.state.currentFilterName.isEmpty && vm.state.currentScriptName.isEmpty,
           ]
         }
+      case "infoPopover":
+        // Tokens 1 and 2 are two rows of one list (id "list", token 1 on top); token 3 is another item.
+        // Each request is one trace, so every trace starts from a fresh state.
+        let tokens = [UUID(), UUID(), UUID()], names = ["list", "list", "other"], ids = ["list", "other", "missing"]
+        let frames: [CGFloat] = [400, 100, 250]
+        let anchors = tokens.indices.map { i in
+          InfoPopoverState.Anchor(token: tokens[i], id: names[i], windowNumber: 1,
+                                  frame: CGRect(x: 300, y: frames[i], width: 16, height: 16))
+        }
+        var state = InfoPopoverState()
+        func slot(_ token: UUID?) -> Int { token.flatMap { tokens.firstIndex(of: $0) }.map { $0 + 1 } ?? 0 }
+        return values.map { e -> [Int] in
+          let tok = e.n("tok"), mouse = e.b("mouse") ? e.n("ev") : nil
+          var result = 0
+          switch e["op"] as! String {
+          case "clicked": state.clicked(tokens[tok - 1], id: names[tok - 1])
+          case "anchor": result = slot(state.anchor(for: ids[e.n("id") - 1], in: anchors, fromKeyboard: e.b("fromKb")))
+          case "request": result = state.request(tokens[tok - 1], mouseUp: mouse) ? 1 : 0
+          case "dismiss": result = state.dismiss(tokens[tok - 1], mouseDown: mouse) ? 1 : 0
+          default: state.clear()
+          }
+          return [slot(state.presented), result]
+        }
       default: preconditionFailure("unknown policy suite \(suite)")
       }
     }
