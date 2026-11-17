@@ -4,7 +4,16 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 TMP="$(mktemp -d)"
-trap 'rm -rf "$TMP"' EXIT
+touch "$TMP/started"
+# Tests open UserDefaults suites with fresh names, and removing a suite's keys
+# leaves its plist behind. Thousands of those left cfprefsd refusing every new
+# domain, so drop the ones this run created.
+cleanup() {
+  find "$HOME/Library/Preferences" -maxdepth 1 -name '*.plist' -newer "$TMP/started" \
+    \( -iname '*test*' -o -iname '*probe*' -o -name 'wblock.*' -o -name 'issue-*' \) -delete 2>/dev/null || true
+  rm -rf "$TMP"
+}
+trap cleanup EXIT
 
 run() {
   echo "[test] $*"
