@@ -131,14 +131,23 @@ final class ResumeCount: @unchecked Sendable { var count = 0 }
         }
       case "frame":
         return values.map { e -> Values in
+          // A web page on this host or on another host, or else a hostless or ftp URL; the frame flag never picks it.
+          let page = e.b("webURL")
+            ? (e.b("otherHost") ? "https://other.example/allowed/page" : "https://example.com/allowed/page")
+            : (e.b("hostless") ? "https:///" : "ftp://example.com/allowed/page")
           var script = UserScript(name: "Frame policy", content: "")
-          script.matches = [e.b("matched") ? "https://example.com/allowed/*" : "https://example.com/denied/*"]
-          script.excludeMatches = e.b("excluded") ? ["https://example.com/allowed/*"] : []
+          // "*://" expands to http and https only, so an ftp page needs its scheme spelled out to match.
+          let scheme = page.hasPrefix("ftp:") ? "ftp" : "*", area = e.b("matched") ? "allowed" : "denied"
+          script.matches = ["\(scheme)://example.com/\(area)/*"]
+          script.excludeMatches = e.b("excluded") ? ["\(scheme)://example.com/allowed/*"] : []
           script.isEnabled = e.b("enabled")
           script.noframes = e.b("noframes")
+          // The ftp page matches its pattern, so only the scheme guard can refuse it.
+          if !e.b("webURL"), !e.b("hostless"), e.b("matched"), !e.b("excluded") {
+            precondition(script.matches(url: page), "the ftp page must match, so the scheme guard decides")
+          }
           return ["allowed": UserScriptFrameAuthorization.allows(
-            script, pageURL: e.b("webURL") ? "https://example.com/allowed/page" : e.b("top") ? "about:blank" : "https:///",
-            isTopFrame: e.b("top"), disabledOnSite: e.b("disabledOnSite"), paused: e.b("paused"))]
+            script, pageURL: page, isTopFrame: e.b("top"), disabledOnSite: e.b("disabledOnSite"), paused: e.b("paused"))]
         }
       case "remoteMetadata":
         return values.map { e -> Values in
@@ -150,10 +159,7 @@ final class ResumeCount: @unchecked Sendable { var count = 0 }
             hasUserProvidedName: e.b("userName"), hasUserProvidedDescription: e.b("userDescription"))
           let result = FilterListRemoteMetadataPolicy.applying(
             title: title, description: description, version: e.b("versionPresent") ? "2025.1" : nil, to: filter)
-          return [
-            "takeTitle": result.name == "Remote Title", "takeDescription": result.description == "Remote Description",
-            "versionUnknown": result.version == "Unknown",
-          ]
+          return ["name": result.name, "description": result.description, "version": result.version]
         }
       case "importReview":
         return values.map { e -> Values in
@@ -406,7 +412,10 @@ final class ResumeCount: @unchecked Sendable { var count = 0 }
           var result = 0
           switch e["op"] as! String {
           case "clicked": state.clicked(tokens[tok - 1], id: names[tok - 1])
-          case "anchor": result = slot(state.anchor(for: ids[e.n("id") - 1], in: anchors, fromKeyboard: e.b("fromKb")))
+          case "anchor":
+            // Production selects among the anchors on screen only.
+            let visible = anchors.indices.filter { e.b("v\($0 + 1)") }.map { anchors[$0] }
+            result = slot(state.anchor(for: ids[e.n("id") - 1], in: visible, fromKeyboard: e.b("fromKb")))
           case "request": result = state.request(tokens[tok - 1], mouseUp: mouse) ? 1 : 0
           case "dismiss": result = state.dismiss(tokens[tok - 1], mouseDown: mouse) ? 1 : 0
           default: state.clear()
@@ -419,10 +428,9 @@ final class ResumeCount: @unchecked Sendable { var count = 0 }
            "next": Int(HeadlessLaunch.autoRebuildDelay(forFailureCount: e.n("g")))]
         }
       case "headlessGate":
-        // One gate directory per trace; each step makes the production consume or record call on it.
-        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
-        try! FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: directory) }
+        // One gate directory, emptied before each trace; each step makes the production consume or record call on it.
+        let directory = Scratch.directory
+        Scratch.reset(nil)
         return values.map { e -> Values in
           let now = TimeInterval(e.n("now")), op = e["op"] as! String
           var granted = false
@@ -448,17 +456,21 @@ final class ResumeCount: @unchecked Sendable { var count = 0 }
         }
       case "pauseStore": return pauseStore[index]!
       case "popup":
-        // Each trace starts from an empty store in its own suite and lock directory. Claim numbers name the
+        // Each trace starts from an empty store; the suite and lock directory are shared and emptied between traces. Claim numbers name the
         // tokens that claims won, so a finish by a model claim is a finish by the production token it won with.
-        let group = "test.wblock.policy-probe.popup.\(UUID().uuidString)"
-        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
-        try! FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        defer {
-          UserDefaults(suiteName: group)?.removePersistentDomain(forName: group)
-          try? FileManager.default.removeItem(at: directory)
-        }
+        let group = Scratch.popupGroup, directory = Scratch.directory
+        Scratch.reset(group)
         var tokens: [Int: FilterUpdatePopupStatus.ClaimToken] = [:]
         let states: [FilterUpdatePopupStatus.State] = [.idle, .running, .succeeded, .noChange, .failed]
+        func completed(_ result: SharedAutoUpdateManager.AutoUpdateCompletionResult) -> SharedAutoUpdateManager.AutoUpdateRunOutcome {
+          .completed(.init(result: result, checkedFilters: 1, updatedFilters: 1, updatedScripts: 0, failedScripts: 0))
+        }
+        // Index order is the model's outcome input: applied, staged, no updates, no selection, then each failure kind.
+        let outcomes: [SharedAutoUpdateManager.AutoUpdateRunOutcome] = [
+          completed(.appliedUpdates), completed(.stagedUpdates), completed(.noFilterUpdates), completed(.noSelectedFilters),
+          .failed(message: "failed"), .overLimit(message: "over limit"), .deferred(phase: "reading"),
+          .cancelled, .skipped(reason: "disabled"),
+        ]
         return values.map { e -> [Int] in
           let now = Date(timeIntervalSince1970: Double(e.n("now")))
           let claim = e.n("claim"), op = e.n("op")
@@ -473,13 +485,8 @@ final class ResumeCount: @unchecked Sendable { var count = 0 }
           case 2:
             ok = FilterUpdatePopupStatus.consumeUpdateRequest(groupIdentifier: group, lockDirectory: directory) != nil
           case 3:
-            let completion = SharedAutoUpdateManager.AutoUpdateCompletion(
-              result: e.n("outcome") == 1 ? .noFilterUpdates : .appliedUpdates,
-              checkedFilters: 1, updatedFilters: 1, updatedScripts: 0, failedScripts: 0)
-            let outcome: SharedAutoUpdateManager.AutoUpdateRunOutcome =
-              e.n("outcome") == 2 ? .failed(message: "failed") : .completed(completion)
-            ok = FilterUpdatePopupStatus.finish(
-              outcome, claim: tokens[claim] ?? .init(rawValue: "unclaimed"),
+              ok = FilterUpdatePopupStatus.finish(
+              outcomes[e.n("outcome")], claim: tokens[claim] ?? .init(rawValue: "unclaimed"),
               groupIdentifier: group, now: now, lockDirectory: directory)
           default: break
           }
@@ -504,13 +511,18 @@ final class ResumeCount: @unchecked Sendable { var count = 0 }
   static let statuses: [BlockingPauseStore.ResumeStatus] = [.idle, .pending, .applying, .succeeded, .failed]
 
   static func run(_ steps: [Values]) async -> [[Int]] {
-    let suite = "policy-probe-pause-\(UUID().uuidString)"
+    let suite = Scratch.pauseGroup
+    Scratch.reset(suite)
     guard let defaults = UserDefaults(suiteName: suite) else { preconditionFailure("could not create suite") }
-    defer { defaults.removePersistentDomain(forName: suite) }
     return await observe(steps, defaults: defaults, suite: suite)
   }
 
   static func observe(_ steps: [Values], defaults: UserDefaults, suite: String) async -> [[Int]] {
+    // The global and content-blocking queries migrate a legacy store, so they run on a copy of the raw keys that
+    // this trace owns. Observing a step must not change the trace's store.
+    let copySuite = suite + "-observed"
+    Scratch.reset(copySuite)
+    guard let copy = UserDefaults(suiteName: copySuite) else { preconditionFailure("could not create suite") }
     var observed: [[Int]] = []
     for e in steps {
       let mask = BlockingPauseComponents(
@@ -550,6 +562,7 @@ final class ResumeCount: @unchecked Sendable { var count = 0 }
       }
       let status = BlockingPauseStore.resumeStatus(groupIdentifier: suite)
       let stored = defaults.object(forKey: BlockingPauseStore.componentsKey) != nil
+      let paused = pauseReads(defaults, copy: copy, copySuite: copySuite)
       observed.append([
         defaults.bool(forKey: BlockingPauseStore.key) ? 1 : 0,
         stored ? 1 : 0,
@@ -558,14 +571,51 @@ final class ResumeCount: @unchecked Sendable { var count = 0 }
         statuses.firstIndex(of: status.status)!,
         status.error == nil ? 0 : 1,
         out,
+        paused.any ? 1 : 0,
+        paused.content ? 1 : 0,
       ])
     }
     return observed
+  }
+
+  // Copies the trace's raw keys into the copy suite, then asks the production queries about it.
+  static func pauseReads(_ defaults: UserDefaults, copy: UserDefaults, copySuite: String) -> (any: Bool, content: Bool) {
+    copy.set(defaults.bool(forKey: BlockingPauseStore.key), forKey: BlockingPauseStore.key)
+    if let mask = defaults.object(forKey: BlockingPauseStore.componentsKey) {
+      copy.set(mask, forKey: BlockingPauseStore.componentsKey)
+    } else {
+      copy.removeObject(forKey: BlockingPauseStore.componentsKey)
+    }
+    return (BlockingPauseStore.isPaused(groupIdentifier: copySuite),
+            BlockingPauseStore.isContentBlockingPaused(groupIdentifier: copySuite))
   }
 
   static func insideMask(_ suite: String) -> Int {
     [(BlockingPauseComponents.filters, 1), (.userScripts, 2), (.elementZapper, 4)].reduce(0) { bits, pair in
       bits | (BlockingPauseStore.isPaused(pair.0, groupIdentifier: suite) ? pair.1 : 0)
     }
+  }
+}
+
+// Creating a UserDefaults suite per trace slows every later suite down, so the stateful probes share one suite each
+// and one scratch directory, emptied before each trace and removed when the probe exits.
+@MainActor enum Scratch {
+  static let id = UUID().uuidString
+  static let popupGroup = "test.wblock.policy-probe.popup.\(id)", pauseGroup = "policy-probe-pause-\(id)"
+  static let directory: URL = {
+    let url = FileManager.default.temporaryDirectory.appendingPathComponent("policy-probe-\(id)", isDirectory: true)
+    atexit {
+      for group in [Scratch.popupGroup, Scratch.pauseGroup, Scratch.pauseGroup + "-observed"] {
+        UserDefaults(suiteName: group)?.removePersistentDomain(forName: group)
+      }
+      try? FileManager.default.removeItem(at: FileManager.default.temporaryDirectory.appendingPathComponent("policy-probe-\(Scratch.id)"))
+    }
+    return url
+  }()
+
+  static func reset(_ group: String?) {
+    if let group { UserDefaults(suiteName: group)?.removePersistentDomain(forName: group) }
+    try? FileManager.default.removeItem(at: directory)
+    try! FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
   }
 }

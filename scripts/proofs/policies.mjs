@@ -5,7 +5,8 @@ import { bool, nat, upTo, oneOf, min, max, fun, rule, when, forall, yes, no, pro
 // with production Swift; neither a proof failure nor a disagreement may pass CI.
 export const decisions = {};
 let proven = 0, mutations = 0, concrete = 0, seed = 0x475044;
-const draw = n => ((seed = (Math.imul(seed,1664525) + 1013904223) >>> 0) % n);
+// High bits: the low bits of a power-of-two LCG cycle with short periods.
+const draw = n => (seed = (Math.imul(seed,1664525) + 1013904223) >>> 0, Math.floor(seed / 2 ** 32 * n));
 function verdict(v, claims=1) {
   assert.equal(v.proven, true, JSON.stringify(v));
   assert.equal(v.checked, true, JSON.stringify(v));
@@ -168,17 +169,21 @@ decision('customImport', booleans('builtInCurrent','builtInLegacy','variant'),
   ], e => ({import: e.builtInCurrent.not()}));
 
 // Mirrors UserScriptFrameAuthorization.allows: unpaused, not disabled on the site, enabled, on an http(s) URL with a host,
-// a noframes script only in the top frame, and matched but not excluded.
-decision('frame', booleans('paused','disabledOnSite','enabled','webURL','noframes','top','matched','excluded'),
-  e => ({allowed: e.paused.not().and(e.disabledOnSite.not(), e.enabled, e.webURL, e.noframes.not().or(e.top), e.matched, e.excluded.not())}), m => [
+// a noframes script only in the top frame, and matched but not excluded. A page on another host is unmatched
+// (otherHost); a hostless or non-http page is refused by webURL whatever the frame.
+const frameAllowed = e => e.paused.not().and(e.disabledOnSite.not(), e.enabled, e.webURL, e.noframes.not().or(e.top), e.matched, e.otherHost.not(), e.excluded.not());
+decision('frame', booleans('paused','disabledOnSite','enabled','webURL','noframes','top','matched','excluded','otherHost','hostless'),
+  e => ({allowed: frameAllowed(e)}), m => [
     m.law('a paused script never runs', ({paused}) => paused, o => o.allowed.not()),
     m.law('a script disabled on its site never runs', ({disabledOnSite}) => disabledOnSite, o => o.allowed.not()),
     m.law('a noframes script never runs in a subframe', ({noframes,top}) => noframes.and(top.not()), o => o.allowed.not()),
     m.law('a non-http(s) or hostless page never runs a script', ({webURL}) => webURL.not(), o => o.allowed.not()),
+    m.law('a page on another host never runs a script', ({otherHost}) => otherHost, o => o.allowed.not()),
     m.law('an exclude beats a match', ({matched,excluded}) => matched.and(excluded), o => o.allowed.not()),
-    m.law('an enabled, unpaused, matched top-frame page runs the script', e => e.paused.not().and(e.disabledOnSite.not(), e.enabled, e.webURL, e.noframes.not().or(e.top), e.matched, e.excluded.not()), o => o.allowed),
-  ], e => ({allowed: e.disabledOnSite.not().and(e.enabled, e.webURL, e.noframes.not().or(e.top), e.matched, e.excluded.not())}));
-// FilterListRemoteMetadataPolicy.applying: each header value is nil, blank or text. A manual flag or a built-in list keeps its name and description; version is always replaced ("Unknown" when absent).
+    m.law('an enabled, unpaused, matched web page runs the script, except a noframes script in a subframe', frameAllowed, o => o.allowed),
+  ], e => ({allowed: e.disabledOnSite.not().and(e.enabled, e.webURL, e.noframes.not().or(e.top), e.matched, e.otherHost.not(), e.excluded.not())}));
+// FilterListRemoteMetadataPolicy.applying: a nil or blank header value changes nothing, and a manual flag or a built-in list keeps its name and description.
+// The version is not stated here: verify.mjs projects the outputs to the real name, description and version strings.
 decision('remoteMetadata', booleans('custom','userName','titlePresent','titleBlank','userDescription','descriptionPresent','descriptionBlank','versionPresent'),
   ({custom,userName,titlePresent,titleBlank,userDescription,descriptionPresent,descriptionBlank,versionPresent}) => ({
     takeTitle: custom.and(userName.not(), titlePresent, titleBlank.not()), takeDescription: custom.and(userDescription.not(), descriptionPresent, descriptionBlank.not()),
@@ -188,7 +193,6 @@ decision('remoteMetadata', booleans('custom','userName','titlePresent','titleBla
     m.law('a manual description survives remote metadata', ({userDescription}) => userDescription, o => o.takeDescription.not()),
     m.law('built-in lists never take header title or description', ({custom}) => custom.not(), o => o.takeTitle.not().and(o.takeDescription.not())),
     m.law('blank header values never replace metadata', () => [], (o,e) => e.titleBlank.implies(o.takeTitle.not()).and(e.descriptionBlank.implies(o.takeDescription.not()))),
-    m.law('version is always replaced', () => [], (o,e) => iff(o.versionUnknown, e.versionPresent.not())),
   ], e => ({takeTitle: e.custom.and(e.titlePresent, e.titleBlank.not())}));
 
 // ImportMetadataReview.userProvided: an unchanged prefill stays automatic, a cleared prefill is an explicit empty override.
@@ -282,12 +286,11 @@ export const gateRule = gate.step(e => gateStep(e));
 const gateLaws = [
   gateRule.law('a running gate holds no app work', ({running,work}) => running.implies(work.eq(0))),
   gateRule.law('queued app work waits for a run', ({waiting,running}) => waiting.atLeast(1).implies(running)),
-  gateRule.law('app work never underflows', ({work}) => work.atLeast(0)),
 ];
 const gateSteps = [
   gateRule.stepLaw('a begin outside a run claims one unit', ({work},a) => a.work.eq(work.plus(1)).and(a.granted), e => e.op.eq(0).and(e.running.not())),
   gateRule.stepLaw('a begin during a run holds nothing', ({work,waiting},a) => a.work.eq(work).and(a.waiting.eq(waiting.plus(1)), a.granted.not()), e => e.op.eq(0).and(e.running)),
-  gateRule.stepLaw('an end releases one unit, never below zero', ({work},a) => a.work.eq(work.minus(1)), e => e.op.eq(1)),
+  gateRule.stepLaw('an end releases one unit, never below zero', ({work},a) => work.eq(0).implies(a.work.eq(0)).and(work.eq(0).not().implies(a.work.plus(1).eq(work))), e => e.op.eq(1)),
   gateRule.stepLaw('a run starts only without app work', ({work},a) => a.granted.implies(work.eq(0)), e => e.op.eq(2)),
   gateRule.stepLaw('a start without app work runs', (_,a) => a.running, e => e.op.eq(2).and(e.work.eq(0))),
   gateRule.stepLaw('only a finish resumes app work', ({}, a) => a.resumed.eq(0), e => e.op.eq(3).not()),
@@ -297,25 +300,30 @@ const gateSteps = [
 
 // InfoPopoverState. Tokens 1 and 2 are two rows of one list (id 1, token 1 on top); token 3 is another item (id 2);
 // id 3 names no item. Event numbers are 1 or 2; 0 means none (the mouse flag says whether an event is present).
-const idOf = t => when(t.eq(3), 2, 1), topmost = i => when(i.eq(1), 1, when(i.eq(2), 3, 0));
+// v1..v3 say whether each token's anchor is on screen: production selects among the visible anchors only.
+const idOf = t => when(t.eq(3), 2, 1), shown = (t, v1, v2, v3) => when(t.eq(1), v1, when(t.eq(2), v2, v3));
+const topmost = (i, v1, v2, v3) => when(i.eq(1), when(v1, 1, when(v2, 2, 0)), when(i.eq(2), when(v3, 3, 0), 0));
+const topOf = b => topmost(b.id, b.v1, b.v2, b.v3);
 const infoBase = rule('info popover')
-  .inputs({op: oneOf('clicked', 'anchor', 'request', 'dismiss', 'clear'), tok: nat, id: nat, ev: nat, mouse: bool, fromKb: bool})
+  .inputs({op: oneOf('clicked', 'anchor', 'request', 'dismiss', 'clear'), tok: nat, id: nat, ev: nat, mouse: bool, fromKb: bool, v1: bool, v2: bool, v3: bool})
   .state({pres: 0, cTok: 0, cEv: 0, kTok: 0, pick: 0})
   .assume(({tok, id, ev}) => tok.atLeast(1).and(tok.atMost(3), id.atLeast(1), id.atMost(3), ev.atLeast(1), ev.atMost(2)))
-  .flags(({op, tok, id, ev, mouse, fromKb, pres, cTok, cEv, kTok}) => ({
+  .flags(({op, tok, id, ev, mouse, fromKb, v1, v2, v3, pres, cTok, cEv, kTok}) => ({
     closingUp: op.is('request').and(mouse, cTok.eq(tok), cEv.eq(ev)),
     closes: op.is('dismiss').and(pres.eq(tok)),
-    clickWins: op.is('anchor').and(fromKb.not(), kTok.atLeast(1), idOf(kTok).eq(id)),
+    clickWins: op.is('anchor').and(fromKb.not(), kTok.atLeast(1), idOf(kTok).eq(id), shown(kTok, v1, v2, v3)),
   }));
 const infoStep = (e, broken = '') => {
   const closingUp = broken === 'reopen' ? e.closingUp.and(e.closingUp.not()) : e.closingUp;
   const mouse = broken === 'unmouse' ? e.mouse.or(e.mouse.not()) : e.mouse;
+  // The broken click path picks the clicked anchor even when it is off screen.
+  const clickWins = broken === 'hidden' ? e.op.is('anchor').and(e.fromKb.not(), e.kTok.atLeast(1), idOf(e.kTok).eq(e.id)) : e.clickWins;
   return {
     pres: when(e.op.is('request').and(closingUp.not()), e.tok, when(e.op.is('clear').or(e.closes), 0, e.pres)),
     cTok: when(e.op.is('request'), 0, when(e.closes, when(mouse, e.tok, 0), e.cTok)),
     cEv: when(e.op.is('request'), 0, when(e.closes, when(mouse, e.ev, 0), e.cEv)),
     kTok: when(e.op.is('clicked'), e.tok, when(e.op.is('anchor').or(e.op.is('clear')), 0, e.kTok)),
-    pick: when(e.clickWins, e.kTok, when(e.op.is('anchor'), topmost(e.id), 0)),
+    pick: when(clickWins, e.kTok, when(e.op.is('anchor'), topmost(e.id, e.v1, e.v2, e.v3), 0)),
   };
 };
 export const infoRule = infoBase.step(e => infoStep(e));
@@ -329,13 +337,14 @@ const infoSteps = [
     d.op.is('dismiss').and(d.mouse.not(), f.pres.eq(d.tok), r.op.is('request'), r.mouse).implies(l.pres.eq(r.tok))),
   infoRule.stepLaw('a selection consumes the click', (_, a) => a.kTok.eq(0), ({op}) => op.is('anchor')),
   infoRule.stepLaw('a click wins its own selection', (b, a) => a.pick.eq(b.kTok), ({clickWins}) => clickWins),
-  infoRule.stepLaw('other selections show the topmost anchor', (b, a) => a.pick.eq(topmost(b.id)), ({op, clickWins}) => op.is('anchor').and(clickWins.not())),
+  infoRule.stepLaw('other selections show the topmost visible anchor', (b, a) => a.pick.eq(topOf(b)), ({op, clickWins}) => op.is('anchor').and(clickWins.not())),
   infoRule.stepsLaw('a click is consumed by exactly one selection', 3, (_, l, [c, s, t]) =>
-    c.op.is('clicked').and(s.op.is('anchor'), s.fromKb.not(), idOf(c.tok).eq(s.id), t.op.is('anchor'), t.id.eq(s.id)).implies(l.pick.eq(topmost(t.id)))),
+    c.op.is('clicked').and(s.op.is('anchor'), s.fromKb.not(), idOf(c.tok).eq(s.id), t.op.is('anchor'), t.id.eq(s.id)).implies(l.pick.eq(topOf(t)))),
 ];
 
 // Headless rebuild gate (HeadlessLaunch.swift): a 900 s cooldown, doubled per failure up to 21600 s.
-// Times are seconds; the clock is positive, and a recorded outcome never moves the stamp backwards.
+// Times are seconds and the clock is positive, but it may move backwards, as shipped: a consume before the last
+// stamp is refused, and a recorded outcome stamps the clock it is given, even when that is earlier.
 export const headlessOps = ['consume', 'launched', 'launchFailed', 'rebuildSucceeded', 'rebuildFailed'];
 const cooldown = 900, maxBackoff = 21600, maxFailures = 9;
 // delay(f) is 900 for f <= 1, else 900 * 2^(f-1) capped at 21600: a finite chain, since failures stay within 0...9.
@@ -347,9 +356,9 @@ decision('headlessBackoff', {f: nat, g: nat}, ({f, g}) => ({d: delayOf(f), next:
 ], ({f}) => ({d: when(f.lt(6), 14400, 28800)}));
 const headlessBase = rule('headless rebuild gate')
   .inputs({op: oneOf(...headlessOps), now: nat})
-  .state({last: 0, failures: 0, outcome: oneOf('none', 'launched', 'launchFailed', 'rebuildSucceeded', 'rebuildFailed').from('none'), granted: bool.from(false), grantedAt: 0})
-  .assume(({op, now, last}) => now.atLeast(1).and(op.is('consume').or(now.atLeast(last))));
-function headlessStep({op, now, last, failures, outcome, grantedAt}, broken = {}) {
+  .state({last: 0, failures: 0, outcome: oneOf('none', 'launched', 'launchFailed', 'rebuildSucceeded', 'rebuildFailed').from('none'), granted: bool.from(false)})
+  .assume(({now}) => now.atLeast(1));
+function headlessStep({op, now, last, failures, outcome}, broken = {}) {
   const bump = min(failures.plus(1), maxFailures);
   const due = broken.noCooldown ? op.is('consume') : last.eq(0).or(now.atLeast(last.plus(delayOf(failures))));
   const grant = op.is('consume').and(due);
@@ -360,18 +369,19 @@ function headlessStep({op, now, last, failures, outcome, grantedAt}, broken = {}
     last: when(op.is('consume').and(grant.not()), last, now),
     failures: when(op.is('consume'), when(grant, reserved, failures), when(op.is('launched'), reserved, when(op.is('rebuildSucceeded'), 0, completed))),
     outcome: when(op.is('consume'), when(grant, outcome.of('launched'), outcome), when(op.is('launched'), outcome.of('launched'), when(op.is('launchFailed'), outcome.of('launchFailed'), when(op.is('rebuildSucceeded'), outcome.of('rebuildSucceeded'), outcome.of('rebuildFailed'))))),
-    grantedAt: when(grant, now, grantedAt),
   };
 }
 export const headlessGateRule = headlessBase.step(e => headlessStep(e));
 const headlessInvariants = [
   headlessGateRule.law('failures stay within the tracked bound', ({failures}) => failures.atMost(maxFailures)),
   headlessGateRule.law('a launched gate has counted a failure', ({outcome, failures}) => outcome.is('launched').implies(failures.atLeast(1))),
-  headlessGateRule.law('the grant stamp never passes the last attempt', ({grantedAt, last}) => grantedAt.atMost(last)),
 ];
 const headlessSteps = [
-  headlessGateRule.stepLaw('a grant follows the previous grant by one cooldown', ({grantedAt, now}, a) => a.granted.implies(grantedAt.eq(0).or(now.atLeast(grantedAt.plus(cooldown))))),
+  headlessGateRule.stepLaw('a grant follows the previous recorded attempt by its delay', ({last, now, failures}, a) => a.granted.implies(last.eq(0).or(now.atLeast(last.plus(delayOf(failures)))))),
   headlessGateRule.stepLaw('a clock earlier than the last attempt never grants', ({now, last}, a) => now.lt(last).implies(a.granted.not())),
+  headlessGateRule.stepLaw('a refused consume keeps the stamp, including a clock behind it', ({last}, a) => a.last.eq(last),
+    ({op, now, last, failures}) => op.is('consume').and(last.eq(0).not(), now.lt(last.plus(delayOf(failures))))),
+  headlessGateRule.stepLaw('a recorded outcome stamps the clock it is given, even backwards', ({now}, a) => a.last.eq(now), ({op}) => op.is('consume').not()),
   headlessGateRule.stepLaw('a grant is recorded as a launch', ({now}, a) => a.granted.implies(a.last.eq(now).and(a.outcome.is('launched')))),
   headlessGateRule.stepLaw('a successful rebuild returns to the base cooldown', (_, a) => a.failures.eq(0), ({op}) => op.is('rebuildSucceeded')),
   headlessGateRule.stepLaw('a failure after a launch is not counted twice', ({failures}, a) => a.failures.eq(failures), ({op, outcome}) => op.is('launchFailed').or(op.is('rebuildFailed')).and(outcome.is('launched'))),
@@ -427,7 +437,7 @@ const pauseSteps = [
   pauseRule.stepLaw('a resumed scope shows only the scripts paused inside', (b, a) => a.out.eq(when(b.es, 2, 0)), b => b.op.eq(8)),
   pauseRule.stepLaw('a resumed scope ends with the mask it began with', (b, a) => a.filters.iff(b.ef).and(a.scripts.iff(b.es), a.zapper.iff(b.ez)), b => b.op.eq(8).or(b.op.eq(9), b.op.eq(10))),
   pauseRule.stepLaw('a failed resume records its error', (_, a) => a.err, b => b.op.eq(7)),
-  pauseRule.stepsLaw('a scope ends with the mask it began with, however it ends, read back by the next request', 2,
+  pauseRule.stepsLaw('a scope ends with the mask it began with, however it ends, and the next status read shows it', 2,
     (f, l, [r1, r2]) => r1.op.eq(8).or(r1.op.eq(9), r1.op.eq(10)).and(r2.op.eq(2)).implies(l.out.eq(effBits(f)))),
   pauseRule.stepsLaw('two consumes in a row: the second finds no request', 2,
     (_, l, [r1, r2]) => r1.op.eq(4).and(r2.op.eq(4)).implies(l.out.eq(0))),
@@ -437,9 +447,11 @@ const pauseSteps = [
 // noChange 3, failed 4. A running claim whose start is more than 300 s old reads as failed, so it is taken by the
 // next claim and acknowledged by consumeSnapshot. Claims and times are at least 1 (0 encodes none or nil).
 // op: 0 beginIfIdle, 1 requestUpdate, 2 consumeUpdateRequest, 3 finish, 4 snapshot, 5 consumeSnapshot.
-// outcome: 0 applied, 1 no change, 2 failed. ok: the claim, request consume or finish succeeded.
+// outcome: the finish's run outcome, in the probe's order: 0 applied and 1 staged (succeeded); 2 no filter updates
+// and 3 no selected filters (noChange); 4 failed, 5 over limit, 6 deferred, 7 cancelled, 8 skipped (failed).
+// ok: the claim, request consume or finish succeeded.
 export const popup = rule('filter update popup status')
-  .inputs({op: upTo(5), claim: nat, now: nat, outcome: upTo(2)})
+  .inputs({op: upTo(5), claim: nat, now: nat, outcome: upTo(8)})
   .state({st: upTo(4).from(0), owner: 0, requested: bool.from(false), startedAt: 0, finishedAt: 0, ok: bool.from(false)})
   .assume(({claim, now}) => claim.atLeast(1).and(now.atLeast(1)));
 // `broken` names one deliberate fault the proofs must refuse; '' is the shipped transition.
@@ -451,7 +463,7 @@ function popupStep({op, claim, now, outcome, st, owner, requested, startedAt, fi
   const finished = op.eq(3).and(st.eq(1), broken === 'owner' ? yes : owner.eq(claim));
   const taken = op.eq(2).and(requested, st.eq(1), owner.atLeast(1));
   const acked = (broken === 'read' ? op.eq(4).or(op.eq(5)) : op.eq(5)).and(broken === 'ack' ? st.atLeast(1) : terminal);
-  const done = when(outcome.eq(0), 2, when(outcome.eq(1), broken === 'outcome' ? 2 : 3, 4));
+  const done = when(outcome.lt(2), 2, when(outcome.lt(4), broken === 'outcome' ? 2 : 3, 4));
   return {
     ok: claimed.or(taken, finished),
     st: when(claimed, 1, when(finished, done, when(acked, 0, st))),
@@ -471,15 +483,15 @@ const popupInvariants = [
   popupRule.law('a pending request belongs to a running claim', ({st, requested}) => requested.implies(st.eq(1))),
 ];
 const popupSteps = [
-  popupRule.stepLaw('a live claim is refused and changes nothing', frozen, s => s.op.eq(0).or(s.op.eq(1)).and(notLive(s).not())),
-  popupRule.stepLaw('a claim takes an idle, finished or expired store', (s, a) => a.st.eq(1).and(a.owner.eq(s.claim), a.startedAt.eq(s.now), a.finishedAt.eq(0)),
+  popupRule.stepLaw('a live claim is refused and changes nothing', (s, a) => frozen(s, a).and(a.ok.not()), s => s.op.eq(0).or(s.op.eq(1)).and(notLive(s).not())),
+  popupRule.stepLaw('a claim takes an idle, finished or expired store', (s, a) => a.st.eq(1).and(a.owner.eq(s.claim), a.startedAt.eq(s.now), a.finishedAt.eq(0), a.ok),
     s => s.op.eq(0).or(s.op.eq(1)).and(notLive(s))),
-  popupRule.stepLaw('a direct claim clears the request bit', (_, a) => a.requested.not(), s => s.op.eq(0).and(notLive(s))),
-  popupRule.stepLaw('a request claim sets the request bit', (_, a) => a.requested, s => s.op.eq(1).and(notLive(s))),
-  popupRule.stepLaw('a finish by a non-owner changes nothing', frozen, s => s.op.eq(3).and(s.owner.eq(s.claim).not())),
-  popupRule.stepLaw('a finish records its outcome', (s, a) => a.st.eq(when(s.outcome.eq(0), 2, when(s.outcome.eq(1), 3, 4))),
+  popupRule.stepLaw('a direct claim clears the request bit', (_, a) => a.requested.not().and(a.ok), s => s.op.eq(0).and(notLive(s))),
+  popupRule.stepLaw('a request claim sets the request bit', (_, a) => a.requested.and(a.ok), s => s.op.eq(1).and(notLive(s))),
+  popupRule.stepLaw('a finish by a non-owner changes nothing', (s, a) => frozen(s, a).and(a.ok.not()), s => s.op.eq(3).and(s.owner.eq(s.claim).not())),
+  popupRule.stepLaw('a finish records its outcome', (s, a) => a.st.eq(when(s.outcome.lt(2), 2, when(s.outcome.lt(4), 3, 4))).and(a.ok),
     s => s.op.eq(3).and(s.owner.eq(s.claim), s.st.eq(1))),
-  popupRule.stepLaw('taking a request clears only its bit', (s, a) => a.requested.not().and(a.st.eq(s.st), a.owner.eq(s.owner), a.startedAt.eq(s.startedAt), a.finishedAt.eq(s.finishedAt)),
+  popupRule.stepLaw('taking a request clears only its bit', (s, a) => a.requested.not().and(a.st.eq(s.st), a.owner.eq(s.owner), a.startedAt.eq(s.startedAt), a.finishedAt.eq(s.finishedAt), a.ok),
     s => s.op.eq(2).and(s.requested, s.st.eq(1), s.owner.atLeast(1))),
   popupRule.stepLaw('a snapshot changes nothing', frozen, s => s.op.eq(4)),
   popupRule.stepLaw('acknowledging an idle store changes nothing', frozen, s => s.op.eq(5).and(s.st.eq(0))),
@@ -513,7 +525,7 @@ export function verifyProofs() {
     assert.equal(v.stuck,'sat',JSON.stringify(v));
     assert.ok(v.witness || v.run,'mutation must have counterexample evidence'); mutations++;
   }
-  for (const r of [infoBase.step(e => infoStep(e, 'reopen')), infoBase.step(e => infoStep(e, 'unmouse'))]) {
+  for (const r of [infoBase.step(e => infoStep(e, 'reopen')), infoBase.step(e => infoStep(e, 'unmouse')), infoBase.step(e => infoStep(e, 'hidden'))]) {
     const v = proveSteps(r, infoInvariants, infoSteps, {search:false});
     assert.equal(v.proven,false,'info broken transition escaped');
     assert.equal(v.stuck,'sat',JSON.stringify(v));
