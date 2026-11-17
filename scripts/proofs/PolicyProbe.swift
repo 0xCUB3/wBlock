@@ -137,7 +137,7 @@ final class ResumeCount: @unchecked Sendable { var count = 0 }
           script.isEnabled = e.b("enabled")
           script.noframes = e.b("noframes")
           return ["allowed": UserScriptFrameAuthorization.allows(
-            script, pageURL: e.b("webURL") ? "https://example.com/allowed/page" : "about:blank",
+            script, pageURL: e.b("webURL") ? "https://example.com/allowed/page" : e.b("top") ? "about:blank" : "https:///",
             isTopFrame: e.b("top"), disabledOnSite: e.b("disabledOnSite"), paused: e.b("paused"))]
         }
       case "remoteMetadata":
