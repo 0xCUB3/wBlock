@@ -123,6 +123,17 @@ extension Dictionary where Key == String, Value == Any {
           // As CloudSyncManager.applyRemoteFilters applies it to the list.
           return ["selected": known.contains(current) ? selected.contains(current) : e.b("local")]
         }
+      case "frame":
+        return values.map { e -> Values in
+          var script = UserScript(name: "Frame policy", content: "")
+          script.matches = [e.b("matched") ? "https://example.com/allowed/*" : "https://example.com/denied/*"]
+          script.excludeMatches = e.b("excluded") ? ["https://example.com/allowed/*"] : []
+          script.isEnabled = e.b("enabled")
+          script.noframes = e.b("noframes")
+          return ["allowed": UserScriptFrameAuthorization.allows(
+            script, pageURL: e.b("webURL") ? "https://example.com/allowed/page" : "about:blank",
+            isTopFrame: e.b("top"), disabledOnSite: e.b("disabledOnSite"), paused: e.b("paused"))]
+        }
       case "custom", "remote":
         return values.map { e -> Values in
           if suite == "custom" {

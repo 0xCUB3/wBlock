@@ -145,6 +145,12 @@ struct UserScriptMatchingAndPayloadTests {
             storageScript.grant = grants
             expect(!storageScript.usesGMStorage, "\(grants) should skip the storage snapshot")
         }
+        var noneStorageScript = UserScript(name: "none with storage")
+        noneStorageScript.grant = ["GM_setValue", " none "]
+        expect(!noneStorageScript.usesGMStorage, "none should veto storage grants")
+        var paddedStorageScript = UserScript(name: "padded storage")
+        paddedStorageScript.grant = [" GM.setValue "]
+        expect(paddedStorageScript.usesGMStorage, "padded GM.setValue should request the storage snapshot")
 
         let payloadCache = UserScriptPayloadDataCache()
         var payloadBuilds = 0

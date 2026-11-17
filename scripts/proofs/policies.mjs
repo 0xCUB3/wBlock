@@ -167,6 +167,18 @@ decision('customImport', booleans('builtInCurrent','builtInLegacy','variant'),
     m.law('other custom lists are imported', e => e.builtInLegacy.or(e.builtInCurrent).not(), o => o.import),
   ], e => ({import: e.builtInCurrent.not()}));
 
+// Mirrors UserScriptFrameAuthorization.allows: unpaused, not disabled on the site, enabled, on an http(s) URL with a host,
+// a noframes script only in the top frame, and matched but not excluded.
+decision('frame', booleans('paused','disabledOnSite','enabled','webURL','noframes','top','matched','excluded'),
+  e => ({allowed: e.paused.not().and(e.disabledOnSite.not(), e.enabled, e.webURL, e.noframes.not().or(e.top), e.matched, e.excluded.not())}), m => [
+    m.law('a paused script never runs', ({paused}) => paused, o => o.allowed.not()),
+    m.law('a script disabled on its site never runs', ({disabledOnSite}) => disabledOnSite, o => o.allowed.not()),
+    m.law('a noframes script never runs in a subframe', ({noframes,top}) => noframes.and(top.not()), o => o.allowed.not()),
+    m.law('a non-http(s) or hostless page never runs a script', ({webURL}) => webURL.not(), o => o.allowed.not()),
+    m.law('an exclude beats a match', ({matched,excluded}) => matched.and(excluded), o => o.allowed.not()),
+    m.law('an enabled, unpaused, matched top-frame page runs the script', e => e.paused.not().and(e.disabledOnSite.not(), e.enabled, e.webURL, e.noframes.not().or(e.top), e.matched, e.excluded.not()), o => o.allowed),
+  ], e => ({allowed: e.disabledOnSite.not().and(e.enabled, e.webURL, e.noframes.not().or(e.top), e.matched, e.excluded.not())}));
+
 export const upload = rule('deferred uploads').inputs({take:bool,syncing:bool,trigger:nat}).state({pending:0,kind:0,value:0});
 const uploadStep = ({take,syncing,trigger,pending}) => ({
   pending:when(take,0,when(syncing,trigger.plus(1),pending)), kind:when(take,2,when(syncing,1,0)),
