@@ -1355,7 +1355,7 @@ private struct UserScriptMetadataSheet: View {
 
     var body: some View {
         SheetContainer {
-            SheetHeader(title: script.localizedDisplayName, isLoading: isSaving) { dismiss() }
+            SheetHeader(verbatim: script.localizedDisplayName, isLoading: isSaving) { dismiss() }
             Form {
                 Section {
                     AddContentMetadataFields(name: $editedName, description: $editedDescription,
