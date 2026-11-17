@@ -707,13 +707,21 @@ fn domain_conds(
     if !exc_ok && !exception {
         return Err("dnr:domain".into());
     }
+    // From Safari 15 hostnames and entities are both top-URL regexes, one condition.
+    let top_hosts: Option<Vec<String>> = exc_hosts.iter().map(|d| host_top_url(d)).collect();
     Ok(match (exc_hosts.is_empty(), exc_tops.is_empty()) {
         (true, true) => vec![None],
         (false, true) => vec![Some(Cond::UnlessDomain(exc_hosts))],
         (true, false) => vec![Some(Cond::UnlessTopUrl(exc_tops))],
-        // WebKit allows one domain condition per trigger.
-        (false, false) if exception => vec![Some(Cond::UnlessDomain(exc_hosts))],
-        (false, false) => return Err("dnr:domain".into()),
+        (false, false) => match top_hosts {
+            Some(mut urls) if top => {
+                urls.extend(exc_tops);
+                vec![Some(Cond::UnlessTopUrl(urls))]
+            }
+            // WebKit allows one domain condition per trigger.
+            _ if exception => vec![Some(Cond::UnlessDomain(exc_hosts))],
+            _ => return Err("dnr:domain".into()),
+        },
     })
 }
 
@@ -2338,6 +2346,48 @@ mod tests {
             V15,
             r#"[{"trigger":{"url-filter":"^[a-z]+://([a-z0-9._-]+\\.)?t\\.com[/:?#]","resource-type":["script"],"unless-top-url":["^[a-z]+://([a-z0-9._-]+\\.)?google\\.(com?\\.)?[^:/.]+[/:?#]"]},"action":{"type":"block"}}]"#,
         );
+    }
+
+    fn mixed_exclude(types: RT, exception: bool) -> NetworkRule {
+        let rule = NetworkRule {
+            from: DomainList {
+                include: vec![],
+                exclude: vec![DomainMatcher::Hostname("a.com".into()), DomainMatcher::Entity("google".into())],
+            },
+            types,
+            ..net("||t.com^")
+        };
+        NetworkRule { exception, ..rule }
+    }
+
+    /// A hostname and an entity exclusion together are one `unless-top-url`,
+    /// so the block is kept, and an exception keeps both of them.
+    #[test]
+    fn mixed_exclude_on_block_uses_one_unless_top_url() {
+        check(
+            &[mixed_exclude(RT::SCRIPT, false)],
+            V15,
+            r#"[{"trigger":{"url-filter":"^[a-z]+://([a-z0-9._-]+\\.)?t\\.com[/:?#]","resource-type":["script"],"unless-top-url":["^[a-z]+://([a-z0-9._-]+\\.)?a\\.com[/:?#]","^[a-z]+://([a-z0-9._-]+\\.)?google\\.(com?\\.)?[^:/.]+[/:?#]"]},"action":{"type":"block"}}]"#,
+        );
+        let (out, _) = run(&[mixed_exclude(RT::SCRIPT, true)], V15);
+        let text = json(&out);
+        assert!(text.contains(r#""unless-top-url":["^[a-z]+://([a-z0-9._-]+\\.)?a\\.com[/:?#]","^[a-z]+://([a-z0-9._-]+\\.)?google"#), "{text}");
+    }
+
+    /// Below Safari 15 a block with both kinds stays dropped, and so does one
+    /// whose hostname is not ASCII.
+    #[test]
+    fn mixed_exclude_needs_safari_15_and_ascii_hosts() {
+        assert_eq!(drop_reason(&[mixed_exclude(RT::SCRIPT, false)], V14), ["dnr:domain"]);
+        let idn = NetworkRule {
+            from: DomainList {
+                include: vec![],
+                exclude: vec![DomainMatcher::Hostname("bücher.de".into()), DomainMatcher::Entity("google".into())],
+            },
+            types: RT::SCRIPT,
+            ..net("||t.com^")
+        };
+        assert_eq!(drop_reason(&[idn], V15), ["dnr:domain"]);
     }
 
     #[test]

@@ -20,6 +20,7 @@ use crate::compile::{
     surviving, NetworkContext, Others, Stats,
 };
 use crate::compile::prune::Seen;
+use crate::compile::regex::domain_top_url;
 use crate::parse::{cosmetic::with_domains, restate};
 use crate::webkit::{SafariVersion, WebkitJson, WkAction, WkRule, WkTrigger};
 use serde::{Deserialize, Serialize};
@@ -978,6 +979,12 @@ impl Plan {
         // The rules are held through the compile; spare capacity would be too.
         others.cosmetic.shrink_to_fit();
         others.scriptlets.shrink_to_fit();
+        // The ignore rules also cancel the hides before them, so the segment is
+        // kept only where no hide can fire on one of its excluded sites.
+        let segment_list = segment_list.filter(|&list| {
+            let sites = &self.lists[list].scope.exclude;
+            !others.cosmetic.iter().any(|r| !r.exception && sites.iter().any(|s| may_fire(&r.domains, s)))
+        });
         // #925: the segment's blocks lead the network rules, then one ignore
         // rule per excluded site; the exceptions after them can lift those
         // blocks. Hides and their exceptions come before all of them.
@@ -1031,6 +1038,7 @@ impl Plan {
             .filter(|&l| {
                 let scope = &self.lists[l].scope;
                 !scope.exclude.is_empty()
+                    && scope.exclude.iter().all(|s| ignore_rule(s).is_some())
                     && scope.only.is_none()
                     && !self.parsed[l].has_affinity
                     && self.duplicates[target][l].is_empty()
@@ -1054,23 +1062,23 @@ impl Plan {
         Some(rule)
     }
 
-    /// #836: the exceptions and `$badfilter`s of lists this blocker does not
-    /// compile, since Safari applies an exception only in its own blocker. All
-    /// of them, as a host exception can lift a block naming no host (`/ads.`,
-    /// `||ads`); `prune` drops those no earlier rule can match.
+    /// #836: the exceptions and `$badfilter`s this blocker does not hold, since
+    /// Safari applies an exception only in its own blocker. Every blocker gets
+    /// every one of them, held or copied, as a host exception can lift a block
+    /// naming no host (`/ads.`, `||ads`); `prune` drops those no earlier rule
+    /// can match. Affinity still decides where a rule is held.
     fn replicated(&self, target: usize) -> Vec<Rule> {
-        let units: Vec<Unit> = self
-            .record_units()
-            .into_iter()
-            .filter(|unit| self.assigned(target, unit.list).is_none())
-            .collect();
+        let units = self.record_units();
         // Records are read per range, in parallel; the `seen` check that makes
         // each rule count once runs after, in order.
         let candidates = parallel_indices(units.len(), |u| {
             let Unit { list, chunk, range } = &units[u];
             let (list, chunk) = (*list, *chunk);
             let mut found: Vec<(u64, Rule)> = Vec::new();
-            for p in self.parsed[list].chunks[chunk][range.clone()].iter().filter(|p| p.shared) {
+            for p in self.parsed[list].chunks[chunk][range.clone()]
+                .iter()
+                .filter(|p| p.shared && !self.holds(target, list, p))
+            {
                 let mut scoped_rules = Vec::new();
                 scoped(self.rule(list, p), &self.lists[list].scope, &mut scoped_rules);
                 for rule in scoped_rules {
@@ -1365,6 +1373,19 @@ fn covers(host: &str, site: &str) -> bool {
     }
 }
 
+/// Whether a hide on `domains` can fire on the excluded site `excluded`. An
+/// entry this cannot read (a regex) counts as overlapping.
+fn may_fire(domains: &DomainList, excluded: &str) -> bool {
+    if domains.exclude.iter().filter_map(site).any(|e| covers(&e, excluded)) {
+        return false;
+    }
+    domains.include.is_empty()
+        || domains.include.iter().any(|m| match site(m) {
+            Some(host) => covers(&host, excluded) || covers(excluded, &host),
+            None => true,
+        })
+}
+
 struct Restricted {
     list: DomainList,
     /// Excluded sites that are subdomains of a kept include; the include still
@@ -1582,7 +1603,8 @@ fn is_plain_block(rule: &Rule) -> bool {
         && NATIVE.contains(r.negated_types)
 }
 
-/// The ignore rule that lifts a #925 segment on an excluded site.
+/// The ignore rule that lifts a #925 segment on an excluded site. `None` when
+/// an entity has no top-URL form.
 fn ignore_rule(site: &str) -> Option<WkRule> {
     let mut trigger = WkTrigger {
         url_filter: ".*".into(),
@@ -1590,11 +1612,7 @@ fn ignore_rule(site: &str) -> Option<WkRule> {
     };
     match site.strip_suffix(".*") {
         Some(name) => {
-            let pattern = format!(
-                r"^[a-z]+://([a-z0-9._-]+\.)?{}\.[^/:]+([/:?#].*)?$",
-                regex_escape(name)
-            );
-            trigger.if_top_url = Some(vec![pattern]);
+            trigger.if_top_url = Some(domain_top_url(&DomainMatcher::Entity(name.into()))?);
         }
         None => trigger.if_domain = Some(vec![format!("*{site}")]),
     }
@@ -1602,17 +1620,6 @@ fn ignore_rule(site: &str) -> Option<WkRule> {
         trigger,
         action: WkAction::IgnorePreviousRules,
     })
-}
-
-fn regex_escape(s: &str) -> String {
-    let mut out = String::with_capacity(s.len());
-    for c in s.chars() {
-        if r"\^$.|?*+()[]{}".contains(c) {
-            out.push('\\');
-        }
-        out.push(c);
-    }
-    out
 }
 
 impl Stats {
@@ -2515,6 +2522,395 @@ mod tests {
         );
         assert!(rules(&plan, 0).iter().any(|r| r["action"]["type"] == "ignore-previous-rules"
             && r["trigger"]["url-filter"].as_str().unwrap().contains("kupuvamsamo")));
+    }
+
+    /// The rules of each blocker of `plan` compiled with `extras`, in WebKit's order.
+    fn compiled_blockers(plan: &Plan, extras: &[Extra]) -> Vec<Vec<Value>> {
+        (0..plan.target_count())
+            .map(|t| serde_json::from_str(&crate::webkit::to_json(&plan.compile_target(t, extras).output.webkit)).unwrap())
+            .collect()
+    }
+
+    fn host_of(url: &str) -> &str {
+        url.split("://").nth(1).unwrap().split(['/', ':', '?']).next().unwrap()
+    }
+
+    /// Whether an if-domain entry names `host`: `*host` also matches its subdomains.
+    fn names(domain: &str, host: &str) -> bool {
+        match domain.strip_prefix('*') {
+            Some(base) => host == base || host.ends_with(&format!(".{base}")),
+            None => host == domain,
+        }
+    }
+
+    /// Whether a WebKit trigger matches a load of `url` on the page `top`.
+    fn list_of<'a>(trigger: &'a Value, key: &str) -> Option<Vec<&'a str>> {
+        trigger[key].as_array().map(|items| items.iter().map(|v| v.as_str().unwrap()).collect())
+    }
+
+    /// A compiled pattern, built once per pattern: the differential test
+    /// evaluates the same few hundred thousand triggers.
+    fn regex(pattern: &str, case_insensitive: bool) -> ::regex::Regex {
+        thread_local! {
+            static CACHE: std::cell::RefCell<std::collections::HashMap<(String, bool), ::regex::Regex>> = Default::default();
+        }
+        CACHE.with(|cache| {
+            cache
+                .borrow_mut()
+                .entry((pattern.to_owned(), case_insensitive))
+                .or_insert_with(|| ::regex::RegexBuilder::new(pattern).case_insensitive(case_insensitive).build().unwrap())
+                .clone()
+        })
+    }
+
+    fn matches(trigger: &Value, url: &str, top: &str, resource: &str, child_frame: bool) -> bool {
+        let (host, top_host) = (host_of(url), host_of(top));
+        let site = |h: &str| crate::registrable_domain(h).unwrap_or(h).to_owned();
+        let load = || if site(host) == site(top_host) { "first-party" } else { "third-party" };
+        let context = if child_frame { "child-frame" } else { "top-frame" };
+        let filter = trigger["url-filter"].as_str().unwrap();
+        let case_sensitive = trigger["url-filter-is-case-sensitive"] == true;
+        let page_matches = |u: &str| regex(u, false).is_match(top);
+        regex(filter, !case_sensitive).is_match(url)
+            && list_of(trigger, "resource-type").is_none_or(|t| t.contains(&resource))
+            && list_of(trigger, "load-type").is_none_or(|t| t.contains(&load()))
+            && list_of(trigger, "load-context").is_none_or(|c| c.contains(&context))
+            && list_of(trigger, "if-domain").is_none_or(|d| d.iter().any(|d| names(d, top_host)))
+            && list_of(trigger, "unless-domain").is_none_or(|d| !d.iter().any(|d| names(d, top_host)))
+            && list_of(trigger, "if-top-url").is_none_or(|u| u.iter().any(|u| page_matches(u)))
+            && list_of(trigger, "unless-top-url").is_none_or(|u| !u.iter().any(|u| page_matches(u)))
+    }
+
+    /// What the blockers do to one load. Safari applies each blocker's rules
+    /// in order: `block` blocks, `ignore-previous-rules` cancels what its
+    /// blocker did before it, and `css-display-none` hides. A load is blocked
+    /// when some blocker ends blocked; `hidden` unions the hides.
+    #[derive(Debug, Default, PartialEq)]
+    struct Verdict {
+        blocked: bool,
+        hidden: std::collections::BTreeSet<String>,
+    }
+
+    fn judge(blockers: &[Vec<Value>], url: &str, top: &str, resource: &str, child_frame: bool) -> Verdict {
+        let mut out = Verdict::default();
+        for rules in blockers {
+            let (mut blocked, mut hidden) = (false, std::collections::BTreeSet::new());
+            for rule in rules.iter().filter(|rule| matches(&rule["trigger"], url, top, resource, child_frame)) {
+                match rule["action"]["type"].as_str().unwrap() {
+                    "block" => blocked = true,
+                    "ignore-previous-rules" => {
+                        blocked = false;
+                        hidden.clear();
+                    }
+                    "css-display-none" => {
+                        hidden.insert(rule["action"]["selector"].as_str().unwrap().to_owned());
+                    }
+                    other => panic!("unexpected action {other}"),
+                }
+            }
+            out.blocked |= blocked;
+            out.hidden.extend(hidden);
+        }
+        out
+    }
+
+    /// `judge` for the blockers of `plan`, with no extra text.
+    fn verdict(plan: &Plan, url: &str, top: &str, resource: &str, child_frame: bool) -> Verdict {
+        judge(&compiled_blockers(plan, &[]), url, top, resource, child_frame)
+    }
+
+    fn request_with(lists: Value, targets: Value, rules: usize) -> PlanRequest {
+        serde_json::from_value(json!({
+            "safari": [26, 0], "lists": lists, "targets": targets, "limits": { "rules": rules }
+        }))
+        .unwrap()
+    }
+
+    /// The review's two lists: `/allowme/` blocks, and an exception in
+    /// `privacy` lifts `allow.js`. `rules` is the blocker limit.
+    fn affinity_request(rules: usize, targets: Value) -> PlanRequest {
+        serde_json::from_value(json!({
+            "safari": [26, 0],
+            "lists": [
+                { "id": "block", "text": "/allowme/" },
+                { "id": "except", "text": "!#safari_cb_affinity(privacy)\n@@/allowme/allow" }
+            ],
+            "targets": targets,
+            "limits": { "rules": rules, "bytes": 10000 }
+        }))
+        .unwrap()
+    }
+
+    const PAGE: &str = "https://site.example/";
+    const ALLOW: &str = "https://x.example/allowme/allow.js";
+    const OTHER: &str = "https://x.example/allowme/other.js";
+
+    #[test]
+    fn affinity_exception_reaches_the_blocker_holding_its_block() {
+        let fixture = json!([
+            { "slot": 1, "lists": [{ "list": 1, "shard": [0, 2] }] },
+            { "slot": 2, "lists": [{ "list": 0 }, { "list": 1, "shard": [1, 2] }] }
+        ]);
+        let split = json!([
+            { "slot": 1, "lists": [{ "list": 0 }, { "list": 1, "shard": [0, 2] }] },
+            { "slot": 2, "lists": [{ "list": 1, "shard": [1, 2] }] }
+        ]);
+        let whole = json!([
+            { "slot": 1, "lists": [{ "list": 0 }] },
+            { "slot": 2, "lists": [{ "list": 1 }] }
+        ]);
+        for (rules, targets) in [(999, fixture), (0, split), (0, whole)] {
+            let plan = Plan::new(affinity_request(rules, targets));
+            assert!(!verdict(&plan, ALLOW, PAGE, "script", false).blocked, "limit {rules}: allow.js");
+            assert!(verdict(&plan, OTHER, PAGE, "script", false).blocked, "limit {rules}: other.js");
+        }
+    }
+
+    #[test]
+    fn packed_plan_matches_reference_verdicts() {
+        // The exceptions are privacy-only, yet every blocker is assigned them.
+        let mut packing = packing_request(0, 300, 75_000, 150);
+        let mut oracle = packing.clone();
+        oracle.limits.rules = 0;
+        oracle.targets = vec![serde_json::from_value(json!({"slot": 1, "lists": [{"list": 0}, {"list": 1}, {"list": 2}]})).unwrap()];
+        // The exceptions are privacy-only, yet every blocker is assigned them.
+        packing.lists[2].text = format!("!#safari_cb_affinity(privacy)\n{}", packing.lists[2].text);
+        let mut reference = packing.clone();
+        reference.limits.rules = 0;
+        let (packed, reference, oracle) = (Plan::new(packing), Plan::new(reference), Plan::new(oracle));
+        packed.check_capacity().unwrap();
+        // A top-level document is its own page, which the page exceptions name.
+        let download = format!("https://host{{}}.example/download/{}/file", "a".repeat(200));
+        for i in 0..3 {
+            let url = download.replace("{}", &i.to_string());
+            let got = verdict(&packed, &url, &url, "document", false);
+            assert_eq!(got, verdict(&reference, &url, &url, "document", false), "host{i} against limits 0");
+            assert_eq!(got, verdict(&oracle, &url, &url, "document", false), "host{i} against one blocker");
+        }
+        assert!(!verdict(&oracle, &download.replace("{}", "1"), &download.replace("{}", "1"), "document", false).blocked);
+        assert!(verdict(&oracle, &download.replace("{}", "0"), &download.replace("{}", "0"), "document", false).blocked);
+    }
+
+    /// xorshift64 with a seed, so a failing case can be rerun from its number.
+    struct Xorshift(u64);
+
+    impl Xorshift {
+        fn below(&mut self, n: usize) -> usize {
+            self.0 ^= self.0 << 13;
+            self.0 ^= self.0 >> 7;
+            self.0 ^= self.0 << 17;
+            (self.0 % n as u64) as usize
+        }
+    }
+
+    /// Two to five lists of host, path, exception and badfilter rules. Runs of
+    /// lines get a random affinity, and the second text is the same lists with
+    /// the affinity lines stripped: the oracle's text.
+    fn random_lists(rng: &mut Xorshift) -> (Vec<String>, Vec<String>) {
+        const NAMES: [&str; 6] = ["general", "privacy", "social", "other", "custom", "security"];
+        let (mut with, mut without) = (Vec::new(), Vec::new());
+        for _ in 0..2 + rng.below(4) {
+            let (mut text, mut plain) = (String::new(), String::new());
+            for _ in 0..5 + rng.below(36) {
+                if rng.below(3) == 0 {
+                    // Affinity 0 is none: the directive with no types.
+                    let mask = if rng.below(3) == 0 { 0 } else { 1 + rng.below(63) };
+                    let types: Vec<&str> = (0..6).filter(|b| mask >> b & 1 == 1).map(|b| NAMES[b]).collect();
+                    text += &if types.is_empty() {
+                        "!#safari_cb_affinity\n".to_string()
+                    } else {
+                        format!("!#safari_cb_affinity({})\n", types.join(","))
+                    };
+                }
+                let i = rng.below(6);
+                let line = match rng.below(5) {
+                    0 => format!("||h{i}.example^"),
+                    1 => format!("/p{i}/"),
+                    2 => format!("@@||h{i}.example^"),
+                    3 => format!("@@/p{i}/ok"),
+                    _ => format!("||h{i}.example^$badfilter"),
+                };
+                text += &format!("{line}\n");
+                plain += &format!("{line}\n");
+            }
+            with.push(text);
+            without.push(plain);
+        }
+        (with, without)
+    }
+
+    /// Five blockers (slots 1 to 5). Each list is whole in a random set of them,
+    /// or sharded over distinct ones, so every list reaches some blocker.
+    fn random_targets(rng: &mut Xorshift, lists: usize) -> Value {
+        let mut held: Vec<Vec<Value>> = vec![Vec::new(); 5];
+        for list in 0..lists {
+            if rng.below(2) == 0 {
+                let mut any = false;
+                for target in &mut held {
+                    if rng.below(2) == 0 {
+                        target.push(json!({ "list": list }));
+                        any = true;
+                    }
+                }
+                if !any {
+                    held[rng.below(5)].push(json!({ "list": list }));
+                }
+            } else {
+                let mut order: Vec<usize> = (0..5).collect();
+                for i in (1..5).rev() {
+                    order.swap(i, rng.below(i + 1));
+                }
+                let count = 2 + rng.below(2);
+                for shard in 0..count {
+                    held[order[shard]].push(json!({ "list": list, "shard": [shard, count] }));
+                }
+            }
+        }
+        Value::Array(held.into_iter().enumerate().map(|(t, lists)| json!({ "slot": t + 1, "lists": lists })).collect())
+    }
+
+    /// Affinity plans against their oracle, one blocker with the same lists
+    /// and no affinity. Wherever the plan's capacity check passes, every load
+    /// gets the oracle's verdict.
+    #[test]
+    fn affinity_plans_match_the_one_blocker_oracle() {
+        let urls: Vec<String> = (0..6)
+            .map(|i| format!("https://h{i}.example/a.js"))
+            .chain((0..6).flat_map(|i| ["a", "ok"].map(|file| format!("https://cdn.example/p{i}/{file}.js"))))
+            .collect();
+        let pages = ["https://site.example/", "https://h0.example/"];
+        let (mut checked, mut blocked) = (0, 0);
+        for seed in 1..=300u64 {
+            let mut rng = Xorshift(seed.wrapping_mul(0x9E37_79B9_7F4A_7C15) | 1);
+            let (with, without) = random_lists(&mut rng);
+            let targets = random_targets(&mut rng, with.len());
+            let lists = |texts: &[String]| -> Value {
+                Value::Array(texts.iter().enumerate().map(|(i, text)| json!({ "id": format!("list{i}"), "text": text })).collect())
+            };
+            let all: Value = Value::Array((0..with.len()).map(|i| json!({ "list": i })).collect());
+            let oracle = Plan::new(request_with(lists(&without), json!([{ "slot": 1, "lists": all }]), 0));
+            let oracle_blockers = compiled_blockers(&oracle, &[]);
+            let oracle_rules = oracle_blockers[0].len();
+            let zero = Plan::new(request_with(lists(&with), targets.clone(), 0));
+            let limited = Plan::new(request_with(lists(&with), targets, (oracle_rules * 2 / 5).max(1)));
+            for plan in [&zero, &limited] {
+                if plan.check_capacity().is_err() {
+                    continue;
+                }
+                checked += 1;
+                let plan_blockers = compiled_blockers(plan, &[]);
+                for url in &urls {
+                    for page in pages {
+                        for (resource, child) in [("script", false), ("document", true)] {
+                            let got = judge(&plan_blockers, url, page, resource, child);
+                            let want = judge(&oracle_blockers, url, page, resource, child);
+                            blocked += want.blocked as usize;
+                            assert_eq!(got, want, "seed {seed}: {url} on {page} as {resource} (child frame {child})\n{with:?}");
+                        }
+                    }
+                }
+            }
+        }
+        assert!(checked >= 300 && blocked > 0, "{checked} plans checked, {blocked} blocked loads");
+    }
+
+    /// Mixed hostname and entity exclusions on a block and its exception
+    /// reach the blocks of both lists: every block is kept.
+    #[test]
+    fn mixed_exclusions_keep_every_block() {
+        let excluded = json!({ "exclude": ["www.a.com", "google.*", "b.co.uk"] });
+        let request: PlanRequest = serde_json::from_value(json!({
+            "safari": [26, 0],
+            "lists": [
+                { "id": "seg", "text": "/one/\n/two/\n/three/\n/six/", "scope": excluded },
+                { "id": "rest", "text": "/four/\n/five/\n@@/four/ok", "scope": excluded }
+            ],
+            "targets": [{ "slot": 1, "lists": [{ "list": 0 }, { "list": 1 }] }]
+        }))
+        .unwrap();
+        let mut reference = request.clone();
+        reference.limits.rules = 0;
+        assert_eq!(union(&Plan::new(request.clone())), union(&Plan::new(reference)));
+        let plan = Plan::new(request);
+        let news = "https://news.example/";
+        let excluded_pages = ["https://www.a.com/", "https://www.google.de/", "https://b.co.uk/"];
+        for path in ["one", "two", "three", "four", "five", "six"] {
+            let url = format!("https://cdn.example/{path}/a.js");
+            assert!(verdict(&plan, &url, news, "script", false).blocked, "{path} on news");
+            for page in excluded_pages {
+                assert!(!verdict(&plan, &url, page, "script", false).blocked, "{path} on {page}");
+            }
+        }
+        for page in [news, excluded_pages[0], excluded_pages[1], excluded_pages[2]] {
+            assert!(!verdict(&plan, "https://cdn.example/four/ok.js", page, "script", false).blocked, "four/ok on {page}");
+        }
+    }
+
+    /// An exception with mixed exclusions lifts its block everywhere except
+    /// on the sites it excludes, hostnames and entities alike.
+    #[test]
+    fn mixed_exclusion_exception_lifts_only_off_its_sites() {
+        let exception = plan(
+            json!([{ "id": "list", "text": "||t.example/ok.js$script\n@@||t.example/ok.js$script,domain=~a.example|~google.*" }]),
+            json!([{ "slot": 1, "lists": [{ "list": 0 }] }]),
+            json!({}),
+        );
+        let blocked = |page: &str| verdict(&exception, "https://t.example/ok.js", page, "script", false).blocked;
+        assert!(!blocked("https://news.example/"));
+        assert!(blocked("https://a.example/"));
+        assert!(blocked("https://www.google.de/"));
+        // A block with both kinds of exclusion carries the merged condition, and
+        // an unconditioned exception still lifts it everywhere.
+        let merged = plan(
+            json!([{ "id": "list", "text": "||t.example/ok.js$script,domain=~a.example|~google.*\n@@||t.example/ok.js$script" }]),
+            json!([{ "slot": 1, "lists": [{ "list": 0 }] }]),
+            json!({}),
+        );
+        for page in ["https://news.example/", "https://a.example/", "https://www.google.de/"] {
+            assert!(!verdict(&merged, "https://t.example/ok.js", page, "script", false).blocked, "{page}");
+        }
+    }
+
+    /// A segment's ignore rule cancels the hides before it. The hide of a list
+    /// that does not exclude the site must survive, and so must the block of
+    /// the other list.
+    fn check_unrelated_hides(plan: &Plan, extras: &[Extra], hide: &str) {
+        let blockers = compiled_blockers(plan, extras);
+        let (a, news) = ("https://www.a.com/", "https://news.example/");
+        let hidden = |page: &str| judge(&blockers, page, page, "document", false).hidden;
+        assert!(hidden(a).contains(hide) && !hidden(a).contains(".own"), "{:?}", hidden(a));
+        assert!(hidden(news).contains(hide) && hidden(news).contains(".own"), "{:?}", hidden(news));
+        for path in ["one", "two", "three"] {
+            let url = format!("https://cdn.example/{path}/a.js");
+            let blocked = |page: &str| judge(&blockers, &url, page, "script", false).blocked;
+            assert_eq!(blocked(a), path == "three", "{path} on {a}");
+            assert!(blocked(news), "{path} on {news}");
+        }
+    }
+
+    fn excluded_segment_plan(plainlist: &str) -> Plan {
+        Plan::new(
+            serde_json::from_value(json!({
+                "safari": [26, 0],
+                "lists": [
+                    { "id": "scoped", "text": "/one/\n/two/\n##.own", "scope": { "exclude": ["www.a.com"] } },
+                    { "id": "plainlist", "text": plainlist }
+                ],
+                "targets": [{ "slot": 1, "lists": [{ "list": 0 }, { "list": 1 }] }]
+            }))
+            .unwrap(),
+        )
+    }
+
+    #[test]
+    fn segment_ignore_spares_unrelated_hides() {
+        check_unrelated_hides(&excluded_segment_plan("##.unrelated\n/three/"), &[], ".unrelated");
+    }
+
+    #[test]
+    fn segment_ignore_spares_extra_hides() {
+        let extra = Extra { text: "##.zapped".into(), trusted: true, every_blocker: false };
+        check_unrelated_hides(&excluded_segment_plan("/three/"), &[extra], ".zapped");
     }
 
     #[test]
