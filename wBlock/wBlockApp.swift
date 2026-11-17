@@ -97,19 +97,15 @@ struct wBlockApp: App {
                 #endif
                 #if os(macOS)
                 .handlesExternalEvents(preferring: Set(["open"]), allowing: Set(["*"]))
-                .confirmationDialog(
-                    "Restart Onboarding?",
-                    isPresented: $showingRestartConfirmation,
-                    titleVisibility: .visible
-                ) {
+                .alert("Restart Onboarding?", isPresented: $showingRestartConfirmation) {
+                    Button("Cancel", role: .cancel) {}
                     Button("Restart", role: .destructive) {
                         Task { @MainActor in
                             await filterManager.completeResetForOnboarding()
                         }
                     }
-                    Button("Cancel", role: .cancel) {}
                 } message: {
-                    Text("This will reset all filters, userscripts, and preferences.")
+                    Text("This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow.")
                 }
                 #endif
         }

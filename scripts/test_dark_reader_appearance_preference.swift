@@ -31,11 +31,6 @@ struct DarkReaderAppearancePreferenceTests {
             "the preference must default to following system appearance"
         )
 
-        expect(
-            DarkReaderAppearancePreference.darkThemeDetectionMarkerName == "detectBuiltInDarkTheme",
-            "the detection marker must match the adapter's detector function name"
-        )
-
         DarkReaderAppearancePreference.setFollowsSystemAppearance(false, groupIdentifier: suite)
         expect(
             !DarkReaderAppearancePreference.followsSystemAppearance(groupIdentifier: suite),

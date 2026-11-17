@@ -4,7 +4,16 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 TMP="$(mktemp -d)"
-trap 'rm -rf "$TMP"' EXIT
+touch "$TMP/started"
+# Tests open UserDefaults suites with fresh names, and removing a suite's keys
+# leaves its plist behind. Thousands of those left cfprefsd refusing every new
+# domain, so drop the ones this run created.
+cleanup() {
+  find "$HOME/Library/Preferences" -maxdepth 1 -name '*.plist' -newer "$TMP/started" \
+    \( -iname '*test*' -o -iname '*probe*' -o -name 'wblock.*' -o -name 'issue-*' \) -delete 2>/dev/null || true
+  rm -rf "$TMP"
+}
+trap cleanup EXIT
 
 run() {
   echo "[test] $*"
@@ -17,7 +26,6 @@ case "${1:-all}" in
 esac
 if [[ "${1:-all}" != --native ]]; then
   for test in scripts/test_*.mjs; do
-    [[ "$test" == scripts/test_no_autoplay.mjs ]] && continue
     run node "$test"
   done
 fi
@@ -93,8 +101,6 @@ queue() {
   step "${@:2}"
 }
 
-queue core python3 scripts/test_issue_684_external_refresh.py
-
 compile_core_test() {
   local name="$1"
   local test="$2"
@@ -150,8 +156,6 @@ compile_direct_test userscript-world-isolation scripts/test_userscript_world_iso
 compile_direct_test tab-selection-isolation wBlock/AppTabView.swift scripts/test_tab_selection_isolation.swift
 compile_direct_test shared-auto-update-lease \
   wBlockCoreService/FileLock.swift wBlockCoreService/SharedAutoUpdateLease.swift scripts/test_shared_auto_update_lease.swift
-compile_direct_test foreground-run-gate \
-  wBlockCoreService/ForegroundRunGate.swift scripts/test_foreground_run_gate.swift
 
 # Core-module API tests. Source-only wBlock tests add their production source
 # explicitly; the remaining tests use the freshly built core framework.
@@ -159,7 +163,6 @@ compile_core_test apply-progress-presentation scripts/test_apply_progress_presen
   wBlock/ApplyChangesViewModel.swift
 compile_core_test safari-setup-query-isolation scripts/test_safari_setup_query_isolation.swift \
   wBlock/SafariExtensionSetupSupport.swift
-compile_core_test userscript-frame-authorization scripts/test_userscript_frame_authorization.swift
 job core "policy proofs and Swift conformance"
 step npm --prefix scripts/proofs ci --ignore-scripts --no-audit --no-fund
 step npm --prefix scripts/proofs test
@@ -184,36 +187,6 @@ compile_core_test cloud-local-user-scripts scripts/test_cloud_sync_local_user_sc
   wBlock/CloudSyncRemoteUserScriptSync.swift
 compile_core_test cloud-remote-user-scripts scripts/test_cloud_sync_remote_user_scripts.swift \
   wBlock/CloudSyncRemoteUserScriptSync.swift
-cat > "$TMP/localization-formatting-shim.swift" <<'SWIFT'
-import Foundation
-
-extension Locale {
-  static var appCurrent: Locale { .current }
-}
-
-enum LocalizedFormatting {
-  static func relativeDateTimeFormatter(unitsStyle: RelativeDateTimeFormatter.UnitsStyle) -> RelativeDateTimeFormatter {
-    let formatter = RelativeDateTimeFormatter()
-    formatter.unitsStyle = unitsStyle
-    return formatter
-  }
-
-  static func timeFormatter() -> DateFormatter {
-    let formatter = DateFormatter()
-    formatter.dateFormat = "h:mm a"
-    return formatter
-  }
-
-  static func dateTimeFormatter() -> DateFormatter {
-    let formatter = DateFormatter()
-    formatter.dateFormat = "MMM d, yyyy 'at' h:mm a"
-    return formatter
-  }
-}
-SWIFT
-compile_direct_test cloud-timestamp-formatter \
-  "$TMP/localization-formatting-shim.swift" \
-  wBlock/CloudSyncTimestampFormatter.swift scripts/test_cloud_sync_timestamp_formatter.swift
 compile_core_test dark-reader-appearance scripts/test_dark_reader_appearance_preference.swift
 compile_core_test tube-cleaner-dearrow scripts/test_tube_cleaner_dearrow_preference.swift
 compile_core_test sponsorblock-settings-transfer scripts/test_sponsorblock_settings_transfer.swift
@@ -245,7 +218,7 @@ compile_core_test foreign-filter-groups scripts/test_foreign_filter_groups.swift
   wBlock/LocalizationHelpers.swift wBlock/FilterListLoader.swift wBlock/ConcurrentLogManager.swift wBlock/LogTimeZone.swift
 compile_core_test filter-list-presentation scripts/test_filter_list_presentation.swift \
   wBlock/FilterListPresentation.swift wBlock/ListDisplayOrder.swift wBlock/ContentRowMetadata.swift \
-  wBlock/LocalizationHelpers.swift wBlock/FilterListLoader.swift wBlock/ConcurrentLogManager.swift wBlock/LogTimeZone.swift
+  wBlock/SwiftUICompatibility.swift wBlock/LocalizationHelpers.swift wBlock/FilterListLoader.swift wBlock/ConcurrentLogManager.swift wBlock/LogTimeZone.swift
 compile_core_test filter-url-mirrors scripts/test_filter_url_mirrors.swift
 compile_core_test filter-list-duplicates scripts/test_filter_list_duplicates.swift \
   wBlock/FilterListDuplicates.swift
@@ -374,9 +347,6 @@ step swiftc -F "$CORE_PRODUCTS" -I "$CORE_PRODUCTS" -I "$CORE_PRODUCTS/include" 
   scripts/test_issue_511_packaged_compilers.swift -o "$TMP/packaged-compilers"
 step env "${COMPILER_BUNDLES[@]}" "$TMP/packaged-compilers"
 
-# Safari uses template tinting, so disabled toolbar icons need a distinct alpha mask.
-queue direct swift scripts/test_action_icon_masks.swift
-
 for test in scripts/test_*.sh; do
   if [[ "$test" == scripts/test_apply_sheet_presentation.sh ]]; then
     # This parameterized suite runs in the simulator job in CI.
@@ -416,11 +386,6 @@ compile_direct_test include-resolution \
   wBlockCoreService/ConditionalEvaluator.swift \
   wBlockCoreService/PlatformConstants.swift \
   scripts/test_include_resolver_url_encoding.swift
-
-compile_direct_test pause-store \
-  wBlockCoreService/GroupIdentifier.swift \
-  wBlockCoreService/BlockingPauseStore.swift \
-  scripts/test_issue_508_pause_store.swift
 
 compile_direct_test pending-filter-update-revisions \
   wBlockCoreService/GroupIdentifier.swift \

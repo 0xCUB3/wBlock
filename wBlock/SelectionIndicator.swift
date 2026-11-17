@@ -8,7 +8,7 @@ struct SelectableRow: View {
     /// A short line under the title, such as the languages a list covers.
     var caption: String = ""
     var subtitle: String = ""
-    var badge: Text? = nil
+    var badge: String? = nil
     let isSelected: Bool
     let action: () -> Void
 
@@ -21,14 +21,7 @@ struct SelectableRow: View {
                         .foregroundStyle(.primary)
                         .multilineTextAlignment(.leading)
                     if let badge {
-                        badge
-                            .font(.caption2)
-                            .fontWeight(.medium)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.orange.opacity(0.15))
-                            .foregroundStyle(.orange)
-                            .cornerRadius(4)
+                        Badge(text: badge, color: .orange)
                     }
                 }
                 if !caption.isEmpty {

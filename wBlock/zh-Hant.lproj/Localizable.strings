@@ -597,7 +597,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This removes all settings for %@." = "這會移除 %@ 的所有設定。";
 "This removes the whitelist entry, userscript exceptions, and zapper rules for %@." = "這會移除 %@ 的允許清單項目、使用者腳本例外和元素清除器規則。";
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "這會移除所有過濾器、使用者腳本與偏好設定，然後重新啟動新手導覽流程。";
-"This will reset all filters, userscripts, and preferences." = "這將重設所有過濾器、使用者腳本與偏好設定。";
 "Timed out" = "逾時";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield 可協助封鎖 Ad-Shield 在相符網站上重新插入的廣告。";
 "Lets ad blockers quickly resist Ad-Shield, which reinserts ads on matching sites after filter lists hide them." = "讓廣告封鎖器快速對抗 Ad-Shield；它會在過濾器清單隱藏廣告後，在相符的網站上重新插入廣告。";

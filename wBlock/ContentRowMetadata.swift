@@ -108,5 +108,6 @@ struct InfoActionRow: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .noFocusRingCompat()
     }
 }

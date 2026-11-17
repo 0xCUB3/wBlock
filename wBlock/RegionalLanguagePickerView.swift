@@ -57,9 +57,7 @@ struct RegionalLanguagePickerView: View {
                 Text("Languages").foregroundStyle(.primary)
                 Spacer()
                 Text(verbatim: summary).foregroundStyle(.secondary).lineLimit(1).truncationMode(.tail)
-                Image(systemName: "chevron.right")
-                    .font(.footnote.weight(.semibold))
-                    .foregroundStyle(.tertiary)
+                RowDisclosureChevron()
             }
             .contentShape(Rectangle())
         }

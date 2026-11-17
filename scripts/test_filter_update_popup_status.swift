@@ -53,14 +53,12 @@ struct FilterUpdatePopupStatusTests {
             try? FileManager.default.removeItem(at: lockDirectory)
         }
 
+        // The state machine (claims, stale claims, owners, requests, acknowledgement) is proven in
+        // scripts/proofs and differentially checked there. Result counts are not part of that model.
         guard let claim = FilterUpdatePopupStatus.beginIfIdle(
             groupIdentifier: suite,
             lockDirectory: lockDirectory
         ) else { fatalError("update should begin") }
-        expect(FilterUpdatePopupStatus.consumeSnapshot(groupIdentifier: suite, lockDirectory: lockDirectory).state == .running,
-               "reading a running update must not acknowledge it")
-        expect(FilterUpdatePopupStatus.snapshot(groupIdentifier: suite, lockDirectory: lockDirectory).state == .running,
-               "running state must remain available to polling")
 
         let completion = SharedAutoUpdateManager.AutoUpdateCompletion(
             result: .noFilterUpdates,
@@ -69,14 +67,6 @@ struct FilterUpdatePopupStatusTests {
             updatedScripts: 0,
             failedScripts: 0
         )
-        expect(!FilterUpdatePopupStatus.finish(
-            .completed(completion),
-            claim: .init(rawValue: "stale-owner"),
-            groupIdentifier: suite,
-            lockDirectory: lockDirectory
-        ), "a stale owner must not finish another claim")
-        expect(FilterUpdatePopupStatus.snapshot(groupIdentifier: suite, lockDirectory: lockDirectory).state == .running,
-               "stale finish must not alter running state")
         expect(FilterUpdatePopupStatus.finish(
             .completed(completion),
             claim: claim,
@@ -85,44 +75,15 @@ struct FilterUpdatePopupStatusTests {
         ), "claim owner should finish")
 
         let terminal = FilterUpdatePopupStatus.consumeSnapshot(groupIdentifier: suite, lockDirectory: lockDirectory)
-        expect(terminal.state == .noChange, "the finishing popup must receive the terminal result")
         expect(terminal.checkedFilters == 12, "terminal result must retain its stats")
 
         let reopened = FilterUpdatePopupStatus.snapshot(groupIdentifier: suite, lockDirectory: lockDirectory)
-        expect(reopened.state == .idle, "a reopened popup must not repeat an acknowledged result")
-        expect(reopened.startedAt == nil && reopened.finishedAt == nil,
-               "acknowledgement must clear stale timestamps")
         expect(reopened.checkedFilters == 0 && reopened.updatedFilters == 0,
                "acknowledgement must clear stale counts")
 
-        testStaleRequestDoesNotAttachToNewClaim(lockDirectory: lockDirectory)
         testCrossProcessClaim(lockDirectory: lockDirectory)
 
         print("PASS")
-    }
-
-    private static func testStaleRequestDoesNotAttachToNewClaim(lockDirectory: URL) {
-        let suite = "test.wblock.popup-status.stale-request.\(UUID().uuidString)"
-        guard let defaults = UserDefaults(suiteName: suite) else { fatalError("missing stale-request defaults") }
-        defer { defaults.removePersistentDomain(forName: suite) }
-
-        let old = FilterUpdatePopupStatus.requestUpdate(
-            groupIdentifier: suite,
-            now: Date(timeIntervalSince1970: 1),
-            lockDirectory: lockDirectory
-        )
-        expect(old != nil, "old app request should be created")
-
-        let replacement = FilterUpdatePopupStatus.beginIfIdle(
-            groupIdentifier: suite,
-            now: Date(timeIntervalSince1970: 1_000),
-            lockDirectory: lockDirectory
-        )
-        expect(replacement != nil, "stale running generation should permit a new claim")
-        expect(FilterUpdatePopupStatus.consumeUpdateRequest(
-            groupIdentifier: suite,
-            lockDirectory: lockDirectory
-        ) == nil, "new direct claim must clear the stale request bit")
     }
 
     private static func testCrossProcessClaim(lockDirectory: URL) {

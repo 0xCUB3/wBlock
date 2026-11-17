@@ -595,7 +595,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "This removes all settings for %@." = "این کار همهٔ تنظیمات را برای %@ حذف می‌کند.";
 "This removes the whitelist entry, userscript exceptions, and zapper rules for %@." = "این کار ورودی فهرست مجاز، استثناهای اسکریپت کاربر و قوانین حذف‌کننده را برای %@ حذف می‌کند.";
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "این کار همهٔ فیلترها، اسکریپت‌های کاربر و اولویت‌ها را حذف کرده و سپس فرایند آشنایی اولیه را دوباره راه‌اندازی می‌کند.";
-"This will reset all filters, userscripts, and preferences." = "این کار همهٔ فیلترها، اسکریپت‌های کاربر و اولویت‌ها را بازنشانی می‌کند.";
 "Timed out" = "مهلت زمانی تمام شد";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "در سایت‌های منطبق، tinyShield به مسدود کردن تبلیغات دوباره درج‌شده توسط Ad-Shield کمک می‌کند.";
 "Lets ad blockers quickly resist Ad-Shield, which reinserts ads on matching sites after filter lists hide them." = "به مسدودکننده‌های تبلیغات امکان می‌دهد سریعاً در برابر Ad-Shield مقاومت کنند، که پس از پنهان شدن تبلیغات توسط فهرست‌های فیلتر، دوباره آن‌ها را در سایت‌های منطبق درج می‌کند.";

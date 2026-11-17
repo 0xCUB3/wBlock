@@ -157,11 +157,20 @@ struct InfoSheetHeader<Title: View>: View {
 // MARK: - Reusable Sheet Header
 
 struct SheetHeader: View {
-    let title: String
+    let title: Text
     let isLoading: Bool
     let onDismiss: () -> Void
 
     init(title: String, isLoading: Bool = false, onDismiss: @escaping () -> Void) {
+        self.init(Text(LocalizedStringKey(title)), isLoading: isLoading, onDismiss: onDismiss)
+    }
+
+    /// For user-supplied names, which must not be read as keys or Markdown.
+    init(verbatim title: String, isLoading: Bool = false, onDismiss: @escaping () -> Void) {
+        self.init(Text(verbatim: title), isLoading: isLoading, onDismiss: onDismiss)
+    }
+
+    private init(_ title: Text, isLoading: Bool, onDismiss: @escaping () -> Void) {
         self.title = title
         self.isLoading = isLoading
         self.onDismiss = onDismiss
@@ -169,9 +178,10 @@ struct SheetHeader: View {
 
     var body: some View {
         HStack {
-            Text(LocalizedStringKey(title))
+            title
                 .font(.title2)
                 .fontWeight(.semibold)
+                .lineLimit(1)
             Spacer()
             dismissControl
                 .disabled(isLoading)
@@ -179,8 +189,8 @@ struct SheetHeader: View {
                 .accessibilityHidden(isLoading)
                 .transaction { $0.animation = nil }
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 20)
+        .padding(.horizontal, SheetDesign.contentHorizontalPadding)
+        .padding(.top, SheetDesign.contentHorizontalPadding)
         .background(Color.clear)
     }
 
@@ -202,7 +212,7 @@ struct SheetBottomToolbar<Content: View>: View {
         HStack(spacing: 16) {
             content
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, SheetDesign.contentHorizontalPadding)
         .padding(.vertical, 12)
         .background(Color.clear)
     }

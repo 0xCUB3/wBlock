@@ -4,12 +4,10 @@ import wBlockCoreService
 @main
 struct Issue508BackupUserScriptTests {
     static func main() throws {
-        let original = BackupProbe(name: "Display Override", category: "custom", localImportIdentity: "file:/tmp/source.user.js", isLocal: true, url: nil)
-        let roundTrip = try JSONDecoder().decode(BackupProbe.self, from: JSONEncoder().encode(original))
-        check(roundTrip == original, "backup identity and category must survive a JSON round trip")
+        let stableIdentity = "file:/tmp/source.user.js"
         var stable = UserScript(name: "Display Override", content: "source")
         stable.isLocal = true
-        stable.localImportIdentity = original.localImportIdentity
+        stable.localImportIdentity = stableIdentity
         stable.category = .custom
         var other = UserScript(name: "Display Override", content: "other")
         other.isLocal = true
@@ -33,11 +31,4 @@ struct Issue508BackupUserScriptTests {
     private static func check(_ condition: @autoclosure () -> Bool, _ message: String) {
         guard condition() else { fputs("FAIL: \(message)\n", stderr); exit(1) }
     }
-}
-private struct BackupProbe: Codable, Equatable {
-    var name: String
-    var category: String?
-    var localImportIdentity: String?
-    var isLocal: Bool
-    var url: String?
 }

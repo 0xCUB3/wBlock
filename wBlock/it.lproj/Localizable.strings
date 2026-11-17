@@ -595,7 +595,6 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "This removes all settings for %@." = "Questo rimuove tutte le impostazioni per %@.";
 "This removes the whitelist entry, userscript exceptions, and zapper rules for %@." = "Questo rimuove la voce dei siti consentiti, le eccezioni degli userscript e le regole di Rimozione elementi per %@.";
 "This will remove all filters, userscripts, and preferences, then relaunch the onboarding flow." = "Questo rimuoverà tutti i filtri, gli userscript e le preferenze, quindi riavvierà la configurazione iniziale.";
-"This will reset all filters, userscripts, and preferences." = "Questo reimposterà tutti i filtri, gli userscript e le preferenze.";
 "Timed out" = "Tempo scaduto";
 "tinyShield helps block ads reinserted by Ad-Shield on matching sites." = "tinyShield aiuta a bloccare gli annunci reinseriti da Ad-Shield sui siti corrispondenti.";
 "Lets ad blockers quickly resist Ad-Shield, which reinserts ads on matching sites after filter lists hide them." = "Consente ai blocchi pubblicitari di resistere rapidamente ad Ad-Shield, che reinserisce gli annunci nei siti corrispondenti dopo che gli elenchi di filtri li hanno nascosti.";
