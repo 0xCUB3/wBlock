@@ -1572,14 +1572,17 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         )
         let (plan, targetIndex, requestJSON, extrasJSON, fingerprints) =
             (inputs.plan, inputs.targetIndex, inputs.requestJSON, inputs.extrasJSON, inputs.fingerprints)
-        // Every blocker is refused when the selection does not fit, so none is saved.
+        // Every blocker is refused when the selection does not fit, so none is
+        // saved. On iOS the ones over the byte budget report their size, so the
+        // apply sheet can name them and suggest lists to turn off.
         if let capacity = plan.capacity {
             #if os(iOS)
-            throw ContentBlockerSizeLimitError(byteCount: capacity.slots[targetIndex].bytes,
-                                               limit: safariContentBlockerJSONSizeLimit)
-            #else
-            throw WBEngine.EngineError(errorDescription: plan.capacityMessage)
+            let bytes = capacity.slots[targetIndex].bytes
+            if bytes > capacity.bytes {
+                throw ContentBlockerSizeLimitError(byteCount: bytes, limit: safariContentBlockerJSONSizeLimit)
+            }
             #endif
+            throw WBEngine.EngineError(errorDescription: plan.capacityMessage)
         }
         if Task.isCancelled || isCancelled?() == true { throw CancellationError() }
         let fingerprintIdentity = "|\(SafariVersionDetection.compilerIdentity)"
