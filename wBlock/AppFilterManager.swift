@@ -236,7 +236,9 @@ class AppFilterManager: ObservableObject {
     /// handover and have not handed over yet (completeAdGuardHandover).
     /// Device-local and recorded once, so a list turned on later, here or on a
     /// synced device, stays on.
-    private static let adGuardHandoverPendingKey = "wBlock.adGuardHandoverPending.3"
+    /// `.4` runs the 3.2.3 to 4.0 handover once more on 4.0.0 installs, so AdGuard
+    /// lists turned on after the first run hand over as an upgrade from 3.2.3 does.
+    private static let adGuardHandoverPendingKey = "wBlock.adGuardHandoverPending.4"
 
     var adGuardHandoverPending: Set<UUID> {
         get {
@@ -255,7 +257,8 @@ class AppFilterManager: ObservableObject {
         adGuardHandoverPending = Set(lists.filter { $0.isSelected && FilterListLoader.isReplacedList($0) }.map(\.id))
     }
 
-    private static let changedDefaultsKey = "wBlock.changedDefaults.4.0"
+    /// `.2` applies the changed defaults once more on 4.0.0 installs, with the handover above.
+    private static let changedDefaultsKey = "wBlock.changedDefaults.4.0.2"
 
     /// Gives an existing install the defaults 4.0 changed after its first
     /// builds, once per device. New installs start from the current defaults.

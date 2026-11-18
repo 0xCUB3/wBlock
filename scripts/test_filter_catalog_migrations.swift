@@ -306,9 +306,6 @@ private final class TestLoader: FilterListLoader {
         // Retired built-ins leave the catalog and are recognized by address, so they go without errors.
         let retired = [
             ("\(registry)/extension/safari/filters/207_optimized.txt", "Adblock Warning Removal List"),
-            ("\(registry)/extension/safari/filters/10_optimized.txt", "AdGuard Allowlist"),
-            ("\(registry)/extension/safari/filters/10.txt", "AdGuard Allowlist"),
-            ("https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/whitelist-referral.txt", "HaGeZi Referral Allowlist"),
             // #1088: every address the list was ever stored under.
             ("https://filters.adtidy.org/extension/ublock/filters/25.txt", "AdGuard Mail Tracking Protection Filter"),
             ("\(registry)/extension/safari/filters/25_optimized.txt", "AdGuard Mail Tracking Protection Filter"),
@@ -324,12 +321,18 @@ private final class TestLoader: FilterListLoader {
             precondition(!FilterListLoader.isRetiredBuiltIn(custom), "a custom copy of \(name) must stay")
         }
 
-        // Online Malicious URL Blocklist goes even when on, with the custom copy 3.2.3 kept (#1088).
-        for url in ["https://curbengh.github.io/malware-filter/urlhaus-filter-vivaldi-online.txt",
-                    "\(registry)/extension/safari/filters/208_optimized.txt"] {
+        // Online Malicious URL Blocklist and the two allowlists go even when on, with the custom copies earlier
+        // releases kept (#1088).
+        for (url, name) in [
+            ("https://curbengh.github.io/malware-filter/urlhaus-filter-vivaldi-online.txt", "Online Malicious URL Blocklist"),
+            ("\(registry)/extension/safari/filters/208_optimized.txt", "Online Malicious URL Blocklist"),
+            ("\(registry)/extension/safari/filters/10_optimized.txt", "AdGuard Allowlist"),
+            ("\(registry)/extension/safari/filters/10.txt", "AdGuard Allowlist"),
+            ("https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/whitelist-referral.txt", "HaGeZi Referral Allowlist"),
+        ] {
             precondition(!defaults.contains { $0.url.absoluteString == url }, "\(url) is still in the catalog")
             for isCustom in [false, true] {
-                let filter = FilterList(name: "Online Malicious URL Blocklist", url: URL(string: url)!, category: .security,
+                let filter = FilterList(name: name, url: URL(string: url)!, category: .security,
                                         isCustom: isCustom, isSelected: true)
                 precondition(FilterListLoader.isRetiredBuiltIn(filter) && FilterListLoader.isPurgedBuiltIn(filter),
                              "\(url) custom:\(isCustom) is not purged")

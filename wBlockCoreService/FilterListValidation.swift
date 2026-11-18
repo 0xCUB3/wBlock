@@ -23,10 +23,16 @@ public enum PurgedFilterLists {
         "hagezi/dns-blocklists@latest/adblock/pro.mini.txt",  // HaGeZi Multi Pro Mini, a DNS list (docs/HAGEZI.md)
     ]
 
-    /// Online Malicious URL Blocklist: 24k rules Safe Browsing covers (#864, #1088). 3.2.3 kept the registry copy.
+    /// Lists an earlier release left on as custom copies.
     private static let keptCopyFragments = [
+        // Online Malicious URL Blocklist: 24k rules Safe Browsing covers (#864, #1088). 3.2.3 kept the registry copy.
         "malware-filter/urlhaus-filter-vivaldi-online.txt",
         "filters/208_optimized.txt",
+        // AdGuard Allowlist and HaGeZi Referral Allowlist undo blocking on purpose: search ads, self-promotion,
+        // and referral links. 4.0 builds kept a selected one as a custom list instead of turning it off.
+        "platforms/extension/safari/filters/10_optimized.txt",
+        "platforms/extension/safari/filters/10.txt",
+        "adblock/whitelist-referral.txt",
     ]
 
     /// A custom list matches only the kept copies, so a user's own custom list at a purged built-in address stays.

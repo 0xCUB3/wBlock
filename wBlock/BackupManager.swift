@@ -438,6 +438,8 @@ enum BackupCustomFilterRestorer {
                 }
                 inlineID = nil
                 url = remoteURL
+                // A list wBlock purges stays gone; loading would delete it again anyway.
+                if PurgedFilterLists.contains(remoteURL, isCustom: true) { continue }
                 // A custom copy of a built-in list is that list, as loading folds
                 // it (FilterListSetup.hydrate); restoring it must not add it again.
                 let address = currentAddress(remoteURL)

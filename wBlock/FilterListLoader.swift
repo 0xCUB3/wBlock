@@ -305,9 +305,6 @@ class FilterListLoader {
         "d3ward/toolz",
         "platforms/extension/safari/filters/122_optimized.txt",  // Fanboy's Annoyances Filter (#877)
         "platforms/extension/safari/filters/207_optimized.txt",  // Adblock Warning Removal List
-        "platforms/extension/safari/filters/10_optimized.txt",  // AdGuard Allowlist
-        "platforms/extension/safari/filters/10.txt",  // AdGuard Allowlist, older address
-        "adblock/whitelist-referral.txt",  // HaGeZi Referral Allowlist
         "raw.githubusercontent.com/cjx82630/cjxlist/master/cjx-annoyance.txt",  // CJX's Annoyances List (#882)
         "raw.githubusercontent.com/easylist/easylistchina/master/easylistchina.txt",  // EasyList China (#882)
         "easylist-downloads.adblockplus.org/easylistdutch.txt",  // EasyList Dutch (#882)
