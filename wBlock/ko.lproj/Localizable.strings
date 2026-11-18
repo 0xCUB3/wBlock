@@ -320,7 +320,6 @@
 "Filter list updated. Apply changes to enable it." = "필터 목록이 업데이트되었습니다. 활성화하려면 변경 사항을 적용하세요.";
 "Filter list with this URL already exists: %@" = "다음 URL이 포함된 필터 목록이 이미 존재합니다: %@";
 "Filter list with URL already exists" = "해당 URL의 필터 목록이 이미 존재합니다";
-"Filter name" = "필터 이름";
 "Filter that aims to remove regional Swedish ads, tracking, social media, annoyances, sponsored articles etc." = "스웨덴 지역 광고, 추적, 소셜 미디어, 방해 요소, 후원 기사 등을 제거하는 것을 목표로 하는 필터입니다.";
 "Filter that blocks ads on Thai sites." = "태국 사이트의 광고를 차단하는 필터입니다.";
 "Filter that enables ad blocking on websites in Japanese language." = "일본어로 된 웹사이트에서 광고 차단을 활성화하는 필터입니다.";

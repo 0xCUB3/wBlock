@@ -320,7 +320,6 @@
 "Filter list updated. Apply changes to enable it." = "フィルターリストをアップデートしました。変更を適用して有効にします。";
 "Filter list with this URL already exists: %@" = "このURLのフィルターリストは既に存在します: %@";
 "Filter list with URL already exists" = "指定したURLのフィルターリストは既に存在します";
-"Filter name" = "フィルター名";
 "Filter that aims to remove regional Swedish ads, tracking, social media, annoyances, sponsored articles etc." = "スウェーデン地域の広告、追跡、ソーシャルメディア、迷惑要素、スポンサー記事などを削除することを目的としたフィルター。";
 "Filter that blocks ads on Thai sites." = "タイのサイトの広告をブロックするフィルター。";
 "Filter that enables ad blocking on websites in Japanese language." = "日本語ウェブサイトでの広告ブロックを有効にするフィルター。";

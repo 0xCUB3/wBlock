@@ -320,7 +320,6 @@
 "Filter list updated. Apply changes to enable it." = "تم تحديث قائمة الفلاتر. طبّق التغييرات لتفعيلها.";
 "Filter list with this URL already exists: %@" = "توجد بالفعل قائمة فلاتر بعنوان URL هذا: %@";
 "Filter list with URL already exists" = "توجد قائمة فلاتر بهذا الرابط بالفعل";
-"Filter name" = "اسم الفلتر";
 "Filter that aims to remove regional Swedish ads, tracking, social media, annoyances, sponsored articles etc." = "فلتر يهدف إلى إزالة الإعلانات السويدية الإقليمية والتتبع ووسائل التواصل الاجتماعي والإزعاجات والمقالات الدعائية وما إلى ذلك.";
 "Filter that blocks ads on Thai sites." = "فلتر يحظر الإعلانات على المواقع التايلاندية.";
 "Filter that enables ad blocking on websites in Japanese language." = "فلتر يتيح حظر الإعلانات على مواقع الويب باللغة اليابانية.";

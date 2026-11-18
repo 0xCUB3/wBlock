@@ -320,7 +320,6 @@
 "Filter list updated. Apply changes to enable it." = "List updated. Apply changes to use it.";
 "Filter list with this URL already exists: %@" = "Filter list with this URL already exists: %@";
 "Filter list with URL already exists" = "Filter list with URL already exists";
-"Filter name" = "Filter name";
 "Filter that aims to remove regional Swedish ads, tracking, social media, annoyances, sponsored articles etc." = "Blocks Swedish ads, tracking, social media widgets, annoyances, sponsored articles, and more.";
 "Filter that blocks ads on Thai sites." = "Filter that blocks ads on Thai sites.";
 "Filter that enables ad blocking on websites in Japanese language." = "Blocks ads on Japanese-language websites.";

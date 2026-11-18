@@ -79,7 +79,7 @@ struct ElementZapperSettingsView: View {
     private var page: some View {
         // The same list or form as Settings; a site opens into rows below it (#1084).
         SettingsPage {
-            Section {
+            SettingsGroup(footer: ruleManager.domains.isEmpty ? [] : ["Element Zapper changes take full effect after the next apply."]) {
                 if filteredDomains.isEmpty {
                     emptyState
                 } else {
@@ -137,26 +137,15 @@ struct ElementZapperSettingsView: View {
             let rule = ruleManager.rules(for: domain)[index]
             ruleRow(rule, domain: domain, index: index)
         }
-        // The note sits under the button the way Site Settings captions sit
-        // under their titles.
         Button(role: .destructive) {
             pendingConfirmation = .clear(domain: domain)
         } label: {
-            clearRulesLabel
+            Text("Clear Element Zapper Rules")
+                .foregroundStyle(.red)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-    }
-
-    private var clearRulesLabel: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text("Clear Element Zapper Rules")
-                .foregroundStyle(.red)
-            Text("Element Zapper changes take full effect after the next apply.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
     }
 
     private func ruleRow(_ rule: String, domain: String, index: Int) -> some View {
@@ -167,39 +156,41 @@ struct ElementZapperSettingsView: View {
                 .lineLimit(1)
                 .truncationMode(.tail)
             Spacer()
-            Button {
-                editingRule = RuleSelection(domain: domain, rule: rule)
-            } label: {
-                Image(systemName: "pencil.circle.fill")
-                    .foregroundStyle(Color.accentColor)
-                    .scaledSystemFont(size: 18)
-                    #if os(macOS)
-                    .frame(minWidth: 28, minHeight: 32)
-                    #else
-                    .frame(minWidth: 44, minHeight: 44)
-                    #endif
-                    .contentShape(Rectangle())
+            HStack(spacing: 0) {
+                Button {
+                    editingRule = RuleSelection(domain: domain, rule: rule)
+                } label: {
+                    Image(systemName: "pencil.circle.fill")
+                        .foregroundStyle(.secondary)
+                        .scaledSystemFont(size: 18)
+                        #if os(macOS)
+                        .frame(minWidth: 28)
+                        #else
+                        .frame(minWidth: 44, minHeight: 44)
+                        #endif
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .noFocusRingCompat()
+                .accessibilityLabel("Edit")
+                Button {
+                    deleteRule(rule, from: domain, at: index)
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                        .scaledSystemFont(size: 18)
+                        #if os(macOS)
+                        .frame(minWidth: 28)
+                        #else
+                        .frame(minWidth: 44, minHeight: 44)
+                        #endif
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .noFocusRingCompat()
+                .accessibilityLabel("Delete")
+                .accessibilityValue(rule)
             }
-            .buttonStyle(.plain)
-            .noFocusRingCompat()
-            .accessibilityLabel("Edit")
-            Button {
-                deleteRule(rule, from: domain, at: index)
-            } label: {
-                Image(systemName: "xmark.circle.fill")
-                    .foregroundStyle(.secondary)
-                    .scaledSystemFont(size: 18)
-                    #if os(macOS)
-                    .frame(minWidth: 28, minHeight: 32)
-                    #else
-                    .frame(minWidth: 44, minHeight: 44)
-                    #endif
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .noFocusRingCompat()
-            .accessibilityLabel("Delete")
-            .accessibilityValue(rule)
         }
     }
 
@@ -377,30 +368,30 @@ struct ElementZapperRuleEditor: View {
     var body: some View {
         SheetContainer {
             SheetHeader(title: "Edit Element Rule", isLoading: isSaving) { dismiss() }
-            VStack(alignment: .leading, spacing: 12) {
-                Text(domain).font(.headline).textSelection(.enabled)
-                Text("CSS Selector").font(.subheadline).foregroundStyle(.secondary)
-                TextEditor(text: $draft)
-                    .font(.system(.body, design: .monospaced))
-                    .autocorrectionDisabled()
-                    #if os(iOS)
-                    .textInputAutocapitalization(.never)
-                    #endif
-                    .frame(minHeight: 140)
-                    .accessibilityLabel("CSS Selector")
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(.secondary.opacity(0.3)))
-                    .disabled(isSaving)
-                if saveFailed {
-                    Text("The rule could not be saved. It may have changed or already exist.")
-                        .font(.caption)
-                        .foregroundStyle(.red)
+            Form {
+                Section {
+                    TextEditor(text: $draft)
+                        .font(.system(.body, design: .monospaced))
+                        .autocorrectionDisabled()
+                        #if os(iOS)
+                        .textInputAutocapitalization(.never)
+                        #endif
+                        .hideEditorBackgroundCompat()
+                        .addContentEditorBox()
+                        .frame(minHeight: 96, maxHeight: 140)
+                        .accessibilityLabel("CSS Selector")
+                        .disabled(isSaving)
+                } header: {
+                    Text(verbatim: domain).textCase(nil)
+                } footer: {
+                    if saveFailed {
+                        Text("The rule could not be saved. It may have changed or already exist.")
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
                 }
-                Text("Element Zapper changes take full effect after the next apply.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
-            .padding(.horizontal, SheetDesign.contentHorizontalPadding)
-            .padding(.vertical, 16)
+            .groupedFormStyleCompat()
             SheetBottomToolbar {
                 Spacer()
                 if isSaving { ProgressView().controlSize(.small) }
@@ -422,7 +413,7 @@ struct ElementZapperRuleEditor: View {
         }
         .interactiveDismissDisabled(isSaving)
         #if os(macOS)
-        .frame(width: 560)
+        .frame(width: 460)
         .frame(minHeight: 380, idealHeight: 440)
         #endif
     }

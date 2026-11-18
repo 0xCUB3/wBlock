@@ -320,7 +320,6 @@
 "Filter list updated. Apply changes to enable it." = "过滤器列表已更新。应用更改以启用它。";
 "Filter list with this URL already exists: %@" = "包含此 URL 的过滤器列表已存在：%@";
 "Filter list with URL already exists" = "具有该 URL 的过滤器列表已存在";
-"Filter name" = "过滤器名称";
 "Filter that aims to remove regional Swedish ads, tracking, social media, annoyances, sponsored articles etc." = "旨在移除瑞典地区广告、跟踪、社交媒体、烦人元素、赞助文章等的过滤器。";
 "Filter that blocks ads on Thai sites." = "拦截泰国网站上广告的过滤器。";
 "Filter that enables ad blocking on websites in Japanese language." = "可在日语网站上拦截广告的过滤器。";

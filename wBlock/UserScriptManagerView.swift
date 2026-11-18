@@ -1355,13 +1355,21 @@ private struct UserScriptMetadataSheet: View {
 
     var body: some View {
         SheetContainer {
-            SheetHeader(verbatim: script.localizedDisplayName, isLoading: isSaving) { dismiss() }
+            SheetHeader(title: "Edit Info", isLoading: isSaving) { dismiss() }
             Form {
                 Section {
                     AddContentMetadataFields(name: $editedName, description: $editedDescription,
                         category: $selectedCategory, categories: FilterListCategory.userScriptCategories)
-                    TextField("Author", text: $editedAuthor)
-                    TextField("Homepage", text: $editedHomepage)
+                    TextField("Author", text: $editedAuthor, prompt: Text("Author"))
+                        .labelsHidden()
+                        .disableAutocorrection(true)
+                    TextField("Homepage", text: $editedHomepage, prompt: Text("Homepage"))
+                        .labelsHidden()
+                        .disableAutocorrection(true)
+                        #if os(iOS)
+                        .keyboardType(.URL)
+                        .textInputAutocapitalization(.never)
+                        #endif
                 } footer: {
                     if let validationMessage { Text(validationMessage).foregroundStyle(.red) }
                 }

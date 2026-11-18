@@ -320,7 +320,6 @@
 "Filter list updated. Apply changes to enable it." = "Filtre listesi güncellendi. Etkinleştirmek için değişiklikleri uygulayın.";
 "Filter list with this URL already exists: %@" = "Bu URL'ye sahip filtre listesi zaten mevcut: %@";
 "Filter list with URL already exists" = "Bu URL'ye sahip filtre listesi zaten var";
-"Filter name" = "Filtre adı";
 "Filter that aims to remove regional Swedish ads, tracking, social media, annoyances, sponsored articles etc." = "İsveç'e özgü reklamları, izlemeyi, sosyal medya öğelerini, rahatsız edici içerikleri, sponsorlu makaleleri vb. kaldırmayı amaçlayan filtre.";
 "Filter that blocks ads on Thai sites." = "Tayland sitelerindeki reklamları engelleyen filtre.";
 "Filter that enables ad blocking on websites in Japanese language." = "Japonca dilindeki sitelerde reklam engellemeyi sağlayan filtre.";

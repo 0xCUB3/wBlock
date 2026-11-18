@@ -71,7 +71,7 @@ struct StringListEditor: View {
             Button { update(items.filter { $0 != item }) } label: {
                 Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
                     #if os(macOS)
-                    .frame(minWidth: 28, minHeight: 32)
+                    .frame(minWidth: 28)
                     #else
                     .frame(minWidth: 44, minHeight: 44)
                     #endif

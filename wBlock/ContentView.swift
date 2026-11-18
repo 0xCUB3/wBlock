@@ -1297,11 +1297,6 @@ extension FilterListCategory {
     }
 }
 
-private func userListCategoryPicker(selection: Binding<FilterListCategory>) -> some View {
-    ContentCategoryPicker(selection: selection, categories: FilterListCategory.userListCategories)
-}
-
-
 struct FilterListAddValidation {
     static func isDuplicateName(candidate: String, existingNames: [String]) -> Bool {
         let trimmedCandidate = candidate.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -2014,7 +2009,6 @@ struct EditCustomFilterView: View {
     let filter: FilterList
 
     @Environment(\.dismiss) private var dismiss
-    @FocusState private var nameFieldIsFocused: Bool
 
     @State private var name: String
     @State private var description: String
@@ -2035,51 +2029,18 @@ struct EditCustomFilterView: View {
         Group {
             #if os(iOS)
                 CompatibleNavigationStack {
-                    Form {
-                        Section {
-                            TextField("Name", text: $name)
-                                .focused($nameFieldIsFocused)
-                                .textInputAutocapitalization(.words)
-                                .submitLabel(.done)
-                                .onSubmit {
-                                    if canSave {
-                                        save()
-                                    } else {
-                                        nameFieldIsFocused = false
-                                    }
-                                }
-
-                            TextField("Description", text: $description)
-                            userListCategoryPicker(selection: $selectedCategory)
-                            RegionalListLanguagesField(category: selectedCategory, languages: $languages)
-
-                            if !filter.isInlineUserList {
-                                Text(filter.url.absoluteString)
-                                    .font(.footnote)
-                                    .foregroundStyle(.secondary)
-                                    .textSelection(.enabled)
+                    metadataForm
+                        .navigationTitle("Edit Filter List")
+                        .navigationBarTitleDisplayMode(.inline)
+                        .toolbar {
+                            ToolbarItem(placement: .cancellationAction) {
+                                Button("Cancel") { dismiss() }
                             }
-                        } footer: {
-                            if isDuplicate {
-                                Text("That name is already used by another filter list.")
-                                    .foregroundStyle(.orange)
+                            ToolbarItem(placement: .confirmationAction) {
+                                Button("Save") { save() }
+                                    .disabled(!canSave)
                             }
                         }
-                    }
-                    .navigationTitle("Edit Filter List")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button("Cancel") { dismiss() }
-                        }
-                        ToolbarItem(placement: .confirmationAction) {
-                            Button("Save") { save() }
-                                .disabled(!canSave)
-                        }
-                    }
-                }
-                .onAppear {
-                    nameFieldIsFocused = true
                 }
             #else
                 SheetContainer {
@@ -2087,59 +2048,15 @@ struct EditCustomFilterView: View {
                         dismiss()
                     }
 
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 16) {
-                            VStack(alignment: .leading, spacing: 10) {
-                                Text("Name")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-
-                                TextField("Filter name", text: $name)
-                                    .textFieldStyle(.roundedBorder)
-                                    .focused($nameFieldIsFocused)
-                                    .onSubmit {
-                                        if canSave {
-                                            save()
-                                        } else {
-                                            nameFieldIsFocused = false
-                                        }
-                                    }
-
-                                TextField("Description", text: $description)
-                                    .textFieldStyle(.roundedBorder)
-                                userListCategoryPicker(selection: $selectedCategory)
-                                RegionalListLanguagesField(category: selectedCategory, languages: $languages)
-
-                                if !filter.isInlineUserList {
-                                    Text(filter.url.absoluteString)
-                                        .font(.caption2)
-                                        .foregroundStyle(.tertiary)
-                                        .lineLimit(2)
-                                        .textSelection(.enabled)
-                                }
-
-                                if isDuplicate {
-                                    Text("That name is already used by another filter list.")
-                                        .font(.caption)
-                                        .foregroundStyle(.orange)
-                                }
-                            }
-                            .padding(SheetDesign.contentHorizontalPadding)
-                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                        }
-                        .padding(.horizontal, SheetDesign.contentHorizontalPadding)
-                        .padding(.top, 12)
-                        .padding(.bottom, 40)
-                    }
+                    metadataForm
 
                     SheetBottomToolbar {
                         Spacer()
                         saveButton
                     }
                 }
-                .onAppear {
-                    nameFieldIsFocused = true
-                }
+                // The size the userscript Edit Info sheet uses.
+                .frame(width: 460, height: 360)
             #endif
         }
         .alert(
@@ -2153,6 +2070,28 @@ struct EditCustomFilterView: View {
         } message: {
             Text(errorMessage ?? "")
         }
+    }
+
+    private var metadataForm: some View {
+        Form {
+            Section {
+                AddContentMetadataFields(name: $name, description: $description,
+                    category: $selectedCategory, categories: FilterListCategory.userListCategories,
+                    languages: $languages)
+            } footer: {
+                VStack(alignment: .leading, spacing: 4) {
+                    if !filter.isInlineUserList {
+                        Text(filter.url.absoluteString)
+                            .textSelection(.enabled)
+                    }
+                    if isDuplicate {
+                        Text("That name is already used by another filter list.")
+                            .foregroundStyle(.orange)
+                    }
+                }
+            }
+        }
+        .groupedFormStyleCompat()
     }
 
     private var trimmedName: String {

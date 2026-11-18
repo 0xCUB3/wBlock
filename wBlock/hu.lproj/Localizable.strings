@@ -320,7 +320,6 @@
 "Filter list updated. Apply changes to enable it." = "Szűrőlista frissítve. Alkalmazza a módosításokat az engedélyezéséhez.";
 "Filter list with this URL already exists: %@" = "A következő URL-címmel már létezik szűrőlista: %@";
 "Filter list with URL already exists" = "Már létezik szűrőlista ezzel az URL-lel";
-"Filter name" = "Szűrő neve";
 "Filter that aims to remove regional Swedish ads, tracking, social media, annoyances, sponsored articles etc." = "Szűrő, amely eltávolítja a regionális svéd hirdetéseket, nyomkövetést, közösségi médiát, bosszúságokat, szponzorált cikkeket stb.";
 "Filter that blocks ads on Thai sites." = "Szűrő, amely blokkolja a hirdetéseket a thaiföldi webhelyeken.";
 "Filter that enables ad blocking on websites in Japanese language." = "Szűrő, amely lehetővé teszi a hirdetések blokkolását japán nyelvű webhelyeken.";

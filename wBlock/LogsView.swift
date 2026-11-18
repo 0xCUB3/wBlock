@@ -11,6 +11,9 @@ import AppKit
 #endif
 
 struct LogsView: View {
+    #if os(macOS)
+    @Environment(\.appearsActive) private var appearsActive
+    #endif
     private static let availableCategories: [LogCategory] = [
         .system,
         .filterUpdate,
@@ -248,8 +251,11 @@ struct LogsView: View {
             timeZoneToggle
         } label: {
             #if os(macOS)
+            // An explicit tint never dims with the window, so it applies only
+            // while the window is active. Settings pins controlActiveState to
+            // .active, so this reads appearsActive.
             Label("Filter Logs", systemImage: isFiltering ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease")
-                .foregroundStyle(isFiltering ? AnyShapeStyle(.tint) : AnyShapeStyle(.primary))
+                .foregroundStyle(isFiltering && appearsActive ? AnyShapeStyle(.tint) : isFiltering ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
             #else
             Label("Filter Logs", systemImage: "line.3.horizontal.decrease")
             #endif

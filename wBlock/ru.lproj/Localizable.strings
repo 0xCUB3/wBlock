@@ -320,7 +320,6 @@
 "Filter list updated. Apply changes to enable it." = "Список фильтров обновлен. Примените изменения, чтобы включить его.";
 "Filter list with this URL already exists: %@" = "Список фильтров с этим URL-адресом уже существует: %@";
 "Filter list with URL already exists" = "Список фильтров с таким URL уже существует";
-"Filter name" = "Название фильтра";
 "Filter that aims to remove regional Swedish ads, tracking, social media, annoyances, sponsored articles etc." = "Фильтр, целью которого является удаление региональной шведской рекламы, отслеживания, социальных сетей, раздражителей, спонсорских статей и т. д.";
 "Filter that blocks ads on Thai sites." = "Фильтр, блокирующий рекламу на тайских сайтах.";
 "Filter that enables ad blocking on websites in Japanese language." = "Фильтр, позволяющий блокировать рекламу на веб-сайтах на японском языке.";
