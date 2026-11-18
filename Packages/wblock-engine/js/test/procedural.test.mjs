@@ -325,6 +325,19 @@ describe('actions', () => {
     assert.equal(a.getAttribute('d'), 'M2 2L4 4');
   });
 
+  test('style on a pseudo-element styles it on the elements the rest matches', () => {
+    const { document, api } = setup('<main id="a"></main><div class="hero"><div class="box"></div></div>');
+    api.apply([
+      filt([op('css-selector', 'main::before')], act('style', "content: 'note' !important")),
+      filt([op('matches-path', '/'), op('css-selector', 'div.hero > div.box::after')], act('style', 'color: red !important')),
+    ]);
+    const sheet = document.querySelector('style').textContent;
+    assert.equal(isMarked(document.getElementById('a')), true);
+    assert.equal(isMarked(document.querySelector('.box')), true);
+    assert.match(sheet, /\]::before\{content: 'note' !important\}/);
+    assert.match(sheet, /\]::after\{color: red !important\}/);
+  });
+
   test('style with the same text reuses one rule', () => {
     const { document, api } = setup('<div class="s"></div><div class="s"></div>');
     api.apply([filt([op('css-selector', '.s')], act('style', 'color: red'))]);

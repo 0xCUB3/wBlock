@@ -12,6 +12,7 @@
   'use strict';
 
   const DEFAULT_STYLE = 'display: none !important';
+  const PSEUDO_ELEMENT = /::?(?:before|after|marker|placeholder|selection|first-line|first-letter|backdrop|file-selector-button)$/i;
   const BAD_STYLE = /image-set\(|url\(|expression|\\|\/\s*\/|\/\*|[{}<>]/i;
   // Pseudo-classes that depend only on tree shape and the selectors they wrap.
   const STRUCTURAL = /^(?:not|is|where|has|matches|nth-(?:last-)?(?:child|of-type)|(?:first|last|only)-(?:child|of-type)|root|scope)$/;
@@ -310,22 +311,22 @@
   ]);
 
   // Generated attribute per style text; one rule per style in a single <style> element.
-  const styleAttr = (css) => {
-    let attr = state.styles.get(css);
+  const styleAttr = (css, pseudo = '') => {
+    let attr = state.styles.get(pseudo + css);
     if (attr) return attr;
     attr = token();
-    state.styles.set(css, attr);
+    state.styles.set(pseudo + css, attr);
     if (!state.styleEl) {
       state.styleEl = document.createElement('style');
       (document.head || document.documentElement).append(state.styleEl);
     }
-    state.styleEl.textContent += `[${attr}]{${css}}\n`;
+    state.styleEl.textContent += `[${attr}]${pseudo}{${css}}\n`;
     for (const sheet of state.shadowStyles.values()) sheet.textContent = state.styleEl.textContent;
     return attr;
   };
 
   // Returns (el, mark) => void. Hide and style record a mark; the rest act immediately.
-  const compileAction = (action) => {
+  const compileAction = (action, pseudo) => {
     if (!action) return (el, mark) => mark(el, styleAttr(DEFAULT_STYLE));
     const { type, arg } = action;
     switch (type) {
@@ -335,7 +336,7 @@
         if (!arg || BAD_STYLE.test(arg)) throw new Error('style: rejected');
         const d = svgPath(arg);
         return (el, mark) => {
-          mark(el, styleAttr(arg));
+          mark(el, styleAttr(arg, pseudo));
           if (d !== undefined && el.getAttribute('d') !== d) el.setAttribute('d', d);
         };
       }
@@ -387,8 +388,14 @@
   };
 
   const compileFilter = (json) => {
-    const { selector, action } = typeof json === 'string' ? JSON.parse(json) : json;
-    const compiled = { dead: false, run: compileSelector(selector), act: compileAction(action) };
+    let { selector, action } = typeof json === 'string' ? JSON.parse(json) : json;
+    // querySelectorAll never matches a pseudo-element, so a style on `a::before`
+    // marks what `a` matches and styles the pseudo-element through the mark.
+    const last = Array.isArray(selector) ? selector[selector.length - 1] : undefined;
+    const pseudo = action?.type === 'style' && last?.type === 'css-selector' && typeof last.arg === 'string'
+      ? PSEUDO_ELEMENT.exec(last.arg.trim())?.[0] : undefined;
+    if (pseudo) selector = [...selector.slice(0, -1), { ...last, arg: last.arg.trim().slice(0, -pseudo.length) }];
+    const compiled = { dead: false, run: compileSelector(selector), act: compileAction(action, pseudo) };
     trackAction(action);
     return compiled;
   };
