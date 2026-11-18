@@ -496,13 +496,14 @@ mod tests {
                 "lists": [{"id": "list", "text": text}],
                 "targets": [{"slot": 1, "lists": [{"list": 0}]}, {"slot": 2, "lists": []}]
             }).to_string());
-            let plan = wbe_plan_new(request("||one.example^\n||two.example^").as_ptr());
+            // Three blocks cannot fit two blockers of one rule each; two could.
+            let plan = wbe_plan_new(request("||one.example^\n||two.example^\n||three.example^").as_ptr());
             assert!(!plan.is_null(), "{}", last_error());
             let capacity = CStr::from_ptr(wbe_plan_capacity_json(plan)).to_str().unwrap();
             let capacity: serde_json::Value = serde_json::from_str(capacity).unwrap();
             assert_eq!(capacity["rules"], 1);
             assert_eq!(capacity["slots"].as_array().unwrap().len(), 2);
-            assert_eq!(capacity["slots"][0]["rules"], 2);
+            assert_eq!(capacity["slots"][0]["rules"], 3);
             assert!(capacity["slots"][0]["bytes"].as_u64().unwrap() > 0);
             assert_eq!(capacity["slots"][1]["rules"], 0);
             let message = CStr::from_ptr(wbe_plan_capacity_message(plan)).to_str().unwrap();
