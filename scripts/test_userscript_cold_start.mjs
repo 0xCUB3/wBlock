@@ -41,7 +41,10 @@ const hideShorts = {
 // answers only when the test releases it, as a host that is still starting
 // does. `staleReplies` is how many replies carry a revision that native has
 // already left behind, as when the script list changes right after the reply.
-function loadPage({ cachedRevision, hostRevision, staleReplies = 0 }) {
+// `unanswered` is how many of the page's first messages get no reply at all:
+// Safari resolves them with undefined while the background has no listener yet,
+// as in a profile whose background has not loaded. `cachedAt` dates the cache.
+function loadPage({ cachedRevision, hostRevision, staleReplies = 0, unanswered = 0, cachedAt = Date.now() }) {
   const injected = [];
   const makeElement = tag => ({
     tagName: String(tag).toUpperCase(), textContent: "", attributes: {}, children: [], style: {},
@@ -75,7 +78,7 @@ function loadPage({ cachedRevision, hostRevision, staleReplies = 0 }) {
     addEventListener() {}, removeEventListener() {}, postMessage() {},
     sessionStorage: storage(new Map()),
     localStorage: storage(new Map(cachedRevision === null ? [] : [["__wblock_warm_start_v1", JSON.stringify({
-      version: 1, savedAt: Date.now(), scripts: [{ ...hideShorts, payloadRevision: cachedRevision }],
+      version: 1, savedAt: cachedAt, scripts: [{ ...hideShorts, payloadRevision: cachedRevision }],
     })]])),
     document: {
       readyState: "loading", documentElement: root, head, body: null, createElement: makeElement,
@@ -85,6 +88,7 @@ function loadPage({ cachedRevision, hostRevision, staleReplies = 0 }) {
       onMessage: { addListener() {}, removeListener() {} },
       sendMessage: message => {
         sent.push(message.action);
+        if (unanswered-- > 0) return Promise.resolve(undefined);
         if (message.action === "getUserScripts") {
           const payloadRevision = staleReplies-- > 0 ? hostRevision - 1 : hostRevision;
           return Promise.resolve({ userScripts: [{ ...hideShorts, payloadRevision }] });
@@ -145,6 +149,24 @@ const rejecting = loadPage({ cachedRevision: null, hostRevision: 2, staleReplies
 await rejecting.finish();
 check("changed list: a copy rejected again is not requested a third time",
   rejecting.requests() === 2 && rejecting.injected.length === 0);
+
+// Switching Safari profiles: the profile's background has not loaded, so the
+// page's first message gets no reply. That is not an empty script list.
+const switched = loadPage({ cachedRevision: null, hostRevision: 1, unanswered: 1 });
+await new Promise(resolve => setTimeout(resolve, 400));
+await switched.finish();
+check("profile switch: an unanswered request is asked again and the script runs once",
+  switched.requests() === 2 && switched.injected.length === 1);
+
+// The same switch with a copy this profile cached 20 minutes ago: neither its
+// validation nor the first request is answered.
+const switchedWarm = loadPage({ cachedRevision: 1, hostRevision: 1, unanswered: 2, cachedAt: Date.now() - 20 * 60 * 1000 });
+await new Promise(resolve => setTimeout(resolve, 400));
+await switchedWarm.finish();
+check("profile switch: an unanswered cached copy still runs once from the retried request",
+  switchedWarm.requests() === 2 && switchedWarm.injected.length === 1);
+check("profile switch: an unanswered request leaves the page cache in place",
+  switchedWarm.cachedRevisions().join() === "1");
 
 if (failures > 0) {
   console.error(`\n${failures} check(s) failed`);

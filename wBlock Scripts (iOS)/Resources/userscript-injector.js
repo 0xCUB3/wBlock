@@ -627,14 +627,21 @@ if (window.wBlockUserscriptInjectorHasRun) {
                 const initialization = globalThis.__wblockFrameInitialization;
                 delete globalThis.__wblockFrameInitialization;
                 const response = await initialization;
-                return { userScripts: response?.userScripts || [],
-                    error: response?.userScriptsError || response?.error };
+                // No reply at all is asked again below, directly.
+                if (response) return { userScripts: response.userScripts || [],
+                    error: response.userScriptsError || response.error };
             }
             const requestId = payload.requestId || this.generateRequestId(action);
             const messagePayload = { ...payload, requestId };
 
             if (typeof browser !== 'undefined' && browser.runtime && browser.runtime.sendMessage) {
-                return await browser.runtime.sendMessage({ action, ...messagePayload });
+                const reply = await browser.runtime.sendMessage({ action, ...messagePayload });
+                // Safari resolves with undefined when no background listener
+                // answered, as on the first page of a profile whose background
+                // has not loaded yet. The background answers every request, so
+                // this is a failure to retry, never an empty script list.
+                if (reply === undefined) throw new Error(`[wBlock] No reply from the background: ${action}`);
+                return reply;
             }
 
             if (typeof safari !== 'undefined' && safari.extension && safari.extension.dispatchMessage) {
