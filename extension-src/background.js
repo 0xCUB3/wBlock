@@ -2018,6 +2018,23 @@
       });
     return filterStagePingInFlight;
   };
+  // Safari shuts the extension out of the tab it shows right after a profile
+  // switch: no content scripts, not even after a reload, and executeScript is
+  // refused although the site is allowed. A new tab is fine, so that page
+  // moves to one. Once per background, since Safari refuses some pages for
+  // good and a loop would be worse than one missed page.
+  let replacedShutOutTab = false;
+  const replaceShutOutTab = async tab => {
+    if (replacedShutOutTab || tab.incognito || !browser.scripting?.executeScript || !/^https?:/i.test(tab.url || "")) return;
+    const probe = await browser.tabs.sendMessage(tab.id, { type: "wblock:pageSupportProbe" }, { frameId: 0 }).catch(() => null);
+    if (probe?.ok || replacedShutOutTab) return;
+    const allowed = await browser.permissions.contains({ origins: [new URL(tab.url).origin + "/*"] }).catch(() => false);
+    const refused = await browser.scripting.executeScript({ target: { tabId: tab.id }, func: () => true }).then(() => false, () => true);
+    if (!allowed || !refused || replacedShutOutTab) return;
+    replacedShutOutTab = true;
+    await browser.tabs.create({ url: tab.url, index: tab.index + 1, active: tab.active, windowId: tab.windowId });
+    await browser.tabs.remove(tab.id);
+  };
   if (canObserveTabs) {
     if (browser.tabs.onUpdated) {
       browser.tabs.onUpdated.addListener((_tabId, changeInfo, tab) => {
@@ -2032,6 +2049,7 @@
         }
         syncActionStateForTab(tab);
         if (changeInfo && changeInfo.status === "complete") {
+          void replaceShutOutTab(tab).catch(error => console.warn("[wBlock] Failed to replace a tab Safari shut wBlock out of:", error));
           maybeRefreshUserScripts().then(maybeStageFilterUpdates);
         }
       });
