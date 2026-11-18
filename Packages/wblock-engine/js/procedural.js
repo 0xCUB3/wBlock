@@ -60,7 +60,12 @@
     } else if (/^(?:matches-css|matches-prop|xpath)/.test(type)) deps.any = true;
   };
 
+  // WebKit has no CSS `d` property (#1122), so a style's `d: path("…")` is set as
+  // the SVG attribute instead, and set again when the page writes it back.
+  const svgPath = (css) => /(?:^|;)\s*d\s*:\s*path\(\s*(["'])([^"']*)\1\s*\)/i.exec(css)?.[2];
+
   const trackAction = (action) => {
+    if (action?.type === 'style' && svgPath(action.arg || '') !== undefined) state.deps.attrs.add('d');
     if (!action || (action.type !== 'remove-attr' && action.type !== 'remove-class')) return;
     const name = unquote(action.arg || '');
     if (action.type === 'remove-attr' && name.startsWith('/')) state.deps.any = true;
@@ -326,9 +331,14 @@
     switch (type) {
       case 'remove':
         return (el) => el.remove();
-      case 'style':
+      case 'style': {
         if (!arg || BAD_STYLE.test(arg)) throw new Error('style: rejected');
-        return (el, mark) => mark(el, styleAttr(arg));
+        const d = svgPath(arg);
+        return (el, mark) => {
+          mark(el, styleAttr(arg));
+          if (d !== undefined && el.getAttribute('d') !== d) el.setAttribute('d', d);
+        };
+      }
       case 'remove-attr': {
         const re = toRegex(unquote(arg), true);
         return (el) => {

@@ -313,6 +313,18 @@ describe('actions', () => {
     assert.match(document.querySelector('style').textContent, /height: 1px !important/);
   });
 
+  test('style sets a d: path() as the attribute and keeps it over page writes', async () => {
+    const { document, api } = setup('<svg id="i"><path d="M0 0L9 9"/><path d="M1 1"/></svg>');
+    api.apply([filt([op('css-selector', '#i path')], act('style', 'd: path("M2 2L4 4") !important; stroke: currentColor !important'))]);
+    const [a, b] = document.querySelectorAll('path');
+    assert.equal(a.getAttribute('d'), 'M2 2L4 4');
+    assert.equal(b.getAttribute('d'), 'M2 2L4 4');
+    assert.equal(isMarked(a), true);
+    a.setAttribute('d', 'M0 0L9 9');
+    await new Promise(resolve => setTimeout(resolve, 150));
+    assert.equal(a.getAttribute('d'), 'M2 2L4 4');
+  });
+
   test('style with the same text reuses one rule', () => {
     const { document, api } = setup('<div class="s"></div><div class="s"></div>');
     api.apply([filt([op('css-selector', '.s')], act('style', 'color: red'))]);
