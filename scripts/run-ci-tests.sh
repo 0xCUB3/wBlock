@@ -402,6 +402,7 @@ compile_direct_test staged-filter-downloads \
 
 
 compile_core_test filter-validation scripts/test_filter_list_validation.swift
+compile_core_test user-list-conditionals scripts/test_user_list_conditionals.swift
 
 compile_core_test filter-remote-metadata-policy scripts/test_filter_list_remote_metadata_policy.swift
 compile_core_test remote-filter-metadata scripts/test_remote_filter_list_metadata_loader.swift

@@ -1786,7 +1786,8 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         let selectedIDs = Set(orderedSelectedFilters.map(\.id))
         let planFilters = orderedSelectedFilters + filters.filter { !selectedIDs.contains($0.id) }
         let available = planFilters.compactMap { filter -> (FilterList, URL)? in
-            ContentBlockerIncrementalCache.existingLocalFileURL(for: filter, containerURL: containerURL).map { (filter, $0) }
+            ContentBlockerIncrementalCache.existingLocalFileURL(for: filter, containerURL: containerURL)
+                .map { (filter, filter.engineInputURL(at: $0)) }
         }
         let indexes = Dictionary(uniqueKeysWithValues: available.enumerated().map { ($0.element.0.id, $0.offset) })
         let lists: [[String: Any]] = available.map { filter, url in

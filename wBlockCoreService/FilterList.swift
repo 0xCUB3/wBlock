@@ -230,6 +230,23 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
         url.scheme?.lowercased() == "wblock" && url.host?.lowercased() == "userlist"
     }
 
+    /// The file the engine reads for this list. A downloaded list had its
+    /// `!#if` blocks resolved on download; pasted rules stay as typed, so a
+    /// resolved copy is written beside them.
+    public func engineInputURL(at url: URL) -> URL {
+        guard isInlineUserList,
+              let text = try? String(contentsOf: url, encoding: .utf8),
+              text.contains("!#if") else { return url }
+        let resolved = url.appendingPathExtension("resolved")
+        let lines = ConditionalEvaluator.evaluate(lines: text.components(separatedBy: "\n"))
+        do {
+            try lines.joined(separator: "\n").write(to: resolved, atomically: true, encoding: .utf8)
+            return resolved
+        } catch {
+            return url
+        }
+    }
+
     /// Whether this list may use trusted scriptlets. uBO trusts its own lists
     /// and the user's rules; AdGuard trusts its own filters, which its
     /// registry (filters.json) marks `"trustLevel": "full"`: IDs 1-27 (12 and
