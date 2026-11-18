@@ -9,6 +9,7 @@ function setup({path='/watch?v=video',locked=false,status='OK',host='www.youtube
     const dom=new JSDOM('<div id="movie_player"></div>',{url:'https://'+host+path,runScripts:'outside-only'});
     const w=dom.window;
     w.Request=class extends Request {};
+    w.Response=class extends Response {};
     w.TextEncoder=class extends TextEncoder {};
     w.document.getElementById('movie_player').getPlayerResponse=()=>({playabilityStatus:{status}});
     const stringify=w.JSON.stringify.bind(w.JSON);
@@ -139,3 +140,17 @@ run('mobile serialized bodies and API transports follow the same policy',async({
     }
     const unrelated=new w.Request('https://example.com/youtubei/v1/player',{method:'POST',body});assert.equal(await unrelated.text(),body);
 },{host:'m.youtube.com'});
+run('mobile drops the idle prompt from player responses',async({w})=>{
+    const prompt={youThereRenderer:{configData:{youThereData:{playbackPauseDelayMs:0}}}};
+    const keep={mealbarPromoRenderer:{}};
+    const text=JSON.stringify({playabilityStatus:{status:'OK'},messages:[prompt,keep],playerResponse:{messages:[prompt]}});
+    const parsed=w.JSON.parse(text);
+    assert.deepEqual(JSON.parse(JSON.stringify(parsed.messages)),[keep]);
+    assert.deepEqual(JSON.parse(JSON.stringify(parsed.playerResponse.messages)),[]);
+    const fetched=await new w.Response(text).json();
+    assert.deepEqual(JSON.parse(JSON.stringify(fetched.messages)),[keep]);
+},{host:'m.youtube.com'});
+run('desktop leaves player response messages alone',({w})=>{
+    const text=JSON.stringify({messages:[{youThereRenderer:{}}]});
+    assert.equal(w.JSON.parse(text).messages.length,1);
+});

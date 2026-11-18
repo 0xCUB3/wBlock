@@ -74,6 +74,35 @@ function youtubePlayerRequest() {
             return Reflect.apply(target, self, args);
         },
     });
+    // lactMilliseconds is time since the viewer's last input, so the mobile value
+    // reads as decades idle and YouTube answers with an immediate "Video paused.
+    // Continue watching?" prompt. Drop that prompt from the player responses.
+    const dropIdlePrompt = data => {
+        for (const response of [data, data?.playerResponse]) {
+            const messages = response?.messages;
+            if (Array.isArray(messages) && messages.some(message => message?.youThereRenderer)) {
+                response.messages = messages.filter(message => !message?.youThereRenderer);
+            }
+        }
+        return data;
+    };
+    if (mobile) {
+        install(JSON, 'parse', {
+            apply(target, self, args) {
+                const data = Reflect.apply(target, self, args);
+                try { dropIdlePrompt(data); } catch (_) {}
+                return data;
+            },
+        });
+        install(globalThis.Response?.prototype, 'json', {
+            apply(target, self, args) {
+                return Reflect.apply(target, self, args).then(data => {
+                    try { dropIdlePrompt(data); } catch (_) {}
+                    return data;
+                });
+            },
+        });
+    }
     install(globalThis, 'Request', {
         construct(target, args, newTarget) {
             try {
