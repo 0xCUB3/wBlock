@@ -572,7 +572,8 @@ impl Plan {
         if base[target].within(&limits) {
             return self.rebalance(&base, budget).is_some();
         }
-        // Fewer wide blockers than this could not each take their share.
+        // Each wide blocker can fill about 0.85 of a limit before its fixed
+        // blocks alone leave too little room, so fewer blockers would not fit.
         let fewest = (base[target].ratio(&limits) / 0.85).ceil() as usize;
         let blockers = self.targets.len();
         for k in fewest.max(2)..=blockers {
@@ -586,6 +587,8 @@ impl Plan {
                     return false;
                 };
                 fixed = sizes;
+                // Stop probing at 0.9 of a limit, keeping a tenth of each slot
+                // for the movable blocks that rebalancing places there.
                 if fixed.iter().all(|s| s.ratio(&limits) <= 0.9) {
                     break;
                 }
@@ -2554,6 +2557,50 @@ mod tests {
         for t in 0..5 {
             assert_eq!(first.fingerprint(t, &[]), second.fingerprint(t, &[]));
         }
+    }
+
+    /// An `every_blocker` extra with a block the wide set takes: the block
+    /// compiles in the one blocker that holds it, its exception where that
+    /// blocker needs it, and the verdicts match the one-blocker oracle.
+    #[test]
+    fn every_blocker_extra_follows_a_split_wide_set() {
+        let mut request = one_list_request(&wide_text(0));
+        request.limits.rules = share_of_rules(&request, 0.45);
+        let extra = Extra { text: "/adpath/\n@@/adpath/ok.js\n".into(), trusted: true, every_blocker: true };
+        let extras = std::slice::from_ref(&extra);
+        let packed = Plan::new(request.clone());
+        packed.check_capacity().unwrap();
+        let mut oracle = request;
+        oracle.limits.rules = 0;
+        oracle.targets = vec![serde_json::from_value(json!({"slot": 3, "lists": [{"list": 0}]})).unwrap()];
+        let oracle = compiled_blockers(&Plan::new(oracle), extras);
+        let blockers = compiled_blockers(&packed, extras);
+        let holding = |blockers: &[Vec<Value>], action: &str| {
+            blockers.iter().filter(|rules| rules.iter().any(|r| {
+                r["action"]["type"] == action && r["trigger"]["url-filter"].as_str().is_some_and(|f| f.contains("adpath"))
+            })).count()
+        };
+        assert_eq!(holding(&blockers, "block"), 1, "the extra's block is in one blocker");
+        assert_eq!(holding(&oracle, "block"), 1);
+        assert!(holding(&blockers, "ignore-previous-rules") >= 1, "its exception is kept with it");
+        // The wide set really split: the list's blocks are in more than one blocker.
+        assert!(blockers.iter().filter(|rules| rules.iter().any(|r| r["trigger"]["url-filter"].as_str().is_some_and(|f| f.contains("/ads")))).count() >= 2);
+        let mut urls = wide_urls(0);
+        urls.extend(["https://x.example/adpath/gif.gif".into(), "https://x.example/adpath/ok.js".into()]);
+        let tops = [PAGE, "https://news.example/", "https://x.example/"];
+        let mut blocked = 0;
+        for url in &urls {
+            for top in tops {
+                for (resource, child) in [("script", false), ("image", false), ("document", true)] {
+                    let want = judge(&oracle, url, top, resource, child);
+                    assert_eq!(judge(&blockers, url, top, resource, child), want, "{url} on {top} as {resource}");
+                    blocked += want.blocked as usize;
+                }
+            }
+        }
+        assert!(blocked > 0);
+        assert!(!judge(&blockers, "https://x.example/adpath/ok.js", PAGE, "script", false).blocked);
+        assert!(judge(&blockers, "https://x.example/adpath/gif.gif", PAGE, "script", false).blocked);
     }
 
     /// Each blocker with a block keeps the exceptions not anchored at a host,
