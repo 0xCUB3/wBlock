@@ -147,7 +147,7 @@ class AppFilterManager: ObservableObject {
         filterLists.filter(\.isCustom)
     }
 
-    var appliedSelectedFilterIDs: Set<UUID> = []
+    @Published var appliedSelectedFilterIDs: Set<UUID> = []
     /// Monotonic local selection revision used to protect local choices during remote/async work.
     private(set) var selectionMutationRevision: UInt64 = 0
     private var appliedCustomFilterKeys: Set<String> = []

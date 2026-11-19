@@ -69,6 +69,20 @@ struct FilterListPresentationTests {
         let nativeSearch = try await FilterListPresentation.prepare(input(filters, query: "Deutsch"))
         precondition(ids(nativeSearch) == [regional.id], "Search accepts the language’s native name")
 
+        let disabledRegional = try await FilterListPresentation.prepare(input([superseded]))
+        let disabledRegionalMatch = try await FilterListPresentation.prepare(input([superseded], query: "Old regional"))
+        precondition(!disabledRegional.isSearching && disabledRegionalMatch.isSearching)
+        precondition(
+            ids(disabledRegionalMatch) == ids(disabledRegional) && !disabledRegionalMatch.showsSameRows(as: disabledRegional),
+            "A search for the only regional list must still override collapse")
+
+        let enabledRegionalAll = try await FilterListPresentation.prepare(input([regional]))
+        let enabledRegionalOnly = try await FilterListPresentation.prepare(input([regional], enabled: true))
+        precondition(!enabledRegionalAll.enabledOnly && enabledRegionalOnly.enabledOnly)
+        precondition(
+            ids(enabledRegionalOnly) == ids(enabledRegionalAll) && !enabledRegionalOnly.showsSameRows(as: enabledRegionalAll),
+            "Enabled-only must still override collapse when every regional list is on")
+
         var changed = a
         changed.category = .privacy
         changed.sourceRuleCount = 123
