@@ -38,6 +38,8 @@ struct ContentView: View {
     @State private var selectedFilterFallbacks: FilterList?
     @State private var selectedCategoryInfo: FilterListCategory?
     @State private var isForeignFiltersExpanded = ProtobufDataManager.shared.isForeignFiltersExpanded
+    // Keep a disabled row within reach so its switch can be turned back on.
+    @State private var recentlyDisabledForeignFilterIDs: Set<UUID> = []
     @State private var showingCapacityPopover = false
     // Only AppTabView observes selection. A tab click must not invalidate every row.
     @State private var tabSelection = AppTabSelection()
@@ -46,9 +48,6 @@ struct ContentView: View {
         nonmutating set { tabSelection.value = newValue }
     }
 
-    private var shouldExpandForeignFilters: Bool {
-        showOnlyEnabledLists || isForeignFiltersExpanded
-    }
     // Prepared off the main actor: every progress publish re-renders this view,
     // and sorting the catalog there stalled older iPads until the watchdog fired (#860).
     @State private var filterPresentation = FilterListPresentation()
@@ -314,7 +313,7 @@ struct ContentView: View {
         ), presenting: pendingEssentialFilter) { filter in
             Button("Cancel", role: .cancel) { pendingEssentialFilter = nil }
             Button("Disable", role: .destructive) {
-                filterManager.setFilterListSelection(id: filter.id, selected: false)
+                setFilterRowSelection(filter, selected: false)
                 pendingEssentialFilter = nil
             }
         } message: { _ in
@@ -332,10 +331,19 @@ struct ContentView: View {
             filterLastModified = newValue
         }
         .onChangeCompat(of: isForeignFiltersExpanded) { _, newValue in
+            recentlyDisabledForeignFilterIDs.removeAll()
             guard dataManager.isForeignFiltersExpanded != newValue else { return }
             Task {
                 await dataManager.setIsForeignFiltersExpanded(newValue)
             }
+        }
+        .onChangeCompat(of: filterManager.appliedSelectedFilterIDs) { _, current in
+            guard !recentlyDisabledForeignFilterIDs.isSubset(of: current) else { return }
+            recentlyDisabledForeignFilterIDs.formIntersection(current)
+        }
+        .onChangeCompat(of: recentlyDisabledForeignFilterIDs.isEmpty ? [] : filterManager.selectedFilterIDs) { _, selected in
+            guard !recentlyDisabledForeignFilterIDs.isDisjoint(with: selected) else { return }
+            recentlyDisabledForeignFilterIDs.subtract(selected)
         }
     }
 
@@ -486,15 +494,7 @@ struct ContentView: View {
             }
 
             ForEach(sections, id: \.category) { item in
-                if item.category == .foreign {
-                    // Same section chrome as every other category; the header's
-                    // chevron collapses the rows instead of a nested DisclosureGroup.
-                    ContentListSection { categoryHeader(item.category) } content: {
-                        if shouldExpandForeignFilters {
-                            filterRows(item.filters)
-                        }
-                    }
-                } else if item.category == .annoyances {
+                if item.category == .annoyances {
                     // One card per topic; the category title heads the first.
                     let groups = AnnoyanceTopic.groups(item.filters)
                     ForEach(groups, id: \.topic) { group in
@@ -513,7 +513,7 @@ struct ContentView: View {
                     }
                 } else {
                     ContentListSection { categoryHeader(item.category) } content: {
-                        filterRows(item.filters)
+                        filterRows(item.category == .foreign ? visibleForeignFilters(item.filters) : item.filters)
                     }
                 }
             }
@@ -643,17 +643,30 @@ struct ContentView: View {
     // in the header on both platforms now that macOS no longer renders
     // AppKit's outline cell.
     private func foreignExpansion(for category: FilterListCategory) -> Binding<Bool>? {
-        guard category == .foreign else { return nil }
-        return Binding(
-            get: { shouldExpandForeignFilters },
-            set: { isExpanded in
-                guard !showOnlyEnabledLists else { return }
-                isForeignFiltersExpanded = isExpanded
-            }
-        )
+        guard category == .foreign, !filterPresentation.enabledOnly, !filterPresentation.isSearching else { return nil }
+        return $isForeignFiltersExpanded
+    }
+
+    private func visibleForeignFilters(_ filters: [FilterList]) -> [FilterList] {
+        if filterPresentation.enabledOnly || isForeignFiltersExpanded || filterPresentation.isSearching { return filters }
+        // The snapshot can still hold the old selection after a toggle.
+        let visibleIDs = filterManager.selectedFilterIDs.union(recentlyDisabledForeignFilterIDs)
+        return filters.filter { visibleIDs.contains($0.id) }
+    }
+
+    private func setFilterRowSelection(_ filter: FilterList, selected: Bool) {
+        guard filterManager.setFilterListSelection(id: filter.id, selected: selected),
+              filter.category == .foreign else { return }
+        if selected {
+            recentlyDisabledForeignFilterIDs.remove(filter.id)
+        } else if !isForeignFiltersExpanded, !showOnlyEnabledLists,
+                  !filterPresentation.enabledOnly, !filterPresentation.isSearching {
+            recentlyDisabledForeignFilterIDs.insert(filter.id)
+        }
     }
 
     private func enableRecommended(_ ids: Set<UUID>, in category: FilterListCategory) {
+        if category == .foreign { recentlyDisabledForeignFilterIDs.removeAll() }
         for filter in filterManager.filterLists where filter.category == category {
             // A list not downloaded yet downloads now, like its own switch, so
             // its row turns on at once instead of after Apply (#1098).
@@ -692,7 +705,7 @@ struct ContentView: View {
                 downloadingFilterIDs.remove(filter.id)
                 if succeeded, let current {
                     // The switch enables the list only after its content is persisted.
-                    filterManager.setFilterListSelection(id: current.id, selected: true)
+                    setFilterRowSelection(current, selected: true)
                 }
             }
             guard let current else { return }
@@ -765,9 +778,9 @@ struct ContentView: View {
                 if !newValue && FilterListLoader.essentialFilterNames.contains(filter.name) {
                     pendingEssentialFilter = filter
                 } else if newValue {
-                    confirmingExperimental(filter) { filterManager.setFilterListSelection(id: filter.id, selected: true) }
+                    confirmingExperimental(filter) { setFilterRowSelection(filter, selected: true) }
                 } else {
-                    filterManager.setFilterListSelection(id: filter.id, selected: false)
+                    setFilterRowSelection(filter, selected: false)
                 }
             }
         )
@@ -837,11 +850,9 @@ struct ContentView: View {
     private func macFilterSection(_ category: FilterListCategory, _ filters: [FilterList]) -> MacListSection? {
         if category == .foreign {
             guard !filters.isEmpty else { return nil }
-            // Collapse is owned by the header's disclosure binding; the
-            // section simply carries its rows only while expanded.
-            let rows = shouldExpandForeignFilters ? filters.map { filter in
+            let rows = visibleForeignFilters(filters).map { filter in
                 MacListRow(filter.id) { filterRowView(for: filter) }
-            } : []
+            }
             return MacListSection(id: category.id, header: AnyView(categoryHeader(category)),
                                   rows: rows, allowsCrossSectionMoves: false)
         }
@@ -873,9 +884,10 @@ struct ContentView: View {
         // presentation task subsequently refreshes metadata and search results.
         filterPresentation.sections = FilterListCategory.allCases.compactMap { target in
             let others = previous.first { $0.category == target }?.filters.filter { $0.id != move.itemID } ?? []
+            // Keep hidden regional rows and other annoyance topics in the snapshot.
             let rows = target != category ? others
-                // A topic section carries only its own rows, so the category is re-sorted whole.
-                : target == .annoyances ? ListDisplayOrder.sorted(others + [live[move.itemID]].compactMap { $0 }, order: filterDisplayOrder)
+                : (target == .annoyances || target == .foreign) ? ListDisplayOrder.sorted(
+                    others + [live[move.itemID]].compactMap { $0 }, order: filterDisplayOrder)
                 : move.orderedIDs.compactMap { live[$0] }
             return rows.isEmpty ? nil : FilterListPresentation.Section(category: target, filters: rows)
         }

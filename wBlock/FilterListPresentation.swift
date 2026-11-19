@@ -75,12 +75,14 @@ struct FilterListPresentation: Sendable {
 
     var sections: [Section] = []
     var rowText: [UUID: RowText] = [:]
+    var isSearching = false
+    var enabledOnly = false
 
-    /// Whether both lay out the same rows with the same text. Rows read their
-    /// list live, so a change that moves no row and alters no text, such as a
-    /// switch, needs no second pass over the whole list.
+    /// Whether both produce the same layout and text. Rows read their list
+    /// live, so a switch that leaves the layout and text alone needs no second pass.
     func showsSameRows(as other: Self) -> Bool {
-        rowText == other.rowText && sections.map(\.category) == other.sections.map(\.category)
+        isSearching == other.isSearching && enabledOnly == other.enabledOnly && rowText == other.rowText
+            && sections.map(\.category) == other.sections.map(\.category)
             && zip(sections, other.sections).allSatisfy { $0.filters.map(\.id) == $1.filters.map(\.id) }
     }
 
@@ -112,7 +114,7 @@ struct FilterListPresentation: Sendable {
                 (filter.id, RowText(filter, isDownloaded: input.downloadedIDs.contains(filter.id),
                                     lastModified: input.lastModified[filter.id.uuidString]))
             })
-            return Self(sections: sections, rowText: rowText)
+            return Self(sections: sections, rowText: rowText, isSearching: !query.isEmpty, enabledOnly: input.enabledOnly)
         }
         return try await withTaskCancellationHandler {
             let result = try await worker.value
