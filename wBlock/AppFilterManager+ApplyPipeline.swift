@@ -81,7 +81,8 @@ extension AppFilterManager {
         logMessage: String,
         metadata: [String: String] = [:],
         statusMessage: String? = nil,
-        dismissProgressSheet: Bool = false
+        dismissProgressSheet: Bool = false,
+        marksUpgradeFailed: Bool = true
     ) async {
         await ConcurrentLogManager.shared.error(
             .filterApply,
@@ -96,7 +97,9 @@ extension AppFilterManager {
         await MainActor.run {
             self.autoApplyTask?.cancel()
             self.autoApplyTask = nil
-            self.persistFailedUpgradeRebuildSignature()
+            if marksUpgradeFailed {
+                self.persistFailedUpgradeRebuildSignature()
+            }
             self.lastApplySucceeded = false
             self.hasError = true
             self.statusDescription = resolvedStatusMessage
@@ -213,11 +216,13 @@ extension AppFilterManager {
             return false
         }
         #if os(iOS)
+        // An apply cut short by suspension did not fail, so the next launch may retry the upgrade rebuild.
         await failApplyRun(
             logMessage: LocalizedStrings.text(
                 "Apply cancelled to release file locks before suspension",
                 comment: "Apply pipeline suspension cancel"
-            )
+            ),
+            marksUpgradeFailed: false
         )
         return true
         #else
