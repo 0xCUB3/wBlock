@@ -217,6 +217,8 @@ struct FilterRulesView: View {
     @State private var rebuildTask: Task<Void, Never>?
     #if os(macOS)
     @State private var showingKinds = false
+    @State private var kindsOnScreen = false
+    @State private var closesAfterKinds = false
     #endif
     @Environment(\.dismiss) private var dismiss
 
@@ -229,7 +231,7 @@ struct FilterRulesView: View {
                     .font(.headline)
                 Spacer()
                 SourceViewerControls(
-                    wrapsLines: $wrapsLines, onSearch: editorController.openSearch, onClose: { dismiss() }, isLoading: isLoading
+                    wrapsLines: $wrapsLines, onSearch: editorController.openSearch, onClose: close, isLoading: isLoading
                 ) {
                     if let analysis { filterMenu(analysis) }
                 }
@@ -291,6 +293,21 @@ struct FilterRulesView: View {
         .onDisappear { rebuildTask?.cancel() }
     }
 
+    /// Closing the sheet under the open View popover flashed the sheet (#1123),
+    /// so the popover goes first and the sheet closes once it has. The click
+    /// on the close button already dismisses a transient popover, so this
+    /// waits on the popover leaving the screen, not on showingKinds.
+    private func close() {
+        #if os(macOS)
+        if kindsOnScreen {
+            closesAfterKinds = true
+            showingKinds = false
+            return
+        }
+        #endif
+        dismiss()
+    }
+
     /// Contents of enabled lists that compile before this one, so a rule the
     /// engine already has from another list shows as a duplicate here.
     private func earlierListContents() -> [String] {
@@ -316,6 +333,11 @@ struct FilterRulesView: View {
                         .buttonStyle(PopoverRowStyle())
                         .padding(6)
                         .fixedSize()
+                        .onAppear { kindsOnScreen = true }
+                        .onDisappear {
+                            kindsOnScreen = false
+                            if closesAfterKinds { dismiss() }
+                        }
                 }
             #else
             Menu { filterMenuItems(analysis) } label: { filterMenuLabel }
