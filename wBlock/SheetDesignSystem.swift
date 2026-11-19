@@ -191,7 +191,8 @@ struct SheetHeader: View {
         }
         .padding(.horizontal, SheetDesign.contentHorizontalPadding)
         .padding(.top, SheetDesign.contentHorizontalPadding)
-        .background(Color.clear)
+        // Keeps the form's edge off the title and X, like InfoSheetHeader (Strawberry, Discord).
+        .padding(.bottom, 12)
     }
 
     private var dismissControl: some View {
