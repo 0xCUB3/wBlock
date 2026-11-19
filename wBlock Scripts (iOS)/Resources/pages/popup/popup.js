@@ -8,6 +8,8 @@ const SUPPORT_PROBE_ATTEMPTS = 5;
 const SUPPORT_PROBE_RETRY_DELAY_MS = 200;
 const TOP_FRAME_ID = 0;
 const NATIVE_MESSAGE_TIMEOUT_MS = 3500;
+// Cold native starts on older iPads can take well past the per-message cutoff.
+const POPUP_LOAD_TIMEOUT_MS = 15000;
 const FILTER_UPDATE_POLL_INTERVAL_MS = 500;
 const FILTER_UPDATE_POLL_ATTEMPTS = 120;
 let resumeInFlight = false;
@@ -2077,9 +2079,15 @@ async function refreshUi(options = {}) {
 }
 
 function loadPopup() {
-    return refreshUi().catch((error) => {
+    const load = refreshUi();
+    const generation = popupLoadGeneration;
+    return withTimeout(load, POPUP_LOAD_TIMEOUT_MS, 'Popup load timed out.').catch((error) => {
         console.error('[wBlock] Popup load failed:', error);
         setError(t('popup_error_load_popup', undefined, 'Failed to load popup.'));
+        // A slow cold start can still finish after the timeout; then the error goes away.
+        load.then(() => {
+            if (generation === popupLoadGeneration) setError('');
+        }, () => {});
     });
 }
 

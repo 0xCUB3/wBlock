@@ -10,8 +10,8 @@ const repoRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const popupPath = path.join(repoRoot, "wBlock Scripts (iOS)", "Resources", "pages", "popup", "popup.js");
 let popupSource = readFileSync(popupPath, "utf8");
 popupSource = popupSource.replace(
-  "refreshUi().catch((error) => {",
-  "globalThis.__popupInitPromise = refreshUi().catch((error) => {"
+  "const load = refreshUi();",
+  "const load = globalThis.__popupInitPromise = refreshUi();"
 );
 
 let failures = 0;
