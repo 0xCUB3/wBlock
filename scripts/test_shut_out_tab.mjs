@@ -1,7 +1,7 @@
 // Run: node scripts/test_shut_out_tab.mjs
 // Safari shuts the extension out of the tab it shows after a profile switch
-// or a switch into Private Browsing.
-// That page moves to a new tab, once per background.
+// or a switch into or out of Private Browsing.
+// That page moves to a new tab, but a replacement never moves again.
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
@@ -59,7 +59,13 @@ for (const file of ['extension-src/background.js', 'wBlock Scripts (iOS)/Resourc
     assert.deepEqual(page.created, [{ url: tab.url, index: 3, active: true, windowId: 1 }], `${file}: a shut-out page moves to a new tab`);
     assert.deepEqual(page.removed, [7], `${file}: the shut-out tab closes`);
     await page.complete({ ...tab, id: 8 });
-    assert.equal(page.created.length, 1, `${file}: only one tab is replaced per background`);
+    assert.equal(page.created.length, 2, `${file}: the tab shut out by a later switch moves too`);
+    await page.complete({ ...tab, id: 102 });
+    assert.equal(page.created.length, 2, `${file}: a replacement that is shut out too stays put`);
+    await page.complete({ ...tab, id: 9 });
+    assert.equal(page.created.length, 2, `${file}: a site Safari refuses for good is left alone`);
+    await page.complete({ ...tab, id: 10, url: 'https://other.example/' });
+    assert.equal(page.created.length, 3, `${file}: other sites still move`);
   }
   for (const [label, options] of [
     ['content scripts answered', { probe: { ok: true } }],

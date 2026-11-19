@@ -2019,22 +2019,36 @@
     return filterStagePingInFlight;
   };
   // Safari shuts the extension out of the tab it shows right after a profile
-  // switch or a switch into Private Browsing: no content scripts, not even
+  // switch or a switch into or out of Private Browsing: no content scripts, not even
   // after a reload, and executeScript is refused although the site is allowed.
   // A new tab in the same window is fine (a private window keeps it private),
-  // so that page moves to one. Once per background, since Safari refuses some
-  // pages for good and a loop would be worse than one missed page.
-  let replacedShutOutTab = false;
+  // so that page moves to one. Each switch shuts out a fresh tab, so this runs
+  // every time. A replacement that is shut out too means Safari refuses that
+  // site for good, and its origin is left alone from then on.
+  const checkingShutOutTabs = new Set();
+  const replacementTabs = new Set();
+  const refusedOrigins = new Set();
   const replaceShutOutTab = async tab => {
-    if (replacedShutOutTab || !browser.scripting?.executeScript || !/^https?:/i.test(tab.url || "")) return;
-    const probe = await browser.tabs.sendMessage(tab.id, { type: "wblock:pageSupportProbe" }, { frameId: 0 }).catch(() => null);
-    if (probe?.ok || replacedShutOutTab) return;
-    const allowed = await browser.permissions.contains({ origins: [new URL(tab.url).origin + "/*"] }).catch(() => false);
-    const refused = await browser.scripting.executeScript({ target: { tabId: tab.id }, func: () => true }).then(() => false, () => true);
-    if (!allowed || !refused || replacedShutOutTab) return;
-    replacedShutOutTab = true;
-    await browser.tabs.create({ url: tab.url, index: tab.index + 1, active: tab.active, windowId: tab.windowId });
-    await browser.tabs.remove(tab.id);
+    if (!browser.scripting?.executeScript || !/^https?:/i.test(tab.url || "") || checkingShutOutTabs.has(tab.id)) return;
+    const origin = new URL(tab.url).origin;
+    if (refusedOrigins.has(origin)) return;
+    checkingShutOutTabs.add(tab.id);
+    try {
+      const probe = await browser.tabs.sendMessage(tab.id, { type: "wblock:pageSupportProbe" }, { frameId: 0 }).catch(() => null);
+      if (probe?.ok) return;
+      const allowed = await browser.permissions.contains({ origins: [origin + "/*"] }).catch(() => false);
+      const refused = await browser.scripting.executeScript({ target: { tabId: tab.id }, func: () => true }).then(() => false, () => true);
+      if (!allowed || !refused) return;
+      if (replacementTabs.has(tab.id)) {
+        refusedOrigins.add(origin);
+        return;
+      }
+      const replacement = await browser.tabs.create({ url: tab.url, index: tab.index + 1, active: tab.active, windowId: tab.windowId });
+      replacementTabs.add(replacement.id);
+      await browser.tabs.remove(tab.id);
+    } finally {
+      checkingShutOutTabs.delete(tab.id);
+    }
   };
   if (canObserveTabs) {
     if (browser.tabs.onUpdated) {
