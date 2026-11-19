@@ -1494,6 +1494,11 @@ public actor SharedAutoUpdateManager {
             }
             _ = StagedFilterDownloads.clear(ifMatches: stagingMarker)
             appendSharedLog("Extension staging failed: \(error.localizedDescription)")
+            // Back off, or every page load retries the full download while the network is down.
+            let retryDelay = Self.retryDelaySeconds(intervalHours: interval)
+            await ProtobufDataManager.shared.setAutoUpdateNextEligibleTime(Int64(Date().timeIntervalSince1970 + retryDelay))
+            _ = await ProtobufDataManager.shared.saveDataImmediately()
+            invalidateStatusCache()
             return .skipped(reason: "fetch_failed")
         }
 
@@ -1631,6 +1636,7 @@ public actor SharedAutoUpdateManager {
         var errorCount = 0
         var validatorUpdates: [String: (etag: String?, lastModified: String?)] = [:]
         var checkedCount = 0
+        var failures: [String] = []
         await reportRunProgress(.checking(done: 0, total: remoteFilters.count))
 
         let patches = FilterPatchCache()
@@ -1650,6 +1656,7 @@ public actor SharedAutoUpdateManager {
             case .error(let filterName, let error):
                 hadErrors = true
                 errorCount += 1
+                failures.append("\(filterName): \(error.localizedDescription)")
                 os_log(
                     "Update fetch error for %{public}@ – %{public}@",
                     log: log,
@@ -1659,6 +1666,11 @@ public actor SharedAutoUpdateManager {
                 )
             }
         })
+
+        // Keep per-list failures in the shared log so a log export shows which lists failed.
+        if !failures.isEmpty {
+            appendSharedLog("Filter checks failed (\(failures.count)): " + failures.joined(separator: "; "))
+        }
 
         try Task.checkCancellation()
 
