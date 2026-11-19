@@ -1298,7 +1298,6 @@ extension SettingsView {
 
         // Trigger overdue updates ONLY on first call (not recursive)
         if shouldTriggerOverdue && status.isOverdue && !status.isRunning {
-            await SharedAutoUpdateManager.shared.forceNextUpdate()
             await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(
                 trigger: "SettingsOverdueDetection", force: true)
             // Refresh display WITHOUT retriggering overdue check

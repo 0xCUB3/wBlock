@@ -126,7 +126,6 @@ private extension AppDelegate {
         trigger: String,
         policy: SharedAutoUpdateManager.AutoUpdateExecutionPolicy? = nil
     ) async -> SharedAutoUpdateManager.AutoUpdateRunOutcome {
-        await SharedAutoUpdateManager.shared.forceNextUpdate()
         let resolvedPolicy = policy ?? SharedAutoUpdateManager.AutoUpdateExecutionPolicy.foreground(trigger: trigger)
         return await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(
             trigger: trigger,
@@ -404,7 +403,6 @@ extension AppDelegate: NSApplicationDelegate {
             )
             let popupClaim = FilterUpdatePopupStatus.consumeUpdateRequest()
             if popupClaim != nil || reason == .stagedDownloads {
-                await SharedAutoUpdateManager.shared.forceNextUpdate()
                 let outcome = await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(
                     trigger: "Headless-\(reason.rawValue)",
                     force: true

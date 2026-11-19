@@ -702,13 +702,6 @@ public actor SharedAutoUpdateManager {
         lastStatusCheck = nil
     }
 
-    /// Forces the next update to run immediately regardless of throttling
-    /// Must be called from within actor context to safely invalidate cache
-    public func forceNextUpdate() async {
-        await ProtobufDataManager.shared.setAutoUpdateForceNext(true)
-        invalidateStatusCache()
-    }
-
     /// Clears the cached auto-update window so future runs re-evaluate scheduling.
     public func resetScheduleAfterConfigurationChange() async {
         await ProtobufDataManager.shared.setAutoUpdateNextEligibleTime(0)
@@ -1120,8 +1113,11 @@ public actor SharedAutoUpdateManager {
             }
 
             guard !updatedFilterSet.isEmpty else {
+                // Only outputs a helper staged, or broken ones, need a reload.
+                // A run forced just because it was overdue has nothing new to
+                // load, and reloading every blocker took minutes on older iPads.
                 var reloadStatus = "skipped"
-                if shouldForce || contentBlockerOutputsNeedRepair() {
+                if forceFlag || contentBlockerOutputsNeedRepair() {
                     if isExternalHelperTrigger(trigger) {
                         await ProtobufDataManager.shared.setAutoUpdateForceNext(true)
                         reloadStatus = "pending app launch"
