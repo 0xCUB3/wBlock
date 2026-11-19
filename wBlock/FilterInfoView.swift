@@ -261,15 +261,21 @@ struct FilterRulesView: View {
         .sourceSheetPresentationCompat()
         #endif
         .task {
-            rules = FilterListLoader().readLocalFilterContent(filter) ?? ""
+            // File reads stay off the main actor; the list lookup needs filterManager, so it runs here first.
+            let filter = filter
+            let earlier = earlierLists()
+            rules = await Task.detached(priority: .userInitiated) {
+                FilterListLoader().readLocalFilterContent(filter) ?? ""
+            }.value
             editorController.replaceText(rules, lineKinds: [:], markClean: true)
             isLoading = false
             guard !rules.isEmpty else { return }
             let content = rules
-            let earlier = earlierListContents()
             let worker = Task.detached(priority: .userInitiated) { () -> FilterRuleAnalysis in
+                let loader = FilterListLoader()
                 var seen = Set<String>()
-                for text in earlier {
+                for list in earlier {
+                    guard let text = loader.readLocalFilterContent(list) else { continue }
                     seen.formUnion(FilterRuleAnalysis.ruleSet(from: text, isCancelled: { Task.isCancelled }))
                 }
                 return FilterRuleAnalysis.analyze(
@@ -308,14 +314,14 @@ struct FilterRulesView: View {
         dismiss()
     }
 
-    /// Contents of enabled lists that compile before this one, so a rule the
-    /// engine already has from another list shows as a duplicate here.
-    private func earlierListContents() -> [String] {
+    /// Enabled lists that compile before this one, so a rule the engine already
+    /// has from another list shows as a duplicate here. Their contents are read
+    /// off the main actor by the analysis task.
+    private func earlierLists() -> [FilterList] {
         let selected = filterManager.filterLists.filter { $0.isSelected }
         let ordered = ContentBlockerMappingService.orderedForCompilation(selected)
         guard let index = ordered.firstIndex(where: { $0.id == filter.id }) else { return [] }
-        let loader = FilterListLoader()
-        return ordered[..<index].compactMap { loader.readLocalFilterContent($0) }
+        return Array(ordered[..<index])
     }
 
     /// Each kind's count sits in its menu item; a legend under the editor
