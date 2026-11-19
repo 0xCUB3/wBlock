@@ -1,5 +1,6 @@
 // Run: node scripts/test_shut_out_tab.mjs
-// Safari shuts the extension out of the tab it shows after a profile switch.
+// Safari shuts the extension out of the tab it shows after a profile switch
+// or a switch into Private Browsing.
 // That page moves to a new tab, once per background.
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -75,8 +76,12 @@ for (const file of ['extension-src/background.js', 'wBlock Scripts (iOS)/Resourc
     await settle();
     await page.complete({ ...tab, url: 'about:blank' });
     assert.equal(page.created.length, 0, `${file}: non-web pages are left alone`);
-    await page.complete({ ...tab, incognito: true });
-    assert.equal(page.created.length, 0, `${file}: private tabs never reopen outside Private Browsing`);
+  }
+  {
+    const page = load(file);
+    await settle();
+    await page.complete({ ...tab, incognito: true, windowId: 9 });
+    assert.deepEqual(page.created, [{ url: tab.url, index: 3, active: true, windowId: 9 }], `${file}: a shut-out private tab reopens in its own private window`);
   }
 }
 

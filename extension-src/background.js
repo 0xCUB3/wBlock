@@ -2019,13 +2019,14 @@
     return filterStagePingInFlight;
   };
   // Safari shuts the extension out of the tab it shows right after a profile
-  // switch: no content scripts, not even after a reload, and executeScript is
-  // refused although the site is allowed. A new tab is fine, so that page
-  // moves to one. Once per background, since Safari refuses some pages for
-  // good and a loop would be worse than one missed page.
+  // switch or a switch into Private Browsing: no content scripts, not even
+  // after a reload, and executeScript is refused although the site is allowed.
+  // A new tab in the same window is fine (a private window keeps it private),
+  // so that page moves to one. Once per background, since Safari refuses some
+  // pages for good and a loop would be worse than one missed page.
   let replacedShutOutTab = false;
   const replaceShutOutTab = async tab => {
-    if (replacedShutOutTab || tab.incognito || !browser.scripting?.executeScript || !/^https?:/i.test(tab.url || "")) return;
+    if (replacedShutOutTab || !browser.scripting?.executeScript || !/^https?:/i.test(tab.url || "")) return;
     const probe = await browser.tabs.sendMessage(tab.id, { type: "wblock:pageSupportProbe" }, { frameId: 0 }).catch(() => null);
     if (probe?.ok || replacedShutOutTab) return;
     const allowed = await browser.permissions.contains({ origins: [new URL(tab.url).origin + "/*"] }).catch(() => false);
