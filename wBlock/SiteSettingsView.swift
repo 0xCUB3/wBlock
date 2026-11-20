@@ -278,8 +278,16 @@ struct SiteSettingsView: View {
     private func expansionRows(_ site: SiteSummary) -> some View {
         // Every component at once, the popup's top switch (#1097).
         Toggle(isOn: Binding(
-            get: { !dataManager.areAllSiteComponentsDisabled(onHost: site.domain) },
-            set: { runs in mutateSite(site.domain) { await dataManager.setAllSiteComponentsDisabled(!runs, onHost: site.domain) } }
+            get: {
+                let whitelist = DisabledSitesNormalizer.normalizedDomains(from: dataManager.disabledSites)
+                return !HostMatcher.isHostDisabled(host: site.domain, disabledSites: whitelist)
+                    && !dataManager.areAllSiteComponentsDisabled(onHost: site.domain)
+            },
+            set: { runs in
+                mutateSite(site.domain) {
+                    await dataManager.setAllSiteComponentsDisabled(!runs, onHost: site.domain, removingExactWhitelistEntry: true)
+                }
+            }
         )) {
             Text("wBlock on this site")
         }
@@ -426,6 +434,9 @@ struct SiteSettingsView: View {
             guard generation == mutationGeneration else { return }
             let after = siteSnapshot(domain)
             guard before != after else { return }
+            if before.isZapperDisabled != after.isZapperDisabled {
+                ZapperRuleManager.notifySafariRulesChanged()
+            }
             undoStack.append(SiteUndoState(domain: domain, before: before, after: after))
             redoStack = []
         }
@@ -457,6 +468,9 @@ struct SiteSettingsView: View {
         setFilterExclusions(snapshot.excludedFilterIDs, on: domain)
         if dataManager.isZapperDisabled(forHost: domain) != snapshot.isZapperDisabled {
             await dataManager.setZapperRulesDisabled(snapshot.isZapperDisabled, forHost: domain)
+            if dataManager.isZapperDisabled(forHost: domain) == snapshot.isZapperDisabled {
+                ZapperRuleManager.notifySafariRulesChanged()
+            }
         }
         let disabledHosts = dataManager.getUserScriptDisabledHosts()
         for scriptID in Set(disabledHosts.keys).union(snapshot.disabledScriptIDs) {
@@ -558,6 +572,9 @@ struct SiteSettingsView: View {
                 await dataManager.setUserScriptSiteAccess(.init(onlySelectedSites: true, hosts: hosts.filter { $0 != domain }), forScriptID: id)
             }
             setFilterExclusions([], on: domain)
+            if dataManager.isZapperDisabled(forHost: domain) {
+                await dataManager.setZapperRulesDisabled(false, forHost: domain)
+            }
             expandedDomains.remove(domain)
         }
     }
