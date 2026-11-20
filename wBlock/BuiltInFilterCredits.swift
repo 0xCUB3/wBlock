@@ -28,7 +28,7 @@ enum BuiltInFilterCredits {
     private static let ruAdList = credit("dimisa-RUAdList", "https://github.com/easylist/ruadlist")
 
     private static let byName: [String: Credit] = [
-        // uBO's fork of AdGuard's list, shown as "uBO/AdGuard URL Tracking Protection Filter" (#1097).
+        // uBO's fork of AdGuard's list, shown as "AdGuard/uBO – URL Tracking Protection", uBO's name for it (#1097, Dalsu).
         "AdGuard URL Tracking Protection Filter": credit(
             "AdGuard, Raymond Hill and the uAssets contributors",
             "https://github.com/AdguardTeam/AdguardFilters", "https://github.com/uBlockOrigin/uAssets"),

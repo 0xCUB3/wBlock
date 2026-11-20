@@ -1102,7 +1102,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Disable AMP" = "Disable AMP";
 "wBlock on this site" = "이 사이트에서 wBlock 사용";
 "Autoplay on this site" = "이 사이트에서 자동 재생";
-"AdGuard URL Tracking Protection Filter" = "uBO/AdGuard URL Tracking Protection Filter";
+"AdGuard URL Tracking Protection Filter" = "AdGuard/uBO – URL Tracking Protection";
 "When off, wBlock leaves this list at its current version." = "끄면 wBlock이 이 목록을 현재 버전으로 유지합니다.";
 "When off, wBlock leaves this script at its current version." = "끄면 wBlock이 이 스크립트를 현재 버전으로 유지합니다.";
 "No sites selected, so this list is off." = "선택한 사이트가 없어 이 목록이 꺼져 있습니다.";

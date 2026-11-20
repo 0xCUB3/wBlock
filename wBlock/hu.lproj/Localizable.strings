@@ -1102,7 +1102,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Disable AMP" = "Disable AMP";
 "wBlock on this site" = "wBlock ezen a webhelyen";
 "Autoplay on this site" = "Automatikus lejátszás ezen a webhelyen";
-"AdGuard URL Tracking Protection Filter" = "uBO/AdGuard URL Tracking Protection Filter";
+"AdGuard URL Tracking Protection Filter" = "AdGuard/uBO – URL Tracking Protection";
 "When off, wBlock leaves this list at its current version." = "Kikapcsolva a wBlock megtartja a lista jelenlegi verzióját.";
 "When off, wBlock leaves this script at its current version." = "Kikapcsolva a wBlock megtartja a szkript jelenlegi verzióját.";
 "No sites selected, so this list is off." = "Nincs kiválasztott webhely, így ez a lista ki van kapcsolva.";

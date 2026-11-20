@@ -1111,7 +1111,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Disable AMP" = "Disable AMP";
 "wBlock on this site" = "Bu sitede wBlock";
 "Autoplay on this site" = "Bu sitede otomatik oynatma";
-"AdGuard URL Tracking Protection Filter" = "uBO/AdGuard URL Tracking Protection Filter";
+"AdGuard URL Tracking Protection Filter" = "AdGuard/uBO – URL Tracking Protection";
 "When off, wBlock leaves this list at its current version." = "Kapalıyken wBlock bu listenin geçerli sürümünü korur.";
 "When off, wBlock leaves this script at its current version." = "Kapalıyken wBlock bu betiğin geçerli sürümünü korur.";
 "No sites selected, so this list is off." = "Site seçilmedi, bu yüzden bu liste kapalı.";

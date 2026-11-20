@@ -1102,7 +1102,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Disable AMP" = "Disable AMP";
 "wBlock on this site" = "wBlock σε αυτόν τον ιστότοπο";
 "Autoplay on this site" = "Αυτόματη αναπαραγωγή σε αυτόν τον ιστότοπο";
-"AdGuard URL Tracking Protection Filter" = "uBO/AdGuard URL Tracking Protection Filter";
+"AdGuard URL Tracking Protection Filter" = "AdGuard/uBO – URL Tracking Protection";
 "When off, wBlock leaves this list at its current version." = "Όταν είναι ανενεργό, το wBlock κρατά την τρέχουσα έκδοση αυτής της λίστας.";
 "When off, wBlock leaves this script at its current version." = "Όταν είναι ανενεργό, το wBlock κρατά την τρέχουσα έκδοση αυτού του σεναρίου.";
 "No sites selected, so this list is off." = "Δεν έχουν επιλεγεί ιστότοποι, οπότε αυτή η λίστα είναι ανενεργή.";

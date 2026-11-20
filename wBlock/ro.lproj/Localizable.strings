@@ -1102,7 +1102,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Disable AMP" = "Disable AMP";
 "wBlock on this site" = "wBlock pe acest site";
 "Autoplay on this site" = "Redare automată pe acest site";
-"AdGuard URL Tracking Protection Filter" = "uBO/AdGuard URL Tracking Protection Filter";
+"AdGuard URL Tracking Protection Filter" = "AdGuard/uBO – URL Tracking Protection";
 "When off, wBlock leaves this list at its current version." = "Când este oprit, wBlock păstrează versiunea actuală a acestei liste.";
 "When off, wBlock leaves this script at its current version." = "Când este oprit, wBlock păstrează versiunea actuală a acestui script.";
 "No sites selected, so this list is off." = "Niciun site selectat, deci această listă este oprită.";

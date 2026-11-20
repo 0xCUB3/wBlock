@@ -1102,7 +1102,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Disable AMP" = "Disable AMP";
 "wBlock on this site" = "wBlock на этом сайте";
 "Autoplay on this site" = "Автовоспроизведение на этом сайте";
-"AdGuard URL Tracking Protection Filter" = "uBO/AdGuard URL Tracking Protection Filter";
+"AdGuard URL Tracking Protection Filter" = "AdGuard/uBO – URL Tracking Protection";
 "When off, wBlock leaves this list at its current version." = "Если выключено, wBlock оставляет текущую версию этого списка.";
 "When off, wBlock leaves this script at its current version." = "Если выключено, wBlock оставляет текущую версию этого скрипта.";
 "No sites selected, so this list is off." = "Сайты не выбраны, поэтому этот список выключен.";

@@ -1071,7 +1071,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Disable AMP" = "Disable AMP";
 "wBlock on this site" = "このサイトでwBlockを有効にする";
 "Autoplay on this site" = "このサイトで自動再生";
-"AdGuard URL Tracking Protection Filter" = "AdGuard URL Tracking Protection Filter";
+"AdGuard URL Tracking Protection Filter" = "AdGuard/uBO – URL Tracking Protection";
 "When off, wBlock leaves this list at its current version." = "オフにすると、wBlockはこのリストを現在のバージョンのままにします。";
 "When off, wBlock leaves this script at its current version." = "オフにすると、wBlockはこのスクリプトを現在のバージョンのままにします。";
 "No sites selected, so this list is off." = "サイトが選択されていないため、このリストはオフです。";
