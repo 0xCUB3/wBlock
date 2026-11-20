@@ -534,10 +534,8 @@ class AppFilterManager: ObservableObject {
     /// Performs the complete reset used by every Restart Onboarding entry point.
     @MainActor
     func completeResetForOnboarding() async {
-        // Wiping defaults turns sync off on disk only. The manager kept syncing
-        // during onboarding and merged the iCloud lists back in (Strawberry, Discord).
-        CloudSyncManager.shared.setEnabled(false)
         resetOnboardingUserDefaults()
+        CloudSyncManager.shared.reloadFromDefaults()
         await dataManager.resetToDefaultData(preservingOnboardingCompletion: true)
         await resetForOnboarding()
         await UserScriptManager.shared.simulateFreshInstall()

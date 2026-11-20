@@ -235,6 +235,9 @@ struct OnboardingView: View {
                 await refreshContentBlockerStates()
             }
         }
+        .onChangeCompat(of: wantsCloudSync) { _, wantsSync in
+            if wantsSync { probeForExistingICloudSetupIfNeeded() }
+        }
         .onChangeCompat(of: selectedLanguages) { _, newValue in
             hasManuallyEditedRegionalSelection = false
             updateRegionalRecommendations(for: newValue)
@@ -961,8 +964,9 @@ struct OnboardingView: View {
 
         Task {
             let probe = await CloudSyncManager.shared.probeRemoteConfig()
+            // Ask again when sync is turned on, so a failed check never reads as an empty iCloud.
+            if probe.error != nil { hasProbedRemoteConfig = false }
             guard probe.exists else { return }
-            guard !wantsCloudSync else { return }
 
             if let updatedAt = probe.updatedAt {
                 let formatter = LocalizedFormatting.relativeDateTimeFormatter(unitsStyle: .short)

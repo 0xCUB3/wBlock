@@ -29,6 +29,7 @@ struct SettingsView: View {
     @State private var pendingBackup: WBlockBackup? = nil
     @State private var backupStatusMessage: String? = nil
     @State private var showingBackupStatus = false
+    @State private var syncProbeError: String?
     @State private var showingSyncAdoptPrompt = false
     @State private var syncAdoptTimestamp: String?
     @State private var showingRuleCapacity = false
@@ -95,6 +96,14 @@ struct SettingsView: View {
             }
         } message: {
             Text("Safari doesn't tell extensions what content blockers block. To get a count, wBlock copies the filter rules that block one domain or a path on it (like ||example.com^ or ||example.com/ads/) into Safari's declarativeNetRequest engine, and Safari counts how often they match. Rules that can match any domain or only apply on certain sites aren't counted, and neither are hidden page elements. Safari also limits how many rules an extension can have, so with many filter lists some are left out. Blocking doesn't change, but the number will probably be a lot lower than you're used to. It counts requests, so a tracker that loads five times counts as five.")
+        }
+        .alert("iCloud Sync", isPresented: Binding(
+            get: { syncProbeError != nil },
+            set: { if !$0 { syncProbeError = nil } }
+        )) {
+            Button("OK", role: .cancel) { syncProbeError = nil }
+        } message: {
+            Text(syncProbeError ?? "")
         }
         .alert("Backup", isPresented: $showingBackupStatus) {
             Button("OK", role: .cancel) {}
@@ -895,6 +904,10 @@ struct SettingsView: View {
         guard syncManager.isCloudKitAvailable else { return }
         Task {
             let probe = await CloudSyncManager.shared.probeRemoteConfig()
+            if let error = probe.error {
+                syncProbeError = error
+                return
+            }
             guard probe.exists else {
                 syncManager.setEnabled(true)
                 return

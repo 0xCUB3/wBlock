@@ -74,8 +74,8 @@ final class CloudSyncManager: ObservableObject {
     }()
 
     @Published private(set) var isCloudKitAvailable: Bool
-    @Published private(set) var isEnabled: Bool
-    @Published private(set) var syncUserScriptEnabledStates: Bool
+    @Published private(set) var isEnabled = false
+    @Published private(set) var syncUserScriptEnabledStates = true
     @Published private(set) var isSyncing: Bool = false
     @Published private(set) var status: SyncStatus = .off
     @Published private(set) var statusLine: String = String(localized: "Sync: Off")
@@ -153,8 +153,16 @@ final class CloudSyncManager: ObservableObject {
 
     private init() {
         isCloudKitAvailable = Self.hasCloudKitEntitlement
+        reloadFromDefaults()
+    }
+
+    /// Reads the settings this manager mirrors. Restart Onboarding clears the
+    /// defaults under it. Before this reload, sync stayed on in memory during
+    /// onboarding and merged the iCloud lists back in (Strawberry, Discord).
+    func reloadFromDefaults() {
         isEnabled = defaults.bool(forKey: Keys.enabled)
         syncUserScriptEnabledStates = CloudSyncUserScriptEnabledStatePolicy.syncEnabled(in: defaults)
+        if !isEnabled { deferredSyncTrigger = nil }
         refreshStatusFromDefaults()
     }
 
@@ -361,6 +369,9 @@ final class CloudSyncManager: ObservableObject {
         let exists: Bool
         let updatedAt: TimeInterval?
         let schemaVersion: Int?
+        /// Set when iCloud couldn't be checked. Treating that as "nothing in
+        /// iCloud" turned sync on unasked, and with no sync base iCloud then won.
+        var error: String? = nil
     }
 
     func probeRemoteConfig() async -> RemoteConfigProbe {
@@ -381,7 +392,8 @@ final class CloudSyncManager: ObservableObject {
                 schemaVersion: schemaVersion
             )
         } catch {
-            return RemoteConfigProbe(exists: false, updatedAt: nil, schemaVersion: nil)
+            return RemoteConfigProbe(exists: false, updatedAt: nil, schemaVersion: nil,
+                                     error: userFacingErrorMessage(for: error))
         }
     }
 
