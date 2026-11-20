@@ -61,7 +61,10 @@ struct FilterListPresentationTests {
         let descriptionSearch = try await FilterListPresentation.prepare(input(filters, query: "  UNIQUE DESCRIPTION \n"))
         precondition(ids(descriptionSearch) == [a.id])
         let urlSearch = try await FilterListPresentation.prepare(input(filters, query: "EXAMPLE.COM/B"))
-        precondition(ids(urlSearch) == [b.id])
+        precondition(ids(urlSearch).isEmpty, "Catalog lists don't match by URL")
+        var customB = b; customB.isCustom = true
+        let customURLSearch = try await FilterListPresentation.prepare(input(filters.map { $0.id == b.id ? customB : $0 }, query: "EXAMPLE.COM/B"))
+        precondition(ids(customURLSearch) == [b.id], "Custom lists match by URL")
         let empty = try await FilterListPresentation.prepare(input(filters, query: "no match"))
         precondition(empty.sections.isEmpty)
         let languageSearch = try await FilterListPresentation.prepare(input(filters, query: "German"))
