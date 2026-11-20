@@ -284,12 +284,14 @@ extension FilterList {
         languages.contains { RegionalLanguageOption(code: $0.lowercased(), locale: locale).matches(query) }
     }
 
-    /// The filter search: name, description, URL, or a language it covers.
+    /// The filter search: name, description, a language it covers, or a custom
+    /// list's URL. Catalog URLs stay out: most are uBlock-flavored builds or
+    /// mirrors, so "ublock" matched nearly every list (Dalsu, Discord).
     func matchesSearch(_ query: String, locale: Locale) -> Bool {
         query.isEmpty
             || localizedDisplayName.localizedCaseInsensitiveContains(query)
             || localizedDisplayDescription.localizedCaseInsensitiveContains(query)
-            || url.absoluteString.localizedCaseInsensitiveContains(query)
+            || (isCustom && url.absoluteString.localizedCaseInsensitiveContains(query))
             || matchesLanguage(query, locale: locale)
     }
 
