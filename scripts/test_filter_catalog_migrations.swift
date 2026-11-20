@@ -204,6 +204,18 @@ private final class TestLoader: FilterListLoader {
                      && !alphaByName["AdGuard Cookie Notices"]!.updatesAutomatically, "settings move with the swap")
         precondition(FilterListLoader.swappingToAdGuardAnnoyances(alpha) == alpha, "the swap leaves AdGuard users alone")
         precondition(Set(FilterListLoader.adGuardAnnoyanceSwaps.flatMap { [$0.key, $0.value] }).isSubset(of: Set(defaults.map(\.name))))
+        // General goes off for 4.0 alphas; a 3.2.3 AdGuard Other Annoyances user keeps it.
+        let general = Set(AnnoyanceChoice.general.filterNames)
+        let withGeneral = defaults.map { list -> FilterList in
+            var list = list; list.isSelected = general.contains(list.name) || list.name == "AdGuard Cookie Notices"; return list
+        }
+        precondition(Set(AnnoyanceChoice.turningOffGeneral(withGeneral).filter(\.isSelected).map(\.name))
+                     == ["AdGuard Cookie Notices"], "General goes off")
+        let upgraded = defaults.map { list -> FilterList in
+            var list = list; list.isSelected = list.name == "AdGuard Other Annoyances"; return list
+        }
+        precondition(AnnoyanceChoice.turningOffGeneral(upgraded) == upgraded, "3.2.3 choice stays")
+        precondition(general.isSubset(of: Set(defaults.map(\.name))), "General names in catalog")
 
         // A renamed annoyance list would silently fall into Other.
         let topical = defaults.filter { $0.category == .annoyances && AnnoyanceTopic.topic(for: $0) != .other }

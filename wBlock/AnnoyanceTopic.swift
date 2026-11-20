@@ -56,8 +56,9 @@ enum AnnoyanceChoice: String, CaseIterable, Identifiable, Sendable {
 
     var id: String { rawValue }
 
-    /// What onboarding preselects (#1091).
-    static let recommended: Set<AnnoyanceChoice> = [.cookies, .general]
+    /// What onboarding preselects (#1091). Cookie Notices only, as in 3.2.3:
+    /// AdGuard Other Annoyances hides Google's AI Overview (Dalsu, Discord).
+    static let recommended: Set<AnnoyanceChoice> = [.cookies]
 
     /// A localization key.
     var title: String {
@@ -97,6 +98,20 @@ enum AnnoyanceChoice: String, CaseIterable, Identifiable, Sendable {
     static func filters(for choices: Set<AnnoyanceChoice>, in filters: [FilterList]) -> [FilterList] {
         let names = Set(choices.flatMap(\.filterNames))
         return filters.filter { !$0.isCustom && names.contains($0.name) }
+    }
+
+    /// General was on by default in the 4.0 alphas. It goes off once where
+    /// all its lists are on (AppFilterManager.applyOnce). uBlock filters –
+    /// Annoyances is new in 4.0, so a 3.2.3 install that ran AdGuard Other
+    /// Annoyances keeps it.
+    static func turningOffGeneral(_ lists: [FilterList]) -> [FilterList] {
+        guard choices(enabledIn: lists).contains(.general) else { return lists }
+        let names = Set(general.filterNames)
+        return lists.map { list in
+            var list = list
+            if !list.isCustom && names.contains(list.name) { list.isSelected = false }
+            return list
+        }
     }
 
     /// Choices whose lists are all on.

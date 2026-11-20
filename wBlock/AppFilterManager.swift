@@ -261,6 +261,7 @@ class AppFilterManager: ObservableObject {
     private static let changedDefaultsKey = "wBlock.changedDefaults.4.0.2"
     /// Its own key, so the defaults above don't come back on for people who turned them off.
     private static let adGuardAnnoyancesKey = "wBlock.adGuardAnnoyances.4"
+    private static let generalAnnoyancesOffKey = "wBlock.generalAnnoyancesOff.4"
 
     /// Gives an existing install the defaults 4.0 changed after its first
     /// builds, once per device and `key`. New installs start from the current
@@ -823,6 +824,8 @@ class AppFilterManager: ObservableObject {
         let changedDefaults = applyOnce(Self.changedDefaultsKey, FilterListLoader.applyingChangedDefaults, to: &migratedFilterLists)
         let swappedAnnoyances = applyOnce(Self.adGuardAnnoyancesKey, FilterListLoader.swappingToAdGuardAnnoyances,
                                           to: &migratedFilterLists)
+        let generalOff = applyOnce(Self.generalAnnoyancesOffKey, AnnoyanceChoice.turningOffGeneral, to: &migratedFilterLists)
+        let migratedAnnoyances = swappedAnnoyances || generalOff
         let foldedCustomCopies = migratedFilterLists.filter(\.isCustom).count < customCountBeforeHydrate
         migratedFilterLists = deduplicateFilterIDs(migratedFilterLists)
         validatorClearIDs = migratedFilterLists.compactMap { filter in
@@ -840,7 +843,7 @@ class AppFilterManager: ObservableObject {
             return originalURL != filter.url
         }
         if hasURLMigrations || addedDefaultFilters || selectedDeprecatedListWasRemoved || foldedCustomCopies || !offAdGuard.removed.isEmpty
-            || changedDefaults || swappedAnnoyances {
+            || changedDefaults || migratedAnnoyances {
             Task { await self.saveFilterLists() }
         }
 
@@ -869,7 +872,7 @@ class AppFilterManager: ObservableObject {
         let signatureMismatch = storedSignature != currentSignature
         let needsRebuild = dataManager.hasCompletedOnboarding
             && (hasURLMigrations || selectedDeprecatedListWasRemoved || foldedCustomCopies || handedOverSelections || changedDefaults
-                || swappedAnnoyances || signatureMismatch)
+                || migratedAnnoyances || signatureMismatch)
         if needsRebuild {
             markNonSelectionChangesPending()
             if let delay = ContentBlockerService.automaticRebuildDelay(
