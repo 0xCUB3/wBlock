@@ -70,7 +70,6 @@ class FilterListLoader {
             "AdGuard Base Filter": ads,
             "AdGuard Mobile Filter": ads,
             "AdGuard Tracking Protection Filter": ["uBlock filters – Privacy", "EasyPrivacy"],
-            "AdGuard Cookie Notices": ["uBlock filters – Cookie Notices", "EasyList – Cookie Notices"],
             "AdGuard Russian filter": ["RU AdList"],
             "AdGuard Ukrainian filter": ["RU AdList"],
             "EasyList Germany": ["AdGuard German filter"],
@@ -79,7 +78,6 @@ class FilterListLoader {
             "EasyList Spanish": ["AdGuard Spanish/Portuguese filter"],
             "EasyDutch": ["AdGuard Dutch filter"],
             "AdGuard Popups": annoyances,
-            "AdGuard Other Annoyances": annoyances,
             "AdGuard Mobile App Banners": annoyances,
             "AdGuard Widgets": annoyances + ["EasyList – Chat Widgets"],
         ]
@@ -577,10 +575,19 @@ class FilterListLoader {
                 description: "Hides cookie notices, from the uBlock Origin project.",
                 trustLevel: "high"),
             FilterList(
+                id: UUID(), name: "AdGuard Cookie Notices",
+                url: Self.adGuardUBlockURL(18), category: FilterListCategory.annoyances,
+                description: "Hides cookie notices, from the AdGuard project."),
+            FilterList(
                 id: UUID(), name: "EasyList – Cookie Notices",
                 url: URL(string: "https://ublockorigin.github.io/uAssetsCDN/thirdparties/easylist-cookies.txt")!,
                 category: FilterListCategory.annoyances,
                 description: "Hides cookie notices, from the EasyList project."),
+            FilterList(
+                id: UUID(), name: "AdGuard Other Annoyances",
+                url: Self.adGuardUBlockURL(21), category: FilterListCategory.annoyances,
+                description:
+                    "Hides promotions, copy restrictions, and other annoyances, from the AdGuard project."),
             FilterList(
                 id: UUID(), name: "EasyList – Other Annoyances",
                 url: URL(string: "https://ublockorigin.github.io/uAssetsCDN/thirdparties/easylist-annoyances.txt")!,
@@ -670,19 +677,10 @@ class FilterListLoader {
                 url: Self.adGuardUBlockURL(11), category: FilterListCategory.ads,
                 description: "Blocks ads from mobile ad networks, from the AdGuard project."),
             FilterList(
-                id: UUID(), name: "AdGuard Cookie Notices",
-                url: Self.adGuardUBlockURL(18), category: FilterListCategory.annoyances,
-                description: "Hides cookie notices, from the AdGuard project."),
-            FilterList(
                 id: UUID(), name: "AdGuard Popups",
                 url: Self.adGuardUBlockURL(19), category: FilterListCategory.annoyances,
                 description:
                     "Hides pop-ups that sites don't need to work, from the AdGuard project."),
-            FilterList(
-                id: UUID(), name: "AdGuard Other Annoyances",
-                url: Self.adGuardUBlockURL(21), category: FilterListCategory.annoyances,
-                description:
-                    "Hides promotions, copy restrictions, and other annoyances, from the AdGuard project."),
             FilterList(
                 id: UUID(), name: "AdGuard Mobile App Banners",
                 url: Self.adGuardUBlockURL(20), category: FilterListCategory.annoyances,

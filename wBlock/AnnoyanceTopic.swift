@@ -49,6 +49,8 @@ enum AnnoyanceTopic: String, CaseIterable, Sendable {
 /// What onboarding and Annoyances Info offer in place of the whole list of
 /// annoyance lists, none of which is on by default (#1087). Each choice turns
 /// on the lists it names. Pop-ups & Banners turns on EasyList's lists only (#1091).
+/// Cookie Notices and General use AdGuard's lists, which are updated far more
+/// often than EasyList's (#1112).
 enum AnnoyanceChoice: String, CaseIterable, Identifiable, Sendable {
     case general, cookies, popups, social, chat, ai
 
@@ -82,11 +84,11 @@ enum AnnoyanceChoice: String, CaseIterable, Identifiable, Sendable {
 
     var filterNames: [String] {
         switch self {
-        case .cookies: ["uBlock filters – Cookie Notices", "EasyList – Cookie Notices"]
+        case .cookies: ["uBlock filters – Cookie Notices", "AdGuard Cookie Notices"]
         case .popups: ["EasyList – Newsletter Notices", "EasyList – Notifications"]
         case .social: ["EasyList – Social Widgets"]
         case .chat: ["EasyList – Chat Widgets"]
-        case .general: ["uBlock filters – Annoyances", "EasyList – Other Annoyances"]
+        case .general: ["uBlock filters – Annoyances", "AdGuard Other Annoyances"]
         case .ai: ["Stevo's AI Blocklist"]
         }
     }

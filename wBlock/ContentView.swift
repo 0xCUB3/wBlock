@@ -825,7 +825,8 @@ struct ContentView: View {
         }
     }
 
-    /// One section per topic. Only Other, where custom lists show, accepts moves.
+    /// One section per topic, each reorderable (#1112). Only Other, where custom
+    /// lists show, takes lists from other sections.
     private func annoyanceSections(_ filters: [FilterList]) -> [MacListSection] {
         var groups = AnnoyanceTopic.groups(filters)
         if !groups.contains(where: { $0.topic == .other }) { groups.append((.other, [])) }
@@ -842,7 +843,7 @@ struct ContentView: View {
                 rows: group.filters.map { filter in
                     MacListRow(filter.id, leavesSection: filter.isCustom) { filterRowView(for: filter) }
                 },
-                acceptsMoves: isOther, allowsCrossSectionMoves: isOther,
+                allowsCrossSectionMoves: isOther,
                 revealsOnlyWhileDragging: isOther && group.filters.isEmpty)
         }
     }
