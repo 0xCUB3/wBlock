@@ -190,6 +190,21 @@ private final class TestLoader: FilterListLoader {
         precondition(!after.last!.isSelected, "a custom list keeps its selection")
         precondition(FilterListLoader.recommendedFilterNames.isSuperset(of: FilterListLoader.defaultsTurnedOn), "changed defaults match the defaults")
 
+        // 4.0 alpha installs on EasyList's cookie and annoyance lists move to AdGuard's with their settings (#1112).
+        var alpha = defaults.map { list -> FilterList in
+            var list = list
+            list.isSelected = ["EasyList – Cookie Notices", "EasyList – Other Annoyances", "AdGuard Other Annoyances"].contains(list.name)
+            if list.name == "EasyList – Cookie Notices" { list.excludedSites = ["a.com"]; list.updatesAutomatically = false }
+            return list
+        }
+        alpha = FilterListLoader.swappingToAdGuardAnnoyances(alpha)
+        let alphaByName = Dictionary(alpha.map { ($0.name, $0) }, uniquingKeysWith: { a, _ in a })
+        precondition(Set(alpha.filter(\.isSelected).map(\.name)) == ["AdGuard Cookie Notices", "AdGuard Other Annoyances"], "annoyance swap")
+        precondition(alphaByName["AdGuard Cookie Notices"]!.excludedSites == ["a.com"]
+                     && !alphaByName["AdGuard Cookie Notices"]!.updatesAutomatically, "settings move with the swap")
+        precondition(FilterListLoader.swappingToAdGuardAnnoyances(alpha) == alpha, "the swap leaves AdGuard users alone")
+        precondition(Set(FilterListLoader.adGuardAnnoyanceSwaps.flatMap { [$0.key, $0.value] }).isSubset(of: Set(defaults.map(\.name))))
+
         // A renamed annoyance list would silently fall into Other.
         let topical = defaults.filter { $0.category == .annoyances && AnnoyanceTopic.topic(for: $0) != .other }
         precondition(topical.count == 14, "annoyance topics lost a list: \(topical.map(\.name))")

@@ -259,16 +259,18 @@ class AppFilterManager: ObservableObject {
 
     /// `.2` applies the changed defaults once more on 4.0.0 installs, with the handover above.
     private static let changedDefaultsKey = "wBlock.changedDefaults.4.0.2"
+    /// Its own key, so the defaults above don't come back on for people who turned them off.
+    private static let adGuardAnnoyancesKey = "wBlock.adGuardAnnoyances.4"
 
     /// Gives an existing install the defaults 4.0 changed after its first
-    /// builds, once per device. New installs start from the current defaults.
-    /// Returns whether the selection changed.
-    private func applyChangedDefaultsOnce(_ lists: inout [FilterList]) -> Bool {
+    /// builds, once per device and `key`. New installs start from the current
+    /// defaults. Returns whether the selection changed.
+    private func applyOnce(_ key: String, _ change: ([FilterList]) -> [FilterList], to lists: inout [FilterList]) -> Bool {
         let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
-        guard !defaults.bool(forKey: Self.changedDefaultsKey) else { return false }
-        defaults.set(true, forKey: Self.changedDefaultsKey)
+        guard !defaults.bool(forKey: key) else { return false }
+        defaults.set(true, forKey: key)
         guard dataManager.hasCompletedOnboarding else { return false }
-        let updated = FilterListLoader.applyingChangedDefaults(lists)
+        let updated = change(lists)
         guard updated != lists else { return false }
         lists = updated
         return true
@@ -815,7 +817,9 @@ class AppFilterManager: ObservableObject {
             migratedFilterLists, pending: adGuardHandoverPending, catalogURLs: defaultURLs).isEmpty
         let customCountBeforeHydrate = migratedFilterLists.filter(\.isCustom).count
         migratedFilterLists = FilterListSetup.hydrate(migratedFilterLists, defaults: defaultLists)
-        let changedDefaults = applyChangedDefaultsOnce(&migratedFilterLists)
+        let changedDefaults = applyOnce(Self.changedDefaultsKey, FilterListLoader.applyingChangedDefaults, to: &migratedFilterLists)
+        let swappedAnnoyances = applyOnce(Self.adGuardAnnoyancesKey, FilterListLoader.swappingToAdGuardAnnoyances,
+                                          to: &migratedFilterLists)
         let foldedCustomCopies = migratedFilterLists.filter(\.isCustom).count < customCountBeforeHydrate
         migratedFilterLists = deduplicateFilterIDs(migratedFilterLists)
         validatorClearIDs = migratedFilterLists.compactMap { filter in
@@ -833,7 +837,7 @@ class AppFilterManager: ObservableObject {
             return originalURL != filter.url
         }
         if hasURLMigrations || addedDefaultFilters || selectedDeprecatedListWasRemoved || foldedCustomCopies || !offAdGuard.removed.isEmpty
-            || changedDefaults {
+            || changedDefaults || swappedAnnoyances {
             Task { await self.saveFilterLists() }
         }
 
@@ -862,7 +866,7 @@ class AppFilterManager: ObservableObject {
         let signatureMismatch = storedSignature != currentSignature
         let needsRebuild = dataManager.hasCompletedOnboarding
             && (hasURLMigrations || selectedDeprecatedListWasRemoved || foldedCustomCopies || handedOverSelections || changedDefaults
-                || signatureMismatch)
+                || swappedAnnoyances || signatureMismatch)
         if needsRebuild {
             markNonSelectionChangesPending()
             if let delay = ContentBlockerService.automaticRebuildDelay(

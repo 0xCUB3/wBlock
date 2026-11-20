@@ -41,7 +41,7 @@ class FilterListLoader {
     ]
 
     /// Defaults wBlock 4.0 changed after its first builds, applied once to
-    /// existing installs (AppFilterManager.applyChangedDefaultsOnce).
+    /// existing installs (AppFilterManager.applyOnce).
     static let defaultsTurnedOn: Set<String> = ["AdGuard URL Tracking Protection Filter"]
 
     static func applyingChangedDefaults(_ lists: [FilterList]) -> [FilterList] {
@@ -51,6 +51,30 @@ class FilterListLoader {
             if defaultsTurnedOn.contains(list.name) { list.isSelected = true }
             return list
         }
+    }
+
+    /// EasyList annoyance lists whose choices now turn on AdGuard's (#1112).
+    static let adGuardAnnoyanceSwaps = [
+        "EasyList – Cookie Notices": "AdGuard Cookie Notices",
+        "EasyList – Other Annoyances": "AdGuard Other Annoyances",
+    ]
+
+    /// Each EasyList list that is on goes off, and its AdGuard list comes on
+    /// with its settings unless the user already runs it.
+    static func swappingToAdGuardAnnoyances(_ lists: [FilterList]) -> [FilterList] {
+        var lists = lists
+        for (easyList, adGuard) in adGuardAnnoyanceSwaps {
+            guard let old = lists.firstIndex(where: { !$0.isCustom && $0.name == easyList && $0.isSelected }),
+                  let new = lists.firstIndex(where: { !$0.isCustom && $0.name == adGuard }) else { continue }
+            lists[old].isSelected = false
+            guard !lists[new].isSelected else { continue }
+            lists[new].isSelected = true
+            lists[new].updatesAutomatically = lists[old].updatesAutomatically
+            lists[new].excludedSites = lists[old].excludedSites
+            lists[new].selectedSites = lists[old].selectedSites
+            lists[new].onlySelectedSites = lists[old].onlySelectedSites
+        }
+        return lists
     }
 
     // Lists that prompt an "essential protection" warning before they are disabled.
