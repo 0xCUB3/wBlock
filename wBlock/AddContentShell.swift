@@ -162,6 +162,60 @@ struct AddContentMetadataFields: View {
     }
 }
 
+/// Edit Filter List and a script's Edit Info share this sheet, so they keep
+/// the same controls (cameren, Discord). On iOS, Cancel and Save sit in the
+/// navigation bar like the Add sheets. macOS shows a header and a bottom Save.
+struct MetadataEditSheet<Content: View>: View {
+    let title: String
+    var isSaving = false
+    let canSave: Bool
+    let onSave: () -> Void
+    @ViewBuilder let content: () -> Content
+
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        Group {
+            #if os(iOS)
+            CompatibleNavigationStack {
+                form
+                    .navigationTitle(LocalizedStringKey(title))
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Cancel") { dismiss() }.disabled(isSaving)
+                        }
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button(action: onSave) { AddContentSubmitLabel(title: "Save", isLoading: isSaving) }
+                                .disabled(!canSave || isSaving)
+                        }
+                    }
+            }
+            #else
+            SheetContainer {
+                SheetHeader(title: title, isLoading: isSaving) { dismiss() }
+                form
+                SheetBottomToolbar {
+                    Spacer()
+                    Button("Save", action: onSave)
+                        .primaryActionButtonStyle()
+                        .disabled(!canSave || isSaving)
+                        .keyboardShortcut(.defaultAction)
+                }
+            }
+            .frame(width: 460, height: 360)
+            #endif
+        }
+        .interactiveDismissDisabled(isSaving)
+    }
+
+    private var form: some View {
+        Form { content() }
+            .groupedFormStyleCompat()
+            .disabled(isSaving)
+    }
+}
+
 /// Fills metadata fields from source headers until the user edits them.
 struct EditorMetadataAutofillState: Equatable {
     private(set) var lastAutofilledName = ""

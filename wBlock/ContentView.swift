@@ -2039,54 +2039,7 @@ struct EditCustomFilterView: View {
     }
 
     var body: some View {
-        Group {
-            #if os(iOS)
-                CompatibleNavigationStack {
-                    metadataForm
-                        .navigationTitle("Edit Filter List")
-                        .navigationBarTitleDisplayMode(.inline)
-                        .toolbar {
-                            ToolbarItem(placement: .cancellationAction) {
-                                Button("Cancel") { dismiss() }
-                            }
-                            ToolbarItem(placement: .confirmationAction) {
-                                Button("Save") { save() }
-                                    .disabled(!canSave)
-                            }
-                        }
-                }
-            #else
-                SheetContainer {
-                    SheetHeader(title: "Edit Filter List") {
-                        dismiss()
-                    }
-
-                    metadataForm
-
-                    SheetBottomToolbar {
-                        Spacer()
-                        saveButton
-                    }
-                }
-                // The size the userscript Edit Info sheet uses.
-                .frame(width: 460, height: 360)
-            #endif
-        }
-        .alert(
-            "Error",
-            isPresented: Binding(
-                get: { errorMessage != nil },
-                set: { _ in errorMessage = nil }
-            )
-        ) {
-            Button("OK", role: .cancel) { errorMessage = nil }
-        } message: {
-            Text(errorMessage ?? "")
-        }
-    }
-
-    private var metadataForm: some View {
-        Form {
+        MetadataEditSheet(title: "Edit Info", canSave: canSave, onSave: save) {
             Section {
                 AddContentMetadataFields(name: $name, description: $description,
                     category: $selectedCategory, categories: FilterListCategory.userListCategories,
@@ -2104,7 +2057,17 @@ struct EditCustomFilterView: View {
                 }
             }
         }
-        .groupedFormStyleCompat()
+        .alert(
+            "Error",
+            isPresented: Binding(
+                get: { errorMessage != nil },
+                set: { _ in errorMessage = nil }
+            )
+        ) {
+            Button("OK", role: .cancel) { errorMessage = nil }
+        } message: {
+            Text(errorMessage ?? "")
+        }
     }
 
     private var trimmedName: String {
@@ -2121,15 +2084,6 @@ struct EditCustomFilterView: View {
 
     private var canSave: Bool {
         !trimmedName.isEmpty && !isDuplicate
-    }
-
-    private var saveButton: some View {
-        Button("Save") {
-            save()
-        }
-        .primaryActionButtonStyle()
-        .disabled(!canSave)
-        .keyboardShortcut(.defaultAction)
     }
 
     private func save() {

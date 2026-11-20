@@ -1354,40 +1354,26 @@ private struct UserScriptMetadataSheet: View {
     }
 
     var body: some View {
-        SheetContainer {
-            SheetHeader(title: "Edit Info", isLoading: isSaving) { dismiss() }
-            Form {
-                Section {
-                    AddContentMetadataFields(name: $editedName, description: $editedDescription,
-                        category: $selectedCategory, categories: FilterListCategory.userScriptCategories)
-                    TextField("Author", text: $editedAuthor, prompt: Text("Author"))
-                        .labelsHidden()
-                        .disableAutocorrection(true)
-                    TextField("Homepage", text: $editedHomepage, prompt: Text("Homepage"))
-                        .labelsHidden()
-                        .disableAutocorrection(true)
-                        #if os(iOS)
-                        .keyboardType(.URL)
-                        .textInputAutocapitalization(.never)
-                        #endif
-                } footer: {
-                    if let validationMessage { Text(validationMessage).foregroundStyle(.red) }
-                }
-            }
-            .groupedFormStyleCompat()
-            .disabled(isSaving)
-            SheetBottomToolbar {
-                Spacer()
-                Button("Save") { Task { await save() } }
-                    .primaryActionButtonStyle()
-                    .disabled(isSaving || !hasChanges || editedName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    .keyboardShortcut(.defaultAction)
+        MetadataEditSheet(title: "Edit Info", isSaving: isSaving,
+                          canSave: hasChanges && !editedName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                          onSave: { Task { await save() } }) {
+            Section {
+                AddContentMetadataFields(name: $editedName, description: $editedDescription,
+                    category: $selectedCategory, categories: FilterListCategory.userScriptCategories)
+                TextField("Author", text: $editedAuthor, prompt: Text("Author"))
+                    .labelsHidden()
+                    .disableAutocorrection(true)
+                TextField("Homepage", text: $editedHomepage, prompt: Text("Homepage"))
+                    .labelsHidden()
+                    .disableAutocorrection(true)
+                    #if os(iOS)
+                    .keyboardType(.URL)
+                    .textInputAutocapitalization(.never)
+                    #endif
+            } footer: {
+                if let validationMessage { Text(validationMessage).foregroundStyle(.red) }
             }
         }
-        #if os(macOS)
-        .frame(width: 460, height: 360)
-        #endif
-        .interactiveDismissDisabled(isSaving)
     }
 
     private var hasChanges: Bool {
