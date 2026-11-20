@@ -602,7 +602,16 @@ final class CloudSyncManager: ObservableObject {
         return message.map { LocalizedStrings.text($0, comment: "iCloud sync error") } ?? ckError.localizedDescription
     }
 
-    private func uploadLatestPayload(trigger: String, withinSyncSession: Bool = false) async {
+    /// Start Fresh: turns sync on and replaces the iCloud setup with this
+    /// device's. Two-way sync lets iCloud win without a sync base, and a reset
+    /// clears the base, so the old setup came back (Dalsu, Strawberry, Discord).
+    func enableReplacingRemote() {
+        guard isCloudKitAvailable else { return }
+        setEnabled(true, startSync: false)
+        Task { await uploadLatestPayload(trigger: "StartFresh", replacingRemote: true) }
+    }
+
+    private func uploadLatestPayload(trigger: String, withinSyncSession: Bool = false, replacingRemote: Bool = false) async {
         guard isCloudKitAvailable else { return }
         guard isEnabled else { return }
 
@@ -635,7 +644,7 @@ final class CloudSyncManager: ObservableObject {
             // save notifications fired by non-sync-visible state (e.g. filter version/count
             // refreshes). Remote-newer changes are still converged by two-way sync.
             let preCheckPayload = try await stableLocalPayloadAndMutationBaseline().payload
-            if pendingRemoteScriptAdditions().isEmpty,
+            if !replacingRemote, pendingRemoteScriptAdditions().isEmpty,
                preCheckPayload.contentHash == defaults.string(forKey: Keys.lastUploadedHash) {
                 markUpToDate(from: preCheckPayload)
                 return
@@ -643,7 +652,7 @@ final class CloudSyncManager: ObservableObject {
 
             var record = try await fetchRecord() ?? CKRecord(recordType: recordType, recordID: recordID)
 
-            if let remotePayload = try? decodePayload(from: record) {
+            if !replacingRemote, let remotePayload = try? decodePayload(from: record) {
                 // Another device changed iCloud since this one last agreed with it. Merge that
                 // first; the apply schedules the upload of the merged state.
                 if let base = loadSyncBase(), remotePayload.contentHash != base.contentHash {

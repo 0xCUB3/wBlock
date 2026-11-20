@@ -148,7 +148,7 @@ struct SettingsView: View {
                 }
             }
             Button("Start Fresh") {
-                syncManager.setEnabled(true)
+                syncManager.enableReplacingRemote()
             }
             Button("Cancel", role: .cancel) {}
         } message: {

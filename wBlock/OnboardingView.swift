@@ -37,6 +37,8 @@ struct OnboardingView: View {
     @State private var hasProbedRemoteConfig: Bool = false
     @State private var remoteConfigUpdatedAtText: String?
     @State private var showRemoteConfigPrompt: Bool = false
+    /// Start Fresh at the iCloud prompt: turning sync on replaces the iCloud setup.
+    @State private var startsFreshInICloud = false
     @State private var isAdoptingRemoteConfig: Bool = false
     @State private var hasSeededUserscriptSelection = false
     @State private var manuallySelectedUserscripts: Set<String> = []
@@ -272,7 +274,7 @@ struct OnboardingView: View {
             Button("Use iCloud Setup") {
                 Task { await adoptRemoteICloudSetup() }
             }
-            Button("Start Fresh", role: .cancel) {}
+            Button("Start Fresh", role: .cancel) { startsFreshInICloud = true }
         } message: {
             if let remoteConfigUpdatedAtText {
                 Text(
@@ -905,7 +907,13 @@ struct OnboardingView: View {
         await dataManager.setHasEnabledPlatformExtension(hasEnabledAdvanced)
         await dataManager.setHasSetAllWebsitesPermission(hasEnabledAdvanced)
 
-        if !restoredFromBackup { CloudSyncManager.shared.setEnabled(wantsCloudSync) }
+        if !restoredFromBackup {
+            if wantsCloudSync && startsFreshInICloud {
+                CloudSyncManager.shared.enableReplacingRemote()
+            } else {
+                CloudSyncManager.shared.setEnabled(wantsCloudSync)
+            }
+        }
         guard await dataManager.setHasCompletedOnboarding(true) else { return }
         restoredFromBackup = false
 
