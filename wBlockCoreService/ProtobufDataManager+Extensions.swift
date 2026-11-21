@@ -225,8 +225,9 @@ extension ProtobufDataManager {
     }
     
     public func setWhitelistedDomains(_ domains: [String]) async {
+        let normalized = DisabledSitesNormalizer.normalizedDomains(from: domains)
         await persistWhitelistedDomains { disabledSites in
-            disabledSites = domains
+            disabledSites = normalized
             return true
         }
     }
@@ -340,12 +341,23 @@ extension ProtobufDataManager {
 
     /// One disk transaction keeps a failed save from changing only some components.
     @discardableResult
-    public func setAllSiteComponentsDisabled(_ disabled: Bool, onHost host: String) async -> Bool {
+    public func setAllSiteComponentsDisabled(
+        _ disabled: Bool,
+        onHost host: String,
+        removingExactWhitelistEntry: Bool = false
+    ) async -> Bool {
         guard let host = DisabledSitesNormalizer.normalizedDomain(host) else { return false }
         let saved = await updateDataImmediately { data in
-            guard !HostMatcher.isHostDisabled(host: host, disabledSites: data.whitelist.disabledSites) else { return }
-            Self.setSiteDisabled(disabled, onHost: host, in: &data.whitelist.filterDisabledSites, includingParents: true)
-            Self.setSiteDisabled(disabled, onHost: host, in: &data.whitelist.userScriptsDisabledSites, includingParents: true)
+            var whitelist = data.whitelist.disabledSites
+            if !disabled && removingExactWhitelistEntry {
+                whitelist.removeAll { $0 == host }
+            }
+            guard !HostMatcher.isHostDisabled(host: host, disabledSites: whitelist) else { return }
+            // Site Settings undo only restores overrides for this domain.
+            let removedExactWhitelistEntry = whitelist != data.whitelist.disabledSites
+            data.whitelist.disabledSites = whitelist
+            Self.setSiteDisabled(disabled, onHost: host, in: &data.whitelist.filterDisabledSites, includingParents: !removedExactWhitelistEntry)
+            Self.setSiteDisabled(disabled, onHost: host, in: &data.whitelist.userScriptsDisabledSites, includingParents: !removedExactWhitelistEntry)
             Self.setZapperRulesDisabled(disabled, forHost: host, in: &data)
             Self.setAutoplayAllowed(disabled, onHost: host, in: &data)
         }
