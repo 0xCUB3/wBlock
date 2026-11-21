@@ -258,8 +258,20 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
     /// 24 are unused) and 224. Third-party lists it redistributes stay untrusted.
     public var isTrustedSource: Bool {
         if isInlineUserList { return true }
-        let host = url.host?.lowercased() ?? "", path = url.path
-        let components = path.split(separator: "/").map(String.init)
+        guard url.scheme?.lowercased() == "https",
+              url.port == nil, url.user == nil, url.password == nil,
+              let rawEncodedPath = URLComponents(url: url, resolvingAgainstBaseURL: false)?.percentEncodedPath
+        else { return false }
+        let lowerEncoded = rawEncodedPath.lowercased()
+        guard !lowerEncoded.contains("%2e"), !lowerEncoded.contains("%2f"), !lowerEncoded.contains("%5c"),
+              !rawEncodedPath.contains("\\")
+        else { return false }
+        let components = url.path.split(separator: "/", omittingEmptySubsequences: false).dropFirst().map(String.init)
+        guard !components.isEmpty, !components.contains(""), !components.contains("."), !components.contains("..") else {
+            return false
+        }
+        let host = url.host?.lowercased() ?? ""
+        let path = "/" + components.joined(separator: "/")
         if let filename = components.last {
             let suffix: String
             if host == "filters.adtidy.org", components.count == 4,

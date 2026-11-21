@@ -22,6 +22,12 @@ private final class TestLoader: FilterListLoader {
             ("https://raw.githubusercontent.com/AdguardTeam/AdguardFilters/master/BaseFilter/sections/general.txt", true),
             ("https://filters.adtidy.org/extension/chromium/filters/101.txt", false),
             ("https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/118_optimized.txt", false),
+            ("https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/filters.txt", true),
+            ("https://cdn.jsdelivr.net/gh/uBlockOrigin/uAssetsCDN@main/filters/filters.txt", true),
+            ("http://ublockorigin.github.io/uAssets/filters/filters.txt", false),
+            ("https://raw.githubusercontent.com/uBlockOrigin/../other/repo/main/list.txt", false),
+            ("https://raw.githubusercontent.com/uBlockOrigin/%2e%2e/other/repo/main/list.txt", false),
+            ("https://cdn.jsdelivr.net/gh/uBlockOrigin/../other/repo/list.txt", false),
         ] {
             let list = FilterList(name: "test", url: URL(string: url)!, category: .ads)
             precondition(list.isTrustedSource == trusted, "incorrect trust for \(url)")
