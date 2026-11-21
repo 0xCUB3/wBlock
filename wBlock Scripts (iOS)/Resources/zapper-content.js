@@ -416,9 +416,9 @@
       let segment = currentTag;
 
       const currentId = current.id ? `#${cssEscape(current.id)}` : '';
-      if (currentId) {
-        const candidate = `${currentTag}${currentId}`;
-        if (isUniqueSelector(candidate)) return candidate;
+      // A unique id anchors the path collected below it, not the ancestor itself.
+      if (currentId && isUniqueSelector(`${currentTag}${currentId}`)) {
+        return [`${currentTag}${currentId}`, ...segments].join(' > ');
       }
 
       const currentClasses = Array.from(current.classList || []).filter(Boolean).slice(0, 1);
