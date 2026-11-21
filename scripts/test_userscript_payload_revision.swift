@@ -13,6 +13,9 @@ struct UserScriptPayloadRevisionRegression {
         try FileManager.default.createDirectory(at: scripts, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: root) }
         UserScriptManager.scriptsDirectoryOverrideForTesting = scripts
+        // Built-in scripts would otherwise download after launch and change the
+        // revision at an arbitrary point, which made this test flaky in CI.
+        UserScriptManager.skipsStartupDownloadsForTesting = true
 
         var script = UserScript(
             name: "Revision Probe",
@@ -38,6 +41,7 @@ struct UserScriptPayloadRevisionRegression {
         let restartedStore = ProtobufDataManager.makeIsolatedForTesting(dataDirectoryURL: root)
         await restartedStore.loadData()
         let restarted = UserScriptManager.makeIsolatedForTesting(dataManager: restartedStore)
+        await restarted.waitUntilReady()
         await restarted.refreshFromDiskForExecution()
         precondition(restarted.userScript(withId: script.id)?.isEnabled == true, "restarted host loaded the script")
         precondition(first.payloadMutationRevision == restarted.payloadMutationRevision,

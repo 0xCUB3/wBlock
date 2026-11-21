@@ -600,7 +600,9 @@ extension ProtobufDataManager {
             } else {
                 protoUserScript.clearMetadataHomepageOverride()
             }
-            protoUserScript.lastUpdated = Int64(Date().timeIntervalSince1970)
+            // The script's own update time. Stamping every save made a toggle that
+            // ends where it started look like a change (userscript-payload-revision).
+            protoUserScript.lastUpdated = userScript.lastUpdated.map(\.epochSeconds) ?? 0
             return protoUserScript
         }
         let explicit = Dictionary(uniqueKeysWithValues: explicitEnabledStates.map { ($0.key.uuidString, $0.value) })
@@ -657,7 +659,7 @@ extension ProtobufDataManager {
             } else {
                 record.clearMetadataHomepageOverride()
             }
-            record.lastUpdated = Int64(Date().timeIntervalSince1970)
+            record.lastUpdated = userScript.lastUpdated.map(\.epochSeconds) ?? 0
             return record
         }
         return await updateDataImmediately(userScriptsAreAuthoritative: true) { data in

@@ -659,7 +659,19 @@ public class UserScriptManager: ObservableObject {
     public static func makeIsolatedForTesting(dataManager: ProtobufDataManager) -> UserScriptManager {
         UserScriptManager(dataManager: dataManager)
     }
+
+    /// Skips the default-script downloads that start after launch. They reach the
+    /// live network and change the scripts at an arbitrary point in a test.
+    nonisolated(unsafe) public static var skipsStartupDownloadsForTesting = false
     #endif
+
+    private static var startsDownloadsAtLaunch: Bool {
+        #if DEBUG
+        return !skipsStartupDownloadsForTesting
+        #else
+        return true
+        #endif
+    }
 
     private let defaultUserScripts = BuiltInUserScripts.definitions
 
@@ -1187,7 +1199,7 @@ public class UserScriptManager: ObservableObject {
         logger.info("🔧 Setting up UserScriptManager...")
         checkAndCreateUserScriptsFolder()
         await loadUserScripts()
-        prefetchDefaultUserScriptMetadataIfNeeded()
+        if Self.startsDownloadsAtLaunch { prefetchDefaultUserScriptMetadataIfNeeded() }
         logger.info("✅ UserScriptManager initialized with \(self.userScripts.count) userscript(s)")
         statusDescription = "Initialized with \(userScripts.count) userscript(s)."
     }
@@ -1455,6 +1467,7 @@ public class UserScriptManager: ObservableObject {
     /// native request timed out (the "Dark Reader applies after ~15 seconds"
     /// reports). Run it after readiness so cold starts answer from disk.
     private func startDeferredStartupMaintenance() {
+        guard Self.startsDownloadsAtLaunch else { return }
         Task { @MainActor [weak self] in
             guard let self else { return }
             // Only download scripts that are enabled but missing content (e.g., from migration).
