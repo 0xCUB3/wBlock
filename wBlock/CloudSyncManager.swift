@@ -1,6 +1,5 @@
 import CloudKit
 import Combine
-import CryptoKit
 import Foundation
 import os.log
 import Security
@@ -887,6 +886,26 @@ final class CloudSyncManager: ObservableObject {
                 remote: remoteNoAutoplayAllowedSites
             ))
         }
+        if let remoteNoAutoplayBlockedSites = payload.noAutoplayBlockedSites {
+            await dataManager.setNoAutoplayBlockedSites(CloudSyncMerge.strings(
+                local: currentContent.noAutoplayBlockedSites ?? [],
+                baseline: localPayloadBaseline.noAutoplayBlockedSites ?? [],
+                remote: remoteNoAutoplayBlockedSites
+            ))
+        }
+        if let remoteUserScriptsDisabledSites = payload.userScriptsDisabledSites {
+            await dataManager.setUserScriptsDisabledSites(CloudSyncMerge.strings(
+                local: currentContent.userScriptsDisabledSites ?? [],
+                baseline: localPayloadBaseline.userScriptsDisabledSites ?? [],
+                remote: remoteUserScriptsDisabledSites
+            ))
+        }
+        applyRemoteCosmeticSites(payload, current: currentContent, baseline: localPayloadBaseline)
+        if currentSettings.isBlockedRequestCountEnabled == settingsBaseline.isBlockedRequestCountEnabled,
+           let remoteBlockedRequestCount = payload.settings.isBlockedRequestCountEnabled
+        {
+            await dataManager.setBlockedRequestCountEnabled(remoteBlockedRequestCount)
+        }
 
         // Merge each host's zapper selectors and the disabled hosts as sets.
         let mergedZapperRules: [String: [String]]
@@ -1008,6 +1027,7 @@ final class CloudSyncManager: ObservableObject {
                 && (left.languages ?? []) == (right.languages ?? [])
                 && left.resolvedUserProvidedName == right.resolvedUserProvidedName
                 && left.resolvedUserProvidedDescription == right.resolvedUserProvidedDescription
+                && left.siteScope == right.siteScope
         default: return false
         }
     }
@@ -1128,6 +1148,12 @@ final class CloudSyncManager: ObservableObject {
             baseline: baselineFilters.automaticUpdates ?? [:],
             remote: filters.automaticUpdates ?? liveAutomaticUpdates
         )
+        let liveSiteScopes = Self.builtInSiteScopes(filterLists)
+        let siteScopes = Self.mergeDictionary(
+            local: liveSiteScopes,
+            baseline: Self.canonicalSiteScopes(baselineFilters.siteScopes) ?? [:],
+            remote: Self.canonicalSiteScopes(filters.siteScopes) ?? liveSiteScopes
+        )
 
         let liveCustomURLs = Set(filterLists.filter(\.isCustom).map { $0.url.absoluteString })
         let urlsToDelete = CloudSyncCustomFilterReconciler.tombstonedURLsToDelete(
@@ -1146,6 +1172,11 @@ final class CloudSyncManager: ObservableObject {
             let url = FilterListLoader.canonicalFilterURLString(filterLists[index].url.absoluteString)
             if let enabled = automaticUpdates[url], filterLists[index].updatesAutomatically != enabled {
                 filterLists[index].updatesAutomatically = enabled
+                updateSettingsChanged = true
+            }
+            let scope = siteScopes[url] ?? .unscoped
+            if SyncPayload.SiteScope.of(filterLists[index]) != scope {
+                scope.apply(to: &filterLists[index])
                 updateSettingsChanged = true
             }
             guard knownURLs.contains(url), mayApplyRemoteSelection else { continue }
@@ -1212,6 +1243,10 @@ final class CloudSyncManager: ObservableObject {
                         filterLists[index].languages = languages
                         nonSelectionChanged = true
                     }
+                    if let scope = remoteCustom.siteScope, scope != SyncPayload.SiteScope.of(filterLists[index]) {
+                        scope.apply(to: &filterLists[index])
+                        nonSelectionChanged = true
+                    }
                     if mayApplyRemoteSelection, filterLists[index].isSelected != remoteCustom.isSelected {
                         filterLists[index].isSelected = remoteCustom.isSelected
                         selectionChanged = true
@@ -1219,7 +1254,7 @@ final class CloudSyncManager: ObservableObject {
                     continue
                 }
             }
-            filterLists.append(FilterList(
+            var added = FilterList(
                 id: Self.inlineUserListID(from: remoteCustom.url) ?? UUID(),
                 name: remoteCustom.name,
                 url: url,
@@ -1232,7 +1267,9 @@ final class CloudSyncManager: ObservableObject {
                 languages: remoteCustom.languages ?? [],
                 hasUserProvidedName: remoteCustom.resolvedUserProvidedName,
                 hasUserProvidedDescription: remoteCustom.resolvedUserProvidedDescription
-            ))
+            )
+            remoteCustom.siteScope?.apply(to: &added)
+            filterLists.append(added)
             nonSelectionChanged = true
         }
 
@@ -1260,6 +1297,29 @@ final class CloudSyncManager: ObservableObject {
             filters.filter { !$0.isCustom }.map { (filterOrderKey($0), $0.updatesAutomatically) },
             uniquingKeysWith: { _, latest in latest }
         )
+    }
+
+    /// Non-default site scopes of the built-in lists, keyed like `builtInAutomaticUpdates`.
+    private static func builtInSiteScopes(_ filters: [FilterList]) -> [String: SyncPayload.SiteScope] {
+        Dictionary(
+            filters.filter { !$0.isCustom }.compactMap { list -> (String, SyncPayload.SiteScope)? in
+                let scope = SyncPayload.SiteScope.of(list)
+                return scope == .unscoped ? nil : (filterOrderKey(list), scope)
+            },
+            uniquingKeysWith: { _, latest in latest }
+        )
+    }
+
+    /// Re-keys scopes by canonical URL so a 3.x address and its 4.0 successor match.
+    private static func canonicalSiteScopes(
+        _ scopes: [String: SyncPayload.SiteScope]?
+    ) -> [String: SyncPayload.SiteScope]? {
+        scopes.map { scopes in
+            Dictionary(
+                scopes.map { (FilterListLoader.canonicalFilterURLString($0.key), $0.value) },
+                uniquingKeysWith: { _, latest in latest }
+            )
+        }
     }
 
     private static func filterOrderKey(_ filter: FilterList) -> String {
@@ -1627,14 +1687,44 @@ final class CloudSyncManager: ObservableObject {
         return !keptUnsyncedLocalScripts.isEmpty
     }
 
+    /// Cosmetic site scope and generic rules each merge against their own baseline.
+    /// A missing remote value leaves the local value alone.
+    private func applyRemoteCosmeticSites(_ payload: SyncPayload, current: SyncPayload.Content, baseline: SyncPayload) {
+        let local = CosmeticFilteringPreference.sites()
+        var selected = local.selectedSites
+        var excluded = local.excludedSites
+        var onlySelected = local.onlySelectedSites
+        var generic = local.includesGeneric
+        if let remote = payload.cosmeticFilteringSites,
+           current.cosmeticFilteringSites == baseline.cosmeticFilteringSites {
+            selected = remote.selectedSites
+            excluded = remote.excludedSites
+            onlySelected = remote.onlySelectedSites
+        }
+        if let remoteGeneric = payload.genericCosmeticFilteringEnabled,
+           current.genericCosmeticFilteringEnabled == baseline.genericCosmeticFilteringEnabled {
+            generic = remoteGeneric
+        }
+        var merged = CosmeticFilteringPreference.Sites(
+            selectedSites: selected, excludedSites: excluded, includesGeneric: generic
+        )
+        merged.onlySelectedSites = onlySelected
+        CosmeticFilteringPreference.setSites(merged)
+    }
+
     private func applyRemoteZapperRules(_ zapperRules: [String: [String]], disabledDomains: [String]?) async {
-        let normalizedRemoteRules = Self.normalizedZapperRules(zapperRules)
+        var normalizedRemoteRules = Self.normalizedZapperRules(zapperRules)
+        // A host disabled with no selectors is in the disabled list only. It still exists
+        // remotely, so it must neither be deleted nor skipped when the flag is applied.
+        let disabledDomainSet = Set(Self.normalizedDisabledHosts(disabledDomains ?? []))
+        for host in disabledDomainSet where normalizedRemoteRules[host] == nil {
+            normalizedRemoteRules[host] = []
+        }
         let currentDomains = Set(dataManager.getZapperDomains())
         let remoteDomains = Set(normalizedRemoteRules.keys)
 
         var disabledByHost: [String: Bool]? = nil
-        if let disabledDomains {
-            let disabledDomainSet = Set(Self.normalizedDisabledHosts(disabledDomains))
+        if disabledDomains != nil {
             disabledByHost = Dictionary(
                 uniqueKeysWithValues: normalizedRemoteRules.keys.map { ($0, disabledDomainSet.contains($0)) }
             )
@@ -1914,7 +2004,7 @@ final class CloudSyncManager: ObservableObject {
     private func buildPayloadRefreshingSnapshot() async throws -> SyncPayload {
         let content = try await buildPayloadContent()
         let contentData = try? sortedJSONEncoder.encode(content)
-        let contentHash = contentData.map(Self.sha256Hex) ?? ""
+        let contentHash = contentData.map { DigestSupport.sha256Hex($0) } ?? ""
 
         if !contentHash.isEmpty, contentHash != defaults.string(forKey: Keys.lastLocalHash) {
             defaults.set(contentHash, forKey: Keys.lastLocalHash)
@@ -1938,7 +2028,11 @@ final class CloudSyncManager: ObservableObject {
             noAutoplayAllowedSites: content.noAutoplayAllowedSites,
             globalPrivacyControlEnabled: content.globalPrivacyControlEnabled,
             zapperRules: content.zapperRules,
-            zapperDisabledDomains: content.zapperDisabledDomains
+            zapperDisabledDomains: content.zapperDisabledDomains,
+            noAutoplayBlockedSites: content.noAutoplayBlockedSites,
+            userScriptsDisabledSites: content.userScriptsDisabledSites,
+            cosmeticFilteringSites: content.cosmeticFilteringSites,
+            genericCosmeticFilteringEnabled: content.genericCosmeticFilteringEnabled
         )
     }
 
@@ -1956,7 +2050,8 @@ final class CloudSyncManager: ObservableObject {
             excludedDefaultUserScriptURLs: dataManager.getExcludedDefaultUserScriptURLs().sorted(),
             tubeCleanerFeatures: TubeCleanerDeArrowPreference.features(),
             tubeCleanerDeArrow: TubeCleanerDeArrowPreference.settings(),
-            playerCleanerFeatures: PlayerCleanerPreference.features()
+            playerCleanerFeatures: PlayerCleanerPreference.features(),
+            isBlockedRequestCountEnabled: dataManager.isBlockedRequestCountEnabled
         )
 
         let filterLists = currentFilterLists()
@@ -1993,7 +2088,8 @@ final class CloudSyncManager: ObservableObject {
                     userProvidedName: list.hasUserProvidedName,
                     userProvidedDescription: list.hasUserProvidedDescription,
                     content: inlineContents[list.url.absoluteString],
-                    languages: list.languages.isEmpty ? nil : list.languages
+                    languages: list.languages.isEmpty ? nil : list.languages,
+                    siteScope: SyncPayload.SiteScope.of(list)
                 )
             }
             .sorted { $0.url < $1.url }
@@ -2008,7 +2104,8 @@ final class CloudSyncManager: ObservableObject {
             automaticUpdates: Self.builtInAutomaticUpdates(filterLists),
             order: ListDisplayOrder.exportedKeys(
                 FilterListPresentation.ordered(filterLists, order: ListDisplayOrder.cleared),
-                order: ListDisplayOrder.saved(ListDisplayOrder.filtersKey), key: Self.filterOrderKey)
+                order: ListDisplayOrder.saved(ListDisplayOrder.filtersKey), key: Self.filterOrderKey),
+            siteScopes: Self.builtInSiteScopes(filterLists)
         )
 
         let userScriptDisabledHosts = dataManager.getUserScriptDisabledHosts()
@@ -2097,6 +2194,7 @@ final class CloudSyncManager: ObservableObject {
             )
         )
         let zapperDisabledDomains = dataManager.getDisabledZapperDomains()
+        let cosmetic = CosmeticFilteringPreference.sites()
 
         return SyncPayload.Content(
             settings: settings,
@@ -2108,7 +2206,15 @@ final class CloudSyncManager: ObservableObject {
             noAutoplayAllowedSites: noAutoplayAllowedSites,
             globalPrivacyControlEnabled: dataManager.isGlobalPrivacyControlEnabled,
             zapperRules: zapperRules,
-            zapperDisabledDomains: zapperDisabledDomains
+            zapperDisabledDomains: zapperDisabledDomains,
+            noAutoplayBlockedSites: dataManager.noAutoplayBlockedSites.sorted(),
+            userScriptsDisabledSites: dataManager.userScriptsDisabledSites.sorted(),
+            cosmeticFilteringSites: SyncPayload.CosmeticSites(
+                selectedSites: cosmetic.selectedSites,
+                excludedSites: cosmetic.excludedSites,
+                onlySelectedSites: cosmetic.onlySelectedSites
+            ),
+            genericCosmeticFilteringEnabled: cosmetic.includesGeneric
         )
     }
 
@@ -2402,11 +2508,6 @@ final class CloudSyncManager: ObservableObject {
         defaults.set(remaining, forKey: Keys.pendingRemoteScriptAdditions)
     }
 
-    private static func sha256Hex(_ data: Data) -> String {
-        let digest = SHA256.hash(data: data)
-        return digest.map { String(format: "%02x", $0) }.joined()
-    }
-
     private static func inlineUserListID(from urlString: String) -> UUID? {
         guard let url = URL(string: urlString) else { return nil }
         guard url.scheme?.lowercased() == "wblock" else { return nil }
@@ -2639,6 +2740,34 @@ final class CloudSyncManager: ObservableObject {
 }
 
 private struct SyncPayload: Codable {
+    /// Where a list applies: every site except `excludedSites`, or only `selectedSites`.
+    struct SiteScope: Codable, Equatable {
+        var excludedSites: [String]
+        var selectedSites: [String]
+        var onlySelectedSites: Bool
+
+        static let unscoped = SiteScope(excludedSites: [], selectedSites: [], onlySelectedSites: false)
+
+        static func of(_ list: FilterList) -> SiteScope {
+            SiteScope(excludedSites: list.excludedSites, selectedSites: list.selectedSites,
+                      onlySelectedSites: list.onlySelectedSites)
+        }
+
+        func apply(to list: inout FilterList) {
+            list.excludedSites = excludedSites
+            list.selectedSites = selectedSites
+            list.onlySelectedSites = onlySelectedSites
+        }
+    }
+
+    /// Cosmetic site scope in the shape of `CosmeticFilteringPreference.Sites`. Generic
+    /// rules travel as `genericCosmeticFilteringEnabled`.
+    struct CosmeticSites: Codable, Equatable {
+        var selectedSites: [String]?
+        var excludedSites: [String]
+        var onlySelectedSites: Bool
+    }
+
     struct Settings: Codable {
         let selectedBlockingLevel: String
         let isBadgeCounterEnabled: Bool
@@ -2649,6 +2778,7 @@ private struct SyncPayload: Codable {
         var tubeCleanerFeatures: TubeCleanerDeArrowPreference.Features? = nil
         var tubeCleanerDeArrow: TubeCleanerDeArrowPreference.Settings? = nil
         var playerCleanerFeatures: PlayerCleanerPreference.Features? = nil
+        var isBlockedRequestCountEnabled: Bool? = nil
     }
 
     struct CustomFilterList: Codable {
@@ -2664,6 +2794,8 @@ private struct SyncPayload: Codable {
         let content: String?
         /// Languages a custom regional list covers; nil from older clients.
         var languages: [String]? = nil
+        /// Nil from older clients, which leaves the local scope alone.
+        var siteScope: SiteScope? = nil
 
         var resolvedUpdatesAutomatically: Bool { updatesAutomatically ?? true }
 
@@ -2695,6 +2827,9 @@ private struct SyncPayload: Codable {
         var automaticUpdates: [String: Bool]? = nil
         /// Canonical URLs in the user's display order; nil until they reorder.
         var order: [String]? = nil
+        /// Site scope of each built-in list keyed by canonical URL. Only non-default
+        /// scopes appear; nil from older clients, an empty map clears them.
+        var siteScopes: [String: SiteScope]? = nil
     }
 
     struct RemoteUserScript: Codable, Sendable {
@@ -2742,6 +2877,10 @@ private struct SyncPayload: Codable {
         let globalPrivacyControlEnabled: Bool?
         let zapperRules: [String: [String]]?
         let zapperDisabledDomains: [String]?
+        var noAutoplayBlockedSites: [String]? = nil
+        var userScriptsDisabledSites: [String]? = nil
+        var cosmeticFilteringSites: CosmeticSites? = nil
+        var genericCosmeticFilteringEnabled: Bool? = nil
     }
 
     let schemaVersion: Int
@@ -2757,6 +2896,10 @@ private struct SyncPayload: Codable {
     let globalPrivacyControlEnabled: Bool?
     let zapperRules: [String: [String]]?
     let zapperDisabledDomains: [String]?
+    var noAutoplayBlockedSites: [String]? = nil
+    var userScriptsDisabledSites: [String]? = nil
+    var cosmeticFilteringSites: CosmeticSites? = nil
+    var genericCosmeticFilteringEnabled: Bool? = nil
 }
 
 private extension SyncPayload.CustomFilterList {

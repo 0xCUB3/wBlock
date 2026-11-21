@@ -425,9 +425,7 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
 """
 
     private static func compatibilityRulesFingerprintHex() -> String {
-        let payload = "\(embeddedCompatibilityRulesVersion)\n\(embeddedCompatibilityRules)"
-        let digest = SHA256.hash(data: Data(payload.utf8))
-        return digest.map { String(format: "%02x", $0) }.joined()
+        DigestSupport.sha256Hex("\(embeddedCompatibilityRulesVersion)\n\(embeddedCompatibilityRules)")
     }
 
     /// Reads the default filter file contents from the main bundle.
@@ -849,10 +847,27 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
     /// Rewrites the blocker output without the rules WebKit rejects
     /// (ContentBlockerRuleRepair). False when WebKit accepts the output as is,
     /// so the failure had another cause.
-    private static func repairRejectedRules(outputURL: URL, containerURL: URL, targetRulesFilename: String) async -> Bool {
+    private static func repairRejectedRules(
+        outputURL: URL, containerURL: URL, targetRulesFilename: String, groupIdentifier: String
+    ) async -> Bool {
         guard let data = try? Data(contentsOf: outputURL),
               let repair = await ContentBlockerRuleRepair.repaired(data)
         else { return false }
+        // An unchanged apply rebuilds the output from the base cache, so the base
+        // drops the same rules too, or they come back on that apply.
+        let baseFilename = ContentBlockerIncrementalCache.baseRulesFilename(for: targetRulesFilename)
+        let baseURL = containerURL.appendingPathComponent(baseFilename)
+        if let baseData = try? Data(contentsOf: baseURL),
+           let baseRepair = await ContentBlockerRuleRepair.repaired(baseData),
+           let baseCount = ContentBlockerRuleArray.count(baseRepair.data) {
+            _ = try? withContentBlockerOutputLock(at: containerURL, targetRulesFilename: baseFilename) {
+                guard (try? Data(contentsOf: baseURL)) == baseData else { return }
+                try FilterArtifactStorage.write(baseRepair.data, to: baseURL)
+                // The count is written last: a crash before it leaves a mismatch, which reads as no base cache.
+                try saveBlockerListFile(contents: String(baseCount), groupIdentifier: groupIdentifier,
+                    filename: "\(baseFilename).count", containerURL: containerURL)
+            }
+        }
         let written = (try? withContentBlockerOutputLock(at: containerURL, targetRulesFilename: targetRulesFilename) {
             // Never overwrite an output another writer replaced meanwhile.
             guard (try? Data(contentsOf: outputURL)) == data else { return false }
@@ -990,7 +1005,8 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
             // a rejection: after a timeout, compiling the whole blocker again in
             // the app ran an iPad 6 out of memory and crashed it.
             if !reload.success, reload.rulesRejected, enabledInSafari != false, !repairedOutput,
-               await repairRejectedRules(outputURL: outputURL, containerURL: containerURL, targetRulesFilename: targetRulesFilename),
+               await repairRejectedRules(outputURL: outputURL, containerURL: containerURL,
+                                         targetRulesFilename: targetRulesFilename, groupIdentifier: groupIdentifier),
                let repaired = try? readReloadSnapshot(markerURL: markerURL, outputURL: outputURL, appGroupURL: containerURL),
                repaired.outputDigest != nil
             {
@@ -1485,6 +1501,17 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         containerURL: URL? = nil,
         isCancelled: (() -> Bool)? = nil
     ) throws -> ContentBlockerTargetOutcome {
+        // Outside an Apply nothing else drops the parsed lists, so this compile
+        // gets a scope of its own; its deinit drops them once the plan is gone.
+        if CompilationScope.current == nil {
+            return try CompilationScope.$current.withValue(CompilationScope()) {
+                try compileTargetRules(
+                    filters: filters, orderedSelectedFilters: orderedSelectedFilters, targetInfo: targetInfo,
+                    allTargets: allTargets, disabledSites: disabledSites, extraRulesText: extraRulesText,
+                    groupIdentifier: groupIdentifier, containerURL: containerURL, isCancelled: isCancelled
+                )
+            }
+        }
         if Task.isCancelled || isCancelled?() == true {
             throw CancellationError()
         }
@@ -1594,10 +1621,7 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
             storedSignature.flatMap { stored in hasCachedBase ? (current: current, stored: stored) : nil }
         }
         let knownFingerprint = reuse.flatMap { _ in
-            (try? String(contentsOf: containerURL.appendingPathComponent(fingerprintFilename), encoding: .utf8))
-                .flatMap { saved -> UInt64? in
-                    saved.hasSuffix(fingerprintIdentity) ? UInt64(saved.dropLast(fingerprintIdentity.count)) : nil
-                }
+            savedPlanFingerprint(rulesFilename: rulesFilename, containerURL: containerURL)
         }
         guard let compiled = try plan.compileTarget(targetIndex, extras: extrasJSON, knownFingerprint: knownFingerprint) else {
             guard let reuse else { preconditionFailure("the engine matches a fingerprint only when one was known") }
@@ -1635,8 +1659,8 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
             try saveBlockerListFile(contents: String(baseCount), groupIdentifier: groupIdentifier, filename: "\(baseFilename).count", containerURL: containerURL)
             try saveBlockerListFile(contents: advanced ?? "", groupIdentifier: groupIdentifier, filename: ContentBlockerIncrementalCache.baseAdvancedRulesFilename(for: rulesFilename), containerURL: containerURL)
             try saveBlockerListFile(contents: SafariVersionDetection.compilerIdentity, groupIdentifier: groupIdentifier, filename: ContentBlockerIncrementalCache.baseCompilerFilename(for: rulesFilename), containerURL: containerURL)
-            let digest = SHA256.hash(data: Data((requestJSON + extrasJSON + fingerprints).utf8)).map { String(format: "%02x", $0) }.joined()
-            try saveBlockerListFile(contents: digest, groupIdentifier: groupIdentifier, filename: "\(baseFilename).sha256", containerURL: containerURL)
+            try saveBlockerListFile(contents: DigestSupport.sha256Hex(requestJSON + extrasJSON + fingerprints),
+                groupIdentifier: groupIdentifier, filename: "\(baseFilename).sha256", containerURL: containerURL)
             if let fingerprint = compiled.stats.fingerprint {
                 try saveBlockerListFile(contents: fingerprint + fingerprintIdentity, groupIdentifier: groupIdentifier,
                     filename: fingerprintFilename, containerURL: containerURL)
@@ -1810,8 +1834,28 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         }
         let safari = SafariVersionDetection.current
         let limits = nativePlanLimits(disabledSites: disabledSites)
+        let extras: [[String: Any]] = [
+            ["text": embeddedCompatibilityRules, "trusted": true, "every_blocker": true],
+            ["text": extraRulesText ?? "", "trusted": true],
+            ["text": RemoveParamDNRRuleGenerator.savedRedirectCarveOuts(containerURL: containerURL), "trusted": false]
+        ]
+        let extrasJSON = String(decoding: try JSONSerialization.data(withJSONObject: extras), as: UTF8.self)
+        // The output each blocker was last saved with, so the engine can tell which blockers the selection changes.
+        let knownTargets: [Any] = allTargets.map { target -> Any in
+            guard let saved = savedTargetBase(rulesFilename: target.rulesFilename, containerURL: containerURL) else {
+                return NSNull()
+            }
+            // The engine compares these as 16 lowercase hex digits, its `{:016x}` form.
+            return ["fingerprint": String(format: "%016llx", saved.fingerprint), "rules": saved.rules, "bytes": saved.bytes] as [String: Any]
+        }
+        #if os(iOS)
+        let packOutputsMaxBytes = ProcessInfo.processInfo.physicalMemory <= 4 * 1024 * 1024 * 1024
+            ? 24 * 1024 * 1024 : 100 * 1024 * 1024
+        #else
+        let packOutputsMaxBytes = 100 * 1024 * 1024
+        #endif
         let request: [String: Any] = ["safari": [safari.major, safari.minor], "lists": lists, "targets": targets,
-            "retain": CompilationScope.keepsParsedLists,
+            "extras": extras, "known_targets": knownTargets, "cache_pack_outputs_max_bytes": packOutputsMaxBytes,
             // The engine moves blocks between blockers only when every blocker
             // is built from this same plan.
             "limits": ["rules": followsPlan ? limits.rules : 0, "bytes": limits.bytes],
@@ -1827,14 +1871,81 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         let planKey = "wbe-plan|\(SafariVersionDetection.compilerIdentity)|\(requestJSON)|\(fingerprints)"
         let makePlan = { try WBEngine.Plan(requestJSON: requestJSON) }
         let plan = try CompilationScope.current.map { try $0.memoized(planKey, makePlan) } ?? makePlan()
-        let extras: [[String: Any]] = [
-            ["text": embeddedCompatibilityRules, "trusted": true, "every_blocker": true],
-            ["text": extraRulesText ?? "", "trusted": true],
-            ["text": RemoveParamDNRRuleGenerator.savedRedirectCarveOuts(containerURL: containerURL), "trusted": false]
-        ]
-        let extrasJSON = String(decoding: try JSONSerialization.data(withJSONObject: extras), as: UTF8.self)
         return EnginePlanInputs(plan: plan, targetIndex: targetIndex, requestJSON: requestJSON,
                                 extrasJSON: extrasJSON, fingerprints: fingerprints)
+    }
+
+    /// The plan fingerprint a blocker's saved output was built with. The file holds it
+    /// with the compiler identity appended, so output from another compiler never matches.
+    static func savedPlanFingerprint(rulesFilename: String, containerURL: URL) -> UInt64? {
+        let identity = "|\(SafariVersionDetection.compilerIdentity)"
+        let fileURL = containerURL.appendingPathComponent(
+            "\(ContentBlockerIncrementalCache.baseRulesFilename(for: rulesFilename)).plan-fingerprint")
+        guard let saved = try? String(contentsOf: fileURL, encoding: .utf8), saved.hasSuffix(identity) else {
+            return nil
+        }
+        return UInt64(saved.dropLast(identity.count))
+    }
+
+    /// A blocker's saved base output: its plan fingerprint, rule count, and JSON size.
+    struct SavedTargetBase {
+        let fingerprint: UInt64
+        let rules: Int
+        let bytes: Int
+    }
+
+    static func savedTargetBase(rulesFilename: String, containerURL: URL) -> SavedTargetBase? {
+        guard let fingerprint = savedPlanFingerprint(rulesFilename: rulesFilename, containerURL: containerURL) else {
+            return nil
+        }
+        let baseFilename = ContentBlockerIncrementalCache.baseRulesFilename(for: rulesFilename)
+        guard let countText = try? String(
+                contentsOf: containerURL.appendingPathComponent("\(baseFilename).count"), encoding: .utf8),
+              let rules = Int(countText.trimmingCharacters(in: .whitespacesAndNewlines)),
+              let bytes = (try? FileManager.default.attributesOfItem(
+                  atPath: containerURL.appendingPathComponent(baseFilename).path))?[.size] as? Int
+        else { return nil }
+        return SavedTargetBase(fingerprint: fingerprint, rules: rules, bytes: bytes)
+    }
+
+    /// What a rebuild of `allTargets` would change, judged by each blocker's plan
+    /// fingerprint against the one saved with its output. Compiles nothing.
+    public struct TargetRebuildScan: Sendable {
+        /// Indices into `allTargets` whose saved output no longer matches the selection.
+        public let dirtyIndices: [Int]
+        /// Rule count of each blocker's saved output, nil where none was saved.
+        public let savedRuleCounts: [Int?]
+        /// False when the selection exceeds a limit, which a compile would refuse.
+        public let fitsLimits: Bool
+    }
+
+    public static func targetRebuildScan(
+        orderedSelectedFilters: [FilterList],
+        allTargets: [ContentBlockerTargetInfo],
+        disabledSites: [String],
+        extraRulesText: (ContentBlockerTargetInfo) -> String?,
+        groupIdentifier: String,
+        containerURL: URL
+    ) throws -> TargetRebuildScan {
+        let ordered = ContentBlockerMappingService.orderedForCompilation(orderedSelectedFilters)
+        let distribution = ContentBlockerMappingService.plan(selectedFilters: ordered, across: allTargets)
+        let cosmeticSites = CosmeticFilteringPreference.effectiveSites(groupIdentifier: groupIdentifier)
+        var dirty: [Int] = []
+        var savedRules: [Int?] = []
+        var fits = true
+        for (index, target) in allTargets.enumerated() {
+            let inputs = try enginePlanInputs(
+                filters: ContentBlockerIncrementalCache.canonicalFilterOrder(distribution.filtersByTarget[target] ?? []),
+                orderedSelectedFilters: ordered, targetInfo: target, allTargets: allTargets,
+                disabledSites: disabledSites, extraRulesText: extraRulesText(target),
+                cosmeticSites: cosmeticSites, containerURL: containerURL)
+            if inputs.plan.capacity != nil { fits = false }
+            let saved = savedTargetBase(rulesFilename: target.rulesFilename, containerURL: containerURL)
+            savedRules.append(saved?.rules)
+            let fingerprint = try inputs.plan.targetFingerprint(inputs.targetIndex, extras: inputs.extrasJSON)
+            if saved?.fingerprint != fingerprint { dirty.append(index) }
+        }
+        return TargetRebuildScan(dirtyIndices: dirty, savedRuleCounts: savedRules, fitsLimits: fits)
     }
 
     /// What the blockers would come to with one list turned off.
@@ -2147,6 +2258,6 @@ public nonisolated enum ContentBlockerChunkedHasher {
             chunkSize: chunkSize,
             isCancelled: isCancelled
         )
-        return hasher.finalize().map { String(format: "%02x", $0) }.joined()
+        return DigestSupport.hex(hasher.finalize())
     }
 }

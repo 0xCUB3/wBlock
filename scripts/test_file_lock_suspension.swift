@@ -44,6 +44,15 @@ final class FakeSystem: @unchecked Sendable {
     }
 }
 
+final class Counter: @unchecked Sendable {
+    private let lock = NSLock()
+    private var count = 0
+
+    func increment() { lock.lock(); count += 1; lock.unlock() }
+
+    var value: Int { lock.lock(); defer { lock.unlock() }; return count }
+}
+
 func expect(_ condition: Bool, _ message: String) {
     if !condition { print("FAIL: \(message)"); exit(1) }
 }
@@ -98,6 +107,28 @@ struct FileLockSuspensionTest {
         expect(second.tryLock(), "second holder gets it after release")
         second.unlock()
         expect(system.waitForActivities(0), "every attempt was balanced")
+
+        // A contended wait holds one activity for the whole wait, not one per poll.
+        // The holder has no suspension guard, so only the contender opens activities.
+        let holder = FileLock(filePath: path, suspension: nil)!
+        expect(holder.tryLock(), "holder takes the kernel lock")
+        let contender = FileLock(filePath: path, suspension: guardian)!
+        let opened = system.bodies.count
+        expect(!contender.lock(before: Date().addingTimeInterval(0.3)), "contended lock times out")
+        expect(system.bodies.count - opened == 1, "a contended wait opens one activity, not one per poll")
+        expect(system.waitForActivities(0), "the timed-out wait leaves no activity open")
+        holder.unlock()
+
+        // An activity that never starts must not let a lock through without its assertion.
+        let stalledBegins = Counter()
+        let stalled = SuspensionGuard { _ in stalledBegins.increment() }
+        let stalledLock = FileLock(filePath: otherPath, suspension: stalled)!
+        expect(!stalledLock.tryLock(), "no lock when the activity never starts")
+        let bare = FileLock(filePath: otherPath, suspension: nil)!
+        expect(bare.tryLock(), "the kernel lock was not taken by the refused attempt")
+        bare.unlock()
+        expect(!stalledLock.tryLock(), "a second attempt is refused the same way")
+        expect(stalledBegins.value == 2, "an abandoned activity is reopened on the next attempt")
 
         print("file lock suspension: ok")
     }

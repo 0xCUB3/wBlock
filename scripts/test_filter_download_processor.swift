@@ -290,6 +290,36 @@ struct FilterDownloadProcessorTests {
         expectEqual(try publishedURL.resourceValues(forKeys: [.isExcludedFromBackupKey]).isExcludedFromBackup, false,
                     "custom source must remain backup eligible after subsequent updates")
 
+        // A failed publication must not leave its staged .pending-filter file behind.
+        // A directory at the revision store's path makes the revision write fail.
+        let blockedContainerURL = containerURL.appendingPathComponent("blocked-revision-store", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: blockedContainerURL.appendingPathComponent(PendingFilterUpdateRevisions.filename, isDirectory: true),
+            withIntermediateDirectories: true
+        )
+        let blockedFilter = FilterList(
+            name: "Blocked",
+            url: URL(string: "https://blocked.example/list.txt")!,
+            category: .custom,
+            isCustom: true
+        )
+        do {
+            _ = try await FilterDownloadProcessor.processAndPublish(
+                data: Data("||blocked.example^\n".utf8),
+                sourceURL: blockedFilter.url,
+                filter: blockedFilter,
+                containerURL: blockedContainerURL,
+                etag: "blocked",
+                lastModified: nil,
+                urlSession: session
+            )
+            fatalError("publication with an unwritable revision store must fail")
+        } catch {
+            let leftovers = try FileManager.default.contentsOfDirectory(atPath: blockedContainerURL.path)
+                .filter { $0.hasPrefix(".pending-filter-") && $0.hasSuffix(".txt") }
+            expectEqual(leftovers, [], "a failed publication must remove its staged file")
+        }
+
         print("PASS")
     }
 

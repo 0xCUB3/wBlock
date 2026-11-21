@@ -939,7 +939,9 @@ extension SettingsView {
             let data: Data
             do {
                 let backup = try await BackupManager.createBackup(filterManager: filterManager)
-                data = try BackupManager.exportData(backup: backup)
+                data = try await Task.detached(priority: .utility) {
+                    try BackupManager.exportData(backup: backup)
+                }.value
             } catch {
                 await ConcurrentLogManager.shared.operation("settings-export", fields: ["result": "creation-failed"], level: .error)
                 backupStatusMessage = String.localizedStringWithFormat(
@@ -990,12 +992,13 @@ extension SettingsView {
             guard let url = urls.first else { return }
             Task { @MainActor in
                 do {
-                    try url.withSecurityScopedAccess { accessibleURL in
-                        let data = try Data(contentsOf: accessibleURL)
-                        let backup = try BackupManager.importData(from: data)
-                        pendingBackup = backup
-                        showingRestoreBackupConfirmation = true
-                    }
+                    let backup = try await Task.detached(priority: .utility) {
+                        try url.withSecurityScopedAccess { accessibleURL in
+                            try BackupManager.importData(from: Data(contentsOf: accessibleURL))
+                        }
+                    }.value
+                    pendingBackup = backup
+                    showingRestoreBackupConfirmation = true
                 } catch {
                     backupStatusMessage = String.localizedStringWithFormat(
                         NSLocalizedString("Failed to read backup: %@", comment: "Backup import read failure"),

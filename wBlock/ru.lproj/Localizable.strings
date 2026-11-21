@@ -1128,7 +1128,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "A new engine" = "Новый движок";
 "wBlock's new engine reads lists like uBlock Origin. Your enabled AdGuard lists were swapped for matching uBO lists." = "Новый движок wBlock читает списки так же, как uBlock Origin. Включённые списки AdGuard заменены соответствующими списками uBO.";
 "What stays the same" = "Что осталось прежним";
-"Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. AdGuard lists are still in Filters if you want them back." = "Твои списки, userscript'ы, правила Element Zapper и настройки сайтов не изменились. Списки AdGuard по-прежнему есть в разделе «Фильтры», если захочешь вернуть их.";
+"Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. Most AdGuard lists are still in Filters if you want them back." = "Твои списки, userscript'ы, правила Element Zapper и настройки сайтов не изменились. Большинство списков AdGuard по-прежнему есть в разделе «Фильтры», если захочешь вернуть их.";
+"Resuming blocking timed out. Try again." = "Не удалось возобновить блокировку: истекло время ожидания. Попробуй ещё раз.";
 "If a site breaks" = "Если сайт перестал работать";
 "Turn wBlock off for that site using the wBlock button in Safari, then report it on [GitHub](https://github.com/0xCUB3/wBlock/issues)." = "Выключи wBlock для этого сайта кнопкой wBlock в Safari и сообщи об этом на [GitHub](https://github.com/0xCUB3/wBlock/issues).";
 "Duplicate Filter Lists" = "Повторяющиеся списки фильтров";

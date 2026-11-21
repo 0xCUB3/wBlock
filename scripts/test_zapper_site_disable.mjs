@@ -30,6 +30,7 @@ function makeSandbox({ nativeRules, nativeDisabled, inheritedRules = [], localSt
     rules: [...nativeRules],
     disabled: nativeDisabled,
     setDisabledCalls: [],
+    syncCalls: [],
     getRulesCalls: 0,
     siteStateCalls: 0,
   };
@@ -76,7 +77,15 @@ function makeSandbox({ nativeRules, nativeDisabled, inheritedRules = [], localSt
         native.setDisabledCalls.push({ hostname: message.hostname, disabled: native.disabled });
         return { ok: true, disabled: native.disabled };
       case "syncZapperRules":
-        native.rules = [...(message.rules ?? [])];
+        native.syncCalls.push({ rules: message.rules, added: message.added, removed: message.removed });
+        // Mirrors WebExtensionRequestHandler: a delta removes, then adds; no delta replaces.
+        if (message.added !== undefined || message.removed !== undefined) {
+          const removed = new Set(message.removed ?? []);
+          native.rules = native.rules.filter((rule) => !removed.has(rule));
+          for (const rule of message.added ?? []) if (!native.rules.includes(rule)) native.rules.push(rule);
+        } else {
+          native.rules = [...(message.rules ?? [])];
+        }
         return { ok: true, rules: [...native.rules] };
       case "getSiteDisabledState":
         return { disabled: false };
@@ -251,6 +260,14 @@ function loadScript(sandbox) {
   check("clearing empty rules needs no site-state message", env.native.siteStateCalls === stateCalls);
 }
 
+// A top frame with no zapper rules has no reason to poll.
+{
+  const env = makeSandbox({ nativeRules: [], nativeDisabled: false });
+  loadScript(env.sandbox);
+  await new Promise((r) => setTimeout(r, 20));
+  check("top frame without zapper rules starts no fallback poll", env.intervalDelays.length === 0);
+}
+
 // An empty local configuration must still apply a parent domain's rules.
 {
   const env = makeSandbox({ nativeRules: [], inheritedRules: ['.parent-ad'], nativeDisabled: false, isTopFrame: false });
@@ -268,12 +285,12 @@ function loadScript(sandbox) {
   iframe.native.rules = [".fresh-frame"];
 
   const top = makeSandbox({
-    nativeRules: [],
+    nativeRules: [".top-rule"],
     nativeDisabled: false,
     broadcastReload: () => iframe.sendRuntimeMessage({ type: "wblock:zapper:reloadRules" }),
   });
   loadScript(top.sandbox);
-  await new Promise((r) => setTimeout(r, 20));
+  await waitFor(() => top.intervalCallbacks.length === 1);
   await top.intervalCallbacks[0]();
   const iframeRefreshed = await waitFor(() => (iframe.styleText() ?? "").includes(".fresh-frame"));
   check("coarse top-frame tick refreshes iframe rules through background broadcast", iframeRefreshed);
@@ -342,6 +359,62 @@ function loadScript(sandbox) {
   loadScript(env.sandbox);
   check('zapper consumes combined frame startup', await waitFor(() => (env.styleText() ?? '').includes('.startup-ad')));
   check('combined startup avoids a separate zapper request', env.native.getRulesCalls === 0);
+}
+
+// The Share Sheet shim must relay the delta, or native falls back to a full replace
+// and a stale Share Sheet list erases rules saved in Safari tabs.
+{
+  const posted = [];
+  const shimSandbox = {
+    WBLOCK_MESSAGES: {},
+    window: { webkit: { messageHandlers: { wblock: { postMessage: (message) => { posted.push(message); return { ok: true, rules: [] }; } } } } },
+  };
+  vm.createContext(shimSandbox);
+  vm.runInContext(readFileSync(path.join(repoRoot, "wBlock Zapper (iOS)", "zapper-share-shim.js"), "utf8"), shimSandbox, { filename: "zapper-share-shim.js" });
+  await shimSandbox.window.browser.runtime.sendMessage({
+    action: "wblock:zapper:syncRules", hostname: HOST, rules: [".kept"], added: [".kept"], removed: [".dropped"],
+  });
+  const forwarded = posted.at(-1);
+  check("share shim forwards added and removed to native syncZapperRules",
+    forwarded?.action === "syncZapperRules" && JSON.stringify(forwarded.added) === '[".kept"]'
+      && JSON.stringify(forwarded.removed) === '[".dropped"]' && JSON.stringify(forwarded.rules) === '[".kept"]');
+}
+
+// A Safari tab with a pending add must send only that delta when it reconciles.
+// Its cached list lacks the Share Sheet selector, which must survive on native.
+{
+  const env = makeSandbox({
+    nativeRules: [".share-rule"],
+    nativeDisabled: false,
+    localStorageSeed: {
+      [`wblock.zapperRules.v1:${HOST}`]: [".tab-rule"],
+      [`wblock.zapperMeta.v1:${HOST}`]: { pendingSync: true, pendingAdded: [".tab-rule"], pendingRemoved: [], lastLocalEditAt: 1 },
+    },
+  });
+  loadScript(env.sandbox);
+  await waitFor(() => env.native.syncCalls.length > 0);
+  check("pending add reconciles as a delta, not the stale full list",
+    env.native.syncCalls.length === 1 && JSON.stringify(env.native.syncCalls[0].added) === '[".tab-rule"]'
+      && JSON.stringify(env.native.syncCalls[0].removed) === "[]");
+  check("stale tab keeps the Share Sheet selector on native",
+    await waitFor(() => env.native.rules.includes(".share-rule") && env.native.rules.includes(".tab-rule")));
+  check("reconciled list reaches the page and the pending delta clears",
+    await waitFor(() => (env.styleText() ?? "").includes(".share-rule")
+      && env.storage.get(`wblock.zapperMeta.v1:${HOST}`)?.pendingSync === false));
+}
+
+// A stale cached list with no pending edit yields to native and is never pushed back.
+{
+  const env = makeSandbox({
+    nativeRules: [".share-rule"],
+    nativeDisabled: false,
+    localStorageSeed: { [`wblock.zapperRules.v1:${HOST}`]: [".stale-rule"] },
+  });
+  loadScript(env.sandbox);
+  check("stale cached list yields to native rules",
+    await waitFor(() => (env.styleText() ?? "").includes(".share-rule") && !(env.styleText() ?? "").includes(".stale-rule")));
+  check("stale cached list is never pushed back to native",
+    env.native.syncCalls.length === 0 && JSON.stringify(env.native.rules) === '[".share-rule"]');
 }
 
 if (failures > 0) {

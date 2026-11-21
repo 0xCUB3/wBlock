@@ -4,12 +4,25 @@ import Foundation
 /// reads them. Past the limit only the newest half is kept.
 enum SharedLogFile {
     static let byteLimit = 256 * 1024
+    /// Logging must never stall a caller, so a busy log drops the line instead.
+    private static let lockTimeoutSeconds: TimeInterval = 1
 
     static func append(_ line: String, to filename: String, containerURL: URL? = nil) {
         guard let url = (containerURL ?? FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value
         ))?.appendingPathComponent(filename) else { return }
         let data = Data("[\(Date().ISO8601Format())] \(line)\n".utf8)
+        // Other processes append to and trim the same file. The lock keeps a trim from
+        // dropping a line written meanwhile; a line that cannot get it in time is skipped.
+        _ = try? FileLock.withLock(
+            at: url.deletingLastPathComponent().appendingPathComponent(".\(filename).lock", isDirectory: false),
+            timeout: lockTimeoutSeconds
+        ) {
+            write(data, to: url)
+        }
+    }
+
+    private static func write(_ data: Data, to url: URL) {
         guard let handle = try? FileHandle(forWritingTo: url) else {
             try? data.write(to: url)
             return

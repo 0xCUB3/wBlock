@@ -162,6 +162,8 @@ struct SiteSettingsView: View {
         domains.formUnion(scriptsDisabled)
         domains.formUnion(exceptionsByScript.values.flatMap { $0 })
         domains.formUnion(dataManager.getUserScriptAllowedHosts().values.flatMap { $0 })
+        // A site whose only change is a switched-off Element Zapper still needs a row to re-enable from.
+        domains.formUnion(DisabledSitesNormalizer.normalizedDomains(from: dataManager.getDisabledZapperDomains()))
         // A list's `name.*` pattern is no single site, so it stays in the list's editor.
         domains.formUnion(filterManager.filterLists.flatMap(\.excludedSites).filter { !$0.hasSuffix(".*") })
 

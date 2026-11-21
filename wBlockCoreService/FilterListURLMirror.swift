@@ -4,7 +4,8 @@ import Foundation
 public enum FilterListURLMirror {
     public static func allowsFallback(primary: URL, fallback: URL) -> Bool {
         // A mirror must keep the same platform, list, and optimized/full variant.
-        if let source = registryPath(for: primary), let mirror = registryPath(for: fallback), source != mirror {
+        if let source = registryPath(for: primary), let mirror = registryPath(for: fallback),
+           source.lowercased() != mirror.lowercased() {
             return false
         }
         guard fallback.host?.lowercased() == "filters.adtidy.org" else { return true }
@@ -19,16 +20,25 @@ public enum FilterListURLMirror {
         return !(isSafariPrimary && fallbackPath.contains("/ios/filters/"))
     }
 
+    /// The URL's path as written, with percent-encoding kept. `URL.path` decodes
+    /// it, which breaks any URL rebuilt from a string.
+    private static func encodedPath(of url: URL) -> String? {
+        URLComponents(url: url, resolvingAgainstBaseURL: false)?.percentEncodedPath
+    }
+
+    /// The path after `/platforms`, in its original case, so a URL rebuilt from
+    /// it points at the same file. Matching is case-insensitive.
     private static func registryPath(for url: URL) -> String? {
+        guard let path = encodedPath(of: url) else { return nil }
         let host = url.host?.lowercased()
-        let path = url.path.lowercased()
+        let lowerPath = path.lowercased()
         if host == "filters.adtidy.org" {
             return ["/extension/safari/filters/", "/extension/ublock/filters/", "/ios/filters/", "/mac_v3/filters/"]
-                .contains { path.hasPrefix($0) } ? path : nil
+                .contains { lowerPath.hasPrefix($0) } ? path : nil
         }
-        guard (host == "raw.githubusercontent.com" && path.hasPrefix("/adguardteam/filtersregistry/"))
-            || (host == "cdn.jsdelivr.net" && path.hasPrefix("/gh/adguardteam/filtersregistry@")),
-              let range = path.range(of: "/platforms") else { return nil }
+        guard (host == "raw.githubusercontent.com" && lowerPath.hasPrefix("/adguardteam/filtersregistry/"))
+            || (host == "cdn.jsdelivr.net" && lowerPath.hasPrefix("/gh/adguardteam/filtersregistry@")),
+              let range = path.range(of: "/platforms", options: .caseInsensitive) else { return nil }
         return String(path[range.upperBound...])
     }
 
@@ -59,7 +69,8 @@ public enum FilterListURLMirror {
     /// lists under thirdparties/easylist/. Its sources keep their `!#include`
     /// lines, which resolve against the copy that served them.
     private static func uAssetsMirrors(for url: URL) -> [URL]? {
-        let host = url.host?.lowercased() ?? "", path = url.path
+        let host = url.host?.lowercased() ?? ""
+        guard let path = encodedPath(of: url) else { return nil }
         let cdnPrefixes = [("ublockorigin.github.io", "/uAssetsCDN/"), ("ublockorigin.pages.dev", "/"),
                            ("cdn.jsdelivr.net", "/gh/uBlockOrigin/uAssetsCDN@main/"),
                            ("raw.githubusercontent.com", "/uBlockOrigin/uAssetsCDN/main/")]
@@ -216,6 +227,7 @@ public enum FilterListURLMirror {
         if host == "filters.adtidy.org" {
             guard let path = registryPath(for: primary),
                   let registry = URL(string: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms\(path)") else { return [] }
+            // The registry path keeps the case and encoding of the primary URL.
             return ([registry] + fallbackURLs(for: registry)).filter {
                 $0 != primary && allowsFallback(primary: primary, fallback: $0)
             }
@@ -223,10 +235,7 @@ public enum FilterListURLMirror {
         if let uAssets = uAssetsMirrors(for: primary) { return uAssets }
         if host == "cdn.jsdelivr.net" { return [] }
         guard host == "raw.githubusercontent.com" else { return [] }
-        // Use the encoded path: URL.path decodes spaces and other characters, which
-        // would make the derived URL invalid when it is rebuilt from a string.
-        guard let encodedPath = URLComponents(url: primary, resolvingAgainstBaseURL: false)?.percentEncodedPath else { return [] }
-        let parts = encodedPath.split(separator: "/").map(String.init)
+        guard let parts = encodedPath(of: primary)?.split(separator: "/").map(String.init) else { return [] }
         guard parts.count >= 4 else { return [] }
         let user = parts[0], repo = parts[1], ref = parts[2]
         let path = parts.dropFirst(3).joined(separator: "/")
@@ -252,8 +261,9 @@ public enum FilterListURLMirror {
             let filename = String(jsPath.dropFirst(prefix.count))
             // filter 17 is not published at AdGuard's Safari endpoint.
             if filename != "filter.txt" && filename != "filter_17_TrackParam.txt"
-                && !(adtidyPath == "extension/safari/filters/" && filename.hasPrefix("17_")) {
-                result.insert(URL(string: "https://filters.adtidy.org/\(adtidyPath)\(filename)")!, at: 0)
+                && !(adtidyPath == "extension/safari/filters/" && filename.hasPrefix("17_")),
+               let adtidy = URL(string: "https://filters.adtidy.org/\(adtidyPath)\(filename)") {
+                result.insert(adtidy, at: 0)
             }
         }
         var seen = Set<URL>()

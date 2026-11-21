@@ -26,6 +26,8 @@ public enum StagedFilterDownloads {
 
     public static let filename = "staged-filter-updates.json"
     private static let lock = NSLock()
+    /// Callers can run on the main actor, so a contended lock must give up.
+    private static let lockTimeoutSeconds: TimeInterval = 2
 
     static func url(groupIdentifier: String = GroupIdentifier.shared.value) -> URL? {
         FileManager.default
@@ -121,6 +123,6 @@ public enum StagedFilterDownloads {
         defer { lock.unlock() }
         let lockURL = storeURL.deletingLastPathComponent()
             .appendingPathComponent(".\(filename).lock", isDirectory: false)
-        return try? FileLock.withLock(at: lockURL, timeout: .infinity, operation)
+        return try? FileLock.withLock(at: lockURL, timeout: lockTimeoutSeconds, operation)
     }
 }

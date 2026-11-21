@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import CryptoKit
 
 public enum FilterUpdateResponseStatus: Equatable {
     case notModified
@@ -17,10 +18,13 @@ public enum FilterUpdateResponseStatus: Equatable {
 
 public enum FilterUpdateResponseClassifier {
     /// `localData` is read only for a 200, so a 304 never loads the saved list.
+    /// See `contentDiffers` for `usedFallbackMirror` and `localNormalizedDigest`.
     public static func classify(
         statusCode: Int,
         responseData: Data?,
-        localData: @autoclosure () -> Data?
+        localData: @autoclosure () -> Data?,
+        usedFallbackMirror: Bool = false,
+        localNormalizedDigest: String? = nil
     ) -> FilterUpdateResponseStatus {
         switch statusCode {
         case 304:
@@ -29,7 +33,9 @@ public enum FilterUpdateResponseClassifier {
             guard let responseData, looksLikeFilterListData(responseData) else {
                 return .invalidContent
             }
-            return contentDiffers(remoteData: responseData, localData: localData())
+            return contentDiffers(
+                remoteData: responseData, localData: localData(),
+                usedFallbackMirror: usedFallbackMirror, localNormalizedDigest: localNormalizedDigest)
                 ? .updatedContent
                 : .unchangedContent
         default:
@@ -56,22 +62,44 @@ public enum FilterUpdateResponseClassifier {
         statusCode == 403 || statusCode == 404 || statusCode == 408 || statusCode == 429 || statusCode >= 500
     }
 
+    /// Lowercase hex SHA-256, the digest form stored with pending revisions.
+    public static func sha256Hex(_ data: Data) -> String {
+        SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+    }
+
     /// Saved lists are normalized (LF line endings, unsupported directives dropped),
     /// so the remote body is compared in that form. Comparing raw bytes reported
     /// every CRLF list as changed whenever the server sent a 200 instead of a 304.
-    /// A fallback mirror can lag the primary by a few releases; its older copy
-    /// is not an update, or applying it makes the next check offer the newer
-    /// one again.
-    public static func contentDiffers(remoteData: Data, localData: Data?) -> Bool {
+    ///
+    /// A fallback mirror can lag the primary by a few releases. Its older copy is
+    /// not an update, or applying it makes the next check offer the newer one
+    /// again, so the older-version guard applies only when `usedFallbackMirror`
+    /// is true. A rollback on the primary URL is applied.
+    ///
+    /// Saved lists that include other files are stored expanded, so their bytes
+    /// never equal the unexpanded remote body. When `localNormalizedDigest` (the
+    /// SHA-256 of the normalized, unexpanded body from the last download) is
+    /// given, it is compared instead of the saved bytes.
+    public static func contentDiffers(
+        remoteData: Data,
+        localData: Data?,
+        usedFallbackMirror: Bool = false,
+        localNormalizedDigest: String? = nil
+    ) -> Bool {
         guard let localData else { return true }
         guard remoteData != localData else { return false }
         let remoteText = String(decoding: remoteData, as: UTF8.self)
-        if let remoteVersion = numericVersion(remoteText),
+        if usedFallbackMirror,
+           let remoteVersion = numericVersion(remoteText),
            let localVersion = numericVersion(String(decoding: localData.prefix(16_384), as: UTF8.self)),
            UserScript.isVersionNewer(localVersion, than: remoteVersion) {
             return false
         }
-        return Data(FilterListContentProcessing.normalizedContent(from: remoteText).utf8) != localData
+        let normalized = Data(FilterListContentProcessing.normalizedContent(from: remoteText).utf8)
+        if let localNormalizedDigest {
+            return sha256Hex(normalized) != localNormalizedDigest
+        }
+        return normalized != localData
     }
 
     /// Only dotted numbers order reliably; some lists stamp a date instead.

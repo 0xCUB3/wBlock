@@ -24,6 +24,9 @@ struct ApplyRunSnapshot {
     let activeZapperRules: [String: [String]]
     let disabledZapperDomains: Set<String>
     let cosmeticSites: CosmeticFilteringPreference.Sites
+    /// Revisions the run compiled. A targeted reload retry acknowledges exactly this
+    /// snapshot, so revisions that arrived after the compile stay pending.
+    var pendingRevisionsSnapshot: PendingFilterUpdateRevisions.Snapshot?
 }
 
 @MainActor
@@ -99,6 +102,8 @@ class AppFilterManager: ObservableObject {
     // New ViewModel-based progress tracking
     @Published var applyProgressViewModel = ApplyChangesViewModel()
     private var validatorClearIDs: [String] = []
+    /// `applyOnce` keys whose changes setup has not saved yet.
+    private var onceKeysAwaitingSave: [String] = []
 
     /// Ensures only one apply/update pipeline runs at a time across entry points.
     /// Published so views that disable themselves while an apply runs refresh when it ends.
@@ -265,15 +270,23 @@ class AppFilterManager: ObservableObject {
 
     /// Gives an existing install the defaults 4.0 changed after its first
     /// builds, once per device and `key`. New installs start from the current
-    /// defaults. Returns whether the selection changed.
+    /// defaults. Returns whether the selection changed. A changed selection's
+    /// flag is set only after setup saves it (onceKeysAwaitingSave), so a crash
+    /// before the save applies the change again.
     private func applyOnce(_ key: String, _ change: ([FilterList]) -> [FilterList], to lists: inout [FilterList]) -> Bool {
         let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
         guard !defaults.bool(forKey: key) else { return false }
-        defaults.set(true, forKey: key)
-        guard dataManager.hasCompletedOnboarding else { return false }
+        guard dataManager.hasCompletedOnboarding else {
+            defaults.set(true, forKey: key)
+            return false
+        }
         let updated = change(lists)
-        guard updated != lists else { return false }
+        guard updated != lists else {
+            defaults.set(true, forKey: key)
+            return false
+        }
         lists = updated
+        onceKeysAwaitingSave.append(key)
         return true
     }
 
@@ -689,6 +702,9 @@ class AppFilterManager: ObservableObject {
         }
     }
 
+    /// Completes after the launch migration and setup() (URL and catalog
+    /// migrations, the handover, validator resets), so callers that need filter
+    /// state, such as the initial iCloud sync, wait here.
     func waitUntilReady() async {
         await setupTask?.value
     }
@@ -717,6 +733,10 @@ class AppFilterManager: ObservableObject {
         }
         for uuid in validatorClearIDs {
             await dataManager.setFilterValidators(uuid, etag: nil, lastModified: nil)
+        }
+        // 0 is the stored "never checked" value: getFilterLastChecked returns nil for it.
+        if !validatorClearIDs.isEmpty {
+            await dataManager.setFilterLastChecked(Dictionary(uniqueKeysWithValues: validatorClearIDs.map { ($0, Int64(0)) }))
         }
         validatorClearIDs.removeAll()
         // Schema and app-version changes cannot wait for the download throttle.
@@ -826,9 +846,20 @@ class AppFilterManager: ObservableObject {
         let migratedAnnoyances = swappedAnnoyances || generalOff
         let foldedCustomCopies = migratedFilterLists.filter(\.isCustom).count < customCountBeforeHydrate
         migratedFilterLists = deduplicateFilterIDs(migratedFilterLists)
-        validatorClearIDs = migratedFilterLists.compactMap { filter in
-            guard let originalURL = originalURLsByID[filter.id], originalURL != filter.url else { return nil }
-            return filter.id.uuidString
+        // A list whose URL moved keeps validators, a last check and a delta baseline
+        // from its old source. Clear them and its last update, so the planner treats
+        // the list as due and no old `! Diff-Path:` resolves against the new URL.
+        let containerURL = loader.getSharedContainerURL()
+        validatorClearIDs = []
+        for index in migratedFilterLists.indices {
+            let filter = migratedFilterLists[index]
+            guard let originalURL = originalURLsByID[filter.id], originalURL != filter.url else { continue }
+            validatorClearIDs.append(filter.id.uuidString)
+            migratedFilterLists[index].lastUpdated = nil
+            if let containerURL {
+                try? FileManager.default.removeItem(
+                    at: FilterListFetchChain.diffBaselineURL(for: filter, containerURL: containerURL))
+            }
         }
 
         filterLists = migratedFilterLists
@@ -836,13 +867,16 @@ class AppFilterManager: ObservableObject {
 
         // Persist URL migrations and newly added defaults. Catalog metadata is hydrated in memory
         // because older app data does not store languages/trust levels.
-        let hasURLMigrations = migratedFilterLists.contains { filter in
-            guard let originalURL = originalURLsByID[filter.id] else { return false }
-            return originalURL != filter.url
-        }
+        let hasURLMigrations = !validatorClearIDs.isEmpty
         if hasURLMigrations || addedDefaultFilters || selectedDeprecatedListWasRemoved || foldedCustomCopies || !offAdGuard.removed.isEmpty
             || changedDefaults || migratedAnnoyances {
-            Task { await self.saveFilterLists() }
+            let onceKeys = onceKeysAwaitingSave
+            onceKeysAwaitingSave = []
+            Task {
+                guard await self.saveFilterLists() else { return }
+                let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
+                for key in onceKeys { defaults.set(true, forKey: key) }
+            }
         }
 
         // Only load defaults if truly no data exists
@@ -986,7 +1020,6 @@ class AppFilterManager: ObservableObject {
             // Before the snapshot, so the run compiles the handed-over selection.
             await self.completeAdGuardHandover()
             self.prepareApplyRunState()
-            self.failedReloadTargets = []
             self.showingApplyProgressSheet = showProgress
 
             if downloadMissing ?? checkForUpdates, !self.missingFilters.isEmpty || !self.missingUserScripts.isEmpty {

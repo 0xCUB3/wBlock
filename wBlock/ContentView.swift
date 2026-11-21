@@ -1104,6 +1104,8 @@ struct ContentModifiers: ViewModifier {
     // Use explicit @State for sheet presentation to avoid computed binding issues
     @State private var showOnboardingSheet = false
     @State private var showUpgradeNotice = false
+    /// The notice is owed but waits for the apply sheet to close.
+    @State private var upgradeNoticeDue = false
     // Track if initial presentation check has been done to avoid re-showing after dismiss
     @State private var hasPerformedInitialCheck = false
     // False from the moment onboarding is requested until its dismissal finishes.
@@ -1158,6 +1160,9 @@ struct ContentModifiers: ViewModifier {
             }
             .onChangeCompat(of: showOnboardingSheet) { _, presented in
                 if presented { onboardingSettled = false }
+            }
+            .onChangeCompat(of: progressSheetPresented) { _, presented in
+                if !presented { presentUpgradeNoticeIfDue() }
             }
             .alert("Filters Auto-Disabled", isPresented: $filterManager.showingAutoDisabledAlert) {
                 Button("OK", role: .cancel) {}
@@ -1221,7 +1226,7 @@ struct ContentModifiers: ViewModifier {
             .onAppear {
                 filterManager.setUserScriptManager(userScriptManager)
             }
-            .sheet(isPresented: $showUpgradeNotice) { UpgradeNoticeView() }
+            .sheet(isPresented: $showUpgradeNotice, onDismiss: { UpgradeNotice.markSeen() }) { UpgradeNoticeView() }
             // Show onboarding/setup sheets only on initial load
             .task {
                 await dataManager.waitUntilLoaded()
@@ -1274,7 +1279,15 @@ struct ContentModifiers: ViewModifier {
         if !dataManager.hasCompletedOnboarding {
             showOnboardingSheet = true
         }
-        showUpgradeNotice = UpgradeNotice.shouldShowOnce(hasCompletedOnboarding: dataManager.hasCompletedOnboarding)
+        upgradeNoticeDue = UpgradeNotice.isPending(hasCompletedOnboarding: dataManager.hasCompletedOnboarding)
+        presentUpgradeNoticeIfDue()
+    }
+
+    /// SwiftUI shows one sheet at a time, so the notice waits while the apply sheet is up.
+    private func presentUpgradeNoticeIfDue() {
+        guard upgradeNoticeDue, !progressSheetPresented else { return }
+        upgradeNoticeDue = false
+        showUpgradeNotice = true
     }
 
     private func applyFilterChangesFromExternalTrigger() {

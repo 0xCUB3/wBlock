@@ -19,6 +19,96 @@ import os.log
 /// This handler receives requests from the extension's background page, looks up the
 /// appropriate blocking rules for the requested URL, and returns the configuration
 /// back to the extension.
+/// Collects a GM_xmlhttpRequest body from data-task chunks. The old per-byte
+/// async iteration suspended once per byte; a 25 MB reply meant 25 million awaits.
+/// Redirects still go through GMRedirectPolicyDelegate.
+private final class GMBoundedResponseLoader: NSObject, URLSessionDataDelegate, @unchecked Sendable {
+    enum Failure: LocalizedError {
+        case tooLarge
+        case invalidResponse
+
+        var errorDescription: String? {
+            switch self {
+            case .tooLarge: return "GM_xmlhttpRequest response is too large"
+            case .invalidResponse: return "Invalid HTTP response"
+            }
+        }
+    }
+
+    private let redirects: GMRedirectPolicyDelegate
+    private let maximumBytes: Int
+    private var continuation: CheckedContinuation<(HTTPURLResponse, Data), Error>?
+    private var response: HTTPURLResponse?
+    private var body = Data()
+    private var overflowed = false
+
+    private init(redirects: GMRedirectPolicyDelegate, maximumBytes: Int) {
+        self.redirects = redirects
+        self.maximumBytes = maximumBytes
+    }
+
+    static func load(
+        _ request: URLRequest,
+        configuration: URLSessionConfiguration,
+        redirects: GMRedirectPolicyDelegate,
+        maximumBytes: Int
+    ) async throws -> (HTTPURLResponse, Data) {
+        let loader = GMBoundedResponseLoader(redirects: redirects, maximumBytes: maximumBytes)
+        let session = URLSession(configuration: configuration, delegate: loader, delegateQueue: nil)
+        defer { session.finishTasksAndInvalidate() }
+        let task = session.dataTask(with: request)
+        return try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                loader.continuation = continuation
+                task.resume()
+            }
+        } onCancel: {
+            task.cancel()
+        }
+    }
+
+    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask,
+                    didReceive response: URLResponse,
+                    completionHandler: @escaping (URLSession.ResponseDisposition) -> Void) {
+        self.response = response as? HTTPURLResponse
+        // A declared length over the limit is refused before any body arrives.
+        overflowed = (self.response?.expectedContentLength ?? 0) > Int64(maximumBytes)
+        completionHandler(overflowed ? .cancel : .allow)
+    }
+
+    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
+        guard !overflowed else { return }
+        body.append(data)
+        if body.count > maximumBytes {
+            overflowed = true
+            dataTask.cancel()
+        }
+    }
+
+    func urlSession(_ session: URLSession, task: URLSessionTask,
+                    willPerformHTTPRedirection response: HTTPURLResponse,
+                    newRequest request: URLRequest,
+                    completionHandler: @escaping (URLRequest?) -> Void) {
+        redirects.urlSession(session, task: task, willPerformHTTPRedirection: response,
+                             newRequest: request, completionHandler: completionHandler)
+    }
+
+    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        let result: Result<(HTTPURLResponse, Data), Error>
+        if overflowed {
+            result = .failure(Failure.tooLarge)
+        } else if let error {
+            result = .failure(error)
+        } else if let response {
+            result = .success((response, body))
+        } else {
+            result = .failure(Failure.invalidResponse)
+        }
+        continuation?.resume(with: result)
+        continuation = nil
+    }
+}
+
 public enum WebExtensionRequestHandler {
     private static let sharedWebExtensionLogFilename = "web_extension.log"
     private static let userScriptPayloadDataCache = UserScriptPayloadDataCache()
@@ -28,7 +118,7 @@ public enum WebExtensionRequestHandler {
 
     // Reuse one stateless session. Native fallback must not inherit the app
     // cookie jar or credential storage; it cannot access Safari's cookie store.
-    private static let gmDefaultSession: URLSession = {
+    private static let gmDefaultConfiguration: URLSessionConfiguration = {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.httpCookieStorage = nil
         configuration.httpShouldSetCookies = false
@@ -36,7 +126,7 @@ public enum WebExtensionRequestHandler {
         configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
         configuration.urlCache = nil
         configuration.timeoutIntervalForResource = 300
-        return URLSession(configuration: configuration)
+        return configuration
     }()
 
     private static func emptyRulesPayload(disabled: Bool, paused: Bool) -> [String: Any] {
@@ -454,7 +544,7 @@ public enum WebExtensionRequestHandler {
 
         Task { @MainActor in
             await ProtobufDataManager.shared.waitUntilLoaded()
-            _ = await ProtobufDataManager.shared.refreshFromDiskIfModified(forceRead: true)
+            _ = await ProtobufDataManager.shared.refreshFromDiskIfModified()
             if allComponents && (BlockingPauseStore.isPaused()
                 || HostMatcher.isHostDisabled(host: normalizedHost, disabledSites: ProtobufDataManager.shared.disabledSites)) {
                 context.completeRequest(returningItems: [createResponse(with: ["ok": false, "error": "Site controls are locked"])])
@@ -737,7 +827,7 @@ public enum WebExtensionRequestHandler {
         let limit = message["limit"] as? Int ?? 50
         Task { @MainActor in
             await ProtobufDataManager.shared.waitUntilLoaded()
-            _ = await ProtobufDataManager.shared.refreshFromDiskIfModified(forceRead: true)
+            _ = await ProtobufDataManager.shared.refreshFromDiskIfModified()
             let payload = RemoveParamDNRRuleGenerator.loadBlockedCountRulesPayload(
                 groupIdentifier: GroupIdentifier.shared.value,
                 enabled: ProtobufDataManager.shared.isBlockedRequestCountEnabled && !BlockingPauseStore.isPaused(.filters),
@@ -901,6 +991,12 @@ public enum WebExtensionRequestHandler {
     /// staged-downloads marker.
     private static func handleMaybeStageFilterUpdates(context: NSExtensionContext) {
         Task {
+            // Until the app has applied this version once, its first apply owns the
+            // downloads, so nothing is staged and no headless launch follows.
+            guard SharedAutoUpdateManager.appHasAppliedCurrentVersion() else {
+                context.completeRequest(returningItems: [createResponse(with: ["ok": true, "skipped": "awaiting_app_upgrade"])])
+                return
+            }
             let outcome = await SharedAutoUpdateManager.shared.stageFilterDownloadsFromExtension(trigger: "SafariBrowsing")
             var payload: [String: Any] = ["ok": true]
             switch outcome {
@@ -1398,7 +1494,7 @@ public enum WebExtensionRequestHandler {
         let disabled = message["disabled"] as? Bool ?? false
         Task { @MainActor in
             await ProtobufDataManager.shared.waitUntilLoaded()
-            _ = await ProtobufDataManager.shared.refreshFromDiskIfModified(forceRead: true)
+            _ = await ProtobufDataManager.shared.refreshFromDiskIfModified()
             let ok = await ProtobufDataManager.shared.setUserScriptsDisabled(disabled, onHost: host)
             let response = createResponse(with: [
                 "ok": ok,
@@ -1607,8 +1703,6 @@ public enum WebExtensionRequestHandler {
         timeoutMilliseconds: Double
     ) async -> [String: Any?] {
         let timeoutSeconds = timeoutMilliseconds > 0 ? max(timeoutMilliseconds / 1000, 0.1) : 30
-        let session = gmDefaultSession
-
         var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: timeoutSeconds)
         request.httpMethod = method
         headers.forEach { key, value in
@@ -1622,26 +1716,13 @@ public enum WebExtensionRequestHandler {
         }
 
         do {
-            let delegate = GMRedirectPolicyDelegate(policy: policy, redirect: redirect)
-            let (bytes, response) = try await session.bytes(for: request, delegate: delegate)
-            guard let httpResponse = response as? HTTPURLResponse else {
-                return ["error": "Invalid HTTP response"]
-            }
+            let (httpResponse, data) = try await GMBoundedResponseLoader.load(
+                request,
+                configuration: gmDefaultConfiguration,
+                redirects: GMRedirectPolicyDelegate(policy: policy, redirect: redirect),
+                maximumBytes: maximumGMXHRResponseBytes
+            )
             let expectedLength = httpResponse.expectedContentLength
-            if expectedLength > Int64(maximumGMXHRResponseBytes) {
-                return ["error": "GM_xmlhttpRequest response is too large"]
-            }
-            var data = Data()
-            data.reserveCapacity(min(
-                maximumGMXHRResponseBytes,
-                expectedLength > 0 ? Int(expectedLength) : 64 * 1024
-            ))
-            for try await byte in bytes {
-                if data.count >= maximumGMXHRResponseBytes {
-                    return ["error": "GM_xmlhttpRequest response is too large"]
-                }
-                data.append(byte)
-            }
 
             let responseHeaders = httpResponse.allHeaderFields
                 .compactMap { entry -> String? in
@@ -1749,10 +1830,21 @@ public enum WebExtensionRequestHandler {
 
         Task { @MainActor in
             await ProtobufDataManager.shared.waitUntilLoaded()
-            _ = await ProtobufDataManager.shared.refreshFromDiskIfModified(forceRead: true)
+            _ = await ProtobufDataManager.shared.refreshFromDiskIfModified()
 
-            let incoming = message["rules"] as? [String] ?? []
-            if let rules = await ProtobufDataManager.shared.synchronizeZapperRules(forHost: hostname, rules: incoming) {
+            // A delta touches only the selectors that changed, so a tab with a
+            // stale list cannot wipe out rules added elsewhere (Share Sheet, another tab).
+            let added = message["added"] as? [String]
+            let removed = message["removed"] as? [String]
+            let rules: [String]?
+            if added != nil || removed != nil {
+                rules = await ProtobufDataManager.shared.applyZapperRuleDelta(
+                    forHost: hostname, added: added ?? [], removed: removed ?? [])
+            } else {
+                let incoming = message["rules"] as? [String] ?? []
+                rules = await ProtobufDataManager.shared.synchronizeZapperRules(forHost: hostname, rules: incoming)
+            }
+            if let rules {
                 let response = createResponse(with: ["ok": true, "rules": rules])
                 context.completeRequest(returningItems: [response])
             } else {
@@ -1801,7 +1893,7 @@ public enum WebExtensionRequestHandler {
         let disabled = message["disabled"] as? Bool ?? false
         Task { @MainActor in
             await ProtobufDataManager.shared.waitUntilLoaded()
-            _ = await ProtobufDataManager.shared.refreshFromDiskIfModified(forceRead: true)
+            _ = await ProtobufDataManager.shared.refreshFromDiskIfModified()
             await ProtobufDataManager.shared.setZapperRulesDisabled(disabled, forHost: hostname)
             let response = createResponse(with: [
                 "ok": true,
@@ -1815,7 +1907,7 @@ public enum WebExtensionRequestHandler {
         let host = (message["host"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         Task { @MainActor in
             await ProtobufDataManager.shared.waitUntilLoaded()
-            _ = await ProtobufDataManager.shared.refreshFromDiskIfModified(forceRead: true)
+            _ = await ProtobufDataManager.shared.refreshFromDiskIfModified()
             // With a host, `enabled` becomes the effective per-site answer
             // (gate armed) and `siteAllowed` its complement, so the gate and
             // popup need no knowledge of the override lists (#835). Without a
@@ -1839,7 +1931,7 @@ public enum WebExtensionRequestHandler {
     private static func handleGetGlobalPrivacyControlState(context: NSExtensionContext) {
         Task { @MainActor in
             await ProtobufDataManager.shared.waitUntilLoaded()
-            _ = await ProtobufDataManager.shared.refreshFromDiskIfModified(forceRead: true)
+            _ = await ProtobufDataManager.shared.refreshFromDiskIfModified()
             let response = createResponse(with: [
                 "enabled": ProtobufDataManager.shared.isGlobalPrivacyControlEnabled
                     && !ProtobufDataManager.safariHasGlobalPrivacyControl,
@@ -1852,7 +1944,7 @@ public enum WebExtensionRequestHandler {
         let enabled = message["enabled"] as? Bool ?? false
         Task { @MainActor in
             await ProtobufDataManager.shared.waitUntilLoaded()
-            _ = await ProtobufDataManager.shared.refreshFromDiskIfModified(forceRead: true)
+            _ = await ProtobufDataManager.shared.refreshFromDiskIfModified()
             let persisted = await ProtobufDataManager.shared.setNoAutoplayEnabled(enabled)
             var payload: [String: Any?] = [
                 "ok": persisted,
@@ -1883,7 +1975,7 @@ public enum WebExtensionRequestHandler {
         let allowed = message["allowed"] as? Bool ?? false
         Task { @MainActor in
             await ProtobufDataManager.shared.waitUntilLoaded()
-            _ = await ProtobufDataManager.shared.refreshFromDiskIfModified(forceRead: true)
+            _ = await ProtobufDataManager.shared.refreshFromDiskIfModified()
             let persisted = await ProtobufDataManager.shared.setAutoplayAllowed(allowed, onHost: host)
             let siteAllowed = ProtobufDataManager.shared.isAutoplayAllowed(onHost: host)
             var payload: [String: Any?] = [

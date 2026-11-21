@@ -74,6 +74,15 @@ import wBlockCoreService
         let ruAdList = URL(string: "https://cdn.jsdelivr.net/gh/dimisa-RUAdList/RUAdListCDN@main/lists/ruadlist.ubo.min.txt")!
         check(FilterListURLMirror.fallbackURLs(for: ruAdList).first?.absoluteString
               == "https://raw.githubusercontent.com/easylist/ruadlist/master/RuAdList-uBO.txt", "RU AdList falls back to its source first")
+        // Mixed-case and percent-encoded paths must survive the rebuild from a string.
+        let mixedCase = URL(string: "https://filters.adtidy.org/mac_v3/filters/Mixed_Case.txt")!
+        check(FilterListURLMirror.fallbackURLs(for: mixedCase).first?.absoluteString
+              == "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/mac_v3/filters/Mixed_Case.txt",
+              "adtidy registry mirror keeps the file name's case")
+        let encodedEasyList = URL(string: "https://ublockorigin.github.io/uAssetsCDN/thirdparties/Some%20List.txt")!
+        check(FilterListURLMirror.fallbackURLs(for: encodedEasyList).map(\.absoluteString).contains(
+            "https://ublockorigin.github.io/uAssets/thirdparties/Some%20List.txt"),
+              "uAssets mirror keeps percent-encoding")
         print("PASS")
     }
 }

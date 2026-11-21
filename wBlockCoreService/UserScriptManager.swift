@@ -846,7 +846,7 @@ public class UserScriptManager: ObservableObject {
     /// rather than relying on this process's cached array or revision counter.
     public func refreshFromDiskForExecution() async {
         await waitUntilReady()
-        _ = await dataManager.refreshFromDiskIfModified(forceRead: true)
+        _ = await dataManager.refreshFromDiskIfModified()
         let diskScripts = dataManager.getUserScripts(includePersistedContent: true)
         let hydratedScripts = await hydrateUserScriptsFromDisk(
             diskScripts,

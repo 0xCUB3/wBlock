@@ -7,12 +7,21 @@ enum UpgradeNotice {
     private static let seenKey = "wBlock.upgradeNotice.4.0"
     private static var defaults: UserDefaults { UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard }
 
-    /// Marks the notice seen and reports whether this launch should show it:
-    /// the first launch of 4.0 on a device that finished onboarding earlier.
-    static func shouldShowOnce(hasCompletedOnboarding: Bool) -> Bool {
+    /// Whether the notice is still owed: a device that finished onboarding before
+    /// 4.0 and has not dismissed it. A new install never sees it, so it is marked
+    /// seen here.
+    static func isPending(hasCompletedOnboarding: Bool) -> Bool {
         guard !defaults.bool(forKey: seenKey) else { return false }
+        guard hasCompletedOnboarding else {
+            markSeen()
+            return false
+        }
+        return true
+    }
+
+    /// Called on dismissal, so a notice that never got on screen stays pending.
+    static func markSeen() {
         defaults.set(true, forKey: seenKey)
-        return hasCompletedOnboarding
     }
 }
 
@@ -25,7 +34,7 @@ struct UpgradeNoticeView: View {
         ("shield.lefthalf.filled", "A new engine",
          "wBlock's new engine reads lists like uBlock Origin. Your enabled AdGuard lists were swapped for matching uBO lists."),
         ("checkmark.circle", "What stays the same",
-         "Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. AdGuard lists are still in Filters if you want them back."),
+         "Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. Most AdGuard lists are still in Filters if you want them back."),
         ("wrench.and.screwdriver", "If a site breaks",
          "Turn wBlock off for that site using the wBlock button in Safari, then report it on [GitHub](https://github.com/0xCUB3/wBlock/issues)."),
     ]

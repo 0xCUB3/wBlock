@@ -100,6 +100,26 @@ public final class SuspensionShield: @unchecked Sendable {
 
 /// Actor to ensure we don't run overlapping auto-updates from multiple extension
 /// entry points concurrently.
+/// Moving average of what a blocker costs to compile and reload, measured on each real rebuild.
+/// A background run without a full rebuild uses it to judge whether one blocker fits the time left.
+private enum BlockerRebuildCost {
+    private static var defaults: UserDefaults? { UserDefaults(suiteName: GroupIdentifier.shared.value) }
+
+    private static func key(_ bundleIdentifier: String) -> String {
+        "rebuildCostSeconds.\(bundleIdentifier)"
+    }
+
+    static func expected(for bundleIdentifier: String) -> TimeInterval? {
+        defaults?.object(forKey: key(bundleIdentifier)) as? TimeInterval
+    }
+
+    static func record(seconds: TimeInterval, for bundleIdentifier: String) {
+        guard let defaults else { return }
+        let previous = expected(for: bundleIdentifier)
+        defaults.set(previous.map { $0 * 0.7 + seconds * 0.3 } ?? seconds, forKey: key(bundleIdentifier))
+    }
+}
+
 public actor SharedAutoUpdateManager {
     public static let shared = SharedAutoUpdateManager()
 
@@ -224,11 +244,13 @@ public actor SharedAutoUpdateManager {
         /// was applied until the user turns lists off.
         case overLimit(message: String)
 
+        /// A deferral is the planned result of a background budget that ran short. Its work
+        /// waits in PendingFilterUpdateRevisions, so iOS should not count it as a failure.
         public var isSuccessfulForBackgroundTask: Bool {
             switch self {
-            case .completed(_), .skipped(_):
+            case .completed(_), .skipped(_), .deferred(_):
                 return true
-            case .cancelled, .deferred(_), .failed(_), .overLimit(_):
+            case .cancelled, .failed(_), .overLimit(_):
                 return false
             }
         }
@@ -507,6 +529,11 @@ public actor SharedAutoUpdateManager {
         return await MainActor.run { manager.autoUpdateLastCheckTime }
     }
 
+    private func getAutoUpdateRunningSinceTime() async -> Int64 {
+        let manager = await getDataManager()
+        return await MainActor.run { manager.autoUpdateRunningSinceTimestamp }
+    }
+
     private func getAutoUpdateLastSuccessfulTime() async -> Int64 {
         let manager = await getDataManager()
         return await MainActor.run { manager.autoUpdateLastSuccessfulTime }
@@ -715,11 +742,22 @@ public actor SharedAutoUpdateManager {
     /// every successful apply (AppFilterManager.persistUpgradeRebuildSignature).
     public static let lastAppliedUpgradeSignatureKey = "wBlock.lastAppliedUpgradeSignature"
 
-    static func appHasAppliedCurrentVersion(
+    public static func appHasAppliedCurrentVersion(
         defaults: UserDefaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
     ) -> Bool {
         defaults.string(forKey: lastAppliedUpgradeSignatureKey) == ContentBlockerService.upgradeSignature
     }
+
+    /// Per-request timeout for update checks. Background runs use a shorter one so a dead
+    /// primary host cannot use up most of the background budget.
+    private static let foregroundCheckTimeout: TimeInterval = 30
+    private static let backgroundCheckTimeout: TimeInterval = 10
+    /// Validators and check times are saved every this many lists, so a run that expires
+    /// keeps the checks it finished.
+    private static let checkPersistBatchSize = 4
+    /// An app run that started longer ago than this is treated as killed, not running, when
+    /// the extension stages on iOS.
+    private static let staleRunInterval: TimeInterval = 15 * 60
 
     private func runIfNeeded(
         trigger: String,
@@ -881,11 +919,13 @@ public actor SharedAutoUpdateManager {
         let forceFlag = await getAutoUpdateForceNext() && !isExternalHelperTrigger(trigger)
         let shouldForce = force || forceFlag
 
+        // A downloaded revision the app has not applied yet runs even inside the throttle
+        // window, so a background download does not wait out the whole interval.
         if !shouldForce {
             let nextEligibleInt64 = await getAutoUpdateNextEligibleTime()
             if nextEligibleInt64 > 0 {
                 let nextEligible = TimeInterval(nextEligibleInt64)
-                if now < nextEligible {
+                if now < nextEligible, !(await hasPendingFilterRevisions(trigger: trigger)) {
                     let remainingSeconds = Int(max(0, nextEligible - now))
                     appendSkipTelemetry(
                         trigger: trigger,
@@ -898,7 +938,7 @@ public actor SharedAutoUpdateManager {
                 let lastCheckInt64 = await getAutoUpdateLastCheckTime()
                 if lastCheckInt64 > 0 {
                     let lastCheck = TimeInterval(lastCheckInt64)
-                    if now - lastCheck < interval * 3600 {
+                    if now - lastCheck < interval * 3600, !(await hasPendingFilterRevisions(trigger: trigger)) {
                         let remainingSeconds = Int(max(0, interval * 3600 - (now - lastCheck)))
                         appendSkipTelemetry(
                             trigger: trigger,
@@ -1015,6 +1055,8 @@ public actor SharedAutoUpdateManager {
                 // An empty selection is a valid first-run state, but never silently
                 // preserves output from a previous selection. Helpers stage the
                 // inert files for the app; app-owned triggers can reload them now.
+                // A staged marker has no selected lists left to apply.
+                if !isExternalHelperTrigger(trigger) { StagedFilterDownloads.clear() }
                 let hasPersistedOutput = contentBlockerOutputsContainRules()
                 var outputStatus = "clean"
                 if hasPersistedOutput {
@@ -1093,7 +1135,9 @@ public actor SharedAutoUpdateManager {
                 requiredTime: policy.minimumTimeForNetwork
             )
             try throwIfCancelled()
-            let updateResult = try await checkAndFetchUpdates(filters: selectedFilters)
+            let updateResult = try await checkAndFetchUpdates(
+                filters: selectedFilters, force: shouldForce, isBackground: policy.isBackground
+            )
             try throwIfCancelled()
             var updatedFilterSet = updateResult.updatedFilters
             let hadErrors = updateResult.hadErrors
@@ -1113,11 +1157,14 @@ public actor SharedAutoUpdateManager {
             }
 
             guard !updatedFilterSet.isEmpty else {
+                // A marker here names no selected list that changed, so nothing in it applies.
+                if let stagedDownloadMarker { _ = StagedFilterDownloads.clear(ifMatches: stagedDownloadMarker) }
                 // Only outputs a helper staged, or broken ones, need a reload.
                 // A run forced just because it was overdue has nothing new to
                 // load, and reloading every blocker took minutes on older iPads.
                 var reloadStatus = "skipped"
-                if forceFlag || contentBlockerOutputsNeedRepair() {
+                let outputsNeedRepair = contentBlockerOutputsNeedRepair()
+                if forceFlag || outputsNeedRepair {
                     if isExternalHelperTrigger(trigger) {
                         await ProtobufDataManager.shared.setAutoUpdateForceNext(true)
                         reloadStatus = "pending app launch"
@@ -1128,7 +1175,9 @@ public actor SharedAutoUpdateManager {
                             requiredTime: max(policy.minimumTimeForReloadRetry, policy.minimumTimeForAdvancedEngine)
                         )
                         try throwIfCancelled()
-                        try await reloadExistingContentBlockers(policy: policy)
+                        // Only a missing output is forced to reload. Otherwise a blocker
+                        // Safari already loaded is skipped by its reload marker.
+                        try await reloadExistingContentBlockers(policy: policy, force: outputsNeedRepair)
                         reloadStatus = "ok"
                     }
                 }
@@ -1187,15 +1236,6 @@ public actor SharedAutoUpdateManager {
                 ))
             }
 
-            try requireFullRebuildAllowed(policy, phase: AutoUpdateBudgetPhase.fullRebuild)
-            try checkBudget(
-                policy,
-                phase: AutoUpdateBudgetPhase.fullRebuild,
-                requiredTime: policy.minimumTimeForConversionTarget
-                    + policy.minimumTimeForReloadRetry
-                    + policy.minimumTimeForAdvancedEngine
-            )
-            os_log("Found %d filter updates — applying", log: log, type: .info, updatedFilterSet.count)
             let updatedPreview = updatedFilterSet.prefix(3).map(\.name).joined(separator: ", ")
 
             var merged = allFilters
@@ -1212,31 +1252,66 @@ public actor SharedAutoUpdateManager {
                 snapshot: merged,
                 latestPersisted: latestPersistedFilters
             )
+            let helperStagedUpdates = isExternalHelperTrigger(trigger)
+            // A background run without a full rebuild still brings up to date the one blocker
+            // the downloads changed, when its measured cost fits the time left.
+            let soleBlocker: SoleBlocker?
+            if policy.isBackground && !policy.allowsFullRebuild && !helperStagedUpdates {
+                soleBlocker = await soleBlockerForBackgroundRun(
+                    selectedFilters: merged.filter { $0.isSelected }, policy: policy
+                )
+            } else {
+                soleBlocker = nil
+            }
+            if soleBlocker == nil {
+                try requireFullRebuildAllowed(policy, phase: AutoUpdateBudgetPhase.fullRebuild)
+                try checkBudget(
+                    policy,
+                    phase: AutoUpdateBudgetPhase.fullRebuild,
+                    requiredTime: policy.minimumTimeForConversionTarget
+                        + policy.minimumTimeForReloadRetry
+                        + policy.minimumTimeForAdvancedEngine
+                )
+            }
+            os_log("Found %d filter updates — applying", log: log, type: .info, updatedFilterSet.count)
             try requireFinalSaveBudget()
             await saveFilterListsToProtobuf(updateResult.updatedFilters, baseline: allFilters)
             let admissionBaseline = merged
             try await saveAutoUpdateStateImmediately(context: AutoUpdateBudgetPhase.finalStateSave)
             try throwIfCancelled()
-            let helperStagedUpdates = isExternalHelperTrigger(trigger)
             let pendingRevisionSnapshot = PendingFilterUpdateRevisions.snapshotPublished(
                 filterIDs: Set(merged.filter { $0.isSelected }.map { $0.id.uuidString })
             )
-            let rebuildSummary = try await rebuildAndReload(
-                selectedFilters: merged.filter { $0.isSelected },
-                policy: policy,
-                reloadContentBlockers: !helperStagedUpdates
-            )
-            merged = merged.map { filter in
-                var updated = filter
-                if filter.isSelected {
-                    updated.uniqueRuleCount = rebuildSummary.admittedSourceRuleCountsByFilterID[filter.id]
-                } else {
-                    updated.uniqueRuleCount = nil
+            let rebuildSummary: RebuildAndReloadSummary?
+            var soleCovered = false
+            if let soleBlocker {
+                let assignedIDs = try await rebuildSoleBlocker(
+                    soleBlocker, selectedFilters: merged.filter { $0.isSelected }, policy: policy
+                )
+                // Acknowledge only when every pending or updated list feeds the blocker that was rebuilt.
+                let covered = Set(pendingRevisionSnapshot.tokensByFilterID.keys)
+                    .union(updatedFilterSet.map { $0.id.uuidString })
+                soleCovered = covered.isSubset(of: assignedIDs)
+                rebuildSummary = nil
+            } else {
+                let summary = try await rebuildAndReload(
+                    selectedFilters: merged.filter { $0.isSelected },
+                    policy: policy,
+                    reloadContentBlockers: !helperStagedUpdates
+                )
+                merged = merged.map { filter in
+                    var updated = filter
+                    if filter.isSelected {
+                        updated.uniqueRuleCount = summary.admittedSourceRuleCountsByFilterID[filter.id]
+                    } else {
+                        updated.uniqueRuleCount = nil
+                    }
+                    return updated
                 }
-                return updated
+                rebuildSummary = summary
             }
             try throwIfCancelled()
-            if !helperStagedUpdates {
+            if !helperStagedUpdates && (rebuildSummary != nil || soleCovered) {
                 PendingFilterUpdateRevisions.acknowledge(pendingRevisionSnapshot)
                 if let stagedDownloadMarker {
                     _ = StagedFilterDownloads.clear(ifMatches: stagedDownloadMarker)
@@ -1269,9 +1344,13 @@ public actor SharedAutoUpdateManager {
             appendSharedLog(
                 "Applied \(updatedFilterSet.count) filter update(s): \(updatedPreview)\(updatedFilterSet.count > 3 ? ", ..." : "")."
             )
-            appendSharedLog(
-                "Rebuild summary: targets \(rebuildSummary.targetCount), cache \(rebuildSummary.cacheHits)/\(rebuildSummary.cacheMisses), rules \(rebuildSummary.safariRulesTotal), input \(formatBytes(rebuildSummary.inputBytesTotal)) written in \(formatDurationMs(rebuildSummary.inputWriteDurationMs)), conversion \(formatDurationMs(rebuildSummary.conversionDurationMs)), reload \(formatDurationMs(rebuildSummary.reloadDurationMs)), slowest write \(rebuildSummary.slowestWriteTarget), slowest rebuild \(rebuildSummary.slowestTarget), userscripts +\(scriptsResult.updated)/-\(scriptsResult.failed), next check in \(formatDurationSeconds(nextCheckInSeconds))."
-            )
+            if let rebuildSummary {
+                appendSharedLog(
+                    "Rebuild summary: targets \(rebuildSummary.targetCount), cache \(rebuildSummary.cacheHits)/\(rebuildSummary.cacheMisses), rules \(rebuildSummary.safariRulesTotal), input \(formatBytes(rebuildSummary.inputBytesTotal)) written in \(formatDurationMs(rebuildSummary.inputWriteDurationMs)), conversion \(formatDurationMs(rebuildSummary.conversionDurationMs)), reload \(formatDurationMs(rebuildSummary.reloadDurationMs)), slowest write \(rebuildSummary.slowestWriteTarget), slowest rebuild \(rebuildSummary.slowestTarget), userscripts +\(scriptsResult.updated)/-\(scriptsResult.failed), next check in \(formatDurationSeconds(nextCheckInSeconds))."
+                )
+            } else {
+                appendSharedLog("Rebuilt one blocker in the background; userscripts +\(scriptsResult.updated)/-\(scriptsResult.failed), next check in \(formatDurationSeconds(nextCheckInSeconds)), covered=\(soleCovered).")
+            }
             if hadErrors {
                 appendSharedLog("Some filter checks failed; using a shorter retry interval.")
             }
@@ -1318,10 +1397,8 @@ public actor SharedAutoUpdateManager {
         } catch let autoUpdateError as AutoUpdateError {
             let isDeferred = autoUpdateError.isDeferred
             let phase = autoUpdateError.failurePhase ?? "unknown"
-            if isDeferred {
-                await ProtobufDataManager.shared.setAutoUpdateForceNext(true)
-                invalidateStatusCache()
-            }
+            // A deferred run sets no force flag. Its downloads stay pending until an apply
+            // acknowledges them, and the throttle check runs it again without a full sweep.
             let result = isDeferred ? "deferred" : "failed"
 
             if isDeferred {
@@ -1423,6 +1500,7 @@ public actor SharedAutoUpdateManager {
     private func stageFilterDownloadsFromExtensionImpl(trigger: String) async throws -> StagingOutcome {
         try Task.checkCancellation()
         guard Self.isAppExtensionProcess else { return .skipped(reason: "not_extension") }
+        guard Self.appHasAppliedCurrentVersion() else { return .skipped(reason: "awaiting_app_upgrade") }
         guard !stagingInProgress else { return .skipped(reason: "already_running") }
         stagingInProgress = true
         defer { stagingInProgress = false }
@@ -1434,14 +1512,22 @@ public actor SharedAutoUpdateManager {
         try Task.checkCancellation()
         guard !BlockingPauseStore.isPaused(.filters) else { return .skipped(reason: "filters_paused") }
         try Task.checkCancellation()
-        guard await !getAutoUpdateIsRunning() else { return .skipped(reason: "app_run_in_progress") }
 
-        #if !os(iOS)
+        #if os(iOS)
+        // The running flag is trusted only while its run is recent. A run the system killed
+        // leaves the flag set, and that would stop staging for good.
+        let isRunning = await getAutoUpdateIsRunning()
+        let runningSince = await getAutoUpdateRunningSinceTime()
+        let runStarted = TimeInterval(runningSince > 0 ? runningSince : await getAutoUpdateLastCheckTime())
+        let isStaleRun = Date().timeIntervalSince1970 - runStarted > Self.staleRunInterval
+        guard !isRunning || isStaleRun else { return .skipped(reason: "app_run_in_progress") }
+        #else
         // On macOS the app or its agent may be updating right now; the lease
         // is the cross-process check. Release it at once: RunningBoard also
         // suspends idle Safari extensions on macOS and kills one that holds a
         // flock in the app group (0xDEAD10CC, #867). Staging writes atomically,
-        // like the unlocked iOS path.
+        // like the unlocked iOS path. A lease held by a killed run is released
+        // by the system, so it cannot block staging forever.
         guard SharedAutoUpdateLease.acquire(groupIdentifier: GroupIdentifier.shared.value) != nil else {
             return .skipped(reason: "already_running")
         }
@@ -1482,14 +1568,19 @@ public actor SharedAutoUpdateManager {
 
         let updateResult: UpdateFetchResult
         do {
-            updateResult = try await checkAndFetchUpdates(filters: selectedFilters)
+            updateResult = try await checkAndFetchUpdates(
+                filters: selectedFilters, force: false, isBackground: true, deferIncludeExpansion: true
+            )
             try Task.checkCancellation()
         } catch is CancellationError {
-            // Leave the marker as a recovery signal if a download completed
-            // before cancellation. Do not write again while unwinding.
+            // A download that finished before cancellation left a pending revision, which
+            // the next app run applies. The marker has nothing more to say, so clear it
+            // rather than leave a rebuild-everything marker behind.
+            _ = StagedFilterDownloads.clear(ifMatches: stagingMarker)
             return .skipped(reason: "cancelled")
         } catch {
             if Task.isCancelled {
+                _ = StagedFilterDownloads.clear(ifMatches: stagingMarker)
                 return .skipped(reason: "cancelled")
             }
             _ = StagedFilterDownloads.clear(ifMatches: stagingMarker)
@@ -1502,9 +1593,11 @@ public actor SharedAutoUpdateManager {
             return .skipped(reason: "fetch_failed")
         }
 
+        // Lists left for the app, and failed checks, come back on the shorter retry schedule.
         let retryDelay = Self.retryDelaySeconds(intervalHours: interval)
         let completion = Date().timeIntervalSince1970
-        let nextCheck = completion + (updateResult.hadErrors ? retryDelay : interval * 3600)
+        let needsAppRun = updateResult.hadErrors || updateResult.deferredToAppCount > 0
+        let nextCheck = completion + (needsAppRun ? retryDelay : interval * 3600)
 
         guard !updateResult.updatedFilters.isEmpty else {
             try Task.checkCancellation()
@@ -1527,7 +1620,12 @@ public actor SharedAutoUpdateManager {
         try Task.checkCancellation()
         await saveFilterListsToProtobuf(updateResult.updatedFilters, baseline: allFilters)
         try Task.checkCancellation()
-        _ = StagedFilterDownloads.save(filterIDs: updateResult.updatedFilters.map { $0.id.uuidString })
+        // Without this marker the app applies nothing from the staged copies until its own rebuild runs.
+        guard StagedFilterDownloads.save(filterIDs: updateResult.updatedFilters.map { $0.id.uuidString }) != nil else {
+            appendSharedLog("Extension staging failed: could not save the staged-download marker")
+            invalidateStatusCache()
+            return .skipped(reason: "staging_marker_unavailable")
+        }
         try Task.checkCancellation()
         await ProtobufDataManager.shared.setAutoUpdateForceNext(true)
         try Task.checkCancellation()
@@ -1614,16 +1712,33 @@ public actor SharedAutoUpdateManager {
         var hadErrors: Bool
         var errorCount: Int
         var checkedCount: Int
+        /// Lists the extension left for the app to fetch, since they need `!#include` expansion.
+        var deferredToAppCount: Int
     }
 
     private enum FilterFetchOutcome {
-        case noChange
+        case noChange(uuid: String)
         case noChangeWithValidators(uuid: String, etag: String?, lastModified: String?)
         case updated(filter: FilterList, validators: (etag: String?, lastModified: String?))
+        /// A revision waiting to be applied stands in for a list whose check failed. The
+        /// staged copy is used, and the failed check still counts as an error.
+        case staleCopy(filter: FilterList, validators: (etag: String?, lastModified: String?), filterName: String, error: Error)
+        /// The list needs `!#include` expansion, which the extension does not run. The app's run fetches it.
+        case deferredToApp
         case error(filterName: String, error: Error)
+        case cancelled
     }
 
-    private func checkAndFetchUpdates(filters: [FilterList]) async throws -> UpdateFetchResult {
+    /// Lists due for a check, least recently checked first, so a run that expires partway
+    /// through does not check the same head of the list every time. A list is due when the
+    /// run is forced, a revision of it is waiting to be applied, it was never checked, or
+    /// its `! Diff-Expires:` interval has passed.
+    private func checkAndFetchUpdates(
+        filters: [FilterList],
+        force: Bool,
+        isBackground: Bool,
+        deferIncludeExpansion: Bool = false
+    ) async throws -> UpdateFetchResult {
         try Task.checkCancellation()
         let remoteFilters = filters.filter(\.canUpdateAutomatically)
 
@@ -1631,39 +1746,94 @@ public actor SharedAutoUpdateManager {
             throw AutoUpdateError.sharedContainerUnavailable
         }
 
+        let manager = await getDataManager()
+        let lastCheckedByID: [String: Int64] = await MainActor.run {
+            remoteFilters.reduce(into: [:]) { result, filter in
+                result[filter.id.uuidString] = manager.getFilterLastChecked(filter.id.uuidString) ?? 0
+            }
+        }
+        let pendingIDs = PendingFilterUpdateRevisions.pendingFilterIDs(
+            selectedFilterIDs: Set(remoteFilters.map { $0.id.uuidString })
+        )
+        let now = Date().timeIntervalSince1970
+        let due = remoteFilters.filter { filter in
+            let id = filter.id.uuidString
+            if force || pendingIDs.contains(id) { return true }
+            guard let checkedAt = lastCheckedByID[id], checkedAt > 0 else { return true }
+            guard let expires = expirySeconds(for: filter, containerURL: containerURL) else { return true }
+            return now - TimeInterval(checkedAt) >= expires
+        }
+        .sorted { (lastCheckedByID[$0.id.uuidString] ?? 0) < (lastCheckedByID[$1.id.uuidString] ?? 0) }
+
+        let timeout = isBackground ? Self.backgroundCheckTimeout : Self.foregroundCheckTimeout
         var updatedFilters: [FilterList] = []
         var hadErrors = false
         var errorCount = 0
         var validatorUpdates: [String: (etag: String?, lastModified: String?)] = [:]
+        var checkedTimes: [String: Int64] = [:]
         var checkedCount = 0
+        var deferredToAppCount = 0
         var failures: [String] = []
-        await reportRunProgress(.checking(done: 0, total: remoteFilters.count))
+        await reportRunProgress(.checking(done: 0, total: due.count))
+
+        // Saves what the finished checks learned. Runs between lists and before the run
+        // returns, so an expired background run keeps the 304s it already received.
+        func persistCheckProgress() async {
+            guard !validatorUpdates.isEmpty || !checkedTimes.isEmpty else { return }
+            if !validatorUpdates.isEmpty {
+                await ProtobufDataManager.shared.setFilterValidators(validatorUpdates)
+            }
+            await ProtobufDataManager.shared.setFilterLastChecked(checkedTimes)
+            _ = await ProtobufDataManager.shared.saveDataImmediately()
+            validatorUpdates = [:]
+            checkedTimes = [:]
+        }
+
+        func recordFailure(filterName: String, error: Error) {
+            hadErrors = true
+            errorCount += 1
+            failures.append("\(filterName): \(error.localizedDescription)")
+            os_log(
+                "Update fetch error for %{public}@ – %{public}@",
+                log: log,
+                type: .error,
+                filterName,
+                error.localizedDescription
+            )
+        }
 
         let patches = FilterPatchCache()
-        await boundedConcurrentForEach(remoteFilters, operation: { filter in
-            await self.fetchIfUpdated(filter, containerURL: containerURL, patches: patches)
+        await boundedConcurrentForEach(due, operation: { filter in
+            await self.fetchIfUpdated(
+                filter, containerURL: containerURL, patches: patches,
+                timeout: timeout, deferIncludeExpansion: deferIncludeExpansion, hedgedFallback: isBackground
+            )
         }, onResult: { outcome in
             checkedCount += 1
-            await self.reportRunProgress(.checking(done: checkedCount, total: remoteFilters.count))
+            await self.reportRunProgress(.checking(done: checkedCount, total: due.count))
             switch outcome {
-            case .noChange:
-                break
+            case .noChange(let uuid):
+                checkedTimes[uuid] = Int64(Date().timeIntervalSince1970)
             case .noChangeWithValidators(let uuid, let etag, let lastModified):
                 validatorUpdates[uuid] = (etag: etag, lastModified: lastModified)
+                checkedTimes[uuid] = Int64(Date().timeIntervalSince1970)
             case .updated(let filter, let validators):
                 updatedFilters.append(filter)
                 validatorUpdates[filter.id.uuidString] = validators
+                checkedTimes[filter.id.uuidString] = Int64(Date().timeIntervalSince1970)
+            case let .staleCopy(filter, validators, filterName, error):
+                updatedFilters.append(filter)
+                validatorUpdates[filter.id.uuidString] = validators
+                recordFailure(filterName: filterName, error: error)
+            case .deferredToApp:
+                deferredToAppCount += 1
+            case .cancelled:
+                break
             case .error(let filterName, let error):
-                hadErrors = true
-                errorCount += 1
-                failures.append("\(filterName): \(error.localizedDescription)")
-                os_log(
-                    "Update fetch error for %{public}@ – %{public}@",
-                    log: log,
-                    type: .error,
-                    filterName,
-                    error.localizedDescription
-                )
+                recordFailure(filterName: filterName, error: error)
+            }
+            if validatorUpdates.count + checkedTimes.count >= Self.checkPersistBatchSize {
+                await persistCheckProgress()
             }
         })
 
@@ -1672,29 +1842,63 @@ public actor SharedAutoUpdateManager {
             appendSharedLog("Filter checks failed (\(failures.count)): " + failures.joined(separator: "; "))
         }
 
+        await persistCheckProgress()
         try Task.checkCancellation()
-
-        if !validatorUpdates.isEmpty {
-            await ProtobufDataManager.shared.setFilterValidators(validatorUpdates)
-        }
 
         return UpdateFetchResult(
             updatedFilters: updatedFilters,
             hadErrors: hadErrors,
             errorCount: errorCount,
-            checkedCount: remoteFilters.count
+            checkedCount: checkedCount,
+            deferredToAppCount: deferredToAppCount
         )
+    }
+
+    /// The shorter of a list's `! Diff-Expires:` and `! Expires:` intervals, or nil when it advertises neither.
+    private func expirySeconds(for filter: FilterList, containerURL: URL) -> TimeInterval? {
+        [diffExpirySeconds(for: filter, containerURL: containerURL), listExpiresSeconds(for: filter, containerURL: containerURL)]
+            .compactMap { $0 }
+            .min()
+    }
+
+    /// The `! Expires:` interval in the saved list's header, or nil when it has none.
+    private func listExpiresSeconds(for filter: FilterList, containerURL: URL) -> TimeInterval? {
+        guard let url = ContentBlockerIncrementalCache.existingLocalFileURL(for: filter, containerURL: containerURL),
+              let handle = try? FileHandle(forReadingFrom: url)
+        else { return nil }
+        defer { try? handle.close() }
+        guard let head = try? handle.read(upToCount: 4096) else { return nil }
+        return FilterListFetchChain.parseExpiresInterval(from: String(decoding: head, as: UTF8.self))
+    }
+
+    /// The `! Diff-Expires:` interval of a list's last full download, or nil when it advertises none.
+    private func diffExpirySeconds(for filter: FilterList, containerURL: URL) -> TimeInterval? {
+        let baselineURL = FilterListFetchChain.diffBaselineURL(for: filter, containerURL: containerURL)
+        guard let handle = try? FileHandle(forReadingFrom: baselineURL) else { return nil }
+        defer { try? handle.close() }
+        // The directives sit in the first kilobyte, so the rest of the list is never read.
+        guard let head = try? handle.read(upToCount: 1024),
+              let text = String(data: head, encoding: .utf8),
+              let seconds = FilterDiffUpdater.parseMetadata(from: text)?.diffExpiresSeconds,
+              seconds > 0
+        else { return nil }
+        return TimeInterval(seconds)
     }
 
     /// A list a helper downloaded but could not apply is still checked against
     /// the server, so the app never installs a copy that is already stale. The
     /// staged copy is used only when nothing newer can be fetched.
     private func fetchIfUpdated(
-        _ filter: FilterList, containerURL: URL, patches: FilterPatchCache
+        _ filter: FilterList, containerURL: URL, patches: FilterPatchCache,
+        timeout: TimeInterval, deferIncludeExpansion: Bool, hedgedFallback: Bool
     ) async -> FilterFetchOutcome {
         let pending = PendingFilterUpdateRevisions.publishedRevision(filterID: filter.id.uuidString)
-        let fetched = await fetchFromServer(filter, containerURL: containerURL, patches: patches)
+        let fetched = await fetchFromServer(
+            filter, containerURL: containerURL, patches: patches,
+            timeout: timeout, deferIncludeExpansion: deferIncludeExpansion, hedgedFallback: hedgedFallback
+        )
         if case .updated = fetched { return fetched }
+        if case .cancelled = fetched { return fetched }
         guard let pending else { return fetched }
         var updated = filter
         if let data = localDataForComparison(filter: filter, containerURL: containerURL) {
@@ -1707,14 +1911,16 @@ public actor SharedAutoUpdateManager {
         updated.lastUpdated = Date(timeIntervalSince1970: pending.downloadedAt)
         updated.etag = pending.etag
         updated.serverLastModified = pending.lastModified
-        return .updated(
-            filter: updated,
-            validators: (etag: pending.etag, lastModified: pending.lastModified)
-        )
+        let validators = (etag: pending.etag, lastModified: pending.lastModified)
+        if case let .error(filterName, error) = fetched {
+            return .staleCopy(filter: updated, validators: validators, filterName: filterName, error: error)
+        }
+        return .updated(filter: updated, validators: validators)
     }
 
     private func fetchFromServer(
-        _ filter: FilterList, containerURL: URL, patches: FilterPatchCache
+        _ filter: FilterList, containerURL: URL, patches: FilterPatchCache,
+        timeout: TimeInterval, deferIncludeExpansion: Bool, hedgedFallback: Bool
     ) async -> FilterFetchOutcome {
         let uuid = filter.id.uuidString
         let etag = await getFilterEtag(uuid)
@@ -1723,9 +1929,9 @@ public actor SharedAutoUpdateManager {
             let result = try await FilterListFetchChain.fetch(
                 session: urlSession, primaryURL: filter.url,
                 fallbackURLs: FilterListURLMirror.fallbackURLs(for: filter.url),
-                etag: etag, lastModified: lastModified, timeout: 30,
+                etag: etag, lastModified: lastModified, timeout: timeout,
                 diffBaselineURL: FilterListFetchChain.diffBaselineURL(for: filter, containerURL: containerURL),
-                patches: patches,
+                patches: patches, hedgedFallback: hedgedFallback,
                 log: { await self.appendSharedLog("Diff update: \(filter.name) \($0)") })
             let data = result.data
             let http = result.response
@@ -1738,11 +1944,13 @@ public actor SharedAutoUpdateManager {
             }
             let responseStatus = FilterUpdateResponseClassifier.classify(
                 statusCode: http.statusCode, responseData: data,
-                localData: self.localDataForComparison(filter: filter, containerURL: containerURL))
+                localData: self.localDataForComparison(filter: filter, containerURL: containerURL),
+                usedFallbackMirror: result.servedFallback,
+                localNormalizedDigest: FilterListNormalizedDigest.load(for: filter, containerURL: containerURL))
 
             switch responseStatus {
             case .notModified:
-                return .noChange
+                return .noChange(uuid: uuid)
             case .unchangedContent:
                 return hasValidatorUpdates
                     ? .noChangeWithValidators(
@@ -1750,7 +1958,7 @@ public actor SharedAutoUpdateManager {
                         etag: responseEtag,
                         lastModified: responseLastModified
                     )
-                    : .noChange
+                    : .noChange(uuid: uuid)
             case .invalidContent:
                 // Don't overwrite the on-disk list with HTML challenge pages or other garbage.
                 return .error(filterName: filter.name, error: URLError(.cannotParseResponse))
@@ -1758,6 +1966,11 @@ public actor SharedAutoUpdateManager {
                 return .error(filterName: filter.name, error: URLError(.badServerResponse))
             case .updatedContent:
                 break
+            }
+
+            // Expanding !#include reads sub-lists over the network, which the extension does not do.
+            if deferIncludeExpansion, data.range(of: Data("!#include".utf8)) != nil {
+                return .deferredToApp
             }
 
             let processed = try await FilterDownloadProcessor.processAndPublish(
@@ -1775,6 +1988,7 @@ public actor SharedAutoUpdateManager {
                     )
                 }
             )
+            FilterListNormalizedDigest.record(body: data, for: filter, containerURL: containerURL)
             if !processed.strippedDirectives.isEmpty {
                 appendSharedLog(
                     "Stripped unknown directives: filter=\(filter.name), directives=\(processed.strippedDirectives.joined(separator: ", "))"
@@ -1785,6 +1999,7 @@ public actor SharedAutoUpdateManager {
                 validators: (etag: responseEtag, lastModified: responseLastModified)
             )
         } catch {
+            if Task.isCancelled { return .cancelled }
             return .error(filterName: filter.name, error: error)
         }
     }
@@ -1799,18 +2014,20 @@ public actor SharedAutoUpdateManager {
 
 
 
-    private func contentBlockerOutputsNeedRepair() -> Bool {
+    private var currentPlatform: Platform {
         #if os(iOS)
-        let platform: Platform = .iOS
+        .iOS
         #else
-        let platform: Platform = .macOS
+        .macOS
         #endif
+    }
 
+    private func contentBlockerOutputsNeedRepair() -> Bool {
         guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value) else {
             return false
         }
 
-        for target in ContentBlockerTargetManager.shared.allTargets(forPlatform: platform) {
+        for target in ContentBlockerTargetManager.shared.allTargets(forPlatform: currentPlatform) {
             let rulesURL = containerURL.appendingPathComponent(target.rulesFilename)
             if !FileManager.default.fileExists(atPath: rulesURL.path) {
                 return true
@@ -1829,38 +2046,39 @@ public actor SharedAutoUpdateManager {
         }
     }
 
-    private func contentBlockerOutputsContainRules() -> Bool {
-        #if os(iOS)
-        let platform: Platform = .iOS
-        #else
-        let platform: Platform = .macOS
-        #endif
+    /// Whether a blocker's persisted rules file holds rules rather than the inert placeholder.
+    /// The file size decides first: a real output is megabytes, so it is never read. Only a file
+    /// the size of the inert placeholder is read and compared with it.
+    public static func outputFileContainsRules(at rulesURL: URL) -> Bool {
+        let size = (try? rulesURL.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0
+        guard size > 0 else { return false }
+        let inertBytes = Data(ContentBlockerService.inertContentBlockerRulesJSON.utf8)
+        guard size == inertBytes.count else { return true }
+        guard let data = try? Data(contentsOf: rulesURL) else { return false }
+        return data != inertBytes
+    }
 
+    private func contentBlockerOutputsContainRules() -> Bool {
         guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value) else {
             return false
         }
 
-        for target in ContentBlockerTargetManager.shared.allTargets(forPlatform: platform) {
-            let rulesURL = containerURL.appendingPathComponent(target.rulesFilename)
-            guard let data = try? Data(contentsOf: rulesURL), !data.isEmpty else {
-                continue
-            }
-
-            if data.contains(UInt8(ascii: "{")) {
-                return true
-            }
+        return ContentBlockerTargetManager.shared.allTargets(forPlatform: currentPlatform).contains { target in
+            Self.outputFileContainsRules(at: containerURL.appendingPathComponent(target.rulesFilename))
         }
+    }
 
-        return false
+    /// Whether an app run should bypass the throttle for a downloaded revision it has not applied.
+    /// A helper cannot apply one, so helpers keep the throttle, or they would restage on every launch.
+    private func hasPendingFilterRevisions(trigger: String) async -> Bool {
+        guard !isExternalHelperTrigger(trigger) else { return false }
+        let selectedIDs = Set(
+            await ProtobufDataManager.shared.getFilterLists().filter(\.isSelected).map { $0.id.uuidString }
+        )
+        return !PendingFilterUpdateRevisions.pendingFilterIDs(selectedFilterIDs: selectedIDs).isEmpty
     }
 
     private func clearPersistedBlockingOutputsForPause(reloadContentBlockers: Bool) async -> Bool {
-        #if os(iOS)
-        let platform: Platform = .iOS
-        #else
-        let platform: Platform = .macOS
-        #endif
-
         var failedTargets: [String] = []
         let groupIdentifier = GroupIdentifier.shared.value
 
@@ -1881,7 +2099,7 @@ public actor SharedAutoUpdateManager {
             return false
         }
 
-        let targets = ContentBlockerTargetManager.shared.allTargets(forPlatform: platform)
+        let targets = ContentBlockerTargetManager.shared.allTargets(forPlatform: currentPlatform)
         var uncleared: Set<String> = []
         for target in targets {
             let saveResult = try? ContentBlockerService.saveContentBlockerIfChanged(
@@ -1928,16 +2146,13 @@ public actor SharedAutoUpdateManager {
         return false
     }
 
+    /// Re-publishes the engine and reloads every blocker. `force` reloads even a blocker Safari
+    /// already holds, which only a repair needs. Otherwise the reload marker decides.
     private func reloadExistingContentBlockers(
-        policy: AutoUpdateExecutionPolicy
+        policy: AutoUpdateExecutionPolicy,
+        force: Bool
     ) async throws {
-        #if os(iOS)
-        let platform: Platform = .iOS
-        #else
-        let platform: Platform = .macOS
-        #endif
-
-        let targets = ContentBlockerTargetManager.shared.allTargets(forPlatform: platform)
+        let targets = ContentBlockerTargetManager.shared.allTargets(forPlatform: currentPlatform)
         var advancedRulesSnippets: [String] = []
 
         let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value)
@@ -1959,7 +2174,7 @@ public actor SharedAutoUpdateManager {
         )
 
         let counts = await MainActor.run { ProtobufDataManager.shared.ruleCountsByCategory.mapValues { Int($0) } }
-        let reloadResults = try await reloadTargets(targets, ruleCounts: counts, policy: policy, force: true)
+        let reloadResults = try await reloadTargets(targets, ruleCounts: counts, policy: policy, force: force)
         let failures = targets.compactMap { target in
             reloadResults[target.bundleIdentifier].flatMap { Self.reloadFailure(target, $0) }
         }
@@ -2144,6 +2359,134 @@ public actor SharedAutoUpdateManager {
         return results
     }
 
+    // MARK: - Single blocker (background)
+
+    /// The one blocker a background run without a full rebuild compiles, with the scope its scan ran in.
+    private struct SoleBlocker {
+        let target: ContentBlockerTargetInfo
+        let scope: CompilationScope
+    }
+
+    /// Above this many rules a blocker is too heavy to compile in the background unless it is not the widest.
+    private static let soleBlockerRuleCeiling = 120_000
+
+    /// The one blocker a background run can bring up to date, or nil when the run must defer:
+    /// several blockers changed, the selection exceeds a limit, the blocker is the widest and
+    /// too large, its cost is unmeasured, or the time left does not cover it.
+    private func soleBlockerForBackgroundRun(
+        selectedFilters: [FilterList],
+        policy: AutoUpdateExecutionPolicy
+    ) async -> SoleBlocker? {
+        guard let containerURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value
+        ) else { return nil }
+        let targets = ContentBlockerTargetManager.shared.allTargets(forPlatform: currentPlatform)
+        let disabledSites = await getDisabledSites()
+        let zapper = await zapperRulesForCompilation()
+        let scope = CompilationScope()
+        let scan = try? CompilationScope.$current.withValue(scope) {
+            try ContentBlockerService.targetRebuildScan(
+                orderedSelectedFilters: selectedFilters, allTargets: targets, disabledSites: disabledSites,
+                extraRulesText: { $0.slot == 5 ? zapper : nil },
+                groupIdentifier: GroupIdentifier.shared.value, containerURL: containerURL
+            )
+        }
+        guard let scan, scan.fitsLimits, scan.dirtyIndices.count == 1, let index = scan.dirtyIndices.first,
+              let rules = scan.savedRuleCounts[index]
+        else { return nil }
+        let widest = scan.savedRuleCounts.indices.max { (scan.savedRuleCounts[$0] ?? -1) < (scan.savedRuleCounts[$1] ?? -1) }
+        if widest == index && rules >= Self.soleBlockerRuleCeiling { return nil }
+        let target = targets[index]
+        guard let expected = BlockerRebuildCost.expected(for: target.bundleIdentifier),
+              let deadline = policy.deadline,
+              deadline.timeIntervalSinceNow >= max(expected * 1.5, 4.0)
+        else { return nil }
+        return SoleBlocker(target: target, scope: scope)
+    }
+
+    /// Compiles and reloads one blocker, and publishes the advanced engine from every blocker's
+    /// output. Returns the lists that feed the blocker, so the caller can tell whether the
+    /// pending downloads are all covered.
+    private func rebuildSoleBlocker(
+        _ blocker: SoleBlocker,
+        selectedFilters: [FilterList],
+        policy: AutoUpdateExecutionPolicy
+    ) async throws -> Set<String> {
+        let targets = ContentBlockerTargetManager.shared.allTargets(forPlatform: currentPlatform)
+        let disabledSites = await getDisabledSites()
+        let dataManager = await getDataManager()
+        let zapper = await zapperRulesForCompilation()
+        let distribution = ContentBlockerMappingService.plan(selectedFilters: selectedFilters, across: targets)
+        let ordered = ContentBlockerMappingService.orderedForCompilation(selectedFilters)
+        let target = blocker.target
+        let compileStarted = Date()
+        let outcome = try CompilationScope.$current.withValue(blocker.scope) {
+            try ContentBlockerService.compileTargetRules(
+                filters: distribution.filtersByTarget[target] ?? [],
+                orderedSelectedFilters: ordered, targetInfo: target, allTargets: targets,
+                disabledSites: disabledSites, extraRulesText: target.slot == 5 ? zapper : nil,
+                groupIdentifier: GroupIdentifier.shared.value,
+                isCancelled: { Task.isCancelled }
+            )
+        }
+        malloc_zone_pressure_relief(nil, 0)
+        let compileSeconds = Date().timeIntervalSince(compileStarted)
+        if outcome.truncatedRuleCount > 0 {
+            throw Self.truncationError(target, dropped: outcome.truncatedRuleCount)
+        }
+
+        var snippets: [String] = []
+        for other in targets {
+            let text = other == target
+                ? outcome.advancedRulesText
+                : ContentBlockerIncrementalCache.loadCachedAdvancedRules(
+                    targetRulesFilename: other.rulesFilename, groupIdentifier: GroupIdentifier.shared.value)
+            if let snippet = text?.trimmingCharacters(in: .whitespacesAndNewlines), !snippet.isEmpty {
+                snippets.append(snippet)
+            }
+        }
+        try publishAdvancedEngine(
+            advancedRulesSnippets: snippets, policy: policy,
+            failureLogPrefix: "Advanced engine publish failed after rebuilding a content blocker"
+        )
+
+        let reloads = try await reloadTargets(
+            [target], ruleCounts: [target.bundleIdentifier: outcome.safariRulesCount], policy: policy, force: false
+        )
+        let reload = reloads[target.bundleIdentifier]
+        guard reload?.success == true else {
+            let failure = reload.flatMap { Self.reloadFailure(target, $0) } ?? "\(target.displayName) (no reload result)"
+            appendSharedLog("Rebuild reload failures: \(failure)")
+            throw AutoUpdateError.contentBlockerReloadFailed(failures: [failure])
+        }
+        if !outcome.reusedCachedBase, let reload {
+            BlockerRebuildCost.record(seconds: compileSeconds + Double(reload.durationMs) / 1000, for: target.bundleIdentifier)
+        }
+        let recorded = await Self.recordRebuiltRuleCounts(
+            targets: [target], outcomes: [target.bundleIdentifier: outcome], dataManager: dataManager
+        )
+        if !recorded { appendSharedLog("Failed to record rule counts for rebuilt blocker output") }
+        appendSharedLog("Rebuilt \(target.displayName) alone in the background: \(outcome.safariRulesCount) rules, compile \(formatDurationMs(Int(compileSeconds * 1000))), reload \(formatDurationMs(reload?.durationMs ?? 0)).")
+        return Set(distribution.filtersByTarget[target]?.map { $0.id.uuidString } ?? [])
+    }
+
+    /// The zapper rules the zapper blocker compiles. Nil while the zapper is paused.
+    private func zapperRulesForCompilation() async -> String? {
+        await MainActor.run {
+            BlockingPauseStore.isPaused(.elementZapper)
+                ? nil
+                : ZapperContentBlockerRuleGenerator.generatedRulesText(
+                    from: ProtobufDataManager.shared.getActiveZapperRulesByHost()
+                )
+        }
+    }
+
+    private static func truncationError(_ target: ContentBlockerTargetInfo, dropped: Int) -> ContentBlockerLimitError {
+        ContentBlockerLimitError(message: String.localizedStringWithFormat(
+            NSLocalizedString("%@ dropped %d rules at Safari's per-extension limit.", comment: "Truncated Safari rule count"),
+            target.displayName, dropped))
+    }
+
     // MARK: - Conversion & Reload
     private func rebuildAndReload(
         selectedFilters: [FilterList],
@@ -2151,12 +2494,7 @@ public actor SharedAutoUpdateManager {
         reloadContentBlockers: Bool
     ) async throws -> RebuildAndReloadSummary {
         try Task.checkCancellation()
-        #if os(iOS)
-        let detectedPlatform: Platform = .iOS
-        #else
-        let detectedPlatform: Platform = .macOS
-        #endif
-        let targets = ContentBlockerTargetManager.shared.allTargets(forPlatform: detectedPlatform)
+        let targets = ContentBlockerTargetManager.shared.allTargets(forPlatform: currentPlatform)
         guard FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: GroupIdentifier.shared.value) != nil else {
             throw AutoUpdateError.sharedContainerUnavailable
         }
@@ -2169,13 +2507,7 @@ public actor SharedAutoUpdateManager {
         } catch { appendSharedLog("Failed to prepare removeparam DNR rules: \(error.localizedDescription)") }
         let ordered = ContentBlockerMappingService.orderedForCompilation(selectedFilters)
         let byTarget = ContentBlockerMappingService.distribute(selectedFilters: selectedFilters, across: targets)
-        let zapper = await MainActor.run {
-            BlockingPauseStore.isPaused(.elementZapper)
-                ? nil
-                : ZapperContentBlockerRuleGenerator.generatedRulesText(
-                    from: ProtobufDataManager.shared.getActiveZapperRulesByHost()
-                )
-        }
+        let zapper = await zapperRulesForCompilation()
         let requests = targets.map { target in
             TargetCompilationRequest(
                 target: target,
@@ -2212,7 +2544,7 @@ public actor SharedAutoUpdateManager {
         for target in targets {
             guard let conversion = results[target.bundleIdentifier]?.outcome else { throw CancellationError() }
             if conversion.truncatedRuleCount > 0 {
-                throw ContentBlockerLimitError(message: String.localizedStringWithFormat(NSLocalizedString("%@ dropped %d rules at Safari's per-extension limit.", comment: "Truncated Safari rule count"), target.displayName, conversion.truncatedRuleCount))
+                throw Self.truncationError(target, dropped: conversion.truncatedRuleCount)
             }
         }
         // The per-page engine goes first, as in the app's apply: a Scripts
@@ -2263,6 +2595,10 @@ public actor SharedAutoUpdateManager {
                 reloadMs = reload.durationMs
                 reloadAttempts = reload.attempts
                 if let failure = Self.reloadFailure(target, reload) { failures.append(failure) }
+                if reload.success && !conversion.reusedCachedBase {
+                    BlockerRebuildCost.record(
+                        seconds: Double(result.durationMs + reload.durationMs) / 1000, for: target.bundleIdentifier)
+                }
             }
             for (filterID, count) in conversion.admittedSourceRuleCountsByFilterID {
                 appliedSourceRuleCountsByFilterID[filterID, default: 0] += count

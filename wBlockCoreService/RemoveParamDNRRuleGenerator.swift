@@ -322,6 +322,9 @@ public enum RemoveParamDNRRuleGenerator {
     /// `blockedCount` writes the blocked-request count's rules; otherwise
     /// their file is emptied.
     private static let generationLock = NSLock()
+    /// Serializes writers across processes. The app and the extension can both save.
+    private static let saveLockFilename = ".remove-param-dnr-rules.lock"
+    private static let saveLockTimeoutSeconds: TimeInterval = 5
 
     public static func saveRules(
         for filters: [FilterList],
@@ -337,7 +340,20 @@ public enum RemoveParamDNRRuleGenerator {
         ) else {
             throw CocoaError(.fileNoSuchFile)
         }
+        return try FileLock.withLock(
+            at: containerURL.appendingPathComponent(saveLockFilename, isDirectory: false),
+            timeout: saveLockTimeoutSeconds
+        ) {
+            try saveRulesLocked(for: filters, disabledSites: disabledSites, blockedCount: blockedCount, containerURL: containerURL)
+        }
+    }
 
+    private static func saveRulesLocked(
+        for filters: [FilterList],
+        disabledSites: [String],
+        blockedCount: Bool,
+        containerURL: URL
+    ) throws -> Summary {
         let inputKey = generationInputKey(
             for: filters, disabledSites: disabledSites, blockedCount: blockedCount, containerURL: containerURL
         )
@@ -1182,8 +1198,7 @@ public enum RemoveParamDNRRuleGenerator {
     }
 
     static func sha256Hex(data: Data) -> String {
-        let digest = SHA256.hash(data: data)
-        return digest.map { String(format: "%02x", $0) }.joined()
+        DigestSupport.sha256Hex(data)
     }
 }
 

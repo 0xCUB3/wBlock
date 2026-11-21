@@ -137,21 +137,21 @@ private final class TestLoader: FilterListLoader {
         precondition(offline.lists.contains { $0.id == base.id && $0.isSelected }, "a list keeps protecting until it can hand over")
         precondition(offline.lists.contains { $0.name == "AdGuard Cookie Notices" && $0.isCustom }, "a custom list is never touched")
 
-        // Widgets needs everything Popups does plus EasyList – Chat Widgets.
+        // Popups and Mobile App Banners hand over to the same topic lists: each waits for all of them, and their settings combine.
         var overlapPopups = catalogList("AdGuard Popups", selected: true)
         overlapPopups.excludedSites = ["b.com"]
-        var overlapWidgets = catalogList("AdGuard Widgets", selected: true)
-        overlapWidgets.excludedSites = ["url.example"]
-        let overlapPending: Set<UUID> = [overlapPopups.id, overlapWidgets.id]
+        var overlapBanners = catalogList("AdGuard Mobile App Banners", selected: true)
+        overlapBanners.excludedSites = ["url.example"]
+        let overlapPending: Set<UUID> = [overlapPopups.id, overlapBanners.id]
         let overlap = defaults.filter { !uBOOffered.contains($0.name) }
-            .map { list -> FilterList in var list = list; list.isSelected = false; return list } + [overlapPopups, overlapWidgets]
-        let annoyanceReplacements = Set(FilterListLoader.listReplacements["AdGuard Popups"]!)
+            .map { list -> FilterList in var list = list; list.isSelected = false; return list } + [overlapPopups, overlapBanners]
+        let popupReplacements = Set(FilterListLoader.listReplacements["AdGuard Popups"]!)
         let first = FilterListLoader.handingOverReplacedAdGuardLists(overlap, pending: overlapPending, catalogURLs: catalogURLs,
-                                                                     hasContent: { annoyanceReplacements.contains($0.name) })
-        precondition(first.handedOver.isEmpty, "a list waits while another sharing its replacements cannot hand over")
+                                                                     hasContent: { $0.name == "EasyList – Notifications" })
+        precondition(first.handedOver.isEmpty, "a list waits until every replacement has content")
         let second = FilterListLoader.handingOverReplacedAdGuardLists(first.lists, pending: overlapPending, catalogURLs: catalogURLs,
-                                                                      hasContent: { _ in true })
-        precondition(second.lists.first { $0.name == "uBlock filters – Annoyances" }!.excludedSites == ["b.com", "url.example"], "overlapping handovers must combine settings regardless of download order")
+                                                                      hasContent: { popupReplacements.contains($0.name) })
+        precondition(second.lists.first { $0.name == "EasyList – Newsletter Notices" }!.excludedSites == ["b.com", "url.example"], "overlapping handovers must combine settings regardless of download order")
 
         // Only Base's replacements arrived: Base hands over, Tracking waits.
         let remaining = pending.subtracting(offline.settled)
@@ -216,6 +216,10 @@ private final class TestLoader: FilterListLoader {
         }
         precondition(AnnoyanceChoice.turningOffGeneral(upgraded) == upgraded, "3.2.3 choice stays")
         precondition(general.isSubset(of: Set(defaults.map(\.name))), "General names in catalog")
+        // An annoyance handover must never enable a General list, or General would turn it back off.
+        for (adGuard, targets) in FilterListLoader.listReplacements {
+            precondition(Set(targets).isDisjoint(with: general), "\(adGuard) hands over to General: \(targets)")
+        }
 
         // A renamed annoyance list would silently fall into Other.
         let topical = defaults.filter { $0.category == .annoyances && AnnoyanceTopic.topic(for: $0) != .other }

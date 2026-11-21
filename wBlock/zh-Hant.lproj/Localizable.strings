@@ -1128,7 +1128,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "A new engine" = "全新引擎";
 "wBlock's new engine reads lists like uBlock Origin. Your enabled AdGuard lists were swapped for matching uBO lists." = "wBlock 的新引擎可以像 uBlock Origin 一樣讀取清單。你啟用的 AdGuard 清單已換成對應的 uBO 清單。";
 "What stays the same" = "維持不變的部分";
-"Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. AdGuard lists are still in Filters if you want them back." = "你的自訂清單、使用者腳本、Element Zapper 規則和網站設定都沒有改變。如果你想換回 AdGuard 清單，它們仍在「過濾器」中。";
+"Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. Most AdGuard lists are still in Filters if you want them back." = "你的自訂清單、使用者腳本、Element Zapper 規則和網站設定都沒有改變。如果你想換回大多數 AdGuard 清單，它們仍在「過濾器」中。";
+"Resuming blocking timed out. Try again." = "恢復封鎖逾時。請再試一次。";
 "If a site breaks" = "如果網站出了問題";
 "Turn wBlock off for that site using the wBlock button in Safari, then report it on [GitHub](https://github.com/0xCUB3/wBlock/issues)." = "在 Safari 中點按 wBlock 按鈕，為該網站關閉 wBlock，然後在 [GitHub](https://github.com/0xCUB3/wBlock/issues) 上回報。";
 "Duplicate Filter Lists" = "重複的過濾清單";

@@ -10,6 +10,21 @@ import Foundation
 import CryptoKit
 import os.log
 
+/// SHA-256 digests as lowercase hex, the form every cache fingerprint is stored in.
+public enum DigestSupport {
+    static func hex(_ digest: SHA256.Digest) -> String {
+        digest.map { String(format: "%02x", $0) }.joined()
+    }
+
+    public static func sha256Hex(_ data: Data) -> String {
+        hex(SHA256.hash(data: data))
+    }
+
+    public static func sha256Hex(_ string: String) -> String {
+        sha256Hex(Data(string.utf8))
+    }
+}
+
 public enum FilterListMetadataParser {
     private static let titleRegex = headerRegex("Title")
     private static let descriptionRegex = headerRegex("Description")
@@ -340,8 +355,7 @@ public enum ContentBlockerIncrementalCache {
         }
 
         if let extraRulesText, !extraRulesText.isEmpty {
-            let extraDigest = SHA256.hash(data: Data(extraRulesText.utf8))
-            let extraFingerprint = extraDigest.map { String(format: "%02x", $0) }.joined()
+            let extraFingerprint = DigestSupport.sha256Hex(extraRulesText)
             canonical.append("extra=\(extraFingerprint)\n")
         } else {
             canonical.append("extra=\n")
@@ -356,8 +370,7 @@ public enum ContentBlockerIncrementalCache {
             canonical.append("cosmetic=\(marker)\n")
         }
 
-        let digest = SHA256.hash(data: Data(canonical.utf8))
-        return digest.map { String(format: "%02x", $0) }.joined()
+        return DigestSupport.sha256Hex(canonical)
     }
 
     public static func loadInputSignature(
@@ -455,7 +468,7 @@ public enum ContentBlockerIncrementalCache {
         return last == UInt8(ascii: "]")
     }
 
-    private static func isJSONWhitespace(_ byte: UInt8) -> Bool {
+    static func isJSONWhitespace(_ byte: UInt8) -> Bool {
         byte == 0x20 || byte == 0x0A || byte == 0x0D || byte == 0x09
     }
 

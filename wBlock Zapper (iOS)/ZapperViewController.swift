@@ -70,7 +70,15 @@ final class ZapperViewController: UIViewController, WKNavigationDelegate, WKScri
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         webView.callAsyncJavaScript(
             "return await wblockShareDispatch({ type: 'wblock:zapper:activate' })",
-            in: nil, in: world, completionHandler: nil)
+            in: nil, in: world
+        ) { [weak self] result in
+            // The Zapper answers ok: false on a disabled or paused site. Say so
+            // instead of leaving the share sheet silently empty.
+            let reply = (try? result.get()) as? [String: Any]
+            if (reply?["ok"] as? Bool) != true {
+                self?.showUnavailable()
+            }
+        }
     }
 
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {

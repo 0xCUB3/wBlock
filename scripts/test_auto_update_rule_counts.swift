@@ -131,6 +131,7 @@ struct AutoUpdateRuleCountTests {
         await checkAppAdoptsHelperAfterRefusedSave(targets: targets, container: container)
         await checkRefusedButWrittenCommitIsAdopted(targets: targets, container: container)
         await checkPausePreservesUnclearedBlocker(targets: targets, container: container)
+        try checkOutputFileContainsRules(container: container)
 
         print("PASS test_auto_update_rule_counts")
     }
@@ -402,6 +403,31 @@ struct AutoUpdateRuleCountTests {
             groupIdentifier: groupIdentifier,
             containerURL: container
         )
+    }
+
+    /// The reload storm came from a paused run reading whole 19 MB outputs to find the inert
+    /// placeholder. The size check must call the placeholder empty and real output non-empty,
+    /// and a file of the placeholder's size with other bytes must still count as rules.
+    private static func checkOutputFileContainsRules(container: URL) throws {
+        let inertBytes = Data(ContentBlockerService.inertContentBlockerRulesJSON.utf8)
+        let inert = container.appendingPathComponent("inert-output.json")
+        try inertBytes.write(to: inert)
+        expect(!SharedAutoUpdateManager.outputFileContainsRules(at: inert),
+               "the inert placeholder output must not count as rules")
+
+        let sameSize = container.appendingPathComponent("same-size-output.json")
+        try Data(repeating: UInt8(ascii: " "), count: inertBytes.count).write(to: sameSize)
+        expect(SharedAutoUpdateManager.outputFileContainsRules(at: sameSize),
+               "an output of the placeholder's size with other bytes must count as rules")
+
+        let real = container.appendingPathComponent("real-output.json")
+        try Data("[{\"trigger\":{\"url-filter\":\"a\"},\"action\":{\"type\":\"block\"}}]".utf8).write(to: real)
+        expect(SharedAutoUpdateManager.outputFileContainsRules(at: real),
+               "real rules output must count as rules")
+
+        let missing = container.appendingPathComponent("missing-output.json")
+        expect(!SharedAutoUpdateManager.outputFileContainsRules(at: missing),
+               "a missing output holds no rules")
     }
 
     private static func expect(_ condition: @autoclosure () -> Bool, _ message: String) {

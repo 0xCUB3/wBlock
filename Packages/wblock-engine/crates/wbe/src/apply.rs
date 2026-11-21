@@ -23,11 +23,12 @@ use crate::compile::prune::Seen;
 use crate::compile::regex::domain_top_url;
 use crate::parse::{cosmetic::with_domains, restate};
 use crate::webkit::{SafariVersion, WebkitJson, WkAction, WkRule, WkTrigger};
+use memmap2::Mmap;
 use serde::{Deserialize, Serialize};
 use std::collections::hash_map::DefaultHasher;
 use rustc_hash::{FxHashMap, FxHashSet};
 use std::collections::BTreeMap;
-use std::ops::Range;
+use std::ops::{Deref, Range};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use std::hash::{Hash, Hasher};
 
@@ -54,6 +55,10 @@ pub struct ListSpec {
     pub text: String,
     #[serde(default)]
     pub path: Option<String>,
+    /// Names the file at `path` (its path, inode, size, and mtime). A list whose
+    /// file the parse cache knows by this key is neither read nor hashed.
+    #[serde(default)]
+    pub cache_key: Option<String>,
     #[serde(default)]
     pub trusted: bool,
     #[serde(default)]
@@ -100,6 +105,30 @@ pub struct PlanRequest {
     pub cosmetics: CosmeticScope,
     #[serde(default)]
     pub limits: Limits,
+    /// The extras every blocker is compiled with, so the packing measures
+    /// what the blockers will hold. Empty measures the lists alone.
+    #[serde(default)]
+    pub extras: Vec<Extra>,
+    /// Per target, the fingerprint and size of a blocker the caller already
+    /// holds for these inputs. A target whose fingerprint matches is measured
+    /// from these numbers and not compiled.
+    #[serde(default)]
+    pub known_targets: Vec<Option<KnownTarget>>,
+    /// The bytes of compiled blockers `pack` may keep, so the first
+    /// `compile_unless` of each takes its output without compiling it again.
+    /// 0 keeps none.
+    #[serde(default)]
+    pub cache_pack_outputs_max_bytes: usize,
+}
+
+/// A blocker's fingerprint and measured size, as a plan's previous apply
+/// reported them.
+#[derive(Clone, Debug, Deserialize)]
+pub struct KnownTarget {
+    /// The 16 lowercase hex digits of the blocker's fingerprint (`{:016x}`).
+    pub fingerprint: String,
+    pub rules: usize,
+    pub bytes: usize,
 }
 
 /// Extra text one blocker compiles after its lists (zapper rules, wBlock's
@@ -174,7 +203,7 @@ impl ParsedList {
 /// What `parse` reads from a list, so a list's records can be reused by any
 /// plan with the same key. The text is hashed and its length kept beside the
 /// hash; the records' offsets point into that text.
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 struct ParseKey {
     text: u64,
     len: usize,
@@ -184,10 +213,10 @@ struct ParseKey {
 }
 
 impl ParseKey {
-    fn of(list: &ListSpec, text: u64) -> ParseKey {
+    fn of(list: &ListSpec, text: u64, len: usize) -> ParseKey {
         ParseKey {
             text,
-            len: list.text.len(),
+            len,
             trusted: list.trusted,
             scope: hash(&(&list.scope.exclude, &list.scope.only)),
             version: crate::OUTPUT_VERSION,
@@ -195,34 +224,59 @@ impl ParseKey {
     }
 }
 
+/// A list kept by the parse cache: its text, which the records' offsets point
+/// into, and the records.
+struct CacheEntry {
+    key: ParseKey,
+    /// The file the list was read from, as `ListSpec::cache_key`.
+    file: Option<String>,
+    text: Arc<ListText>,
+    parsed: Arc<ParsedList>,
+}
+
 /// Parsed lists kept between plans. A plan keeps only the entries of its own
 /// lists, so the cache holds one apply's lists and a changed list is parsed
 /// again alone. The app clears it on phones after each apply.
 #[derive(Default)]
-pub struct ParseCache(Mutex<Vec<(ParseKey, Arc<ParsedList>)>>);
+pub struct ParseCache(Mutex<Vec<CacheEntry>>);
 
 /// The cache `Plan::new` uses.
 static PARSE_CACHE: ParseCache = ParseCache(Mutex::new(Vec::new()));
 
 impl ParseCache {
-    fn entries(&self) -> MutexGuard<'_, Vec<(ParseKey, Arc<ParsedList>)>> {
+    fn entries(&self) -> MutexGuard<'_, Vec<CacheEntry>> {
         self.0.lock().unwrap_or_else(PoisonError::into_inner)
     }
 
-    fn parsed(&self, key: ParseKey, list: &ListSpec) -> Arc<ParsedList> {
-        if let Some((_, hit)) = self.entries().iter().find(|(k, _)| *k == key) {
-            return hit.clone();
+    /// The entry of the list read from `file`, when its parse options are
+    /// `list`'s. Its text is not read again.
+    fn by_file(&self, file: &str, list: &ListSpec) -> Option<(ParseKey, Arc<ListText>, Arc<ParsedList>)> {
+        self.entries()
+            .iter()
+            .find(|e| e.file.as_deref() == Some(file) && e.key == ParseKey::of(list, e.key.text, e.key.len))
+            .map(|e| (e.key, e.text.clone(), e.parsed.clone()))
+    }
+
+    /// The entry for `text`, parsed now unless one has `key`; `file` is kept
+    /// as the entry's file, so the next plan finds it by key.
+    fn parsed(&self, key: ParseKey, file: Option<&str>, text: Arc<ListText>, list: &ListSpec) -> (Arc<ListText>, Arc<ParsedList>) {
+        if let Some(hit) = self.entries().iter_mut().find(|e| e.key == key) {
+            if file.is_some() {
+                hit.file = file.map(str::to_owned);
+            }
+            return (hit.text.clone(), hit.parsed.clone());
         }
-        let parsed = Arc::new(parse(list));
+        let parsed = Arc::new(parse(list, &text));
         let mut entries = self.entries();
-        if !entries.iter().any(|(k, _)| *k == key) {
-            entries.push((key, parsed.clone()));
+        if let Some(hit) = entries.iter().find(|e| e.key == key) {
+            return (hit.text.clone(), hit.parsed.clone());
         }
-        parsed
+        entries.push(CacheEntry { key, file: file.map(str::to_owned), text: text.clone(), parsed: parsed.clone() });
+        (text, parsed)
     }
 
     fn keep(&self, keys: &[ParseKey]) {
-        self.entries().retain(|(k, _)| keys.contains(k));
+        self.entries().retain(|e| keys.contains(&e.key));
     }
 
     /// Drops every entry. Plans in use keep the lists they already parsed.
@@ -231,9 +285,68 @@ impl ParseCache {
     }
 }
 
-/// Empties the process-wide parse cache.
+/// The packing decided for one set of plan inputs, kept for the next plan
+/// with the same inputs. One is kept: the app plans again with the same lists
+/// when nothing changed, and the measured compiles of `pack` are the cost.
+#[derive(Clone)]
+struct PackDecision {
+    key: u64,
+    wide: Option<Wide>,
+    duplicates: Vec<Vec<FxHashSet<u64>>>,
+    capacity: Option<Capacity>,
+}
+
+static PACK_CACHE: Mutex<Option<PackDecision>> = Mutex::new(None);
+
+/// Empties the process-wide parse cache and the packing decision kept with it.
 pub fn clear_parse_cache() {
     PARSE_CACHE.clear();
+    *PACK_CACHE.lock().unwrap_or_else(PoisonError::into_inner) = None;
+}
+
+/// A list's text. A file's UTF-8 text stays mapped rather than on the heap.
+pub struct ListText(Backing);
+
+enum Backing {
+    Owned(String),
+    /// Checked as UTF-8 when mapped, and the map is never written.
+    Mapped(Mmap),
+}
+
+impl Deref for ListText {
+    type Target = str;
+
+    fn deref(&self) -> &str {
+        match &self.0 {
+            Backing::Owned(text) => text,
+            // SAFETY: `read_text` checked these bytes are UTF-8 when it mapped them.
+            Backing::Mapped(map) => unsafe { std::str::from_utf8_unchecked(map) },
+        }
+    }
+}
+
+impl AsRef<str> for ListText {
+    fn as_ref(&self) -> &str {
+        self
+    }
+}
+
+/// Reads a list file. Bytes that are not UTF-8 become U+FFFD, so one bad byte
+/// does not fail the plan.
+fn read_text(path: &str) -> std::io::Result<ListText> {
+    let file = std::fs::File::open(path)?;
+    // SAFETY: a list is replaced by rename, never written in place (see
+    // `wbe_engine_open`), so the mapped bytes do not change under the plan.
+    let mapped = match file.metadata()?.len() {
+        0 => None,
+        _ => unsafe { Mmap::map(&file) }.ok(),
+    };
+    let backing = match mapped {
+        Some(map) if std::str::from_utf8(&map).is_ok() => Backing::Mapped(map),
+        Some(map) => Backing::Owned(String::from_utf8_lossy(&map).into_owned()),
+        None => Backing::Owned(String::from_utf8_lossy(&std::fs::read(path)?).into_owned()),
+    };
+    Ok(ListText(backing))
 }
 
 /// Records per network unit: the granularity at which rules are parsed and
@@ -286,10 +399,13 @@ impl ListScan {
 pub struct Plan {
     opts: CompileOptions,
     lists: Vec<ListSpec>,
+    /// Each list's text, as the records' offsets point into it.
+    texts: Vec<Arc<ListText>>,
     parsed: Vec<Arc<ParsedList>>,
     targets: Vec<TargetSpec>,
     cosmetics: CosmeticScope,
     limits: Limits,
+    extras: Vec<Extra>,
     /// List index -> rule identities a blocker other than this one owns (#681).
     duplicates: Vec<Vec<FxHashSet<u64>>>,
     /// Hash of each list's text, for `fingerprint`.
@@ -297,6 +413,13 @@ pub struct Plan {
     /// Where the blocks exceptions can reach go, when they go to one blocker.
     wide: Option<Wide>,
     capacity: Option<Capacity>,
+    /// `PlanRequest::known_targets`.
+    known_targets: Vec<Option<KnownTarget>>,
+    /// `PlanRequest::cache_pack_outputs_max_bytes`.
+    pack_output_budget: usize,
+    /// Per target, the blocker `pack` compiled last, with its fingerprint, for
+    /// `compile_unless` to take. Empty unless `pack_output_budget` is set.
+    pack_outputs: Mutex<Vec<Option<(u64, TargetOutput)>>>,
 }
 
 /// A packing that exceeds the limits: the budgets, and each slot's measured
@@ -348,7 +471,7 @@ impl Default for Limits {
 /// The other blocks go to the fewest blockers that have room for them, the
 /// wide one among them: each blocker with a block still keeps the exceptions
 /// not anchored at a host.
-#[derive(Debug, Hash)]
+#[derive(Clone, Debug, Hash)]
 struct Wide {
     target: usize,
     /// The sites (`Route::Site`) the plan's host exceptions name, sorted.
@@ -459,41 +582,102 @@ fn boundaries(targets: &[usize], weights: &[f64]) -> Vec<(usize, u64)> {
     split
 }
 
+/// The parse of one list: its cache key, text, and records.
+type Loaded = (ParseKey, Arc<ListText>, Arc<ParsedList>);
+
+/// The list's parse from `cache`: by its file when the cache knows the file,
+/// else from its text or its file's text, which is then parsed or found by hash.
+fn load(cache: &ParseCache, list: &ListSpec) -> Result<Loaded, String> {
+    if let Some(hit) = list.cache_key.as_deref().and_then(|file| cache.by_file(file, list)) {
+        return Ok(hit);
+    }
+    let text = match &list.path {
+        Some(path) => {
+            if !list.text.is_empty() {
+                return Err(format!("list {} specifies both path and text", list.id));
+            }
+            read_text(path).map_err(|error| format!("cannot read list {}: {error}", list.id))?
+        }
+        None => ListText(Backing::Owned(list.text.clone())),
+    };
+    let key = ParseKey::of(list, hash(&*text), text.len());
+    let (text, parsed) = cache.parsed(key, list.cache_key.as_deref(), Arc::new(text), list);
+    Ok((key, text, parsed))
+}
+
 impl Plan {
+    /// Panics when a list file cannot be read; `try_new` reports it.
     pub fn new(request: PlanRequest) -> Plan {
         Plan::with_cache(request, &PARSE_CACHE)
     }
 
+    /// `new`, with a list file that cannot be read reported as an error.
+    pub fn try_new(request: PlanRequest) -> Result<Plan, String> {
+        Plan::try_with_cache(request, &PARSE_CACHE)
+    }
+
     /// `new`, taking each list's parse from `cache` when the cache has it.
     pub fn with_cache(request: PlanRequest, cache: &ParseCache) -> Plan {
+        Plan::try_with_cache(request, cache).expect("list files are readable")
+    }
+
+    /// `with_cache`, with a list file that cannot be read reported as an error.
+    pub fn try_with_cache(mut request: PlanRequest, cache: &ParseCache) -> Result<Plan, String> {
         let opts = CompileOptions {
             safari: SafariVersion::new(request.safari.0, request.safari.1),
         };
-        let text_hashes = parallel_indices(request.lists.len(), |i| hash(&request.lists[i].text));
-        let keys: Vec<ParseKey> = request
-            .lists
-            .iter()
-            .zip(&text_hashes)
-            .map(|(list, &text)| ParseKey::of(list, text))
-            .collect();
-        let parsed = parallel_indices(request.lists.len(), |i| cache.parsed(keys[i], &request.lists[i]));
+        let loaded = parallel_indices(request.lists.len(), |i| load(cache, &request.lists[i]))
+            .into_iter()
+            .collect::<Result<Vec<Loaded>, String>>()?;
+        let keys: Vec<ParseKey> = loaded.iter().map(|(key, ..)| *key).collect();
         cache.keep(&keys);
+        // The cache and the plan hold the text now; the request's copies go.
+        for list in &mut request.lists {
+            list.text = String::new();
+        }
+        let (texts, parsed) = loaded.into_iter().map(|(_, text, parsed)| (text, parsed)).unzip();
         let mut plan = Plan {
             opts,
             lists: request.lists,
+            texts,
             parsed,
             targets: request.targets,
             cosmetics: request.cosmetics,
             limits: request.limits,
+            extras: request.extras,
             duplicates: Vec::new(),
-            text_hashes,
+            text_hashes: keys.iter().map(|key| key.text).collect(),
             wide: None,
             capacity: None,
+            known_targets: request.known_targets,
+            pack_output_budget: request.cache_pack_outputs_max_bytes,
+            pack_outputs: Mutex::new(Vec::new()),
         };
-        plan.wide = plan.wide();
-        plan.duplicates = plan.duplicate_rules();
-        plan.capacity = plan.pack().err();
-        plan
+        plan.decide(&keys);
+        Ok(plan)
+    }
+
+    /// Sets the wide blocker, the #681 duplicates, and the capacity: from the
+    /// packing kept for these inputs when it is the same, else by packing.
+    fn decide(&mut self, keys: &[ParseKey]) {
+        let key = hash(&(keys, format!("{:?}{:?}{:?}{:?}{:?}", self.opts, self.targets, self.cosmetics, self.limits, self.extras)));
+        let kept = PACK_CACHE.lock().unwrap_or_else(PoisonError::into_inner).as_ref().filter(|d| d.key == key).cloned();
+        if let Some(decision) = kept {
+            self.wide = decision.wide;
+            self.duplicates = decision.duplicates;
+            self.capacity = decision.capacity;
+            return;
+        }
+        self.wide = self.wide();
+        self.duplicates = self.duplicate_rules();
+        self.capacity = self.pack().err();
+        let decision = PackDecision {
+            key,
+            wide: self.wide.clone(),
+            duplicates: self.duplicates.clone(),
+            capacity: self.capacity.clone(),
+        };
+        *PACK_CACHE.lock().unwrap_or_else(PoisonError::into_inner) = Some(decision);
     }
 
     /// The measured packing when it exceeds the limits, else None. The plan is
@@ -520,8 +704,32 @@ impl Plan {
         }
     }
 
+    /// Each blocker's size under the current packing. A target whose
+    /// fingerprint `known_targets` gives is measured from those numbers and not
+    /// compiled. The blockers compiled here are kept, within
+    /// `pack_output_budget`, for `compile_unless`; this pass replaces the last.
     fn sizes(&self) -> Vec<Size> {
-        (0..self.targets.len()).map(|t| Size::of(&self.compile_target(t, &[]).output)).collect()
+        let mut kept: Vec<Option<(u64, TargetOutput)>> = (0..self.targets.len()).map(|_| None).collect();
+        let mut kept_bytes = 0;
+        let mut sizes = Vec::with_capacity(kept.len());
+        for (t, slot) in kept.iter_mut().enumerate() {
+            let (fingerprint, replicated) = self.fingerprinted(t, &self.extras);
+            if let Some(known) = self.known_targets.get(t).and_then(Option::as_ref) {
+                if known.fingerprint == format!("{fingerprint:016x}") {
+                    sizes.push(Size { rules: known.rules as f64, bytes: known.bytes as f64 });
+                    continue;
+                }
+            }
+            let output = self.compile_with(t, &self.extras, fingerprint, replicated);
+            sizes.push(Size::of(&output.output));
+            let bytes = output.output.webkit.as_str().len();
+            if self.pack_output_budget > 0 && kept_bytes + bytes <= self.pack_output_budget {
+                kept_bytes += bytes;
+                *slot = Some((fingerprint, output));
+            }
+        }
+        *self.pack_outputs.lock().unwrap_or_else(PoisonError::into_inner) = kept;
+        sizes
     }
 
     /// Estimates choose the initial packing, never whether it can ship. If it
@@ -663,7 +871,8 @@ impl Plan {
 
     /// The line of the rule at `p`.
     fn line(&self, list: usize, p: &Parsed) -> &str {
-        self.lists[list].text[p.offset..].lines().next().unwrap_or_default()
+        let text: &str = &self.texts[list];
+        text[p.offset..].lines().next().unwrap_or_default()
     }
 
     pub fn target_count(&self) -> usize {
@@ -989,6 +1198,26 @@ impl Plan {
         if known == Some(fingerprint) {
             return None;
         }
+        if let Some(output) = self.take_pack_output(target, fingerprint) {
+            return Some(output);
+        }
+        Some(self.compile_with(target, extras, fingerprint, replicated))
+    }
+
+    /// The blocker `pack` compiled for `target` at `fingerprint`, taken out of
+    /// the kept outputs: it is returned once, and the next call compiles.
+    fn take_pack_output(&self, target: usize, fingerprint: u64) -> Option<TargetOutput> {
+        let mut kept = self.pack_outputs.lock().unwrap_or_else(PoisonError::into_inner);
+        let slot = kept.get_mut(target)?;
+        if slot.as_ref()?.0 != fingerprint {
+            return None;
+        }
+        slot.take().map(|(_, output)| output)
+    }
+
+    /// `target`'s blocker compiled from its lists and `extras`, given the
+    /// `fingerprint` and replicated rules `fingerprinted` returned for them.
+    fn compile_with(&self, target: usize, extras: &[Extra], fingerprint: u64, replicated: Vec<Rule>) -> TargetOutput {
         let segment_list = self.segment_list(target);
         let scans = self.scans(target);
 
@@ -1095,11 +1324,11 @@ impl Plan {
             &mut seen,
             &front.unwrap_or_default(),
         );
-        Some(TargetOutput {
+        TargetOutput {
             output,
             admitted,
             fingerprint,
-        })
+        }
     }
 
     /// #925: the largest list of this blocker with excluded sites, plain
@@ -1189,14 +1418,13 @@ const PARSE_CHUNK: usize = 1 << 20;
 /// The records of `list`. Each rule is parsed again from its line when a
 /// blocker needs it (`Plan::rule`), with the list's index, so the index is not
 /// needed here.
-fn parse(list: &ListSpec) -> ParsedList {
-    parse_chunked(list, PARSE_CHUNK)
+fn parse(list: &ListSpec, text: &str) -> ParsedList {
+    parse_chunked(list, text, PARSE_CHUNK)
 }
 
 /// `parse` with chunks of about `chunk_bytes`, parsed in parallel. The records,
 /// line numbers, and stats are the same whatever the chunk size.
-fn parse_chunked(list: &ListSpec, chunk_bytes: usize) -> ParsedList {
-    let text = list.text.as_str();
+fn parse_chunked(list: &ListSpec, text: &str, chunk_bytes: usize) -> ParsedList {
     let spans = line_spans(text, chunk_bytes);
     // An affinity block's types carry from one line to the next, so each span
     // starts in the block the lines before it leave open.
@@ -1211,7 +1439,7 @@ fn parse_chunked(list: &ListSpec, chunk_bytes: usize) -> ParsedList {
             start
         })
         .collect();
-    let parse = |i: usize| parse_lines(list, spans[i].0.clone(), spans[i].1, opens[i]);
+    let parse = |i: usize| parse_lines(list, text, spans[i].0.clone(), spans[i].1, opens[i]);
     let parts = if spans.len() == 1 { vec![parse(0)] } else { parallel_indices(spans.len(), parse) };
     let mut merged = ParsedList {
         chunks: Vec::with_capacity(parts.len()),
@@ -1252,8 +1480,8 @@ fn line_spans(text: &str, chunk_bytes: usize) -> Vec<(Range<usize>, u32)> {
 
 /// The records of the lines of `list.text` in `span`, whose first line is
 /// number `lines_before + 1` and in the affinity block `affinity`.
-fn parse_lines(list: &ListSpec, span: Range<usize>, lines_before: u32, mut affinity: Option<u8>) -> ParsedList {
-    let text = &list.text[span];
+fn parse_lines(list: &ListSpec, full: &str, span: Range<usize>, lines_before: u32, mut affinity: Option<u8>) -> ParsedList {
+    let text = &full[span];
     let mut stats = Stats::default();
     // Sized up front: growing it would leave the old buffers behind.
     let mut rules = Vec::with_capacity(text.lines().count());
@@ -1270,7 +1498,7 @@ fn parse_lines(list: &ListSpec, span: Range<usize>, lines_before: u32, mut affin
             has_directive = true;
         }
         let mut line_stats = Stats::default();
-        let offset = line.as_ptr() as usize - list.text.as_ptr() as usize;
+        let offset = line.as_ptr() as usize - full.as_ptr() as usize;
         let parsed_line = parse_list(line, 0, list.trusted, &mut line_stats);
         for (position, rule) in parsed_line.iter().enumerate() {
             rules.push(Parsed {
@@ -1768,6 +1996,64 @@ mod tests {
     }
 
     #[test]
+    fn file_list_is_not_read_again_once_its_key_is_cached() {
+        let path = std::env::temp_dir().join(format!("wbe-apply-key-{}", std::process::id()));
+        std::fs::write(&path, "||one.example^\n").unwrap();
+        let file = path.to_str().unwrap().to_owned();
+        let request = |key: Option<&str>| -> PlanRequest {
+            serde_json::from_value(json!({
+                "safari": [18, 0],
+                "lists": [{"id": "list", "path": file, "cache_key": key}],
+                "targets": [{"slot": 1, "lists": [{"list": 0}]}]
+            }))
+            .unwrap()
+        };
+        let cache = ParseCache::default();
+        let first = Plan::try_with_cache(request(Some("key")), &cache).unwrap();
+        std::fs::remove_file(&path).unwrap();
+        // The file is gone, yet its key still finds the parse: nothing was read.
+        let second = Plan::try_with_cache(request(Some("key")), &cache).unwrap();
+        assert!(Arc::ptr_eq(&first.parsed[0], &second.parsed[0]));
+        assert_eq!(rules(&first, 0), rules(&second, 0));
+        assert!(Plan::try_with_cache(request(None), &cache).is_err());
+    }
+
+    #[test]
+    fn list_file_with_invalid_utf8_still_plans() {
+        let path = std::env::temp_dir().join(format!("wbe-apply-utf8-{}", std::process::id()));
+        std::fs::write(&path, b"||one.example^\n# \xff\n||two.example^\n").unwrap();
+        let file = path.to_str().unwrap().to_owned();
+        let request: PlanRequest = serde_json::from_value(json!({
+            "safari": [18, 0],
+            "lists": [{"id": "list", "path": file}],
+            "targets": [{"slot": 1, "lists": [{"list": 0}]}]
+        }))
+        .unwrap();
+        let plan = Plan::try_new(request);
+        std::fs::remove_file(&path).unwrap();
+        assert_eq!(rules(&plan.unwrap(), 0).len(), 2);
+    }
+
+    #[test]
+    fn packing_decision_follows_the_extras_it_measures() {
+        let request = |extras: Value| -> PlanRequest {
+            serde_json::from_value(json!({
+                "safari": [18, 0], "limits": {"rules": 1},
+                "lists": [{"id": "list", "text": "||one.example^"}],
+                "targets": [{"slot": 1, "lists": [{"list": 0}]}, {"slot": 2, "lists": []}],
+                "extras": extras
+            }))
+            .unwrap()
+        };
+        let extra = json!([{"text": "||two.example^"}]);
+        assert!(Plan::new(request(json!([]))).capacity().is_none());
+        // The same lists with the extra measure over the limit. The packing kept
+        // for the first plan must not answer for this one.
+        assert!(Plan::new(request(extra)).capacity().is_some());
+        assert!(Plan::new(request(json!([]))).capacity().is_none());
+    }
+
+    #[test]
     fn chunked_parse_matches_one_piece() {
         let text: String = (0..300)
             .map(|i| match i % 4 {
@@ -1782,6 +2068,7 @@ mod tests {
             id: "chunks".into(),
             text,
             path: None,
+            cache_key: None,
             trusted: false,
             scope: SiteScope::default(),
         };
@@ -1791,9 +2078,9 @@ mod tests {
                 .map(|p| (p.offset, p.line, p.index, p.identity, p.shared, p.network, p.affinity))
                 .collect()
         };
-        let whole = parse_chunked(&list, usize::MAX);
+        let whole = parse_chunked(&list, &list.text, usize::MAX);
         for chunk in [1, 64, 1000] {
-            let chunked = parse_chunked(&list, chunk);
+            let chunked = parse_chunked(&list, &list.text, chunk);
             assert!(chunked.chunks.len() > 1, "chunk {chunk} gives one chunk");
             assert_eq!(records(&chunked), records(&whole), "chunk {chunk}");
             assert_eq!(chunked.has_affinity, whole.has_affinity);
@@ -2559,6 +2846,110 @@ mod tests {
         }
     }
 
+    /// Clears the packing decision kept between plans, so a plan with these
+    /// inputs packs. Texts unique to a test keep other tests' decisions out.
+    fn clear_pack_cache() {
+        *PACK_CACHE.lock().unwrap_or_else(PoisonError::into_inner) = None;
+    }
+
+    /// A target whose fingerprint and size `known_targets` gives is measured
+    /// from them and not compiled. With every target known, the packing is the
+    /// one the measured plan chose, and its last pass compiles nothing.
+    #[test]
+    fn known_targets_skips_recompiling_clean_targets_during_pack() {
+        let text = format!("||known-targets.example^\n{}", wide_text(0));
+        let mut request = one_list_request(&text);
+        request.limits.rules = share_of_rules(&request, 0.45);
+        request.cache_pack_outputs_max_bytes = 1 << 30;
+        clear_pack_cache();
+        let measured = Plan::with_cache(request.clone(), &ParseCache::default());
+        measured.check_capacity().unwrap();
+        // The measured plan's last pass compiled every target.
+        let kept: Vec<Option<(u64, usize, usize)>> = measured
+            .pack_outputs
+            .lock()
+            .unwrap()
+            .iter()
+            .map(|slot| slot.as_ref().map(|(fp, out)| (*fp, out.output.webkit.rules() as usize, out.output.webkit.as_str().len())))
+            .collect();
+        assert!(kept.iter().all(Option::is_some));
+        request.known_targets = kept
+            .iter()
+            .map(|slot| slot.map(|(fp, rules, bytes)| KnownTarget { fingerprint: format!("{fp:016x}"), rules, bytes }))
+            .collect();
+        clear_pack_cache();
+        let skipped = Plan::with_cache(request, &ParseCache::default());
+        assert_eq!(skipped.capacity(), measured.capacity());
+        assert_eq!(format!("{:?}", skipped.wide), format!("{:?}", measured.wide));
+        assert!(skipped.pack_outputs.lock().unwrap().iter().all(Option::is_none));
+    }
+
+    /// The blocker `pack` compiles is kept for the first `compile_unless` of
+    /// it, which takes it, so that compile is free. Its output is the output
+    /// of a plan that packs without keeping anything.
+    #[test]
+    fn pack_cached_output_reused_by_compile_unless() {
+        let text = format!("||reuse-cache.example^\n{}", wide_text(0));
+        let mut request = one_list_request(&text);
+        request.limits.rules = 150_000;
+        request.cache_pack_outputs_max_bytes = 1 << 30;
+        clear_pack_cache();
+        let plan = Plan::with_cache(request.clone(), &ParseCache::default());
+        assert!(plan.pack_outputs.lock().unwrap()[0].is_some());
+        let taken = plan.compile_unless(0, &[], None).expect("nothing known");
+        assert!(plan.pack_outputs.lock().unwrap()[0].is_none(), "taken once");
+
+        request.cache_pack_outputs_max_bytes = 0;
+        let fresh = Plan::with_cache(request, &ParseCache::default()).compile_target(0, &[]);
+        assert_eq!(taken.fingerprint, fresh.fingerprint);
+        assert_eq!(taken.admitted, fresh.admitted);
+        assert_eq!(taken.output.webkit.as_str(), fresh.output.webkit.as_str());
+        assert_eq!(taken.output.runtime.join("\n"), fresh.output.runtime.join("\n"));
+        assert_eq!(
+            serde_json::to_value(&taken.output.stats).unwrap(),
+            serde_json::to_value(&fresh.output.stats).unwrap()
+        );
+        // Later compiles, and a known fingerprint, behave as before.
+        let again = plan.compile_unless(0, &[], None).expect("compiles again");
+        assert_eq!(again.output.webkit.as_str(), fresh.output.webkit.as_str());
+        assert!(plan.compile_unless(0, &[], Some(fresh.fingerprint)).is_none());
+    }
+
+    /// A list file is mapped when its text is UTF-8 and compiles as its text
+    /// does. An empty file and a file with bad bytes compile too; the bad
+    /// bytes read as U+FFFD, as they did when the file was read onto the heap.
+    #[test]
+    fn mmap_list_file_plans_and_compiles() {
+        let dir = std::env::temp_dir().join(format!("wbe-apply-mmap-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let file = |name: &str, bytes: &[u8]| {
+            let path = dir.join(name);
+            std::fs::write(&path, bytes).unwrap();
+            path.to_str().unwrap().to_owned()
+        };
+        let from_file = |path: &str| {
+            let request = json!({"safari": [18, 0], "lists": [{"id": "file", "path": path}], "targets": [{"slot": 1, "lists": [{"list": 0}]}]});
+            Plan::with_cache(serde_json::from_value(request).unwrap(), &ParseCache::default())
+        };
+        let from_text = |text: &str| plan(json!([{"id": "file", "text": text}]), json!([{"slot": 1, "lists": [{"list": 0}]}]), json!({}));
+        let webkit = |plan: &Plan| plan.compile_target(0, &[]).output.webkit.as_str().to_owned();
+
+        let valid = from_file(&file("valid.txt", b"||mapped.example^\n||second.example^\n"));
+        assert!(matches!(valid.texts[0].0, Backing::Mapped(_)));
+        assert_eq!(rules(&valid, 0).len(), 2);
+        assert_eq!(webkit(&valid), webkit(&from_text("||mapped.example^\n||second.example^\n")));
+
+        let empty = from_file(&file("empty.txt", b""));
+        assert!(matches!(empty.texts[0].0, Backing::Owned(_)));
+        assert!(rules(&empty, 0).is_empty());
+
+        let invalid = from_file(&file("invalid.txt", b"! caf\xe9 comment\n||lossy.example^\n"));
+        assert!(matches!(invalid.texts[0].0, Backing::Owned(_)));
+        assert_eq!(webkit(&invalid), webkit(&from_text("! caf\u{FFFD} comment\n||lossy.example^\n")));
+
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
+
     /// An `every_blocker` extra with a block the wide set takes: the block
     /// compiles in the one blocker that holds it, its exception where that
     /// blocker needs it, and the verdicts match the one-blocker oracle.
@@ -3252,6 +3643,7 @@ mod tests {
                     id: name,
                     text,
                     path: None,
+                    cache_key: None,
                     trusted: false,
                     scope,
                 }
@@ -3285,6 +3677,9 @@ mod tests {
             targets,
             cosmetics,
             limits: Limits::default(),
+            extras: Vec::new(),
+            known_targets: Vec::new(),
+            cache_pack_outputs_max_bytes: 0,
         })
     }
 

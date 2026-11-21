@@ -196,7 +196,7 @@ compile_direct_test filter-update-popup-status \
   wBlockCoreService/FilterUpdatePopupStatus.swift \
   scripts/test_filter_update_popup_status.swift
 compile_core_test filter-list-setup scripts/test_filter_list_setup.swift wBlock/FilterListSetup.swift \
-  wBlock/FilterListLoader.swift wBlock/LocalizationHelpers.swift wBlock/ConcurrentLogManager.swift wBlock/LogTimeZone.swift
+  wBlock/AnnoyanceTopic.swift wBlock/FilterListLoader.swift wBlock/LocalizationHelpers.swift wBlock/ConcurrentLogManager.swift wBlock/LogTimeZone.swift
 compile_core_test apply-baseline-acknowledgement scripts/test_apply_baseline_acknowledgement.swift \
   wBlock/ApplyFilterConfiguration.swift
 compile_core_test filter-list-site-exclusion scripts/test_filter_list_site_exclusion.swift
@@ -216,10 +216,10 @@ compile_core_test target-compilation scripts/test_target_compilation.swift
 compile_core_test reload-pass-timing scripts/test_reload_pass_timing.swift
 compile_core_test issue-729-headless-rebuild-gate scripts/test_issue_729_headless_rebuild_gate.swift
 compile_core_test foreign-filter-groups scripts/test_foreign_filter_groups.swift \
-  wBlock/LocalizationHelpers.swift wBlock/FilterListLoader.swift wBlock/ConcurrentLogManager.swift wBlock/LogTimeZone.swift
+  wBlock/AnnoyanceTopic.swift wBlock/LocalizationHelpers.swift wBlock/FilterListLoader.swift wBlock/ConcurrentLogManager.swift wBlock/LogTimeZone.swift
 compile_core_test filter-list-presentation scripts/test_filter_list_presentation.swift \
   wBlock/FilterListPresentation.swift wBlock/ListDisplayOrder.swift wBlock/ContentRowMetadata.swift \
-  wBlock/SwiftUICompatibility.swift wBlock/LocalizationHelpers.swift wBlock/FilterListLoader.swift wBlock/ConcurrentLogManager.swift wBlock/LogTimeZone.swift
+  wBlock/SwiftUICompatibility.swift wBlock/AnnoyanceTopic.swift wBlock/LocalizationHelpers.swift wBlock/FilterListLoader.swift wBlock/ConcurrentLogManager.swift wBlock/LogTimeZone.swift
 compile_core_test filter-url-mirrors scripts/test_filter_url_mirrors.swift
 compile_core_test filter-list-duplicates scripts/test_filter_list_duplicates.swift \
   wBlock/FilterListDuplicates.swift

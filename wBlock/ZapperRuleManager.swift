@@ -14,7 +14,8 @@ import SafariServices
 final class ZapperRuleManager: ObservableObject {
     static let shared = ZapperRuleManager()
 
-    /// Sorted list of hostnames that have at least one zapper rule.
+    /// Sorted hostnames with zapper rules, or with the Element Zapper switched off. The
+    /// switched-off ones can have no rules at all, and they must stay listed to be re-enabled.
     @Published private(set) var domains: [String] = []
 
     /// Hostnames whose zapper rules are kept but currently not applied.

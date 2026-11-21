@@ -82,6 +82,8 @@ public enum HeadlessLaunch {
     /// events cannot launch invisible app instances without a cooldown.
     public static func shouldAutoRebuildAfterStaging() async -> Bool {
         guard await ProtobufDataManager.shared.backgroundAgentDisabled else { return false }
+        // Until the app has applied this version, a headless launch cannot finish the rebuild.
+        guard SharedAutoUpdateManager.appHasAppliedCurrentVersion() else { return false }
         guard !isContainingAppRunning() else { return false }
         return consumeAutoRebuildLaunchSlot()
     }
