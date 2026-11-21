@@ -754,12 +754,12 @@ class FilterListLoader {
             FilterList(
                 id: UUID(), name: "Liste AR",
                 url: URL(string: "https://easylist-downloads.adblockplus.org/Liste_AR.txt")!,
-                category: .foreign, description: "Blocks ads on Arabic websites.",
+                category: .foreign, description: "Blocks ads on Arabic websites, from the EasyList project.",
                 languages: ["ar"], trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "Bulgarian list",
                 url: URL(string: "https://stanev.org/abp/adblock_bg.txt")!, category: .foreign,
-                description: "Blocks ads on Bulgarian websites.", languages: ["bg"],
+                description: "Blocks ads on Bulgarian websites, from the EasyList project.", languages: ["bg"],
                 trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "AdGuard Chinese filter",
@@ -838,7 +838,7 @@ class FilterListLoader {
                 url: URL(string: "https://easylist-downloads.adblockplus.org/indianlist.txt")!,
                 category: .foreign,
                 description:
-                    "Blocks ads on websites in Hindi, Tamil, and other Indic and Dravidian languages.",
+                    "Blocks ads on websites in Hindi, Tamil, and other Indic and Dravidian languages, from the EasyList project.",
                 languages: ["hi", "bn", "gu", "pa", "as", "mai", "mr", "ta", "ml", "te", "kn", "or", "ne", "si"], trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "ABPindo",
@@ -846,7 +846,7 @@ class FilterListLoader {
                     string:
                         "https://raw.githubusercontent.com/ABPindo/indonesianadblockrules/master/subscriptions/abpindo.txt"
                 )!, category: .foreign,
-                description: "Blocks ads on Indonesian and Malay websites.",
+                description: "Blocks ads on Indonesian and Malay websites, from the EasyList project.",
                 languages: ["id", "ms"], trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "AdBlockID",
@@ -876,7 +876,7 @@ class FilterListLoader {
             FilterList(
                 id: UUID(), name: "Latvian List",
                 url: URL(string: "https://raw.githubusercontent.com/Latvian-List/adblock-latvian/master/lists/latvian-list.txt")!,
-                category: .foreign, description: "Blocks ads on Latvian websites.",
+                category: .foreign, description: "Blocks ads on Latvian websites, from the EasyList project.",
                 languages: ["lv"], trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "EasyList Lithuania",
@@ -896,7 +896,7 @@ class FilterListLoader {
                 url: URL(string: "https://raw.githubusercontent.com/DandelionSprout/adfilt/master/NorwegianList.txt")!,
                 category: .foreign,
                 description:
-                    "Blocks ads on websites from Norway, Denmark, Iceland, the Danish territories, and Sámi communities.",
+                    "Blocks ads on websites from Norway, Denmark, Iceland, the Danish territories, and Sámi communities, from the EasyList project.",
                 languages: ["nb", "nn", "da", "is", "fo", "kl", "se", "sjd", "sje", "sju", "sma", "smj", "smn", "sms"], trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "PersianBlockerNG",
@@ -925,7 +925,7 @@ class FilterListLoader {
             FilterList(
                 id: UUID(), name: "RU AdList",
                 url: URL(string: "https://cdn.jsdelivr.net/gh/dimisa-RUAdList/RUAdListCDN@main/lists/ruadlist.ubo.min.txt")!,
-                category: .foreign, description: "Blocks ads on Russian websites.",
+                category: .foreign, description: "Blocks ads on Russian websites, from the EasyList project.",
                 languages: ["ru", "uk", "kk", "uz"], trustLevel: "full"),
             FilterList(
                 id: UUID(), name: "RU AdList: Counters",
@@ -962,7 +962,7 @@ class FilterListLoader {
                 url: URL(
                     string:
                         "https://raw.githubusercontent.com/easylist-thailand/easylist-thailand/master/subscription/easylist-thailand.txt"
-                )!, category: .foreign, description: "Blocks ads on Thai websites, from the EasyList project.",
+                )!, category: .foreign, description: "Blocks ads on Thai websites.",
                 languages: ["th"], trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "AdGuard Turkish filter",
@@ -974,7 +974,7 @@ class FilterListLoader {
             FilterList(
                 id: UUID(), name: "ABPVN List",
                 url: URL(string: "https://raw.githubusercontent.com/abpvn/abpvn/master/filter/abpvn_ublock.txt")!,
-                category: .foreign, description: "Blocks ads on Vietnamese websites.",
+                category: .foreign, description: "Blocks ads on Vietnamese websites, from the EasyList project.",
                 languages: ["vi"], trustLevel: "high"),
             // Low trust keeps it out of onboarding's preselection; it stays opt-in.
         ])
