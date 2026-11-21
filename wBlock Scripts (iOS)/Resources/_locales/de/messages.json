@@ -3,7 +3,7 @@
     "message": "wBlock auf dieser Website"
   },
   "context_menu_zap_element": {
-    "message": "Element löschen",
+    "message": "Element ausblenden",
     "description": "Right-click context menu item that activates the Element Zapper on the clicked element."
   },
   "extension_name": {
