@@ -1,9 +1,9 @@
 {
   "popup_site_enabled": {
-    "message": "このサイトで wBlock を有効にする"
+    "message": "このサイトでwBlockを有効にする"
   },
   "context_menu_zap_element": {
-    "message": "要素をZap",
+    "message": "要素をブロック",
     "description": "Right-click context menu item that activates the Element Zapper on the clicked element."
   },
   "extension_name": {
@@ -11,7 +11,7 @@
     "description": "The display name for the extension."
   },
   "extension_description": {
-    "message": "YouTube を含む、最もしつこい広告や追跡手法をブロックします。",
+    "message": "YouTubeを含め、特に煩わしい広告やトラッキング手法をブロックします。",
     "description": "Description of what the extension does."
   },
   "popup_status_loading": {
@@ -23,7 +23,7 @@
     "description": "Section title for the element zapper controls in the popup."
   },
   "popup_button_activate": {
-    "message": "有効化",
+    "message": "有効にする",
     "description": "Button label to activate element zapper mode."
   },
   "popup_button_clear": {
@@ -39,7 +39,7 @@
     "description": "Button label in the popup header that opens the wBlock app. Keep the product name wBlock."
   },
   "popup_rules_empty": {
-    "message": "ルールがありません",
+    "message": "要素ブロックのルールはありません",
     "description": "Empty-state text shown when no zapper rules exist for the current site."
   },
   "popup_rule_delete_aria": {
@@ -71,7 +71,7 @@
     "description": "Status label indicating blocking is globally paused."
   },
   "popup_status_partially_paused": {
-    "message": "一部停止中",
+    "message": "一部一時停止中",
     "description": "Status label indicating that some blocking components are paused."
   },
   "popup_status_active": {
@@ -83,7 +83,7 @@
     "description": "Error shown when popup fails to update per-site enabled state."
   },
   "popup_warning_open_app_to_apply": {
-    "message": "フィルターの適用を完了するには wBlock を開いてください。",
+    "message": "フィルターの適用を完了するには、wBlockを開いてください。",
     "description": "Warning shown when the site toggle persisted but a full filter apply is still required."
   },
   "popup_error_zapper_unavailable": {
@@ -91,7 +91,7 @@
     "description": "Error shown when zapper cannot be activated on the current tab."
   },
   "popup_error_clear_rules": {
-    "message": "要素ブロックルールのクリアに失敗しました。",
+    "message": "要素ブロックのルールをクリアできませんでした。",
     "description": "Error shown when popup fails to clear zapper rules for the current site."
   },
   "popup_status_unsupported": {
@@ -99,7 +99,7 @@
     "description": "Status label indicating current page does not support popup actions."
   },
   "popup_status_unavailable": {
-    "message": "利用できません",
+    "message": "利用不可",
     "description": "Status label indicating the current site setting could not be read."
   },
   "popup_status_checking": {
@@ -111,7 +111,7 @@
     "description": "Error shown if popup initialization fails."
   },
   "zapper_aria_label": {
-    "message": "wBlock 要素ブロック",
+    "message": "wBlock要素ブロック",
     "description": "Accessible label for the in-page element zapper toolbar."
   },
   "zapper_button_undo": {
@@ -135,7 +135,7 @@
     "description": "Tooltip for choosing the child element in refine mode."
   },
   "zapper_button_add_custom_rule": {
-    "message": "カスタム CSS ルールを追加…",
+    "message": "カスタムCSSルールを追加…",
     "description": "Menu item label for adding a manual CSS selector rule."
   },
   "zapper_button_done": {
@@ -143,11 +143,11 @@
     "description": "Button label to finish zapper mode."
   },
   "zapper_button_add_rule": {
-    "message": "ルール追加",
+    "message": "ルールを追加",
     "description": "Button label that hides the selected element and saves a permanent rule."
   },
   "zapper_button_hide_once": {
-    "message": "一度だけ非表示",
+    "message": "今回のみ非表示",
     "description": "Button label to hide the selected element until the page reloads, without saving a rule."
   },
   "zapper_button_cancel": {
@@ -155,11 +155,11 @@
     "description": "Button label to close the element zapper and undo every hide made in this session."
   },
   "zapper_error_enter_selector": {
-    "message": "CSS セレクタを入力してください。",
+    "message": "CSSセレクタを入力してください。",
     "description": "Validation error shown when manual selector input is empty."
   },
   "zapper_error_rule_syntax_invalid": {
-    "message": "CSS ルールの構文が正しくありません。",
+    "message": "CSSルールの構文が無効です。",
     "description": "Validation error shown when manual CSS rule syntax is invalid."
   },
   "zapper_error_selector_too_long": {
@@ -167,7 +167,7 @@
     "description": "Validation error shown when manual selector exceeds max length."
   },
   "zapper_error_selector_syntax_invalid": {
-    "message": "セレクタの構文が正しくありません。",
+    "message": "セレクタの構文が無効です。",
     "description": "Validation error shown when selector cannot be parsed."
   },
   "zapper_toast_rule_exists": {
@@ -175,23 +175,23 @@
     "description": "Toast shown when trying to add a duplicate manual rule."
   },
   "zapper_toast_already_hidden": {
-    "message": "すでに非表示です。",
+    "message": "すでに非表示になっています。",
     "description": "Toast shown when picked element is already hidden by existing rule."
   },
   "zapper_toast_rule_saved": {
-    "message": "このサイトのルールを保存しました。",
+    "message": "このサイトにルールを保存しました。",
     "description": "Toast shown after successfully adding a manual rule."
   },
   "zapper_toast_hidden_and_saved": {
-    "message": "非表示にしました。このサイトのルールを保存しました。",
+    "message": "非表示にしました。このサイトにルールを保存しました。",
     "description": "Toast shown after hiding selected element and saving generated rule."
   },
   "zapper_toast_hidden_until_reload": {
-    "message": "再読み込みまで非表示にしました。",
+    "message": "再読み込みするまで非表示にします。",
     "description": "Toast shown after hiding an element that stays hidden only until the page reloads."
   },
   "zapper_prompt_enter_selector": {
-    "message": "このサイトの CSS セレクタを入力",
+    "message": "このサイト用のCSSセレクタを入力",
     "description": "Prompt text shown when user adds a manual selector rule."
   },
   "zapper_toast_undone": {
@@ -199,15 +199,15 @@
     "description": "Toast shown after undoing the last zapper action."
   },
   "zapper_toast_unable_create_rule": {
-    "message": "その要素のルールを作成できませんでした。",
+    "message": "その要素のルールを作成できません。",
     "description": "Toast shown when selector generation fails for selected element."
   },
   "zapper_toast_enabled": {
-    "message": "要素ブロックを有効化しました。",
+    "message": "要素ブロックを有効にしました。",
     "description": "Toast shown when zapper mode is enabled."
   },
   "zapper_toast_disabled": {
-    "message": "要素ブロックを無効化しました。",
+    "message": "要素ブロックを無効にしました。",
     "description": "Toast shown when zapper mode is disabled."
   },
   "popup_userscripts": {
@@ -215,11 +215,11 @@
     "description": "Section title for userscripts that match the current page in the popup."
   },
   "popup_userscripts_empty": {
-    "message": "このページで実行されているユーザースクリプトはありません。",
+    "message": "このページで実行中のユーザースクリプトはありません。",
     "description": "Empty state shown when no userscripts match or run on the current page."
   },
   "popup_error_update_userscript": {
-    "message": "ユーザースクリプトの設定更新に失敗しました。",
+    "message": "ユーザースクリプト設定の更新に失敗しました。",
     "description": "Error shown when popup fails to update a per-site userscript setting."
   },
   "popup_paused_prompt_title": {
@@ -227,11 +227,11 @@
     "description": "Title shown in the popup when global blocking is paused."
   },
   "popup_paused_partial_prompt_title": {
-    "message": "一部のブロック機能が停止中です",
+    "message": "一部のブロック機能が一時停止中です",
     "description": "Title shown in the popup when only some blocking components are paused."
   },
   "popup_paused_prompt_message": {
-    "message": "再開するとすべてのコンポーネントが復元されます。",
+    "message": "再開すると、すべての機能の一時停止が解除されます。",
     "description": "Prompt explaining how to restore global blocking."
   },
   "popup_button_resume_blocking": {
@@ -255,15 +255,15 @@
     "description": "Shown when the containing app is unavailable while resuming blocking."
   },
   "popup_button_update_filters": {
-    "message": "フィルターを更新",
+    "message": "フィルターをアップデート",
     "description": "Button label for starting a background filter update from the popup."
   },
   "popup_error_filter_update": {
-    "message": "フィルターの更新に失敗しました。",
+    "message": "フィルターのアップデートに失敗しました。",
     "description": "Error status shown when a background filter update fails."
   },
   "popup_error_filter_update_start": {
-    "message": "フィルターの更新を開始できません。",
+    "message": "フィルターのアップデートを開始できませんでした。",
     "description": "Error shown when the background filter update cannot be started."
   },
   "popup_content_filtering": {
