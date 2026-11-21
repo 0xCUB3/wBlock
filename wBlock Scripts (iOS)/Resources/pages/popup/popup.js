@@ -89,7 +89,7 @@ async function sendNativeMessage(message) {
         // but the persisted config cache survives and would be hydrated on wake, so
         // drop it here (same key the background clears).
         const result = await browser.runtime.sendNativeMessage('application.id', message);
-        await browser.storage.local.remove('wblockConfigCacheV1');
+        await browser.storage.local.remove('wblockConfigCacheV2');
         return result;
     }
     if (!response || response.ok !== true) {
@@ -1260,6 +1260,7 @@ function isNativeNoAutoplayState(response) {
         response
         && typeof response.enabled === 'boolean'
         && typeof response.siteAllowed === 'boolean'
+        && typeof response.globalEnabled === 'boolean'
     );
 }
 
@@ -1303,7 +1304,7 @@ async function fetchNativeNoAutoplayState(siteHost) {
         return {
             enabled: response.enabled,
             siteAllowed: response.siteAllowed,
-            globalEnabled: typeof response.globalEnabled === 'boolean' ? response.globalEnabled : response.enabled,
+            globalEnabled: response.globalEnabled,
         };
     } catch (error) {
         console.warn('[wBlock] Failed to read native No Autoplay state:', error);
@@ -1418,7 +1419,7 @@ async function getNoAutoplayState(siteHost) {
     }
 
     native = await fetchNativeNoAutoplayState(siteHost) || native;
-    await mirrorNoAutoplayLocalCache(native.enabled, siteHost, native.siteAllowed);
+    await mirrorNoAutoplayLocalCache(native.globalEnabled, siteHost, native.siteAllowed);
     return native;
 }
 
@@ -1442,12 +1443,10 @@ async function setNoAutoplaySiteAllowed(siteHost, allowed) {
         host: siteHost,
         allowed: nextAllowed,
     });
-    if (!response || response.ok !== true
-        || typeof response.enabled !== 'boolean'
-        || typeof response.siteAllowed !== 'boolean') {
+    if (response?.ok !== true || !isNativeNoAutoplayState(response)) {
         throw new Error('Native No Autoplay site allow write did not persist');
     }
-    await mirrorNoAutoplayLocalCache(response.enabled, siteHost, response.siteAllowed);
+    await mirrorNoAutoplayLocalCache(response.globalEnabled, siteHost, response.siteAllowed);
 }
 
 // The global switch reads as Autoplay (on by default); `state.enabled` is
@@ -1950,7 +1949,6 @@ async function refreshUi(options = {}) {
         ? Promise.resolve(supportProbe)
         : probeTabSupport(tab.id);
     const zapperStatePromise = getAuthoritativeZapperState(host);
-    const zapperCountPromise = getZapperCount(host);
     const noAutoplayStatePromise = getNoAutoplayState(host);
 
     setStatus(t('popup_status_checking', undefined, 'Checking…'), 'neutral');
@@ -2060,18 +2058,17 @@ async function refreshUi(options = {}) {
     if (rulesToggle) {
         rulesToggle.disabled = zapperPaused;
     }
-    const [page, zapperCount, commands] = await Promise.all([
+    const [page, commands] = await Promise.all([
         pageUserScriptsPromise,
-        zapperCountPromise,
         contentScriptReachable ? fetchUserscriptCommands(tab.id) : [],
     ]);
     if (stale()) return;
     userScriptsSiteDisabled = page.siteDisabled;
     renderPageUserScripts(page.scripts, siteWhitelisted || userScriptsPaused || siteToggleInFlight);
     currentZapperRules = zapperState.rules;
-    renderZapperCount(host, zapperCount);
+    renderZapperCount(host, currentZapperRules.length);
     const zapperClear = document.getElementById('zapper-clear');
-    if (zapperClear) zapperClear.disabled = zapperPaused || zapperCount === 0;
+    if (zapperClear) zapperClear.disabled = zapperPaused || currentZapperRules.length === 0;
     renderUserscriptCommands(commands);
     if (zapperRulesExpanded) {
         renderZapperRules(currentZapperRules);
