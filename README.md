@@ -285,7 +285,7 @@ wBlock is free and open source. If it's useful to you, you can support developme
 
 <div align="center">
 
-<sub>Contributors include [@arjpar](https://github.com/arjpar), [@ameshkov](https://github.com/ameshkov), and [@shindgew](https://github.com/shindgew). Rule conversion and scriptlets come from [AdGuard](https://github.com/AdguardTeam). SponsorBlock and DeArrow data come from [Ajay Ramachandran's](https://sponsor.ajay.app/) projects under CC BY-NC-SA 4.0.</sub>
+<sub>Contributors include [@arjpar](https://github.com/arjpar), [@ameshkov](https://github.com/ameshkov), [@shindgew](https://github.com/shindgew), and [@braverug](https://github.com/braverug). Rule conversion and scriptlets come from [AdGuard](https://github.com/AdguardTeam). SponsorBlock and DeArrow data come from [Ajay Ramachandran's](https://sponsor.ajay.app/) projects under CC BY-NC-SA 4.0.</sub>
 
 <br>
 <br>
