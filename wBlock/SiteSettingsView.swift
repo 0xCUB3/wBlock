@@ -278,11 +278,7 @@ struct SiteSettingsView: View {
     private func expansionRows(_ site: SiteSummary) -> some View {
         // Every component at once, the popup's top switch (#1097).
         Toggle(isOn: Binding(
-            get: {
-                let whitelist = DisabledSitesNormalizer.normalizedDomains(from: dataManager.disabledSites)
-                return !HostMatcher.isHostDisabled(host: site.domain, disabledSites: whitelist)
-                    && !dataManager.areAllSiteComponentsDisabled(onHost: site.domain)
-            },
+            get: { !dataManager.areAllSiteComponentsDisabled(onHost: site.domain) },
             set: { runs in
                 mutateSite(site.domain) {
                     await dataManager.setAllSiteComponentsDisabled(!runs, onHost: site.domain, removingExactWhitelistEntry: true)

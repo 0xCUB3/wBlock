@@ -62,6 +62,13 @@ private func normalizeAppDataIdentifiers(_ data: inout Wblock_Data_AppData) -> B
         data.userScripts = uniqueScripts
         changed = true
     }
+    // Older saves kept whitelist entries as typed, like "*.example.com", which
+    // blocking normalizes but host checks matched literally.
+    let whitelist = DisabledSitesNormalizer.normalizedDomains(from: data.whitelist.disabledSites)
+    if whitelist != data.whitelist.disabledSites {
+        data.whitelist.disabledSites = whitelist
+        changed = true
+    }
     return changed
 }
 

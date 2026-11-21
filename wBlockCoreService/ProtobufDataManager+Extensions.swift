@@ -225,8 +225,9 @@ extension ProtobufDataManager {
     }
     
     public func setWhitelistedDomains(_ domains: [String]) async {
+        let normalized = DisabledSitesNormalizer.normalizedDomains(from: domains)
         await persistWhitelistedDomains { disabledSites in
-            disabledSites = domains
+            disabledSites = normalized
             return true
         }
     }
@@ -346,15 +347,12 @@ extension ProtobufDataManager {
         removingExactWhitelistEntry: Bool = false
     ) async -> Bool {
         guard let host = DisabledSitesNormalizer.normalizedDomain(host) else { return false }
-        let matchingSites: @Sendable ([String]) -> [String] = { sites in
-            removingExactWhitelistEntry ? sites.compactMap(DisabledSitesNormalizer.normalizedDomain) : sites
-        }
         let saved = await updateDataImmediately { data in
             var whitelist = data.whitelist.disabledSites
             if !disabled && removingExactWhitelistEntry {
-                whitelist.removeAll { DisabledSitesNormalizer.normalizedDomain($0) == host }
+                whitelist.removeAll { $0 == host }
             }
-            guard !HostMatcher.isHostDisabled(host: host, disabledSites: matchingSites(whitelist)) else { return }
+            guard !HostMatcher.isHostDisabled(host: host, disabledSites: whitelist) else { return }
             // Site Settings undo only restores overrides for this domain.
             let removedExactWhitelistEntry = whitelist != data.whitelist.disabledSites
             data.whitelist.disabledSites = whitelist
@@ -364,7 +362,7 @@ extension ProtobufDataManager {
             Self.setAutoplayAllowed(disabled, onHost: host, in: &data)
         }
         if saved { UserScriptManager.invalidateDocumentStartExecutionCache() }
-        return saved && !HostMatcher.isHostDisabled(host: host, disabledSites: matchingSites(disabledSites))
+        return saved && !HostMatcher.isHostDisabled(host: host, disabledSites: disabledSites)
     }
 
     nonisolated static func setSiteDisabled(_ disabled: Bool, onHost host: String, in sites: inout [String], includingParents: Bool = false) {
