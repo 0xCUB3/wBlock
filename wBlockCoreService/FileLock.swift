@@ -29,9 +29,7 @@ final class FileLock {
     func tryLock() -> Bool {
         if isLocked { return true }
         guard suspension?.enter() ?? true else { return false }
-        var result: Int32
-        repeat { result = flock(fileDescriptor, LOCK_EX | LOCK_NB) } while result == -1 && errno == EINTR
-        guard result == 0 else {
+        guard acquireKernelLock() else {
             suspension?.leave()
             return false
         }
@@ -39,13 +37,26 @@ final class FileLock {
         return true
     }
 
-    /// Waits for the lock until `limit`; false when it was not acquired.
+    /// Waits for the lock until `limit`; false when it was not acquired. The
+    /// suspension count is taken once for the whole wait, not on every poll.
     func lock(before limit: Date) -> Bool {
-        while !tryLock() {
-            guard Date() < limit, suspension?.isRefusing != true else { return false }
+        if isLocked { return true }
+        guard suspension?.enter() ?? true else { return false }
+        while !acquireKernelLock() {
+            guard Date() < limit, suspension?.isRefusing != true else {
+                suspension?.leave()
+                return false
+            }
             usleep(10_000)
         }
+        isLocked = true
         return true
+    }
+
+    private func acquireKernelLock() -> Bool {
+        var result: Int32
+        repeat { result = flock(fileDescriptor, LOCK_EX | LOCK_NB) } while result == -1 && errno == EINTR
+        return result == 0
     }
 
     func unlock() {
@@ -94,6 +105,9 @@ final class SuspensionGuard: @unchecked Sendable {
     private var activityOpen = false
     private var activityStarted = false
     private var expired = false
+    /// Bumped whenever an activity is opened or abandoned, so a callback from an
+    /// abandoned activity that starts late does nothing.
+    private var generation = 0
 
     init(beginActivity: @escaping BeginActivity) {
         self.beginActivity = beginActivity
@@ -106,7 +120,8 @@ final class SuspensionGuard: @unchecked Sendable {
         return activityOpen && expired
     }
 
-    /// Counts a lock about to be taken; false when suspension is imminent.
+    /// Counts a lock about to be taken. False when suspension is imminent, or
+    /// when the activity did not start in time: then no lock may be taken.
     func enter() -> Bool {
         condition.lock()
         defer { condition.unlock() }
@@ -116,14 +131,21 @@ final class SuspensionGuard: @unchecked Sendable {
             activityOpen = true
             activityStarted = false
             expired = false
+            generation += 1
+            let opened = generation
             condition.unlock()
-            beginActivity { [self] isExpired in activity(expired: isExpired) }
+            beginActivity { [self] isExpired in activity(expired: isExpired, generation: opened) }
             condition.lock()
-            let deadline = Date().addingTimeInterval(Self.startTimeout)
-            while !activityStarted && condition.wait(until: deadline) {}
         }
-        guard !expired else {
+        let watched = generation
+        let deadline = Date().addingTimeInterval(Self.startTimeout)
+        while !activityStarted && condition.wait(until: deadline) {}
+        guard activityStarted, !expired else {
             held -= 1
+            if !activityStarted && generation == watched {
+                activityOpen = false
+                generation += 1
+            }
             condition.broadcast()
             return false
         }
@@ -137,9 +159,10 @@ final class SuspensionGuard: @unchecked Sendable {
         condition.unlock()
     }
 
-    private func activity(expired isExpired: Bool) {
+    private func activity(expired isExpired: Bool, generation opened: Int) {
         condition.lock()
         defer { condition.unlock() }
+        guard opened == generation else { return }
         activityStarted = true
         if isExpired { expired = true }
         condition.broadcast()

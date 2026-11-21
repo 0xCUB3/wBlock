@@ -20,7 +20,9 @@
       return { ok: true, disabled: Boolean(response && response.disabled) };
     },
     'wblock:zapper:getRules': ({ hostname }) => native({ action: 'getZapperRules', hostname }),
-    'wblock:zapper:syncRules': ({ hostname, rules }) => native({ action: 'syncZapperRules', hostname, rules }),
+    // `added` and `removed` select native's delta path; without them a stale `rules` list replaces everything.
+    'wblock:zapper:syncRules': ({ hostname, rules, added, removed }) =>
+      native({ action: 'syncZapperRules', hostname, rules, added, removed }),
     'wblock:zapper:setDisabled': ({ hostname, disabled }) =>
       native({ action: 'setSiteZapperDisabled', hostname, disabled: disabled === true }),
     'wblock:zapper:broadcastReload': async () => {

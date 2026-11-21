@@ -261,7 +261,8 @@ final class FilterListUpdater: @unchecked Sendable {
             let httpResponse = result.response
             let responseStatus = FilterUpdateResponseClassifier.classify(
                 statusCode: httpResponse.statusCode, responseData: data,
-                localData: self.localDataForComparison(filter: filter))
+                localData: self.localDataForComparison(filter: filter),
+                usedFallbackMirror: result.servedFallback)
 
             if result.servedFallback {
                 await pendingValidatorUpdates.add(
@@ -443,7 +444,8 @@ final class FilterListUpdater: @unchecked Sendable {
         let responseLastModified = download.lastModified
         if !FilterUpdateResponseClassifier.contentDiffers(
             remoteData: download.data,
-            localData: localDataForComparison(filter: filter)
+            localData: localDataForComparison(filter: filter),
+            usedFallbackMirror: download.servedFallback
         ) {
             if responseEtag != nil || responseLastModified != nil {
                 await ProtobufDataManager.shared.setFilterValidators(

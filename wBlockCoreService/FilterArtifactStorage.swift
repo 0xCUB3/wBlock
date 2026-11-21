@@ -68,10 +68,20 @@ public enum FilterArtifactStorage {
             let url = container.appendingPathComponent(name)
             if manager.fileExists(atPath: url.path) { excludeFromBackup(url) }
         }
+        let listing = (try? manager.contentsOfDirectory(atPath: container.path)) ?? []
         // The converter before wBlock 4 wrote its inputs here; nothing does now.
-        let inputs = ((try? manager.contentsOfDirectory(atPath: container.path)) ?? [])
-            .filter { $0.hasPrefix("temp_skula.wBlock.wBlock-") && $0.hasSuffix(".txt") }
-        for name in inputs + ["Library/Caches/FilterCompilation"] {
+        let inputs = listing.filter { $0.hasPrefix("temp_skula.wBlock.wBlock-") && $0.hasSuffix(".txt") }
+        // Written by 3.2.3 and the engine before 4.0; no current code reads or writes them.
+        let obsolete = ["combined-rules.sha256", ".webext"] + listing.filter { $0.hasPrefix("engine-rebuild-") }
+        // A download stages its file here before the revision is published. Anything
+        // older than an hour was left by an interrupted download.
+        let staleCutoff = Date().addingTimeInterval(-3600)
+        let staging = listing.filter { name in
+            guard name.hasPrefix(".pending-filter-") else { return false }
+            let modified = (try? manager.attributesOfItem(atPath: container.appendingPathComponent(name).path)[.modificationDate]) as? Date
+            return (modified ?? .distantPast) < staleCutoff
+        }
+        for name in inputs + obsolete + staging + ["Library/Caches/FilterCompilation"] {
             try? manager.removeItem(at: container.appendingPathComponent(name))
         }
     }

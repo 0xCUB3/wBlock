@@ -67,18 +67,74 @@ public enum WBEngine {
         public let capacityMessage: String?
 
         public init(requestJSON: String) throws {
-            guard let handle = wbe_plan_new(requestJSON) else { throw EngineError.last() }
-            self.handle = handle
-            if let json = wbe_plan_capacity_json(handle) {
-                capacity = try JSONDecoder().decode(Capacity.self, from: Data(String(cString: json).utf8))
-                capacityMessage = wbe_plan_capacity_message(handle).map { String(cString: $0) }
-            } else {
-                capacity = nil
-                capacityMessage = nil
+            guard let raw = wbe_plan_new(Self.withFileKeys(requestJSON)) else { throw EngineError.last() }
+            // `raw` has no owner until `handle` is set, and a throw here skips
+            // `deinit`, so it is freed on that path.
+            let capacity: Capacity?
+            let capacityMessage: String?
+            do {
+                if let json = wbe_plan_capacity_json(raw) {
+                    capacity = try JSONDecoder().decode(Capacity.self, from: Data(String(cString: json).utf8))
+                    capacityMessage = wbe_plan_capacity_message(raw).map { String(cString: $0) }
+                } else {
+                    capacity = nil
+                    capacityMessage = nil
+                }
+            } catch {
+                wbe_plan_free(raw)
+                throw error
             }
+            handle = raw
+            self.capacity = capacity
+            self.capacityMessage = capacityMessage
         }
 
         deinit { wbe_plan_free(handle) }
+
+        /// The request with `cache_key` set on each file list, so the engine
+        /// skips reading a file it has parsed and the file has not changed.
+        /// A request that cannot be read is passed on unchanged.
+        static func withFileKeys(_ requestJSON: String) -> String {
+            guard var request = try? JSONSerialization.jsonObject(with: Data(requestJSON.utf8)) as? [String: Any],
+                  var lists = request["lists"] as? [[String: Any]] else { return requestJSON }
+            var changed = false
+            for index in lists.indices where lists[index]["cache_key"] == nil {
+                guard let path = lists[index]["path"] as? String, let key = fileKey(path) else { continue }
+                lists[index]["cache_key"] = key
+                changed = true
+            }
+            guard changed else { return requestJSON }
+            request["lists"] = lists
+            guard let data = try? JSONSerialization.data(withJSONObject: request, options: [.sortedKeys]) else {
+                return requestJSON
+            }
+            return String(decoding: data, as: UTF8.self)
+        }
+
+        /// `path|inode|size|mtime`, which changes when the file is replaced or
+        /// written. Read it before the file, so a change in between leaves the
+        /// key stale rather than current.
+        static func fileKey(_ path: String) -> String? {
+            var info = stat()
+            guard stat(path, &info) == 0 else { return nil }
+            return "\(path)|\(info.st_ino)|\(info.st_size)|\(info.st_mtimespec.tv_sec).\(info.st_mtimespec.tv_nsec)"
+        }
+
+        /// The fingerprint `compileTarget` compares with `knownFingerprint` for
+        /// blocker `target` compiled with `extras`. A caller stores it as the
+        /// 16 hex digits `String(format: "%016llx", fingerprint)`, which is the
+        /// form `known_targets` takes.
+        public func targetFingerprint(_ target: Int, extras: String) throws -> UInt64 {
+            guard target >= 0 else {
+                throw EngineError(errorDescription: "target index out of bounds")
+            }
+            let fingerprint = wbe_plan_target_fingerprint(handle, target, extras)
+            // Zero is a fingerprint too; only a set error means failure.
+            guard fingerprint != 0 || String(cString: wbe_last_error()).isEmpty else {
+                throw EngineError.last()
+            }
+            return fingerprint
+        }
 
         /// Compiles the blocker unless `knownFingerprint` is the fingerprint its
         /// output has now (`compiled.stats.fingerprint`); then nil, and nothing
@@ -92,16 +148,34 @@ public enum WBEngine {
             ) else {
                 throw EngineError.last()
             }
-            defer { wbe_compile_free(result) }
-            if wbe_compile_unchanged(result) { return nil }
-            let statsJSON = String(cString: wbe_compile_stats_json(result))
+            if wbe_compile_unchanged(result) {
+                wbe_compile_free(result)
+                return nil
+            }
+            // The result owns the strings the accessors return, so it is freed
+            // only after they are read, or, for the webkit JSON, with its Data.
+            let stats: Stats
+            do {
+                stats = try JSONDecoder().decode(Stats.self, from: Data(String(cString: wbe_compile_stats_json(result)).utf8))
+            } catch {
+                wbe_compile_free(result)
+                throw error
+            }
+            let runtimeRules = String(cString: wbe_compile_runtime_text(result))
             let webkit = wbe_compile_webkit_json(result)!
-            return Compiled(
-                // One copy out of the engine's buffer; no String round trip.
-                safariRulesJSON: Data(bytes: webkit, count: strlen(webkit)),
-                runtimeRules: String(cString: wbe_compile_runtime_text(result)),
-                stats: try JSONDecoder().decode(Stats.self, from: Data(statsJSON.utf8))
+            let length = strlen(webkit)
+            guard length > 0 else {
+                wbe_compile_free(result)
+                return Compiled(safariRulesJSON: Data(), runtimeRules: runtimeRules, stats: stats)
+            }
+            // The engine's buffer is handed over, not copied: it is freed when
+            // the Data is released.
+            let safariRulesJSON = Data(
+                bytesNoCopy: UnsafeMutableRawPointer(mutating: UnsafeRawPointer(webkit)),
+                count: length,
+                deallocator: .custom { _, _ in wbe_compile_free(result) }
             )
+            return Compiled(safariRulesJSON: safariRulesJSON, runtimeRules: runtimeRules, stats: stats)
         }
     }
 
@@ -112,8 +186,14 @@ public enum WBEngine {
         guard wbe_engine_build(runtimeRules, &bytes, &length), let bytes else {
             throw EngineError.last()
         }
-        defer { wbe_bytes_free(bytes, length) }
-        return Data(bytes: bytes, count: length)
+        guard length > 0 else {
+            wbe_bytes_free(bytes, length)
+            return Data()
+        }
+        // The engine's buffer is handed over, not copied: freed with the Data.
+        return Data(bytesNoCopy: UnsafeMutableRawPointer(bytes), count: length, deallocator: .custom { pointer, count in
+            wbe_bytes_free(pointer.assumingMemoryBound(to: UInt8.self), count)
+        })
     }
 
     /// The per-page engine. Not safe for concurrent use; callers serialize.

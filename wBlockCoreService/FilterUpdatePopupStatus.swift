@@ -64,6 +64,8 @@ public enum FilterUpdatePopupStatus {
     private static let staleAfter: TimeInterval = 300
     private static let lock = NSLock()
     private static let lockFilename = "filter-update-popup.lock"
+    /// Callers can run on the main actor, so a contended lock must give up.
+    private static let lockTimeoutSeconds: TimeInterval = 2
 
     public static func beginIfIdle(
         groupIdentifier: String = GroupIdentifier.shared.value,
@@ -256,7 +258,7 @@ public enum FilterUpdatePopupStatus {
             ?? FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier)
         guard let directory else { return nil }
         let lockURL = directory.appendingPathComponent(lockFilename, isDirectory: false)
-        return try? FileLock.withLock(at: lockURL, timeout: .infinity, operation)
+        return try? FileLock.withLock(at: lockURL, timeout: lockTimeoutSeconds, operation)
         #else
         return operation()
         #endif

@@ -64,6 +64,10 @@ public enum PendingFilterUpdateRevisions {
 
     private static let lock = NSLock()
     private static let fileLockTimeoutSeconds: TimeInterval = 2
+    private static let digestCacheLock = NSLock()
+    /// SHA-256 digests keyed by path, size, and mtime of the opened file.
+    /// Writers replace files by rename, so a changed file has a new key.
+    nonisolated(unsafe) private static var digestCache: [String: String] = [:]
 
     public static func storeURL(groupIdentifier: String = GroupIdentifier.shared.value) -> URL? {
         FileManager.default
@@ -152,6 +156,18 @@ public enum PendingFilterUpdateRevisions {
         return contains(filterID: filterID, storeURL: url)
     }
 
+    /// Whether any downloaded revision is still waiting for an apply. Reads the
+    /// store without the file lock: writers replace it by rename, so a read never
+    /// sees a partial file, and the check stays cheap for a foreground caller.
+    public static func hasPendingRevisions(groupIdentifier: String = GroupIdentifier.shared.value) -> Bool {
+        guard let url = storeURL(groupIdentifier: groupIdentifier) else { return false }
+        return hasPendingRevisions(storeURL: url)
+    }
+
+    public static func hasPendingRevisions(storeURL: URL) -> Bool {
+        !loadStateUnlocked(from: storeURL).revisionsByFilterID.isEmpty
+    }
+
     public static func contains(filterID: String, storeURL: URL) -> Bool {
         lock.lock()
         defer { lock.unlock() }
@@ -170,6 +186,7 @@ public enum PendingFilterUpdateRevisions {
 
     public static func pendingFilterIDs(selectedFilterIDs: Set<String>, storeURL: URL) -> Set<String> {
         guard !selectedFilterIDs.isEmpty else { return [] }
+        prewarmDigests(for: selectedFilterIDs, storeURL: storeURL)
         lock.lock()
         defer { lock.unlock() }
         return (try? withFileLock(for: storeURL) {
@@ -231,6 +248,7 @@ public enum PendingFilterUpdateRevisions {
 
     public static func snapshotPublished(filterIDs: Set<String>, storeURL: URL) -> Snapshot {
         guard !filterIDs.isEmpty else { return Snapshot(tokensByFilterID: [:]) }
+        prewarmDigests(for: filterIDs, storeURL: storeURL)
         lock.lock()
         defer { lock.unlock() }
         return (try? withFileLock(for: storeURL) {
@@ -263,6 +281,7 @@ public enum PendingFilterUpdateRevisions {
     }
 
     public static func isPublished(filterID: String, storeURL: URL) -> Bool {
+        prewarmDigests(for: [filterID], storeURL: storeURL)
         lock.lock()
         defer { lock.unlock() }
         return (try? withFileLock(for: storeURL) {
@@ -288,6 +307,7 @@ public enum PendingFilterUpdateRevisions {
     }
 
     public static func publishedRevision(filterID: String, storeURL: URL) -> Revision? {
+        prewarmDigests(for: [filterID], storeURL: storeURL)
         lock.lock()
         defer { lock.unlock() }
         return try? withFileLock(for: storeURL) {
@@ -397,6 +417,19 @@ public enum PendingFilterUpdateRevisions {
         try data.write(to: url, options: .atomic)
     }
 
+    /// Hashes the source and staged copies of `filterIDs` before the file lock is
+    /// taken, so the locked check finds their digests in the cache. The state is
+    /// read without the lock; a stale read only costs a cache miss.
+    private static func prewarmDigests(for filterIDs: Set<String>, storeURL: URL) {
+        let directory = storeURL.deletingLastPathComponent()
+        for revision in loadStateUnlocked(from: storeURL).revisionsByFilterID.values where filterIDs.contains(revision.filterID) {
+            for name in [revision.sourceFilename, revision.stagedFilename] {
+                guard let name = safeFilename(name) else { continue }
+                _ = sha256Hex(of: directory.appendingPathComponent(name, isDirectory: false))
+            }
+        }
+    }
+
     private static func ensurePublishedUnlocked(_ revision: Revision, storeURL: URL) -> Bool {
         guard let expectedDigest = revision.sourceSHA256?.lowercased(), !expectedDigest.isEmpty,
               let sourceFilename = safeFilename(revision.sourceFilename) else {
@@ -442,6 +475,15 @@ public enum PendingFilterUpdateRevisions {
     private static func sha256Hex(of url: URL) -> String? {
         guard let handle = try? FileHandle(forReadingFrom: url) else { return nil }
         defer { try? handle.close() }
+        // The key comes from the opened file, so it describes the bytes hashed below.
+        var info = stat()
+        guard fstat(handle.fileDescriptor, &info) == 0 else { return nil }
+        let key = "\(url.path)|\(info.st_size)|\(info.st_mtimespec.tv_sec).\(info.st_mtimespec.tv_nsec)"
+        digestCacheLock.lock()
+        let cached = digestCache[key]
+        digestCacheLock.unlock()
+        if let cached { return cached }
+
         var hasher = SHA256()
         do {
             while true {
@@ -452,6 +494,11 @@ public enum PendingFilterUpdateRevisions {
         } catch {
             return nil
         }
-        return hasher.finalize().map { String(format: "%02x", $0) }.joined()
+        let digest = hasher.finalize().map { String(format: "%02x", $0) }.joined()
+        digestCacheLock.lock()
+        if digestCache.count >= 64 { digestCache.removeAll() }
+        digestCache[key] = digest
+        digestCacheLock.unlock()
+        return digest
     }
 }

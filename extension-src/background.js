@@ -218,6 +218,9 @@
    * newer engine.
    */
   const PERSISTED_CONFIG_CACHE_KEY = "wblockConfigCacheV2";
+  const PERSISTED_CONFIG_CACHE_SCHEMA_VERSION = 2;
+  // Keys written by 3.2.3 builds that nothing reads anymore.
+  const RETIRED_STORAGE_KEYS = ["wblockConfigCacheV1", "wblockRedirectDNRStatusReport"];
   const PERSISTED_CONFIG_CACHE_LIMIT = 40;
   const PERSIST_CONFIG_CACHE_DELAY_MS = 1000;
   let persistConfigCacheTimer = null;
@@ -239,6 +242,7 @@
         }
         await browser.storage.local.set({
           [PERSISTED_CONFIG_CACHE_KEY]: {
+            schemaVersion: PERSISTED_CONFIG_CACHE_SCHEMA_VERSION,
             engineTimestamp,
             entries: entries.slice(-PERSISTED_CONFIG_CACHE_LIMIT)
           }
@@ -259,10 +263,18 @@
   };
   const configCacheHydration = (async () => {
     const generation = configurationGeneration;
+    for (const key of RETIRED_STORAGE_KEYS) {
+      browser.storage.local.remove(key).catch(() => {});
+    }
     try {
       const stored = await browser.storage.local.get(PERSISTED_CONFIG_CACHE_KEY);
       if (generation !== configurationGeneration) return;
       const persisted = stored && stored[PERSISTED_CONFIG_CACHE_KEY];
+      if (persisted && persisted.schemaVersion !== PERSISTED_CONFIG_CACHE_SCHEMA_VERSION) {
+        // Entries from another schema are discarded whole; the next native lookup rebuilds them.
+        await browser.storage.local.remove(PERSISTED_CONFIG_CACHE_KEY);
+        return;
+      }
       if (!persisted || typeof persisted.engineTimestamp !== "number" || !Array.isArray(persisted.entries)) {
         return;
       }
@@ -294,7 +306,6 @@
       }));
     } catch {}
   };
-  let nativeMessageQueue = Promise.resolve();
   const nativeMessageTimeoutMs = request => {
     const action = request && typeof request.action === "string" ? request.action : "";
     if (action === "syncZapperRules" || action === "getZapperRules") return 3500;
@@ -362,12 +373,17 @@
     }, forget);
     return promise;
   };
-  const sendQueuedNativeMessage = request => {
+  // Maintenance pings (auto-update, filter staging) can run for minutes. They
+  // get a lane of their own so interactive calls never wait behind them.
+  const nativeMessageLanes = { interactive: Promise.resolve(), maintenance: Promise.resolve() };
+  const sendLanedNativeMessage = (lane, request) => {
     const action = request && typeof request.action === "string" ? request.action : "";
-    const response = nativeMessageQueue.then(() => withNativeMessageTimeout(browser.runtime.sendNativeMessage("application.id", request), nativeMessageTimeoutMs(request), action));
-    nativeMessageQueue = response.catch(() => {});
+    const response = nativeMessageLanes[lane].then(() => withNativeMessageTimeout(browser.runtime.sendNativeMessage("application.id", request), nativeMessageTimeoutMs(request), action));
+    nativeMessageLanes[lane] = response.catch(() => {});
     return forgetStaleStateAround(action, response);
   };
+  const sendQueuedNativeMessage = request => sendLanedNativeMessage("interactive", request);
+  const sendMaintenanceNativeMessage = request => sendLanedNativeMessage("maintenance", request);
   const sendPriorityNativeMessage = request => {
     const action = request && typeof request.action === "string" ? request.action : "";
     return forgetStaleStateAround(action, withNativeMessageTimeout(
@@ -839,7 +855,9 @@
     }
   };
   const readGMFetchResponseBytes = async (response, maximumBytes) => {
-    if (!response.body || typeof response.body.getReader !== "function") {
+    // A 204 or 304 reply has no body stream to read.
+    if (!response.body) return new Uint8Array(0);
+    if (typeof response.body.getReader !== "function") {
       throw new Error("GM_xmlhttpRequest response cannot be safely bounded");
     }
     const reader = response.body.getReader();
@@ -1236,6 +1254,9 @@
     if (message && message.action === "wblock:zapper:syncRules") {
       const hostname = typeof message.hostname === "string" ? message.hostname : "";
       const rules = Array.isArray(message.rules) ? message.rules : [];
+      // A delta merges into the stored list; a full list from an older page replaces it.
+      const added = Array.isArray(message.added) ? message.added : undefined;
+      const removed = Array.isArray(message.removed) ? message.removed : undefined;
       if (!hostname) {
         return { ok: false, error: "Missing hostname", rules: [] };
       }
@@ -1243,7 +1264,9 @@
         const response = await sendQueuedNativeMessage({
           action: "syncZapperRules",
           hostname,
-          rules
+          rules,
+          added,
+          removed
         });
         return response || { ok: false, rules: [] };
       } catch (error) {
@@ -1984,7 +2007,7 @@
       return userScriptRefreshPingInFlight || Promise.resolve();
     }
     lastUserScriptRefreshPingAt = now;
-    userScriptRefreshPingInFlight = sendQueuedNativeMessage({ action: "maybeUpdateUserScripts" })
+    userScriptRefreshPingInFlight = sendMaintenanceNativeMessage({ action: "maybeUpdateUserScripts" })
       .then(response => {
         if (response && response.updated > 0) {
           clearDocumentStartSessionCache();
@@ -2009,7 +2032,7 @@
       return filterStagePingInFlight || Promise.resolve();
     }
     lastFilterStagePingAt = now;
-    filterStagePingInFlight = sendQueuedNativeMessage({ action: "maybeStageFilterUpdates" })
+    filterStagePingInFlight = sendMaintenanceNativeMessage({ action: "maybeStageFilterUpdates" })
       .catch(error => {
         console.warn("[wBlock] Filter staging ping failed:", error);
       })

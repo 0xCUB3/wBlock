@@ -17,6 +17,7 @@ struct ProtobufReliabilityTests {
         await testSourceTimestampOwnership(root: root.appendingPathComponent("source-timestamp"))
         await testInlineFilterSelection(root: root.appendingPathComponent("inline-filters"))
         await testCorruptionRecovery(root: root.appendingPathComponent("recovery"))
+        await testMidSessionCorruptionHealsOnNextSave(root: root.appendingPathComponent("mid-session-corruption"))
         await testMissingMainAndScriptTimestamp(root: root.appendingPathComponent("missing-main"))
         await testCorruptMainWithoutBackup(root: root.appendingPathComponent("no-backup-recovery"))
         await testInitialization(root: root.appendingPathComponent("migration-failure"))
@@ -537,6 +538,30 @@ struct ProtobufReliabilityTests {
         await restarted.loadData()
         let restartedLevel = await restarted.selectedBlockingLevel
         expect(restartedLevel == "after-recovery", "mutation after repair must survive restart")
+    }
+
+    /// A main corrupted while the app runs must not fail the next save. The save
+    /// heals the main, quarantines the corrupt bytes, and leaves no clone temp files.
+    private static func testMidSessionCorruptionHealsOnNextSave(root: URL) async {
+        let manager = await makeManager(root: root)
+        await manager.loadData()
+        await manager.setSelectedBlockingLevel("before-corruption")
+        let initialSaved = await manager.saveDataImmediately()
+        expect(initialSaved, "initial state must persist")
+        let dataURL = root.appendingPathComponent("wblock_data.pb")
+        try! Data([0xff, 0x00, 0xff]).write(to: dataURL, options: .atomic)
+
+        await manager.setSelectedBlockingLevel("after-corruption")
+        let healedSaved = await manager.saveDataImmediately()
+        expect(healedSaved, "a save after mid-session corruption must succeed")
+        expect(FileManager.default.fileExists(atPath: dataURL.appendingPathExtension("corrupt").path),
+               "the corrupt main bytes must be quarantined")
+        let leftovers = try! FileManager.default.contentsOfDirectory(atPath: root.path).filter { $0.hasSuffix(".tmp") }
+        expect(leftovers.isEmpty, "backup clones must not leave temporary files behind: \(leftovers)")
+
+        let restarted = await makeManager(root: root)
+        await restarted.loadData()
+        expect(restarted.selectedBlockingLevel == "after-corruption", "the healed main must hold the new state")
     }
 
     private static func testInitialization(root: URL) async {

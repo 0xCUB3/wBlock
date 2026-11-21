@@ -1128,7 +1128,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "A new engine" = "새로운 엔진";
 "wBlock's new engine reads lists like uBlock Origin. Your enabled AdGuard lists were swapped for matching uBO lists." = "wBlock의 새 엔진은 uBlock Origin처럼 목록을 읽습니다. 사용 중이던 AdGuard 목록은 대응하는 uBO 목록으로 바뀌었습니다.";
 "What stays the same" = "그대로인 것";
-"Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. AdGuard lists are still in Filters if you want them back." = "사용자 목록, 사용자 스크립트, Element Zapper 규칙, 사이트별 설정은 그대로입니다. AdGuard 목록도 필요하면 다시 쓸 수 있도록 필터에 남아 있습니다.";
+"Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. Most AdGuard lists are still in Filters if you want them back." = "사용자 목록, 사용자 스크립트, Element Zapper 규칙, 사이트별 설정은 그대로입니다. AdGuard 목록 대부분은 필요하면 다시 쓸 수 있도록 필터에 남아 있습니다.";
+"Resuming blocking timed out. Try again." = "차단 다시 시작이 시간 초과되었습니다. 다시 시도해 주세요.";
 "If a site breaks" = "사이트가 깨진다면";
 "Turn wBlock off for that site using the wBlock button in Safari, then report it on [GitHub](https://github.com/0xCUB3/wBlock/issues)." = "Safari에서 wBlock 버튼을 눌러 해당 사이트에서 wBlock을 끄고, [GitHub](https://github.com/0xCUB3/wBlock/issues)에 보고해 주세요.";
 "Duplicate Filter Lists" = "중복된 필터 목록";

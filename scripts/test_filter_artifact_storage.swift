@@ -55,7 +55,13 @@ struct FilterArtifactStorageTests {
         let outsideInput = try make(inputName(), in: outside)
         let symlink = root.appendingPathComponent(inputName())
         try manager.createSymbolicLink(at: symlink, withDestinationURL: outsideInput)
+        let obsolete = [try make("combined-rules.sha256"), try make("engine-rebuild-\(UUID().uuidString)"),
+                        try make(".webext", folder: true)]
+        let staleStaging = try make(".pending-filter-\(UUID().uuidString).txt", old: true)
+        let freshStaging = try make(".pending-filter-\(UUID().uuidString).txt")
         FilterArtifactStorage.maintain(container: root, generatedFilenames: [legacy.lastPathComponent, "../outside"])
+        for url in obsolete + [staleStaging] { expect(!manager.fileExists(atPath: url.path), url.lastPathComponent) }
+        expect(manager.fileExists(atPath: freshStaging.path), "a download in progress keeps its staging file")
         expect(try excluded(legacy))
         for url in [root, custom, settings, unknown] {
             expect(try !excluded(url), "authoritative and unknown data must remain backup eligible")

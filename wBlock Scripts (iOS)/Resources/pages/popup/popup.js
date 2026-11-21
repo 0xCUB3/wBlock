@@ -126,28 +126,56 @@ function zapperMetaKey(host) {
     return `${ZAPPER_META_PREFIX}${host}`;
 }
 
+// The content script writes the pending delta into this same meta record, so
+// every field it uses must survive a normalize here.
 function normalizeSyncMeta(raw) {
-    if (!raw || typeof raw !== 'object') {
-        return { pendingSync: false, lastLocalEditAt: 0, lastSyncAt: 0, disabled: false };
-    }
-    const lastLocalEditAt = Number(raw.lastLocalEditAt);
-    const lastSyncAt = Number(raw.lastSyncAt);
+    const source = raw && typeof raw === 'object' ? raw : {};
+    const lastLocalEditAt = Number(source.lastLocalEditAt);
+    const lastSyncAt = Number(source.lastSyncAt);
+    const pendingSync = Boolean(source.pendingSync);
     return {
-        pendingSync: Boolean(raw.pendingSync),
+        pendingSync,
+        // Null marks pending state saved before edits were kept as deltas.
+        pendingAdded: !pendingSync ? [] : Array.isArray(source.pendingAdded) ? normalizeRules(source.pendingAdded) : null,
+        pendingRemoved: pendingSync ? normalizeRules(source.pendingRemoved) : [],
         lastLocalEditAt: Number.isFinite(lastLocalEditAt) ? lastLocalEditAt : 0,
         lastSyncAt: Number.isFinite(lastSyncAt) ? lastSyncAt : 0,
-        disabled: raw.disabled === true,
+        disabled: source.disabled === true,
     };
 }
 
+// Pending edits travel as add/remove deltas. Pushing the full local list after a
+// failed sync would erase rules added from another surface (Share Sheet, another tab).
+function pendingDeltaOf(meta) {
+    return meta.pendingAdded === null ? null : { added: meta.pendingAdded, removed: meta.pendingRemoved };
+}
+
+function deltaKey(delta) {
+    return JSON.stringify([delta.added, delta.removed]);
+}
+
+function mergeDelta(base, edit) {
+    const added = new Set(base.added);
+    const removed = new Set(base.removed);
+    for (const selector of edit.added) {
+        removed.delete(selector);
+        added.add(selector);
+    }
+    for (const selector of edit.removed) {
+        added.delete(selector);
+        removed.add(selector);
+    }
+    return { added: [...added], removed: [...removed] };
+}
+
 async function getSyncMeta(host) {
-    if (!host) return { pendingSync: false, lastLocalEditAt: 0, lastSyncAt: 0, disabled: false };
+    if (!host) return normalizeSyncMeta(null);
     try {
         const key = zapperMetaKey(host);
         const result = await browser.storage.local.get(key);
         return normalizeSyncMeta(result[key]);
     } catch {
-        return { pendingSync: false, lastLocalEditAt: 0, lastSyncAt: 0, disabled: false };
+        return normalizeSyncMeta(null);
     }
 }
 
@@ -185,7 +213,8 @@ async function migrateLegacyZapperRulesDisabled(host, rules = null) {
             await syncRulesToNative(host, rules);
         }
         const response = await setSiteZapperDisabled(host, true);
-        await browser.storage.local.remove(key);
+        // Keep the legacy flag unless native confirmed the write, so a failed or timed-out write retries on the next open.
+        if (response && response.ok === true) await browser.storage.local.remove(key);
         return Boolean(response && response.disabled);
     } catch (error) {
         console.warn('[wBlock] Failed to migrate legacy Zapper state:', error);
@@ -203,21 +232,35 @@ function normalizeNativeZapperState(response) {
     };
 }
 
-async function syncRulesToNative(host, rules) {
+// Native's list is authoritative after a sync. A pending delta clears only when no
+// newer edit merged into it while this sync was in flight.
+async function adoptSyncedRules(host, rules, delta) {
+    const normalized = normalizeRules(rules);
+    await browser.storage.local.set({ [zapperStorageKey(host)]: normalized });
+    const current = pendingDeltaOf(await getSyncMeta(host));
+    const settled = !delta || (current !== null && deltaKey(current) === deltaKey(delta));
+    await setSyncMeta(host, settled
+        ? { pendingSync: false, pendingAdded: [], pendingRemoved: [], lastSyncAt: Date.now() }
+        : { lastSyncAt: Date.now() });
+    return normalized;
+}
+
+// A delta is merged natively; the full list rides along for relays that only forward `rules`.
+async function syncRulesToNative(host, rules, delta = null) {
     if (!host) return null;
-    const normalizedRules = normalizeRules(rules);
+    const payload = { rules: normalizeRules(rules) };
+    if (delta) {
+        payload.added = normalizeRules(delta.added);
+        payload.removed = normalizeRules(delta.removed);
+    }
     try {
         const response = await withTimeout(browser.runtime.sendMessage({
             action: 'wblock:zapper:syncRules',
             hostname: host,
-            rules: normalizedRules
+            ...payload
         }), NATIVE_MESSAGE_TIMEOUT_MS, 'Zapper sync timed out.');
         if (response && Array.isArray(response.rules)) {
-            const key = zapperStorageKey(host);
-            const normalized = normalizeRules(response.rules);
-            await browser.storage.local.set({ [key]: normalized });
-            await setSyncMeta(host, { pendingSync: false, lastSyncAt: Date.now() });
-            return normalized;
+            return await adoptSyncedRules(host, response.rules, delta);
         }
         return null;
     } catch {
@@ -225,14 +268,10 @@ async function syncRulesToNative(host, rules) {
             const response = await sendNativeMessage({
                 action: 'syncZapperRules',
                 hostname: host,
-                rules: normalizedRules
+                ...payload
             });
             if (response && Array.isArray(response.rules)) {
-                const key = zapperStorageKey(host);
-                const normalized = normalizeRules(response.rules);
-                await browser.storage.local.set({ [key]: normalized });
-                await setSyncMeta(host, { pendingSync: false, lastSyncAt: Date.now() });
-                return normalized;
+                return await adoptSyncedRules(host, response.rules, delta);
             }
         } catch {
             return null;
@@ -257,7 +296,7 @@ async function fetchRulesFromNative(host) {
         const nativeSig = rulesSignature(state.rules);
         const meta = await getSyncMeta(host);
         if (meta.pendingSync && localSig !== nativeSig) {
-            const reconciled = await syncRulesToNative(host, localRules);
+            const reconciled = await syncRulesToNative(host, localRules, pendingDeltaOf(meta));
             const rules = Array.isArray(reconciled) ? reconciled : localRules;
             const disabled = state.disabled || await migrateLegacyZapperRulesDisabled(host, rules);
             await setSyncMeta(host, { disabled });
@@ -281,7 +320,7 @@ async function fetchRulesFromNative(host) {
             const nativeSig = rulesSignature(state.rules);
             const meta = await getSyncMeta(host);
             if (meta.pendingSync && localSig !== nativeSig) {
-                const reconciled = await syncRulesToNative(host, localRules);
+                const reconciled = await syncRulesToNative(host, localRules, pendingDeltaOf(meta));
                 const rules = Array.isArray(reconciled) ? reconciled : localRules;
                 const disabled = state.disabled || await migrateLegacyZapperRulesDisabled(host, rules);
                 await setSyncMeta(host, { disabled });
@@ -303,12 +342,14 @@ async function getAuthoritativeZapperState(host) {
         return nativeState;
     }
     const localRules = await loadZapperRules(host);
-    if (localRules.length > 0) {
-        syncRulesToNative(host, localRules).catch(() => {});
+    const meta = await getSyncMeta(host);
+    // Only a pending edit is pushed; the cached list may be older than native's.
+    if (meta.pendingSync) {
+        syncRulesToNative(host, localRules, pendingDeltaOf(meta)).catch(() => {});
     }
     return {
         rules: localRules,
-        disabled: (await getSyncMeta(host)).disabled === true,
+        disabled: meta.disabled === true,
     };
 }
 
@@ -671,19 +712,22 @@ async function loadZapperRules(host) {
     }
 }
 
-async function saveZapperRules(host, rules) {
+// `edit` lists the selectors this change added and removed; only that delta is
+// sent, so a stale popup list cannot erase rules saved elsewhere.
+async function saveZapperRules(host, rules, edit) {
     if (!host) return;
-    const key = zapperStorageKey(host);
     const normalized = normalizeRules(rules);
-    await browser.storage.local.set({ [key]: normalized });
-    await setSyncMeta(host, { pendingSync: true, lastLocalEditAt: Date.now() });
-    const reconciled = await syncRulesToNative(host, normalized);
-    if (!Array.isArray(reconciled)) {
-        return;
-    }
-    if (rulesSignature(reconciled) !== rulesSignature(normalized)) {
-        await browser.storage.local.set({ [key]: reconciled });
-    }
+    const meta = await getSyncMeta(host);
+    const legacyPending = meta.pendingSync && meta.pendingAdded === null;
+    const pending = legacyPending ? null : mergeDelta(pendingDeltaOf(meta) || { added: [], removed: [] }, edit);
+    await browser.storage.local.set({ [zapperStorageKey(host)]: normalized });
+    await setSyncMeta(host, {
+        pendingSync: true,
+        pendingAdded: pending ? pending.added : null,
+        pendingRemoved: pending ? pending.removed : [],
+        lastLocalEditAt: Date.now(),
+    });
+    await syncRulesToNative(host, normalized, pending);
 }
 
 async function notifyZapperRulesChanged(tabId) {
@@ -1557,8 +1601,8 @@ function setupListeners() {
             try {
                 setError('');
                 const next = currentZapperRules.slice();
-                next.splice(idx, 1);
-                await saveZapperRules(host, next);
+                const [deleted] = next.splice(idx, 1);
+                await saveZapperRules(host, next, { added: [], removed: [deleted] });
                 currentZapperRules = await getAuthoritativeZapperRules(host);
                 renderZapperRules(currentZapperRules);
                 await updateZapperCount(host);
@@ -1843,7 +1887,7 @@ function setupListeners() {
 let resumeRecheckTimer = null;
 function scheduleResumeRecheck(resuming) {
     clearTimeout(resumeRecheckTimer);
-    resumeRecheckTimer = resuming ? setTimeout(() => { refreshUi().catch(() => {}); }, 2000) : null;
+    resumeRecheckTimer = resuming ? setTimeout(() => { refreshUi({ resumeRecheck: true }).catch(() => {}); }, 2000) : null;
 }
 
 // Each load supersedes the ones before it, so a slow answer for the
@@ -1869,9 +1913,13 @@ async function refreshUi(options = {}) {
             console.warn('[wBlock] Failed to restore filter update status:', error);
         });
     }
-    browser.runtime.sendMessage({ action: 'wblock:installRemoveParamDNRRules' }).catch((error) => {
-        console.warn('[wBlock] Failed to refresh removeparam DNR rules:', error);
-    });
+    // The resume poll reruns this every 2 s, and the background forces a reinstall
+    // per request, so only a regular load asks for one.
+    if (!options.resumeRecheck) {
+        browser.runtime.sendMessage({ action: 'wblock:installRemoveParamDNRRules' }).catch((error) => {
+            console.warn('[wBlock] Failed to refresh removeparam DNR rules:', error);
+        });
+    }
 
     const hostEl = document.getElementById('site-host');
     const disableToggle = document.getElementById('enable-toggle');

@@ -237,6 +237,34 @@ struct PendingFilterUpdateRevisionTests {
         expect(!PendingFilterUpdateRevisions.contains(filterID: "orphan-filter", storeURL: crashStoreURL),
                "an unpublishable revision should be pruned")
 
+        // Digests are cached by path, size, and mtime: a matching source is
+        // recognized, and a replaced source with a new size is not.
+        let freshStoreURL = directory.appendingPathComponent("has-pending-\(UUID().uuidString).json")
+        expect(!PendingFilterUpdateRevisions.hasPendingRevisions(storeURL: freshStoreURL),
+               "an empty store has no pending revisions")
+        let bigSourceURL = directory.appendingPathComponent("big-source.txt")
+        let bigData = Data(repeating: 0x61, count: 3 * 1024 * 1024)
+        try! bigData.write(to: bigSourceURL)
+        let bigDigest = SHA256.hash(data: bigData).map { String(format: "%02x", $0) }.joined()
+        PendingFilterUpdateRevisions.markDownloaded(
+            filterID: "big-filter",
+            sourceSHA256: bigDigest,
+            sourceFilename: bigSourceURL.lastPathComponent,
+            token: "big-token",
+            storeURL: freshStoreURL
+        )
+        expect(PendingFilterUpdateRevisions.hasPendingRevisions(storeURL: freshStoreURL),
+               "a downloaded revision is pending until it is applied")
+        expect(PendingFilterUpdateRevisions.pendingFilterIDs(selectedFilterIDs: ["big-filter"], storeURL: freshStoreURL)
+            == ["big-filter"], "a cached matching digest keeps the revision pending")
+        expect(PendingFilterUpdateRevisions.pendingFilterIDs(selectedFilterIDs: ["big-filter"], storeURL: freshStoreURL)
+            == ["big-filter"], "a repeated check served from the digest cache agrees")
+        try! Data(repeating: 0x62, count: 3 * 1024 * 1024 + 1).write(to: bigSourceURL)
+        expect(PendingFilterUpdateRevisions.pendingFilterIDs(selectedFilterIDs: ["big-filter"], storeURL: freshStoreURL).isEmpty,
+               "a replaced source must not match the cached digest")
+        expect(!PendingFilterUpdateRevisions.hasPendingRevisions(storeURL: freshStoreURL),
+               "a pruned revision is no longer pending")
+
         print("PASS")
     }
 

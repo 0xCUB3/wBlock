@@ -1128,7 +1128,8 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "A new engine" = "Un motor nou";
 "wBlock's new engine reads lists like uBlock Origin. Your enabled AdGuard lists were swapped for matching uBO lists." = "Noul motor al wBlock citește listele ca uBlock Origin. Listele AdGuard activate au fost înlocuite cu listele uBO corespunzătoare.";
 "What stays the same" = "Ce rămâne la fel";
-"Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. AdGuard lists are still in Filters if you want them back." = "Listele tale personalizate, userscripturile, regulile Element Zapper și setările pentru site-uri nu se schimbă. Listele AdGuard sunt încă în Filtre, dacă vrei să le revii.";
+"Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. Most AdGuard lists are still in Filters if you want them back." = "Listele tale personalizate, userscripturile, regulile Element Zapper și setările pentru site-uri nu se schimbă. Majoritatea listelor AdGuard sunt încă în Filtre, dacă vrei să le revii.";
+"Resuming blocking timed out. Try again." = "Reluarea blocării a expirat. Încearcă din nou.";
 "If a site breaks" = "Dacă un site nu mai merge";
 "Turn wBlock off for that site using the wBlock button in Safari, then report it on [GitHub](https://github.com/0xCUB3/wBlock/issues)." = "Oprește wBlock pentru acel site cu butonul wBlock din Safari, apoi raportează-l pe [GitHub](https://github.com/0xCUB3/wBlock/issues).";
 "Duplicate Filter Lists" = "Liste de filtre duplicate";

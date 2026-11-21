@@ -31,6 +31,15 @@ public enum BlockingPauseStore {
     public static let resumeRequestKey = "blockingResumeRequested"
     public static let resumeStatusKey = "blockingResumeStatus"
     public static let resumeErrorKey = "blockingResumeError"
+    /// Time of the last resume progress (request queued, or apply heartbeat). An in-flight
+    /// status older than `resumeTimeout` reads as failed.
+    public static let resumeRequestedAtKey = "blockingResumeRequestedAt"
+    /// Epoch time until which content blockers read rules as unpaused. Set only for the
+    /// reload inside a resume, so the persisted pause flags are never touched.
+    public static let contentBlockingResumingUntilKey = "contentBlockingResumingUntil"
+    /// Seconds a resume may go without progress before it reads as failed. The same value
+    /// bounds the reload window, so a crash mid-resume unpauses content blockers only briefly.
+    public static let resumeTimeout: TimeInterval = 120
     public static let resumeRequestNotificationName = "skula.wBlock.blocking-resume-requested"
     private static let resumeRequestLock = NSLock()
 
@@ -47,15 +56,18 @@ public enum BlockingPauseStore {
         groupIdentifier: String = GroupIdentifier.shared.value
     ) -> BlockingPauseComponents {
         guard let defaults = UserDefaults(suiteName: groupIdentifier) else { return [] }
+        let stored: BlockingPauseComponents
         if let rawValue = defaults.object(forKey: componentsKey) as? NSNumber {
-            return BlockingPauseComponents(rawValue: rawValue.intValue).intersection(.all)
+            stored = BlockingPauseComponents(rawValue: rawValue.intValue).intersection(.all)
+        } else {
+            // Existing installations only have `isBlockingPaused`; a true value means that
+            // every component was paused by the old global switch.
+            stored = defaults.bool(forKey: key) ? BlockingPauseComponents.all : []
+            defaults.set(stored.rawValue, forKey: componentsKey)
         }
-
-        // Existing installations only have `isBlockingPaused`; a true value means that
-        // every component was paused by the old global switch.
-        let migrated = defaults.bool(forKey: key) ? BlockingPauseComponents.all : []
-        defaults.set(migrated.rawValue, forKey: componentsKey)
-        return migrated
+        // While a resume reload is open, filters and the zapper read as unpaused. This is
+        // applied on read only; the stored components are never changed here.
+        return resumeWindowOpen(defaults) ? stored.subtracting([.filters, .elementZapper]) : stored
     }
 
     public static func isPaused(
@@ -72,6 +84,10 @@ public enum BlockingPauseStore {
     ) -> Bool {
         isPaused(.filters, groupIdentifier: groupIdentifier)
             && isPaused(.elementZapper, groupIdentifier: groupIdentifier)
+    }
+
+    private static func resumeWindowOpen(_ defaults: UserDefaults) -> Bool {
+        defaults.double(forKey: contentBlockingResumingUntilKey) > Date().timeIntervalSince1970
     }
 
     /// Reads the global paused state. It remains true whenever any component is paused.
@@ -98,16 +114,18 @@ public enum BlockingPauseStore {
         setPausedComponents(paused ? .all : [], groupIdentifier: groupIdentifier)
     }
 
-    /// Allows Safari to read prepared rules during a serialized resume apply without
-    /// resuming user scripts or committing the global pause toggle prematurely.
+    /// Lets Safari read the prepared rules during a serialized resume reload. It opens a
+    /// transient window instead of editing the persisted pause flags, so a crash mid-resume
+    /// leaves the flags paused and the window expires on its own.
     @MainActor
     public static func withContentBlockingResumed<T>(
         groupIdentifier: String = GroupIdentifier.shared.value,
         operation: @MainActor () async throws -> T
     ) async rethrows -> T {
-        let previous = pausedComponents(groupIdentifier: groupIdentifier)
-        setPausedComponents(previous.subtracting([.filters, .elementZapper]), groupIdentifier: groupIdentifier)
-        defer { setPausedComponents(previous, groupIdentifier: groupIdentifier) }
+        _ = pausedComponents(groupIdentifier: groupIdentifier)
+        let defaults = UserDefaults(suiteName: groupIdentifier)
+        defaults?.set(Date().timeIntervalSince1970 + resumeTimeout, forKey: contentBlockingResumingUntilKey)
+        defer { defaults?.removeObject(forKey: contentBlockingResumingUntilKey) }
         return try await operation()
     }
 
@@ -119,15 +137,15 @@ public enum BlockingPauseStore {
         guard let defaults = UserDefaults(suiteName: groupIdentifier) else { return .idle }
         resumeRequestLock.lock()
         defer { resumeRequestLock.unlock() }
-        let currentStatus = ResumeStatus(
-            rawValue: defaults.string(forKey: resumeStatusKey) ?? ResumeStatus.idle.rawValue
-        ) ?? .idle
+        // A stale in-flight status reads as failed here, so a fresh request goes through.
+        let currentStatus = resumeStatus(groupIdentifier: groupIdentifier).status
         if currentStatus == .pending || currentStatus == .applying {
             return currentStatus
         }
 
         defaults.set(true, forKey: resumeRequestKey)
         defaults.set(ResumeStatus.pending.rawValue, forKey: resumeStatusKey)
+        defaults.set(Date().timeIntervalSince1970, forKey: resumeRequestedAtKey)
         defaults.removeObject(forKey: resumeErrorKey)
         CFNotificationCenterPostNotification(
             CFNotificationCenterGetDarwinNotifyCenter(),
@@ -149,8 +167,11 @@ public enum BlockingPauseStore {
         return true
     }
 
+    /// Also serves as the apply heartbeat: each call restarts the staleness clock.
     public static func setResumeApplying(groupIdentifier: String = GroupIdentifier.shared.value) {
-        UserDefaults(suiteName: groupIdentifier)?.set(ResumeStatus.applying.rawValue, forKey: resumeStatusKey)
+        guard let defaults = UserDefaults(suiteName: groupIdentifier) else { return }
+        defaults.set(ResumeStatus.applying.rawValue, forKey: resumeStatusKey)
+        defaults.set(Date().timeIntervalSince1970, forKey: resumeRequestedAtKey)
     }
 
     public static func setResumeSucceeded(groupIdentifier: String = GroupIdentifier.shared.value) {
@@ -173,9 +194,18 @@ public enum BlockingPauseStore {
     ) -> (status: ResumeStatus, error: String?) {
         let defaults = UserDefaults(suiteName: groupIdentifier)
         let rawStatus = defaults?.string(forKey: resumeStatusKey) ?? ResumeStatus.idle.rawValue
-        return (
-            status: ResumeStatus(rawValue: rawStatus) ?? .idle,
-            error: defaults?.string(forKey: resumeErrorKey)
-        )
+        let status = ResumeStatus(rawValue: rawStatus) ?? .idle
+        let lastProgress = defaults?.double(forKey: resumeRequestedAtKey) ?? 0
+        let inFlight = status == .pending || status == .applying
+        if inFlight && Date().timeIntervalSince1970 - lastProgress > resumeTimeout {
+            return (
+                status: .failed,
+                error: NSLocalizedString(
+                    "Resuming blocking timed out. Try again.",
+                    comment: "Popup message when a resume made no progress for two minutes"
+                )
+            )
+        }
+        return (status: status, error: defaults?.string(forKey: resumeErrorKey))
     }
 }

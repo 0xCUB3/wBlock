@@ -26,17 +26,8 @@ pub struct WbePlan(Plan, Option<(CString, CString)>);
 #[no_mangle]
 pub unsafe extern "C" fn wbe_plan_new(request_json: *const c_char) -> *mut WbePlan {
     guard(ptr::null_mut(), || {
-        let mut request: PlanRequest = serde_json::from_str(cstr(request_json, "request_json")?)
+        let request: PlanRequest = serde_json::from_str(cstr(request_json, "request_json")?)
             .map_err(|error| error.to_string())?;
-        for list in &mut request.lists {
-            if let Some(path) = &list.path {
-                if !list.text.is_empty() {
-                    return Err(format!("list {} specifies both path and text", list.id));
-                }
-                list.text = std::fs::read_to_string(path)
-                    .map_err(|error| format!("cannot read list {}: {error}", list.id))?;
-            }
-        }
         for target in &request.targets {
             if target
                 .lists
@@ -52,7 +43,7 @@ pub unsafe extern "C" fn wbe_plan_new(request_json: *const c_char) -> *mut WbePl
                 return Err("invalid target shard".into());
             }
         }
-        let plan = Plan::new(request);
+        let plan = Plan::try_new(request)?;
         let capacity = match plan.capacity() {
             Some(capacity) => {
                 let json = serde_json::to_string(capacity).map_err(|error| error.to_string())?;
@@ -134,6 +125,30 @@ pub unsafe extern "C" fn wbe_plan_compile_target(
             stats: to_c(stats.to_string())?,
             unchanged: false,
         })))
+    })
+}
+
+/// The fingerprint `wbe_plan_compile_target` compares with a known one for
+/// blocker `target` compiled with `extras_json`. On an invalid target or extras
+/// it returns 0 and sets `wbe_last_error`.
+///
+/// # Safety
+/// `plan` must be a live pointer from `wbe_plan_new` and `extras_json` a valid
+/// C string.
+#[no_mangle]
+pub unsafe extern "C" fn wbe_plan_target_fingerprint(
+    plan: *const WbePlan,
+    target: usize,
+    extras_json: *const c_char,
+) -> u64 {
+    guard(0, || {
+        let plan = plan.as_ref().ok_or("plan is NULL")?;
+        if target >= plan.0.target_count() {
+            return Err("target index out of bounds".into());
+        }
+        let extras: Vec<Extra> = serde_json::from_str(cstr(extras_json, "extras_json")?)
+            .map_err(|error| error.to_string())?;
+        Ok(plan.0.fingerprint(target, &extras))
     })
 }
 
@@ -484,6 +499,33 @@ mod tests {
             wbe_compile_free(result);
             assert!(wbe_plan_compile_target(plan, 1, c("[]").as_ptr(), false, 0).is_null());
             assert!(last_error().contains("target index out of bounds"));
+            wbe_plan_free(plan);
+        }
+    }
+
+    #[test]
+    fn plan_target_fingerprint_matches_the_compiled_one() {
+        unsafe {
+            let request = c(
+                r#"{"safari":[18,0],"lists":[{"id":"list","text":"||fingerprint.example^"}],"targets":[{"slot":1,"lists":[{"list":0}]}]}"#,
+            );
+            let plan = wbe_plan_new(request.as_ptr());
+            assert!(!plan.is_null(), "{}", last_error());
+            let fingerprint = wbe_plan_target_fingerprint(plan, 0, c("[]").as_ptr());
+            assert_ne!(fingerprint, 0, "{}", last_error());
+            let result = wbe_plan_compile_target(plan, 0, c("[]").as_ptr(), false, 0);
+            let stats = CStr::from_ptr(wbe_compile_stats_json(result)).to_str().unwrap();
+            let stats: serde_json::Value = serde_json::from_str(stats).unwrap();
+            assert_eq!(stats["fingerprint"], fingerprint.to_string());
+            wbe_compile_free(result);
+            // A different extras text is a different blocker.
+            let other = wbe_plan_target_fingerprint(plan, 0, c(r#"[{"text":"||other.example^"}]"#).as_ptr());
+            assert_ne!(other, fingerprint);
+            assert_eq!(wbe_plan_target_fingerprint(plan, 1, c("[]").as_ptr()), 0);
+            assert!(last_error().contains("target index out of bounds"));
+            assert_eq!(wbe_plan_target_fingerprint(plan, 0, ptr::null()), 0);
+            assert!(last_error().contains("extras_json is NULL"));
+            assert_eq!(wbe_plan_target_fingerprint(ptr::null(), 0, c("[]").as_ptr()), 0);
             wbe_plan_free(plan);
         }
     }

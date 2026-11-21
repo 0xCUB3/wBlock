@@ -1137,7 +1137,8 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "A new engine" = "Yeni bir motor";
 "wBlock's new engine reads lists like uBlock Origin. Your enabled AdGuard lists were swapped for matching uBO lists." = "wBlock'un yeni motoru listeleri uBlock Origin gibi okur. Etkin olan AdGuard listelerin yerine karşılık gelen uBO listeleri geçirildi.";
 "What stays the same" = "Değişmeyenler";
-"Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. AdGuard lists are still in Filters if you want them back." = "Özel listelerin, userscript'lerin, Element Zapper kuralların ve site ayarların değişmedi. İstersen AdGuard listeleri hâlâ Filtreler içinde duruyor.";
+"Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. Most AdGuard lists are still in Filters if you want them back." = "Özel listelerin, userscript'lerin, Element Zapper kuralların ve site ayarların değişmedi. İstersen AdGuard listelerinin çoğu hâlâ Filtreler içinde duruyor.";
+"Resuming blocking timed out. Try again." = "Engellemeyi sürdürme zaman aşımına uğradı. Tekrar dene.";
 "If a site breaks" = "Bir site bozulursa";
 "Turn wBlock off for that site using the wBlock button in Safari, then report it on [GitHub](https://github.com/0xCUB3/wBlock/issues)." = "Safari'deki wBlock düğmesini kullanarak o site için wBlock'u kapat ve [GitHub](https://github.com/0xCUB3/wBlock/issues)'da bildir.";
 "Duplicate Filter Lists" = "Yinelenen Filtre Listeleri";

@@ -32,14 +32,22 @@ enum PlayerCleanerPreference {
 
 // Compile the production BackupManager with in-memory service doubles. Only
 // the identity-derived inline files are real, and live inside a unique temp dir.
+// The address and replacement tables are seams the test sets; the real tables
+// are covered by test_filter_catalog_migrations.
 struct FilterListLoader {
     nonisolated(unsafe) static var directory: URL!
     nonisolated(unsafe) static var unavailableIDs: Set<UUID> = []
+    nonisolated(unsafe) static var migrations: [String: URL] = [:]
+    nonisolated(unsafe) static var replacedNames: Set<String> = []
     func localFileURL(for filter: FilterList) -> URL? {
         guard !Self.unavailableIDs.contains(filter.id) else { return nil }
         return Self.directory.appendingPathComponent(ContentBlockerIncrementalCache.localFilename(for: filter))
     }
-    static func migratedURL(for urlString: String) -> URL? { nil }
+    static func migratedURL(for urlString: String) -> URL? { migrations[urlString] }
+    static func canonicalFilterURLString(_ urlString: String) -> String {
+        migratedURL(for: urlString)?.absoluteString ?? urlString
+    }
+    static func isReplacedList(_ list: FilterList) -> Bool { !list.isCustom && replacedNames.contains(list.name) }
 }
 actor ConcurrentLogManager {
     static let shared = ConcurrentLogManager()
@@ -108,6 +116,7 @@ actor ConcurrentLogManager {
     var dataManager = ProtobufDataManager.shared
     var saveFilterListsResult = true
     var saveFilterListsHook: (() -> Void)?
+    var adGuardHandoverPending: Set<UUID> = []
     @discardableResult
     func saveFilterLists() async -> Bool {
         saveFilterListsHook?()
@@ -254,6 +263,49 @@ enum AppAppearance: String {
         print("PASS backup sources: missing, invalid UTF-8, unreadable, unavailable path, empty, valid, remote, atomic rejection")
     }
 
+    // A 3.2.3 backup names built-in lists by the addresses 3.2.3 used. Moved addresses must still
+    // match, and a replaced AdGuard list the backup had on is queued to hand over.
+    @MainActor static func testThreeTwoThreeBuiltInSelections() async throws {
+        let oldPrivacy = "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/118_optimized.txt"
+        let oldBase = "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/platforms/extension/safari/filters/2_optimized.txt"
+        let privacyURL = URL(string: "https://example.com/easyprivacy.txt")!
+        let baseURL = URL(string: "https://example.com/adguard-base.txt")!
+        FilterListLoader.migrations = [oldPrivacy: privacyURL, oldBase: baseURL]
+        FilterListLoader.replacedNames = ["AdGuard Base Filter"]
+        defer {
+            FilterListLoader.migrations = [:]
+            FilterListLoader.replacedNames = []
+        }
+        func restore(baseOn: Bool) async throws -> AppFilterManager {
+            let manager = AppFilterManager()
+            let privacy = FilterList(name: "EasyPrivacy", url: privacyURL, category: .privacy, isSelected: true)
+            let base = FilterList(name: "AdGuard Base Filter", url: baseURL, category: .ads, isSelected: false)
+            let other = FilterList(name: "Other", url: URL(string: "https://example.com/other.txt")!, category: .ads, isSelected: false)
+            manager.filterLists = [privacy, base, other]
+            let backup = WBlockBackup(version: 1, createdAt: Date(), appVersion: "3.2.3",
+                filterSelections: [
+                    .init(url: oldPrivacy, isSelected: false),
+                    .init(url: oldBase, isSelected: baseOn),
+                    .init(url: "https://example.com/other.txt", isSelected: true),
+                ],
+                customFilterLists: [], whitelistedDomains: [], zapperRules: [:], disabledZapperDomains: [], userScripts: [])
+            try await BackupManager.restoreBackup(backup, filterManager: manager)
+            return manager
+        }
+
+        let manager = try await restore(baseOn: true)
+        precondition(manager.filterLists.first { $0.name == "EasyPrivacy" }?.isSelected == false,
+                     "a list whose address moved must restore its backed-up selection")
+        precondition(manager.filterLists.first { $0.name == "AdGuard Base Filter" }?.isSelected == true)
+        precondition(manager.filterLists.first { $0.name == "Other" }?.isSelected == true)
+        let baseID = manager.filterLists.first { $0.name == "AdGuard Base Filter" }!.id
+        precondition(manager.adGuardHandoverPending == [baseID], "a restored replaced list must queue its handover")
+
+        let off = try await restore(baseOn: false)
+        precondition(off.adGuardHandoverPending.isEmpty, "a replaced list that the backup had off queues nothing")
+        print("PASS backup 3.2.3 selections: moved addresses restore, replaced AdGuard lists queue their handover")
+    }
+
     @MainActor static func main() async throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -261,6 +313,7 @@ enum AppAppearance: String {
         FilterListLoader.directory = directory
         try await testAutomaticUpdatePreferences()
         try await testLocalSourceAvailability()
+        try await testThreeTwoThreeBuiltInSelections()
         for content: String? in [nil, "", "||example.com^"] {
             let manager = AppFilterManager()
             var backup = try await BackupManager.createBackup(filterManager: manager)

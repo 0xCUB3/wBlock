@@ -40,6 +40,9 @@ struct wBlockApp: App {
 
         Task {
             await WBlockLaunchSetup.run()
+            // Migration and the auto-rebuild run in AppFilterManager's setup task. The launch
+            // CloudSync sync must not read or write settings while they are in flight.
+            await filterManager.waitUntilReady()
             await MainActor.run {
                 hasCompletedLaunchSetup = true
                 CloudSyncManager.shared.activateAfterLaunchSetup()

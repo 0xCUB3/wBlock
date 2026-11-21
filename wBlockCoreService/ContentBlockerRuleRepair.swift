@@ -10,34 +10,109 @@ enum ContentBlockerRuleRepair {
     /// or nil when WebKit compiles it as is (the failure had another cause) or
     /// it is not a rule array.
     static func repaired(_ data: Data) async -> (data: Data, dropped: [String])? {
-        guard let rules = try? JSONSerialization.jsonObject(with: data) as? [Any], !rules.isEmpty,
-              await !compiles(rules)
+        guard let ranges = topLevelObjectRanges(in: data), !ranges.isEmpty,
+              await !compiles(data)
         else { return nil }
-        let rejected = await rejectedIndices(rules, offset: 0)
+        let rejected = await rejectedIndices(data, ranges[...])
         guard !rejected.isEmpty else { return nil }
         let drop = Set(rejected)
-        let kept = rules.enumerated().filter { !drop.contains($0.offset) }.map(\.element)
-        guard let repaired = try? JSONSerialization.data(withJSONObject: kept) else { return nil }
-        let dropped = rejected.prefix(5).compactMap { index in
-            (try? JSONSerialization.data(withJSONObject: rules[index])).map { String(decoding: $0, as: UTF8.self) }
+        let kept = ranges.indices.filter { !drop.contains($0) }.map { ranges[$0] }
+        let dropped = rejected.prefix(5).map { String(decoding: data[ranges[$0]], as: UTF8.self) }
+        return (assemble(data, kept), dropped)
+    }
+
+    /// Byte ranges of each object in a top-level JSON array, or nil when the data
+    /// is not one. Only brackets and string escapes are tracked, so no rule is
+    /// built; WebKit judges each rule's contents when it compiles.
+    static func topLevelObjectRanges(in data: Data) -> [Range<Int>]? {
+        data.withUnsafeBytes { bytes -> [Range<Int>]? in
+            let origin = data.startIndex
+            var index = 0
+            func skipWhitespace() {
+                while index < bytes.count, ContentBlockerIncrementalCache.isJSONWhitespace(bytes[index]) { index += 1 }
+            }
+            /// The offset just past the `}` closing the object that starts at `start`.
+            func objectEnd(from start: Int) -> Int? {
+                var depth = 0
+                var inString = false
+                var escaped = false
+                var cursor = start
+                while cursor < bytes.count {
+                    let byte = bytes[cursor]
+                    cursor += 1
+                    if inString {
+                        if escaped {
+                            escaped = false
+                        } else if byte == 0x5C {
+                            escaped = true
+                        } else if byte == 0x22 {
+                            inString = false
+                        }
+                    } else if byte == 0x22 {
+                        inString = true
+                    } else if byte == 0x7B || byte == 0x5B {
+                        depth += 1
+                    } else if byte == 0x7D || byte == 0x5D {
+                        depth -= 1
+                        if depth == 0 { return cursor }
+                    }
+                }
+                return nil
+            }
+
+            var ranges: [Range<Int>] = []
+            skipWhitespace()
+            guard index < bytes.count, bytes[index] == 0x5B else { return nil }
+            index += 1
+            skipWhitespace()
+            if index < bytes.count, bytes[index] == 0x5D {
+                index += 1
+            } else {
+                while true {
+                    skipWhitespace()
+                    guard index < bytes.count, bytes[index] == 0x7B, let end = objectEnd(from: index) else { return nil }
+                    ranges.append((origin + index)..<(origin + end))
+                    index = end
+                    skipWhitespace()
+                    guard index < bytes.count else { return nil }
+                    if bytes[index] == 0x2C {
+                        index += 1
+                        continue
+                    }
+                    guard bytes[index] == 0x5D else { return nil }
+                    index += 1
+                    break
+                }
+            }
+            skipWhitespace()
+            return index == bytes.count ? ranges : nil
         }
-        return (repaired, dropped)
     }
 
     /// Indices of the rules WebKit rejects, found by compiling halves.
-    private static func rejectedIndices(_ rules: [Any], offset: Int) async -> [Int] {
-        if rules.count == 1 { return [offset] }
-        let half = rules.count / 2
+    private static func rejectedIndices(_ data: Data, _ ranges: ArraySlice<Range<Int>>) async -> [Int] {
+        if ranges.count == 1 { return [ranges.startIndex] }
+        let middle = ranges.startIndex + ranges.count / 2
         var rejected: [Int] = []
-        for (part, start) in [(Array(rules[..<half]), 0), (Array(rules[half...]), half)] where await !compiles(part) {
-            rejected += await rejectedIndices(part, offset: offset + start)
+        for part in [ranges[..<middle], ranges[middle...]] where await !compiles(assemble(data, part)) {
+            rejected += await rejectedIndices(data, part)
         }
         return rejected
     }
 
+    /// The array of the rules at `ranges`, copied byte for byte from `data`.
+    private static func assemble<Ranges: Sequence>(_ data: Data, _ ranges: Ranges) -> Data where Ranges.Element == Range<Int> {
+        var json = Data([UInt8(ascii: "[")])
+        for (index, range) in ranges.enumerated() {
+            if index > 0 { json.append(UInt8(ascii: ",")) }
+            json.append(data[range])
+        }
+        json.append(UInt8(ascii: "]"))
+        return json
+    }
+
     @MainActor
-    private static func compiles(_ rules: [Any]) async -> Bool {
-        guard let data = try? JSONSerialization.data(withJSONObject: rules) else { return false }
+    private static func compiles(_ json: Data) async -> Bool {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("wblock-rule-check-\(UUID().uuidString)", isDirectory: true)
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -46,7 +121,7 @@ enum ContentBlockerRuleRepair {
         else { return true }
         return await withCheckedContinuation { continuation in
             store.compileContentRuleList(
-                forIdentifier: "check", encodedContentRuleList: String(decoding: data, as: UTF8.self)
+                forIdentifier: "check", encodedContentRuleList: String(decoding: json, as: UTF8.self)
             ) { list, error in
                 continuation.resume(returning: list != nil && error == nil)
             }

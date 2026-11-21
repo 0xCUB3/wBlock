@@ -89,7 +89,6 @@ class FilterListLoader {
     static let listReplacements: [String: [String]] = {
         let ads = ["uBlock filters – Ads", "uBlock filters – Badware risks", "uBlock filters – Quick fixes",
                    "uBlock filters – Unbreak", "EasyList"]
-        let annoyances = ["uBlock filters – Annoyances", "EasyList – Other Annoyances"]
         var replacements = [
             "AdGuard Base Filter": ads,
             "AdGuard Mobile Filter": ads,
@@ -101,9 +100,10 @@ class FilterListLoader {
             "Official Polish filters for AdBlock, uBlock Origin & AdGuard": ["AdGuard Polish filter"],
             "EasyList Spanish": ["AdGuard Spanish/Portuguese filter"],
             "EasyDutch": ["AdGuard Dutch filter"],
-            "AdGuard Popups": annoyances,
-            "AdGuard Mobile App Banners": annoyances,
-            "AdGuard Widgets": annoyances + ["EasyList – Chat Widgets"],
+            // Topic lists only: General stays off (AnnoyanceChoice.turningOffGeneral).
+            "AdGuard Popups": AnnoyanceChoice.popups.filterNames,
+            "AdGuard Mobile App Banners": AnnoyanceChoice.popups.filterNames,
+            "AdGuard Widgets": AnnoyanceChoice.social.filterNames + AnnoyanceChoice.chat.filterNames,
         ]
         // A uBO default on iPhone, so it stays.
         if isPhone { replacements[mobileAdsFilterName] = nil }

@@ -247,6 +247,7 @@ const frameSender = (url, topUrl, frameId = 1) => ({ url, frameId, tab: { id: 7,
   const state = loadBackground({
     storage: {
       [CACHE_KEY]: {
+        schemaVersion: 2,
         engineTimestamp: 111,
         entries: [[`${pageUrl}#`, makeConfig(["#ad-banner"], 111)]]
       }
@@ -288,6 +289,7 @@ const frameSender = (url, topUrl, frameId = 1) => ({ url, frameId, tab: { id: 7,
   const state = loadBackground({
     storage: {
       [CACHE_KEY]: {
+        schemaVersion: 2,
         engineTimestamp: 111,
         entries: [[`${pageUrl}#`, makeConfig(["#stale"], 111)]]
       }
@@ -403,6 +405,7 @@ const frameSender = (url, topUrl, frameId = 1) => ({ url, frameId, tab: { id: 7,
   const refreshState = loadBackground({
     storage: {
       [CACHE_KEY]: {
+        schemaVersion: 2,
         engineTimestamp: 8,
         entries: [[`${pageUrl}#`, makeConfig(["#cached"], 8)]]
       }

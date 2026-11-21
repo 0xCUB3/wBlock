@@ -605,6 +605,8 @@ extension AppFilterManager {
         let pendingRevisionSnapshot = PendingFilterUpdateRevisions.snapshotPublished(
             filterIDs: Set(allSelectedFilters.map { $0.id.uuidString })
         )
+        // Kept on the run snapshot so a later reload retry acks only what this compile used.
+        activeApplySnapshot?.pendingRevisionsSnapshot = pendingRevisionSnapshot
 
         if allSelectedFilters.isEmpty && generatedZapperRules.isEmpty {
             await MainActor.run {
@@ -972,9 +974,9 @@ extension AppFilterManager {
         }
 
         // The per-page engine goes first: it is quick, and a Scripts extension
-        // that sees the new native rules then finds the matching engine. A
-        // failed publish is reported, but the native reloads still run.
-        let advancedEngineSucceeded: Bool
+        // that sees the new native rules then finds the matching engine. A failed
+        // publish ends the run before any native reload, so Safari keeps the rules
+        // it already had.
         do {
             if !advancedRulesByTarget.isEmpty {
                 await MainActor.run {
@@ -1012,16 +1014,14 @@ extension AppFilterManager {
                     )
                 }.value
             }
-            advancedEngineSucceeded = true
         } catch {
-            advancedEngineSucceeded = false
             await failApplyRun(
                 logMessage: LocalizedStrings.text("Advanced engine publish failed"),
                 metadata: ["error": LogErrorDescriber.describe(error)],
                 dismissProgressSheet: false
             )
+            return
         }
-
 
         // Reloading phase
         await MainActor.run {
@@ -1036,9 +1036,10 @@ extension AppFilterManager {
 
         let reloadSummary: ReloadPhaseSummary
         if allowPausedResume {
-            // Safari's extension reads the shared pause flags, not this run's
-            // allowPausedResume override. Let it load the prepared rules rather
-            // than certify another inert list as a successful resume.
+            // Safari's extension reads the shared pause state, not this run's
+            // allowPausedResume override. The resume window lets it load the
+            // prepared rules rather than certify another inert list as a successful resume.
+            BlockingPauseStore.setResumeApplying()
             reloadSummary = await BlockingPauseStore.withContentBlockingResumed {
                 await reloadContentBlockers(platformTargets)
             }
@@ -1108,7 +1109,7 @@ extension AppFilterManager {
             // The applied state is committed as the run ends, so pending
             // changes never outlive it and Apply can't flash (#1088). Ending
             // later showed the raw status line in the update banner (#1087).
-            if allReloadsSuccessful && advancedEngineSucceeded && !self.hasError {
+            if allReloadsSuccessful && !self.hasError {
                 self.commitApplySnapshot(runSnapshot)
             }
             self.isLoading = false
@@ -1119,7 +1120,7 @@ extension AppFilterManager {
                 return
             }
 
-            let advancedEngineAvailable = advancedEngineSucceeded && !self.hasError
+            let advancedEngineAvailable = !self.hasError
             var resultWarning: String?
 
             if allReloadsSuccessful && advancedEngineAvailable {
@@ -1162,7 +1163,7 @@ extension AppFilterManager {
         }
 
         let applySucceeded = await MainActor.run {
-            allReloadsSuccessful && advancedEngineSucceeded && !self.hasError
+            allReloadsSuccessful && !self.hasError
         }
         if applySucceeded {
             PendingFilterUpdateRevisions.acknowledge(pendingRevisionSnapshot)
@@ -1478,6 +1479,8 @@ extension AppFilterManager {
 
     func prepareApplyRunState() {
         captureApplySnapshot()
+        // A retry offered by an earlier run must not outlive the run that replaces its rules.
+        failedReloadTargets = []
         lastApplySucceeded = false
         isLoading = true
         hasError = false
@@ -1536,7 +1539,10 @@ extension AppFilterManager {
 
     /// Reloads only the blockers that failed on the last apply (#648). Rules on
     /// disk are already current, so this skips conversion and just asks Safari
-    /// again, with the full attempt budget for each remaining target.
+    /// again, with the full attempt budget for each remaining target. It runs in
+    /// the same exclusive apply session as a normal run. A clean reload commits the
+    /// snapshot that run took and acknowledges the revisions that run compiled.
+    /// Revisions published after that compile stay pending.
     func retryFailedReloads() {
         let targets = failedReloadTargets
         guard !targets.isEmpty, !isLoading, !isApplyInFlight else { return }
@@ -1553,30 +1559,48 @@ extension AppFilterManager {
             LocalizedStrings.text("Reloading Safari extensions...", comment: "Apply pipeline stage")
         )
         Task {
-            let summary = await reloadContentBlockers(targets)
-            let stillFailing = Set(summary.metrics.filter { !$0.success && !$0.disabledInSafari }.map(\.blockerName))
-            await MainActor.run {
-                self.failedReloadTargets = targets.filter { stillFailing.contains($0.displayName) }
-                self.lastReloadTime = String(format: "%.2fs", Double(summary.durationMs) / 1000)
-                let warning: String?
-                if self.failedReloadTargets.isEmpty {
-                    warning = nil
-                    self.hasError = false
-                    self.statusDescription = LocalizedStrings.text(
-                        "All extensions reloaded.", comment: "Targeted reload retry succeeded")
-                } else {
-                    warning = LocalizedStrings.format(
-                        "%@ still failed to reload. Safari may need a restart.",
-                        comment: "Targeted reload retry still failing",
-                        self.failedReloadTargets.map(\.displayName).joined(separator: ", ")
+            let started = await performExclusiveApply { [self] in
+                let summary = await reloadContentBlockers(targets)
+                let stillFailing = Set(summary.metrics.filter { !$0.success && !$0.disabledInSafari }.map(\.blockerName))
+                await MainActor.run {
+                    self.failedReloadTargets = targets.filter { stillFailing.contains($0.displayName) }
+                    self.lastReloadTime = String(format: "%.2fs", Double(summary.durationMs) / 1000)
+                    let warning: String?
+                    if self.failedReloadTargets.isEmpty {
+                        warning = nil
+                        self.hasError = false
+                        self.lastApplySucceeded = true
+                        if let snapshot = self.activeApplySnapshot {
+                            self.commitApplySnapshot(snapshot)
+                            if let pendingRevisions = snapshot.pendingRevisionsSnapshot {
+                                PendingFilterUpdateRevisions.acknowledge(pendingRevisions)
+                            }
+                        }
+                        self.persistUpgradeRebuildSignature()
+                        self.clearFailedUpgradeRebuildSignature()
+                        self.statusDescription = LocalizedStrings.text(
+                            "All extensions reloaded.", comment: "Targeted reload retry succeeded")
+                    } else {
+                        warning = LocalizedStrings.format(
+                            "%@ still failed to reload. Safari may need a restart.",
+                            comment: "Targeted reload retry still failing",
+                            self.failedReloadTargets.map(\.displayName).joined(separator: ", ")
+                        )
+                        self.statusDescription = warning ?? self.statusDescription
+                    }
+                    self.applyProgressViewModel.markFinished(
+                        statusMessage: self.statusDescription,
+                        resultWarning: warning
                     )
-                    self.statusDescription = warning ?? self.statusDescription
+                    self.isLoading = false
                 }
-                self.applyProgressViewModel.markFinished(
-                    statusMessage: self.statusDescription,
-                    resultWarning: warning
-                )
-                self.isLoading = false
+                await saveRuleCounts()
+            }
+            if !started {
+                await MainActor.run {
+                    self.isLoading = false
+                    self.applyProgressViewModel.updateIsLoading(false)
+                }
             }
         }
     }

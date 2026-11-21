@@ -78,6 +78,40 @@ struct ZapperRuleEditingTests {
         precondition(!failedEdit, "Disk failures must not report a successful edit")
         let failedSync = await failing.synchronizeZapperRules(forHost: host, rules: [".new"])
         precondition(failedSync == nil, "Disk failures must not acknowledge a browser sync")
+
+        // Kill switches on hosts without rules are listed, sync, and are dropped when re-enabled.
+        let switched = manager()
+        await switched.setZapperRulesDisabled(true, forHost: "switch-only.example")
+        precondition(switched.getDisabledZapperDomains().contains("switch-only.example"),
+                     "A disabled host with no rules must be listed as disabled")
+        precondition(switched.getZapperDomains().contains("switch-only.example"),
+                     "A disabled host with no rules must be listed as a host")
+        await switched.applyZapperRulesBatch(rulesByHost: [:], disabledByHost: ["batch-only.example": true])
+        precondition(switched.isZapperDisabled(forHost: "batch-only.example"),
+                     "A batch kill switch must create an entry for a host without rules")
+        await switched.setZapperRulesDisabled(false, forHost: "switch-only.example")
+        precondition(!switched.getZapperDomains().contains("switch-only.example"),
+                     "Re-enabling a host with no rules must drop its entry")
+        await switched.applyZapperRulesBatch(rulesByHost: [:], disabledByHost: ["batch-only.example": false])
+        precondition(!switched.getDisabledZapperDomains().contains("batch-only.example"),
+                     "A batch enable must clear the kill switch")
+        precondition(!switched.getZapperDomains().contains("batch-only.example"),
+                     "A batch enable on a host with no rules must drop its entry")
+
+        // A browser delta removes selectors as pending deletions and re-adds cancel them.
+        let deltaHost = "delta.example"
+        await app.setZapperRules(forHost: deltaHost, rules: [".a", ".b"])
+        let afterDelta = await app.applyZapperRuleDelta(forHost: deltaHost, added: [".c", "  "], removed: [".a"])
+        precondition(afterDelta == [".b", ".c"], "A delta must remove its selectors and add new ones")
+        let deltaSync = await browser.synchronizeZapperRules(forHost: deltaHost, rules: [".a", ".b", ".c"])
+        precondition(deltaSync == [".b", ".c"], "A removed selector must stay suppressed against a stale browser snapshot")
+        let readded = await app.applyZapperRuleDelta(forHost: deltaHost, added: [".a"], removed: [])
+        precondition(readded == [".b", ".c", ".a"], "Re-adding a selector must cancel its pending deletion")
+        let emptied = await app.applyZapperRuleDelta(forHost: deltaHost, added: [], removed: [".b", ".c", ".a"])
+        precondition(emptied == [], "A delta that removes everything must leave no selectors")
+        _ = await browser.synchronizeZapperRules(forHost: deltaHost, rules: [])
+        precondition(!browser.getZapperDomains().contains(deltaHost),
+                     "A host with no rules and no pending deletions must be dropped")
         print("PASS zapper replacement, validation, ordering, disabled state, disk persistence, stale editors, browser reconciliation, and write failures")
     }
 }

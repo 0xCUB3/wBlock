@@ -239,8 +239,13 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
               text.contains("!#if") else { return url }
         let resolved = url.appendingPathExtension("resolved")
         let lines = ConditionalEvaluator.evaluate(lines: text.components(separatedBy: "\n"))
+        let resolvedData = Data(lines.joined(separator: "\n").utf8)
+        // A rewrite with identical bytes still changes the mtime, and CompilationScope
+        // keys its plan on size and mtime, so every blocker target would rebuild.
+        if (try? Data(contentsOf: resolved)) == resolvedData { return resolved }
         do {
-            try lines.joined(separator: "\n").write(to: resolved, atomically: true, encoding: .utf8)
+            // mmap'd by wbe; replace only by atomic rename
+            try resolvedData.write(to: resolved, options: .atomic)
             return resolved
         } catch {
             return url

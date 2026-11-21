@@ -54,12 +54,23 @@ struct Scriptlets {
     rules: Table,
     /// Keyed like `rules`. Values: call ids plus one, or 0 for `#@#+js()`.
     exceptions: Table,
-    regexes: regex::RegexSet,
+    /// The domain regexes' patterns, the keys `regexes` matches by index.
+    patterns: Vec<String>,
+    /// Compiled on the first lookup that needs it, so opening an engine that
+    /// answers no regex domain compiles no DFAs.
+    regexes: OnceLock<regex::RegexSet>,
     // Global calls are consulted on every lookup; their scopes are decoded on
     // the first, so an engine that only answers pages never decodes popups'.
     generic_rules: OnceLock<Vec<(u32, Box<[String]>)>>,
     /// Whether any key is `name>>`; a subframe lookup tries ancestor keys only then.
     ancestors: OnceLock<bool>,
+}
+
+impl Scriptlets {
+    fn regexes(&self) -> &regex::RegexSet {
+        // The patterns were validated when the engine was built.
+        self.regexes.get_or_init(|| regex::RegexSet::new(&self.patterns).unwrap_or_else(|_| regex::RegexSet::empty()))
+    }
 }
 
 /// Scriptlet rules as `Engine::build` collects them.
@@ -135,10 +146,11 @@ impl ScriptletRules {
             }
             (k.as_str(), value)
         }));
-        let regexes = regex::RegexSet::new(self.regexes.keys()).expect("validated domain regexes");
         Scriptlets {
             generic_rules: OnceLock::new(),
             ancestors: OnceLock::new(),
+            patterns: self.regexes.into_keys().collect(),
+            regexes: OnceLock::new(),
             calls: Table::encode(self.calls.iter().map(|call| {
                 let mut value = Vec::new();
                 put_strs(&mut value, call);
@@ -153,7 +165,6 @@ impl ScriptletRules {
                 }
                 (k.as_str(), value)
             })),
-            regexes,
         }
     }
 }
@@ -352,7 +363,8 @@ impl Scriptlets {
     /// `host_keys`, and `/regex/` for each regex domain `host` matches.
     fn keys(&self, host: &str) -> Vec<String> {
         let mut keys = host_keys(host);
-        keys.extend(self.regexes.matches(host).iter().map(|i| format!("/{}/", self.regexes.patterns()[i])));
+        let regexes = self.regexes();
+        keys.extend(regexes.matches(host).iter().map(|i| format!("/{}/", regexes.patterns()[i])));
         keys
     }
 
@@ -550,7 +562,7 @@ impl Engine {
         let mut out = Vec::new();
         for index in [&self.scriptlets, &self.popups, &self.pages] {
             for table in [&index.calls, &index.rules, &index.exceptions] { put(&mut out, table.bytes()); }
-            let patterns: std::collections::BTreeSet<_> = index.regexes.patterns().iter().collect();
+            let patterns: std::collections::BTreeSet<_> = index.patterns.iter().collect();
             put(&mut out, &serde_json::to_vec(&patterns).expect("regex patterns serialize"));
         }
         out
@@ -587,8 +599,7 @@ impl Engine {
         let mut index = || -> Result<Scriptlets, String> {
             let (calls, rules, exceptions) = (Table::parse(&blob, take()?)?, Table::parse(&blob, take()?)?, Table::parse(&blob, take()?)?);
             let patterns = serde_json::from_slice::<Vec<String>>(&bytes[take()?]).map_err(|e| e.to_string())?;
-            let regexes = regex::RegexSet::new(patterns).map_err(|e| e.to_string())?;
-            Ok(Scriptlets { calls, generic_rules: OnceLock::new(), ancestors: OnceLock::new(), rules, exceptions, regexes })
+            Ok(Scriptlets { calls, generic_rules: OnceLock::new(), ancestors: OnceLock::new(), rules, exceptions, patterns, regexes: OnceLock::new() })
         };
         let (scriptlets, popups, pages) = (index()?, index()?, index()?);
         Ok(Self { scriptlets, popups, pages, popup_regexes: Default::default(), page_regexes: Default::default() })

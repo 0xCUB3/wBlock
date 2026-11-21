@@ -168,7 +168,8 @@
         await syncRulesToNative(host, rules);
       }
       const response = await setSiteZapperDisabled(host, true);
-      await browser.storage.local.remove(key);
+      // Keep the legacy flag unless native confirmed the write, so a failed or timed-out write retries on the next load.
+      if (response && response.ok === true) await browser.storage.local.remove(key);
       return Boolean(response && response.disabled);
     } catch {
       return false;
@@ -212,27 +213,48 @@
   }
 
   function normalizeMeta(raw) {
-    if (!raw || typeof raw !== 'object') {
-      return { pendingSync: false, lastLocalEditAt: 0, lastSyncAt: 0, disabled: false };
-    }
-    const lastLocalEditAt = Number(raw.lastLocalEditAt);
-    const lastSyncAt = Number(raw.lastSyncAt);
+    const source = raw && typeof raw === 'object' ? raw : {};
+    const lastLocalEditAt = Number(source.lastLocalEditAt);
+    const lastSyncAt = Number(source.lastSyncAt);
+    const pendingSync = Boolean(source.pendingSync);
     return {
-      pendingSync: Boolean(raw.pendingSync),
+      pendingSync,
+      // Null marks pending state saved before edits were kept as deltas. A synced
+      // host has no delta, so a leftover one can never be replayed later.
+      pendingAdded: !pendingSync ? [] : Array.isArray(source.pendingAdded) ? normalizeRules(source.pendingAdded) : null,
+      pendingRemoved: pendingSync ? normalizeRules(source.pendingRemoved) : [],
       lastLocalEditAt: Number.isFinite(lastLocalEditAt) ? lastLocalEditAt : 0,
       lastSyncAt: Number.isFinite(lastSyncAt) ? lastSyncAt : 0,
-      disabled: raw.disabled === true
+      disabled: source.disabled === true
     };
   }
 
+  // Pending edits travel as add/remove deltas. Pushing the full local list after a
+  // failed sync would erase rules added elsewhere (Share Sheet, another tab).
+  const pendingDeltaOf = (meta) => (meta.pendingAdded === null ? null : { added: meta.pendingAdded, removed: meta.pendingRemoved });
+  const deltaKey = (delta) => JSON.stringify([delta.added, delta.removed]);
+  function mergeDelta(base, edit) {
+    const added = new Set(base.added);
+    const removed = new Set(base.removed);
+    for (const selector of edit.added) {
+      removed.delete(selector);
+      added.add(selector);
+    }
+    for (const selector of edit.removed) {
+      added.delete(selector);
+      removed.add(selector);
+    }
+    return { added: [...added], removed: [...removed] };
+  }
+
   async function getSyncMeta(host) {
-    if (!host) return { pendingSync: false, lastLocalEditAt: 0, lastSyncAt: 0, disabled: false };
+    if (!host) return normalizeMeta(null);
     try {
       const key = metaKey(host);
       const result = await browser.storage.local.get(key);
       return normalizeMeta(result[key]);
     } catch {
-      return { pendingSync: false, lastLocalEditAt: 0, lastSyncAt: 0, disabled: false };
+      return normalizeMeta(null);
     }
   }
 
@@ -269,14 +291,21 @@
     await browser.storage.local.set({ [key]: next });
   }
 
-  async function syncRulesToNative(host, rules) {
+  // A delta merges into the native list. The full list always rides along: relays
+  // that only forward `rules` (the Share Sheet shim) then fall back to a full replace
+  // instead of clearing the host.
+  async function syncRulesToNative(host, rules, delta = null) {
     if (!host) return null;
-    const normalizedRules = normalizeRules(rules);
+    const payload = { rules: normalizeRules(rules) };
+    if (delta) {
+      payload.added = normalizeRules(delta.added);
+      payload.removed = normalizeRules(delta.removed);
+    }
     try {
       const response = await withTimeout(browser.runtime.sendMessage({
         action: 'wblock:zapper:syncRules',
         hostname: host,
-        rules: normalizedRules
+        ...payload
       }), NATIVE_MESSAGE_TIMEOUT_MS, 'Zapper sync timed out.');
       // If the native side returned an authoritative rules list (e.g. after
       // filtering out app-deleted rules), update browser.storage.local to match.
@@ -284,7 +313,13 @@
         const key = storageKey(host);
         const normalized = normalizeRules(response.rules);
         await browser.storage.local.set({ [key]: normalized });
-        await setSyncMeta(host, { pendingSync: false, lastSyncAt: Date.now() });
+        // An edit that merged into the pending delta while this sync was in flight
+        // stays pending; its own sync clears it.
+        const current = pendingDeltaOf(await getSyncMeta(host));
+        const settled = !delta || (current !== null && deltaKey(current) === deltaKey(delta));
+        await setSyncMeta(host, settled
+          ? { pendingSync: false, pendingAdded: [], pendingRemoved: [], lastSyncAt: Date.now() }
+          : { lastSyncAt: Date.now() });
         return normalized;
       }
       return null;
@@ -310,7 +345,7 @@
       const localSig = rulesSignature(localRules);
       const nativeSig = rulesSignature(nativeState.rules);
       if (meta.pendingSync && localSig !== nativeSig) {
-        const reconciled = await syncRulesToNative(host, localRules);
+        const reconciled = await syncRulesToNative(host, localRules, pendingDeltaOf(meta));
         const rules = Array.isArray(reconciled) ? reconciled : localRules;
         const disabled = nativeState.disabled || await migrateLegacyZapperRulesDisabled(host, rules, legacyDisabled);
         await setSyncMeta(host, { disabled });
@@ -320,7 +355,7 @@
       const updates = {};
       if (localSig !== nativeSig || meta.disabled !== disabled || meta.pendingSync) {
         updates[storageKey(host)] = nativeState.rules;
-        updates[metaKey(host)] = { ...meta, pendingSync: false, lastSyncAt: Date.now(), disabled };
+        updates[metaKey(host)] = { ...meta, pendingSync: false, pendingAdded: [], pendingRemoved: [], lastSyncAt: Date.now(), disabled };
       }
       if (cachedPaused !== nativeState.paused) updates[PAUSED_CACHE_KEY] = nativeState.paused;
       if (Object.keys(updates).length) await browser.storage.local.set(updates);
@@ -330,19 +365,26 @@
     }
   }
 
-  async function saveRulesForHost(host, rules) {
-    if (!host) return;
+  // `edit` lists the selectors this change added and removed. Only that delta is
+  // sent, so a stale local list cannot erase rules saved from another surface.
+  // Resolves to the list native kept, which the caller should adopt.
+  async function saveRulesForHost(host, rules, edit) {
+    if (!host) return null;
     const key = storageKey(host);
     const unique = normalizeRules(rules).slice(0, MAX_RULES_PER_SITE);
+    const meta = await getSyncMeta(host);
+    // Pending state from before deltas can only be resolved by pushing the full list.
+    const legacyPending = meta.pendingSync && meta.pendingAdded === null;
+    const pending = legacyPending ? null : mergeDelta(pendingDeltaOf(meta) || { added: [], removed: [] }, edit);
     await browser.storage.local.set({ [key]: unique });
-    await setSyncMeta(host, { pendingSync: true, lastLocalEditAt: Date.now() });
-    const reconciled = await syncRulesToNative(host, unique);
-    if (!Array.isArray(reconciled)) {
-      return;
-    }
-    if (rulesSignature(reconciled) !== rulesSignature(unique)) {
-      await browser.storage.local.set({ [key]: reconciled });
-    }
+    await setSyncMeta(host, {
+      pendingSync: true,
+      pendingAdded: pending ? pending.added : null,
+      pendingRemoved: pending ? pending.removed : [],
+      lastLocalEditAt: Date.now()
+    });
+    const reconciled = await syncRulesToNative(host, unique, pending);
+    return Array.isArray(reconciled) ? reconciled : unique;
   }
 
   function ensureStyleElement(id) {
@@ -882,7 +924,7 @@
       state.tempRules = state.tempRules.concat([normalized]).slice(0, MAX_RULES_PER_SITE);
     } else {
       state.rules = state.rules.concat([normalized]).slice(0, MAX_RULES_PER_SITE);
-      await trackPendingSave(saveRulesForHost(state.host, state.rules));
+      state.rules = (await trackPendingSave(saveRulesForHost(state.host, state.rules, { added: [normalized], removed: [] }))) ?? state.rules;
     }
     await applyRulesToPage(state.rules);
     if (!state.active) return true;
@@ -916,7 +958,7 @@
     state.tempRules = state.tempRules.filter((r) => !temporary.has(r));
     if (permanent.size > 0) {
       state.rules = state.rules.filter((r) => !permanent.has(r));
-      await trackPendingSave(saveRulesForHost(state.host, state.rules));
+      state.rules = (await trackPendingSave(saveRulesForHost(state.host, state.rules, { added: [], removed: [...permanent] }))) ?? state.rules;
     }
     await applyRulesToPage(state.rules);
     return entries;
@@ -1076,12 +1118,14 @@
       if (options.fromContextMenu === true) preselectContextMenuTarget();
       return true;
     }
-    state.host = safeHostname();
+    // A subframe that skipped the load-time lookup still needs its rules before it decides.
+    await reloadRulesAndApplyCoalesced().catch(() => {});
     if (await shouldSuppressZapperRules(state.host)) {
       return false;
     }
     ensureUi();
     state.active = true;
+    startRuleSyncLoop();
     state.undoStack = [];
     state.redoStack = [];
     state.lastPickAt = 0;
@@ -1302,12 +1346,8 @@
         state.rules = nativeState.rules;
       }
       await applyRulesToPage(state.rules);
-      return;
     }
-
-    if (state.rules.length > 0) {
-      syncRulesToNative(state.host, state.rules).catch(() => {});
-    }
+    // A failed fetch keeps the cached rules as they are. Pending edits retry on the next successful fetch.
   }
 
   function reloadRulesAndApplyCoalesced() {
@@ -1374,7 +1414,10 @@
     }
   });
 
-  // Initial load: apply existing rules for this host.
-  reloadRulesAndApplyCoalesced().catch(() => {});
-  startRuleSyncLoop();
+  // Initial load: apply existing rules for this host. Parent-domain (inherited)
+  // rules still need the lookup even when this host has none. The fallback poll
+  // starts only when rules apply here; activation starts it otherwise.
+  reloadRulesAndApplyCoalesced().then(() => {
+    if (state.rules.length > 0 || state.inheritedRules.length > 0) startRuleSyncLoop();
+  }).catch(() => {});
 })();

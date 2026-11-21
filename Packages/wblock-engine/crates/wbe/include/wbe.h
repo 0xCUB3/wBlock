@@ -54,6 +54,11 @@ WbeCompileResult *wbe_plan_compile_target(const WbePlan *plan, size_t target,
                                           bool has_known_fingerprint,
                                           uint64_t known_fingerprint);
 bool wbe_compile_unchanged(const WbeCompileResult *result);
+/* The fingerprint wbe_plan_compile_target compares with a known one for blocker
+ * `target` compiled with extras_json. On an invalid target or extras it returns
+ * 0 and sets wbe_last_error. */
+uint64_t wbe_plan_target_fingerprint(const WbePlan *plan, size_t target,
+                                     const char *extras_json);
 void wbe_plan_free(WbePlan *plan);
 /* Drops the parsed lists kept between plans; plans in use keep theirs. */
 void wbe_clear_parse_cache(void);

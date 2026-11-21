@@ -98,6 +98,8 @@ class AppDelegate: NSObject {
     private let periodicTimerInterval: TimeInterval = 30 * 60 // 30 minutes
     /// macOS-only scheduler holder
     private var backgroundScheduler: NSBackgroundActivityScheduler?
+    /// The interval `backgroundScheduler` was built with, so a settings change can rebuild it.
+    private var scheduledAutoUpdateIntervalHours: Double?
     /// Periodic timer for regular update checks
     private var periodicUpdateTimer: Timer?
     private var autoUpdateSaveObserver: AnyCancellable?
@@ -142,10 +144,15 @@ private extension AppDelegate {
 }
 
 #if os(iOS)
-private actor BGTaskCompletionState {
+/// Claims the single completion a background task may report. Synchronous, so the
+/// expiration handler can claim and complete without waiting on other work.
+private final class BGTaskCompletionState: @unchecked Sendable {
+    private let lock = NSLock()
     private var didComplete = false
 
     func claimCompletion() -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
         guard !didComplete else { return false }
         didComplete = true
         return true
@@ -330,8 +337,15 @@ extension AppDelegate: NSApplicationDelegate {
             Task { await self?.runMacOSBackgroundUpdate(trigger: "PeriodicTimer") }
         }
 
+        scheduleMacOSBackgroundActivity()
+    }
+
+    /// Builds the macOS background activity at the configured interval. Runs again when the
+    /// interval changes, so the new value applies without a relaunch.
+    @MainActor private func scheduleMacOSBackgroundActivity() {
         let intervalHours = configuredAutoUpdateIntervalHours()
-        
+        backgroundScheduler?.invalidate()
+
         let scheduler = NSBackgroundActivityScheduler(identifier: "com.alexanderskula.wblock.filterupdate")
         scheduler.repeats = true
         scheduler.interval = intervalHours * 60 * 60 // Use configured interval
@@ -344,6 +358,7 @@ extension AppDelegate: NSApplicationDelegate {
             }
         }
         self.backgroundScheduler = scheduler
+        scheduledAutoUpdateIntervalHours = intervalHours
     }
 
     @MainActor private func observeMacOSAutoUpdateSettingSaves() {
@@ -352,6 +367,9 @@ extension AppDelegate: NSApplicationDelegate {
             .sink { [weak self] in
                 Task { @MainActor in
                     await self?.reconcileMacOSLaunchAgentRegistration(reason: "SavedSettings")
+                    if self?.configuredAutoUpdateIntervalHours() != self?.scheduledAutoUpdateIntervalHours {
+                        self?.scheduleMacOSBackgroundActivity()
+                    }
                 }
             }
     }
@@ -416,6 +434,10 @@ extension AppDelegate: NSApplicationDelegate {
                     switch outcome {
                     case .completed:
                         HeadlessLaunch.recordAutoRebuildLaunchOutcome(.rebuildSucceeded)
+                    case .skipped(reason: "already_running"), .skipped(reason: "awaiting_app_upgrade"):
+                        // Another run owns the rebuild, or the app has not yet applied this
+                        // version. Neither is a failed rebuild, so the launch gate is not charged.
+                        break
                     default:
                         HeadlessLaunch.recordAutoRebuildLaunchOutcome(.rebuildFailed)
                     }
@@ -676,13 +698,17 @@ extension AppDelegate: UIApplicationDelegate {
         }
     }
 
+    /// The run's budget. Inside a BGTask `backgroundTimeRemaining` reads as a huge value, so it
+    /// only tightens the budget when it is a real, small number.
     @MainActor
-    private func backgroundAutoUpdateDeadline(safetyMargin: TimeInterval = 10) -> Date? {
+    private func backgroundAutoUpdateDeadline(kind: AutoUpdateDiagnosticTaskKind) -> Date {
+        let budget: TimeInterval = kind == .processing ? 180 : 25
+        var deadline = Date().addingTimeInterval(budget)
         let remaining = UIApplication.shared.backgroundTimeRemaining
-        guard remaining.isFinite, remaining > 0, remaining < .greatestFiniteMagnitude else {
-            return nil
+        if remaining.isFinite, remaining < 600 {
+            deadline = min(deadline, Date().addingTimeInterval(max(0, remaining - 3)))
         }
-        return Date().addingTimeInterval(max(0, remaining - safetyMargin))
+        return deadline
     }
 
     @MainActor
@@ -692,7 +718,7 @@ extension AppDelegate: UIApplicationDelegate {
     ) -> SharedAutoUpdateManager.AutoUpdateExecutionPolicy {
         return .background(
             trigger: trigger,
-            deadline: backgroundAutoUpdateDeadline(),
+            deadline: backgroundAutoUpdateDeadline(kind: kind),
             allowsFullRebuild: kind == .processing
         )
     }
@@ -780,7 +806,7 @@ extension AppDelegate: UIApplicationDelegate {
                 os_log("%{public}@ failed with an unknown outcome", type: .error, taskLabel)
             }
 
-            guard await completionState.claimCompletion() else { return }
+            guard completionState.claimCompletion() else { return }
             await ProtobufDataManager.shared.recordAutoUpdateTaskCompletion(kind, result: result)
             task.setTaskCompleted(success: success)
             await MainActor.run {
@@ -792,17 +818,19 @@ extension AppDelegate: UIApplicationDelegate {
             }
         }
 
-        task.expirationHandler = { [weak self] in
+        task.expirationHandler = {
             os_log("%{public}@ expired - clearing running flag", type: .default, taskLabel)
             updateTask.cancel()
+            // iOS may end the process as soon as the handler returns, so the task is completed
+            // before any cleanup. The cleanup below does disk writes that may not finish in time.
+            guard completionState.claimCompletion() else { return }
+            task.setTaskCompleted(success: false)
 
             Task { [weak self] in
-                guard await completionState.claimCompletion() else { return }
                 guard let self else { return }
                 await self.clearAutoUpdateRunningFlag(context: taskLabel)
                 await ProtobufDataManager.shared.recordAutoUpdateTaskExpiration(kind)
                 await ProtobufDataManager.shared.recordAutoUpdateTaskCompletion(kind, result: .timedOut)
-                task.setTaskCompleted(success: false)
                 await MainActor.run {
                     onExpiration(self)
                 }

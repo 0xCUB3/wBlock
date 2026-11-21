@@ -1032,7 +1032,7 @@ fn dedupe_and_merge(out: &mut Emitted) {
     }
     // An `if-domain` rule whose base (the rule without that key) matches an
     // earlier kept rule's adds its domains to that rule and is dropped.
-    let mut merged: FxHashMap<(Tier, Vec<u8>), usize> = FxHashMap::default();
+    let mut merged: FxHashMap<(Tier, bool, Vec<u8>), usize> = FxHashMap::default();
     for j in 0..count {
         if !keep[j] {
             continue;
@@ -1042,7 +1042,7 @@ fn dedupe_and_merge(out: &mut Emitted) {
         let arena = &arenas[entry.arena as usize];
         let mut base = arena[entry.start..span.head].to_vec();
         base.extend_from_slice(&arena[span.tail..entry.end]);
-        match merged.entry((entry.tier, base)) {
+        match merged.entry((entry.tier, span.top, base)) {
             MapEntry::Occupied(kept) => {
                 let incoming = std::mem::take(
                     &mut entries[j].domain.as_mut().expect("if-domain rule").domains,
@@ -1618,6 +1618,19 @@ mod tests {
         let block = NetworkRule { from: list(&[], &["a.com"]), types: RT::SCRIPT, ..net("||t.com^") };
         let (new, _) = run(&[block], V15);
         assert!(json(&new).contains(r#""unless-top-url":["^[a-z]+://([a-z0-9._-]+\\.)?a\\.com[/:?#]"]"#), "{}", json(&new));
+    }
+
+    #[test]
+    fn domain_lists_in_different_top_forms_do_not_merge() {
+        // At Safari 15 an ASCII list is written as if-top-url and a non-ASCII
+        // one as if-domain. The two have the same base, but must stay apart.
+        let ascii = NetworkRule { from: list(&["a.com"], &[]), types: RT::SCRIPT, ..net("||t.com^") };
+        let unicode = NetworkRule { from: list(&["bücher.de"], &[]), types: RT::SCRIPT, ..net("||t.com^") };
+        let (out, _) = run(&[ascii, unicode], V15);
+        let out = json(&out);
+        assert_eq!(out.matches(r#""trigger""#).count(), 2, "{out}");
+        assert!(out.contains(r#""if-top-url":["^[a-z]+://([a-z0-9._-]+\\.)?a\\.com[/:?#]"]"#), "{out}");
+        assert!(out.contains(r#""if-domain":["*bücher.de"]"#), "{out}");
     }
 
     #[test]

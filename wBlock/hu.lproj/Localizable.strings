@@ -1128,7 +1128,8 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "A new engine" = "Új motor";
 "wBlock's new engine reads lists like uBlock Origin. Your enabled AdGuard lists were swapped for matching uBO lists." = "A wBlock új motorja úgy olvassa a listákat, mint az uBlock Origin. A bekapcsolt AdGuard-listáidat a megfelelő uBO-listákra cserélték.";
 "What stays the same" = "Ami nem változik";
-"Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. AdGuard lists are still in Filters if you want them back." = "Az egyéni listáid, userscriptjeid, Element Zapper szabályaid és oldalbeállításaid nem változtak. Az AdGuard-listák továbbra is megvannak a Szűrők között, ha vissza akarod kapcsolni őket.";
+"Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. Most AdGuard lists are still in Filters if you want them back." = "Az egyéni listáid, userscriptjeid, Element Zapper szabályaid és oldalbeállításaid nem változtak. Az AdGuard-listák többsége továbbra is megvan a Szűrők között, ha vissza akarod kapcsolni őket.";
+"Resuming blocking timed out. Try again." = "A blokkolás folytatása időtúllépés miatt nem sikerült. Próbáld újra.";
 "If a site breaks" = "Ha egy oldal elromlik";
 "Turn wBlock off for that site using the wBlock button in Safari, then report it on [GitHub](https://github.com/0xCUB3/wBlock/issues)." = "Kapcsold ki a wBlockot az adott oldalon a Safari wBlock gombjával, majd jelezd a [GitHub](https://github.com/0xCUB3/wBlock/issues)on.";
 "Duplicate Filter Lists" = "Ismétlődő szűrőlisták";

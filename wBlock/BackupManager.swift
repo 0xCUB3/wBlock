@@ -637,7 +637,7 @@ enum BackupManager {
 
     // MARK: - Export
 
-    static func exportData(backup: WBlockBackup) throws -> Data {
+    nonisolated static func exportData(backup: WBlockBackup) throws -> Data {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         encoder.dateEncodingStrategy = .iso8601
@@ -646,7 +646,7 @@ enum BackupManager {
 
     // MARK: - Import
 
-    static func importData(from data: Data) throws -> WBlockBackup {
+    nonisolated static func importData(from data: Data) throws -> WBlockBackup {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return try decoder.decode(WBlockBackup.self, from: data)
@@ -664,14 +664,20 @@ enum BackupManager {
             currentAddress: { FilterListLoader.migratedURL(for: $0.absoluteString) ?? $0 }
         )
         var lists = restored.lists
-        // 1. Restore built-in filter selections by URL
+        // 1. Restore built-in filter selections by URL. A 3.2.3 backup names lists
+        // by the address 3.2.3 used, so each address is canonicalized first.
+        var handoverIDs: Set<UUID> = []
         for selection in backup.filterSelections {
-            if let index = lists.firstIndex(where: { !$0.isCustom && $0.url.absoluteString == selection.url }) {
+            let url = FilterListLoader.canonicalFilterURLString(selection.url)
+            if let index = lists.firstIndex(where: { !$0.isCustom && $0.url.absoluteString == url }) {
                 lists[index].isSelected = selection.isSelected
                 if let enabled = selection.updatesAutomatically {
                     lists[index].updatesAutomatically = enabled
                 }
                 lists[index].uniqueRuleCount = nil
+                if selection.isSelected && FilterListLoader.isReplacedList(lists[index]) {
+                    handoverIDs.insert(lists[index].id)
+                }
             }
         }
         filterManager.filterLists = lists
@@ -686,6 +692,12 @@ enum BackupManager {
                 original: persistenceError,
                 rollbackFailures: rollbackFailures
             )
+        }
+        // A replaced AdGuard list restored as on hands over at the next apply, which
+        // turns on its uBO replacements once they have content. It stays on until then.
+        // Any write creates the key recordAdGuardHandoverIfNeeded checks, so an empty write would stop that recording.
+        if !handoverIDs.isEmpty {
+            filterManager.adGuardHandoverPending.formUnion(handoverIDs)
         }
         let currentLists = filterManager.filterLists
         let keptIDs = Set(lists.map(\.id))

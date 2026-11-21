@@ -471,24 +471,61 @@ private actor ProtobufDiskStore {
         )
     }
 
-    private func readCurrentAppData(from dataURL: URL) throws -> (rawData: Data?, appData: Wblock_Data_AppData) {
+    /// The current main state. A main that reads but does not decode is replaced
+    /// by the backup for this write, and its bytes are quarantined. A mid-session
+    /// corruption therefore heals on the next save instead of failing every save
+    /// until relaunch. Transient read errors still throw.
+    private func readCurrentAppData(
+        from dataURL: URL,
+        backupURL: URL
+    ) throws -> (rawData: Data?, appData: Wblock_Data_AppData, recoveredFromBackup: Bool) {
         guard fileExists(at: dataURL) else {
-            return (rawData: nil, appData: Wblock_Data_AppData())
+            return (rawData: nil, appData: Wblock_Data_AppData(), recoveredFromBackup: false)
         }
 
         let rawData = try Data(contentsOf: dataURL)
-        return (rawData: rawData, appData: try decodeAppData(rawData))
+        do {
+            return (rawData: rawData, appData: try decodeAppData(rawData), recoveredFromBackup: false)
+        } catch {
+            guard fileExists(at: backupURL),
+                  let backupRawData = try? Data(contentsOf: backupURL),
+                  let backup = try? decodeAppData(backupRawData) else {
+                throw error
+            }
+            try writeData(rawData, to: dataURL.appendingPathExtension("corrupt"))
+            return (rawData: backupRawData, appData: backup, recoveredFromBackup: true)
+        }
     }
 
-
+    /// Keeps the backup at the last valid main. The main is cloned rather than
+    /// rewritten, which is O(1) on APFS. The bytes are written only on the first
+    /// save or when cloning fails.
     private func preserveLastKnownGood(
         currentRawData: Data?,
+        recoveredFromBackup: Bool,
+        dataURL: URL,
         newRawData: Data,
         backupURL: URL
     ) throws {
-        // Keep the previously decoded main snapshot when one exists. On first write,
-        // seed the backup with the newly created valid snapshot instead.
-        try writeData(currentRawData ?? newRawData, to: backupURL)
+        guard let currentRawData else {
+            try writeData(newRawData, to: backupURL)
+            return
+        }
+        // A main recovered from the backup means the backup already holds these bytes.
+        guard !recoveredFromBackup else { return }
+        if cloneFile(from: dataURL, to: backupURL) { return }
+        try writeData(currentRawData, to: backupURL)
+    }
+
+    /// Replaces `destinationURL` with a copy-on-write clone of `sourceURL`. The clone
+    /// is built beside the destination and renamed over it, so a failure leaves the
+    /// old backup in place.
+    private func cloneFile(from sourceURL: URL, to destinationURL: URL) -> Bool {
+        let temporaryPath = destinationURL.deletingLastPathComponent()
+            .appendingPathComponent(".\(destinationURL.lastPathComponent).\(UUID().uuidString).tmp").path
+        defer { unlink(temporaryPath) }
+        guard clonefile(sourceURL.path, temporaryPath, 0) == 0 else { return false }
+        return rename(temporaryPath, destinationURL.path) == 0
     }
 
     private func mutateAppDataOnce<Result: Sendable>(
@@ -504,7 +541,7 @@ private actor ProtobufDiskStore {
         didWrite: Bool,
         result: Result
     ) {
-        let current = try readCurrentAppData(from: dataURL)
+        let current = try readCurrentAppData(from: dataURL, backupURL: backupURL)
         var workingData = current.appData
 
         let mutationResult = mutate(&workingData)
@@ -512,7 +549,7 @@ private actor ProtobufDiskStore {
         AppDataDecodeCache.shared.remember(updatedRawData, appData: workingData)
         let currentVersion = dataVersion(for: versionURL)
 
-        if current.rawData == updatedRawData {
+        if !current.recoveredFromBackup, current.rawData == updatedRawData {
             return (
                 appData: workingData,
                 rawData: updatedRawData,
@@ -525,6 +562,8 @@ private actor ProtobufDiskStore {
 
         try preserveLastKnownGood(
             currentRawData: current.rawData,
+            recoveredFromBackup: current.recoveredFromBackup,
+            dataURL: dataURL,
             newRawData: updatedRawData,
             backupURL: backupURL
         )
@@ -551,7 +590,7 @@ private actor ProtobufDiskStore {
         backupURL: URL,
         versionURL: URL
     ) throws -> (appData: Wblock_Data_AppData, rawData: Data, modificationDate: Date?, version: Int64, didWrite: Bool)? {
-        let current = try readCurrentAppData(from: dataURL)
+        let current = try readCurrentAppData(from: dataURL, backupURL: backupURL)
         var mergedSnapshot = appData
 
         if let persistedRawData = current.rawData,
@@ -568,7 +607,7 @@ private actor ProtobufDiskStore {
 
         let rawData = try mergedSnapshot.serializedData()
         AppDataDecodeCache.shared.remember(rawData, appData: mergedSnapshot)
-        if current.rawData == rawData {
+        if !current.recoveredFromBackup, current.rawData == rawData {
             return (
                 appData: mergedSnapshot,
                 rawData: rawData,
@@ -580,6 +619,8 @@ private actor ProtobufDiskStore {
 
         try preserveLastKnownGood(
             currentRawData: current.rawData,
+            recoveredFromBackup: current.recoveredFromBackup,
+            dataURL: dataURL,
             newRawData: rawData,
             backupURL: backupURL
         )
@@ -1020,6 +1061,11 @@ public class ProtobufDataManager: ObservableObject {
         appData.autoUpdate.isRunning
     }
 
+    /// When the running flag was last set or refreshed (Unix timestamp), 0 when clear.
+    public var autoUpdateRunningSinceTimestamp: Int64 {
+        appData.autoUpdate.runningSinceTimestamp
+    }
+
     @MainActor
     public func setAutoUpdateIsRunning(_ value: Bool) async {
         let nowTimestamp = Int64(Date().timeIntervalSince1970)
@@ -1209,10 +1255,11 @@ public class ProtobufDataManager: ObservableObject {
 
     // MARK: - Zapper Rules
 
-    /// Returns sorted array of all hostnames that have at least one zapper rule.
+    /// Returns sorted hostnames that have a zapper rule or a kill switch. A disabled
+    /// host with no rules still counts, so its switch syncs and backs up.
     public func getZapperDomains() -> [String] {
         appData.extensionData.zapperRulesByHost
-            .filter { !$0.value.selectors.isEmpty }
+            .filter { !$0.value.selectors.isEmpty || $0.value.disabled }
             .map { $0.key }
             .sorted()
     }
@@ -1283,11 +1330,7 @@ public class ProtobufDataManager: ObservableObject {
                 guard var ruleList = data.extensionData.zapperRulesByHost[host] else { continue }
                 ruleList.pendingDeletions.append(contentsOf: ruleList.selectors)
                 ruleList.selectors.removeAll()
-                if ruleList.pendingDeletions.isEmpty && !ruleList.disabled {
-                    data.extensionData.zapperRulesByHost.removeValue(forKey: host)
-                } else {
-                    data.extensionData.zapperRulesByHost[host] = ruleList
-                }
+                Self.storeZapperRuleList(ruleList, forHost: host, in: &data)
                 changed = true
             }
             for (host, filtered) in filteredRules {
@@ -1296,7 +1339,7 @@ public class ProtobufDataManager: ObservableObject {
                     guard existing != nil else { continue }
                     var empty = Wblock_Data_ZapperRuleList()
                     empty.disabled = existing?.disabled ?? false
-                    data.extensionData.zapperRulesByHost[host] = empty.disabled ? empty : nil
+                    Self.storeZapperRuleList(empty, forHost: host, in: &data)
                 } else {
                     if let existing,
                        existing.selectors == filtered,
@@ -1312,10 +1355,10 @@ public class ProtobufDataManager: ObservableObject {
             }
             if let disabledByHost {
                 for (host, disabled) in disabledByHost {
-                    guard var ruleList = data.extensionData.zapperRulesByHost[host],
-                          ruleList.disabled != disabled else { continue }
+                    var ruleList = data.extensionData.zapperRulesByHost[host] ?? Wblock_Data_ZapperRuleList()
+                    guard ruleList.disabled != disabled else { continue }
                     ruleList.disabled = disabled
-                    data.extensionData.zapperRulesByHost[host] = ruleList
+                    Self.storeZapperRuleList(ruleList, forHost: host, in: &data)
                     changed = true
                 }
             }
@@ -1366,6 +1409,31 @@ public class ProtobufDataManager: ObservableObject {
             } else {
                 data.extensionData.zapperRulesByHost[host] = rules
             }
+            data.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
+        }
+        return saved ? getZapperRules(forHost: host) : nil
+    }
+
+    /// Applies a browser-side edit as a delta in one disk transaction. Removed selectors
+    /// become pending deletions, and added selectors cancel their pending deletion.
+    /// Returns the host's rules after the write, or nil when the write failed.
+    @MainActor
+    public func applyZapperRuleDelta(forHost host: String, added: [String], removed: [String]) async -> [String]? {
+        let added = added.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+        let removed = removed.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+        let saved = await updateDataImmediately { data in
+            var rules = data.extensionData.zapperRulesByHost[host] ?? Wblock_Data_ZapperRuleList()
+            let original = rules
+            for selector in removed {
+                rules.selectors.removeAll { $0 == selector }
+                if !rules.pendingDeletions.contains(selector) { rules.pendingDeletions.append(selector) }
+            }
+            for selector in added {
+                rules.pendingDeletions.removeAll { $0 == selector }
+                if !rules.selectors.contains(selector) { rules.selectors.append(selector) }
+            }
+            guard rules != original else { return }
+            Self.storeZapperRuleList(rules, forHost: host, in: &data)
             data.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
         }
         return saved ? getZapperRules(forHost: host) : nil
@@ -1426,10 +1494,10 @@ public class ProtobufDataManager: ObservableObject {
         appData.extensionData.zapperRulesByHost[host]?.disabled ?? false
     }
 
-    /// Sorted hostnames whose zapper rules are currently disabled.
+    /// Sorted hostnames whose zapper rules are currently disabled, with or without rules.
     public func getDisabledZapperDomains() -> [String] {
         appData.extensionData.zapperRulesByHost
-            .filter { $0.value.disabled && !$0.value.selectors.isEmpty }
+            .filter { $0.value.disabled }
             .map { $0.key }
             .sorted()
     }
@@ -1446,8 +1514,22 @@ public class ProtobufDataManager: ObservableObject {
         var ruleList = data.extensionData.zapperRulesByHost[host] ?? Wblock_Data_ZapperRuleList()
         guard ruleList.disabled != disabled else { return }
         ruleList.disabled = disabled
-        data.extensionData.zapperRulesByHost[host] = ruleList
+        storeZapperRuleList(ruleList, forHost: host, in: &data)
         data.extensionData.lastUpdated = Int64(Date().timeIntervalSince1970)
+    }
+
+    /// Stores a host's rule list. A host with no selectors, no pending deletions,
+    /// and no kill switch has nothing to keep, so its entry is removed.
+    nonisolated static func storeZapperRuleList(
+        _ ruleList: Wblock_Data_ZapperRuleList,
+        forHost host: String,
+        in data: inout Wblock_Data_AppData
+    ) {
+        if ruleList.selectors.isEmpty && ruleList.pendingDeletions.isEmpty && !ruleList.disabled {
+            data.extensionData.zapperRulesByHost.removeValue(forKey: host)
+        } else {
+            data.extensionData.zapperRulesByHost[host] = ruleList
+        }
     }
 
     /// Rules per host with disabled hosts and empty selectors filtered out.

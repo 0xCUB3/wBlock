@@ -1128,7 +1128,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "A new engine" = "Μια νέα μηχανή";
 "wBlock's new engine reads lists like uBlock Origin. Your enabled AdGuard lists were swapped for matching uBO lists." = "Η νέα μηχανή του wBlock διαβάζει τις λίστες όπως το uBlock Origin. Οι ενεργοποιημένες λίστες της AdGuard αντικαταστάθηκαν με αντίστοιχες λίστες του uBO.";
 "What stays the same" = "Τι μένει ίδιο";
-"Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. AdGuard lists are still in Filters if you want them back." = "Οι προσαρμοσμένες λίστες, τα userscripts, οι κανόνες του Element Zapper και οι ρυθμίσεις των ιστότοπων δεν άλλαξαν. Οι λίστες της AdGuard εξακολουθούν να υπάρχουν στα Φίλτρα, αν θέλετε να τις ξαναχρησιμοποιήσετε.";
+"Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. Most AdGuard lists are still in Filters if you want them back." = "Οι προσαρμοσμένες λίστες, τα userscripts, οι κανόνες του Element Zapper και οι ρυθμίσεις των ιστότοπων δεν άλλαξαν. Οι περισσότερες λίστες της AdGuard εξακολουθούν να υπάρχουν στα Φίλτρα, αν θέλετε να τις ξαναχρησιμοποιήσετε.";
+"Resuming blocking timed out. Try again." = "Έληξε ο χρόνος για τη συνέχιση του αποκλεισμού. Δοκιμάστε ξανά.";
 "If a site breaks" = "Αν ένας ιστότοπος χαλάσει";
 "Turn wBlock off for that site using the wBlock button in Safari, then report it on [GitHub](https://github.com/0xCUB3/wBlock/issues)." = "Απενεργοποιήστε το wBlock για αυτόν τον ιστότοπο με το κουμπί wBlock στο Safari και αναφέρετε το στο [GitHub](https://github.com/0xCUB3/wBlock/issues).";
 "Duplicate Filter Lists" = "Διπλότυπες λίστες φίλτρων";

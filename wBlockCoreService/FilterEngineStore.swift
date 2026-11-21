@@ -1,4 +1,3 @@
-import CryptoKit
 import Foundation
 import os.log
 internal import WBEngine
@@ -52,8 +51,7 @@ enum FilterEngineStore {
         }
         // The serialized format belongs to the engine version, so it is part of
         // the fingerprint as well as the rules.
-        let fingerprint = SHA256.hash(data: Data((SafariVersionDetection.compilerIdentity + "\n" + runtimeRules).utf8))
-            .map { String(format: "%02x", $0) }.joined()
+        let fingerprint = DigestSupport.sha256Hex(SafariVersionDetection.compilerIdentity + "\n" + runtimeRules)
         if readSnapshot(in: directory)?.fingerprint == fingerprint {
             return
         }
