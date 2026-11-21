@@ -405,6 +405,13 @@ class AppFilterManager: ObservableObject {
         Task { await saveFilterLists() }
     }
 
+    func flushPendingSaveNow() async {
+        guard pendingSaveTask != nil else { return }
+        pendingSaveTask?.cancel()
+        pendingSaveTask = nil
+        await saveFilterLists()
+    }
+
     init() {
         self.logManager = ConcurrentLogManager.shared
         self.loader = FilterListLoader()
@@ -548,7 +555,7 @@ class AppFilterManager: ObservableObject {
     @MainActor
     func completeResetForOnboarding() async {
         resetOnboardingUserDefaults()
-        CloudSyncManager.shared.reloadFromDefaults()
+        CloudSyncManager.shared.resetLocalSyncState()
         await dataManager.resetToDefaultData(preservingOnboardingCompletion: true)
         await resetForOnboarding()
         await UserScriptManager.shared.simulateFreshInstall()

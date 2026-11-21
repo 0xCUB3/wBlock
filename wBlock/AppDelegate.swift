@@ -197,7 +197,7 @@ extension AppDelegate: NSApplicationDelegate {
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         guard let filterManager = filterManager, filterManager.hasUnappliedChanges else {
-            return .terminateNow
+            return flushPendingSavesBeforeTerminate()
         }
 
         let alert = NSAlert()
@@ -227,18 +227,53 @@ extension AppDelegate: NSApplicationDelegate {
 
         switch response {
         case .alertFirstButtonReturn: // Apply Changes and Quit
-            Task {
-                await filterManager.performFilterUpdate(showProgress: true)
-                // Ensure changes are applied before terminating
-                DispatchQueue.main.async {
-                    NSApp.reply(toApplicationShouldTerminate: true)
-                }
-            }
+            finishTerminationAfterFlushing(applyFirst: true)
             return .terminateLater
         case .alertSecondButtonReturn: // Quit Without Applying
-            return .terminateNow
+            return flushPendingSavesBeforeTerminate()
         default:
+            return flushPendingSavesBeforeTerminate()
+        }
+    }
+
+    @MainActor
+    private func flushPendingSavesBeforeTerminate() -> NSApplication.TerminateReply {
+        let needsFilterFlush = filterManager?.pendingSaveTask != nil
+        let needsCloudFlush = CloudSyncManager.shared.hasPendingUpload
+        guard needsFilterFlush || needsCloudFlush else {
             return .terminateNow
+        }
+        finishTerminationAfterFlushing(applyFirst: false)
+        return .terminateLater
+    }
+
+    @MainActor
+    private func finishTerminationAfterFlushing(applyFirst: Bool) {
+        Task { @MainActor in
+            if applyFirst, let filterManager {
+                await filterManager.performFilterUpdate(showProgress: true)
+            }
+            await filterManager?.flushPendingSaveNow()
+            _ = await ProtobufDataManager.shared.saveDataImmediately()
+            guard CloudSyncManager.shared.hasPendingUpload else {
+                NSApp.reply(toApplicationShouldTerminate: true)
+                return
+            }
+            var replied = false
+            let replyOnce: @MainActor () -> Void = {
+                guard !replied else { return }
+                replied = true
+                NSApp.reply(toApplicationShouldTerminate: true)
+            }
+            let timeoutTask = Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 3_000_000_000)
+                replyOnce()
+            }
+            Task { @MainActor in
+                await CloudSyncManager.shared.flushPendingUploadIfNeeded()
+                timeoutTask.cancel()
+                replyOnce()
+            }
         }
     }
 
@@ -523,20 +558,14 @@ extension AppDelegate: UIApplicationDelegate {
             await rescheduleBackgroundTasks(reason: "EnterBackground")
         }
 
-        // Flush any pending coalesced filter list saves
-        filterManager?.flushPendingSave()
+        // Flush any pending coalesced filter list saves and protobuf/iCloud writes
+        // inside a background task instead of letting suspension cut them short.
         Task { await ConcurrentLogManager.shared.persistNow() }
-
-        // Flush pending protobuf saves with background time instead of leaving a
-        // debounced disk write to race app suspension.
         flushProtobufDataForBackgroundTransition(reason: "EnterBackground")
     }
 
     func applicationWillTerminate(_ application: UIApplication) {
-        // Flush any pending coalesced filter list saves
-        filterManager?.flushPendingSave()
         Task { await ConcurrentLogManager.shared.persistNow() }
-
         flushProtobufDataForBackgroundTransition(reason: "Terminate")
     }
     
@@ -550,15 +579,32 @@ extension AppDelegate: UIApplicationDelegate {
         let didStartBackgroundTask = backgroundTask.start(name: "wBlock protobuf save: \(reason)")
 
         Task { @MainActor in
-            defer {
+            var ended = false
+            let endOnce: @MainActor () -> Void = {
+                guard !ended else { return }
+                ended = true
                 if didStartBackgroundTask {
                     backgroundTask.end()
                 }
             }
 
+            await filterManager?.flushPendingSaveNow()
             let didSave = await ProtobufDataManager.shared.saveDataImmediately()
             if !didSave {
                 os_log("Failed to flush protobuf data during %{public}@", type: .error, reason)
+            }
+            guard CloudSyncManager.shared.hasPendingUpload else {
+                endOnce()
+                return
+            }
+            let timeoutTask = Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 5_000_000_000)
+                endOnce()
+            }
+            Task { @MainActor in
+                await CloudSyncManager.shared.flushPendingUploadIfNeeded()
+                timeoutTask.cancel()
+                endOnce()
             }
         }
     }

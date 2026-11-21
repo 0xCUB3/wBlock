@@ -108,6 +108,7 @@ final class CloudSyncManager: ObservableObject {
     private var hasPendingExplicitRemoteDownload = false
     private var pendingUploadTask: Task<Void, Never>?
     private var pendingSyncTask: Task<Void, Never>?
+    private var hasPendingLocalSave: Bool = false
     private var isApplyingRemoteChanges: Bool = false
 
     private struct LocalMutationRevisionSnapshot: Equatable {
@@ -165,6 +166,34 @@ final class CloudSyncManager: ObservableObject {
         refreshStatusFromDefaults()
     }
 
+    /// Clears local sync state when restarting onboarding so stale sync bases
+    /// or queued uploads from before the reset cannot interfere afterward.
+    func resetLocalSyncState() {
+        pendingUploadTask?.cancel()
+        pendingUploadTask = nil
+        pendingSyncTask?.cancel()
+        pendingSyncTask = nil
+        hasPendingLocalSave = false
+        deferredSyncTrigger = nil
+        deferredInFlightSyncTrigger = nil
+        _ = uploadCoordinator.takeDeferredTrigger()
+        saveSyncBase(nil)
+        defaults.removeObject(forKey: Keys.lastAccountRecordID)
+        reloadFromDefaults()
+    }
+
+    var hasPendingUpload: Bool {
+        isCloudKitAvailable && isEnabled && (hasPendingLocalSave || pendingUploadTask != nil)
+    }
+
+    func flushPendingUploadIfNeeded() async {
+        guard hasPendingUpload else { return }
+        pendingUploadTask?.cancel()
+        pendingUploadTask = nil
+        hasPendingLocalSave = false
+        await uploadLatestPayload(trigger: "FlushBeforeClose")
+    }
+
     func activateAfterLaunchSetup() {
         guard !hasActivatedObservers else { return }
         hasActivatedObservers = true
@@ -175,6 +204,13 @@ final class CloudSyncManager: ObservableObject {
         observeLocalSaves()
         observeLocalUserScriptChanges()
         observeiCloudAccountChanges()
+        if isCloudKitAvailable, defaults.string(forKey: Keys.lastAccountRecordID) == nil {
+            Task { @MainActor [weak self] in
+                guard let self,
+                      let recordID = try? await CKContainer.default().userRecordID().recordName else { return }
+                self.defaults.set(recordID, forKey: Keys.lastAccountRecordID)
+            }
+        }
 
         let trigger = deferredSyncTrigger
             ?? ((isCloudKitAvailable && isEnabled && !hasPendingExplicitRemoteDownload) ? "Launch" : nil)
@@ -443,6 +479,10 @@ final class CloudSyncManager: ObservableObject {
 
         dataManager.didSaveData
             .receive(on: RunLoop.main)
+            .handleEvents(receiveOutput: { [weak self] _ in
+                guard let self, self.isCloudKitAvailable, self.isEnabled, !self.isApplyingRemoteChanges else { return }
+                self.hasPendingLocalSave = true
+            })
             .debounce(for: .seconds(1.5), scheduler: RunLoop.main)
             .sink { [weak self] in
                 guard let self else { return }
@@ -534,10 +574,19 @@ final class CloudSyncManager: ObservableObject {
                 guard let self, self.isEnabled else { return }
                 // An account change (sign-in/sign-out/switch) can flip which records are
                 // reachable, so bypass the AppActive throttle and reconcile promptly.
+                // Only clear the sync base when the iCloud user record ID actually changed:
+                // CloudKit also posts CKAccountChanged on routine token refreshes and unlocks,
+                // where clearing the base would let remote overwrite unsynced local toggles.
                 self.lastAutomaticSyncAt = 0
-                self.saveSyncBase(nil)
                 Task { @MainActor [weak self] in
                     guard let self else { return }
+                    if let currentRecordID = try? await CKContainer.default().userRecordID().recordName {
+                        let previousRecordID = self.defaults.string(forKey: Keys.lastAccountRecordID)
+                        if let previousRecordID, previousRecordID != currentRecordID {
+                            self.saveSyncBase(nil)
+                        }
+                        self.defaults.set(currentRecordID, forKey: Keys.lastAccountRecordID)
+                    }
                     await self.syncNow(trigger: "AccountChanged")
                 }
             }
@@ -625,6 +674,7 @@ final class CloudSyncManager: ObservableObject {
     private func uploadLatestPayload(trigger: String, withinSyncSession: Bool = false, replacingRemote: Bool = false) async {
         guard isCloudKitAvailable else { return }
         guard isEnabled else { return }
+        hasPendingLocalSave = false
 
         if !withinSyncSession {
             switch uploadCoordinator.actionForUploadRequest(trigger: trigger, isSyncing: isSyncing) {
@@ -960,6 +1010,23 @@ final class CloudSyncManager: ObservableObject {
             await filterManager.applyChanges(allowUserInteraction: true)
         }
 
+        // Save the sync base before building the post-apply local payload so
+        // other-platform built-in entries (e.g. AdGuard Mobile Filter on iOS)
+        // carried in the base are reflected in finalLocalPayload's hash.
+        // Built-in lists it can't name keep their previous baseline
+        // (CloudSyncCustomFilterReconciler.baselineSelection).
+        var base = payload
+        let baseSelection = CloudSyncCustomFilterReconciler.baselineSelection(
+            remote: (payload.filters.selectedURLs, payload.filters.knownURLs),
+            previous: (filtersBaseline.selectedURLs, filtersBaseline.knownURLs),
+            local: (currentContent.filters.selectedURLs, currentContent.filters.knownURLs ?? []),
+            remoteCustomURLs: Set(payload.filters.customLists.map(\.url)),
+            canonicalize: FilterListLoader.canonicalFilterURLString,
+            olderVersionsReconcile: { FilterListLoader.threeXAddresses[$0] != nil })
+        base.filters.selectedURLs = baseSelection.selected
+        base.filters.knownURLs = baseSelection.known
+        saveSyncBase(base)
+
         // Finalize from a payload that no mutation slipped past: drags made during its awaits are
         // suppressed by isApplyingRemoteChanges, so only the rebuilt payload's hash can reveal them.
         let (finalLocalPayload, finalMutations) = try await stableLocalPayloadAndMutationBaseline()
@@ -985,20 +1052,6 @@ final class CloudSyncManager: ObservableObject {
             defaults.set(Date().timeIntervalSince1970, forKey: Keys.lastSyncAt)
             refreshStatusFromDefaults()
         }
-        // Remote is merged in even when local kept its own edits, so the next upload
-        // carries those edits on top of it. Built-in lists it can't name keep their
-        // previous baseline (CloudSyncCustomFilterReconciler.baselineSelection).
-        var base = payload
-        let baseSelection = CloudSyncCustomFilterReconciler.baselineSelection(
-            remote: (payload.filters.selectedURLs, payload.filters.knownURLs),
-            previous: (filtersBaseline.selectedURLs, filtersBaseline.knownURLs),
-            local: (currentContent.filters.selectedURLs, currentContent.filters.knownURLs ?? []),
-            remoteCustomURLs: Set(payload.filters.customLists.map(\.url)),
-            canonicalize: FilterListLoader.canonicalFilterURLString,
-            olderVersionsReconcile: { FilterListLoader.threeXAddresses[$0] != nil })
-        base.filters.selectedURLs = baseSelection.selected
-        base.filters.knownURLs = baseSelection.known
-        saveSyncBase(base)
 
         // A local userscript that was never synced, or a local toggle made during apply, needs
         // a follow-up upload after the current sync becomes idle.
@@ -2055,15 +2108,52 @@ final class CloudSyncManager: ObservableObject {
         )
 
         let filterLists = currentFilterLists()
-        let knownURLs = filterLists
-            .filter { !$0.isCustom }
-            .map { FilterListLoader.syncAddress($0.url.absoluteString) }
-            .sorted()
+        let localBuiltInCanonicalURLs = Set(
+            filterLists.filter { !$0.isCustom }
+                .map { FilterListLoader.canonicalFilterURLString($0.url.absoluteString) }
+        )
+        var knownURLSet = Set(
+            filterLists
+                .filter { !$0.isCustom }
+                .map { FilterListLoader.syncAddress($0.url.absoluteString) }
+        )
+        var selectedURLSet = Set(
+            filterLists
+                .filter { $0.isSelected && !$0.isCustom }
+                .map { FilterListLoader.syncAddress($0.url.absoluteString) }
+        )
+        var automaticUpdates = Self.builtInAutomaticUpdates(filterLists)
+        var siteScopes = Self.builtInSiteScopes(filterLists)
 
-        let selectedURLs = filterLists
-            .filter { $0.isSelected && !$0.isCustom }
-            .map { FilterListLoader.syncAddress($0.url.absoluteString) }
-            .sorted()
+        // Preserve platform-only built-ins from the last sync base (e.g. AdGuard Mobile
+        // Filter from iOS when running on macOS) so this platform neither drops them from
+        // iCloud nor enters an upload ping-pong against the other platform.
+        let otherPlatformURLs = FilterListLoader.otherPlatformBuiltInURLs.subtracting(localBuiltInCanonicalURLs)
+        if !otherPlatformURLs.isEmpty, let baseFilters = loadSyncBase()?.filters {
+            let baseKnown = Set((baseFilters.knownURLs ?? []).map(FilterListLoader.canonicalFilterURLString))
+            let baseSelected = Set(baseFilters.selectedURLs.map(FilterListLoader.canonicalFilterURLString))
+            let baseAutoUpdates = baseFilters.automaticUpdates.map {
+                Dictionary($0.map { (FilterListLoader.canonicalFilterURLString($0.key), $0.value) },
+                           uniquingKeysWith: { _, latest in latest })
+            } ?? [:]
+            let baseSiteScopes = Self.canonicalSiteScopes(baseFilters.siteScopes) ?? [:]
+            for url in otherPlatformURLs {
+                if baseKnown.contains(url) {
+                    knownURLSet.insert(FilterListLoader.syncAddress(url))
+                }
+                if baseSelected.contains(url) {
+                    selectedURLSet.insert(FilterListLoader.syncAddress(url))
+                }
+                if let enabled = baseAutoUpdates[url] {
+                    automaticUpdates[url] = enabled
+                }
+                if let scope = baseSiteScopes[url] {
+                    siteScopes[url] = scope
+                }
+            }
+        }
+        let knownURLs = knownURLSet.sorted()
+        let selectedURLs = selectedURLSet.sorted()
 
         let customListURLs = filterLists
             .filter(\.isCustom)
@@ -2101,11 +2191,11 @@ final class CloudSyncManager: ObservableObject {
             selectedURLs: selectedURLs,
             customLists: customLists,
             deletedCustomURLs: deletedCustomURLs.isEmpty ? nil : deletedCustomURLs,
-            automaticUpdates: Self.builtInAutomaticUpdates(filterLists),
+            automaticUpdates: automaticUpdates,
             order: ListDisplayOrder.exportedKeys(
                 FilterListPresentation.ordered(filterLists, order: ListDisplayOrder.cleared),
                 order: ListDisplayOrder.saved(ListDisplayOrder.filtersKey), key: Self.filterOrderKey),
-            siteScopes: Self.builtInSiteScopes(filterLists)
+            siteScopes: siteScopes
         )
 
         let userScriptDisabledHosts = dataManager.getUserScriptDisabledHosts()
@@ -2436,6 +2526,7 @@ final class CloudSyncManager: ObservableObject {
         static let lastSyncedLocalUserScriptIdentities = "cloudSyncLastSyncedLocalUserScriptIdentities"
         static let deletedRemoteUserScriptURLs = "cloudSyncDeletedRemoteUserScriptURLs"
         static let pendingRemoteScriptAdditions = "cloudSyncPendingRemoteScriptAdditions"
+        static let lastAccountRecordID = "cloudSyncLastAccountRecordID"
     }
 
     // MARK: - Sync base
@@ -2462,8 +2553,8 @@ final class CloudSyncManager: ObservableObject {
             try? FileManager.default.removeItem(at: url)
             return
         }
-        guard loadSyncBase()?.contentHash != payload.contentHash,
-              let data = try? sortedJSONEncoder.encode(payload) else { return }
+        guard let data = try? sortedJSONEncoder.encode(payload) else { return }
+        if let existing = try? Data(contentsOf: url), existing == data { return }
         try? data.write(to: url, options: .atomic)
     }
 

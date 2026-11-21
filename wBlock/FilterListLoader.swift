@@ -204,6 +204,17 @@ class FilterListLoader {
         1, 2, 4, 5, 6, 7, 8, 9, 11, 13, 16, 17, 18, 19, 20, 21, 22, 23, 26, 27, 224,
     ]
 
+    /// Built-in lists shipped only on another platform's catalog (AdGuard Mobile
+    /// Filter is iOS-only). iCloud Sync preserves their remote state from the
+    /// last sync base without importing them into this platform's list.
+    static let otherPlatformBuiltInURLs: Set<String> = {
+        #if os(iOS)
+        []
+        #else
+        [adGuardUBlockURL(11).absoluteString]
+        #endif
+    }()
+
     /// uBlock Origin's copy of an AdGuard list. AdGuard Base uses the copy
     /// without EasyList, as uBO does. URL Tracking Protection (17) is uBO's
     /// own fork, which scopes per-site rules to the link's destination (`to=`).
@@ -696,10 +707,16 @@ class FilterListLoader {
                 id: UUID(), name: "AdGuard Base Filter",
                 url: Self.adGuardUBlockURL(2), category: FilterListCategory.ads,
                 description: "Blocks ads on English-language websites, from the AdGuard project. Works alongside EasyList."),
+        ]
+        #if os(iOS)
+        filterLists.append(
             FilterList(
                 id: UUID(), name: "AdGuard Mobile Filter",
                 url: Self.adGuardUBlockURL(11), category: FilterListCategory.ads,
-                description: "Blocks ads from mobile ad networks, from the AdGuard project."),
+                description: "Blocks ads from mobile ad networks, from the AdGuard project.")
+        )
+        #endif
+        filterLists.append(contentsOf: [
             FilterList(
                 id: UUID(), name: "AdGuard Popups",
                 url: Self.adGuardUBlockURL(19), category: FilterListCategory.annoyances,
@@ -723,7 +740,7 @@ class FilterListLoader {
                 category: FilterListCategory.experimental,
                 description: "Tests new rules before they reach the main lists, from the uBlock Origin project. It may break sites.",
                 trustLevel: "high"),
-        ]
+        ])
 
         filterLists.append(contentsOf: [
             FilterList(

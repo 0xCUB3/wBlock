@@ -72,11 +72,19 @@ private final class TestLoader: FilterListLoader {
             precondition(fm.fileExists(atPath: newURL.path) && fm.fileExists(atPath: newBaseline.path))
         }
         // wBlock 4: replaced AdGuard lists hand their selection to the uBO lists once. Those uBO's
-        // own picker offers stay in the catalog, off; the rest leave it.
+        // own picker offers stay in the catalog, off; the rest leave it. AdGuard Mobile Filter is
+        // iOS-only, so on macOS it leaves the catalog and hands over/removes for existing v4 installs.
         let byName = Dictionary(defaults.map { ($0.name, $0) }, uniquingKeysWith: { a, _ in a })
+        #if os(iOS)
         let uBOOffered: Set<String> = ["AdGuard Base Filter", "AdGuard Mobile Filter", "AdGuard URL Tracking Protection Filter",
                                        "AdGuard Cookie Notices", "AdGuard Popups", "AdGuard Other Annoyances",
                                        "AdGuard Mobile App Banners", "AdGuard Widgets"]
+        #else
+        let uBOOffered: Set<String> = ["AdGuard Base Filter", "AdGuard URL Tracking Protection Filter",
+                                       "AdGuard Cookie Notices", "AdGuard Popups", "AdGuard Other Annoyances",
+                                       "AdGuard Mobile App Banners", "AdGuard Widgets"]
+        precondition(byName["AdGuard Mobile Filter"] == nil, "AdGuard Mobile Filter must not be in the macOS catalog")
+        #endif
         for (adGuard, replacements) in FilterListLoader.listReplacements {
             precondition((byName[adGuard] != nil) == uBOOffered.contains(adGuard), "\(adGuard) catalog presence")
             precondition(byName[adGuard]?.isSelected != true, "\(adGuard) is off by default")
@@ -295,11 +303,18 @@ private final class TestLoader: FilterListLoader {
 
         // Every registry address of a kept AdGuard list moves to uBlock Origin's copy, which the catalog uses.
         // A replaced list moves there too, so it keeps protecting until it hands over.
-        for id in [2, 4, 5, 6, 7, 8, 9, 11, 13, 16, 17, 18, 19, 20, 21, 22, 26, 27, 224] {
+        #if os(iOS)
+        let catalogAdGuardIDs = [2, 4, 5, 6, 7, 8, 9, 11, 13, 16, 17, 18, 19, 20, 21, 22, 26, 27, 224]
+        let replacedAdGuardIDs = [1, 23]
+        #else
+        let catalogAdGuardIDs = [2, 4, 5, 6, 7, 8, 9, 13, 16, 17, 18, 19, 20, 21, 22, 26, 27, 224]
+        let replacedAdGuardIDs = [1, 11, 23]
+        #endif
+        for id in catalogAdGuardIDs {
             let migrated = FilterListLoader.migratedURL(for: "\(registry)/extension/safari/filters/\(id)_optimized.txt")
             precondition(migrated.map(catalogURLs.contains) == true, "AdGuard \(id) does not migrate to a catalog URL")
         }
-        for id in [1, 23] {
+        for id in replacedAdGuardIDs {
             let migrated = FilterListLoader.migratedURL(for: "\(registry)/extension/safari/filters/\(id)_optimized.txt")
             precondition(migrated?.path.contains("/extension/ublock/filters/") == true, "replaced AdGuard \(id) must still load uBlock Origin's copy")
         }
@@ -324,9 +339,30 @@ private final class TestLoader: FilterListLoader {
             precondition(FilterListLoader.syncAddress(current) == old && FilterListLoader.syncAddress(old) == old)
         }
         // 3.x saved AdGuard Mobile at its registry source address too, and any spelling of an old address migrates.
+        let mobileUBlockURL = URL(string: "https://filters.adtidy.org/extension/ublock/filters/11.txt")!
         precondition(FilterListLoader.migratedURL(
             for: "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_11_Mobile/filter.txt")
-            == byName["AdGuard Mobile Filter"]?.url)
+            == mobileUBlockURL)
+        #if !os(iOS)
+        // Existing v4 macOS installs drop AdGuard Mobile Filter whether it was off or on (even with empty pending).
+        let macMobileOff = FilterList(name: "AdGuard Mobile Filter", url: mobileUBlockURL, category: .ads, isSelected: false)
+        let macOffResult = FilterListLoader.handingOverReplacedAdGuardLists(
+            defaults + [macMobileOff], pending: [], catalogURLs: catalogURLs, hasContent: { _ in false })
+        precondition(macOffResult.removed.map(\.id) == [macMobileOff.id]
+                     && !macOffResult.lists.contains { $0.id == macMobileOff.id },
+                     "macOS must remove unselected AdGuard Mobile Filter on launch")
+        let macMobileOn = FilterList(name: "AdGuard Mobile Filter", url: mobileUBlockURL, category: .ads, isSelected: true)
+        let macCandidates = FilterListLoader.adGuardHandoverCandidates(
+            defaults + [macMobileOn], pending: [], catalogURLs: catalogURLs)
+        precondition(macCandidates.map(\.id) == [macMobileOn.id],
+                     "macOS must schedule handover for selected AdGuard Mobile Filter even without pending")
+        let macOnResult = FilterListLoader.handingOverReplacedAdGuardLists(
+            defaults + [macMobileOn], pending: [], catalogURLs: catalogURLs, hasContent: { _ in true })
+        precondition(macOnResult.handedOver.map(\.id) == [macMobileOn.id]
+                     && macOnResult.removed.map(\.id) == [macMobileOn.id]
+                     && !macOnResult.lists.contains { $0.id == macMobileOn.id },
+                     "macOS must hand over and remove selected AdGuard Mobile Filter")
+        #endif
         precondition(FilterListLoader.migratedURL(for: "\(registry)/extension/safari/filters/%34_optimized.txt/#copy")
             == byName["AdGuard Social Media Filter"]?.url)
         precondition(FilterListLoader.migratedURL(
