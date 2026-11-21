@@ -190,6 +190,9 @@ let relayAsleep = false;
 let failAfterCombinedSave = false;
 let combinedApplyWarning = false;
 let zapperMutationResponse = { ok: true, disabled: true };
+let zapperRules = [];
+let noAutoplayGlobalEnabled = true;
+let noAutoplaySiteAllowedOverride = null;
 let siteStateHook = null;
 const tabListeners = { activated: [], updated: [] };
 const sandbox = {
@@ -206,7 +209,7 @@ const sandbox = {
         if (message?.action === "wblock:filterUpdate:getStatus") return { ok: true, state: "idle" };
         if (message?.action === "wblock:installRemoveParamDNRRules") return { ok: true };
         if (message?.action === "wblock:menu:getCommands") return { ok: true, commands: [] };
-        if (message?.action === "wblock:zapper:getRules") return { ok: true, rules: [], disabled: componentsDisabled };
+        if (message?.action === "wblock:zapper:getRules") return { ok: true, rules: zapperRules.slice(), disabled: componentsDisabled };
         if (message?.action === "wblock:clearCache") return { ok: true };
         return { ok: true };
       },
@@ -222,8 +225,20 @@ const sandbox = {
         if (message?.action === "getSiteFilterDisabledState" && siteStateHook) return siteStateHook(message);
         if (message?.action === "getSiteFilterDisabledState") return { disabled: filterDisabled, whitelisted, allDisabled: whitelisted || componentsDisabled };
         if (message?.action === "getPageUserScripts") return { siteDisabled: componentsDisabled, userScripts: siteScripts.map((script) => ({ ...script })) };
-        if (message?.action === "getZapperRules") return { ok: true, rules: [], disabled: componentsDisabled };
-        if (message?.action === "getNoAutoplayState") return { enabled: !componentsDisabled, siteAllowed: componentsDisabled };
+        if (message?.action === "getZapperRules") return { ok: true, rules: zapperRules.slice(), disabled: componentsDisabled };
+        if (message?.action === "getNoAutoplayState") {
+          const siteAllowed = noAutoplaySiteAllowedOverride ?? componentsDisabled;
+          return { enabled: !siteAllowed, siteAllowed, globalEnabled: noAutoplayGlobalEnabled };
+        }
+        if (message?.action === "setNoAutoplaySiteAllowed") {
+          noAutoplaySiteAllowedOverride = message.allowed === true;
+          return {
+            ok: true,
+            enabled: !noAutoplaySiteAllowedOverride,
+            siteAllowed: noAutoplaySiteAllowedOverride,
+            globalEnabled: noAutoplayGlobalEnabled,
+          };
+        }
         if (message?.action === "setAllSiteComponentsDisabled") {
           if (rejectCombined) return { ok: false, error: "Save failed" };
           componentsDisabled = filterDisabled = message.disabled;
@@ -352,11 +367,41 @@ await vm.runInContext("setSiteZapperDisabled('example.com', false)", sandbox);
 check("zapper can be re-enabled through the relay", storage.get("wblock.zapperMeta.v1:example.com")?.disabled === false);
 
 relayAsleep = true;
-storage.set("wblockConfigCacheV1", { engineTimestamp: 1, entries: [] });
+storage.set("wblockConfigCacheV2", { engineTimestamp: 1, entries: [] });
 const asleepState = await vm.runInContext("sendNativeMessage({ action: 'getBlockingPausedState' })", sandbox);
 relayAsleep = false;
 check("popup falls back to direct native when the relay has no listener", asleepState?.paused === false);
-check("the fallback drops the persisted config cache", !storage.has("wblockConfigCacheV1"));
+check("the fallback drops the persisted config cache", !storage.has("wblockConfigCacheV2"));
+
+storage.set("wblock.zapperRules.v1:example.com", []);
+zapperRules = [".ad", ".banner"];
+await sandbox.__refreshPopupForTest();
+check("popup renders authoritative zapper count even when local cache starts stale",
+  elements.get("zapper-count").textContent === "2" && elements.get("zapper-clear").disabled === false);
+storage.set("wblock.zapperRules.v1:example.com", [".stale"]);
+zapperRules = [];
+await sandbox.__refreshPopupForTest();
+check("popup clears zapper count and disables Clear when authoritative rules are empty",
+  elements.get("zapper-count").textContent === "0" && elements.get("zapper-clear").disabled === true);
+
+noAutoplayGlobalEnabled = false;
+noAutoplaySiteAllowedOverride = false;
+await vm.runInContext("getNoAutoplayState('example.com')", sandbox);
+check("getNoAutoplayState keeps global cache false when site overrides it to blocked",
+  storage.get("wblock.noAutoplay.enabled.v1") === false && !storage.has("wblock.noAutoplayAllow.v1:example.com"));
+await vm.runInContext("setNoAutoplaySiteAllowed('example.com', false)", sandbox);
+check("setNoAutoplaySiteAllowed keeps global cache false when blocking site autoplay",
+  storage.get("wblock.noAutoplay.enabled.v1") === false && !storage.has("wblock.noAutoplayAllow.v1:example.com"));
+
+noAutoplayGlobalEnabled = true;
+noAutoplaySiteAllowedOverride = true;
+await vm.runInContext("getNoAutoplayState('example.com')", sandbox);
+check("getNoAutoplayState keeps global cache true when site overrides it to allowed",
+  storage.get("wblock.noAutoplay.enabled.v1") === true && storage.get("wblock.noAutoplayAllow.v1:example.com") === true);
+await vm.runInContext("setNoAutoplaySiteAllowed('example.com', true)", sandbox);
+check("setNoAutoplaySiteAllowed keeps global cache true when allowing site autoplay",
+  storage.get("wblock.noAutoplay.enabled.v1") === true && storage.get("wblock.noAutoplayAllow.v1:example.com") === true);
+noAutoplaySiteAllowedOverride = null;
 
 async function changeToggle(id, checked) {
   elements.get(id).checked = checked;
