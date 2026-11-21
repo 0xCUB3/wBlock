@@ -211,7 +211,7 @@
     "description": "Toast shown when zapper mode is disabled."
   },
   "popup_userscripts": {
-    "message": "Userscripts",
+    "message": "Benutzerskripte",
     "description": "Section title for userscripts that match the current page in the popup."
   },
   "popup_userscripts_empty": {
