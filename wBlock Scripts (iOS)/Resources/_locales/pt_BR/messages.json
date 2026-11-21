@@ -211,15 +211,15 @@
     "description": "Toast shown when zapper mode is disabled."
   },
   "popup_userscripts": {
-    "message": "Userscripts",
+    "message": "Scripts de usuário",
     "description": "Section title for userscripts that match the current page in the popup."
   },
   "popup_userscripts_empty": {
-    "message": "No userscripts are running on this page.",
+    "message": "Nenhum script de usuário está em execução nesta página.",
     "description": "Empty state shown when no userscripts match or run on the current page."
   },
   "popup_error_update_userscript": {
-    "message": "Failed to update userscript setting.",
+    "message": "Falha ao atualizar a configuração do script de usuário.",
     "description": "Error shown when popup fails to update a per-site userscript setting."
   },
   "popup_paused_prompt_title": {
