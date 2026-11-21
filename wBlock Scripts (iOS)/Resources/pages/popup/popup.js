@@ -1260,6 +1260,7 @@ function isNativeNoAutoplayState(response) {
         response
         && typeof response.enabled === 'boolean'
         && typeof response.siteAllowed === 'boolean'
+        && typeof response.globalEnabled === 'boolean'
     );
 }
 
@@ -1303,7 +1304,7 @@ async function fetchNativeNoAutoplayState(siteHost) {
         return {
             enabled: response.enabled,
             siteAllowed: response.siteAllowed,
-            globalEnabled: typeof response.globalEnabled === 'boolean' ? response.globalEnabled : response.enabled,
+            globalEnabled: response.globalEnabled,
         };
     } catch (error) {
         console.warn('[wBlock] Failed to read native No Autoplay state:', error);
@@ -1442,13 +1443,10 @@ async function setNoAutoplaySiteAllowed(siteHost, allowed) {
         host: siteHost,
         allowed: nextAllowed,
     });
-    if (!response || response.ok !== true
-        || typeof response.enabled !== 'boolean'
-        || typeof response.siteAllowed !== 'boolean') {
+    if (response?.ok !== true || !isNativeNoAutoplayState(response)) {
         throw new Error('Native No Autoplay site allow write did not persist');
     }
-    const globalEnabled = typeof response.globalEnabled === 'boolean' ? response.globalEnabled : response.enabled;
-    await mirrorNoAutoplayLocalCache(globalEnabled, siteHost, response.siteAllowed);
+    await mirrorNoAutoplayLocalCache(response.globalEnabled, siteHost, response.siteAllowed);
 }
 
 // The global switch reads as Autoplay (on by default); `state.enabled` is
