@@ -31,8 +31,6 @@ struct ApplyRunSnapshot {
 
 @MainActor
 class AppFilterManager: ObservableObject {
-    private static let lastAppliedUpgradeSignatureKey = SharedAutoUpdateManager.lastAppliedUpgradeSignatureKey
-    private static let lastFailedUpgradeSignatureKey = "wBlock.lastFailedUpgradeSignature"
     @Published var filterLists: [FilterList] = [] {
         // Updated with the lists, not from a view's onChange, so the list
         // presentation sees one input change instead of two per frame.
@@ -233,8 +231,7 @@ class AppFilterManager: ObservableObject {
     }
 
     private func storedUpgradeSignature() -> String? {
-        let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
-        return defaults.string(forKey: Self.lastAppliedUpgradeSignatureKey)
+        UpgradeStateStore.lastAppliedUpgradeSignature()
     }
 
     /// Replaced AdGuard lists that were on when this device first ran the
@@ -247,18 +244,15 @@ class AppFilterManager: ObservableObject {
 
     var adGuardHandoverPending: Set<UUID> {
         get {
-            let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
-            return Set((defaults.stringArray(forKey: Self.adGuardHandoverPendingKey) ?? []).compactMap(UUID.init))
+            UpgradeStateStore.adGuardHandoverPending(legacyKey: Self.adGuardHandoverPendingKey) ?? []
         }
         set {
-            let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
-            defaults.set(newValue.map(\.uuidString).sorted(), forKey: Self.adGuardHandoverPendingKey)
+            UpgradeStateStore.setAdGuardHandoverPending(newValue)
         }
     }
 
     private func recordAdGuardHandoverIfNeeded(_ lists: [FilterList]) {
-        let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
-        guard defaults.object(forKey: Self.adGuardHandoverPendingKey) == nil else { return }
+        guard UpgradeStateStore.adGuardHandoverPending(legacyKey: Self.adGuardHandoverPendingKey) == nil else { return }
         adGuardHandoverPending = Set(lists.filter { $0.isSelected && FilterListLoader.isReplacedList($0) }.map(\.id))
     }
 
@@ -274,15 +268,14 @@ class AppFilterManager: ObservableObject {
     /// flag is set only after setup saves it (onceKeysAwaitingSave), so a crash
     /// before the save applies the change again.
     private func applyOnce(_ key: String, _ change: ([FilterList]) -> [FilterList], to lists: inout [FilterList]) -> Bool {
-        let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
-        guard !defaults.bool(forKey: key) else { return false }
+        guard !UpgradeStateStore.hasCompletedMigration(key) else { return false }
         guard dataManager.hasCompletedOnboarding else {
-            defaults.set(true, forKey: key)
+            UpgradeStateStore.markMigrationCompleted(key)
             return false
         }
         let updated = change(lists)
         guard updated != lists else {
-            defaults.set(true, forKey: key)
+            UpgradeStateStore.markMigrationCompleted(key)
             return false
         }
         lists = updated
@@ -293,23 +286,19 @@ class AppFilterManager: ObservableObject {
     private var catalogURLs: Set<URL> { Set(loader.getDefaultFilterLists().map(\.url)) }
 
     func persistUpgradeRebuildSignature() {
-        let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
-        defaults.set(ContentBlockerService.upgradeSignature, forKey: Self.lastAppliedUpgradeSignatureKey)
+        UpgradeStateStore.setLastAppliedUpgradeSignature(ContentBlockerService.upgradeSignature)
     }
 
     func persistFailedUpgradeRebuildSignature() {
-        let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
-        defaults.set(ContentBlockerService.upgradeSignature, forKey: Self.lastFailedUpgradeSignatureKey)
+        UpgradeStateStore.setLastFailedUpgradeSignature(ContentBlockerService.upgradeSignature)
     }
 
     func clearFailedUpgradeRebuildSignature() {
-        let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
-        defaults.removeObject(forKey: Self.lastFailedUpgradeSignatureKey)
+        UpgradeStateStore.setLastFailedUpgradeSignature(nil)
     }
 
     private func storedFailedUpgradeSignature() -> String? {
-        let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
-        return defaults.string(forKey: Self.lastFailedUpgradeSignatureKey)
+        UpgradeStateStore.lastFailedUpgradeSignature()
     }
 
     func captureApplySnapshot() {
@@ -555,6 +544,7 @@ class AppFilterManager: ObservableObject {
     @MainActor
     func completeResetForOnboarding() async {
         resetOnboardingUserDefaults()
+        UpgradeStateStore.reset()
         CloudSyncManager.shared.resetLocalSyncState()
         await dataManager.resetToDefaultData(preservingOnboardingCompletion: true)
         await resetForOnboarding()
@@ -881,8 +871,7 @@ class AppFilterManager: ObservableObject {
             onceKeysAwaitingSave = []
             Task {
                 guard await self.saveFilterLists() else { return }
-                let defaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
-                for key in onceKeys { defaults.set(true, forKey: key) }
+                for key in onceKeys { UpgradeStateStore.markMigrationCompleted(key) }
             }
         }
 

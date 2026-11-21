@@ -4,14 +4,11 @@ import wBlockCoreService
 /// Shown once to installs that used wBlock before 4.0, explaining the move to
 /// the uBO-semantics engine and lists. New installs never see it.
 enum UpgradeNotice {
-    private static let seenKey = "wBlock.upgradeNotice.4.0"
-    private static var defaults: UserDefaults { UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard }
-
     /// Whether the notice is still owed: a device that finished onboarding before
     /// 4.0 and has not dismissed it. A new install never sees it, so it is marked
     /// seen here.
     static func isPending(hasCompletedOnboarding: Bool) -> Bool {
-        guard !defaults.bool(forKey: seenKey) else { return false }
+        guard !UpgradeStateStore.hasSeenUpgradeNotice() else { return false }
         guard hasCompletedOnboarding else {
             markSeen()
             return false
@@ -21,7 +18,7 @@ enum UpgradeNotice {
 
     /// Called on dismissal, so a notice that never got on screen stays pending.
     static func markSeen() {
-        defaults.set(true, forKey: seenKey)
+        UpgradeStateStore.markUpgradeNoticeSeen()
     }
 }
 
@@ -41,7 +38,10 @@ struct UpgradeNoticeView: View {
 
     var body: some View {
         SheetContainer(fill: .system) {
-            SheetHeader(title: "Welcome to wBlock 4.0") { dismiss() }
+            SheetHeader(title: "Welcome to wBlock 4.0") {
+                UpgradeNotice.markSeen()
+                dismiss()
+            }
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     ForEach(sections.indices, id: \.self) { index in
@@ -64,7 +64,10 @@ struct UpgradeNoticeView: View {
                 .padding(SheetDesign.contentHorizontalPadding)
             }
             SheetBottomToolbar {
-                Button { dismiss() } label: {
+                Button {
+                    UpgradeNotice.markSeen()
+                    dismiss()
+                } label: {
                     Text("Got It").frame(maxWidth: .infinity)
                 }
                 .primaryActionButtonStyle()

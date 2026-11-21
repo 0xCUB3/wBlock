@@ -22,6 +22,228 @@ import Foundation
 import CryptoKit
 import os.log
 import SafariServices
+
+/// File-backed store for one-time migration flags, the 4.0 upgrade notice, and
+/// the last applied/failed upgrade signature. Persisted atomically alongside
+/// `ProtobufData` instead of relying on app-group `UserDefaults`, which can
+/// lose writes across relaunches when `cfprefsd` rejects or detaches from an
+/// app-group suite.
+public enum UpgradeStateStore {
+    public struct State: Codable, Equatable, Sendable {
+        public var upgradeNoticeSeen: Bool?
+        public var lastAppliedUpgradeSignature: String?
+        public var lastFailedUpgradeSignature: String?
+        public var adGuardHandoverPending: [String]?
+        public var completedMigrations: [String: Bool] = [:]
+
+        public init(
+            upgradeNoticeSeen: Bool? = nil,
+            lastAppliedUpgradeSignature: String? = nil,
+            lastFailedUpgradeSignature: String? = nil,
+            adGuardHandoverPending: [String]? = nil,
+            completedMigrations: [String: Bool] = [:]
+        ) {
+            self.upgradeNoticeSeen = upgradeNoticeSeen
+            self.lastAppliedUpgradeSignature = lastAppliedUpgradeSignature
+            self.lastFailedUpgradeSignature = lastFailedUpgradeSignature
+            self.adGuardHandoverPending = adGuardHandoverPending
+            self.completedMigrations = completedMigrations
+        }
+    }
+
+    public static let filename = "upgrade-state.json"
+    private static let lock = NSLock()
+    private static let legacyNoticeKey = "wBlock.upgradeNotice.4.0"
+    private static let legacyFailedSignatureKey = "wBlock.lastFailedUpgradeSignature"
+
+    public static func defaultStoreURL(groupIdentifier: String = GroupIdentifier.shared.value) -> URL {
+        let fm = FileManager.default
+        let baseDir: URL
+        if let containerURL = fm.containerURL(forSecurityApplicationGroupIdentifier: groupIdentifier) {
+            baseDir = containerURL.appendingPathComponent("ProtobufData", isDirectory: true)
+        } else {
+            let appSupport = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+                ?? fm.temporaryDirectory
+            baseDir = appSupport.appendingPathComponent("wBlock", isDirectory: true)
+                .appendingPathComponent("ProtobufData", isDirectory: true)
+        }
+        return baseDir.appendingPathComponent(filename)
+    }
+
+    private static func defaultLegacyDefaults(groupIdentifier: String = GroupIdentifier.shared.value) -> UserDefaults? {
+        UserDefaults(suiteName: groupIdentifier)
+    }
+
+    private static func loadUnlocked(from url: URL) -> State {
+        guard let data = try? Data(contentsOf: url),
+              let state = try? JSONDecoder().decode(State.self, from: data) else {
+            return State()
+        }
+        return state
+    }
+
+    private static func saveUnlocked(_ state: State, to url: URL) {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        guard let data = try? encoder.encode(state) else { return }
+        let directory = url.deletingLastPathComponent()
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try? data.write(to: url, options: .atomic)
+    }
+
+    public static func hasSeenUpgradeNotice(
+        storeURL: URL? = nil,
+        legacyDefaults: UserDefaults? = nil
+    ) -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        let url = storeURL ?? defaultStoreURL()
+        var state = loadUnlocked(from: url)
+        if let seen = state.upgradeNoticeSeen { return seen }
+        let defaults = legacyDefaults ?? (storeURL == nil ? defaultLegacyDefaults() : nil)
+        if defaults?.bool(forKey: legacyNoticeKey) == true {
+            state.upgradeNoticeSeen = true
+            saveUnlocked(state, to: url)
+            return true
+        }
+        return false
+    }
+
+    public static func markUpgradeNoticeSeen(storeURL: URL? = nil) {
+        lock.lock()
+        defer { lock.unlock() }
+        let url = storeURL ?? defaultStoreURL()
+        var state = loadUnlocked(from: url)
+        guard state.upgradeNoticeSeen != true else { return }
+        state.upgradeNoticeSeen = true
+        saveUnlocked(state, to: url)
+    }
+
+    public static func lastAppliedUpgradeSignature(
+        storeURL: URL? = nil,
+        legacyDefaults: UserDefaults? = nil
+    ) -> String? {
+        lock.lock()
+        defer { lock.unlock() }
+        let url = storeURL ?? defaultStoreURL()
+        var state = loadUnlocked(from: url)
+        if let signature = state.lastAppliedUpgradeSignature { return signature }
+        let defaults = legacyDefaults ?? (storeURL == nil ? defaultLegacyDefaults() : nil)
+        if let legacy = defaults?.string(forKey: SharedAutoUpdateManager.lastAppliedUpgradeSignatureKey) {
+            state.lastAppliedUpgradeSignature = legacy
+            saveUnlocked(state, to: url)
+            return legacy
+        }
+        return nil
+    }
+
+    public static func setLastAppliedUpgradeSignature(_ signature: String?, storeURL: URL? = nil) {
+        lock.lock()
+        defer { lock.unlock() }
+        let url = storeURL ?? defaultStoreURL()
+        var state = loadUnlocked(from: url)
+        guard state.lastAppliedUpgradeSignature != signature else { return }
+        state.lastAppliedUpgradeSignature = signature
+        saveUnlocked(state, to: url)
+    }
+
+    public static func lastFailedUpgradeSignature(
+        storeURL: URL? = nil,
+        legacyDefaults: UserDefaults? = nil
+    ) -> String? {
+        lock.lock()
+        defer { lock.unlock() }
+        let url = storeURL ?? defaultStoreURL()
+        var state = loadUnlocked(from: url)
+        if let signature = state.lastFailedUpgradeSignature { return signature }
+        let defaults = legacyDefaults ?? (storeURL == nil ? defaultLegacyDefaults() : nil)
+        if let legacy = defaults?.string(forKey: legacyFailedSignatureKey) {
+            state.lastFailedUpgradeSignature = legacy
+            saveUnlocked(state, to: url)
+            return legacy
+        }
+        return nil
+    }
+
+    public static func setLastFailedUpgradeSignature(_ signature: String?, storeURL: URL? = nil) {
+        lock.lock()
+        defer { lock.unlock() }
+        let url = storeURL ?? defaultStoreURL()
+        var state = loadUnlocked(from: url)
+        guard state.lastFailedUpgradeSignature != signature else { return }
+        state.lastFailedUpgradeSignature = signature
+        saveUnlocked(state, to: url)
+    }
+
+    /// Returns nil only before the device has recorded its handover list.
+    public static func adGuardHandoverPending(
+        legacyKey: String,
+        storeURL: URL? = nil,
+        legacyDefaults: UserDefaults? = nil
+    ) -> Set<UUID>? {
+        lock.lock()
+        defer { lock.unlock() }
+        let url = storeURL ?? defaultStoreURL()
+        var state = loadUnlocked(from: url)
+        if let raw = state.adGuardHandoverPending {
+            return Set(raw.compactMap(UUID.init))
+        }
+        let defaults = legacyDefaults ?? (storeURL == nil ? defaultLegacyDefaults() : nil)
+        if let legacy = defaults?.stringArray(forKey: legacyKey) {
+            state.adGuardHandoverPending = legacy
+            saveUnlocked(state, to: url)
+            return Set(legacy.compactMap(UUID.init))
+        }
+        return nil
+    }
+
+    public static func setAdGuardHandoverPending(_ ids: Set<UUID>, storeURL: URL? = nil) {
+        lock.lock()
+        defer { lock.unlock() }
+        let url = storeURL ?? defaultStoreURL()
+        var state = loadUnlocked(from: url)
+        let sorted = ids.map(\.uuidString).sorted()
+        guard state.adGuardHandoverPending != sorted else { return }
+        state.adGuardHandoverPending = sorted
+        saveUnlocked(state, to: url)
+    }
+
+    public static func hasCompletedMigration(
+        _ key: String,
+        storeURL: URL? = nil,
+        legacyDefaults: UserDefaults? = nil
+    ) -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        let url = storeURL ?? defaultStoreURL()
+        var state = loadUnlocked(from: url)
+        if state.completedMigrations[key] == true { return true }
+        let defaults = legacyDefaults ?? (storeURL == nil ? defaultLegacyDefaults() : nil)
+        if defaults?.bool(forKey: key) == true {
+            state.completedMigrations[key] = true
+            saveUnlocked(state, to: url)
+            return true
+        }
+        return false
+    }
+
+    public static func markMigrationCompleted(_ key: String, storeURL: URL? = nil) {
+        lock.lock()
+        defer { lock.unlock() }
+        let url = storeURL ?? defaultStoreURL()
+        var state = loadUnlocked(from: url)
+        guard state.completedMigrations[key] != true else { return }
+        state.completedMigrations[key] = true
+        saveUnlocked(state, to: url)
+    }
+
+    public static func reset(storeURL: URL? = nil) {
+        lock.lock()
+        defer { lock.unlock() }
+        let url = storeURL ?? defaultStoreURL()
+        try? FileManager.default.removeItem(at: url)
+    }
+}
 #if canImport(UIKit)
 import UIKit
 #endif
@@ -738,13 +960,14 @@ public actor SharedAutoUpdateManager {
     // MARK: - State Management Helpers
 
     // MARK: - Core Logic
-    /// App-group key where the app records "version|compatibility|compiler" after
-    /// every successful apply (AppFilterManager.persistUpgradeRebuildSignature).
+    /// Legacy UserDefaults key migrated into `UpgradeStateStore`.
     public static let lastAppliedUpgradeSignatureKey = "wBlock.lastAppliedUpgradeSignature"
 
-    public static func appHasAppliedCurrentVersion(
-        defaults: UserDefaults = UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
-    ) -> Bool {
+    public static func appHasAppliedCurrentVersion() -> Bool {
+        UpgradeStateStore.lastAppliedUpgradeSignature() == ContentBlockerService.upgradeSignature
+    }
+
+    public static func appHasAppliedCurrentVersion(defaults: UserDefaults) -> Bool {
         defaults.string(forKey: lastAppliedUpgradeSignatureKey) == ContentBlockerService.upgradeSignature
     }
 

@@ -27,6 +27,35 @@ struct WbeUpgradeTests {
         defaults.set(ContentBlockerService.upgradeSignature, forKey: SharedAutoUpdateManager.lastAppliedUpgradeSignatureKey)
         check(SharedAutoUpdateManager.appHasAppliedCurrentVersion(defaults: defaults), "background work resumes after this compiler has applied")
 
+        // File-backed UpgradeStateStore persists without UserDefaults, migrates legacy keys once, and resets cleanly.
+        let stateURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("wblock-upgrade-state-\(UUID().uuidString).json")
+        defer { try? FileManager.default.removeItem(at: stateURL) }
+        check(!UpgradeStateStore.hasSeenUpgradeNotice(storeURL: stateURL), "notice starts unseen")
+        check(UpgradeStateStore.adGuardHandoverPending(legacyKey: "wBlock.adGuardHandoverPending.4", storeURL: stateURL) == nil, "handover starts unrecorded")
+        let legacySuite = "wblock.upgrade-legacy.\(UUID().uuidString)"
+        let legacyDefaults = UserDefaults(suiteName: legacySuite)!
+        defer { legacyDefaults.removePersistentDomain(forName: legacySuite) }
+        legacyDefaults.set(true, forKey: "wBlock.upgradeNotice.4.0")
+        legacyDefaults.set("legacy-sig", forKey: SharedAutoUpdateManager.lastAppliedUpgradeSignatureKey)
+        legacyDefaults.set(true, forKey: "wBlock.changedDefaults.4.0.2")
+        let handoverID = UUID()
+        legacyDefaults.set([handoverID.uuidString], forKey: "wBlock.adGuardHandoverPending.4")
+        check(UpgradeStateStore.hasSeenUpgradeNotice(storeURL: stateURL, legacyDefaults: legacyDefaults), "migrates legacy notice")
+        check(UpgradeStateStore.lastAppliedUpgradeSignature(storeURL: stateURL, legacyDefaults: legacyDefaults) == "legacy-sig", "migrates legacy signature")
+        check(UpgradeStateStore.hasCompletedMigration("wBlock.changedDefaults.4.0.2", storeURL: stateURL, legacyDefaults: legacyDefaults), "migrates legacy migration flag")
+        check(UpgradeStateStore.adGuardHandoverPending(legacyKey: "wBlock.adGuardHandoverPending.4", storeURL: stateURL, legacyDefaults: legacyDefaults) == [handoverID], "migrates legacy handover")
+        // Clear legacy defaults and verify every value survives in the file alone.
+        legacyDefaults.removePersistentDomain(forName: legacySuite)
+        check(UpgradeStateStore.hasSeenUpgradeNotice(storeURL: stateURL), "notice persists in file")
+        check(UpgradeStateStore.lastAppliedUpgradeSignature(storeURL: stateURL) == "legacy-sig", "signature persists in file")
+        check(UpgradeStateStore.hasCompletedMigration("wBlock.changedDefaults.4.0.2", storeURL: stateURL), "migration flag persists in file")
+        check(UpgradeStateStore.adGuardHandoverPending(legacyKey: "wBlock.adGuardHandoverPending.4", storeURL: stateURL) == [handoverID], "handover persists in file")
+        UpgradeStateStore.setLastAppliedUpgradeSignature(ContentBlockerService.upgradeSignature, storeURL: stateURL)
+        check(UpgradeStateStore.lastAppliedUpgradeSignature(storeURL: stateURL) == ContentBlockerService.upgradeSignature, "signature updates atomically")
+        UpgradeStateStore.reset(storeURL: stateURL)
+        check(!UpgradeStateStore.hasSeenUpgradeNotice(storeURL: stateURL) && UpgradeStateStore.lastAppliedUpgradeSignature(storeURL: stateURL) == nil, "reset clears file")
+
         for hasEngine in [false, true] {
             check(ContentBlockerService.automaticRebuildDelay(
                 signatureMismatch: true, failedCurrentUpgrade: false,
