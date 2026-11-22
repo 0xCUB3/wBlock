@@ -37,21 +37,24 @@
   const warmScriptletFiles = new Map();
   let warmScriptletSync = Promise.resolve();
   const warmOriginFromUrl = url => {
-    if (typeof url !== 'string') return '';
+    if (typeof url !== 'string') return null;
     try {
       const parsed = new URL(url);
-      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return '';
-      return parsed.origin;
+      if ((parsed.protocol !== 'http:' && parsed.protocol !== 'https:') || parsed.port) return null;
+      return {
+        id: `${WARM_SCRIPTLET_PREFIX}${parsed.protocol.slice(0, -1)}-${parsed.hostname}`,
+        match: `${parsed.protocol}//${parsed.hostname}/*`
+      };
     } catch (_) {
-      return '';
+      return null;
     }
   };
   const syncWarmScriptlets = (url, uboCalls) => {
     if (!(browser.scripting && typeof browser.scripting.registerContentScripts === 'function')) return;
-    const origin = warmOriginFromUrl(url);
-    if (!origin) return;
+    const target = warmOriginFromUrl(url);
+    if (!target) return;
     const names = [...new Set(uboCalls.map(([name]) => name).filter(name => typeof name === 'string' && name && !name.startsWith('trusted-')))];
-    const id = WARM_SCRIPTLET_PREFIX + origin;
+    const { id, match } = target;
     const js = names.length > 0 ? ['early/warm-scriptlets.js', ...names.map(name => `scriptlets/${name}.js`)] : [];
     const signature = js.join('\0');
     if (warmScriptletFiles.get(id) === signature) return;
@@ -68,7 +71,7 @@
       }
       await browser.scripting.registerContentScripts([{
         id,
-        matches: [origin + '/*'],
+        matches: [match],
         js,
         runAt: 'document_start',
         world: 'MAIN',
