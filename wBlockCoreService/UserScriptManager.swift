@@ -3385,14 +3385,7 @@ public class UserScriptManager: ObservableObject {
         return succeeded
     }
 
-    public func autoUpdateEnabledUserScripts(
-        skipFresh: Bool = false,
-        removeDisabledDownloads: Bool = true,
-        progressCallback: (@MainActor (AutoUpdateProgress) async -> Void)? = nil
-    ) async -> AutoUpdateResult {
-        await waitUntilReady()
-
-        let disabledScriptIDs = Set(userScripts.filter { !$0.isEnabled }.map(\.id))
+    private func autoUpdateCandidates(skipFresh: Bool) async -> [UserScript] {
         var candidates = userScripts.filter { $0.isEnabled && $0.canUpdateAutomatically }
 
         if skipFresh {
@@ -3406,6 +3399,23 @@ public class UserScriptManager: ObservableObject {
                 interval: interval
             )
         }
+        return candidates
+    }
+
+    public func autoUpdateCandidateCount(skipFresh: Bool = false) async -> Int {
+        await waitUntilReady()
+        return await autoUpdateCandidates(skipFresh: skipFresh).count
+    }
+
+    public func autoUpdateEnabledUserScripts(
+        skipFresh: Bool = false,
+        removeDisabledDownloads: Bool = true,
+        progressCallback: (@MainActor (AutoUpdateProgress) async -> Void)? = nil
+    ) async -> AutoUpdateResult {
+        await waitUntilReady()
+
+        let disabledScriptIDs = Set(userScripts.filter { !$0.isEnabled }.map(\.id))
+        let candidates = await autoUpdateCandidates(skipFresh: skipFresh)
 
         var updatedCount = 0
         var failedCount = 0

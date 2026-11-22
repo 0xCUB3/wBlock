@@ -1067,11 +1067,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides banners that push a site's mobile app, from the AdGuard project." = "隱藏推廣網站行動 App 的橫幅，來自 AdGuard 專案。";
 "Hides cookie notices, from the AdGuard project." = "隱藏 Cookie 通知，來自 AdGuard 專案。";
 "Hides cookie notices, from the EasyList project." = "隱藏 Cookie 通知，來自 EasyList 專案。";
-"Hides cookie notices, from the uBlock Origin project." = "隱藏 Cookie 通知，來自 uBlock Origin 專案。";
+"Hides cookie notices, from the uBlock Origin project. Works alongside AdGuard Cookie Notices or EasyList – Cookie Notices." = "隱藏 Cookie 通知，來自 uBlock Origin 專案。可與 AdGuard Cookie Notices 或 EasyList – Cookie Notices 搭配使用。";
 "Hides live chat and support widgets, from the EasyList project." = "隱藏即時聊天和支援小工具，來自 EasyList 專案。";
 "Hides newsletter sign-up prompts, from the EasyList project." = "隱藏電子報訂閱提示，來自 EasyList 專案。";
 "Hides newsletter prompts, in-page pop-ups, app banners, and other annoyances, from the EasyList project." = "隱藏電子報訂閱提示、頁內彈出視窗、App 橫幅和其他惱人內容，來自 EasyList 專案。";
-"Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project." = "隱藏覆蓋層、促銷橫幅和其他惱人內容，來自 uBlock Origin 專案。";
+"Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project. Works alongside AdGuard Other Annoyances or EasyList – Other Annoyances." = "隱藏覆蓋層、促銷橫幅和其他惱人內容，來自 uBlock Origin 專案。可與 AdGuard Other Annoyances 或 EasyList – Other Annoyances 搭配使用。";
 "Hides pop-ups that sites don't need to work, from the AdGuard project." = "隱藏網站正常運作並不需要的彈出視窗，來自 AdGuard 專案。";
 "Hides promotions, copy restrictions, and other annoyances, from the AdGuard project." = "隱藏促銷內容、複製限制和其他惱人內容，來自 AdGuard 專案。";
 "Hides prompts that ask to show notifications, from the EasyList project." = "隱藏要求顯示通知的提示，來自 EasyList 專案。";

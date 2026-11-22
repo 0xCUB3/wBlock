@@ -1067,11 +1067,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides banners that push a site's mobile app, from the AdGuard project." = "Скрывает баннеры с предложением установить мобильное приложение сайта, из проекта AdGuard.";
 "Hides cookie notices, from the AdGuard project." = "Скрывает уведомления о cookie, из проекта AdGuard.";
 "Hides cookie notices, from the EasyList project." = "Скрывает уведомления о cookie, из проекта EasyList.";
-"Hides cookie notices, from the uBlock Origin project." = "Скрывает уведомления о cookie, из проекта uBlock Origin.";
+"Hides cookie notices, from the uBlock Origin project. Works alongside AdGuard Cookie Notices or EasyList – Cookie Notices." = "Скрывает уведомления о cookie, из проекта uBlock Origin. Работает вместе с AdGuard Cookie Notices или EasyList – Cookie Notices.";
 "Hides live chat and support widgets, from the EasyList project." = "Скрывает виджеты живого чата и поддержки, из проекта EasyList.";
 "Hides newsletter sign-up prompts, from the EasyList project." = "Скрывает предложения подписаться на рассылку, из проекта EasyList.";
 "Hides newsletter prompts, in-page pop-ups, app banners, and other annoyances, from the EasyList project." = "Скрывает предложения подписаться на рассылку, всплывающие окна на странице, баннеры приложений и прочие раздражители, из проекта EasyList.";
-"Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project." = "Скрывает оверлеи, рекламные баннеры и прочие раздражители, из проекта uBlock Origin.";
+"Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project. Works alongside AdGuard Other Annoyances or EasyList – Other Annoyances." = "Скрывает оверлеи, рекламные баннеры и прочие раздражители, из проекта uBlock Origin. Работает вместе с AdGuard Other Annoyances или EasyList – Other Annoyances.";
 "Hides pop-ups that sites don't need to work, from the AdGuard project." = "Скрывает всплывающие окна, которые сайтам не нужны для работы, из проекта AdGuard.";
 "Hides promotions, copy restrictions, and other annoyances, from the AdGuard project." = "Скрывает промо-материалы, ограничения на копирование и прочие раздражители, из проекта AdGuard.";
 "Hides prompts that ask to show notifications, from the EasyList project." = "Скрывает запросы на показ уведомлений, из проекта EasyList.";

@@ -1067,11 +1067,11 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Hides banners that push a site's mobile app, from the AdGuard project." = "Elrejti azokat a bannereket, amelyek a webhely mobilalkalmazását reklámozzák. Az AdGuard projekt listája.";
 "Hides cookie notices, from the AdGuard project." = "Elrejti a cookie-értesítéseket. Az AdGuard projekt listája.";
 "Hides cookie notices, from the EasyList project." = "Elrejti a cookie-értesítéseket. Az EasyList projekt listája.";
-"Hides cookie notices, from the uBlock Origin project." = "Elrejti a cookie-értesítéseket. Az uBlock Origin projekt listája.";
+"Hides cookie notices, from the uBlock Origin project. Works alongside AdGuard Cookie Notices or EasyList – Cookie Notices." = "Elrejti a cookie-értesítéseket. Az uBlock Origin projekt listája. Az AdGuard Cookie Notices vagy az EasyList – Cookie Notices listával együtt működik.";
 "Hides live chat and support widgets, from the EasyList project." = "Elrejti az élő csevegő- és ügyfélszolgálati widgeteket. Az EasyList projekt listája.";
 "Hides newsletter sign-up prompts, from the EasyList project." = "Elrejti a hírlevél-feliratkozásra szólító ablakokat. Az EasyList projekt listája.";
 "Hides newsletter prompts, in-page pop-ups, app banners, and other annoyances, from the EasyList project." = "Elrejti a hírlevél-feliratkozási ablakokat, az oldalon belüli felugró elemeket, az alkalmazásbannereket és más zavaró elemeket. Az EasyList projekt listája.";
-"Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project." = "Elrejti az átfedéseket, a promóciós bannereket és más zavaró elemeket. Az uBlock Origin projekt listája.";
+"Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project. Works alongside AdGuard Other Annoyances or EasyList – Other Annoyances." = "Elrejti az átfedéseket, a promóciós bannereket és más zavaró elemeket. Az uBlock Origin projekt listája. Az AdGuard Other Annoyances vagy az EasyList – Other Annoyances listával együtt működik.";
 "Hides pop-ups that sites don't need to work, from the AdGuard project." = "Elrejti a felugró ablakokat, amelyekre a webhelyeknek nincs szükségük a működéshez. Az AdGuard projekt listája.";
 "Hides promotions, copy restrictions, and other annoyances, from the AdGuard project." = "Elrejti a promóciókat, a másolási korlátozásokat és más zavaró elemeket. Az AdGuard projekt listája.";
 "Hides prompts that ask to show notifications, from the EasyList project." = "Elrejti az értesítések megjelenítésére kérő üzeneteket. Az EasyList projekt listája.";

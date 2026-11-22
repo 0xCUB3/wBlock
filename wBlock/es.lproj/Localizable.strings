@@ -1067,11 +1067,11 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Hides banners that push a site's mobile app, from the AdGuard project." = "Oculta banners que promocionan la aplicación móvil de un sitio, del proyecto AdGuard.";
 "Hides cookie notices, from the AdGuard project." = "Oculta avisos de cookies, del proyecto AdGuard.";
 "Hides cookie notices, from the EasyList project." = "Oculta avisos de cookies, del proyecto EasyList.";
-"Hides cookie notices, from the uBlock Origin project." = "Oculta avisos de cookies, del proyecto uBlock Origin.";
+"Hides cookie notices, from the uBlock Origin project. Works alongside AdGuard Cookie Notices or EasyList – Cookie Notices." = "Oculta avisos de cookies, del proyecto uBlock Origin. Funciona junto con AdGuard Cookie Notices o EasyList – Cookie Notices.";
 "Hides live chat and support widgets, from the EasyList project." = "Oculta widgets de chat en vivo y de soporte, del proyecto EasyList.";
 "Hides newsletter sign-up prompts, from the EasyList project." = "Oculta solicitudes de suscripción al boletín, del proyecto EasyList.";
 "Hides newsletter prompts, in-page pop-ups, app banners, and other annoyances, from the EasyList project." = "Oculta avisos de boletines, ventanas emergentes dentro de la página, banners de apps y otras molestias, del proyecto EasyList.";
-"Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project." = "Oculta superposiciones, banners promocionales y otras molestias, del proyecto uBlock Origin.";
+"Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project. Works alongside AdGuard Other Annoyances or EasyList – Other Annoyances." = "Oculta superposiciones, banners promocionales y otras molestias, del proyecto uBlock Origin. Funciona junto con AdGuard Other Annoyances o EasyList – Other Annoyances.";
 "Hides pop-ups that sites don't need to work, from the AdGuard project." = "Oculta ventanas emergentes que los sitios no necesitan para funcionar, del proyecto AdGuard.";
 "Hides promotions, copy restrictions, and other annoyances, from the AdGuard project." = "Oculta promociones, restricciones de copia y otras molestias, del proyecto AdGuard.";
 "Hides prompts that ask to show notifications, from the EasyList project." = "Oculta solicitudes para mostrar notificaciones, del proyecto EasyList.";

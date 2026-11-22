@@ -1067,11 +1067,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides banners that push a site's mobile app, from the AdGuard project." = "يخفي اللافتات التي تروّج لتطبيق الجوال الخاص بالموقع، من مشروع AdGuard.";
 "Hides cookie notices, from the AdGuard project." = "يخفي إشعارات ملفات تعريف الارتباط، من مشروع AdGuard.";
 "Hides cookie notices, from the EasyList project." = "يخفي إشعارات ملفات تعريف الارتباط، من مشروع EasyList.";
-"Hides cookie notices, from the uBlock Origin project." = "يخفي إشعارات ملفات تعريف الارتباط، من مشروع uBlock Origin.";
+"Hides cookie notices, from the uBlock Origin project. Works alongside AdGuard Cookie Notices or EasyList – Cookie Notices." = "يخفي إشعارات ملفات تعريف الارتباط، من مشروع uBlock Origin. ويعمل مع AdGuard Cookie Notices أو EasyList – Cookie Notices.";
 "Hides live chat and support widgets, from the EasyList project." = "يخفي أدوات الدردشة المباشرة والدعم، من مشروع EasyList.";
 "Hides newsletter sign-up prompts, from the EasyList project." = "يخفي مطالبات الاشتراك في النشرات الإخبارية، من مشروع EasyList.";
 "Hides newsletter prompts, in-page pop-ups, app banners, and other annoyances, from the EasyList project." = "يخفي طلبات الاشتراك في النشرات البريدية والنوافذ المنبثقة داخل الصفحة ولافتات التطبيقات وغيرها من الإزعاجات، من مشروع EasyList.";
-"Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project." = "يخفي الطبقات المتراكبة واللافتات الترويجية والإزعاجات الأخرى، من مشروع uBlock Origin.";
+"Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project. Works alongside AdGuard Other Annoyances or EasyList – Other Annoyances." = "يخفي الطبقات المتراكبة واللافتات الترويجية والإزعاجات الأخرى، من مشروع uBlock Origin. ويعمل مع AdGuard Other Annoyances أو EasyList – Other Annoyances.";
 "Hides pop-ups that sites don't need to work, from the AdGuard project." = "يخفي النوافذ المنبثقة التي لا تحتاجها المواقع للعمل، من مشروع AdGuard.";
 "Hides promotions, copy restrictions, and other annoyances, from the AdGuard project." = "يخفي العروض الترويجية وقيود النسخ والإزعاجات الأخرى، من مشروع AdGuard.";
 "Hides prompts that ask to show notifications, from the EasyList project." = "يخفي المطالبات التي تطلب عرض الإشعارات، من مشروع EasyList.";

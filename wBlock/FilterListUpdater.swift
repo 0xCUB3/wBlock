@@ -581,6 +581,9 @@ final class FilterListUpdater: @unchecked Sendable {
             await runDownloadPass(filtersToRetry)
         }
         await progressCallback(FilterRefreshProgress(completed: total, total: total))
+        await MainActor.run {
+            self.filterListManager?.applyProgressViewModel.updateCurrentFilter("")
+        }
 
         return filters.map { filter in
             resultsByID[filter.id] ?? (filter, .unavailable)
@@ -590,6 +593,20 @@ final class FilterListUpdater: @unchecked Sendable {
     struct RefreshFiltersResult: Sendable {
         let updated: [FilterList]
         let failedCount: Int
+    }
+
+    /// Returns the subset of `filters` that currently need a network refresh check.
+    func filtersNeedingRefresh(_ filters: [FilterList]) async -> [FilterList] {
+        guard !filters.isEmpty else { return [] }
+        let (lastSuccessfulCheck, interval) = await refreshFreshnessWindow()
+        let lastCheckedByID = await perFilterLastChecked(for: filters)
+        return FilterRefreshPlanner.filtersRequiringNetworkRefresh(
+            filters,
+            fileExists: { loader.filterFileExists($0) },
+            lastSuccessfulCheck: lastSuccessfulCheck,
+            lastChecked: { lastCheckedByID[$0.id] },
+            interval: interval
+        )
     }
 
     /// Refreshes filters that need updates and continues even if some downloads fail.

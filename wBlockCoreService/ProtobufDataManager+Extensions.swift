@@ -359,7 +359,9 @@ extension ProtobufDataManager {
             Self.setSiteDisabled(disabled, onHost: host, in: &data.whitelist.filterDisabledSites, includingParents: !removedExactWhitelistEntry)
             Self.setSiteDisabled(disabled, onHost: host, in: &data.whitelist.userScriptsDisabledSites, includingParents: !removedExactWhitelistEntry)
             Self.setZapperRulesDisabled(disabled, forHost: host, in: &data)
-            Self.setAutoplayAllowed(disabled, onHost: host, in: &data)
+            // Turning wBlock off on a site lets autoplay play; turning it back on
+            // restores the global autoplay policy rather than forcing blocking on (#1136).
+            Self.setAutoplayAllowed(disabled ? true : !data.whitelist.noAutoplayEnabled, onHost: host, in: &data)
         }
         if saved { UserScriptManager.invalidateDocumentStartExecutionCache() }
         return saved && !HostMatcher.isHostDisabled(host: host, disabledSites: disabledSites)

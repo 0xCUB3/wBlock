@@ -170,6 +170,12 @@ extension AppFilterManager {
             self.statusDescription = downloadingStatus
             self.applyProgressViewModel.updateStageDescription(downloadingStatus)
 
+            let autoUpdatableScriptsCount = selectedScripts.filter { $0.canUpdateAutomatically }.count
+            if !selectedFilters.isEmpty || autoUpdatableScriptsCount > 0 {
+                self.applyProgressViewModel.updateFiltersChecked(0, total: selectedFilters.count)
+                self.applyProgressViewModel.updateScriptsChecked(0, total: autoUpdatableScriptsCount)
+            }
+
             var successfullyUpdatedFilters: [FilterList] = []
             if !selectedFilters.isEmpty {
                 successfullyUpdatedFilters = await self.filterUpdater.updateSelectedFilters(
@@ -186,11 +192,13 @@ extension AppFilterManager {
                     }
                 )
 
+                self.applyProgressViewModel.updateCurrentFilter("")
                 self.saveFilterListsCoalesced()
             }
 
             var successfullyUpdatedScripts: [UserScript] = []
             if !selectedScripts.isEmpty {
+                self.applyProgressViewModel.updateCurrentFilter("")
                 self.applyProgressViewModel.updatePhaseCompletion(updating: true, scripts: false)
 
                 let scriptsStatus = LocalizedStrings.text(

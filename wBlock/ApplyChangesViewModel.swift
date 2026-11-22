@@ -220,9 +220,7 @@ class ApplyChangesViewModel: ObservableObject {
         let clampedDone = min(max(0, done), clampedTotal)
         state.filtersCheckedDone = clampedDone
         state.filtersCheckedTotal = clampedTotal
-        if clampedTotal > 0 {
-            state.phaseProgress = Double(clampedDone) / Double(clampedTotal)
-        }
+        updateCombinedUpdatingProgress()
     }
 
     /// Records how many scripts have been checked or downloaded out of the total.
@@ -232,8 +230,13 @@ class ApplyChangesViewModel: ObservableObject {
         let clampedDone = min(max(0, done), clampedTotal)
         state.scriptsCheckedDone = clampedDone
         state.scriptsCheckedTotal = clampedTotal
-        if clampedTotal > 0 {
-            state.phaseProgress = Double(clampedDone) / Double(clampedTotal)
+        updateCombinedUpdatingProgress()
+    }
+
+    private func updateCombinedUpdatingProgress() {
+        let total = state.filtersCheckedTotal + state.scriptsCheckedTotal
+        if total > 0 {
+            state.phaseProgress = Double(state.filtersCheckedDone + state.scriptsCheckedDone) / Double(total)
         }
     }
 

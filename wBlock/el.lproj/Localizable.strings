@@ -1067,11 +1067,11 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides banners that push a site's mobile app, from the AdGuard project." = "Κρύβει banner που προωθούν την εφαρμογή για κινητά ενός ιστότοπου, από το έργο AdGuard.";
 "Hides cookie notices, from the AdGuard project." = "Κρύβει ειδοποιήσεις cookie, από το έργο AdGuard.";
 "Hides cookie notices, from the EasyList project." = "Κρύβει ειδοποιήσεις cookie, από το έργο EasyList.";
-"Hides cookie notices, from the uBlock Origin project." = "Κρύβει ειδοποιήσεις cookie, από το έργο uBlock Origin.";
+"Hides cookie notices, from the uBlock Origin project. Works alongside AdGuard Cookie Notices or EasyList – Cookie Notices." = "Κρύβει ειδοποιήσεις cookie, από το έργο uBlock Origin. Λειτουργεί μαζί με το AdGuard Cookie Notices ή το EasyList – Cookie Notices.";
 "Hides live chat and support widgets, from the EasyList project." = "Κρύβει γραφικά στοιχεία ζωντανής συνομιλίας και υποστήριξης, από το έργο EasyList.";
 "Hides newsletter sign-up prompts, from the EasyList project." = "Κρύβει προτροπές εγγραφής σε ενημερωτικά δελτία, από το έργο EasyList.";
 "Hides newsletter prompts, in-page pop-ups, app banners, and other annoyances, from the EasyList project." = "Κρύβει προτροπές για newsletter, αναδυόμενα παράθυρα μέσα στη σελίδα, banner εφαρμογών και άλλες ενοχλήσεις, από το έργο EasyList.";
-"Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project." = "Κρύβει επικαλύψεις, διαφημιστικά banner και άλλες ενοχλήσεις, από το έργο uBlock Origin.";
+"Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project. Works alongside AdGuard Other Annoyances or EasyList – Other Annoyances." = "Κρύβει επικαλύψεις, διαφημιστικά banner και άλλες ενοχλήσεις, από το έργο uBlock Origin. Λειτουργεί μαζί με το AdGuard Other Annoyances ή το EasyList – Other Annoyances.";
 "Hides pop-ups that sites don't need to work, from the AdGuard project." = "Κρύβει αναδυόμενα παράθυρα που οι ιστότοποι δεν χρειάζονται για να λειτουργήσουν, από το έργο AdGuard.";
 "Hides promotions, copy restrictions, and other annoyances, from the AdGuard project." = "Κρύβει προωθήσεις, περιορισμούς αντιγραφής και άλλες ενοχλήσεις, από το έργο AdGuard.";
 "Hides prompts that ask to show notifications, from the EasyList project." = "Κρύβει προτροπές που ζητούν να εμφανιστούν ειδοποιήσεις, από το έργο EasyList.";

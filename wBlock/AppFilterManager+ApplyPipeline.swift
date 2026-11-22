@@ -480,6 +480,22 @@ extension AppFilterManager {
             let enabledFilters = pausedComponents.contains(.filters)
                 ? []
                 : runSnapshot.filters.filter { $0.isSelected }
+            let plannedFiltersCount = enabledFilters.isEmpty
+                ? 0
+                : await filterUpdater.filtersNeedingRefresh(enabledFilters).count
+            let plannedScriptsCount: Int
+            if !pausedComponents.contains(.userScripts),
+               let userScriptManager = filterUpdater.userScriptManager {
+                plannedScriptsCount = await userScriptManager.autoUpdateCandidateCount(skipFresh: true)
+            } else {
+                plannedScriptsCount = 0
+            }
+            if plannedFiltersCount > 0 || plannedScriptsCount > 0 {
+                await MainActor.run {
+                    self.applyProgressViewModel.updateFiltersChecked(0, total: plannedFiltersCount)
+                    self.applyProgressViewModel.updateScriptsChecked(0, total: plannedScriptsCount)
+                }
+            }
             if !enabledFilters.isEmpty {
                 let refreshResult = await filterUpdater.refreshFiltersIfNeeded(
                     enabledFilters, progressCallback: { prog in
@@ -523,16 +539,10 @@ extension AppFilterManager {
                 }
             }
 
-            // Mark updating phase as complete
+            // Clear the last filter name before userscripts/userstyles report theirs.
             await MainActor.run {
+                self.applyProgressViewModel.updateCurrentFilter("")
                 self.applyProgressViewModel.updatePhaseCompletion(updating: true, scripts: false)
-                self.statusDescription = LocalizedStrings.text(
-                    "Applying filters...\n(This may take a while)",
-                    comment: "Apply pipeline filter application status"
-                )
-                self.applyProgressViewModel.updateStageDescription(
-                    LocalizedStrings.text("Applying filters...", comment: "Apply pipeline stage")
-                )
             }
 
             // Auto-update enabled userscripts as part of Apply Changes (helps YouTube, etc.).
@@ -561,11 +571,25 @@ extension AppFilterManager {
                         updated: scriptsResult.updated,
                         failed: scriptsResult.failed
                     )
+                    self.statusDescription = LocalizedStrings.text(
+                        "Applying filters...\n(This may take a while)",
+                        comment: "Apply pipeline filter application status"
+                    )
+                    self.applyProgressViewModel.updateStageDescription(
+                        LocalizedStrings.text("Applying filters...", comment: "Apply pipeline stage")
+                    )
                     self.applyProgressViewModel.updatePhaseCompletion(scripts: true, reading: false)
                 }
             } else {
                 await MainActor.run {
                     self.applyProgressViewModel.updateScriptsUpdateResult(updated: 0, failed: 0)
+                    self.statusDescription = LocalizedStrings.text(
+                        "Applying filters...\n(This may take a while)",
+                        comment: "Apply pipeline filter application status"
+                    )
+                    self.applyProgressViewModel.updateStageDescription(
+                        LocalizedStrings.text("Applying filters...", comment: "Apply pipeline stage")
+                    )
                     self.applyProgressViewModel.updatePhaseCompletion(scripts: true, reading: false)
                 }
             }
