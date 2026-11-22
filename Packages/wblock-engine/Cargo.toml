@@ -3,8 +3,9 @@ resolver = "2"
 members = ["crates/wbe"]
 
 [profile.release]
-lto = "fat"
-codegen-units = 1
+# ThinLTO keeps cross-crate inlining while parallelizing codegen/LTO across
+# cores (much faster on Xcode Cloud and CI than single-threaded fat LTO).
+lto = "thin"
 # ffi.rs catches panics at the C boundary, which needs unwinding.
 panic = "unwind"
 opt-level = 3
