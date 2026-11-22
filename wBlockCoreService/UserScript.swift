@@ -339,7 +339,7 @@ final class UserScriptPreparedPayloadCache {
 
         if entries[script.id] == nil, entries.count >= Self.maximumEntries,
            let victim = entries.min(by: {
-               $0.value.hits != $1.value.hits ? $0.value.hits < $1.value.hits : $0.value.lastUsed > $1.value.lastUsed
+               $0.value.hits != $1.value.hits ? $0.value.hits < $1.value.hits : $0.value.lastUsed < $1.value.lastUsed
            })?.key {
             entries.removeValue(forKey: victim)
         }
@@ -677,9 +677,8 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
     }
 
     private static func isCharacterBoundary(_ index: String.Index, in content: String) -> Bool {
-        index == content.startIndex
-            || index == content.endIndex
-            || content.index(after: content.index(before: index)) == index
+        index == content.endIndex
+            || content.index(before: content.index(after: index)) == index
     }
 
     private static func graphemeAlignedLiteralRange(

@@ -433,6 +433,25 @@ struct UserScriptMatchingAndPayloadTests {
             UserStylePreprocessorService.digest(updatedPrefix + dependency + body + edit),
             "changing the source revision must refresh the digest"
         )
+
+        let evictionCache = UserScriptPreparedPayloadCache()
+        let scripts = (0..<129).map { index in
+            UserScript(name: "Script \(index)", content: "console.log(\(index));")
+        }
+        let oldest = evictionCache.payload(for: scripts[0], payloadRevision: 1, runtimePrefix: nil)
+        var newest: UserScriptPreparedPayload?
+        for index in 1..<128 {
+            newest = evictionCache.payload(for: scripts[index], payloadRevision: 1, runtimePrefix: nil)
+        }
+        _ = evictionCache.payload(for: scripts[128], payloadRevision: 1, runtimePrefix: nil)
+        expect(
+            evictionCache.payload(for: scripts[127], payloadRevision: 1, runtimePrefix: nil) === newest,
+            "eviction with tied hit counts must keep the most recently used entry"
+        )
+        expect(
+            evictionCache.payload(for: scripts[0], payloadRevision: 1, runtimePrefix: nil) !== oldest,
+            "eviction with tied hit counts must drop the least recently used entry"
+        )
     }
 
     @MainActor
