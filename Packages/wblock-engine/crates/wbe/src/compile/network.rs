@@ -5,7 +5,7 @@
 //! makes them wider and can only under-block. Each rule's tier follows
 //! `compile/mod.rs`; exceptions use ignore-previous-rules.
 
-use super::regex::{apart, domain_top_url, host_top_url, url_filter};
+use super::regex::{apart, domain_top_url, host_top_url, split_negative_lookahead, url_filter};
 use super::prune::{domain_host, if_page, unless_page, Page, Shape};
 use super::{DomainSpan, Emitted, Entry, Stats, Tier};
 use crate::ast::{
@@ -276,6 +276,16 @@ fn compile_rule(
     if !exception && !r.denyallow.is_empty() {
         return compile_denyallow(r, v, ctx, out);
     }
+    if !exception
+        && tier.is_none()
+        && r.pattern.kind == PatternKind::Regex
+        && r.to.is_empty()
+        && url_filter(&r.pattern).is_none()
+    {
+        if let Some((block_body, allow_body)) = split_negative_lookahead(&r.pattern.body) {
+            return compile_negative_lookahead(r, block_body, allow_body, v, ctx, out);
+        }
+    }
     let party = party(r.party, exception)?;
     let urls = urls(r, exception)?;
     let conds = domain_conds(&r.from, v, exception)?;
@@ -397,6 +407,60 @@ fn compile_denyallow(
     });
     if result.is_err() {
         // The block was emitted before a failing exception: drop it too.
+        out.arenas[arena].truncate(mark.0);
+        out.entries.truncate(mark.1);
+        out.anchored.retain(|a| a.entry < mark.1);
+    }
+    result
+}
+
+/// Splits a block regex `prefix(?!exclude)suffix` that WebKit cannot express
+/// directly into a block (`prefix + suffix`) and an exception (`prefix +
+/// (?:exclude)`) under the same options. Placed in the denyallow tiers so the
+/// exception lifts only this block rather than ordinary blocks after it.
+fn compile_negative_lookahead(
+    r: &NetworkRule,
+    block_body: String,
+    allow_body: String,
+    v: SafariVersion,
+    ctx: &Context,
+    out: &mut Emitted,
+) -> Result<(), String> {
+    let block = NetworkRule {
+        pattern: Pattern {
+            kind: PatternKind::Regex,
+            body: block_body,
+            right_anchored: false,
+        },
+        ..r.clone()
+    };
+    let allow = NetworkRule {
+        exception: true,
+        important: false,
+        pattern: Pattern {
+            kind: PatternKind::Regex,
+            body: allow_body,
+            right_anchored: false,
+        },
+        ..r.clone()
+    };
+    // Both halves must translate; letting `allow` fall back to `.*` would
+    // cancel the block everywhere.
+    if url_filter(&block.pattern).is_none() || url_filter(&allow.pattern).is_none() {
+        return Err("dnr:url-filter".into());
+    }
+    let (block_tier, allow_tier) = if r.important {
+        (Tier::ImportantDenyallowBlock, Tier::ImportantDenyallowException)
+    } else if r.from.include.iter().any(|d| ctx.generic_page(d)) {
+        (Tier::Block, Tier::Exception)
+    } else {
+        (Tier::DenyallowBlock, Tier::DenyallowException)
+    };
+    let arena = out.arena();
+    let mark = (out.arenas[arena].len(), out.entries.len());
+    let result = compile_rule(&block, v, ctx, out, Some(block_tier))
+        .and_then(|()| compile_rule(&allow, v, ctx, out, Some(allow_tier)));
+    if result.is_err() {
         out.arenas[arena].truncate(mark.0);
         out.entries.truncate(mark.1);
         out.anchored.retain(|a| a.entry < mark.1);
@@ -2809,6 +2873,52 @@ mod tests {
         let rules: serde_json::Value = serde_json::from_str(&crate::webkit::to_json(&output.webkit)).unwrap();
         assert_eq!(rules[0]["action"]["type"], "block");
         assert_eq!(rules[1]["action"]["type"], "ignore-previous-rules");
+    }
+
+    #[test]
+    fn negative_lookahead_regex_splits_into_block_and_exception() {
+        let text = "/^https:\\/\\/nstatic\\.dcinside\\.com\\/dc\\/event\\/nft_gaejugi\\/(?!nftcon)/$domain=dcinside.com";
+        let output = crate::compile(
+            &[crate::ListInput { text, trusted: false }],
+            &crate::CompileOptions { safari: SafariVersion::new(18, 0) },
+        );
+        assert!(output.stats.dropped.is_empty(), "{:?}", output.stats.dropped);
+        let rules: serde_json::Value = serde_json::from_str(&crate::webkit::to_json(&output.webkit)).unwrap();
+        let arr = rules.as_array().unwrap();
+        // Untyped rules emit two type triggers (subresources + child-frame document) per side.
+        assert_eq!(arr.len(), 4);
+        assert!(arr[0..2].iter().all(|r| r["action"]["type"] == "block"));
+        assert!(arr[2..4].iter().all(|r| r["action"]["type"] == "ignore-previous-rules"));
+        let block_re = ::regex::RegexBuilder::new(arr[0]["trigger"]["url-filter"].as_str().unwrap())
+            .case_insensitive(true).build().unwrap();
+        let allow_re = ::regex::RegexBuilder::new(arr[2]["trigger"]["url-filter"].as_str().unwrap())
+            .case_insensitive(true).build().unwrap();
+        let blocked = "https://nstatic.dcinside.com/dc/event/nft_gaejugi/puppy.png";
+        let allowed = "https://nstatic.dcinside.com/dc/event/nft_gaejugi/nftcon_01.png";
+        assert!(block_re.is_match(blocked) && !allow_re.is_match(blocked));
+        assert!(block_re.is_match(allowed) && allow_re.is_match(allowed));
+    }
+
+    #[test]
+    fn negative_lookahead_with_alternation_and_suffix() {
+        let text = concat!(
+            "/^https?:\\/\\/www\\.tinnews\\.co\\.kr\\/data\\/tinnews_co_kr\\/banner\\/(?!(favicon\\.ico|2020040642392902))/$domain=tinnews.co.kr\n",
+            "/^https:\\/\\/image\\.aladin\\.co\\.kr\\/img\\/banner\\/flash\\/welcome\\/nav\\/(?!181010)[0-9]+_tab/$domain=aladin.co.kr\n",
+            "/^https:\\/\\/bad\\.example\\/(?!a(?=b))/$domain=bad.example\n"
+        );
+        let output = crate::compile(
+            &[crate::ListInput { text, trusted: false }],
+            &crate::CompileOptions { safari: SafariVersion::new(18, 0) },
+        );
+        // First two compile; nested positive lookahead inside negative lookahead is dropped cleanly.
+        assert_eq!(output.stats.dropped.get("dnr:url-filter").copied(), Some(1));
+        let rules: serde_json::Value = serde_json::from_str(&crate::webkit::to_json(&output.webkit)).unwrap();
+        let arr = rules.as_array().unwrap();
+        // tinnews: 1 block + 2 allows; aladin: 1 block + 1 allow; x2 type triggers each = 10.
+        assert_eq!(arr.len(), 10);
+        assert_eq!(arr.iter().filter(|r| r["action"]["type"] == "block").count(), 4);
+        assert_eq!(arr.iter().filter(|r| r["action"]["type"] == "ignore-previous-rules").count(), 6);
+        assert!(arr.iter().all(|r| r["trigger"]["url-filter"].as_str().unwrap() != ".*"));
     }
 
 }

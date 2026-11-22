@@ -35,6 +35,103 @@ const MAX_REPEAT: u32 = 32;
 /// memory on macOS, and timed out Safari on an iPad 6; 12 adds about 6 MB.
 const MAX_ANY_REPEAT: u32 = 12;
 
+/// Splits a regex with a single top-level negative lookahead
+/// `prefix(?!exclude)suffix` into `(prefix + suffix, prefix + (?:exclude))`.
+/// Returns `None` if there is no such lookahead, more than one, a top-level
+/// alternation outside it, an empty body, or a quantifier on the lookahead.
+pub(crate) fn split_negative_lookahead(src: &str) -> Option<(String, String)> {
+    let b = src.as_bytes();
+    let mut i = 0;
+    let mut depth = 0usize;
+    let mut in_class = false;
+    let mut found: Option<(usize, usize)> = None;
+    while i < b.len() {
+        match b[i] {
+            b'\\' => {
+                i += 2;
+                continue;
+            }
+            b'[' if !in_class => {
+                in_class = true;
+                i += 1;
+                if b.get(i) == Some(&b'^') {
+                    i += 1;
+                }
+                if b.get(i) == Some(&b']') {
+                    i += 1;
+                }
+                continue;
+            }
+            b']' if in_class => in_class = false,
+            _ if in_class => {}
+            b'|' if depth == 0 => return None,
+            b'(' if depth == 0 && b.get(i + 1) == Some(&b'?') && b.get(i + 2) == Some(&b'!') => {
+                if found.is_some() {
+                    return None;
+                }
+                let start = i;
+                i += 3;
+                let mut inner_depth = 1usize;
+                let mut inner_class = false;
+                while i < b.len() && inner_depth > 0 {
+                    match b[i] {
+                        b'\\' => {
+                            i += 2;
+                            continue;
+                        }
+                        b'[' if !inner_class => {
+                            inner_class = true;
+                            i += 1;
+                            if b.get(i) == Some(&b'^') {
+                                i += 1;
+                            }
+                            if b.get(i) == Some(&b']') {
+                                i += 1;
+                            }
+                            continue;
+                        }
+                        b']' if inner_class => inner_class = false,
+                        _ if inner_class => {}
+                        b'(' => inner_depth += 1,
+                        b')' => inner_depth -= 1,
+                        _ => {}
+                    }
+                    i += 1;
+                }
+                if inner_depth != 0 {
+                    return None;
+                }
+                let end = i - 1;
+                if end == start + 3 || matches!(b.get(i), Some(b'*' | b'+' | b'?' | b'{')) {
+                    return None;
+                }
+                found = Some((start, end));
+                continue;
+            }
+            b'(' => depth += 1,
+            b')' => {
+                if depth == 0 {
+                    return None;
+                }
+                depth -= 1;
+            }
+            _ => {}
+        }
+        i += 1;
+    }
+    if depth != 0 || in_class {
+        return None;
+    }
+    let (start, end) = found?;
+    let prefix = &src[..start];
+    let inner = &src[start + 3..end];
+    let suffix = &src[end + 1..];
+    if prefix.is_empty() && suffix.is_empty() {
+        return None;
+    }
+    Some((format!("{prefix}{suffix}"), format!("{prefix}(?:{inner})")))
+}
+
 /// The url-filters for a uBO URL pattern, matched case-insensitively; a URL
 /// matches when any of them does. A trailing `^` also matches the end of the
 /// URL in uBO, and WebKit has no alternation, so that end is a second filter.
