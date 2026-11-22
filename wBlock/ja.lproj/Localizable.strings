@@ -176,6 +176,7 @@
 "Calculated source rule count for filter" = "フィルターのソースルール数を算出しました";
 "Cancel" = "キャンセル";
 "Category" = "カテゴリ";
+"Subcategory" = "サブカテゴリ";
 "Element Zapper changes take full effect after the next apply." = "要素ブロックの変更は、次回の適用後に完全に反映されます。";
 "Check for Updates" = "アップデートを確認";
 "Checked %@" = "確認：%@";

@@ -2921,4 +2921,22 @@ mod tests {
         assert!(arr.iter().all(|r| r["trigger"]["url-filter"].as_str().unwrap() != ".*"));
     }
 
+    #[test]
+    fn uritransform_directives_and_doc_exceptions_stay_out_of_content_blocker() {
+        let text = concat!(
+            "/^https:\\/\\/(?:www\\.)?instagram\\.com\\/(.*)/$doc,uritransform=//https:\\/\\/kittygr.am\\/$1/\n",
+            "@@/^https:\\/\\/(?:www\\.)?instagram\\.com\\/specificpath/$doc,uritransform\n",
+            "@@/^https:\\/\\/(?:www\\.)?instagram\\.com\\/other/$doc,uritransform=//https:\\/\\/kittygr.am\\/$1/\n"
+        );
+        let output = crate::compile(
+            &[crate::ListInput { text, trusted: false }],
+            &crate::CompileOptions { safari: SafariVersion::new(18, 0) },
+        );
+        // Handled by Safari DNR rather than native content blockers; crucially,
+        // `@@...$doc,uritransform` must never emit a page-wide ignore-previous-rules.
+        assert_eq!(output.stats.dropped.get("dnr:uritransform").copied(), Some(3));
+        let rules: serde_json::Value = serde_json::from_str(&crate::webkit::to_json(&output.webkit)).unwrap();
+        assert_eq!(rules.as_array().unwrap().len(), 0);
+    }
+
 }

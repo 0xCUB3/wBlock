@@ -42,9 +42,16 @@ struct Test {
         $removeparam=/^utm_/
         $removeparam=~keep
         $removeparam=x,unsupported-option
+        /^https:\\/\\/(?:www\\.)?instagram\\.com\\/(.*)/$doc,uritransform=//https:\\/\\/kittygr.am\\/$1/
+        @@/^https:\\/\\/(?:www\\.)?instagram\\.com\\/specificpath/$doc,uritransform
+        ||instagram.com^$doc,uritransform=//https:\\/\\/kittygr.am\\/$1/
+        /^https:\\/\\/example\\.com\\/(.*)/$doc,uritransform=/a/b/
         """)
-        require(cleaning.lines.map(\.kind) == [.removeParam, .removeParam, .removeParam, .removeParam, .removeParam, .unsupported], "removeparam uses DNR and page support")
-        require(cleaning.count(of: .removeParam) == 5, "removeparam rules are counted on their own")
+        require(cleaning.lines.map(\.kind) == [
+            .removeParam, .removeParam, .removeParam, .removeParam, .removeParam, .unsupported,
+            .removeParam, .removeParam, .unsupported, .unsupported
+        ], "removeparam and uritransform use DNR and page support")
+        require(cleaning.count(of: .removeParam) == 7, "removeparam and uritransform rules are counted on their own")
 
         let identities = FilterRuleAnalysis.analyze(content: """
         ||EXAMPLE.com^

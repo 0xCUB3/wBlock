@@ -2376,6 +2376,7 @@
   };
   const legacySafariRemoveParamRule = rule => {
     if (!rule || !rule.condition) return rule;
+    if (typeof rule.action?.redirect?.regexSubstitution === "string") return null;
     const condition = { ...rule.condition };
 
     // Legacy domains describes the top document, not a nested initiator.
@@ -2459,19 +2460,32 @@
       prepared = lostProtection ? [] : legacyRules.filter(Boolean);
     }
     const checked = [];
+    const safariVersion = Number(globalThis.navigator?.userAgent?.match(/Version\/(\d+)/)?.[1]) || 0;
+    const minor = Number(globalThis.navigator?.userAgent?.match(/Version\/\d+\.(\d+)/)?.[1]) || 0;
     for (const rule of prepared) {
-      // WebKit added requestMethods in Safari 26, independently of the 16.4
-      // quota constant. Older releases must not ignore this restriction.
-      const safariVersion = Number(globalThis.navigator?.userAgent?.match(/Version\/(\d+)/)?.[1]) || 0;
+      // WebKit added regexSubstitution in Safari 17.0, initiatorDomains in 18.4,
+      // and requestMethods in 26, independently of the 16.4 quota constant.
+      // Older releases must not ignore these restrictions or reject the whole set.
+      const hasRegexSubstitution = typeof rule.action?.redirect?.regexSubstitution === "string";
+      const regexSubstitutionSupported = !hasRegexSubstitution || safariVersion >= 17;
       const methodSupported = !rule.condition?.requestMethods || safariVersion >= 26;
-      const minor = Number(globalThis.navigator?.userAgent?.match(/Version\/\d+\.(\d+)/)?.[1]) || 0;
       const initiatorSupported = !(rule.condition?.initiatorDomains || rule.condition?.excludedInitiatorDomains) ||
         safariVersion > 18 || (safariVersion === 18 && minor >= 4);
       const regex = rule.condition?.regexFilter;
-      const supported = methodSupported && initiatorSupported && (!regex || typeof dnr.isRegexSupported !== "function" ||
-        (await dnr.isRegexSupported({ regex, isCaseSensitive: rule.condition.isUrlFilterCaseSensitive === true })).isSupported);
+      const regexOptions = {
+        regex,
+        isCaseSensitive: rule.condition?.isUrlFilterCaseSensitive === true,
+        ...(hasRegexSubstitution ? { requireCapturing: true } : {})
+      };
+      const supported = regexSubstitutionSupported && methodSupported && initiatorSupported &&
+        (!regex || typeof dnr.isRegexSupported !== "function" ||
+          (await dnr.isRegexSupported(regexOptions)).isSupported);
       if (!supported) {
-        logSupportDiagnostic({ event: "dnr_rule_unsupported", id: rule.id, reason: !methodSupported ? "Safari requestMethods unavailable" : !initiatorSupported ? "Safari initiatorDomains unavailable" : "Safari regex compiler" });
+        const reason = !regexSubstitutionSupported ? "Safari regexSubstitution unavailable"
+          : !methodSupported ? "Safari requestMethods unavailable"
+          : !initiatorSupported ? "Safari initiatorDomains unavailable"
+          : "Safari regex compiler";
+        logSupportDiagnostic({ event: "dnr_rule_unsupported", id: rule.id, reason });
         if (rule.action?.type === "allow") return { prepared: [], reportedLimit: 0 };
       } else { checked.push(rule); }
     }
@@ -2500,9 +2514,9 @@
     ));
     const protectiveRules = prepared.filter(rule => rule && rule.action && rule.action.type === "allow");
     const redirectRules = prepared.filter(rule => !rule || !rule.action || rule.action.type !== "allow");
-    // Resource replacements and generic cleaning survive before narrowly scoped
-    // rules. Keep every exception, and budget WebKit's expanded content rules too.
-    const rank = rule => rule.action?.redirect?.extensionPath ? 2 :
+    // Resource replacements, URL transforms, and generic cleaning survive before
+    // narrowly scoped rules. Keep every exception, and budget WebKit's expanded content rules too.
+    const rank = rule => (rule.action?.redirect?.extensionPath || typeof rule.action?.redirect?.regexSubstitution === "string") ? 2 :
       (!rule.condition?.domains && !rule.condition?.requestDomains &&
        (!rule.condition?.urlFilter || rule.condition.urlFilter.startsWith("^")) ? 1 : 0);
     redirectRules.sort((a, b) => rank(b) - rank(a));

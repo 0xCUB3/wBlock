@@ -176,6 +176,7 @@
 "Calculated source rule count for filter" = "تم حساب عدد قواعد المصدر للفلتر";
 "Cancel" = "إلغاء";
 "Category" = "الفئة";
+"Subcategory" = "الفئة الفرعية";
 "Element Zapper changes take full effect after the next apply." = "تسري تغييرات أداة إخفاء العناصر بالكامل بعد التطبيق التالي.";
 "Check for Updates" = "التحقق من التحديثات";
 "Checked %@" = "تم التحقق %@";

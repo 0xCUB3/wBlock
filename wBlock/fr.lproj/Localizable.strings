@@ -176,6 +176,7 @@
 "Calculated source rule count for filter" = "Nombre de règles source calculé pour le filtre";
 "Cancel" = "Annuler";
 "Category" = "Catégorie";
+"Subcategory" = "Sous-catégorie";
 "Element Zapper changes take full effect after the next apply." = "Les modifications du zappeur d’éléments prendront pleinement effet après la prochaine application.";
 "Check for Updates" = "Rechercher des mises à jour";
 "Checked %@" = "Vérifié %@";

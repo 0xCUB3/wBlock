@@ -176,6 +176,7 @@
 "Calculated source rule count for filter" = "Conteggio regole sorgente calcolato per il filtro";
 "Cancel" = "Annulla";
 "Category" = "Categoria";
+"Subcategory" = "Sottocategoria";
 "Element Zapper changes take full effect after the next apply." = "Le modifiche a Rimozione elementi avranno pieno effetto dopo la prossima applicazione.";
 "Check for Updates" = "Controlla aggiornamenti";
 "Checked %@" = "Controllato %@";

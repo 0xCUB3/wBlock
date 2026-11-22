@@ -83,9 +83,17 @@ import Foundation
         check(scoped?.condition.domains == ["page.example"] && scoped?.condition.excludedRequestDomains == ["except-target.example"], "both domain scopes retained")
         let capacity = G.maxGeneratedRules
         let bulk = (0..<capacity + 1).map { "||site\($0).example^$removeparam=p\($0)" }.joined(separator: "\n")
-        let truncated = G.generateRules(from: bulk + "\n@@||site0.example^$removeparam=p0", disabledSites: ["disabled.example"])
+        let truncated = G.generateRules(
+            from: bulk + "\n@@||site0.example^$removeparam=p0",
+            redirectSources: [
+                "/^https:\\/\\/(?:www\\.)?instagram\\.com\\/(.*)/$doc,uritransform=//https:\\/\\/kittygr.am\\/$1/\n@@/^https:\\/\\/(?:www\\.)?instagram\\.com\\/specificpath/$doc,uritransform\n"
+            ],
+            disabledSites: ["disabled.example"]
+        )
         check(truncated.rules.count == capacity && truncated.summary.truncatedRules > 0, "bounded DNR generation")
         check(truncated.rules.contains { $0.action.type == "allow" && $0.priority == 10_000 }, "exceptions survive budget pressure")
+        check(truncated.rules.contains { $0.action.type == "allow" && $0.priority == 12_000 }, "uritransform exceptions survive budget pressure")
+        check(truncated.rules.contains { $0.action.redirect?.regexSubstitution == "https://kittygr.am/\\1" }, "uritransform redirects outrank narrow removeparam rules under budget pressure")
         check(truncated.rules.map(\.id) == Array(G.ruleIDBase..<G.ruleIDBase + capacity), "stable unique rule IDs")
         _ = try JSONEncoder().encode(truncated.rules)
         print("PASS removeparam selectors, scopes, exceptions, badfilter and DNR capacity")

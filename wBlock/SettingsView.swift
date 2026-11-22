@@ -982,6 +982,7 @@ struct SettingsView: View {
             settingsSections
         }
         .unifiedTabListStyle()
+        .topScrollEdgeEffectCompat()
         .navigationTitle("Settings")
         .navigationBarTitleDisplayMode(.inline)
         #else
@@ -1469,7 +1470,7 @@ extension SettingsView {
             return
         }
         scheduleRefreshTimer.start(interval: 30) {
-            await updateScheduleLine()
+            await updateScheduleLine(shouldTriggerOverdue: false)
         }
     }
 

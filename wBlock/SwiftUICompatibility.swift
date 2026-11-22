@@ -165,6 +165,20 @@ extension View {
         }
     }
 
+    /// Soft scroll-edge blur under the top navigation bar / iPadOS tab bar on iOS 26 (#1142).
+    @ViewBuilder
+    func topScrollEdgeEffectCompat() -> some View {
+        #if os(iOS)
+        if #available(iOS 26.0, *) {
+            scrollEdgeEffectStyle(.soft, for: .top)
+        } else {
+            self
+        }
+        #else
+        self
+        #endif
+    }
+
     /// A strip under the top toolbar. iOS 26 blends it into the toolbar's
     /// scroll edge effect. Older systems and the Mac, whose lists are AppKit
     /// scroll views that effect never reaches, get the bar material (#1059).

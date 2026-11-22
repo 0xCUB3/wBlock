@@ -176,6 +176,7 @@
 "Calculated source rule count for filter" = "A szűrő forrásszabály-száma kiszámítva";
 "Cancel" = "Mégse";
 "Category" = "Kategória";
+"Subcategory" = "Alkategória";
 "Element Zapper changes take full effect after the next apply." = "Az Elemeltávolító módosításai a következő alkalmazás után lépnek teljesen életbe.";
 "Check for Updates" = "Frissítések keresése";
 "Checked %@" = "Ellenőrizve: %@";

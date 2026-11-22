@@ -1570,6 +1570,7 @@ extension AppFilterManager {
     func retryFailedReloads() {
         let targets = failedReloadTargets
         guard !targets.isEmpty, !isLoading, !isApplyInFlight else { return }
+        showingApplyProgressSheet = true
         isLoading = true
         applyProgressViewModel.updateIsLoading(true)
         // Nothing before the reload runs again, so the sheet opens on that
@@ -1623,7 +1624,8 @@ extension AppFilterManager {
             if !started {
                 await MainActor.run {
                     self.isLoading = false
-                    self.applyProgressViewModel.updateIsLoading(false)
+                    self.showingApplyProgressSheet = false
+                    self.applyProgressViewModel.cancelProgressRun()
                 }
             }
         }

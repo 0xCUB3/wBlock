@@ -23,18 +23,22 @@ extension RemoveParamDNRRuleGenerator {
     /// Removeparam, redirects, GPC and the CSP rule must stay above this.
     public static let blockedCountPriority = 1
     /// Bump when `extractBlockedCountLines` changes, so cached lists rescan.
-    static let blockedCountExtractionFormat = 1
+    static let blockedCountExtractionFormat = 2
 
     /// Exception options that lift every block on the page, not just one host.
     private static let pageWideExceptionOptions: Set<String> = ["document", "doc", "urlblock", "genericblock", "all"]
-    /// Exceptions that lift cosmetic, scripting or other non-blocking rules.
-    private static let nonBlockingExceptionOptions: Set<String> = [
-        "elemhide", "ehide", "generichide", "ghide", "specifichide", "shide",
-        "jsinject", "content", "extension", "stealth", "popup", "csp",
-        "redirect", "redirect-rule", "removeparam", "removeheader", "cookie",
-        "replace", "header", "permissions", "jsonprune", "hls",
-        "referrerpolicy", "urltransform", "webrtc"
+    /// Modifiers whose `$doc`/`$document` selects the request type rather than
+    /// lifting all blocking on the page.
+    private static let modifierExceptionOptions: Set<String> = [
+        "popup", "csp", "redirect", "redirect-rule", "removeparam",
+        "removeheader", "cookie", "replace", "header", "permissions",
+        "jsonprune", "hls", "referrerpolicy", "uritransform", "urltransform", "webrtc"
     ]
+    /// Exceptions that lift cosmetic, scripting or other non-blocking rules.
+    private static let nonBlockingExceptionOptions: Set<String> = modifierExceptionOptions.union([
+        "elemhide", "ehide", "generichide", "ghide", "specifichide", "shide",
+        "jsinject", "content", "extension", "stealth"
+    ])
 
     // MARK: - Extraction
 
@@ -60,12 +64,29 @@ extension RemoveParamDNRRuleGenerator {
     private static func blockedCountEntries(for line: String) -> [[String]] {
         let isException = line.hasPrefix("@@")
         let body = isException ? String(line.dropFirst(2)) : line
-        // A regex may contain `$`; its options follow the closing slash.
-        let isRegex = body.hasPrefix("/") && (body.range(of: "/$", options: .backwards) != nil
+        // A regex may contain `$`, and `$uritransform` replacements may contain `/$1/`.
+        // Find `/$` where the `/` is not escaped by a backslash, or fall back to last `$`.
+        let regexOptionsStart: String.Index? = body.hasPrefix("/") ? {
+            var searchEnd = body.endIndex
+            while let range = body[..<searchEnd].range(of: "/$", options: .backwards) {
+                var backslashes = 0
+                var cursor = range.lowerBound
+                while cursor > body.startIndex {
+                    let prev = body.index(before: cursor)
+                    guard body[prev] == "\\" else { break }
+                    backslashes += 1
+                    cursor = prev
+                }
+                if backslashes % 2 == 0 {
+                    return body.index(before: range.upperBound)
+                }
+                searchEnd = range.lowerBound
+            }
+            return nil
+        }() : nil
+        let isRegex = body.hasPrefix("/") && (regexOptionsStart != nil
             || body.hasSuffix("/") && body.count > 1)
-        let optionsStart = isRegex
-            ? body.range(of: "/$", options: .backwards).map { body.index(before: $0.upperBound) }
-            : body.lastIndex(of: "$")
+        let optionsStart = isRegex ? regexOptionsStart : body.lastIndex(of: "$")
         let pattern = optionsStart.map { String(body[..<$0]) } ?? body
         let options = optionsStart.map {
             splitOptions(String(body[body.index(after: $0)...])).map(optionNameAndValue)
@@ -78,6 +99,7 @@ extension RemoveParamDNRRuleGenerator {
         }
 
         if names.contains("badfilter") { return [] }
+        if !names.isDisjoint(with: modifierExceptionOptions) { return [] }
         let sites = options.first { $0.name == "domain" }.flatMap { $0.value }
             .map { $0.split(separator: "|").map { $0.trimmingCharacters(in: .whitespaces).lowercased() } }
         let includedSites = sites?.filter { !$0.hasPrefix("~") && isCountableHost($0) } ?? []

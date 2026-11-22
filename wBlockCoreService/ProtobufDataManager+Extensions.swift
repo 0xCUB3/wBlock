@@ -41,7 +41,10 @@ extension ProtobufDataManager {
             protoFilterList.userProvidedName = filter.hasUserProvidedName
             protoFilterList.userProvidedDescription = filter.hasUserProvidedDescription
             protoFilterList.excludedSites = filter.excludedSites
-            if filter.isCustom { protoFilterList.languages = filter.languages }
+            if filter.isCustom {
+                protoFilterList.languages = filter.languages
+                if let topic = filter.annoyanceTopic { protoFilterList.annoyanceTopic = topic }
+            }
             if !filter.selectedSites.isEmpty { protoFilterList.selectedSites.hosts = filter.selectedSites }
             protoFilterList.onlySelectedSites = filter.onlySelectedSites
             if let uniqueRuleCount = filter.uniqueRuleCount {
@@ -92,6 +95,7 @@ extension ProtobufDataManager {
                 sourceRuleCount: protoData.hasSourceRuleCount ? Int(protoData.sourceRuleCount) : nil,
                 lastUpdated: protoData.lastUpdated > 0 ? Date(timeIntervalSince1970: TimeInterval(protoData.lastUpdated)) : nil,
                 languages: protoData.languages,
+                annoyanceTopic: protoData.hasAnnoyanceTopic ? protoData.annoyanceTopic : nil,
                 hasUserProvidedName: protoData.hasUserProvidedName
                     ? protoData.userProvidedName
                     : Self.inferLegacyUserProvidedName(protoData, isCustom: isCustom),

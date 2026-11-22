@@ -176,6 +176,7 @@
 "Calculated source rule count for filter" = "تعداد قوانین منبع برای فیلتر محاسبه شد";
 "Cancel" = "لغو";
 "Category" = "دسته‌بندی";
+"Subcategory" = "زیرمجموعه";
 "Element Zapper changes take full effect after the next apply." = "تغییرات حذف‌کنندهٔ عنصر پس از اعمال بعدی به‌طور کامل اثرگذار خواهند بود.";
 "Check for Updates" = "بررسی به‌روزرسانی‌ها";
 "Checked %@" = "بررسی‌شده در %@";

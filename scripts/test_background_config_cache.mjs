@@ -1414,6 +1414,89 @@ for (const rejectAtInstall of [false, true]) {
   check("verified install count is persisted", state.storage.wblockRemoveParamDNRVersion?.count === 1);
 }
 
+// Safari 17+ accepts regexSubstitution rules with requireCapturing preflight;
+// older Safari releases and failing capturing regexes skip them cleanly without
+// breaking unrelated rules or inflating extensionPath redirect status counts.
+{
+  const originalDescriptor = Object.getOwnPropertyDescriptor(globalThis, "navigator");
+  const withUserAgent = async (userAgent, fn) => {
+    Object.defineProperty(globalThis, "navigator", { value: { userAgent }, configurable: true, writable: true });
+    try { return await fn(); } finally {
+      if (originalDescriptor) Object.defineProperty(globalThis, "navigator", originalDescriptor);
+      else delete globalThis.navigator;
+    }
+  };
+  const transformRules = [
+    {
+      id: 1500000,
+      priority: 11000,
+      action: { type: "redirect", redirect: { regexSubstitution: "https://kittygr.am/\\1" } },
+      condition: { regexFilter: "^https:\\/\\/(?:www\\.)?instagram\\.com\\/(.*)", resourceTypes: ["main_frame"] }
+    },
+    {
+      id: 1500001,
+      priority: 12000,
+      action: { type: "allow" },
+      condition: { regexFilter: "^https:\\/\\/(?:www\\.)?instagram\\.com\\/specificpath", resourceTypes: ["main_frame"] }
+    },
+    {
+      id: 1500002,
+      priority: 4,
+      action: { type: "redirect", redirect: { transform: { queryTransform: { removeParams: ["fbclid"] } } } },
+      condition: { urlFilter: "^fbclid=" }
+    }
+  ];
+
+  for (const source of [canonicalSource, bundleSource]) {
+    const regexCalls = [];
+    await withUserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15", async () => {
+      const state = loadBackground({
+        source,
+        dnrLimit: 30000,
+        dnrRegexSupported: async options => { regexCalls.push(options); return { isSupported: true }; },
+        removeParamHandler: () => ({ ok: true, version: "uritransform-s17", count: transformRules.length, rules: transformRules }),
+        nativeHandler: message => message?.action === "reportRedirectDNRStatus" ? { ok: true } : { payload: makeConfig([], 1) },
+      });
+      await sleep(50);
+      const installed = state.dnrUpdates.at(-1)?.addRules || [];
+      check("Safari 17 installs regexSubstitution and its allow rule",
+        installed.length === 3 && installed.some(r => r.action?.redirect?.regexSubstitution === "https://kittygr.am/\\1"));
+      const subCall = regexCalls.find(c => c.regex.includes("(.*)"));
+      const allowCall = regexCalls.find(c => c.regex.includes("specificpath"));
+      check("regexSubstitution preflight passes requireCapturing: true", subCall?.requireCapturing === true && !allowCall?.requireCapturing);
+      const statusMsg = state.nativeMessages.find(m => m?.action === "reportRedirectDNRStatus");
+      check("redirect carve-out status counts only extensionPath stand-ins", statusMsg?.installedRedirects === 0);
+    });
+  }
+
+  await withUserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.4 Safari/605.1.15", async () => {
+    const state = loadBackground({
+      source: canonicalSource,
+      dnrLimit: 30000,
+      removeParamHandler: () => ({ ok: true, version: "uritransform-s16", count: transformRules.length, rules: transformRules }),
+      nativeHandler: () => ({ payload: makeConfig([], 1) }),
+    });
+    await sleep(50);
+    const installed = state.dnrUpdates.at(-1)?.addRules || [];
+    check("Safari 16.4 skips regexSubstitution while keeping other rules",
+      installed.length === 2 && !installed.some(r => r.action?.redirect?.regexSubstitution));
+  });
+
+  await withUserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15", async () => {
+    const state = loadBackground({
+      source: canonicalSource,
+      dnrLimit: 30000,
+      dnrRegexSupported: async options => ({ isSupported: !options.requireCapturing }),
+      removeParamHandler: () => ({ ok: true, version: "uritransform-bad-capture", count: transformRules.length, rules: transformRules }),
+      nativeHandler: () => ({ payload: makeConfig([], 1) }),
+    });
+    await sleep(50);
+    const installed = state.dnrUpdates.at(-1)?.addRules || [];
+    check("failed requireCapturing check drops only the unsupported regexSubstitution rule",
+      installed.length === 2 && !installed.some(r => r.action?.redirect?.regexSubstitution));
+  });
+}
+
 if (failures > 0) {
   console.error(`\n${failures} check(s) failed`);
   process.exit(1);

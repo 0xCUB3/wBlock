@@ -452,6 +452,17 @@ nonisolated struct Wblock_Data_FilterListData: @unchecked Sendable {
   /// Clears the value of `onlySelectedSites`. Subsequent reads from it will return its default value.
   mutating func clearOnlySelectedSites() {_uniqueStorage()._onlySelectedSites = nil}
 
+  /// Subcategory a custom Annoyances list sits under (general, cookies, popups,
+  /// social). Absent means Other.
+  var annoyanceTopic: String {
+    get {_storage._annoyanceTopic ?? String()}
+    set {_uniqueStorage()._annoyanceTopic = newValue}
+  }
+  /// Returns true if `annoyanceTopic` has been explicitly set.
+  var hasAnnoyanceTopic: Bool {_storage._annoyanceTopic != nil}
+  /// Clears the value of `annoyanceTopic`. Subsequent reads from it will return its default value.
+  mutating func clearAnnoyanceTopic() {_uniqueStorage()._annoyanceTopic = nil}
+
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
   init() {}
@@ -1206,7 +1217,7 @@ nonisolated extension Wblock_Data_AppSettings: SwiftProtobuf.Message, SwiftProto
 
 nonisolated extension Wblock_Data_FilterListData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".FilterListData"
-  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}name\0\u{1}url\0\u{1}category\0\u{3}is_selected\0\u{1}description\0\u{1}version\0\u{3}source_rule_count\0\u{3}last_updated\0\u{3}is_custom\0\u{3}local_file_path\0\u{3}excluded_sites\0\u{3}unique_rule_count\0\u{3}user_provided_name\0\u{3}user_provided_description\0\u{3}admitted_source_rule_count\0\u{3}selected_sites\0\u{3}updates_automatically\0\u{1}languages\0\u{3}only_selected_sites\0")
+  static let _protobuf_nameMap = SwiftProtobuf._NameMap(bytecode: "\0\u{1}id\0\u{1}name\0\u{1}url\0\u{1}category\0\u{3}is_selected\0\u{1}description\0\u{1}version\0\u{3}source_rule_count\0\u{3}last_updated\0\u{3}is_custom\0\u{3}local_file_path\0\u{3}excluded_sites\0\u{3}unique_rule_count\0\u{3}user_provided_name\0\u{3}user_provided_description\0\u{3}admitted_source_rule_count\0\u{3}selected_sites\0\u{3}updates_automatically\0\u{1}languages\0\u{3}only_selected_sites\0\u{3}annoyance_topic\0")
 
   fileprivate class _StorageClass {
     var _id: String = String()
@@ -1229,6 +1240,7 @@ nonisolated extension Wblock_Data_FilterListData: SwiftProtobuf.Message, SwiftPr
     var _updatesAutomatically: Bool? = nil
     var _languages: [String] = []
     var _onlySelectedSites: Bool? = nil
+    var _annoyanceTopic: String? = nil
 
       // This property is used as the initial default value for new instances of the type.
       // The type itself is protecting the reference to its storage via CoW semantics.
@@ -1259,6 +1271,7 @@ nonisolated extension Wblock_Data_FilterListData: SwiftProtobuf.Message, SwiftPr
       _updatesAutomatically = source._updatesAutomatically
       _languages = source._languages
       _onlySelectedSites = source._onlySelectedSites
+      _annoyanceTopic = source._annoyanceTopic
     }
   }
 
@@ -1297,6 +1310,7 @@ nonisolated extension Wblock_Data_FilterListData: SwiftProtobuf.Message, SwiftPr
         case 18: try { try decoder.decodeSingularBoolField(value: &_storage._updatesAutomatically) }()
         case 19: try { try decoder.decodeRepeatedStringField(value: &_storage._languages) }()
         case 20: try { try decoder.decodeSingularBoolField(value: &_storage._onlySelectedSites) }()
+        case 21: try { try decoder.decodeSingularStringField(value: &_storage._annoyanceTopic) }()
         default: break
         }
       }
@@ -1369,6 +1383,9 @@ nonisolated extension Wblock_Data_FilterListData: SwiftProtobuf.Message, SwiftPr
       try { if let v = _storage._onlySelectedSites {
         try visitor.visitSingularBoolField(value: v, fieldNumber: 20)
       } }()
+      try { if let v = _storage._annoyanceTopic {
+        try visitor.visitSingularStringField(value: v, fieldNumber: 21)
+      } }()
     }
     try unknownFields.traverse(visitor: &visitor)
   }
@@ -1398,6 +1415,7 @@ nonisolated extension Wblock_Data_FilterListData: SwiftProtobuf.Message, SwiftPr
         if _storage._updatesAutomatically != rhs_storage._updatesAutomatically {return false}
         if _storage._languages != rhs_storage._languages {return false}
         if _storage._onlySelectedSites != rhs_storage._onlySelectedSites {return false}
+        if _storage._annoyanceTopic != rhs_storage._annoyanceTopic {return false}
         return true
       }
       if !storagesAreEqual {return false}

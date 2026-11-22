@@ -127,6 +127,11 @@ class ApplyChangesViewModel: ObservableObject {
         resetPhases()
     }
 
+    /// Clears a progress run that never started or aborted before applying.
+    func cancelProgressRun() {
+        state = ApplyChangesState(mode: .result, isLoading: false)
+    }
+
     func updateIsLoading(_ isLoading: Bool) {
         state.isLoading = isLoading
         if isLoading {

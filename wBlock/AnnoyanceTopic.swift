@@ -4,8 +4,10 @@ import wBlockCoreService
 /// Topics that split the Annoyances lists into smaller cards, following the
 /// groups uBlock Origin tags its own annoyance lists with. Display only:
 /// categories, ordering and compilation are unchanged.
-enum AnnoyanceTopic: String, CaseIterable, Sendable {
+enum AnnoyanceTopic: String, CaseIterable, Identifiable, Sendable {
     case general, cookies, popups, social, other
+
+    var id: String { rawValue }
 
     var title: String {
         switch self {
@@ -35,7 +37,15 @@ enum AnnoyanceTopic: String, CaseIterable, Sendable {
     ]
 
     static func topic(for filter: FilterList) -> AnnoyanceTopic {
-        filter.isCustom ? .other : topicByName[filter.name] ?? .other
+        if filter.isCustom {
+            return filter.annoyanceTopic.flatMap(AnnoyanceTopic.init(rawValue:)) ?? .other
+        }
+        return topicByName[filter.name] ?? .other
+    }
+
+    /// Persisted value for a custom list's subcategory; nil means Other or non-Annoyances.
+    static func storedValue(_ topic: AnnoyanceTopic, category: FilterListCategory) -> String? {
+        category == .annoyances && topic != .other ? topic.rawValue : nil
     }
 
     /// `filters` split by topic in topic order, each keeping its given order.
