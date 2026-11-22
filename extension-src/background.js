@@ -2270,6 +2270,7 @@
   const REDIRECT_DNR_STATUS_REPORT_KEY = "wblockRedirectDNRStatusReportV2";
   const REDIRECT_DNR_STATUS_REPORT_THROTTLE_MS = 6 * 60 * 60 * 1000;
   let removeParamDNRInstallPromise = null;
+  let removeParamDNRInstallRerun = false;
   let removeParamDNRRulesCache = null;
   let removeParamDNRVersion = "";
   let lastRemoveParamDNRCheck = 0;
@@ -2631,21 +2632,29 @@
     });
     await reportRedirectDNRStatus(installRules);
   };
+  const runRemoveParamDNRInstall = () => installRemoveParamDNRRules().catch(error => {
+    const errorMessage = String(error && error.message || error);
+    console.error(`[wBlock] Failed to install removeparam DNR rules: ${errorMessage}`, error);
+    logSupportDiagnostic({ event: "dnr_install_failed", error: errorMessage });
+  });
   const scheduleInstallRemoveParamDNRRules = (force = false) => {
     const now = Date.now();
     if (!force && now - lastRemoveParamDNRCheck < REMOVE_PARAM_DNR_CHECK_INTERVAL_MS) {
       return removeParamDNRInstallPromise || Promise.resolve();
     }
     lastRemoveParamDNRCheck = now;
-    if (!removeParamDNRInstallPromise) {
-      removeParamDNRInstallPromise = installRemoveParamDNRRules().catch(error => {
-        const errorMessage = String(error && error.message || error);
-        console.error(`[wBlock] Failed to install removeparam DNR rules: ${errorMessage}`, error);
-        logSupportDiagnostic({ event: "dnr_install_failed", error: errorMessage });
-      }).finally(() => {
-        removeParamDNRInstallPromise = null;
-      });
+    if (removeParamDNRInstallPromise) {
+      if (force) removeParamDNRInstallRerun = true;
+      return removeParamDNRInstallPromise;
     }
+    removeParamDNRInstallPromise = (async () => {
+      do {
+        removeParamDNRInstallRerun = false;
+        await runRemoveParamDNRInstall();
+      } while (removeParamDNRInstallRerun);
+    })().finally(() => {
+      removeParamDNRInstallPromise = null;
+    });
     return removeParamDNRInstallPromise;
   };
   if (browser.runtime.onInstalled) {

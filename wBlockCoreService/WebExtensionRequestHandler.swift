@@ -584,7 +584,9 @@ public enum WebExtensionRequestHandler {
             let selectedFilters = ProtobufDataManager.shared.getFilterLists().filter { $0.isSelected }
             let effectiveDisabledSites = await currentFilterDisabledSites()
             let blockedCount = ProtobufDataManager.shared.isBlockedRequestCountEnabled
-            Task.detached(priority: .utility) {
+            // Regenerate DNR rules concurrently with the content blocker reload and
+            // wait for both so popup cache-clear and tab reload see the updated files.
+            let dnrTask = Task.detached(priority: .userInitiated) {
                 do {
                     _ = try RemoveParamDNRRuleGenerator.saveRules(
                         for: selectedFilters,
@@ -606,6 +608,7 @@ public enum WebExtensionRequestHandler {
             let summary = await Task.detached(priority: .userInitiated) {
                 await applyDisabledSitesFastPath(disabledSites: effectiveDisabledSites, platform: platform)
             }.value
+            await dnrTask.value
             let response = createResponse(with: [
                 "ok": true,
                 "disabled": disabled,
@@ -670,14 +673,12 @@ public enum WebExtensionRequestHandler {
 
             await ProtobufDataManager.shared.setWhitelistedDomains(list)
 
-            // Regenerate RemoveParam DNR rules detached from the response: they are read
-            // on demand from disk by handleGetRemoveParamDNRRules, so a brief staleness
-            // window is harmless and removing it from the toggle's critical path keeps
-            // the popup under its timeout even on profiles with many selected filters.
+            // Regenerate DNR rules concurrently with the content blocker reload and
+            // wait for both so popup cache-clear and tab reload see the updated files.
             let selectedFilters = ProtobufDataManager.shared.getFilterLists().filter { $0.isSelected }
             let effectiveDisabledSites = await currentFilterDisabledSites()
             let blockedCount = ProtobufDataManager.shared.isBlockedRequestCountEnabled
-            Task.detached(priority: .utility) {
+            let dnrTask = Task.detached(priority: .userInitiated) {
                 do {
                     _ = try RemoveParamDNRRuleGenerator.saveRules(
                         for: selectedFilters,
@@ -702,6 +703,7 @@ public enum WebExtensionRequestHandler {
             let summary = await Task.detached(priority: .userInitiated) {
                 await applyDisabledSitesFastPath(disabledSites: effectiveDisabledSites, platform: platform)
             }.value
+            await dnrTask.value
             let applyDurationMs = Int(Date().timeIntervalSince(applyStart) * 1000)
 
             let response = createResponse(with: [
@@ -1098,20 +1100,19 @@ public enum WebExtensionRequestHandler {
         let groupID = GroupIdentifier.shared.value
         let targets = ContentBlockerTargetManager.shared.allTargets(forPlatform: platform)
 
-        // Update JSON for all targets, then reload only outputs whose bytes changed.
+        // Update JSON for all targets, then let reloadIfNeeded reload any target
+        // whose bytes changed or whose reload marker is stale.
         var targetsToReload: [ContentBlockerTargetInfo] = []
         var updateFailures = 0
         var fullApplyTargets = 0
         for target in targets {
             do {
-                let updateResult = try ContentBlockerService.fastUpdateDisabledSitesWithOutputChange(
+                _ = try ContentBlockerService.fastUpdateDisabledSitesWithOutputChange(
                     groupIdentifier: groupID,
                     targetRulesFilename: target.rulesFilename,
                     disabledSites: disabledSites
                 )
-                if updateResult.outputChanged {
-                    targetsToReload.append(target)
-                }
+                targetsToReload.append(target)
             } catch let error as CocoaError where error.code == .fileReadCorruptFile {
                 fullApplyTargets += 1
             } catch {

@@ -50,13 +50,13 @@ extension AppFilterManager {
     }
 
     /// Rewrites the DNR rule files from the lists already on disk, so a
-    /// blocked-request count change applies before the next apply.
-    func refreshDNRRules() async {
+    /// blocked-request count or disabled-site change applies before the next apply.
+    func refreshDNRRules(disabledSites overrideDisabledSites: [String]? = nil) async {
         guard !BlockingPauseStore.isPaused(.filters) else { return }
         let selectedFilters = filterLists.filter { $0.isSelected }
-        let disabledSites = effectiveFilterDisabledSites()
+        let disabledSites = overrideDisabledSites ?? effectiveFilterDisabledSites()
         let blockedCount = dataManager.isBlockedRequestCountEnabled
-        await Task.detached(priority: .utility) {
+        await Task.detached(priority: .userInitiated) {
             _ = try? RemoveParamDNRRuleGenerator.saveRules(
                 for: selectedFilters,
                 disabledSites: disabledSites,
@@ -134,10 +134,14 @@ extension AppFilterManager {
                 comment: "Disabled sites update status"
             )
         }
-        let disabledSites = effectiveFilterDisabledSites()
+        let disabledSites = appliedSnapshot
         await ConcurrentLogManager.shared.info(
             .whitelist, LocalizedStrings.text("Fast applying disabled sites changes without full conversion"),
             metadata: [:])
+
+        // Refresh DNR rules alongside the content blocker update so Site Settings
+        // changes do not leave removeparam or blocked-count DNR rules stale.
+        async let dnrRefresh: Void = refreshDNRRules(disabledSites: disabledSites)
 
         // Get all platform targets that need updating
         let currentPlatform = self.currentPlatform
@@ -175,6 +179,7 @@ extension AppFilterManager {
         }
 
         let reloadSummary = await Self.reloadDisabledSitesTargetsInParallel(targetsToReload)
+        await dnrRefresh
         let skippedCount = reloadSummary.skippedTargets
         let reloadTime = String(format: "%.2fs", Double(reloadSummary.reloadDurationMs) / 1000)
 
