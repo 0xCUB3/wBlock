@@ -5,13 +5,9 @@ import wBlockCoreService
 
 struct SettingsView: View {
     let filterManager: AppFilterManager
-    @ObservedObject var safariHealth: SafariHealthMonitor
-    var lastUpdatedDate: Date? = nil
-    var onCheckForUpdates: () -> Void = {}
     @ObservedObject private var dataManager = ProtobufDataManager.shared
     @ObservedObject private var syncManager = CloudSyncManager.shared
     @AppStorage(AppMode.storageKey) private var appMode: AppMode = .basic
-    @State private var showingHealthDetail = false
     private static let autoUpdateIntervalPresets: [Double] = [1, 2, 4, 6, 12, 24, 48, 72, 168]
     static let reportIssueURL = URL(string: "https://github.com/0xCUB3/wBlock/issues/new/choose")!
     static let sourceCodeURL = URL(string: "https://github.com/0xCUB3/wBlock")!
@@ -239,10 +235,6 @@ struct SettingsView: View {
         )
     }
 
-    private var healthStatus: SafariHealthStatus {
-        safariHealth.status(filterManager: filterManager, lastUpdatedDate: lastUpdatedDate)
-    }
-
     private var modeBinding: Binding<AppMode> {
         Binding(
             get: { appMode },
@@ -254,64 +246,14 @@ struct SettingsView: View {
         )
     }
 
-    @ViewBuilder
-    private var protectionStatusSection: some View {
-        Section {
-            Button {
-                showingHealthDetail = true
-            } label: {
-                HStack(spacing: 12) {
-                    Image(systemName: healthStatus.symbolName)
-                        .font(.title3.weight(.semibold))
-                        .foregroundStyle(healthStatus.tone.color)
-                        .frame(width: 24)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(healthStatus.title)
-                            .font(.body.weight(.medium))
-                            .foregroundStyle(.primary)
-                        Text(healthStatus.subtitle())
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    Spacer(minLength: 8)
-                    RowDisclosureChevron()
-                }
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .noFocusRingCompat()
-            #if os(macOS)
-            .modalPopover(isPresented: $showingHealthDetail, arrowEdge: .trailing) {
-                SafariHealthDetailView(
-                    filterManager: filterManager,
-                    safariHealth: safariHealth,
-                    status: healthStatus,
-                    lastUpdatedDate: lastUpdatedDate,
-                    onCheckForUpdates: onCheckForUpdates
-                )
-            }
-            #else
-            .sheet(isPresented: $showingHealthDetail) {
-                SafariHealthDetailView(
-                    filterManager: filterManager,
-                    safariHealth: safariHealth,
-                    status: healthStatus,
-                    lastUpdatedDate: lastUpdatedDate,
-                    onCheckForUpdates: onCheckForUpdates
-                )
-            }
-            #endif
-        }
-    }
+    private static let modeFooterKey: LocalizedStringKey =
+        "Standard is best for most people. Both modes block the same things, and switching never changes your filters. Advanced adds manual control of lists and userscripts."
 
     @ViewBuilder
     private var modeSection: some View {
         #if os(macOS)
         Section {
-            HStack {
-                Text("Mode")
-                Spacer()
+            CompatibleLabeledContent("Mode") {
                 Picker("Mode", selection: modeBinding) {
                     ForEach(AppMode.allCases) { mode in
                         Text(mode.title).tag(mode)
@@ -319,10 +261,16 @@ struct SettingsView: View {
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
-                .frame(width: 210)
+                .fixedSize()
+            }
+        } header: {
+            if appMode == .advanced {
+                // The form draws a header without a card, so the pills ride here.
+                statusPills.frame(maxWidth: .infinity)
+                    .padding(.bottom, 10)
             }
         } footer: {
-            Text("Switching modes keeps all your current settings active.")
+            Text(Self.modeFooterKey)
         }
         #else
         Section {
@@ -336,7 +284,7 @@ struct SettingsView: View {
         } header: {
             Text("Mode")
         } footer: {
-            Text("Switching modes keeps all your current settings active.")
+            Text(Self.modeFooterKey)
         }
         #endif
     }
@@ -373,19 +321,7 @@ struct SettingsView: View {
             }
             #endif
         } header: {
-            #if os(macOS)
-            if appMode == .advanced {
-                // The form draws a header without a card, so the pills ride here.
-                VStack(alignment: .leading, spacing: 16) {
-                    statusPills.frame(maxWidth: .infinity)
-                    sectionHeader(.general)
-                }
-            } else {
-                sectionHeader(.general)
-            }
-            #else
             sectionHeader(.general)
-            #endif
         }
     }
 
@@ -1016,25 +952,16 @@ struct SettingsView: View {
 
     @ViewBuilder
     private var settingsSections: some View {
-        if appMode == .basic {
-            protectionStatusSection
-            modeSection
-            generalSection.settingsAnchor(.general)
-            websitesSection.settingsAnchor(.websites)
-            autoUpdateSection.settingsAnchor(.autoUpdate)
-            syncSection.settingsAnchor(.sync)
-            aboutSection.settingsAnchor(.about)
-            dangerZoneSection.settingsAnchor(.reset)
-        } else {
-            generalSection.settingsAnchor(.general)
-            modeSection
-            websitesSection.settingsAnchor(.websites)
-            autoUpdateSection.settingsAnchor(.autoUpdate)
-            syncSection.settingsAnchor(.sync)
+        modeSection
+        generalSection.settingsAnchor(.general)
+        websitesSection.settingsAnchor(.websites)
+        autoUpdateSection.settingsAnchor(.autoUpdate)
+        syncSection.settingsAnchor(.sync)
+        if appMode == .advanced {
             advancedSection.settingsAnchor(.advanced)
-            aboutSection.settingsAnchor(.about)
-            dangerZoneSection.settingsAnchor(.reset)
         }
+        aboutSection.settingsAnchor(.about)
+        dangerZoneSection.settingsAnchor(.reset)
     }
 
     private func handleAutoUpdateConfigChange() async {

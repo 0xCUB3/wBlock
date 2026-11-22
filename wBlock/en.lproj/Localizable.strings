@@ -1255,3 +1255,15 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Basic is wBlock's new simpler view, alongside the full Advanced interface. You stayed in Advanced so nothing moved, and you can switch anytime in Settings or try Basic below." = "Basic is wBlock's new simpler view, alongside the full Advanced interface. You stayed in Advanced so nothing moved, and you can switch anytime in Settings or try Basic below.";
 "This upgrade replaces the AdGuard converter with wBlock's own engine built for uBlock Origin rules, so more rules work in Safari. Your enabled AdGuard lists were swapped for matching uBO lists." = "This upgrade replaces the AdGuard converter with wBlock's own engine built for uBlock Origin rules, so more rules work in Safari. Your enabled AdGuard lists were swapped for matching uBO lists.";
 "Try Basic Mode" = "Try Basic Mode";
+"Standard" = "Standard";
+"Same engine and filter lists either way. You can switch anytime in Settings." = "Same engine and filter lists either way. You can switch anytime in Settings.";
+"Choose filter lists myself" = "Choose filter lists myself";
+"wBlock sets up recommended blocking for you." = "wBlock sets up recommended blocking for you.";
+"A simpler wBlock" = "A simpler wBlock";
+"wBlock now opens in Standard mode, with a few switches in place of the long list. It uses the same engine, and every list and userscript you had on is still on. If you want the full list view, switch to Advanced below or anytime in Settings." = "wBlock now opens in Standard mode, with a few switches in place of the long list. It uses the same engine, and every list and userscript you had on is still on. If you want the full list view, switch to Advanced below or anytime in Settings.";
+"Standard and Advanced modes" = "Standard and Advanced modes";
+"wBlock has a new Standard mode with a few switches in place of the long list. You have custom lists or userscripts, so you stayed in Advanced and nothing moved. Standard blocks the same things. Try it below or anytime in Settings." = "wBlock has a new Standard mode with a few switches in place of the long list. You have custom lists or userscripts, so you stayed in Advanced and nothing moved. Standard blocks the same things. Try it below or anytime in Settings.";
+"Use Advanced Mode" = "Use Advanced Mode";
+"Try Standard Mode" = "Try Standard Mode";
+"Standard is best for most people. Both modes block the same things, and switching never changes your filters. Advanced adds manual control of lists and userscripts." = "Standard is best for most people. Both modes block the same things, and switching never changes your filters. Advanced adds manual control of lists and userscripts.";
+"Switch to Advanced Mode" = "Switch to Advanced Mode";

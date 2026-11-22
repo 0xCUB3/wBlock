@@ -12,6 +12,7 @@ struct AppTabView<Filters: View, Userscripts: View, Settings: View, Accessory: V
     let userscripts: Userscripts
     let settings: Settings
     var secondTabTitle: LocalizedStringKey = "Userscripts"
+    var tabBarIdentity: String = "advanced"
     var isBottomAccessoryEnabled: Bool = false
     let bottomAccessory: () -> Accessory
 
@@ -21,6 +22,7 @@ struct AppTabView<Filters: View, Userscripts: View, Settings: View, Accessory: V
         userscripts: Userscripts,
         settings: Settings,
         secondTabTitle: LocalizedStringKey = "Userscripts",
+        tabBarIdentity: String = "advanced",
         isBottomAccessoryEnabled: Bool = false,
         @ViewBuilder bottomAccessory: @escaping () -> Accessory
     ) {
@@ -29,6 +31,7 @@ struct AppTabView<Filters: View, Userscripts: View, Settings: View, Accessory: V
         self.userscripts = userscripts
         self.settings = settings
         self.secondTabTitle = secondTabTitle
+        self.tabBarIdentity = tabBarIdentity
         self.isBottomAccessoryEnabled = isBottomAccessoryEnabled
         self.bottomAccessory = bottomAccessory
     }
@@ -58,7 +61,11 @@ struct AppTabView<Filters: View, Userscripts: View, Settings: View, Accessory: V
                 .tabItem { Label("Settings", systemImage: "gear") }
         }
         #if os(macOS)
+        // Recreate the macOS 26 tab bar when the second tab's title changes
+        // ("Extras" <-> "Userscripts") so AppKit does not leave a stale
+        // selection pill rendered on the resized segment.
         return tabs
+            .id(tabBarIdentity)
             .frame(minWidth: MacTabWindow.minimumWidth, idealWidth: max(540, MacTabWindow.minimumWidth), minHeight: 550, idealHeight: 720)
         #else
         return tabs.modifier(

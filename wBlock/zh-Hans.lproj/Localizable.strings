@@ -1246,3 +1246,15 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Basic is wBlock's new simpler view, alongside the full Advanced interface. You stayed in Advanced so nothing moved, and you can switch anytime in Settings or try Basic below." = "基础模式是 wBlock 全新的简洁界面，与完整的高级视图并存。你已保持在高级模式，一切位置不变，随时可在设置中切换，或在下方体验基础模式。";
 "This upgrade replaces the AdGuard converter with wBlock's own engine built for uBlock Origin rules, so more rules work in Safari. Your enabled AdGuard lists were swapped for matching uBO lists." = "本次更新用 wBlock 自研的 uBlock Origin 规则引擎替换了 AdGuard 转换器，使更多规则能在 Safari 中生效。你已启用的 AdGuard 列表也已替换为对应的 uBO 列表。";
 "Try Basic Mode" = "体验基础模式";
+"Standard" = "标准";
+"Same engine and filter lists either way. You can switch anytime in Settings." = "两种模式使用相同的引擎和过滤列表，随时可在设置中切换。";
+"Choose filter lists myself" = "自行选择过滤列表";
+"wBlock sets up recommended blocking for you." = "wBlock 会为你配置推荐的拦截方案。";
+"A simpler wBlock" = "更简洁的 wBlock";
+"wBlock now opens in Standard mode, with a few switches in place of the long list. It uses the same engine, and every list and userscript you had on is still on. If you want the full list view, switch to Advanced below or anytime in Settings." = "wBlock 现在默认以标准模式打开，用几个简洁开关替代冗长列表。它使用相同的引擎，你之前开启的所有列表和脚本仍保持启用。如需完整列表视图，可在下方或设置中切换到高级模式。";
+"Standard and Advanced modes" = "标准模式与高级模式";
+"wBlock has a new Standard mode with a few switches in place of the long list. You have custom lists or userscripts, so you stayed in Advanced and nothing moved. Standard blocks the same things. Try it below or anytime in Settings." = "wBlock 新增了标准模式，用几个开关替代冗长列表。由于你添加了自定义列表或脚本，我们为你保留了高级模式，一切不变。标准模式拦截效果完全相同，可在下方或设置中体验。";
+"Use Advanced Mode" = "使用高级模式";
+"Try Standard Mode" = "体验标准模式";
+"Standard is best for most people. Both modes block the same things, and switching never changes your filters. Advanced adds manual control of lists and userscripts." = "标准模式适合大多数人。两种模式的拦截效果完全一致，切换不会改动你的过滤规则。高级模式提供对列表和用户脚本的手动控制。";
+"Switch to Advanced Mode" = "切换到高级模式";

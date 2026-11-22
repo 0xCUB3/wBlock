@@ -1246,3 +1246,15 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Basic is wBlock's new simpler view, alongside the full Advanced interface. You stayed in Advanced so nothing moved, and you can switch anytime in Settings or try Basic below." = "Az Alap mód a wBlock új, egyszerűbb nézete a teljes Haladó felület mellett. Haladó módban maradtál, így semmi sem mozdult el, és bármikor válthatsz a Beállításokban vagy kipróbálhatod lent az Alap módot.";
 "This upgrade replaces the AdGuard converter with wBlock's own engine built for uBlock Origin rules, so more rules work in Safari. Your enabled AdGuard lists were swapped for matching uBO lists." = "Ez a frissítés az AdGuard konvertert a wBlock saját, uBlock Origin szabályokra épülő motorjára cseréli, így több szabály működik a Safariban. A bekapcsolt AdGuard listáid megfelelő uBO listákra lettek cserélve.";
 "Try Basic Mode" = "Alap mód kipróbálása";
+"Standard" = "Normál";
+"Same engine and filter lists either way. You can switch anytime in Settings." = "Mindkét esetben ugyanaz a motor és szűrőlisták működnek. A Beállításokban bármikor válthatsz.";
+"Choose filter lists myself" = "Magam választom ki a szűrőlistákat";
+"wBlock sets up recommended blocking for you." = "A wBlock beállítja számodra az ajánlott blokkolást.";
+"A simpler wBlock" = "Egyszerűbb wBlock";
+"wBlock now opens in Standard mode, with a few switches in place of the long list. It uses the same engine, and every list and userscript you had on is still on. If you want the full list view, switch to Advanced below or anytime in Settings." = "A wBlock mostantól Normál módban nyílik meg, néhány kapcsolóval a hosszú lista helyett. Ugyanazt a motort használja, és minden bekapcsolt listád és szkripted aktív maradt. Ha a teljes listanézetet szeretnéd, válts Haladóra lent vagy a Beállításokban.";
+"Standard and Advanced modes" = "Normál és Haladó mód";
+"wBlock has a new Standard mode with a few switches in place of the long list. You have custom lists or userscripts, so you stayed in Advanced and nothing moved. Standard blocks the same things. Try it below or anytime in Settings." = "A wBlock új Normál móddal érkezik, amely néhány kapcsolóval váltja ki a hosszú listát. Egyéni listáid vagy szkriptjeid vannak, ezért Haladó módban maradtál és semmi nem változott. A Normál mód ugyanazt blokkolja. Próbáld ki lent vagy a Beállításokban.";
+"Use Advanced Mode" = "Haladó mód használata";
+"Try Standard Mode" = "Normál mód kipróbálása";
+"Standard is best for most people. Both modes block the same things, and switching never changes your filters. Advanced adds manual control of lists and userscripts." = "A Normál mód a legtöbb felhasználónak ideális. Mindkét mód ugyanazt blokkolja, és a váltás sosem módosítja a szűrőidet. A Haladó mód kézi vezérlést ad a listákhoz és szkriptekhez.";
+"Switch to Advanced Mode" = "Váltás Haladó módra";

@@ -1246,3 +1246,15 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Basic is wBlock's new simpler view, alongside the full Advanced interface. You stayed in Advanced so nothing moved, and you can switch anytime in Settings or try Basic below." = "Simplu este noua interfață mai curată a wBlock, alături de vederea Avansată completă. Ai rămas în Avansat ca să nu se schimbe nimic și poți comuta oricând din Configurări sau poți încerca Simplu mai jos.";
 "This upgrade replaces the AdGuard converter with wBlock's own engine built for uBlock Origin rules, so more rules work in Safari. Your enabled AdGuard lists were swapped for matching uBO lists." = "Această actualizare înlocuiește convertorul AdGuard cu motorul propriu al wBlock pentru reguli uBlock Origin, astfel încât mai multe reguli funcționează în Safari. Listele AdGuard active au fost înlocuite cu listele uBO corespunzătoare.";
 "Try Basic Mode" = "Încearcă modul Simplu";
+"Standard" = "Standard";
+"Same engine and filter lists either way. You can switch anytime in Settings." = "Același motor și aceleași liste de filtre în ambele moduri. Poți comuta oricând din Configurări.";
+"Choose filter lists myself" = "Aleg singur listele de filtre";
+"wBlock sets up recommended blocking for you." = "wBlock configurează blocarea recomandată pentru tine.";
+"A simpler wBlock" = "Un wBlock mai simplu";
+"wBlock now opens in Standard mode, with a few switches in place of the long list. It uses the same engine, and every list and userscript you had on is still on. If you want the full list view, switch to Advanced below or anytime in Settings." = "wBlock se deschide acum în modul Standard, cu câteva comutatoare în locul listei lungi. Folosește același motor, iar toate listele și scripturile active au rămas pornite. Dacă vrei lista completă, comută la Avansat mai jos sau din Configurări.";
+"Standard and Advanced modes" = "Modurile Standard și Avansat";
+"wBlock has a new Standard mode with a few switches in place of the long list. You have custom lists or userscripts, so you stayed in Advanced and nothing moved. Standard blocks the same things. Try it below or anytime in Settings." = "wBlock are un nou mod Standard cu câteva comutatoare în locul listei lungi. Ai liste sau scripturi personalizate, așa că ai rămas în Avansat fără modificări. Standard blochează aceleași lucruri. Încearcă-l mai jos sau din Configurări.";
+"Use Advanced Mode" = "Folosește modul Avansat";
+"Try Standard Mode" = "Încearcă modul Standard";
+"Standard is best for most people. Both modes block the same things, and switching never changes your filters. Advanced adds manual control of lists and userscripts." = "Standard este potrivit pentru majoritatea utilizatorilor. Ambele moduri blochează aceleași lucruri, iar comutarea nu schimbă filtrele. Avansat adaugă control manual pentru liste și scripturi.";
+"Switch to Advanced Mode" = "Comută la modul Avansat";

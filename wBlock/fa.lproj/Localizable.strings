@@ -1255,3 +1255,15 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Basic is wBlock's new simpler view, alongside the full Advanced interface. You stayed in Advanced so nothing moved, and you can switch anytime in Settings or try Basic below." = "حالت پایه نمای ساده‌تر جدید wBlock در کنار رابط کامل پیشرفته است. شما در حالت پیشرفته مانده‌اید تا چیزی جابه‌جا نشود و هر زمان بخواهید می‌توانید از تنظیمات تغییر دهید یا حالت پایه را در پایین امتحان کنید.";
 "This upgrade replaces the AdGuard converter with wBlock's own engine built for uBlock Origin rules, so more rules work in Safari. Your enabled AdGuard lists were swapped for matching uBO lists." = "این به‌روزرسانی مبدل AdGuard را با موتور اختصاصی wBlock برای قواعد uBlock Origin جایگزین می‌کند تا قواعد بیشتری در Safari کار کنند. فهرست‌های فعال AdGuard شما با فهرست‌های مشابه uBO جایگزین شدند.";
 "Try Basic Mode" = "امتحان حالت پایه";
+"Standard" = "استاندارد";
+"Same engine and filter lists either way. You can switch anytime in Settings." = "در هر دو حالت از همان موتور و فهرست‌های فیلتر استفاده می‌شود. هر زمان می‌توانید از تنظیمات تغییر دهید.";
+"Choose filter lists myself" = "فهرست‌های فیلتر را خودم انتخاب می‌کنم";
+"wBlock sets up recommended blocking for you." = "wBlock مسدودسازی پیشنهادی را برای شما تنظیم می‌کند.";
+"A simpler wBlock" = "یک wBlock ساده‌تر";
+"wBlock now opens in Standard mode, with a few switches in place of the long list. It uses the same engine, and every list and userscript you had on is still on. If you want the full list view, switch to Advanced below or anytime in Settings." = "wBlock اکنون در حالت استاندارد با چند کلید به جای فهرست طولانی باز می‌شود. از همان موتور استفاده می‌کند و هر فهرست و اسکریپتی که فعال داشتید همچنان فعال است. اگر نمای کامل فهرست‌ها را می‌خواهید، در پایین یا از تنظیمات به پیشرفته بروید.";
+"Standard and Advanced modes" = "حالت‌های استاندارد و پیشرفته";
+"wBlock has a new Standard mode with a few switches in place of the long list. You have custom lists or userscripts, so you stayed in Advanced and nothing moved. Standard blocks the same things. Try it below or anytime in Settings." = "wBlock حالت استاندارد جدیدی با چند کلید به جای فهرست طولانی دارد. چون فهرست‌ها یا اسکریپت‌های سفارشی دارید، در حالت پیشرفته ماندید و چیزی تغییر نکرد. حالت استاندارد همان موارد را مسدود می‌کند. در پایین یا از تنظیمات امتحانش کنید.";
+"Use Advanced Mode" = "استفاده از حالت پیشرفته";
+"Try Standard Mode" = "امتحان حالت استاندارد";
+"Standard is best for most people. Both modes block the same things, and switching never changes your filters. Advanced adds manual control of lists and userscripts." = "حالت استاندارد برای بیشتر افراد بهترین است. هر دو حالت موارد یکسانی را مسدود می‌کنند و جابه‌جایی هرگز فیلترهای شما را تغییر نمی‌دهد. حالت پیشرفته کنترل دستی فهرست‌ها و اسکریپت‌ها را اضافه می‌کند.";
+"Switch to Advanced Mode" = "تغییر به حالت پیشرفته";

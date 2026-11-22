@@ -1255,3 +1255,15 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Basic is wBlock's new simpler view, alongside the full Advanced interface. You stayed in Advanced so nothing moved, and you can switch anytime in Settings or try Basic below." = "ベーシックは、フル機能のアドバンスド画面に加えて新しく用意されたシンプルな表示です。既存の設定が変わらないようアドバンスドのままにしてあります。いつでも設定から切り替えたり、下からベーシックを試したりできます。";
 "This upgrade replaces the AdGuard converter with wBlock's own engine built for uBlock Origin rules, so more rules work in Safari. Your enabled AdGuard lists were swapped for matching uBO lists." = "このアップデートではAdGuardコンバーターをuBlock Originルール向けのwBlock独自エンジンに置き換え、より多くのルールがSafariで動作するようになりました。有効だったAdGuardリストは対応するuBOリストに切り替えられています。";
 "Try Basic Mode" = "ベーシックモードを試す";
+"Standard" = "標準";
+"Same engine and filter lists either way. You can switch anytime in Settings." = "どちらを選んでも同じエンジンとフィルターリストが使われます。設定からいつでも切り替えられます。";
+"Choose filter lists myself" = "自分でフィルターリストを選ぶ";
+"wBlock sets up recommended blocking for you." = "wBlockがおすすめのブロック設定を自動で用意します。";
+"A simpler wBlock" = "よりシンプルなwBlock";
+"wBlock now opens in Standard mode, with a few switches in place of the long list. It uses the same engine, and every list and userscript you had on is still on. If you want the full list view, switch to Advanced below or anytime in Settings." = "wBlockは長い一覧の代わりにシンプルなスイッチを備えた標準モードで開くようになりました。同じエンジンを使い、有効にしていたリストやユーザースクリプトもそのまま有効です。完全な一覧表示を使いたい場合は、下または設定からアドバンスドに切り替えられます。";
+"Standard and Advanced modes" = "標準モードとアドバンスドモード";
+"wBlock has a new Standard mode with a few switches in place of the long list. You have custom lists or userscripts, so you stayed in Advanced and nothing moved. Standard blocks the same things. Try it below or anytime in Settings." = "wBlockに長い一覧の代わりにシンプルなスイッチで操作できる標準モードが加わりました。カスタムリストやユーザースクリプトがあるためアドバンスドのまま維持しています。標準でも同じものをブロックします。下または設定から試せます。";
+"Use Advanced Mode" = "アドバンスドモードを使う";
+"Try Standard Mode" = "標準モードを試す";
+"Standard is best for most people. Both modes block the same things, and switching never changes your filters. Advanced adds manual control of lists and userscripts." = "ほとんどのユーザーには標準が最適です。どちらのモードも同じものをブロックし、切り替えてもフィルターは変わりません。アドバンスドではリストとユーザースクリプトを手動で管理できます。";
+"Switch to Advanced Mode" = "アドバンスドモードに切り替え";

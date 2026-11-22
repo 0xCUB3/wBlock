@@ -22,7 +22,8 @@ struct BasicFiltersView: View {
     @State private var showingUnownedSheet = false
     @State private var showingLanguagesSheet = false
     @State private var showingHeroPopover = false
-    @AppStorage("wBlock.basicStricterBlockingExpanded") private var showStricterBlocking = false
+    private static let stricterBlockingExpandedKey = "wBlock.basicStricterBlockingExpanded"
+    @State private var showStricterBlocking = UserDefaults.standard.bool(forKey: BasicFiltersView.stricterBlockingExpandedKey)
     @State private var scrollOffset: CGFloat = 0
 
     @Environment(\.colorScheme) private var colorScheme
@@ -59,15 +60,30 @@ struct BasicFiltersView: View {
         RegionalLanguageOption.fromForeignFilters(filterManager.filterLists)
     }
 
+    private var storedLanguageCodes: Set<String> {
+        Set((Self.sharedDefaults.stringArray(forKey: OnboardingView.selectedLanguagesDefaultsKey) ?? [])
+            .map(RegionalLanguageOption.canonicalCode))
+    }
+
     private var activeLanguageCodes: Set<String> {
-        let foreignSelected = filterManager.filterLists.filter { !$0.isCustom && $0.category == .foreign && $0.isSelected }
-        return Set(foreignSelected.flatMap(\.languages).map(RegionalLanguageOption.canonicalCode))
+        BasicBundle.activeRegionalLanguageCodes(
+            in: filterManager.filterLists,
+            storedCodes: storedLanguageCodes
+        )
     }
 
     private var languageSelectionBinding: Binding<Set<String>> {
         Binding(
             get: { activeLanguageCodes },
-            set: { applyLanguageSelection($0) }
+            set: { newVisible in
+                let nextStored = BasicBundle.updatedStoredRegionalLanguageCodes(
+                    previousVisible: activeLanguageCodes,
+                    newVisible: newVisible,
+                    storedCodes: storedLanguageCodes,
+                    in: filterManager.filterLists
+                )
+                applyLanguageSelection(nextStored)
+            }
         )
     }
 
@@ -389,12 +405,17 @@ struct BasicFiltersView: View {
                 stricterBlockingRow
 
                 if showStricterBlocking {
-                    ForEach(Array(stricter.enumerated()), id: \.element.id) { index, choice in
-                        Divider().padding(.leading, 56)
-                        annoyanceRow(choice)
+                    VStack(spacing: 0) {
+                        ForEach(Array(stricter.enumerated()), id: \.element.id) { _, choice in
+                            Divider().padding(.leading, 56)
+                            annoyanceRow(choice)
+                        }
                     }
+                    .transition(.opacity.combined(with: .move(edge: .top)))
                 }
             }
+            .clipped()
+            .animation(.spring(response: 0.32, dampingFraction: 0.86), value: showStricterBlocking)
             Text("Cookie Notices is recommended by default. The other filters can sometimes break parts of a website.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -413,9 +434,10 @@ struct BasicFiltersView: View {
             : NSLocalizedString("Off", comment: "Stricter blocking inactive value")
 
         return Button {
-            withAnimation(.easeInOut(duration: 0.2)) {
+            withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
                 showStricterBlocking.toggle()
             }
+            UserDefaults.standard.set(showStricterBlocking, forKey: Self.stricterBlockingExpandedKey)
         } label: {
             HStack(spacing: 12) {
                 IconBadge(
@@ -441,9 +463,10 @@ struct BasicFiltersView: View {
                     .font(.caption.weight(.medium))
                     .foregroundStyle(activeCount > 0 ? Color.orange : Color.secondary)
 
-                Image(systemName: showStricterBlocking ? "chevron.up" : "chevron.down")
+                Image(systemName: "chevron.down")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.tertiary)
+                    .rotationEffect(.degrees(showStricterBlocking ? 180 : 0))
                     .accessibilityHidden(true)
             }
             .padding(.horizontal, 14)
@@ -663,7 +686,7 @@ struct BasicFiltersView: View {
         Button {
             onSwitchToAdvanced()
         } label: {
-            Text("Show All Filter Lists")
+            Text("Switch to Advanced Mode")
                 .font(.footnote.weight(.medium))
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity)
@@ -703,14 +726,7 @@ struct BasicFiltersView: View {
     }
 
     private func scopedFilters(for bundle: BasicBundle) -> [FilterList] {
-        switch bundle {
-        case .core(let core):
-            return filterManager.filterLists.filter { $0.category == core.category }
-        case .annoyance(let choice):
-            let owned = bundle.ownedFilters(in: filterManager.filterLists)
-            if !owned.isEmpty { return owned }
-            return filterManager.filterLists.filter { $0.category == .annoyances && choice.filterNames.contains($0.name) }
-        }
+        bundle.scopedFilters(in: filterManager.filterLists)
     }
 
     private func applyLanguageSelection(_ languages: Set<String>) {
@@ -829,12 +845,7 @@ struct BasicBundlePeekView: View {
     }
 
     private var categoryListCount: Int {
-        switch bundle {
-        case .core(let core):
-            return filterManager.filterLists.filter { $0.category == core.category }.count
-        case .annoyance:
-            return ownedFilters.count
-        }
+        bundle.scopedFilters(in: filterManager.filterLists).count
     }
 
     var body: some View {
@@ -876,12 +887,16 @@ struct BasicBundlePeekView: View {
                 SheetDoneButton { dismiss() }
             }
 
+            Text(bundle.subtitle)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
             // Deliberate master switch
             HStack {
-                Text(bundle.subtitle)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                Text("Enabled")
+                    .font(.body.weight(.medium))
+                    .foregroundStyle(.primary)
                 Spacer(minLength: 12)
                 Toggle("", isOn: Binding(
                     get: { state != .off },
@@ -891,7 +906,8 @@ struct BasicBundlePeekView: View {
                 .toggleStyle(.switch)
                 .fixedSize()
             }
-            .padding(12)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
             .background(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .fill(Color.primary.opacity(0.05))

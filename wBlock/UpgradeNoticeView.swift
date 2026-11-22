@@ -2,7 +2,7 @@ import SwiftUI
 import wBlockCoreService
 
 /// Shown once to installs that used wBlock before 4.0, explaining the move to
-/// the uBO-semantics engine and lists. New installs never see it.
+/// Standard/Advanced modes and the uBO-semantics engine. New installs never see it.
 enum UpgradeNotice {
     /// Whether the notice is still owed: a device that finished onboarding before
     /// 4.0 and has not dismissed it. A new install never sees it, so it is marked
@@ -24,18 +24,41 @@ enum UpgradeNotice {
 
 struct UpgradeNoticeView: View {
     @Environment(\.dismiss) private var dismiss
-    @AppStorage(AppMode.storageKey) private var appMode: AppMode = .advanced
+    @AppStorage(AppMode.storageKey) private var appMode: AppMode = .basic
 
-    private let sections: [(symbol: String, title: LocalizedStringKey, body: LocalizedStringKey)] = [
-        ("rectangle.split.2x1", "Basic and Advanced modes",
-         "Basic is wBlock's new simpler view, alongside the full Advanced interface. You stayed in Advanced so nothing moved, and you can switch anytime in Settings or try Basic below."),
-        ("shield.lefthalf.filled", "A new engine",
-         "This upgrade replaces the AdGuard converter with wBlock's own engine built for uBlock Origin rules, so more rules work in Safari. Your enabled AdGuard lists were swapped for matching uBO lists."),
-        ("checkmark.circle", "What stays the same",
-         "Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. Most AdGuard lists are still in Filters if you want them back."),
-        ("wrench.and.screwdriver", "If a site breaks",
-         "Turn wBlock off for that site using the wBlock button in Safari, then report it on [GitHub](https://github.com/0xCUB3/wBlock/issues)."),
-    ]
+    private var sections: [(symbol: String, title: LocalizedStringKey, body: LocalizedStringKey)] {
+        let modeSection: (String, LocalizedStringKey, LocalizedStringKey) = appMode == .basic
+            ? (
+                "rectangle.split.2x1",
+                "A simpler wBlock",
+                "wBlock now opens in Standard mode, with a few switches in place of the long list. It uses the same engine, and every list and userscript you had on is still on. If you want the full list view, switch to Advanced below or anytime in Settings."
+            )
+            : (
+                "rectangle.split.2x1",
+                "Standard and Advanced modes",
+                "wBlock has a new Standard mode with a few switches in place of the long list. You have custom lists or userscripts, so you stayed in Advanced and nothing moved. Standard blocks the same things. Try it below or anytime in Settings."
+            )
+
+        return [
+            modeSection,
+            ("shield.lefthalf.filled", "A new engine",
+             "This upgrade replaces the AdGuard converter with wBlock's own engine built for uBlock Origin rules, so more rules work in Safari. Your enabled AdGuard lists were swapped for matching uBO lists."),
+            ("checkmark.circle", "What stays the same",
+             "Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. Most AdGuard lists are still in Filters if you want them back."),
+            ("wrench.and.screwdriver", "If a site breaks",
+             "Turn wBlock off for that site using the wBlock button in Safari, then report it on [GitHub](https://github.com/0xCUB3/wBlock/issues)."),
+        ]
+    }
+
+    private var alternateModeLabel: LocalizedStringKey {
+        appMode == .basic ? "Use Advanced Mode" : "Try Standard Mode"
+    }
+
+    private func switchToAlternateMode() {
+        appMode = appMode == .basic ? .advanced : .basic
+        UpgradeNotice.markSeen()
+        dismiss()
+    }
 
     var body: some View {
         SheetContainer(fill: .system) {
@@ -75,29 +98,17 @@ struct UpgradeNoticeView: View {
                     }
                     .primaryActionButtonStyle()
 
-                    if appMode != .basic {
-                        Button {
-                            appMode = .basic
-                            UpgradeNotice.markSeen()
-                            dismiss()
-                        } label: {
-                            Text("Try Basic Mode").frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.large)
-                    }
-                }
-                #else
-                if appMode != .basic {
-                    Button {
-                        appMode = .basic
-                        UpgradeNotice.markSeen()
-                        dismiss()
-                    } label: {
-                        Text("Try Basic Mode").frame(maxWidth: .infinity)
+                    Button(action: switchToAlternateMode) {
+                        Text(alternateModeLabel).frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.bordered)
+                    .controlSize(.large)
                 }
+                #else
+                Button(action: switchToAlternateMode) {
+                    Text(alternateModeLabel).frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
                 Button {
                     UpgradeNotice.markSeen()
                     dismiss()

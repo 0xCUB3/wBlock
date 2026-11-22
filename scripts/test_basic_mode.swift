@@ -9,6 +9,7 @@ struct BasicModeTests {
         testBasicBundleDerivationAndStates()
         testBasicBundlePartlyOnSnapshotIdentityAndReset()
         testBasicBundleUnownedActiveAndDirty()
+        testRegionalLanguageMultiLanguageGroupToggle()
         testSafariHealthPriorityOrder()
         testSafariHealthHysteresisAndTransientNil()
         print("PASS — BasicMode, BasicBundle, and SafariHealth tests")
@@ -19,30 +20,27 @@ struct BasicModeTests {
         let defaults = UserDefaults(suiteName: suiteName)!
         defer { defaults.removePersistentDomain(forName: suiteName) }
 
-        // Fresh install defaults to .basic
-        precondition(
-            AppMode.resolved(hasCompletedOnboarding: false, defaults: defaults) == .basic,
-            "Fresh install must default to .basic"
-        )
-        // Existing install defaults to .advanced
-        precondition(
-            AppMode.resolved(hasCompletedOnboarding: true, defaults: defaults) == .advanced,
-            "Existing install without stored key must default to .advanced"
-        )
+        // Fresh install seeds to .basic (Standard)
+        let seededFresh = AppMode.seedIfNeeded(hasCompletedOnboarding: false, hasCustomContent: false, defaults: defaults)
+        precondition(seededFresh == .basic, "Fresh install must seed to .basic")
+        precondition(defaults.string(forKey: AppMode.storageKey) == "basic")
 
-        // seedIfNeeded writes once and does not overwrite explicit choice
-        let seededExisting = AppMode.seedIfNeeded(hasCompletedOnboarding: true, defaults: defaults)
-        precondition(seededExisting == .advanced, "Existing install must seed to .advanced")
+        // Stock 3.x upgrader with no custom lists/scripts seeds to .basic (Standard)
+        defaults.removeObject(forKey: AppMode.storageKey)
+        let seededStockUpgrader = AppMode.seedIfNeeded(hasCompletedOnboarding: true, hasCustomContent: false, defaults: defaults)
+        precondition(seededStockUpgrader == .basic, "Stock upgrader without custom content must seed to .basic")
+        precondition(defaults.string(forKey: AppMode.storageKey) == "basic")
+
+        // Existing install with custom lists or scripts seeds to .advanced
+        defaults.removeObject(forKey: AppMode.storageKey)
+        let seededPowerUpgrader = AppMode.seedIfNeeded(hasCompletedOnboarding: true, hasCustomContent: true, defaults: defaults)
+        precondition(seededPowerUpgrader == .advanced, "Existing install with custom content must seed to .advanced")
         precondition(defaults.string(forKey: AppMode.storageKey) == "advanced")
 
-        // Explicit choice wins even when onboarding flag differs
+        // Explicit choice wins even when onboarding/custom flags differ
         defaults.set(AppMode.basic.rawValue, forKey: AppMode.storageKey)
         precondition(
-            AppMode.resolved(hasCompletedOnboarding: true, defaults: defaults) == .basic,
-            "Stored mode must take precedence"
-        )
-        precondition(
-            AppMode.seedIfNeeded(hasCompletedOnboarding: true, defaults: defaults) == .basic,
+            AppMode.seedIfNeeded(hasCompletedOnboarding: true, hasCustomContent: true, defaults: defaults) == .basic,
             "seedIfNeeded must preserve existing stored choice"
         )
     }
@@ -158,15 +156,25 @@ struct BasicModeTests {
             id: UUID(),
             name: "My Custom List",
             url: URL(string: "https://example.com/custom.txt")!,
-            category: .ads,
+            category: .custom,
             isSelected: true
         )
         custom.isCustom = true
-        lists.append(custom)
+        var customAds = FilterList(
+            id: UUID(),
+            name: "My Custom Ad List",
+            url: URL(string: "https://example.com/custom-ads.txt")!,
+            category: .ads,
+            isSelected: true
+        )
+        customAds.isCustom = true
+        lists.append(contentsOf: [custom, customAds])
 
         let unowned = BasicBundle.unownedActiveFilters(in: lists)
         precondition(unowned.count == 3, "Expected 3 unowned active lists, got \(unowned.count)")
-        precondition(unowned.contains { $0.id == custom.id }, "Custom list must surface in unowned active lists")
+        precondition(unowned.contains { $0.id == custom.id }, "Custom list in Other must surface in Also on")
+        precondition(!unowned.contains { $0.id == customAds.id }, "Custom list in Ads must stay in Ads scoped lists instead of duplicating in Also on")
+        precondition(BasicBundle.core(.ads).scopedFilters(in: lists).contains { $0.id == customAds.id }, "Custom list in Ads must appear in Ads scoped lists")
 
         // Bypass Paywalls Clean Filter is owned by the Extras toggle while BPC script is on,
         // and surfaces under "Also on" only if enabled standalone without the script.
@@ -201,6 +209,50 @@ struct BasicModeTests {
         }
         precondition(BasicBundle.core(.privacy).isDirty(in: lists, appliedSelectedIDs: baseline))
         precondition(!BasicBundle.core(.ads).isDirty(in: lists, appliedSelectedIDs: baseline))
+    }
+
+    private static func testRegionalLanguageMultiLanguageGroupToggle() {
+        let czechSlovak = FilterList(
+            id: UUID(),
+            name: "EasyList Czech and Slovak",
+            url: URL(string: "https://example.com/cs-sk.txt")!,
+            category: .foreign,
+            isSelected: true,
+            languages: ["cs", "sk"]
+        )
+        let japanese = FilterList(
+            id: UUID(),
+            name: "AdGuard Japanese Filter",
+            url: URL(string: "https://example.com/ja.txt")!,
+            category: .foreign,
+            isSelected: true,
+            languages: ["ja"]
+        )
+        let lists = [czechSlovak, japanese]
+
+        // Selecting Czech alone must not auto-check Slovak in the picker
+        let activeForCzech = BasicBundle.activeRegionalLanguageCodes(in: lists, storedCodes: ["cs", "ja"])
+        precondition(activeForCzech == ["cs", "ja"], "Single language from multi-language list must not pull in siblings")
+
+        // Unchecking Czech removes Czech cleanly
+        let afterRemovingCzech = BasicBundle.updatedStoredRegionalLanguageCodes(
+            previousVisible: activeForCzech,
+            newVisible: ["ja"],
+            storedCodes: ["cs", "ja"],
+            in: lists
+        )
+        precondition(afterRemovingCzech == ["ja"], "Unchecking Czech must leave only Japanese")
+
+        // Synced/untracked multi-language list shows its languages, and unchecking one removes the whole group without touching other languages
+        let activeSynced = BasicBundle.activeRegionalLanguageCodes(in: lists, storedCodes: [])
+        precondition(activeSynced == ["cs", "sk", "ja"])
+        let afterRemovingSyncedCzech = BasicBundle.updatedStoredRegionalLanguageCodes(
+            previousVisible: activeSynced,
+            newVisible: ["sk", "ja"],
+            storedCodes: [],
+            in: lists
+        )
+        precondition(afterRemovingSyncedCzech == ["ja"], "Unchecking one code from an untracked multi-language list must disable its group while preserving unrelated languages")
     }
 
     private static func testSafariHealthPriorityOrder() {

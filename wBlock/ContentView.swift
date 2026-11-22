@@ -332,6 +332,7 @@ struct ContentView: View {
             userscripts: userscriptsView,
             settings: settingsView,
             secondTabTitle: appMode == .basic ? "Extras" : "Userscripts",
+            tabBarIdentity: appMode.rawValue,
             isBottomAccessoryEnabled: showBasicBottomAccessory
         ) {
             SafariHealthBottomAccessory(
@@ -732,12 +733,7 @@ struct ContentView: View {
     }
 
     private var settingsView: some View {
-        SettingsView(
-            filterManager: filterManager,
-            safariHealth: safariHealth,
-            lastUpdatedDate: latestFilterUpdateDate,
-            onCheckForUpdates: { checkForUpdates(scope: .all) }
-        )
+        SettingsView(filterManager: filterManager)
     }
 
     private var topBanners: some ViewModifier {
@@ -1428,7 +1424,11 @@ struct ContentModifiers: ViewModifier {
             .sheet(isPresented: $showUpgradeNotice, onDismiss: { UpgradeNotice.markSeen() }) { UpgradeNoticeView() }
             // Show onboarding/setup sheets only on initial load
             .task {
-                await dataManager.waitUntilLoaded()
+                await WBlockLaunchSetup.run()
+                AppMode.seedIfNeeded(
+                    hasCompletedOnboarding: dataManager.hasCompletedOnboarding,
+                    hasCustomContent: AppMode.detectCustomContent()
+                )
                 // Only check once on initial load
                 if !hasPerformedInitialCheck {
                     hasPerformedInitialCheck = true

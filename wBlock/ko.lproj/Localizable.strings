@@ -1246,3 +1246,15 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Basic is wBlock's new simpler view, alongside the full Advanced interface. You stayed in Advanced so nothing moved, and you can switch anytime in Settings or try Basic below." = "기본 모드는 전체 고급 화면과 함께 제공되는 wBlock의 새로운 간편 보기입니다. 기존 화면이 바뀌지 않도록 고급 모드를 유지했으며, 언제든 설정에서 전환하거나 아래에서 기본 모드를 사용해 볼 수 있습니다.";
 "This upgrade replaces the AdGuard converter with wBlock's own engine built for uBlock Origin rules, so more rules work in Safari. Your enabled AdGuard lists were swapped for matching uBO lists." = "이번 업데이트에서는 AdGuard 변환기 대신 uBlock Origin 규칙용 wBlock 자체 엔진을 사용해 더 많은 규칙이 Safari에서 동작합니다. 사용 중이던 AdGuard 목록은 해당하는 uBO 목록으로 교체되었습니다.";
 "Try Basic Mode" = "기본 모드 사용해 보기";
+"Standard" = "표준";
+"Same engine and filter lists either way. You can switch anytime in Settings." = "어느 쪽을 선택해도 같은 엔진과 필터 목록을 사용합니다. 설정에서 언제든지 전환할 수 있습니다.";
+"Choose filter lists myself" = "필터 목록 직접 선택";
+"wBlock sets up recommended blocking for you." = "wBlock이 권장 차단 구성을 자동으로 설정합니다.";
+"A simpler wBlock" = "더 간편해진 wBlock";
+"wBlock now opens in Standard mode, with a few switches in place of the long list. It uses the same engine, and every list and userscript you had on is still on. If you want the full list view, switch to Advanced below or anytime in Settings." = "이제 wBlock은 긴 목록 대신 몇 개의 스위치로 구성된 표준 모드로 열립니다. 같은 엔진을 사용하며 켜 두었던 모든 목록과 유저스크립트도 그대로 유지됩니다. 전체 목록 보기를 원하면 아래나 설정에서 고급 모드로 전환하세요.";
+"Standard and Advanced modes" = "표준 및 고급 모드";
+"wBlock has a new Standard mode with a few switches in place of the long list. You have custom lists or userscripts, so you stayed in Advanced and nothing moved. Standard blocks the same things. Try it below or anytime in Settings." = "wBlock에 긴 목록 대신 몇 개의 스위치로 조작하는 새 표준 모드가 추가되었습니다. 사용자 지정 목록이나 유저스크립트가 있어 기존처럼 고급 모드를 유지했습니다. 표준 모드도 동일하게 차단합니다. 아래나 설정에서 사용해 보세요.";
+"Use Advanced Mode" = "고급 모드 사용";
+"Try Standard Mode" = "표준 모드 사용해 보기";
+"Standard is best for most people. Both modes block the same things, and switching never changes your filters. Advanced adds manual control of lists and userscripts." = "대부분의 사용자에게는 표준 모드가 가장 좋습니다. 두 모드 모두 동일하게 차단하며 전환해도 필터가 바뀌지 않습니다. 고급 모드에서는 목록과 유저스크립트를 직접 관리할 수 있습니다.";
+"Switch to Advanced Mode" = "고급 모드로 전환";

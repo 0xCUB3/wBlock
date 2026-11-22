@@ -316,14 +316,31 @@ enum BasicBundle: Hashable, Identifiable, Sendable {
         return .partlyOn
     }
 
-    /// True iff any filter this bundle owns differs from `appliedSelectedIDs`.
+    /// Lists shown in this bundle's scoped "All N lists" sheet.
+    /// Core bundles include custom lists placed in that category so they live
+    /// in their category instead of being duplicated under "Also on".
+    func scopedFilters(
+        in filters: [FilterList],
+        recommendedNames: Set<String> = FilterListLoader.recommendedFilterNames
+    ) -> [FilterList] {
+        switch self {
+        case .core(let core):
+            return filters.filter { $0.category == core.category }
+        case .annoyance(let choice):
+            let owned = ownedFilters(in: filters, recommendedNames: recommendedNames)
+            if !owned.isEmpty { return owned }
+            return filters.filter { !$0.isCustom && $0.category == .annoyances && choice.filterNames.contains($0.name) }
+        }
+    }
+
+    /// True iff any filter surfaced under this bundle differs from `appliedSelectedIDs`.
     func isDirty(
         in filters: [FilterList],
         appliedSelectedIDs: Set<UUID>,
         recommendedNames: Set<String> = FilterListLoader.recommendedFilterNames
     ) -> Bool {
-        let owned = ownedFilters(in: filters, recommendedNames: recommendedNames)
-        return owned.contains { $0.isSelected != appliedSelectedIDs.contains($0.id) }
+        let scoped = scopedFilters(in: filters, recommendedNames: recommendedNames)
+        return scoped.contains { $0.isSelected != appliedSelectedIDs.contains($0.id) }
     }
 
     /// Built-in filter paired with the Bypass Paywalls Clean extra.
@@ -358,6 +375,59 @@ enum BasicBundle: Hashable, Identifiable, Sendable {
         filters.contains { !$0.isCustom && $0.category == .foreign && ($0.isSelected != appliedSelectedIDs.contains($0.id)) }
     }
 
+    /// Derives the checked language codes for Standard mode's Languages picker
+    /// from the live selected `.foreign` filters without expanding single-choice
+    /// selections into sibling languages of shared multi-language lists.
+    static func activeRegionalLanguageCodes(
+        in filters: [FilterList],
+        storedCodes: Set<String>
+    ) -> Set<String> {
+        let foreignSelected = filters.filter { !$0.isCustom && $0.category == .foreign && $0.isSelected }
+        guard !foreignSelected.isEmpty else { return [] }
+
+        let normalizedStored = Set(storedCodes.map(RegionalLanguageOption.canonicalCode))
+        var active = Set<String>()
+
+        for filter in foreignSelected {
+            let filterCodes = Set(filter.languages.map(RegionalLanguageOption.canonicalCode))
+            let matchedStored = filterCodes.intersection(normalizedStored)
+            if !matchedStored.isEmpty {
+                active.formUnion(matchedStored)
+            } else {
+                active.formUnion(filterCodes)
+            }
+        }
+        return active
+    }
+
+    /// Computes the next stored language codes after a toggle in the Languages
+    /// picker so unchecking any language from an externally-enabled multi-language
+    /// list disables that list cleanly instead of getting re-pinned by siblings.
+    static func updatedStoredRegionalLanguageCodes(
+        previousVisible: Set<String>,
+        newVisible: Set<String>,
+        storedCodes: Set<String>,
+        in filters: [FilterList]
+    ) -> Set<String> {
+        let normalizedStored = Set(storedCodes.map(RegionalLanguageOption.canonicalCode))
+        let removed = previousVisible.subtracting(newVisible)
+        let added = newVisible.subtracting(previousVisible)
+
+        var next = normalizedStored.intersection(previousVisible)
+        next.formUnion(added)
+        next.subtract(removed)
+
+        let foreignSelected = filters.filter { !$0.isCustom && $0.category == .foreign && $0.isSelected }
+        for filter in foreignSelected {
+            let filterCodes = Set(filter.languages.map(RegionalLanguageOption.canonicalCode))
+            guard filterCodes.isDisjoint(with: normalizedStored) else { continue }
+            if filterCodes.isDisjoint(with: removed) {
+                next.formUnion(filterCodes.intersection(newVisible))
+            }
+        }
+        return next
+    }
+
     /// True iff any unowned list differs from `appliedSelectedIDs`.
     static func isUnownedDirty(
         in filters: [FilterList],
@@ -386,7 +456,7 @@ enum BasicBundle: Hashable, Identifiable, Sendable {
             if !includesMobileAppBannersBundle, case .annoyance(.banners) = bundle {
                 continue
             }
-            ownedIDs.formUnion(bundle.ownedFilters(in: filters, recommendedNames: recommendedNames).map(\.id))
+            ownedIDs.formUnion(bundle.scopedFilters(in: filters, recommendedNames: recommendedNames).map(\.id))
         }
         for filter in filters where !filter.isCustom && filter.category == .foreign {
             ownedIDs.insert(filter.id)

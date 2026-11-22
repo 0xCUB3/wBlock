@@ -1246,3 +1246,15 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Basic is wBlock's new simpler view, alongside the full Advanced interface. You stayed in Advanced so nothing moved, and you can switch anytime in Settings or try Basic below." = "Базовый режим — это новый упрощённый интерфейс wBlock рядом с полным расширенным видом. Вы остались в расширенном режиме, чтобы ничего не пропало, и можете переключиться в любой момент в Настройках или попробовать базовый ниже.";
 "This upgrade replaces the AdGuard converter with wBlock's own engine built for uBlock Origin rules, so more rules work in Safari. Your enabled AdGuard lists were swapped for matching uBO lists." = "Это обновление заменяет конвертер AdGuard собственным движком wBlock для правил uBlock Origin, поэтому в Safari работает больше правил. Включённые списки AdGuard заменены на соответствующие списки uBO.";
 "Try Basic Mode" = "Попробовать базовый режим";
+"Standard" = "Стандартный";
+"Same engine and filter lists either way. You can switch anytime in Settings." = "Одинаковый движок и списки фильтров в обоих режимах. Переключиться можно в любой момент в Настройках.";
+"Choose filter lists myself" = "Выбрать списки фильтров вручную";
+"wBlock sets up recommended blocking for you." = "wBlock настроит рекомендуемую блокировку за вас.";
+"A simpler wBlock" = "Более простой wBlock";
+"wBlock now opens in Standard mode, with a few switches in place of the long list. It uses the same engine, and every list and userscript you had on is still on. If you want the full list view, switch to Advanced below or anytime in Settings." = "Теперь wBlock открывается в стандартном режиме с несколькими переключателями вместо длинного списка. Движок тот же, и все включённые вами списки и скрипты остались активны. Если нужен полный список, переключитесь на расширенный режим ниже или в Настройках.";
+"Standard and Advanced modes" = "Стандартный и расширенный режимы";
+"wBlock has a new Standard mode with a few switches in place of the long list. You have custom lists or userscripts, so you stayed in Advanced and nothing moved. Standard blocks the same things. Try it below or anytime in Settings." = "В wBlock появился стандартный режим с несколькими переключателями вместо длинного списка. У вас есть свои списки или скрипты, поэтому вы остались в расширенном режиме без изменений. Стандартный блокирует то же самое. Попробуйте его ниже или в Настройках.";
+"Use Advanced Mode" = "Открыть расширенный режим";
+"Try Standard Mode" = "Попробовать стандартный режим";
+"Standard is best for most people. Both modes block the same things, and switching never changes your filters. Advanced adds manual control of lists and userscripts." = "Стандартный режим лучше всего подходит большинству пользователей. Оба режима блокируют одно и то же, а переключение не меняет фильтры. Расширенный даёт ручное управление списками и скриптами.";
+"Switch to Advanced Mode" = "Переключиться на расширенный режим";

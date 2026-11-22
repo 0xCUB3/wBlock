@@ -1246,3 +1246,15 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Basic is wBlock's new simpler view, alongside the full Advanced interface. You stayed in Advanced so nothing moved, and you can switch anytime in Settings or try Basic below." = "Básico es la nueva vista más sencilla de wBlock junto a la interfaz Avanzada completa. Seguiste en Avanzado para que nada cambie de sitio, y puedes cambiar cuando quieras en Ajustes o probar Básico abajo.";
 "This upgrade replaces the AdGuard converter with wBlock's own engine built for uBlock Origin rules, so more rules work in Safari. Your enabled AdGuard lists were swapped for matching uBO lists." = "Esta actualización sustituye el conversor de AdGuard por el motor propio de wBlock para reglas de uBlock Origin, así funcionan más reglas en Safari. Tus listas de AdGuard activas se cambiaron por listas equivalentes de uBO.";
 "Try Basic Mode" = "Probar modo Básico";
+"Standard" = "Estándar";
+"Same engine and filter lists either way. You can switch anytime in Settings." = "Mismo motor y listas de filtros en ambos casos. Puedes cambiar cuando quieras en Ajustes.";
+"Choose filter lists myself" = "Elegir listas de filtros por mi cuenta";
+"wBlock sets up recommended blocking for you." = "wBlock configura el bloqueo recomendado por ti.";
+"A simpler wBlock" = "Un wBlock más sencillo";
+"wBlock now opens in Standard mode, with a few switches in place of the long list. It uses the same engine, and every list and userscript you had on is still on. If you want the full list view, switch to Advanced below or anytime in Settings." = "wBlock ahora se abre en modo Estándar, con unos pocos interruptores en lugar de la lista larga. Usa el mismo motor y todas las listas y userscripts que tenías activos siguen activos. Si quieres la vista completa de listas, cambia a Avanzado abajo o en Ajustes.";
+"Standard and Advanced modes" = "Modos Estándar y Avanzado";
+"wBlock has a new Standard mode with a few switches in place of the long list. You have custom lists or userscripts, so you stayed in Advanced and nothing moved. Standard blocks the same things. Try it below or anytime in Settings." = "wBlock tiene un nuevo modo Estándar con unos pocos interruptores en lugar de la lista larga. Tienes listas o userscripts personalizados, así que seguiste en Avanzado sin cambios. Estándar bloquea lo mismo. Pruébalo abajo o en Ajustes.";
+"Use Advanced Mode" = "Usar modo Avanzado";
+"Try Standard Mode" = "Probar modo Estándar";
+"Standard is best for most people. Both modes block the same things, and switching never changes your filters. Advanced adds manual control of lists and userscripts." = "Estándar es lo mejor para la mayoría. Ambos modos bloquean lo mismo y cambiar nunca modifica tus filtros. Avanzado añade control manual de listas y userscripts.";
+"Switch to Advanced Mode" = "Cambiar a modo Avanzado";

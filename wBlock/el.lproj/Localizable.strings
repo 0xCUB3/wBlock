@@ -1246,3 +1246,15 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Basic is wBlock's new simpler view, alongside the full Advanced interface. You stayed in Advanced so nothing moved, and you can switch anytime in Settings or try Basic below." = "Η Βασική είναι η νέα πιο απλή προβολή του wBlock δίπλα στην πλήρη Προηγμένη διεπαφή. Παρέμεινες στην Προηγμένη ώστε να μην αλλάξει τίποτα, και μπορείς να αλλάξεις όποτε θέλεις από τις Ρυθμίσεις ή να δοκιμάσεις τη Βασική παρακάτω.";
 "This upgrade replaces the AdGuard converter with wBlock's own engine built for uBlock Origin rules, so more rules work in Safari. Your enabled AdGuard lists were swapped for matching uBO lists." = "Αυτή η αναβάθμιση αντικαθιστά τον μετατροπέα του AdGuard με τη νέα μηχανή του wBlock για κανόνες uBlock Origin, ώστε να λειτουργούν περισσότεροι κανόνες στο Safari. Οι ενεργές λίστες AdGuard αντικαταστάθηκαν με αντίστοιχες λίστες uBO.";
 "Try Basic Mode" = "Δοκίμασε τη Βασική λειτουργία";
+"Standard" = "Τυπική";
+"Same engine and filter lists either way. You can switch anytime in Settings." = "Ίδια μηχανή και λίστες φίλτρων και στις δύο περιπτώσεις. Μπορείς να αλλάξεις όποτε θέλεις από τις Ρυθμίσεις.";
+"Choose filter lists myself" = "Επιλογή λιστών φίλτρων από εμένα";
+"wBlock sets up recommended blocking for you." = "Το wBlock ρυθμίζει τον προτεινόμενο αποκλεισμό για εσένα.";
+"A simpler wBlock" = "Ένα πιο απλό wBlock";
+"wBlock now opens in Standard mode, with a few switches in place of the long list. It uses the same engine, and every list and userscript you had on is still on. If you want the full list view, switch to Advanced below or anytime in Settings." = "Το wBlock ανοίγει τώρα στην Τυπική λειτουργία, με λίγους διακόπτες αντί για τη μεγάλη λίστα. Χρησιμοποιεί την ίδια μηχανή και κάθε λίστα και userscript που είχες ενεργό παραμένει ενεργό. Αν θέλεις την πλήρη προβολή λιστών, άλλαξε σε Προηγμένη παρακάτω ή από τις Ρυθμίσεις.";
+"Standard and Advanced modes" = "Τυπική και Προηγμένη λειτουργία";
+"wBlock has a new Standard mode with a few switches in place of the long list. You have custom lists or userscripts, so you stayed in Advanced and nothing moved. Standard blocks the same things. Try it below or anytime in Settings." = "Το wBlock διαθέτει μια νέα Τυπική λειτουργία με λίγους διακόπτες αντί για τη μεγάλη λίστα. Έχεις προσαρμοσμένες λίστες ή userscripts, οπότε παρέμεινες στην Προηγμένη χωρίς αλλαγές. Η Τυπική μπλοκάρει τα ίδια πράγματα. Δοκίμασέ τη παρακάτω ή στις Ρυθμίσεις.";
+"Use Advanced Mode" = "Χρήση Προηγμένης λειτουργίας";
+"Try Standard Mode" = "Δοκίμασε την Τυπική λειτουργία";
+"Standard is best for most people. Both modes block the same things, and switching never changes your filters. Advanced adds manual control of lists and userscripts." = "Η Τυπική είναι η καλύτερη επιλογή για τους περισσότερους. Και οι δύο λειτουργίες μπλοκάρουν τα ίδια και η αλλαγή δεν επηρεάζει τα φίλτρα σου. Η Προηγμένη προσθέτει χειροκίνητο έλεγχο λιστών και userscripts.";
+"Switch to Advanced Mode" = "Εναλλαγή σε Προηγμένη λειτουργία";

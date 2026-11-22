@@ -1246,3 +1246,15 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Basic is wBlock's new simpler view, alongside the full Advanced interface. You stayed in Advanced so nothing moved, and you can switch anytime in Settings or try Basic below." = "الوضع الأساسي هو العرض الأبسط الجديد في wBlock إلى جانب الواجهة المتقدمة الكاملة. بقيت في الوضع المتقدم حتى لا يتغير شيء، ويمكنك التبديل في أي وقت من الإعدادات أو تجربة الوضع الأساسي أدناه.";
 "This upgrade replaces the AdGuard converter with wBlock's own engine built for uBlock Origin rules, so more rules work in Safari. Your enabled AdGuard lists were swapped for matching uBO lists." = "يستبدل هذا التحديث محوّل AdGuard بمحرك wBlock الخاص المبني لقواعد uBlock Origin، فتعمل قواعد أكثر في Safari. كما تم استبدال قوائم AdGuard المفعّلة بقوائم uBO المقابلة.";
 "Try Basic Mode" = "جرّب الوضع الأساسي";
+"Standard" = "قياسي";
+"Same engine and filter lists either way. You can switch anytime in Settings." = "نفس المحرك وقوائم التصفية في الحالتين. يمكنك التبديل في أي وقت من الإعدادات.";
+"Choose filter lists myself" = "اختيار قوائم التصفية بنفسي";
+"wBlock sets up recommended blocking for you." = "يضبط wBlock الحظر الموصى به نيابةً عنك.";
+"A simpler wBlock" = "wBlock أبسط";
+"wBlock now opens in Standard mode, with a few switches in place of the long list. It uses the same engine, and every list and userscript you had on is still on. If you want the full list view, switch to Advanced below or anytime in Settings." = "يفتح wBlock الآن في الوضع القياسي ببضعة مفاتيح بدلاً من القائمة الطويلة. يستخدم المحرك نفسه، وكل قائمة وسكربت كانت مفعّلة لا تزال مفعّلة. إذا أردت العرض الكامل للقوائم، انتقل إلى المتقدم أدناه أو في أي وقت من الإعدادات.";
+"Standard and Advanced modes" = "الوضعان القياسي والمتقدم";
+"wBlock has a new Standard mode with a few switches in place of the long list. You have custom lists or userscripts, so you stayed in Advanced and nothing moved. Standard blocks the same things. Try it below or anytime in Settings." = "يضم wBlock وضعاً قياسياً جديداً ببضعة مفاتيح بدلاً من القائمة الطويلة. لديك قوائم أو سكربتات مخصصة، لذا بقيت في المتقدم دون تغيير. الوضع القياسي يحظر الأشياء نفسها. جرّبه أدناه أو في أي وقت من الإعدادات.";
+"Use Advanced Mode" = "استخدام الوضع المتقدم";
+"Try Standard Mode" = "جرّب الوضع القياسي";
+"Standard is best for most people. Both modes block the same things, and switching never changes your filters. Advanced adds manual control of lists and userscripts." = "الوضع القياسي هو الأفضل لمعظم الأشخاص. كلا الوضعين يحظران الأشياء نفسها، والتبديل لا يغير قوائمك أبداً. يضيف المتقدم تحكماً يدوياً في القوائم والسكربتات.";
+"Switch to Advanced Mode" = "التبديل إلى الوضع المتقدم";

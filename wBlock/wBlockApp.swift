@@ -41,7 +41,10 @@ struct wBlockApp: App {
         Task {
             await WBlockLaunchSetup.run()
             await MainActor.run {
-                AppMode.seedIfNeeded(hasCompletedOnboarding: ProtobufDataManager.shared.hasCompletedOnboarding)
+                AppMode.seedIfNeeded(
+                    hasCompletedOnboarding: ProtobufDataManager.shared.hasCompletedOnboarding,
+                    hasCustomContent: AppMode.detectCustomContent()
+                )
             }
             // Migration and the auto-rebuild run in AppFilterManager's setup task. The launch
             // CloudSync sync must not read or write settings while they are in flight.

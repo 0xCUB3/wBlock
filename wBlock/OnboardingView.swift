@@ -405,6 +405,9 @@ struct OnboardingView: View {
                         await applySettings()
                     }
                 } else {
+                    if step == .welcome {
+                        chosenMode = .basic
+                    }
                     advanceToNextStep()
                 }
             }
@@ -462,14 +465,17 @@ struct OnboardingView: View {
                 Text("Welcome to wBlock!")
                     .font(.title.bold())
                     .multilineTextAlignment(.center)
-                Text("Select which setup suits you.")
+                Text("wBlock sets up recommended blocking for you.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
             .frame(maxWidth: .infinity)
 
-            ModeChooserCards(selectedMode: $chosenMode)
+            ModeChooserCards {
+                chosenMode = .advanced
+                advanceToNextStep()
+            }
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 8)
