@@ -208,6 +208,7 @@ compile_core_test userscript-update-unchanged-source scripts/test_userscript_upd
 compile_core_test userscript-restore-enabled-state scripts/test_userscript_restore_enabled_state.swift
 compile_core_test userscript-payload-revision scripts/test_userscript_payload_revision.swift
 compile_core_test adguard-extra-host-manifest scripts/test_adguard_extra_host_manifest.swift
+compile_core_test userscript-extension-disk-refresh scripts/test_userscript_extension_disk_refresh.swift
 compile_core_test userscript-duplicates scripts/test_userscript_duplicates.swift \
   wBlock/CloudSyncUserScriptSync.swift \
   wBlock/CloudSyncRemoteUserScriptSync.swift

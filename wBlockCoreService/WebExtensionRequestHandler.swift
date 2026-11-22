@@ -113,6 +113,19 @@ public enum WebExtensionRequestHandler {
     private static let sharedWebExtensionLogFilename = "web_extension.log"
     private static let userScriptPayloadDataCache = UserScriptPayloadDataCache()
     @MainActor private static let userScriptPreparedPayloadCache = UserScriptPreparedPayloadCache()
+    #if DEBUG
+    @MainActor static var userScriptManagerOverrideForTesting: UserScriptManager?
+    #endif
+
+    @MainActor
+    private static var activeUserScriptManager: UserScriptManager {
+        #if DEBUG
+        if let override = userScriptManagerOverrideForTesting {
+            return override
+        }
+        #endif
+        return UserScriptManager.shared
+    }
     private static let maximumGMXHRResponseBytes = 25 * 1024 * 1024
     private static let maximumGMXHRRequestBodyBytes = 2 * 1024 * 1024
     private static let maximumGMXHRHeaders = 128
@@ -966,9 +979,12 @@ public enum WebExtensionRequestHandler {
 
     private static func handleMaybeUpdateUserScripts(context: NSExtensionContext) {
         Task { @MainActor in
-            guard ProtobufDataManager.shared.autoUpdateEnabled,
-                  !BlockingPauseStore.isPaused(.userScripts)
-            else {
+            guard !BlockingPauseStore.isPaused(.userScripts) else {
+                context.completeRequest(returningItems: [createResponse(with: ["ok": true, "skipped": "disabled"])])
+                return
+            }
+            let manager = activeUserScriptManager
+            guard await manager.isAutoUpdateEnabledFromDisk() else {
                 context.completeRequest(returningItems: [createResponse(with: ["ok": true, "skipped": "disabled"])])
                 return
             }
@@ -976,8 +992,7 @@ public enum WebExtensionRequestHandler {
                 context.completeRequest(returningItems: [createResponse(with: ["ok": true, "skipped": "running"])])
                 return
             }
-            let manager = UserScriptManager.shared
-            await manager.waitUntilReady()
+            await manager.refreshFromDiskForExecution()
             let result = await manager.autoUpdateEnabledUserScripts(skipFresh: true)
             await userScriptRefreshQueue.finish()
             context.completeRequest(returningItems: [createResponse(with: [
@@ -1216,8 +1231,8 @@ public enum WebExtensionRequestHandler {
         // Site disable affects content filtering and scriptlets. Userscripts keep
         // running unless the global userscript pause or per-script site toggle says
         // otherwise, so the popup controls stay available on disabled sites.
-        let userScriptManager = UserScriptManager.shared
-        await userScriptManager.waitUntilReady()
+        let userScriptManager = activeUserScriptManager
+        await userScriptManager.refreshFromDiskForExecution()
         let payloadMutationRevision = userScriptManager.payloadMutationRevision
         let matchedScripts = userScriptManager.getEnabledUserScriptsForURL(urlString)
         let userScripts = matchedScripts.filter {
@@ -1297,10 +1312,8 @@ public enum WebExtensionRequestHandler {
                 script,
                 contentDigest: runtimePrefix != nil ? prepared?.contentDigest(from: script.content) : nil
             )
-            descriptor["disabledHosts"] = ProtobufDataManager.shared.getUserScriptDisabledHosts(
-                forScriptID: script.id.uuidString
-            )
-            let siteAccess = ProtobufDataManager.shared.userScriptSiteAccess(forScriptID: script.id.uuidString)
+            descriptor["disabledHosts"] = userScriptManager.disabledHosts(forScriptID: script.id)
+            let siteAccess = userScriptManager.siteAccess(forScriptID: script.id)
             if siteAccess.onlySelectedSites { descriptor["allowedHosts"] = siteAccess.hosts }
             if script.usesGMStorage {
                 descriptor["storageSnapshot"] = await UserScriptStorageManager.shared.snapshot(
@@ -1473,7 +1486,7 @@ public enum WebExtensionRequestHandler {
         Task { @MainActor in
             // Keep the settings list visible when the site is disabled. Per-script
             // disabled-host settings are the only site-specific userscript gate.
-            let manager = UserScriptManager.shared
+            let manager = activeUserScriptManager
             // The extension process can outlive an app-side userscript update.
             // Reload shared-container records before listing versions/names.
             await manager.refreshFromDiskForExecution()
@@ -1493,7 +1506,7 @@ public enum WebExtensionRequestHandler {
             let host = URL(string: urlString)?.host ?? ""
             let response = createResponse(with: [
                 "userScripts": descriptors,
-                "siteDisabled": ProtobufDataManager.shared.areUserScriptsDisabled(onHost: host)
+                "siteDisabled": manager.areUserScriptsDisabled(onHost: host)
             ])
             context.completeRequest(returningItems: [response])
         }
@@ -1532,8 +1545,8 @@ public enum WebExtensionRequestHandler {
 
         let disabled = message["disabled"] as? Bool ?? false
         Task { @MainActor in
-            let manager = UserScriptManager.shared
-            await manager.waitUntilReady()
+            let manager = activeUserScriptManager
+            await manager.refreshFromDiskForExecution()
             let ok = await manager.setUserScript(
                 withId: scriptID,
                 disabledOnHost: host,
@@ -1557,7 +1570,7 @@ public enum WebExtensionRequestHandler {
         }
 
         Task { @MainActor in
-            let manager = UserScriptManager.shared
+            let manager = activeUserScriptManager
             await manager.refreshFromDiskForExecution()
             guard let scriptUUID = UUID(uuidString: scriptID),
                   let script = manager.userScript(withId: scriptUUID),
@@ -1585,7 +1598,7 @@ public enum WebExtensionRequestHandler {
         }
 
         Task { @MainActor in
-            let manager = UserScriptManager.shared
+            let manager = activeUserScriptManager
             await manager.refreshFromDiskForExecution()
             guard let scriptUUID = UUID(uuidString: scriptID),
                   let script = manager.userScript(withId: scriptUUID),
@@ -1626,7 +1639,7 @@ public enum WebExtensionRequestHandler {
               let page = URL(string: pageURL),
               ["http", "https"].contains(page.scheme?.lowercased() ?? ""),
               !BlockingPauseStore.isPaused(.userScripts) else { return nil }
-        let manager = UserScriptManager.shared
+        let manager = activeUserScriptManager
         await manager.refreshFromDiskForExecution()
         guard let script = manager.userScript(withId: scriptID),
               !script.isUserStyle, script.allowsGMXMLHttpRequest,
@@ -2018,7 +2031,7 @@ public enum WebExtensionRequestHandler {
             return
         }
         Task { @MainActor in
-            let manager = UserScriptManager.shared
+            let manager = activeUserScriptManager
             await manager.refreshFromDiskForExecution()
             // One authoritative snapshot authorizes the batch. No suspension occurs
             // between the revision, frame and digest checks for its members.
@@ -2104,7 +2117,7 @@ public enum WebExtensionRequestHandler {
                 context.completeRequest(returningItems: [response])
                 return
             }
-            let manager = UserScriptManager.shared
+            let manager = activeUserScriptManager
             await manager.refreshFromDiskForExecution()
             guard let requestedRevision = message["payloadRevision"] as? Int,
                   requestedRevision >= 0,

@@ -3802,6 +3802,24 @@ public class UserScriptManager: ObservableObject {
             .allows(host: host, excludedHosts: disabledHosts)
     }
 
+    func disabledHosts(forScriptID id: UUID) -> [String] {
+        dataManager.getUserScriptDisabledHosts(forScriptID: id.uuidString)
+    }
+
+    func siteAccess(forScriptID id: UUID) -> UserScriptSiteAccess {
+        dataManager.userScriptSiteAccess(forScriptID: id.uuidString)
+    }
+
+    func areUserScriptsDisabled(onHost host: String) -> Bool {
+        dataManager.areUserScriptsDisabled(onHost: host)
+    }
+
+    func isAutoUpdateEnabledFromDisk() async -> Bool {
+        await dataManager.waitUntilLoaded()
+        _ = await dataManager.refreshFromDiskIfModified()
+        return dataManager.autoUpdateEnabled
+    }
+
     @discardableResult
     public func setUserScriptSiteAccess(_ access: UserScriptSiteAccess, for scriptID: UUID) async -> Bool {
         guard indexOfUserScript(withId: scriptID) != nil else { return false }
