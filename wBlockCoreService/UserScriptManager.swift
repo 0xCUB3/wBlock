@@ -142,6 +142,8 @@ public class UserScriptManager: ObservableObject {
     @Published public var userScripts: [UserScript] = [] {
         didSet {
             rebuildUserScriptIndex()
+            // Invalidate any in-flight syncFromDataManager snapshot taken before this mutation.
+            dataManagerSyncGeneration &+= 1
             cachedPayloadRevision = nil
             cachedPayloadManifestToken = nil
         }
@@ -2024,6 +2026,8 @@ public class UserScriptManager: ObservableObject {
             logger.error("💾 Failed to persist userscripts to ProtobufDataManager")
             return false
         }
+        // Drop any syncFromDataManager that read disk before this persist completed.
+        dataManagerSyncGeneration &+= 1
         if invalidateExecutionCache {
             Self.invalidateDocumentStartExecutionCache()
         }
