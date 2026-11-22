@@ -30,6 +30,9 @@ struct BlockedCountDNRRulesTests {
         @@|http$script,domain=mylink.*
         ||popup-ex.example^
         @@||popup-ex.example^$popup
+        ||transform-ex.example^
+        @@||transform-ex.example^$doc,uritransform
+        @@/^https:\\/\\/transform-ex\\.example\\/specific/$doc,uritransform=//https:\\/\\/kittygr.am\\/$1/
         @@/js/ads.js|$script,domain=~x.example
         """
         let rules = G.generateBlockedCountRules(
@@ -44,7 +47,7 @@ struct BlockedCountDNRRulesTests {
             allows.contains { $0.condition.urlFilter == urlFilter && $0.condition.domains == domains }
         }
 
-        expect(blockedHosts.isSuperset(of: ["tracker.example", "parent.example", "global-ex.example", "cosmetic-ex.example", "popup-ex.example"]), "whole-host blocks copied")
+        expect(blockedHosts.isSuperset(of: ["tracker.example", "parent.example", "global-ex.example", "cosmetic-ex.example", "popup-ex.example", "transform-ex.example"]), "whole-host blocks copied")
         expect(!blockedHosts.contains("sub.parent.example"), "subdomain folded into its parent")
         expect(!blockedHosts.contains("sited.example") && !blockedFilters.contains { $0.contains("sited") }, "site-scoped block skipped")
         expect(!blockedHosts.contains("bad.example"), "badfilter respected")
@@ -55,7 +58,7 @@ struct BlockedCountDNRRulesTests {
         expect(hasAllow("||global-ex.example/allowed.js", on: nil), "global exception becomes a global allow")
         expect(hasAllow("||scoped-ex.example/x.js", on: ["shop.example", "store.example"]), "scoped exception stays scoped")
         expect(hasAllow("/js/ads.js|", on: nil), "inexpressible sites widen a narrow exception")
-        expect(!allows.contains { $0.condition.urlFilter?.contains("cosmetic-ex") == true || $0.condition.urlFilter?.contains("popup-ex") == true }, "non-blocking exceptions ignored")
+        expect(!allows.contains { $0.condition.urlFilter?.contains("cosmetic-ex") == true || $0.condition.urlFilter?.contains("popup-ex") == true || $0.condition.urlFilter?.contains("transform-ex") == true }, "non-blocking exceptions ignored")
         expect(!allows.contains { ["*", "|http"].contains($0.condition.urlFilter ?? "") && $0.condition.domains == nil }, "no catch-all allow")
         let pageWide = Set(allows.filter { $0.condition.urlFilter == nil && $0.condition.requestDomains == nil }.flatMap { $0.condition.domains ?? [] })
         expect(pageWide == ["disabled.example", "pagewide.example", "good.example"], "page-wide allows: \(pageWide.sorted())")

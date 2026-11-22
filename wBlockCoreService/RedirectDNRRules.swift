@@ -15,12 +15,30 @@ internal import WBEngine
 // redirect of the requests it covers, as it stops the block they stand in for.
 extension RemoveParamDNRRuleGenerator {
     /// Bump when `extractRedirectLines` changes, so cached lists rescan.
-    static let redirectExtractionFormat = 2
+    static let redirectExtractionFormat = 3
     /// The built-in compatibility rules reach every content blocker, so their
     /// exceptions are weighed against every list's redirects too.
     static let compatibilityRedirectLines = extractRedirectLines(
         from: ContentBlockerService.embeddedCompatibilityRules
     )
+    // Priority ladder across wBlock's DNR rules:
+    //   1       blocked-request count (`block` / `allow`)
+    //   2       Global Privacy Control (`modifyHeaders`)
+    //   4       `$removeparam` (normal)
+    //   10_000  `@@$removeparam` (`allow`)
+    //   11_000  `$uritransform` (normal) — above `$removeparam` and its
+    //           exceptions so unrelated query-stripping allows do not cancel
+    //           URL transforms; Safari re-evaluates DNR on the redirected URL.
+    //   12_000  `@@$uritransform` (`allow`) — cancels normal `$uritransform`
+    //           without cancelling `$redirect` stand-ins.
+    //   13_000  `$uritransform,important` — overrides normal `@@$uritransform`.
+    //   15_000  `$redirect` stand-ins (and `$removeparam,important`) — match
+    //           uBO's precedence where resource replacements outrank transforms.
+    //   15_100  `$redirect,important`
+    //   20_000  disabled-site `allow` — cancels everything on disabled sites.
+    static let uriTransformPriority = 11_000
+    static let uriTransformExceptionPriority = 12_000
+    static let importantURITransformPriority = 13_000
     static let redirectPriority = 15_000
     static let importantRedirectPriority = 15_100
     public static let redirectCarveOutsFilename = "redirect_carveouts.txt"
@@ -166,10 +184,10 @@ extension RemoveParamDNRRuleGenerator {
     }
 
     /// Lines one list needs for redirect resolution: redirect directives,
-    /// their exceptions and badfilters, every blocking exception (another
-    /// list's redirect may be the one it stops), and for hosts named by
-    /// `$redirect-rule` the list's whole-host blocks and its exceptions
-    /// touching those hosts.
+    /// their exceptions and badfilters, `$uritransform` rules and exceptions,
+    /// every blocking exception (another list's redirect may be the one it
+    /// stops), and for hosts named by `$redirect-rule` the list's whole-host
+    /// blocks and its exceptions touching those hosts.
     public static func extractRedirectLines(from contents: String) -> String {
         var result = ""
         var conditionalHosts = Set<String>()
@@ -181,13 +199,19 @@ extension RemoveParamDNRRuleGenerator {
                 conditionalHosts.insert(host)
             }
         }
+        for rawLine in lines(containing: "uritransform", in: contents) {
+            guard !RuleText.contains(rawLine, "redirect"), URITransformLine(rawLine) != nil else { continue }
+            result.append(contentsOf: rawLine)
+            result.append("\n")
+        }
         // Set lookups instead of comparing each line's host with every conditional host.
         let conditionalParents = Set(conditionalHosts.flatMap(selfAndParents))
         RuleText.forEachLine(contents) { rawLine in
             let line = RuleText.trimmed(rawLine)
             let isException = line.hasPrefix("@@")
             guard isException || !conditionalHosts.isEmpty && line.hasPrefix("||"),
-                  !RuleText.contains(line, "redirect")
+                  !RuleText.contains(line, "redirect"),
+                  !RuleText.contains(line, "uritransform")
             else { return }
             var needed = isException && RedirectLine(line) != nil
             if !needed, !conditionalHosts.isEmpty, let host = anchoredHost(isException ? line.dropFirst(2) : line) {
@@ -215,21 +239,36 @@ extension RemoveParamDNRRuleGenerator {
         return result
     }
 
-    /// Resolves redirect directives from each list's extracted lines. Badfilters
-    /// and exceptions apply across lists; `$redirect-rule` blocking
-    /// dependencies are checked within the list that declared them.
+    /// Resolves redirect and `$uritransform` directives from each list's
+    /// extracted lines. Badfilters and exceptions apply across lists;
+    /// `$redirect-rule` blocking dependencies are checked within the list that
+    /// declared them.
     static func resourceRedirectRules(
         fromSources sources: [String], scopedSources: Set<Int> = []
-    ) -> (rules: [DeclarativeRule], skipped: Int) {
+    ) -> (rules: [DeclarativeRule], skipped: Int, exceptions: Int) {
         var parsedSources: [[RedirectLine]] = []
         var hostBlocks: [HostBlocks] = []
         var badfilters = Set<String>()
         var exceptions: [RedirectLine] = []
         var plainExceptions: [Substring] = []
+        var uriTransformBadfilters = Set<String>()
+        var uriTransformLines: [URITransformLine] = []
         for (sourceIndex, source) in sources.enumerated() {
             var parsed: [RedirectLine] = []
             var blocks = HostBlocks()
             for rawLine in source.split(whereSeparator: \.isNewline) {
+                if RuleText.contains(rawLine, "uritransform"),
+                   !RuleText.contains(rawLine, "redirect"),
+                   let transform = URITransformLine(rawLine) {
+                    if !scopedSources.contains(sourceIndex) {
+                        if transform.isBadfilter {
+                            uriTransformBadfilters.insert(transform.identity)
+                        } else {
+                            uriTransformLines.append(transform)
+                        }
+                    }
+                    continue
+                }
                 let candidate = RuleText.contains(rawLine, "redirect") ? RedirectLine(rawLine) : nil
                 let line = candidate?.isPlain == false ? candidate : nil
                 if line == nil {
@@ -320,7 +359,18 @@ extension RemoveParamDNRRuleGenerator {
                 }
             }
         }
-        return (rules, skipped)
+        var exceptionCount = 0
+        for line in uriTransformLines where !uriTransformBadfilters.contains(line.identity) {
+            if line.isException { exceptionCount += 1 }
+            guard let rule = uriTransformRule(for: line) else {
+                skipped += 1
+                continue
+            }
+            if let key = try? encoder.encode(rule), seen.insert(key).inserted {
+                rules.append(rule)
+            }
+        }
+        return (rules, skipped, exceptionCount)
     }
 
     /// A lowercased pattern, its `||host`, and the bytes that follow that host.
@@ -688,6 +738,377 @@ extension RemoveParamDNRRuleGenerator {
 
     public static func savedRedirectCarveOuts(containerURL: URL) -> String {
         (try? String(contentsOf: containerURL.appendingPathComponent(redirectCarveOutsFilename), encoding: .utf8)) ?? ""
+    }
+
+    // MARK: - `$uritransform` DNR rules
+
+    private static let uriTransformTypeMap: [String: String] = [
+        "doc": "main_frame", "document": "main_frame", "main_frame": "main_frame",
+        "subdocument": "sub_frame", "sub_frame": "sub_frame", "frame": "sub_frame",
+        "stylesheet": "stylesheet", "css": "stylesheet",
+        "script": "script", "image": "image", "font": "font",
+        "object": "object", "object-subrequest": "object",
+        "xmlhttprequest": "xmlhttprequest", "xhr": "xmlhttprequest",
+        "media": "media", "other": "other",
+    ]
+    private static let uriTransformNegatableOnlyTypes: Set<String> = [
+        "ping", "beacon", "websocket", "popup", "popunder",
+    ]
+    private static let uriTransformDefaultResourceTypes: [String] = [
+        "sub_frame", "stylesheet", "script", "image", "font", "object",
+        "xmlhttprequest", "media", "other",
+    ]
+
+    struct URITransformLine {
+        var isException: Bool
+        var pattern: String
+        /// Raw value of `uritransform=...`, or nil when omitted (valid on exceptions).
+        var value: String?
+        /// Options other than `uritransform` and `badfilter`.
+        var options: [(name: String, value: String?)]
+        var isBadfilter: Bool
+        var isInvalid: Bool
+
+        init?(_ rawLine: Substring) {
+            let line = rawLine.trimmingCharacters(in: .whitespaces)
+            guard !line.isEmpty, !line.hasPrefix("!"), !line.hasPrefix("["),
+                  !line.utf8.contains(UInt8(ascii: "#"))
+                    || !["##", "#@#", "#%#", "#$#", "#?#"].contains(where: line.contains)
+            else { return nil }
+            isException = line.hasPrefix("@@")
+            let body = isException ? String(line.dropFirst(2)) : line
+            guard let (dollar, parsedOptions) = RemoveParamDNRRuleGenerator.uriTransformOptionsSeparator(in: body) else {
+                return nil
+            }
+            pattern = String(body[..<dollar]).trimmingCharacters(in: .whitespaces)
+            var foundValue: String?
+            var seenTransform = false
+            var invalid = false
+            var rest: [(name: String, value: String?)] = []
+            for pair in parsedOptions {
+                if pair.name == "uritransform" {
+                    if seenTransform { invalid = true }
+                    seenTransform = true
+                    foundValue = pair.value
+                } else if pair.name == "~uritransform" {
+                    seenTransform = true
+                    invalid = true
+                } else {
+                    rest.append(pair)
+                }
+            }
+            guard seenTransform else { return nil }
+            isBadfilter = rest.contains { $0.name == "badfilter" }
+            options = rest.filter { $0.name != "badfilter" }
+            value = foundValue
+            isInvalid = invalid
+        }
+
+        /// Identity shared by a rule and its `$badfilter`. Preserves regex and
+        /// replacement case since both are case-sensitive.
+        var identity: String {
+            let opts = options.map { option in option.value.map { "\(option.name)=\($0)" } ?? option.name }
+                + ["uritransform" + (value.map { "=\($0)" } ?? "")]
+            return (isException ? "@@" : "") + pattern + "$" + opts.sorted().joined(separator: ",")
+        }
+    }
+
+    /// Locates the `$` starting an option list that contains `uritransform`
+    /// (scanning right-to-left so `$` inside a regex pattern is skipped and
+    /// `$1` inside a replacement tail has no `uritransform` option).
+    private static func uriTransformOptionsSeparator(
+        in body: String
+    ) -> (String.Index, [(name: String, value: String?)])? {
+        var searchEnd = body.endIndex
+        while let dollar = body[..<searchEnd].lastIndex(of: "$") {
+            let tail = String(body[body.index(after: dollar)...])
+            let parsed = splitURITransformOptions(tail)
+            if parsed.contains(where: { $0.name == "uritransform" || $0.name == "~uritransform" }) {
+                return (dollar, parsed)
+            }
+            searchEnd = dollar
+        }
+        return nil
+    }
+
+    /// Splits a network option list that may contain `uritransform=/pat/rep/flags`
+    /// (unquoted or quoted with `"`, `'`, or `` ` ``) with commas or escaped
+    /// delimiters inside the value.
+    private static func splitURITransformOptions(_ text: String) -> [(name: String, value: String?)] {
+        var rawTokens: [String] = []
+        var token = ""
+        var quote: Character? = nil
+        var slashesRemaining = 0
+        var escaped = false
+        for char in text {
+            if quote == nil && slashesRemaining == 0 {
+                if char == "," && !escaped {
+                    rawTokens.append(token)
+                    token = ""
+                    escaped = false
+                    continue
+                }
+                if token.lowercased().trimmingCharacters(in: .whitespaces) == "uritransform=" {
+                    if char == "\"" || char == "'" || char == "`" {
+                        quote = char
+                    } else if char == "/" {
+                        slashesRemaining = 2
+                    }
+                }
+            } else if let activeQuote = quote {
+                if char == activeQuote && !escaped {
+                    quote = nil
+                }
+            } else if slashesRemaining > 0 {
+                if char == "/" && !escaped {
+                    slashesRemaining -= 1
+                }
+            }
+            token.append(char)
+            escaped = (char == "\\" && !escaped)
+        }
+        rawTokens.append(token)
+        return rawTokens
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+            .map { option in
+                let pair = optionNameAndValue(option)
+                let name = [
+                    "from": "domain",
+                    "3p": "third-party", "~1p": "third-party", "~first-party": "third-party",
+                    "1p": "~third-party", "~3p": "~third-party", "first-party": "~third-party",
+                ][pair.name] ?? pair.name
+                return (name, pair.value)
+            }
+    }
+
+    private static func unescapedIndex(
+        of target: Character,
+        in text: String,
+        from start: String.Index
+    ) -> String.Index? {
+        var index = start
+        var backslashes = 0
+        while index < text.endIndex {
+            let char = text[index]
+            if char == target && backslashes % 2 == 0 { return index }
+            backslashes = char == "\\" ? backslashes + 1 : 0
+            index = text.index(after: index)
+        }
+        return nil
+    }
+
+    /// Mirrors uBO `ArglistParser.normalizeArg`: drops one backslash before each
+    /// backslash-escaped `separator`.
+    private static func normalizeEscapedSeparator(_ text: String, separator: Character) -> String {
+        var out = ""
+        out.reserveCapacity(text.count)
+        var backslashes = 0
+        for char in text {
+            if char == separator {
+                if backslashes % 2 == 1 { _ = out.popLast() }
+                backslashes = 0
+            } else if char == "\\" {
+                backslashes += 1
+            } else {
+                backslashes = 0
+            }
+            out.append(char)
+        }
+        return out
+    }
+
+    /// Parses a uBO `$uritransform` value for DNR conversion, matching uBO's
+    /// `parseReplaceByRegexValue` + `dnrFromCompiled` (`static-net-filtering.js`):
+    /// only empty-pattern values (`//replacement/flags`) convert, and `$N` is
+    /// rewritten to `\N` for DNR `regexSubstitution`.
+    static func parseURITransformReplacement(_ rawValue: String) -> String? {
+        var value = rawValue.trimmingCharacters(in: .whitespaces)
+        if value.count >= 2, let first = value.first,
+           first == "\"" || first == "'" || first == "`",
+           value.last == first {
+            let innerStart = value.index(after: value.startIndex)
+            if let close = unescapedIndex(of: first, in: value, from: innerStart),
+               close == value.index(before: value.endIndex) {
+                value = normalizeEscapedSeparator(String(value[innerStart..<close]), separator: first)
+            }
+        }
+        guard value.hasPrefix("/") else { return nil }
+        let afterOpen = value.index(after: value.startIndex)
+        guard let patternEnd = unescapedIndex(of: "/", in: value, from: afterOpen) else { return nil }
+        // Only empty-pattern `//replacement/flags` is DNR-compatible in uBO.
+        guard patternEnd == afterOpen else { return nil }
+        let afterPattern = value.index(after: patternEnd)
+        guard let replacementEnd = unescapedIndex(of: "/", in: value, from: afterPattern) else { return nil }
+        let flags = value[value.index(after: replacementEnd)...]
+        guard flags.allSatisfy({ "dgimsuvy".contains($0) }) else { return nil }
+
+        var replacement = String(value[afterPattern..<replacementEnd])
+        replacement = normalizeEscapedSeparator(replacement, separator: "/")
+        replacement = normalizeEscapedSeparator(replacement, separator: "$")
+        replacement = normalizeEscapedSeparator(replacement, separator: ",")
+
+        var substitution = ""
+        substitution.reserveCapacity(replacement.count)
+        var index = replacement.startIndex
+        while index < replacement.endIndex {
+            if replacement[index] == "$" {
+                let digitsStart = replacement.index(after: index)
+                var digitsEnd = digitsStart
+                while digitsEnd < replacement.endIndex,
+                      replacement[digitsEnd].isASCII, replacement[digitsEnd].isNumber {
+                    digitsEnd = replacement.index(after: digitsEnd)
+                }
+                if digitsEnd > digitsStart {
+                    substitution.append("\\")
+                    substitution.append(contentsOf: replacement[digitsStart..<digitsEnd])
+                    index = digitsEnd
+                    continue
+                }
+            }
+            substitution.append(replacement[index])
+            index = replacement.index(after: index)
+        }
+        return substitution
+    }
+
+    static func uriTransformRule(for line: URITransformLine) -> DeclarativeRule? {
+        guard !line.isInvalid else { return nil }
+        let pattern = line.pattern.trimmingCharacters(in: .whitespaces)
+        let isRegexPattern = pattern.hasPrefix("/") && pattern.hasSuffix("/") && pattern.count > 2
+
+        let action: RuleAction
+        let priority: Int
+        var condition = RuleCondition()
+
+        if line.isException {
+            if let value = line.value, !value.isEmpty {
+                // Only emit an allow when the value is a valid DNR-compatible
+                // transform; skip invalid values and non-empty-pattern transforms
+                // that DNR never emits.
+                guard parseURITransformReplacement(value) != nil else { return nil }
+            }
+            if isRegexPattern {
+                let regexBody = String(pattern.dropFirst().dropLast())
+                guard (try? NSRegularExpression(pattern: regexBody)) != nil else { return nil }
+                condition.regexFilter = regexBody
+            } else {
+                let normalized = pattern == "*" ? "" : pattern
+                guard normalized.allSatisfy(\.isASCII) else { return nil }
+                condition.urlFilter = normalizeURLFilterPattern(normalized)
+            }
+            action = RuleAction(type: "allow", redirect: nil)
+            priority = uriTransformExceptionPriority
+        } else {
+            // Match uBO: DNR `regexSubstitution` requires both an empty
+            // `$uritransform` pattern and a regex filter pattern.
+            guard isRegexPattern,
+                  let value = line.value, !value.isEmpty,
+                  let substitution = parseURITransformReplacement(value)
+            else { return nil }
+            let regexBody = String(pattern.dropFirst().dropLast())
+            guard (try? NSRegularExpression(pattern: regexBody)) != nil else { return nil }
+            condition.regexFilter = regexBody
+            let isImportant = line.options.contains { $0.name == "important" }
+            action = RuleAction(type: "redirect", redirect: Redirect(regexSubstitution: substitution))
+            priority = isImportant ? importantURITransformPriority : uriTransformPriority
+        }
+
+        var includedTypes: [String] = []
+        var excludedTypes = Set<String>()
+        var hasFrom = false
+        var hasTo = false
+        var hasDenyAllow = false
+        var hasMethod = false
+        var excludedRequestDomains: [String] = []
+
+        for option in line.options {
+            switch option.name {
+            case "important":
+                guard option.value == nil else { return nil }
+            case "match-case":
+                guard option.value == nil else { return nil }
+                condition.isUrlFilterCaseSensitive = true
+            case "third-party":
+                guard option.value == nil, condition.domainType == nil else { return nil }
+                condition.domainType = "thirdParty"
+            case "~third-party":
+                guard option.value == nil, condition.domainType == nil else { return nil }
+                condition.domainType = "firstParty"
+            case "domain":
+                guard !hasFrom, let value = option.value, let parsed = parseDomainOptionValue(value) else {
+                    return nil
+                }
+                hasFrom = true
+                if !parsed.included.isEmpty { condition.domains = parsed.included }
+                if !parsed.excluded.isEmpty { condition.excludedDomains = parsed.excluded }
+            case "to":
+                guard !hasTo, let value = option.value, let parsed = parseDomainOptionValue(value) else {
+                    return nil
+                }
+                hasTo = true
+                if !parsed.included.isEmpty { condition.requestDomains = parsed.included }
+                excludedRequestDomains.append(contentsOf: parsed.excluded)
+            case "denyallow":
+                guard !hasDenyAllow, let value = option.value,
+                      let parsed = parseDomainOptionValue(value), parsed.excluded.isEmpty, !parsed.included.isEmpty
+                else { return nil }
+                hasDenyAllow = true
+                excludedRequestDomains.append(contentsOf: parsed.included)
+            case "method":
+                guard !hasMethod, let value = option.value else { return nil }
+                let methods = value.lowercased().split(separator: "|", omittingEmptySubsequences: false).map(String.init)
+                guard !methods.isEmpty, methods.allSatisfy({
+                    ["get", "post", "put", "delete", "head", "options", "patch", "connect", "trace"].contains($0)
+                }) else { return nil }
+                hasMethod = true
+                condition.requestMethods = methods
+            default:
+                guard option.value == nil else { return nil }
+                if option.name.hasPrefix("~") {
+                    let base = String(option.name.dropFirst())
+                    if let mapped = uriTransformTypeMap[base] {
+                        excludedTypes.insert(mapped)
+                    } else if uriTransformNegatableOnlyTypes.contains(base) {
+                        continue
+                    } else {
+                        return nil
+                    }
+                } else if let mapped = uriTransformTypeMap[option.name] {
+                    if !includedTypes.contains(mapped) { includedTypes.append(mapped) }
+                } else {
+                    return nil
+                }
+            }
+        }
+
+        // `$denyallow` requires `$from`/`$domain` in uBO.
+        if hasDenyAllow && !hasFrom { return nil }
+        // Older Safari ignores `excludedDomains` next to `domains`, which would widen the rule.
+        if condition.domains != nil && condition.excludedDomains != nil { return nil }
+        if !excludedRequestDomains.isEmpty {
+            condition.excludedRequestDomains = Array(Set(excludedRequestDomains)).sorted()
+        }
+
+        if !includedTypes.isEmpty || !excludedTypes.isEmpty {
+            let base = includedTypes.isEmpty ? uriTransformDefaultResourceTypes : includedTypes
+            let resolved = base.filter { !excludedTypes.contains($0) }
+            guard !resolved.isEmpty else { return nil }
+            condition.resourceTypes = resolved
+        }
+
+        return DeclarativeRule(id: 0, priority: priority, action: action, condition: condition)
+    }
+
+    /// For the rules viewer: nil when `rawLine` is not a `$uritransform` rule;
+    /// true when it compiles to a DNR rule (or is a `$badfilter`); false when skipped.
+    static func supportsURITransformRule(_ rawLine: String) -> Bool? {
+        guard RuleText.contains(rawLine, "uritransform"),
+              !RuleText.contains(rawLine, "redirect"),
+              let parsed = URITransformLine(rawLine[...])
+        else { return nil }
+        if parsed.isBadfilter { return !parsed.isInvalid }
+        return uriTransformRule(for: parsed) != nil
     }
 }
 

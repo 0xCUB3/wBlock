@@ -21,7 +21,7 @@ public enum RemoveParamDNRRuleGenerator {
     private static let skippedOptionNames: Set<String> = [
         "app", "cname", "content", "cookie", "csp", "header",
         "hls", "jsonprune", "permissions", "redirect", "referrerpolicy",
-        "removeheader", "replace", "strict1p", "strict3p", "urlblock", "webrtc"
+        "removeheader", "replace", "strict1p", "strict3p", "uritransform", "urlblock", "webrtc"
     ]
 
     /// Option names that the generator understands. Any option whose name is
@@ -130,6 +130,8 @@ public enum RemoveParamDNRRuleGenerator {
         public var transform: URLTransform? = nil
         /// Bundled replacement served by wBlock Scripts for `$redirect` rules.
         public var extensionPath: String? = nil
+        /// Regex replacement for `$uritransform` rules (Safari 17.0+).
+        public var regexSubstitution: String? = nil
     }
 
     public struct URLTransform: Codable, Equatable {
@@ -232,15 +234,24 @@ public enum RemoveParamDNRRuleGenerator {
         var generatedSourceRuleCount = 0
 
         var removeParamRules = 0
-        var exceptionRules = 0
+        var exceptionRules = resolvedRedirects.exceptions
         var skippedRules = resolvedRedirects.skipped
 
-        // Resource replacements stand in for blocks, so they are admitted before
-        // query stripping when the budget is tight.
+        // Resource replacements and URL transforms stand in ahead of query
+        // stripping when the budget is tight; their allow exceptions stay in
+        // `protectiveRules` so truncation never widens redirects.
         for rule in resolvedRedirects.rules {
             generatedSourceRuleCount += 1
-            sourceRulesInOrder.append(rule)
-            redirectRules.append(rule)
+            if sourceRulesInOrder.count < maxGeneratedRules {
+                sourceRulesInOrder.append(rule)
+            }
+            if rule.action.type == "allow" {
+                if protectiveRules.count < maxGeneratedRules {
+                    protectiveRules.append(rule)
+                }
+            } else {
+                redirectRules.append(rule)
+            }
         }
 
         let activeText = activeRulesText(rulesText)
@@ -288,7 +299,7 @@ public enum RemoveParamDNRRuleGenerator {
             } else {
                 let redirectCapacity = availableSourceCapacity - protectiveRules.count
                 func rank(_ rule: DeclarativeRule) -> Int {
-                    if rule.action.redirect?.extensionPath != nil { return 2 }
+                    if rule.action.redirect?.extensionPath != nil || rule.action.redirect?.regexSubstitution != nil { return 2 }
                     return rule.condition.domains == nil && rule.condition.requestDomains == nil &&
                         (rule.condition.urlFilter == nil || rule.condition.urlFilter?.hasPrefix("^") == true) ? 1 : 0
                 }
@@ -313,7 +324,9 @@ public enum RemoveParamDNRRuleGenerator {
             skippedRules: skippedRules,
             truncatedRules: truncatedRules,
             disabledSiteAllowRules: disabledAllowRulesCount,
-            resourceRedirectRules: rules.filter { $0.action.redirect?.extensionPath != nil }.count,
+            resourceRedirectRules: rules.filter {
+                $0.action.redirect?.extensionPath != nil || $0.action.redirect?.regexSubstitution != nil
+            }.count,
             version: version
         )
         return (rules, summary)
@@ -429,7 +442,7 @@ public enum RemoveParamDNRRuleGenerator {
     }
 
     /// Bump when the generator's output changes for the same inputs.
-    private static let generationSchema = 9
+    private static let generationSchema = 10
     private static let generationStateFilename = "dnr-generation-state.json"
 
     private final class BuildMarker {}
@@ -765,7 +778,8 @@ public enum RemoveParamDNRRuleGenerator {
 
     static func supportsDNRRule(_ line: String, vocabulary: NameVocabulary) -> Bool? {
         let result = buildRules(from: line, vocabulary: vocabulary)
-        return result.wasRemoveParamRule ? !result.rules.isEmpty : nil
+        if result.wasRemoveParamRule { return !result.rules.isEmpty }
+        return supportsURITransformRule(line)
     }
 
     private static func buildRules(from rawLine: String, vocabulary: NameVocabulary) -> BuildResult {
@@ -1049,7 +1063,7 @@ public enum RemoveParamDNRRuleGenerator {
         return parsed
     }
 
-    private static func parseDomainOptionValue(
+    static func parseDomainOptionValue(
         _ value: String
     ) -> (included: [String], excluded: [String])? {
         guard !value.isEmpty else { return nil }

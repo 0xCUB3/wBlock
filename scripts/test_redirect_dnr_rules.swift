@@ -75,6 +75,7 @@ struct RedirectDNRRuleTests {
         expect(!RemoveParamDNRRuleGenerator.carveOutsAllowed(status: nil, redirectCount: 4, now: now), "never reported")
 
         plainExceptions()
+        uriTransformRules()
         try savedRules()
         print("redirect DNR rule tests passed")
     }
@@ -211,6 +212,25 @@ struct RedirectDNRRuleTests {
         try JSONSerialization.data(withJSONObject: cache).write(to: cacheURL)
         expectEqual(try savedFilters(disabledSites: ["off.example"]), expected, "an older extraction cache is rescanned")
 
+        // Extraction format 2 (before `$uritransform` extraction) is invalidated and rescanned.
+        let transformLine = "/^https:\\/\\/(?:www\\.)?instagram\\.com\\/(.*)/$doc,uritransform=//https:\\/\\/kittygr.am\\/$1/\n"
+        try transformLine.write(to: container.appendingPathComponent("Test.txt"), atomically: true, encoding: .utf8)
+        _ = try RemoveParamDNRRuleGenerator.saveRules(
+            for: [filter], disabledSites: [], blockedCount: false, groupIdentifier: "unused", containerURL: container
+        )
+        var staleTransformCache = try JSONSerialization.jsonObject(with: Data(contentsOf: cacheURL)) as! [String: [String: Any]]
+        staleTransformCache["Test.txt"]!["redirectLines"] = ""
+        staleTransformCache["Test.txt"]!["redirectFormat"] = 2
+        try JSONSerialization.data(withJSONObject: staleTransformCache).write(to: cacheURL)
+        try? FileManager.default.removeItem(at: container.appendingPathComponent("dnr-generation-state.json"))
+        let rescannedSummary = try RemoveParamDNRRuleGenerator.saveRules(
+            for: [filter], disabledSites: [], blockedCount: false, groupIdentifier: "unused", containerURL: container
+        )
+        expectEqual(rescannedSummary.resourceRedirectRules, 1, "format bump rescans cached lists for uritransform")
+        let rescannedData = try Data(contentsOf: container.appendingPathComponent(RemoveParamDNRRuleGenerator.rulesFilename))
+        let rescannedRules = try JSONDecoder().decode([Rule].self, from: rescannedData)
+        expectEqual(rescannedRules.first?.action.redirect?.regexSubstitution, "https://kittygr.am/\\1", "rescanned uritransform rule is saved")
+
         try "@@||cdn.example^$script\n".write(to: container.appendingPathComponent("Scoped.txt"), atomically: true, encoding: .utf8)
         var scoped = FilterList(name: "Scoped", url: URL(string: "https://example.com/Scoped.txt")!, category: .ads, isSelected: true)
         scoped.onlySelectedSites = true
@@ -220,6 +240,87 @@ struct RedirectDNRRuleTests {
         let data = try Data(contentsOf: container.appendingPathComponent(RemoveParamDNRRuleGenerator.rulesFilename))
         let scopedRules = try JSONDecoder().decode([Rule].self, from: data)
         expect(scopedRules.contains { $0.condition.urlFilter == "||cdn.example/lib.js" && $0.action.redirect?.extensionPath != nil }, "a scoped list's exception is not global")
+    }
+
+    static func uriTransformRules() {
+        let list = """
+        ! Motivating example: instagram -> kittygr.am with a specific-path exception
+        /^https:\\/\\/(?:www\\.)?instagram\\.com\\/(.*)/$doc,uritransform=//https:\\/\\/kittygr.am\\/$1/
+        @@/^https:\\/\\/(?:www\\.)?instagram\\.com\\/specificpath/$doc,uritransform
+        ! Multiple capture groups, escaped comma/dollar/slash, quoted value, match-case, important
+        /^https:\\/\\/multi\\.example\\/([^\\/]+)\\/(.*)/$doc,match-case,important,uritransform="//https:\\/\\/dst.example\\/a,b\\/$2\\/$1/"
+        ! Exception with matching value and domain/to scoping
+        @@/^https:\\/\\/multi\\.example\\/keep/$doc,uritransform=//https:\\/\\/dst.example\\/$1/,domain=caller.example
+        ! Badfiltered directive
+        /^https:\\/\\/gone\\.example\\/(.*)/$doc,uritransform=//https:\\/\\/other\\.example\\/$1/
+        /^https:\\/\\/gone\\.example\\/(.*)/$doc,uritransform=//https:\\/\\/other\\.example\\/$1/,badfilter
+        ! Incompatible / skipped forms (must never widen)
+        ||instagram.com^$doc,uritransform=//https:\\/\\/kittygr.am\\/$1/
+        /^https:\\/\\/nonempty\\.example\\/(.*)/$doc,uritransform=/nonempty\\.example/kittygr.am/
+        /^https:\\/\\/unescaped\\.example\\/(.*)/$doc,uritransform=//https://kittygr.am/$1/
+        /^https:\\/\\/popup\\.example\\/(.*)/$popup,uritransform=//https:\\/\\/kittygr.am\\/$1/
+        /^https:\\/\\/ehide\\.example\\/(.*)/$ehide,uritransform=//https:\\/\\/kittygr.am\\/$1/
+        /^https:\\/\\/ping\\.example\\/(.*)/$ping,uritransform=//https:\\/\\/kittygr.am\\/$1/
+        /^https:\\/\\/mixed\\.example\\/(.*)/$doc,domain=a.example|~b.example,uritransform=//https:\\/\\/kittygr.am\\/$1/
+        /^https:\\/\\/unknown\\.example\\/(.*)/$doc,bogusopt,uritransform=//https:\\/\\/kittygr.am\\/$1/
+        /^https:\\/\\/missingval\\.example\\/(.*)/$doc,uritransform
+        @@/^https:\\/\\/nonempty-ex\\.example\\/(.*)/$doc,uritransform=/a/b/
+        """
+
+        let extracted = RemoveParamDNRRuleGenerator.extractRedirectLines(from: list + "\n||unrelated.example^\n")
+        expect(!extracted.contains("unrelated.example"), "uritransform extraction keeps only related lines")
+        expect(extracted.contains("kittygr.am"), "uritransform extraction keeps directives")
+        expect(extracted.contains("specificpath"), "uritransform extraction keeps exceptions")
+
+        let generated = RemoveParamDNRRuleGenerator.generateRules(
+            from: "$removeparam=utm_source\n@@||instagram.com^$removeparam=utm_source",
+            redirectSources: [extracted + "\n||ads.example/tag.js$script,redirect=noopjs\n"],
+            disabledSites: ["off.example"]
+        )
+        let transforms = generated.rules.filter { $0.action.redirect?.regexSubstitution != nil }
+        expectEqual(transforms.count, 2, "only valid empty-pattern regex uritransforms convert")
+
+        let ig = transforms.first { $0.condition.regexFilter == "^https:\\/\\/(?:www\\.)?instagram\\.com\\/(.*)" }
+        expect(ig != nil, "instagram uritransform rule emitted")
+        expectEqual(ig?.action.type, "redirect", "uritransform emits redirect action")
+        expectEqual(ig?.action.redirect?.regexSubstitution, "https://kittygr.am/\\1", "$1 rewritten to \\1")
+        expectEqual(ig?.condition.urlFilter, nil, "uritransform uses regexFilter only")
+        expectEqual(ig?.condition.resourceTypes, ["main_frame"], "$doc maps to main_frame")
+        expectEqual(ig?.priority, 11_000, "normal uritransform sits above removeparam allows and below redirect stand-ins")
+        expectEqual(RemoveParamDNRRuleGenerator.carveOutLine(for: ig!), nil, "uritransform needs no native carve-out")
+
+        let multi = transforms.first { $0.condition.regexFilter == "^https:\\/\\/multi\\.example\\/([^\\/]+)\\/(.*)" }
+        expectEqual(multi?.action.redirect?.regexSubstitution, "https://dst.example/a,b/\\2/\\1", "quoted value unescapes and rewrites multiple capture groups")
+        expectEqual(multi?.condition.isUrlFilterCaseSensitive, true, "match-case preserved")
+        expectEqual(multi?.priority, 13_000, "important uritransform outranks normal exceptions")
+
+        let igAllow = generated.rules.first {
+            $0.action.type == "allow" && $0.condition.regexFilter == "^https:\\/\\/(?:www\\.)?instagram\\.com\\/specificpath"
+        }
+        expect(igAllow != nil, "valueless uritransform exception emits allow rule")
+        expectEqual(igAllow?.priority, 12_000, "uritransform exception outranks normal uritransform")
+        expectEqual(igAllow?.condition.resourceTypes, ["main_frame"], "exception keeps $doc scope")
+
+        let multiAllow = generated.rules.first {
+            $0.action.type == "allow" && $0.condition.regexFilter == "^https:\\/\\/multi\\.example\\/keep"
+        }
+        expect(multiAllow != nil, "valued uritransform exception emits allow rule")
+        expectEqual(multiAllow?.priority, 12_000, "valued exception priority")
+        expectEqual(multiAllow?.condition.domains, ["caller.example"], "exception retains domain scope")
+
+        let standIn = generated.rules.first { $0.action.redirect?.extensionPath != nil }
+        let removeParam = generated.rules.first { $0.action.redirect?.transform != nil }
+        let removeParamAllow = generated.rules.first { $0.action.type == "allow" && $0.condition.urlFilter == "||instagram.com^" }
+        let disabledAllow = generated.rules.first { $0.priority == 20_000 }
+        expect(removeParam!.priority < removeParamAllow!.priority, "removeparam < removeparam allow")
+        expect(removeParamAllow!.priority < ig!.priority, "removeparam allow < uritransform")
+        expect(ig!.priority < igAllow!.priority, "uritransform < uritransform allow")
+        expect(igAllow!.priority < multi!.priority, "uritransform allow < important uritransform")
+        expect(multi!.priority < standIn!.priority, "important uritransform < redirect stand-in")
+        expect(standIn!.priority < disabledAllow!.priority, "redirect stand-in < disabled site allow")
+
+        expectEqual(generated.summary.resourceRedirectRules, 3, "summary counts both stand-ins and uritransform redirects")
+        expectEqual(generated.summary.skippedRules, 10, "all incompatible uritransform rules reported as skipped")
     }
 
     static func expect(_ condition: Bool, _ message: String) {
