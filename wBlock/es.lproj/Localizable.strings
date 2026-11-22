@@ -1008,7 +1008,7 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Chat" = "Chat";
 "Anti-AI" = "Anti-IA";
 "Hides cookie consent banners and pop-ups." = "Oculta los banners y ventanas emergentes de consentimiento de cookies.";
-"Hides newsletter sign-ups and requests to show notifications." = "Oculta suscripciones a boletines y solicitudes para mostrar notificaciones.";
+"Hides pop-ups, newsletter prompts, and mobile app banners." = "Oculta ventanas emergentes, avisos de boletines y banners de aplicaciones móviles.";
 "Hides share buttons and social media widgets." = "Oculta botones de compartir y widgets de redes sociales.";
 "Hides live chat and support widgets." = "Oculta los widgets de chat en vivo y de soporte.";
 "Hides overlays, promotions, and other distractions." = "Oculta superposiciones, promociones y otras distracciones.";

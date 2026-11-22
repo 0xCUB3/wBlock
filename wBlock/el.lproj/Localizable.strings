@@ -1008,7 +1008,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Chat" = "Συνομιλία";
 "Anti-AI" = "Κατά της ΤΝ";
 "Hides cookie consent banners and pop-ups." = "Κρύβει μπάνερ και αναδυόμενα παράθυρα συναίνεσης για cookie.";
-"Hides newsletter sign-ups and requests to show notifications." = "Κρύβει εγγραφές σε ενημερωτικά δελτία και αιτήματα για ειδοποιήσεις.";
+"Hides pop-ups, newsletter prompts, and mobile app banners." = "Κρύβει αναδυόμενα παράθυρα, προτροπές ενημερωτικών δελτίων και πανό εφαρμογών.";
 "Hides share buttons and social media widgets." = "Κρύβει κουμπιά κοινοποίησης και widget κοινωνικών δικτύων.";
 "Hides live chat and support widgets." = "Κρύβει widget ζωντανής συνομιλίας και υποστήριξης.";
 "Hides overlays, promotions, and other distractions." = "Κρύβει επικαλύψεις, προωθήσεις και άλλους περισπασμούς.";

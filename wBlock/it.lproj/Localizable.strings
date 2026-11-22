@@ -1008,7 +1008,7 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "Chat" = "Chat";
 "Anti-AI" = "Anti-IA";
 "Hides cookie consent banners and pop-ups." = "Nasconde banner e popup di consenso ai cookie.";
-"Hides newsletter sign-ups and requests to show notifications." = "Nasconde iscrizioni alle newsletter e richieste di mostrare notifiche.";
+"Hides pop-ups, newsletter prompts, and mobile app banners." = "Nasconde pop-up, inviti alle newsletter e banner di app mobili.";
 "Hides share buttons and social media widgets." = "Nasconde pulsanti di condivisione e widget dei social.";
 "Hides live chat and support widgets." = "Nasconde i widget di chat dal vivo e assistenza.";
 "Hides overlays, promotions, and other distractions." = "Nasconde sovrapposizioni, promozioni e altre distrazioni.";

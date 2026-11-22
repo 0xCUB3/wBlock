@@ -138,8 +138,8 @@ private final class TestLoader: FilterListLoader {
         let easyPrivacy = stored.firstIndex { $0.name == "EasyPrivacy" }!
         stored[easyPrivacy].isSelected = true
         stored[easyPrivacy].excludedSites = ["mine.com"]
-        // Base and Popups were on when the handover was recorded; Popups was turned off since.
-        // Widgets was turned on later, so it is not pending.
+        // Base was on when the handover was recorded; Popups is no longer replaced,
+        // and Widgets was turned on later, so neither hands over.
         let pending: Set<UUID> = [base.id, popups.id]
 
         // Offline: no replacement has content, so only the withdrawn list that is off goes.
@@ -151,21 +151,20 @@ private final class TestLoader: FilterListLoader {
         precondition(offline.lists.contains { $0.id == base.id && $0.isSelected }, "a list keeps protecting until it can hand over")
         precondition(offline.lists.contains { $0.name == "AdGuard Cookie Notices" && $0.isCustom }, "a custom list is never touched")
 
-        // Popups and Mobile App Banners hand over to the same topic lists: each waits for all of them, and their settings combine.
-        var overlapPopups = catalogList("AdGuard Popups", selected: true)
-        overlapPopups.excludedSites = ["b.com"]
-        var overlapBanners = catalogList("AdGuard Mobile App Banners", selected: true)
-        overlapBanners.excludedSites = ["url.example"]
-        let overlapPending: Set<UUID> = [overlapPopups.id, overlapBanners.id]
-        let overlap = defaults.filter { !uBOOffered.contains($0.name) }
-            .map { list -> FilterList in var list = list; list.isSelected = false; return list } + [overlapPopups, overlapBanners]
-        let popupReplacements = Set(FilterListLoader.listReplacements["AdGuard Popups"]!)
+        // AdGuard Russian and Ukrainian both hand over to RU AdList: each waits for it, and their settings combine.
+        var overlapRussian = adGuard("AdGuard Russian filter", selected: true)
+        overlapRussian.excludedSites = ["b.com"]
+        var overlapUkrainian = adGuard("AdGuard Ukrainian filter", selected: true)
+        overlapUkrainian.excludedSites = ["url.example"]
+        let overlapPending: Set<UUID> = [overlapRussian.id, overlapUkrainian.id]
+        let overlap = defaults.map { list -> FilterList in var list = list; list.isSelected = false; return list }
+            + [overlapRussian, overlapUkrainian]
         let first = FilterListLoader.handingOverReplacedAdGuardLists(overlap, pending: overlapPending, catalogURLs: catalogURLs,
-                                                                     hasContent: { $0.name == "EasyList – Notifications" })
+                                                                     hasContent: { _ in false })
         precondition(first.handedOver.isEmpty, "a list waits until every replacement has content")
         let second = FilterListLoader.handingOverReplacedAdGuardLists(first.lists, pending: overlapPending, catalogURLs: catalogURLs,
-                                                                      hasContent: { popupReplacements.contains($0.name) })
-        precondition(second.lists.first { $0.name == "EasyList – Newsletter Notices" }!.excludedSites == ["b.com", "url.example"], "overlapping handovers must combine settings regardless of download order")
+                                                                      hasContent: { $0.name == "RU AdList" })
+        precondition(second.lists.first { $0.name == "RU AdList" }!.excludedSites == ["b.com", "url.example"], "overlapping handovers must combine settings regardless of download order")
 
         // Only Base's replacements arrived: Base hands over, Tracking waits.
         let remaining = pending.subtracting(offline.settled)
@@ -218,6 +217,44 @@ private final class TestLoader: FilterListLoader {
                      && !alphaByName["AdGuard Cookie Notices"]!.updatesAutomatically, "settings move with the swap")
         precondition(FilterListLoader.swappingToAdGuardAnnoyances(alpha) == alpha, "the swap leaves AdGuard users alone")
         precondition(Set(FilterListLoader.adGuardAnnoyanceSwaps.flatMap { [$0.key, $0.value] }).isSubset(of: Set(defaults.map(\.name))))
+
+        // 4.0 installs on EasyList's pop-up, social, and chat lists move to AdGuard's with combined settings (#1112).
+        var topicAlpha = defaults.map { list -> FilterList in
+            var list = list
+            list.isSelected = [
+                "EasyList – Newsletter Notices", "EasyList – Notifications",
+                "EasyList – Social Widgets", "EasyList – Chat Widgets",
+                "AdGuard Social Media Filter",
+            ].contains(list.name)
+            if list.name == "EasyList – Newsletter Notices" { list.excludedSites = ["a.com"]; list.updatesAutomatically = false }
+            if list.name == "EasyList – Notifications" { list.excludedSites = ["b.com"] }
+            if list.name == "AdGuard Social Media Filter" { list.excludedSites = ["kept.com"] }
+            if list.name == "EasyList – Chat Widgets" { list.excludedSites = ["chat.com"] }
+            return list
+        }
+        topicAlpha = FilterListLoader.swappingToAdGuardTopicAnnoyances(topicAlpha)
+        let topicByName = Dictionary(topicAlpha.map { ($0.name, $0) }, uniquingKeysWith: { a, _ in a })
+        precondition(
+            Set(topicAlpha.filter(\.isSelected).map(\.name))
+                == ["AdGuard Popups", "AdGuard Mobile App Banners", "AdGuard Social Media Filter", "AdGuard Widgets"],
+            "topic annoyance swap: \(topicAlpha.filter(\.isSelected).map(\.name))"
+        )
+        precondition(topicByName["AdGuard Popups"]!.excludedSites == ["a.com", "b.com"]
+                     && !topicByName["AdGuard Popups"]!.updatesAutomatically, "popups inherits combined settings")
+        precondition(topicByName["AdGuard Mobile App Banners"]!.excludedSites == ["a.com", "b.com"]
+                     && !topicByName["AdGuard Mobile App Banners"]!.updatesAutomatically, "banners inherits combined settings")
+        precondition(topicByName["AdGuard Social Media Filter"]!.excludedSites == ["kept.com"], "existing AdGuard list keeps its settings")
+        precondition(topicByName["AdGuard Widgets"]!.excludedSites == ["chat.com"], "widgets inherits chat settings")
+        precondition(FilterListLoader.swappingToAdGuardTopicAnnoyances(topicAlpha) == topicAlpha, "topic swap is idempotent")
+        precondition(Set(FilterListLoader.adGuardTopicAnnoyanceSwaps.keys).isSubset(of: Set(defaults.map(\.name))))
+        precondition(Set(FilterListLoader.adGuardTopicAnnoyanceSwaps.values.flatMap { $0 }).isSubset(of: Set(defaults.map(\.name))))
+        // AdGuard lists lead EasyList in Pop-ups & Banners and Social & Chat too (#1112).
+        let popupsOrder = defaults.filter { AnnoyanceTopic.topic(for: $0) == .popups }.map(\.name)
+        precondition(popupsOrder == ["AdGuard Popups", "AdGuard Mobile App Banners", "EasyList – Newsletter Notices", "EasyList – Notifications"],
+                     "popups catalog order: \(popupsOrder)")
+        let socialOrder = defaults.filter { AnnoyanceTopic.topic(for: $0) == .social }.map(\.name)
+        precondition(socialOrder == ["AdGuard Social Media Filter", "AdGuard Widgets", "EasyList – Social Widgets", "EasyList – Chat Widgets"],
+                     "social catalog order: \(socialOrder)")
         // General goes off for 4.0 alphas; a 3.2.3 AdGuard Other Annoyances user keeps it.
         let general = Set(AnnoyanceChoice.general.filterNames)
         let withGeneral = defaults.map { list -> FilterList in

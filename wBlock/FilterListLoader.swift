@@ -59,22 +59,57 @@ class FilterListLoader {
         "EasyList – Other Annoyances": "AdGuard Other Annoyances",
     ]
 
+    /// Remaining EasyList annoyance lists whose choices now turn on AdGuard's (#1112).
+    static let adGuardTopicAnnoyanceSwaps: [String: [String]] = [
+        "EasyList – Newsletter Notices": AnnoyanceChoice.popups.filterNames,
+        "EasyList – Notifications": AnnoyanceChoice.popups.filterNames,
+        "EasyList – Social Widgets": AnnoyanceChoice.social.filterNames,
+        "EasyList – Chat Widgets": AnnoyanceChoice.chat.filterNames,
+    ]
+
     /// Each EasyList list that is on goes off, and its AdGuard list comes on
     /// with its settings unless the user already runs it.
     static func swappingToAdGuardAnnoyances(_ lists: [FilterList]) -> [FilterList] {
-        var lists = lists
-        for (easyList, adGuard) in adGuardAnnoyanceSwaps {
-            guard let old = lists.firstIndex(where: { !$0.isCustom && $0.name == easyList && $0.isSelected }),
-                  let new = lists.firstIndex(where: { !$0.isCustom && $0.name == adGuard }) else { continue }
-            lists[old].isSelected = false
-            guard !lists[new].isSelected else { continue }
-            lists[new].isSelected = true
-            lists[new].updatesAutomatically = lists[old].updatesAutomatically
-            lists[new].excludedSites = lists[old].excludedSites
-            lists[new].selectedSites = lists[old].selectedSites
-            lists[new].onlySelectedSites = lists[old].onlySelectedSites
+        swappingLists(lists, map: adGuardAnnoyanceSwaps.mapValues { [$0] })
+    }
+
+    /// Swaps selected EasyList pop-up, social, and chat lists to AdGuard's,
+    /// combining settings when multiple predecessors map to the same list.
+    static func swappingToAdGuardTopicAnnoyances(_ lists: [FilterList]) -> [FilterList] {
+        swappingLists(lists, map: adGuardTopicAnnoyanceSwaps)
+    }
+
+    private static func swappingLists(_ lists: [FilterList], map: [String: [String]]) -> [FilterList] {
+        var predecessors: [String: [FilterList]] = [:]
+        var swappedIDs: Set<UUID> = []
+        for list in lists where !list.isCustom && list.isSelected {
+            guard let targets = map[list.name] else { continue }
+            let existingTargets = targets.filter { target in
+                lists.contains { !$0.isCustom && $0.name == target }
+            }
+            guard !existingTargets.isEmpty else { continue }
+            swappedIDs.insert(list.id)
+            for target in existingTargets {
+                predecessors[target, default: []].append(list)
+            }
         }
-        return lists
+        guard !swappedIDs.isEmpty else { return lists }
+        return lists.map { list in
+            var list = list
+            if swappedIDs.contains(list.id) {
+                list.isSelected = false
+                return list
+            }
+            guard !list.isCustom, let from = predecessors[list.name] else { return list }
+            if !list.isSelected {
+                list.isSelected = true
+                list.updatesAutomatically = from.allSatisfy(\.updatesAutomatically)
+                list.excludedSites = Array(Set(from.flatMap(\.excludedSites))).sorted()
+                list.onlySelectedSites = from.allSatisfy(\.onlySelectedSites)
+                list.selectedSites = list.onlySelectedSites ? Array(Set(from.flatMap(\.selectedSites))).sorted() : []
+            }
+            return list
+        }
     }
 
     // Lists that prompt an "essential protection" warning before they are disabled.
@@ -100,10 +135,6 @@ class FilterListLoader {
             "Official Polish filters for AdBlock, uBlock Origin & AdGuard": ["AdGuard Polish filter"],
             "EasyList Spanish": ["AdGuard Spanish/Portuguese filter"],
             "EasyDutch": ["AdGuard Dutch filter"],
-            // Topic lists only: General stays off (AnnoyanceChoice.turningOffGeneral).
-            "AdGuard Popups": AnnoyanceChoice.popups.filterNames,
-            "AdGuard Mobile App Banners": AnnoyanceChoice.popups.filterNames,
-            "AdGuard Widgets": AnnoyanceChoice.social.filterNames + AnnoyanceChoice.chat.filterNames,
         ]
         // A uBO default on iPhone, so it stays.
         if isPhone { replacements[mobileAdsFilterName] = nil }
@@ -628,7 +659,15 @@ class FilterListLoader {
                 url: URL(string: "https://ublockorigin.github.io/uAssetsCDN/thirdparties/easylist-annoyances.txt")!,
                 category: FilterListCategory.annoyances,
                 description: "Hides newsletter prompts, in-page pop-ups, app banners, and other annoyances, from the EasyList project."),
-            // Social & Chat reads EasyList Social, EasyList Chat, AdGuard Social, AdGuard Widgets (#1087).
+            // Social & Chat reads AdGuard Social, AdGuard Widgets, EasyList Social, EasyList Chat (#1112).
+            FilterList(
+                id: UUID(), name: "AdGuard Social Media Filter",
+                url: Self.adGuardUBlockURL(4), category: FilterListCategory.annoyances,
+                description: "Hides social media buttons and widgets, such as Like and Share, from the AdGuard project."),
+            FilterList(
+                id: UUID(), name: "AdGuard Widgets",
+                url: Self.adGuardUBlockURL(22), category: FilterListCategory.annoyances,
+                description: "Hides third-party widgets such as assistants and support chats, from the AdGuard project."),
             FilterList(
                 id: UUID(), name: "EasyList – Social Widgets",
                 url: Self.easyListSocialURL, category: FilterListCategory.annoyances,
@@ -639,6 +678,16 @@ class FilterListLoader {
                 url: URL(string: "https://ublockorigin.github.io/uAssetsCDN/thirdparties/easylist-chat.txt")!,
                 category: FilterListCategory.annoyances,
                 description: "Hides live chat and support widgets, from the EasyList project."),
+            // Pop-ups & Banners reads AdGuard Popups, AdGuard Mobile App Banners, EasyList Newsletters, EasyList Notifications (#1112).
+            FilterList(
+                id: UUID(), name: "AdGuard Popups",
+                url: Self.adGuardUBlockURL(19), category: FilterListCategory.annoyances,
+                description:
+                    "Hides pop-ups that sites don't need to work, from the AdGuard project."),
+            FilterList(
+                id: UUID(), name: "AdGuard Mobile App Banners",
+                url: Self.adGuardUBlockURL(20), category: FilterListCategory.annoyances,
+                description: "Hides banners that push a site's mobile app, from the AdGuard project."),
             FilterList(
                 id: UUID(), name: "EasyList – Newsletter Notices",
                 url: URL(string: "https://ublockorigin.github.io/uAssetsCDN/thirdparties/easylist-newsletters.txt")!,
@@ -660,10 +709,6 @@ class FilterListLoader {
                 url: Self.adTrackingHostsURL, category: FilterListCategory.privacy,
                 description: "Blocks ad and tracking hosts that other lists miss, from the wBlock project.",
                 trustLevel: "high"),
-            FilterList(
-                id: UUID(), name: "AdGuard Social Media Filter",
-                url: Self.adGuardUBlockURL(4), category: FilterListCategory.annoyances,
-                description: "Hides social media buttons and widgets, such as Like and Share, from the AdGuard project."),
             FilterList(
                 id: UUID(), name: "Stevo's AI Blocklist",
                 url: Self.stevoAIBlocklistURL, category: FilterListCategory.annoyances,
@@ -717,19 +762,6 @@ class FilterListLoader {
         )
         #endif
         filterLists.append(contentsOf: [
-            FilterList(
-                id: UUID(), name: "AdGuard Popups",
-                url: Self.adGuardUBlockURL(19), category: FilterListCategory.annoyances,
-                description:
-                    "Hides pop-ups that sites don't need to work, from the AdGuard project."),
-            FilterList(
-                id: UUID(), name: "AdGuard Mobile App Banners",
-                url: Self.adGuardUBlockURL(20), category: FilterListCategory.annoyances,
-                description: "Hides banners that push a site's mobile app, from the AdGuard project."),
-            FilterList(
-                id: UUID(), name: "AdGuard Widgets",
-                url: Self.adGuardUBlockURL(22), category: FilterListCategory.annoyances,
-                description: "Hides third-party widgets such as assistants and support chats, from the AdGuard project."),
             FilterList(
                 id: UUID(), name: "AdGuard Experimental Filter",
                 url: Self.adGuardUBlockURL(5), category: FilterListCategory.experimental,

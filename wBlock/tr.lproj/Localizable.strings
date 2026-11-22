@@ -1017,7 +1017,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Chat" = "Sohbet";
 "Anti-AI" = "Yapay zekâ karşıtı";
 "Hides cookie consent banners and pop-ups." = "Çerez onayı afişlerini ve açılır pencerelerini gizler.";
-"Hides newsletter sign-ups and requests to show notifications." = "Bülten kayıtlarını ve bildirim izni isteklerini gizler.";
+"Hides pop-ups, newsletter prompts, and mobile app banners." = "Açılır pencereleri, bülten istemlerini ve mobil uygulama başlıklarını gizler.";
 "Hides share buttons and social media widgets." = "Paylaş düğmelerini ve sosyal medya bileşenlerini gizler.";
 "Hides live chat and support widgets." = "Canlı sohbet ve destek bileşenlerini gizler.";
 "Hides overlays, promotions, and other distractions." = "Katmanları, promosyonları ve diğer dikkat dağıtıcıları gizler.";

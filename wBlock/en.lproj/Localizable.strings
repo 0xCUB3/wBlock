@@ -1017,7 +1017,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Chat" = "Chat";
 "Anti-AI" = "Anti-AI";
 "Hides cookie consent banners and pop-ups." = "Hides cookie consent banners and pop-ups.";
-"Hides newsletter sign-ups and requests to show notifications." = "Hides newsletter sign-ups and requests to show notifications.";
+"Hides pop-ups, newsletter prompts, and mobile app banners." = "Hides pop-ups, newsletter prompts, and mobile app banners.";
 "Hides share buttons and social media widgets." = "Hides share buttons and social media widgets.";
 "Hides live chat and support widgets." = "Hides live chat and support widgets.";
 "Hides overlays, promotions, and other distractions." = "Hides overlays, promotions, and other distractions.";

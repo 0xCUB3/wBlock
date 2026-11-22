@@ -48,9 +48,9 @@ enum AnnoyanceTopic: String, CaseIterable, Sendable {
 
 /// What onboarding and Annoyances Info offer in place of the whole list of
 /// annoyance lists, none of which is on by default (#1087). Each choice turns
-/// on the lists it names. Pop-ups & Banners turns on EasyList's lists only (#1091).
-/// Cookie Notices and General use AdGuard's lists, which are updated far more
-/// often than EasyList's (#1112).
+/// on the lists it names. All five built-in annoyance choices use AdGuard's
+/// lists (plus uBO's for Cookie Notices and General), which are updated far
+/// more often than EasyList's (#1112).
 enum AnnoyanceChoice: String, CaseIterable, Identifiable, Sendable {
     case general, cookies, popups, social, chat, ai
 
@@ -75,7 +75,7 @@ enum AnnoyanceChoice: String, CaseIterable, Identifiable, Sendable {
     var subtitle: String {
         switch self {
         case .cookies: String(localized: "Hides cookie consent banners and pop-ups.")
-        case .popups: String(localized: "Hides newsletter sign-ups and requests to show notifications.")
+        case .popups: String(localized: "Hides pop-ups, newsletter prompts, and mobile app banners.")
         case .social: String(localized: "Hides share buttons and social media widgets.")
         case .chat: String(localized: "Hides live chat and support widgets.")
         case .general: String(localized: "Hides overlays, promotions, and other distractions.")
@@ -86,9 +86,9 @@ enum AnnoyanceChoice: String, CaseIterable, Identifiable, Sendable {
     var filterNames: [String] {
         switch self {
         case .cookies: ["uBlock filters – Cookie Notices", "AdGuard Cookie Notices"]
-        case .popups: ["EasyList – Newsletter Notices", "EasyList – Notifications"]
-        case .social: ["EasyList – Social Widgets"]
-        case .chat: ["EasyList – Chat Widgets"]
+        case .popups: ["AdGuard Popups", "AdGuard Mobile App Banners"]
+        case .social: ["AdGuard Social Media Filter"]
+        case .chat: ["AdGuard Widgets"]
         case .general: ["uBlock filters – Annoyances", "AdGuard Other Annoyances"]
         case .ai: ["Stevo's AI Blocklist"]
         }

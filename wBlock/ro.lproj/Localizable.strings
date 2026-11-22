@@ -1008,7 +1008,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Chat" = "Chat";
 "Anti-AI" = "Anti-IA";
 "Hides cookie consent banners and pop-ups." = "Ascunde bannerele și ferestrele de consimțământ pentru cookie-uri.";
-"Hides newsletter sign-ups and requests to show notifications." = "Ascunde abonările la newsletter și cererile de a afișa notificări.";
+"Hides pop-ups, newsletter prompts, and mobile app banners." = "Ascunde ferestrele pop-up, invitațiile la newsletter și bannerele pentru aplicații mobile.";
 "Hides share buttons and social media widgets." = "Ascunde butoanele de distribuire și widgeturile rețelelor sociale.";
 "Hides live chat and support widgets." = "Ascunde widgeturile de chat live și asistență.";
 "Hides overlays, promotions, and other distractions." = "Ascunde suprapunerile, promoțiile și alte distrageri.";

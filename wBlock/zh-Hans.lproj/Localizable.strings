@@ -1008,7 +1008,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Chat" = "聊天";
 "Anti-AI" = "反 AI";
 "Hides cookie consent banners and pop-ups." = "隐藏 Cookie 同意横幅和弹窗。";
-"Hides newsletter sign-ups and requests to show notifications." = "隐藏新闻通讯订阅和通知权限请求。";
+"Hides pop-ups, newsletter prompts, and mobile app banners." = "隐藏弹窗、新闻通讯提示和移动应用横幅。";
 "Hides share buttons and social media widgets." = "隐藏分享按钮和社交媒体小组件。";
 "Hides live chat and support widgets." = "隐藏在线聊天和客服小组件。";
 "Hides overlays, promotions, and other distractions." = "隐藏遮罩层、推广内容和其他干扰。";

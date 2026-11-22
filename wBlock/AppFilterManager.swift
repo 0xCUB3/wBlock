@@ -260,8 +260,12 @@ class AppFilterManager: ObservableObject {
     private static let changedDefaultsKey = "wBlock.changedDefaults.4.0.2"
     /// Its own key, so the defaults above don't come back on for people who turned them off.
     private static let adGuardAnnoyancesKey = "wBlock.adGuardAnnoyances.4"
+    /// Swaps the remaining EasyList annoyance topics (Pop-ups & Banners, Social, Chat) to AdGuard (#1112).
+    private static let adGuardTopicAnnoyancesKey = "wBlock.adGuardTopicAnnoyances.4"
     private static let generalAnnoyancesOffKey = "wBlock.generalAnnoyancesOff.4"
-    private static let oneTimeMigrationKeys = [changedDefaultsKey, adGuardAnnoyancesKey, generalAnnoyancesOffKey]
+    private static let oneTimeMigrationKeys = [
+        changedDefaultsKey, adGuardAnnoyancesKey, adGuardTopicAnnoyancesKey, generalAnnoyancesOffKey,
+    ]
 
     /// Marks one-time upgrade migrations and the 4.0 welcome notice as already
     /// satisfied for a freshly onboarded 4.0 install so restarting onboarding
@@ -858,8 +862,10 @@ class AppFilterManager: ObservableObject {
         let changedDefaults = applyOnce(Self.changedDefaultsKey, FilterListLoader.applyingChangedDefaults, to: &migratedFilterLists)
         let swappedAnnoyances = applyOnce(Self.adGuardAnnoyancesKey, FilterListLoader.swappingToAdGuardAnnoyances,
                                           to: &migratedFilterLists)
+        let swappedTopicAnnoyances = applyOnce(Self.adGuardTopicAnnoyancesKey, FilterListLoader.swappingToAdGuardTopicAnnoyances,
+                                               to: &migratedFilterLists)
         let generalOff = applyOnce(Self.generalAnnoyancesOffKey, AnnoyanceChoice.turningOffGeneral, to: &migratedFilterLists)
-        let migratedAnnoyances = swappedAnnoyances || generalOff
+        let migratedAnnoyances = swappedAnnoyances || swappedTopicAnnoyances || generalOff
         let foldedCustomCopies = migratedFilterLists.filter(\.isCustom).count < customCountBeforeHydrate
         migratedFilterLists = deduplicateFilterIDs(migratedFilterLists)
         // A list whose URL moved keeps validators, a last check and a delta baseline

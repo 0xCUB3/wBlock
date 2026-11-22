@@ -1008,7 +1008,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Chat" = "الدردشة";
 "Anti-AI" = "مكافحة الذكاء الاصطناعي";
 "Hides cookie consent banners and pop-ups." = "يخفي لافتات ونوافذ الموافقة على ملفات تعريف الارتباط.";
-"Hides newsletter sign-ups and requests to show notifications." = "يخفي نماذج الاشتراك في النشرات وطلبات عرض الإشعارات.";
+"Hides pop-ups, newsletter prompts, and mobile app banners." = "يخفي النوافذ المنبثقة ومطالبات النشرات ولافتات تطبيقات الجوال.";
 "Hides share buttons and social media widgets." = "يخفي أزرار المشاركة وأدوات وسائل التواصل الاجتماعي.";
 "Hides live chat and support widgets." = "يخفي أدوات الدردشة المباشرة والدعم.";
 "Hides overlays, promotions, and other distractions." = "يخفي الطبقات المتراكبة والعروض الترويجية وغيرها من المشتتات.";
