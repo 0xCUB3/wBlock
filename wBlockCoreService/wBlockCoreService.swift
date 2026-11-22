@@ -7,6 +7,7 @@
 
 internal import WBEngine
 import CryptoKit
+import Darwin
 import Foundation
 import SafariServices
 import os.log
@@ -557,6 +558,7 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         let schema: Int
         let outputDigest: String
         let context: ReloadContext
+        let outputIdentity: OutputIdentity?
     }
 
     private struct ReloadContext: Codable, Equatable {
@@ -581,21 +583,106 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         case failed
     }
 
-    /// Identifies one published output file. Every writer replaces the output
-    /// atomically, so new bytes always get a new identity and an existing
-    /// mapping keeps the bytes it was opened with.
-    private struct OutputIdentity: Equatable {
-        let fileNumber: Int
-        let size: Int
-        let modified: Date?
+    /// Identifies one published output file using POSIX stat metadata so both atomic
+    /// replacements (device/inode) and in-place writes (size/mtime/ctime with ns precision)
+    /// invalidate cached digests cleanly without Obj-C dictionary bridging.
+    private struct OutputIdentity: Codable, Equatable {
+        let device: Int64
+        let fileNumber: UInt64
+        let size: Int64
+        let modifiedSeconds: Int64
+        let modifiedNanoseconds: Int64
+        let statusChangedSeconds: Int64
+        let statusChangedNanoseconds: Int64
     }
 
+    private struct PublishedOutputState: Codable, Equatable {
+        let schema: Int
+        let compilerIdentity: String
+        let ruleLimit: Int
+        let baseIdentity: OutputIdentity
+        let outputIdentity: OutputIdentity
+        let disabledSitesDigest: String
+        let baseRuleCount: Int
+        let finalRuleCount: Int
+    }
+
+    private static let publishedOutputStateSchema = 1
+    private static let publishedOutputStateFileSuffix = ".published-state.json"
+
     private static func outputIdentity(_ url: URL) -> OutputIdentity? {
-        guard let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),
-              let fileNumber = (attributes[.systemFileNumber] as? NSNumber)?.intValue,
-              let size = (attributes[.size] as? NSNumber)?.intValue
-        else { return nil }
-        return OutputIdentity(fileNumber: fileNumber, size: size, modified: attributes[.modificationDate] as? Date)
+        var info = stat()
+        guard url.withUnsafeFileSystemRepresentation({ path in
+            guard let path else { return Int32(-1) }
+            return fstatat(AT_FDCWD, path, &info, 0)
+        }) == 0 else { return nil }
+        return OutputIdentity(
+            device: Int64(info.st_dev),
+            fileNumber: UInt64(info.st_ino),
+            size: Int64(info.st_size),
+            modifiedSeconds: Int64(info.st_mtimespec.tv_sec),
+            modifiedNanoseconds: Int64(info.st_mtimespec.tv_nsec),
+            statusChangedSeconds: Int64(info.st_ctimespec.tv_sec),
+            statusChangedNanoseconds: Int64(info.st_ctimespec.tv_nsec)
+        )
+    }
+
+    private static func publishedOutputStateURL(
+        targetRulesFilename: String,
+        containerURL: URL
+    ) -> URL {
+        containerURL.appendingPathComponent("\(targetRulesFilename)\(publishedOutputStateFileSuffix)")
+    }
+
+    private static func disabledSitesDigest(_ disabledSites: [String]) -> String {
+        let normalized = DisabledSitesNormalizer.normalizedDomains(from: disabledSites)
+        let encoded = (try? JSONEncoder().encode(normalized)) ?? Data()
+        return DigestSupport.sha256Hex(encoded)
+    }
+
+    private static func loadPublishedOutputState(
+        targetRulesFilename: String,
+        containerURL: URL
+    ) -> PublishedOutputState? {
+        let url = publishedOutputStateURL(targetRulesFilename: targetRulesFilename, containerURL: containerURL)
+        guard let data = try? Data(contentsOf: url) else { return nil }
+        return try? JSONDecoder().decode(PublishedOutputState.self, from: data)
+    }
+
+    private static func savePublishedOutputState(
+        targetRulesFilename: String,
+        containerURL: URL,
+        baseURL: URL,
+        outputURL: URL,
+        expectedBaseIdentity: OutputIdentity? = nil,
+        expectedOutputIdentity: OutputIdentity? = nil,
+        disabledSitesDigest: String,
+        baseRuleCount: Int,
+        finalRuleCount: Int
+    ) {
+        let stateURL = publishedOutputStateURL(targetRulesFilename: targetRulesFilename, containerURL: containerURL)
+        try? withContentBlockerOutputLock(at: containerURL, targetRulesFilename: targetRulesFilename) {
+            guard let baseIdentity = outputIdentity(baseURL),
+                  expectedBaseIdentity == nil || expectedBaseIdentity == baseIdentity,
+                  let outputIdentity = outputIdentity(outputURL),
+                  expectedOutputIdentity == nil || expectedOutputIdentity == outputIdentity
+            else {
+                try? FileManager.default.removeItem(at: stateURL)
+                return
+            }
+            let state = PublishedOutputState(
+                schema: publishedOutputStateSchema,
+                compilerIdentity: SafariVersionDetection.compilerIdentity,
+                ruleLimit: safariContentBlockerRuleLimit,
+                baseIdentity: baseIdentity,
+                outputIdentity: outputIdentity,
+                disabledSitesDigest: disabledSitesDigest,
+                baseRuleCount: baseRuleCount,
+                finalRuleCount: finalRuleCount
+            )
+            guard let data = try? JSONEncoder().encode(state) else { return }
+            try? FilterArtifactStorage.write(data, to: stateURL)
+        }
     }
 
     /// Maps the output without reading it. Parsing and hashing a large output
@@ -717,8 +804,8 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         )
     }
 
-    /// An output with `previous`'s identity holds the same bytes (see
-    /// OutputIdentity), so its digest is reused instead of read again.
+    /// Reuses an unchanged output's verified digest via `previous` or the persisted
+    /// `ReloadMarker.outputIdentity` instead of re-mapping and SHA-256 hashing multi-MB JSON.
     private static func readReloadSnapshot(
         markerURL: URL,
         outputURL: URL,
@@ -732,10 +819,26 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
             let marker = (try? Data(contentsOf: markerURL)).flatMap {
                 try? JSONDecoder().decode(ReloadMarker.self, from: $0)
             }
-            if let previous, let identity = previous.outputIdentity, outputIdentity(outputURL) == identity {
-                return (marker, previous, nil, currentReloadContext)
+            let context = currentReloadContext
+            let currentIdentity = outputIdentity(outputURL)
+            if let previous, let identity = previous.outputIdentity, currentIdentity == identity {
+                return (marker, previous, nil, context)
             }
-            return (marker, nil, mapOutput(outputURL), currentReloadContext)
+            if let marker,
+               marker.schema == reloadMarkerSchema,
+               marker.context == context,
+               let markerIdentity = marker.outputIdentity,
+               currentIdentity == markerIdentity
+            {
+                let cached = ReloadSnapshot(
+                    marker: marker,
+                    outputDigest: marker.outputDigest,
+                    outputIdentity: markerIdentity,
+                    context: context
+                )
+                return (marker, cached, nil, context)
+            }
+            return (marker, nil, mapOutput(outputURL), context)
         }
         return ReloadSnapshot(
             marker: marker,
@@ -744,6 +847,45 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
             context: context
         )
     }
+
+    #if DEBUG
+    static func readReloadSnapshotForTesting(
+        markerURL: URL,
+        outputURL: URL,
+        appGroupURL: URL
+    ) throws -> (outputDigest: String?, markerHasIdentity: Bool) {
+        let snapshot = try readReloadSnapshot(
+            markerURL: markerURL,
+            outputURL: outputURL,
+            appGroupURL: appGroupURL
+        )
+        return (snapshot.outputDigest, snapshot.marker?.outputIdentity != nil)
+    }
+
+    static func writeReloadMarkerForTesting(
+        markerURL: URL,
+        outputURL: URL,
+        appGroupURL: URL,
+        groupIdentifier: String
+    ) throws -> Bool {
+        let snapshot = try readReloadSnapshot(
+            markerURL: markerURL,
+            outputURL: outputURL,
+            appGroupURL: appGroupURL
+        )
+        guard let digest = snapshot.outputDigest else { return false }
+        let result = try writeReloadMarkerIfUnchanged(
+            markerURL: markerURL,
+            outputURL: outputURL,
+            appGroupURL: appGroupURL,
+            expectedDigest: digest,
+            expectedIdentity: snapshot.outputIdentity,
+            expectedContext: snapshot.context,
+            groupIdentifier: groupIdentifier
+        )
+        return result == .written
+    }
+    #endif
 
     private static func writeReloadMarkerIfUnchanged(
         markerURL: URL,
@@ -771,7 +913,8 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
             let newMarker = ReloadMarker(
                 schema: reloadMarkerSchema,
                 outputDigest: expectedDigest,
-                context: expectedContext
+                context: expectedContext,
+                outputIdentity: expectedIdentity
             )
             do {
                 try JSONEncoder().encode(newMarker).write(to: markerURL, options: .atomic)
@@ -1373,6 +1516,24 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         knownRuleCount: Int? = nil,
         sharingBlocksWith siblingFilename: String? = nil
     ) throws -> ContentBlockerSaveResult {
+        try saveContentBlockerIfChangedWithIdentity(
+            jsonRules: data,
+            groupIdentifier: groupIdentifier,
+            targetRulesFilename: targetRulesFilename,
+            containerURL: explicitContainerURL,
+            knownRuleCount: knownRuleCount,
+            sharingBlocksWith: siblingFilename
+        ).result
+    }
+
+    private static func saveContentBlockerIfChangedWithIdentity(
+        jsonRules data: Data,
+        groupIdentifier: String,
+        targetRulesFilename: String,
+        containerURL explicitContainerURL: URL? = nil,
+        knownRuleCount: Int? = nil,
+        sharingBlocksWith siblingFilename: String? = nil
+    ) throws -> (result: ContentBlockerSaveResult, outputIdentity: OutputIdentity?) {
         os_log(.info, "Saving pre-formatted JSON content blocker rules to %@", targetRulesFilename)
         #if os(iOS)
         try validateContentBlockerSize(data.count)
@@ -1392,10 +1553,10 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         let sharedFileURL = appGroupURL.appendingPathComponent(targetRulesFilename)
         // Compare before locking; under the lock only confirm the compared file is still current.
         let unchangedIdentity = mapOutput(sharedFileURL).flatMap { $0.data == data ? $0.identity : nil }
-        let outputChanged = try withContentBlockerOutputLock(
+        let (outputChanged, savedIdentity) = try withContentBlockerOutputLock(
             at: appGroupURL,
             targetRulesFilename: targetRulesFilename
-        ) {
+        ) { () -> (Bool, OutputIdentity?) in
             let outputChanged = unchangedIdentity == nil || outputIdentity(sharedFileURL) != unchangedIdentity
             if outputChanged {
                 try FilterArtifactStorage.write(data, to: sharedFileURL,
@@ -1404,9 +1565,9 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
             } else {
                 os_log(.info, "Skipped unchanged rules at %@", sharedFileURL.path)
             }
-            return outputChanged
+            return (outputChanged, outputIdentity(sharedFileURL))
         }
-        return ContentBlockerSaveResult(ruleCount: ruleCount, outputChanged: outputChanged)
+        return (ContentBlockerSaveResult(ruleCount: ruleCount, outputChanged: outputChanged), savedIdentity)
     }
 
     public static func finalizeAndSaveContentBlockerIfWithinLimit(
@@ -1419,6 +1580,29 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         containerURL: URL? = nil,
         isCancelled: (() -> Bool)? = nil
     ) throws -> (ruleCount: Int, truncatedRuleCount: Int, outputChanged: Bool) {
+        let finalized = try finalizeAndSaveContentBlockerResult(
+            baseJSON: baseJSON,
+            disabledSites: disabledSites,
+            knownBaseCount: knownBaseCount,
+            ruleLimit: ruleLimit,
+            groupIdentifier: groupIdentifier,
+            targetRulesFilename: targetRulesFilename,
+            containerURL: containerURL,
+            isCancelled: isCancelled
+        )
+        return (finalized.ruleCount, finalized.truncatedRuleCount, finalized.outputChanged)
+    }
+
+    private static func finalizeAndSaveContentBlockerResult(
+        baseJSON: Data,
+        disabledSites: [String],
+        knownBaseCount: Int? = nil,
+        ruleLimit: Int = safariContentBlockerRuleLimit,
+        groupIdentifier: String,
+        targetRulesFilename: String,
+        containerURL: URL? = nil,
+        isCancelled: (() -> Bool)? = nil
+    ) throws -> (ruleCount: Int, truncatedRuleCount: Int, outputChanged: Bool, outputIdentity: OutputIdentity?) {
         if Task.isCancelled || isCancelled?() == true { throw CancellationError() }
         let finalized = finalizeContentBlockerJSON(
             baseJSON: baseJSON,
@@ -1430,11 +1614,12 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
             return (
                 ruleCount: finalized.ruleCount,
                 truncatedRuleCount: finalized.truncatedRuleCount,
-                outputChanged: false
+                outputChanged: false,
+                outputIdentity: nil
             )
         }
         if Task.isCancelled || isCancelled?() == true { throw CancellationError() }
-        let output = try saveContentBlockerIfChanged(
+        let saved = try saveContentBlockerIfChangedWithIdentity(
             jsonRules: finalized.json,
             groupIdentifier: groupIdentifier,
             targetRulesFilename: targetRulesFilename,
@@ -1445,7 +1630,8 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         return (
             ruleCount: finalized.ruleCount,
             truncatedRuleCount: 0,
-            outputChanged: output.outputChanged
+            outputChanged: saved.result.outputChanged,
+            outputIdentity: saved.outputIdentity
         )
     }
 
@@ -1547,7 +1733,7 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
             containerURL: containerURL
         )
 
-        let hasCachedBase = ContentBlockerIncrementalCache.hasCoherentBaseRulesCache(
+        var hasCachedBase = ContentBlockerIncrementalCache.hasCoherentBaseRulesCache(
             targetRulesFilename: rulesFilename,
             groupIdentifier: groupIdentifier,
             containerURL: containerURL
@@ -1562,18 +1748,10 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
                 containerURL: containerURL,
                 allowTruncation: true
             )
-            let cachedAdvancedRules = ContentBlockerIncrementalCache.loadCachedAdvancedRules(
-                targetRulesFilename: rulesFilename,
-                groupIdentifier: groupIdentifier,
-                containerURL: containerURL
-            )
-            let trimmedAdvanced = cachedAdvancedRules?.trimmingCharacters(
-                in: .whitespacesAndNewlines
-            )
             return ContentBlockerTargetOutcome(
                 safariRulesCount: fastUpdate.safariRulesCount,
                 truncatedRuleCount: fastUpdate.truncatedRuleCount,
-                advancedRulesText: (trimmedAdvanced?.isEmpty == false) ? trimmedAdvanced : nil,
+                advancedRulesText: fastUpdate.advancedRulesText,
                 reusedCachedBase: true,
                 outputChanged: fastUpdate.outputChanged,
                 admittedSourceRuleCountsByFilterID: loadTargetSourceRuleProvenance(
@@ -1585,7 +1763,11 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
             )
         }
         if let currentSignature, currentSignature == storedSignature, hasCachedBase {
-            return try reuseCachedBase(provenanceSignature: currentSignature)
+            do {
+                return try reuseCachedBase(provenanceSignature: currentSignature)
+            } catch where !(error is CancellationError) {
+                hasCachedBase = false
+            }
         }
 
         guard let containerURL = containerURL ?? FileManager.default.containerURL(
@@ -1623,16 +1805,26 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         let knownFingerprint = reuse.flatMap { _ in
             savedPlanFingerprint(rulesFilename: rulesFilename, containerURL: containerURL)
         }
-        guard let compiled = try plan.compileTarget(targetIndex, extras: extrasJSON, knownFingerprint: knownFingerprint) else {
+        let compiled: WBEngine.Compiled
+        if let fresh = try plan.compileTarget(targetIndex, extras: extrasJSON, knownFingerprint: knownFingerprint) {
+            compiled = fresh
+        } else {
             guard let reuse else { preconditionFailure("the engine matches a fingerprint only when one was known") }
-            let outcome = try reuseCachedBase(provenanceSignature: reuse.stored)
-            if outcome.truncatedRuleCount == 0 {
-                ContentBlockerIncrementalCache.saveInputSignature(reuse.current, targetRulesFilename: rulesFilename,
-                    groupIdentifier: groupIdentifier, containerURL: containerURL)
-                saveTargetSourceRuleProvenance(outcome.admittedSourceRuleCountsByFilterID, targetRulesFilename: rulesFilename,
-                    inputSignature: reuse.current, groupIdentifier: groupIdentifier, containerURL: containerURL)
+            do {
+                let outcome = try reuseCachedBase(provenanceSignature: reuse.stored)
+                if outcome.truncatedRuleCount == 0 {
+                    ContentBlockerIncrementalCache.saveInputSignature(reuse.current, targetRulesFilename: rulesFilename,
+                        groupIdentifier: groupIdentifier, containerURL: containerURL)
+                    saveTargetSourceRuleProvenance(outcome.admittedSourceRuleCountsByFilterID, targetRulesFilename: rulesFilename,
+                        inputSignature: reuse.current, groupIdentifier: groupIdentifier, containerURL: containerURL)
+                }
+                return outcome
+            } catch where !(error is CancellationError) {
+                guard let rebuilt = try plan.compileTarget(targetIndex, extras: extrasJSON, knownFingerprint: nil) else {
+                    preconditionFailure("the engine must compile when knownFingerprint is nil")
+                }
+                compiled = rebuilt
             }
-            return outcome
         }
         if Task.isCancelled || isCancelled?() == true { throw CancellationError() }
         let baseJSON = compiled.stats.nativeRules == 0 ? Data(inertContentBlockerRulesJSON.utf8) : compiled.safariRulesJSON
@@ -1642,7 +1834,7 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
             UUID(uuidString: key).map { ($0, value) }
         })
         let baseFilename = ContentBlockerIncrementalCache.baseRulesFilename(for: rulesFilename)
-        let finalized = try finalizeAndSaveContentBlockerIfWithinLimit(
+        let finalized = try finalizeAndSaveContentBlockerResult(
             baseJSON: baseJSON, disabledSites: disabledSites, knownBaseCount: baseCount,
             groupIdentifier: groupIdentifier, targetRulesFilename: rulesFilename, containerURL: containerURL,
             isCancelled: isCancelled
@@ -1653,7 +1845,7 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         if finalized.truncatedRuleCount == 0 {
             // The fingerprint names the base it was saved with, so it goes last.
             try? FileManager.default.removeItem(at: containerURL.appendingPathComponent(fingerprintFilename))
-            _ = try saveContentBlockerIfChanged(jsonRules: baseJSON, groupIdentifier: groupIdentifier,
+            let savedBase = try saveContentBlockerIfChangedWithIdentity(jsonRules: baseJSON, groupIdentifier: groupIdentifier,
                 targetRulesFilename: baseFilename, containerURL: containerURL, knownRuleCount: baseCount,
                 sharingBlocksWith: rulesFilename)
             try saveBlockerListFile(contents: String(baseCount), groupIdentifier: groupIdentifier, filename: "\(baseFilename).count", containerURL: containerURL)
@@ -1665,6 +1857,21 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
                 try saveBlockerListFile(contents: fingerprint + fingerprintIdentity, groupIdentifier: groupIdentifier,
                     filename: fingerprintFilename, containerURL: containerURL)
             }
+            savePublishedOutputState(
+                targetRulesFilename: rulesFilename,
+                containerURL: containerURL,
+                baseURL: containerURL.appendingPathComponent(baseFilename),
+                outputURL: containerURL.appendingPathComponent(rulesFilename),
+                expectedBaseIdentity: savedBase.outputIdentity,
+                expectedOutputIdentity: finalized.outputIdentity,
+                disabledSitesDigest: disabledSitesDigest(disabledSites),
+                baseRuleCount: baseCount,
+                finalRuleCount: finalized.ruleCount
+            )
+        } else {
+            try? FileManager.default.removeItem(
+                at: publishedOutputStateURL(targetRulesFilename: rulesFilename, containerURL: containerURL)
+            )
         }
 
         if let currentSignature, conversion.truncatedRuleCount == 0 {
@@ -1721,6 +1928,18 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         )
     }
 
+    private static func loadCachedAdvancedRulesText(
+        targetRulesFilename: String,
+        containerURL: URL
+    ) throws -> String? {
+        let advancedURL = containerURL.appendingPathComponent(
+            ContentBlockerIncrementalCache.baseAdvancedRulesFilename(for: targetRulesFilename)
+        )
+        let advancedRulesText = try String(contentsOf: advancedURL, encoding: .utf8)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return advancedRulesText.isEmpty ? nil : advancedRulesText
+    }
+
     static func fastUpdateDisabledSitesWithOutputChange(
         groupIdentifier: String,
         targetRulesFilename: String,
@@ -1735,54 +1954,102 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         ) else {
             throw CocoaError(.fileNoSuchFile)
         }
-        
-        let baseFilename = ContentBlockerIncrementalCache.baseRulesFilename(for: targetRulesFilename)
-        let baseCountFilename = "\(baseFilename).count"
 
-        // Preferred path: use cached base JSON (no ignore rules) + cheap string injection.
+        let baseFilename = ContentBlockerIncrementalCache.baseRulesFilename(for: targetRulesFilename)
         let baseURL = containerURL.appendingPathComponent(baseFilename)
-        let baseCountURL = containerURL.appendingPathComponent(baseCountFilename)
-        if ContentBlockerIncrementalCache.hasCoherentBaseRulesCache(
+        let baseCountURL = containerURL.appendingPathComponent("\(baseFilename).count")
+        let outputURL = containerURL.appendingPathComponent(targetRulesFilename)
+
+        guard ContentBlockerIncrementalCache.hasCoherentBaseRulesCache(
             targetRulesFilename: targetRulesFilename,
             groupIdentifier: groupIdentifier,
             containerURL: containerURL
         ),
-           let baseJSON = try? Data(contentsOf: baseURL, options: .alwaysMapped),
-           let parsedBaseCount = ContentBlockerRuleArray.count(baseJSON),
            let baseCount = (try? String(contentsOf: baseCountURL, encoding: .utf8))
                 .flatMap({ Int($0.trimmingCharacters(in: .whitespacesAndNewlines)) }),
-           baseCount == parsedBaseCount {
-            let finalized = try finalizeAndSaveContentBlockerIfWithinLimit(
-                baseJSON: baseJSON,
-                disabledSites: sitesToUse,
-                knownBaseCount: baseCount,
-                groupIdentifier: groupIdentifier,
+           baseCount >= 0
+        else {
+            // Without a complete cache this path cannot safely preserve advanced
+            // rules. The caller must take the full conversion path instead.
+            throw CocoaError(.fileReadCorruptFile)
+        }
+
+        let sitesDigest = disabledSitesDigest(sitesToUse)
+        let currentBaseIdentity = outputIdentity(baseURL)
+        if let publishedState = loadPublishedOutputState(targetRulesFilename: targetRulesFilename, containerURL: containerURL),
+           publishedState.schema == publishedOutputStateSchema,
+           publishedState.compilerIdentity == SafariVersionDetection.compilerIdentity,
+           publishedState.ruleLimit == safariContentBlockerRuleLimit,
+           publishedState.baseRuleCount == baseCount,
+           publishedState.disabledSitesDigest == sitesDigest,
+           let currentBaseIdentity,
+           let currentOutputIdentity = outputIdentity(outputURL),
+           publishedState.baseIdentity == currentBaseIdentity,
+           publishedState.outputIdentity == currentOutputIdentity {
+            let advancedRulesText = try loadCachedAdvancedRulesText(
                 targetRulesFilename: targetRulesFilename,
                 containerURL: containerURL
             )
-            if finalized.truncatedRuleCount > 0 && !allowTruncation {
-                throw CocoaError(.fileReadCorruptFile)
-            }
-
-            let advancedURL = containerURL.appendingPathComponent(
-                ContentBlockerIncrementalCache.baseAdvancedRulesFilename(for: targetRulesFilename)
-            )
-            let advancedRulesText = try String(contentsOf: advancedURL, encoding: .utf8)
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-            let finalRuleCount = finalized.ruleCount
-
-            os_log(.info, "Fast updated %@ with %d rules for %d disabled sites", targetRulesFilename, finalRuleCount, sitesToUse.count)
             return (
-                safariRulesCount: finalRuleCount,
-                truncatedRuleCount: finalized.truncatedRuleCount,
-                advancedRulesText: advancedRulesText.isEmpty ? nil : advancedRulesText,
-                outputChanged: finalized.outputChanged
+                safariRulesCount: publishedState.finalRuleCount,
+                truncatedRuleCount: 0,
+                advancedRulesText: advancedRulesText,
+                outputChanged: false
             )
         }
 
-        // Without a complete cache this path cannot safely preserve advanced
-        // rules. The caller must take the full conversion path instead.
-        throw CocoaError(.fileReadCorruptFile)
+        // Preferred path: use cached base JSON (no ignore rules) + cheap string injection.
+        guard let mappedBaseIdentity = currentBaseIdentity,
+              let baseJSON = try? Data(contentsOf: baseURL, options: .alwaysMapped),
+              outputIdentity(baseURL) == mappedBaseIdentity,
+              let parsedBaseCount = ContentBlockerRuleArray.count(baseJSON),
+              baseCount == parsedBaseCount
+        else {
+            throw CocoaError(.fileReadCorruptFile)
+        }
+
+        let finalized = try finalizeAndSaveContentBlockerResult(
+            baseJSON: baseJSON,
+            disabledSites: sitesToUse,
+            knownBaseCount: baseCount,
+            groupIdentifier: groupIdentifier,
+            targetRulesFilename: targetRulesFilename,
+            containerURL: containerURL
+        )
+        if finalized.truncatedRuleCount > 0 && !allowTruncation {
+            throw CocoaError(.fileReadCorruptFile)
+        }
+
+        let advancedRulesText = try loadCachedAdvancedRulesText(
+            targetRulesFilename: targetRulesFilename,
+            containerURL: containerURL
+        )
+        let finalRuleCount = finalized.ruleCount
+        if finalized.truncatedRuleCount == 0 {
+            savePublishedOutputState(
+                targetRulesFilename: targetRulesFilename,
+                containerURL: containerURL,
+                baseURL: baseURL,
+                outputURL: outputURL,
+                expectedBaseIdentity: mappedBaseIdentity,
+                expectedOutputIdentity: finalized.outputIdentity,
+                disabledSitesDigest: sitesDigest,
+                baseRuleCount: baseCount,
+                finalRuleCount: finalRuleCount
+            )
+        } else {
+            try? FileManager.default.removeItem(
+                at: publishedOutputStateURL(targetRulesFilename: targetRulesFilename, containerURL: containerURL)
+            )
+        }
+
+        os_log(.info, "Fast updated %@ with %d rules for %d disabled sites", targetRulesFilename, finalRuleCount, sitesToUse.count)
+        return (
+            safariRulesCount: finalRuleCount,
+            truncatedRuleCount: finalized.truncatedRuleCount,
+            advancedRulesText: advancedRulesText,
+            outputChanged: finalized.outputChanged
+        )
     }
 
     private struct EnginePlanInputs {

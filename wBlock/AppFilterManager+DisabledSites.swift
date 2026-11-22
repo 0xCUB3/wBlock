@@ -149,27 +149,13 @@ extension AppFilterManager {
             ContentBlockerTargetManager.shared.allTargets(forPlatform: currentPlatform)
         }.value
 
-
-        let updateResult = await Task.detached { () -> ([ContentBlockerTargetInfo], [(name: String, error: Error)]) in
-            var nonEmptyTargets: [ContentBlockerTargetInfo] = []
-            var failures: [(name: String, error: Error)] = []
-            for targetInfo in platformTargets {
-                do {
-                    _ = try ContentBlockerService.fastUpdateDisabledSites(
-                        groupIdentifier: GroupIdentifier.shared.value,
-                        targetRulesFilename: targetInfo.rulesFilename,
-                        disabledSites: disabledSites
-                    )
-                    nonEmptyTargets.append(targetInfo)
-                } catch {
-                    failures.append((targetInfo.displayName, error))
-                }
-            }
-            return (nonEmptyTargets, failures)
-        }.value
-        let targetsToReload = updateResult.0
-        let updateFailureCount = updateResult.1.count
-        for failure in updateResult.1 {
+        let updateResult = await Self.fastUpdateDisabledSitesTargets(
+            platformTargets,
+            disabledSites: disabledSites
+        )
+        let targetsToReload = updateResult.targetsToReload
+        let updateFailureCount = updateResult.failures.count
+        for failure in updateResult.failures {
             await ConcurrentLogManager.shared.error(
                 .whitelist,
                 LocalizedStrings.text("Failed to update disabled sites for blocker"),
@@ -238,6 +224,46 @@ extension AppFilterManager {
             }
         }
         return succeeded
+    }
+
+    nonisolated private static func fastUpdateDisabledSitesTargets(
+        _ targets: [ContentBlockerTargetInfo],
+        disabledSites: [String]
+    ) async -> (targetsToReload: [ContentBlockerTargetInfo], failures: [(name: String, error: Error)]) {
+        #if os(macOS)
+        let maxConcurrent = 3
+        #else
+        let maxConcurrent = 1
+        #endif
+        var orderedOutcomes = Array<Result<ContentBlockerTargetInfo, any Error>?>(repeating: nil, count: targets.count)
+        await boundedConcurrentForEach(Array(targets.enumerated()), maxConcurrent: maxConcurrent, operation: { index, targetInfo in
+            do {
+                _ = try ContentBlockerService.fastUpdateDisabledSites(
+                    groupIdentifier: GroupIdentifier.shared.value,
+                    targetRulesFilename: targetInfo.rulesFilename,
+                    disabledSites: disabledSites
+                )
+                return (index, Result<ContentBlockerTargetInfo, any Error>.success(targetInfo))
+            } catch {
+                return (index, Result<ContentBlockerTargetInfo, any Error>.failure(error))
+            }
+        }, onResult: { index, outcome in
+            orderedOutcomes[index] = outcome
+        })
+
+        var targetsToReload: [ContentBlockerTargetInfo] = []
+        var failures: [(name: String, error: Error)] = []
+        for (index, outcome) in orderedOutcomes.enumerated() {
+            switch outcome {
+            case .success(let targetInfo):
+                targetsToReload.append(targetInfo)
+            case .failure(let error):
+                failures.append((targets[index].displayName, error))
+            case nil:
+                break
+            }
+        }
+        return (targetsToReload, failures)
     }
 
     nonisolated private static func reloadDisabledSitesTargetsInParallel(_ targets: [ContentBlockerTargetInfo]) async -> (
