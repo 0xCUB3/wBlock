@@ -38,6 +38,8 @@ struct AdGuardExtraHostManifestTests {
           "hosts": [
             "facebook.com",
             "*.kinopoisk.ru",
+            "*.bbc.co.uk",
+            "*.sub.example.org",
             "twitch.tv",
             "overlap.example"
           ],
@@ -61,6 +63,16 @@ struct AdGuardExtraHostManifestTests {
         expect(!manifest.matchesExtraHost("sub.facebook.com"), "non-wildcard subdomain must not match")
         expect(manifest.matchesExtraHost("hd.kinopoisk.ru"), "wildcard root subdomain")
         expect(manifest.matchesExtraHost("a.b.kinopoisk.ru"), "nested wildcard root subdomain")
+        expect(manifest.matchesExtraHost("news.bbc.co.uk"), "3-label wildcard subdomain")
+        expect(manifest.matchesExtraHost("a.b.bbc.co.uk"), "nested 3-label wildcard subdomain")
+        expect(manifest.matchesExtraHost("bbc.co.uk"), "3-label wildcard root")
+        expect(manifest.matchesExtraHost("www.bbc.co.uk"), "www-stripped 3-label wildcard root")
+        expect(!manifest.matchesExtraHost("evilbbc.co.uk"), "suffix boundary must not match 3-label wildcard")
+        expect(!manifest.matchesExtraHost("other.co.uk"), "sibling under public suffix must not match 3-label wildcard")
+        expect(manifest.matchesExtraHost("x.sub.example.org"), "subdomain of 3-label wildcard")
+        expect(manifest.matchesExtraHost("sub.example.org"), "exact 3-label wildcard root")
+        expect(!manifest.matchesExtraHost("other.example.org"), "sibling subdomain must not match *.sub.example.org")
+        expect(!manifest.matchesExtraHost("example.org"), "parent domain must not match *.sub.example.org")
         expect(manifest.matchesTinyShieldHost("1000logos.net"), "exact tinyShield host")
         expect(manifest.matchesTinyShieldHost("sub.1000logos.net"), "subdomain tinyShield host")
         expect(!manifest.matchesTinyShieldHost("apple.com"), "unrelated host must not match")

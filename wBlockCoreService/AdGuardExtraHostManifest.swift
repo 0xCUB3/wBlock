@@ -99,11 +99,13 @@ public struct AdGuardExtraHostManifest: Sendable, Equatable {
         if exactHosts.contains(stripped) {
             return true
         }
-        let labels = stripped.split(separator: ".")
-        if labels.count >= 2 {
-            let root = "\(labels[labels.count - 2]).\(labels[labels.count - 1])"
-            if wildcardRoots.contains(root) {
-                return true
+        if !wildcardRoots.isEmpty {
+            var candidate = stripped[...]
+            while let dot = candidate.firstIndex(of: ".") {
+                if wildcardRoots.contains(String(candidate)) {
+                    return true
+                }
+                candidate = candidate[candidate.index(after: dot)...]
             }
         }
         return false
