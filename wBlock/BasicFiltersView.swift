@@ -555,7 +555,7 @@ struct BasicFiltersView: View {
                 IconBadge(
                     systemName: "globe",
                     tint: Color(red: 0.16, green: 0.56, blue: 0.88),
-                    isOn: hasActiveForeign || !selectedLanguages.isEmpty,
+                    isOn: hasActiveForeign,
                     ringPhase: rowRingPhase(isDirty: isDirty),
                     showsFailedDot: filterManager.lastBasicApplyFailed && isDirty
                 )
