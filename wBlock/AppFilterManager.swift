@@ -261,6 +261,22 @@ class AppFilterManager: ObservableObject {
     /// Its own key, so the defaults above don't come back on for people who turned them off.
     private static let adGuardAnnoyancesKey = "wBlock.adGuardAnnoyances.4"
     private static let generalAnnoyancesOffKey = "wBlock.generalAnnoyancesOff.4"
+    private static let oneTimeMigrationKeys = [changedDefaultsKey, adGuardAnnoyancesKey, generalAnnoyancesOffKey]
+
+    /// Marks one-time upgrade migrations and the 4.0 welcome notice as already
+    /// satisfied for a freshly onboarded 4.0 install so restarting onboarding
+    /// and reopening the app never re-runs upgrade migrations over the user's
+    /// new onboarding choices.
+    func markFreshInstallMigrationsComplete(preservingPendingHandover: Bool = false) {
+        UpgradeNotice.markSeen()
+        for key in Self.oneTimeMigrationKeys {
+            UpgradeStateStore.markMigrationCompleted(key)
+        }
+        if !preservingPendingHandover
+            || UpgradeStateStore.adGuardHandoverPending(legacyKey: Self.adGuardHandoverPendingKey) == nil {
+            adGuardHandoverPending = []
+        }
+    }
 
     /// Gives an existing install the defaults 4.0 changed after its first
     /// builds, once per device and `key`. New installs start from the current
@@ -545,6 +561,7 @@ class AppFilterManager: ObservableObject {
     func completeResetForOnboarding() async {
         resetOnboardingUserDefaults()
         UpgradeStateStore.reset()
+        markFreshInstallMigrationsComplete(preservingPendingHandover: false)
         CloudSyncManager.shared.resetLocalSyncState()
         await dataManager.resetToDefaultData(preservingOnboardingCompletion: true)
         await resetForOnboarding()
@@ -708,7 +725,8 @@ class AppFilterManager: ObservableObject {
 
     private func setupAsync() async {
         await dataManager.waitUntilLoaded()
-        setup()
+        let migrationSaveTask = setup()
+        await migrationSaveTask?.value
         if let container = loader.getSharedContainerURL() {
             let sources = filterLists.filter { !$0.isCustom }.map(ContentBlockerIncrementalCache.localFilename)
             let baselines = filterLists.map { "diff-baseline-\(ContentBlockerIncrementalCache.localFilename(for: $0))" }
@@ -753,7 +771,8 @@ class AppFilterManager: ObservableObject {
         setupTask = nil
     }
 
-    func setup() {
+    @discardableResult
+    func setup() -> Task<Void, Never>? {
         filterUpdater.filterListManager = self
         SharedAutoUpdateManager.runProgressHandler = { [weak self] in self?.showAutoUpdateProgress($0) }
 
@@ -865,11 +884,12 @@ class AppFilterManager: ObservableObject {
         // Persist URL migrations and newly added defaults. Catalog metadata is hydrated in memory
         // because older app data does not store languages/trust levels.
         let hasURLMigrations = !validatorClearIDs.isEmpty
+        var migrationSaveTask: Task<Void, Never>?
         if hasURLMigrations || addedDefaultFilters || selectedDeprecatedListWasRemoved || foldedCustomCopies || !offAdGuard.removed.isEmpty
             || changedDefaults || migratedAnnoyances {
             let onceKeys = onceKeysAwaitingSave
             onceKeysAwaitingSave = []
-            Task {
+            migrationSaveTask = Task {
                 guard await self.saveFilterLists() else { return }
                 for key in onceKeys { UpgradeStateStore.markMigrationCompleted(key) }
             }
@@ -924,6 +944,7 @@ class AppFilterManager: ObservableObject {
             await updateVersionsAndCounts()
             await checkForDuplicateLists()
         }
+        return migrationSaveTask
     }
 
 

@@ -917,6 +917,7 @@ struct OnboardingView: View {
                 CloudSyncManager.shared.setEnabled(wantsCloudSync)
             }
         }
+        filterManager.markFreshInstallMigrationsComplete(preservingPendingHandover: restoredFromBackup)
         guard await dataManager.setHasCompletedOnboarding(true) else { return }
         restoredFromBackup = false
 
@@ -1001,6 +1002,7 @@ struct OnboardingView: View {
         )
 
         guard applied else { return }
+        filterManager.markFreshInstallMigrationsComplete(preservingPendingHandover: false)
         guard await dataManager.setHasCompletedOnboarding(true) else { return }
         dismiss()
         NotificationCenter.default.post(name: .wBlockSelectTabRequest, object: 0)
