@@ -1258,3 +1258,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Try Standard Mode" = "Попробовать стандартный режим";
 "Standard is best for most people. Both modes block the same things, and switching never changes your filters. Advanced adds manual control of lists and userscripts." = "Стандартный режим лучше всего подходит большинству пользователей. Оба режима блокируют одно и то же, а переключение не меняет фильтры. Расширенный даёт ручное управление списками и скриптами.";
 "Switch to Advanced Mode" = "Переключиться на расширенный режим";
+"Here are your starting options. You can change any of them later." = "Вот стартовые настройки. Любую из них можно изменить позже.";

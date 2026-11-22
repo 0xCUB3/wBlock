@@ -1258,3 +1258,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Try Standard Mode" = "Δοκίμασε την Τυπική λειτουργία";
 "Standard is best for most people. Both modes block the same things, and switching never changes your filters. Advanced adds manual control of lists and userscripts." = "Η Τυπική είναι η καλύτερη επιλογή για τους περισσότερους. Και οι δύο λειτουργίες μπλοκάρουν τα ίδια και η αλλαγή δεν επηρεάζει τα φίλτρα σου. Η Προηγμένη προσθέτει χειροκίνητο έλεγχο λιστών και userscripts.";
 "Switch to Advanced Mode" = "Εναλλαγή σε Προηγμένη λειτουργία";
+"Here are your starting options. You can change any of them later." = "Αυτές είναι οι αρχικές σου επιλογές. Μπορείς να αλλάξεις οποιαδήποτε αργότερα.";

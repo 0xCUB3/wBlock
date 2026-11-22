@@ -485,9 +485,10 @@ struct OnboardingView: View {
     /// so Next is always enabled.
     private var quickReviewStep: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text("Here are your selected starting options (change later).")
+            Text("Here are your starting options. You can change any of them later.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
 
             // Detected languages
             VStack(alignment: .leading, spacing: 8) {

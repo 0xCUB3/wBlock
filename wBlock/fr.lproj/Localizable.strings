@@ -1258,3 +1258,4 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Try Standard Mode" = "Essayer le mode Standard";
 "Standard is best for most people. Both modes block the same things, and switching never changes your filters. Advanced adds manual control of lists and userscripts." = "Standard convient à la plupart des utilisateurs. Les deux modes bloquent les mêmes choses et changer ne modifie jamais vos filtres. Avancé ajoute le contrôle manuel des listes et userscripts.";
 "Switch to Advanced Mode" = "Passer en mode Avancé";
+"Here are your starting options. You can change any of them later." = "Voici vos options de départ. Vous pourrez les modifier plus tard.";

@@ -1267,3 +1267,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Try Standard Mode" = "امتحان حالت استاندارد";
 "Standard is best for most people. Both modes block the same things, and switching never changes your filters. Advanced adds manual control of lists and userscripts." = "حالت استاندارد برای بیشتر افراد بهترین است. هر دو حالت موارد یکسانی را مسدود می‌کنند و جابه‌جایی هرگز فیلترهای شما را تغییر نمی‌دهد. حالت پیشرفته کنترل دستی فهرست‌ها و اسکریپت‌ها را اضافه می‌کند.";
 "Switch to Advanced Mode" = "تغییر به حالت پیشرفته";
+"Here are your starting options. You can change any of them later." = "این‌ها گزینه‌های اولیه شما هستند. هر کدام را بعداً می‌توانید تغییر دهید.";

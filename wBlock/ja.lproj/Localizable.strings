@@ -1267,3 +1267,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Try Standard Mode" = "標準モードを試す";
 "Standard is best for most people. Both modes block the same things, and switching never changes your filters. Advanced adds manual control of lists and userscripts." = "ほとんどのユーザーには標準が最適です。どちらのモードも同じものをブロックし、切り替えてもフィルターは変わりません。アドバンスドではリストとユーザースクリプトを手動で管理できます。";
 "Switch to Advanced Mode" = "アドバンスドモードに切り替え";
+"Here are your starting options. You can change any of them later." = "初期設定は以下になります。あとからいつでも変更できます。";

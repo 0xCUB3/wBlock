@@ -1267,3 +1267,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Try Standard Mode" = "Try Standard Mode";
 "Standard is best for most people. Both modes block the same things, and switching never changes your filters. Advanced adds manual control of lists and userscripts." = "Standard is best for most people. Both modes block the same things, and switching never changes your filters. Advanced adds manual control of lists and userscripts.";
 "Switch to Advanced Mode" = "Switch to Advanced Mode";
+"Here are your starting options. You can change any of them later." = "Here are your starting options. You can change any of them later.";

@@ -1258,3 +1258,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Try Standard Mode" = "جرّب الوضع القياسي";
 "Standard is best for most people. Both modes block the same things, and switching never changes your filters. Advanced adds manual control of lists and userscripts." = "الوضع القياسي هو الأفضل لمعظم الأشخاص. كلا الوضعين يحظران الأشياء نفسها، والتبديل لا يغير قوائمك أبداً. يضيف المتقدم تحكماً يدوياً في القوائم والسكربتات.";
 "Switch to Advanced Mode" = "التبديل إلى الوضع المتقدم";
+"Here are your starting options. You can change any of them later." = "إليك خيارات البداية. يمكنك تغيير أي منها لاحقاً.";

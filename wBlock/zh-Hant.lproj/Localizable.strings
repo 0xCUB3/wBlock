@@ -1258,3 +1258,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Try Standard Mode" = "試用標準模式";
 "Standard is best for most people. Both modes block the same things, and switching never changes your filters. Advanced adds manual control of lists and userscripts." = "標準模式最適合大多數使用者。兩種模式的封鎖效果完全相同，切換不會更動你的過濾清單。進階模式提供對清單與使用者腳本的手動控制。";
 "Switch to Advanced Mode" = "切換至進階模式";
+"Here are your starting options. You can change any of them later." = "以下是你的初始選項，之後隨時都可以修改。";

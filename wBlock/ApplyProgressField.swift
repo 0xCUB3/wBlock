@@ -18,7 +18,7 @@ struct ProgressBanners<Leading: View>: ViewModifier {
     private enum Banner { case apply, check, applied, noUpdates }
 
     private var banner: Banner? {
-        if filterManager.showingApplyProgressSheet {
+        if filterManager.showingApplyProgressSheet || filterManager.isApplyInFlight {
             // Picking updates and failed or warning results use the sheet.
             return applyProgress.state.mode == .progress ? .apply : nil
         }

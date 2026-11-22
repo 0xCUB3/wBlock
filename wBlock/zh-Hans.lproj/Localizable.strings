@@ -1258,3 +1258,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Try Standard Mode" = "体验标准模式";
 "Standard is best for most people. Both modes block the same things, and switching never changes your filters. Advanced adds manual control of lists and userscripts." = "标准模式适合大多数人。两种模式的拦截效果完全一致，切换不会改动你的过滤规则。高级模式提供对列表和用户脚本的手动控制。";
 "Switch to Advanced Mode" = "切换到高级模式";
+"Here are your starting options. You can change any of them later." = "以下是你的初始选项，之后可以随时修改。";

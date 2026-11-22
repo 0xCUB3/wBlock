@@ -1258,3 +1258,4 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "Try Standard Mode" = "Prova modalità Standard";
 "Standard is best for most people. Both modes block the same things, and switching never changes your filters. Advanced adds manual control of lists and userscripts." = "Standard è la scelta migliore per la maggior parte delle persone. Entrambe le modalità bloccano le stesse cose e cambiare non modifica i tuoi filtri. Avanzata aggiunge il controllo manuale di liste e userscript.";
 "Switch to Advanced Mode" = "Passa alla modalità Avanzata";
+"Here are your starting options. You can change any of them later." = "Ecco le opzioni iniziali. Puoi cambiare qualsiasi scelta in seguito.";
