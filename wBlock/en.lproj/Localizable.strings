@@ -1013,11 +1013,14 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Pop-ups & Banners" = "Pop-ups & Banners";
 "Social & Chat" = "Social & Chat";
 "Enable Recommended" = "Enable Recommended";
+"Pop-ups" = "Pop-ups";
+"Mobile App Banners" = "Mobile App Banners";
 "Social" = "Social";
 "Chat" = "Chat";
 "Anti-AI" = "Anti-AI";
 "Hides cookie consent banners and pop-ups." = "Hides cookie consent banners and pop-ups.";
-"Hides pop-ups, newsletter prompts, and mobile app banners." = "Hides pop-ups, newsletter prompts, and mobile app banners.";
+"Hides pop-ups, newsletter prompts, and notification requests." = "Hides pop-ups, newsletter prompts, and notification requests.";
+"Hides banners that push a site's mobile app." = "Hides banners that push a site's mobile app.";
 "Hides share buttons and social media widgets." = "Hides share buttons and social media widgets.";
 "Hides live chat and support widgets." = "Hides live chat and support widgets.";
 "Hides overlays, promotions, and other distractions." = "Hides overlays, promotions, and other distractions.";

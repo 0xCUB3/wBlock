@@ -1013,11 +1013,14 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Pop-ups & Banners" = "Açılır pencereler ve banner'lar";
 "Social & Chat" = "Sosyal medya ve sohbet";
 "Enable Recommended" = "Önerilenleri etkinleştir";
+"Pop-ups" = "Açılır pencereler";
+"Mobile App Banners" = "Mobil Uygulama Başlıkları";
 "Social" = "Sosyal medya";
 "Chat" = "Sohbet";
 "Anti-AI" = "Yapay zekâ karşıtı";
 "Hides cookie consent banners and pop-ups." = "Çerez onayı afişlerini ve açılır pencerelerini gizler.";
-"Hides pop-ups, newsletter prompts, and mobile app banners." = "Açılır pencereleri, bülten istemlerini ve mobil uygulama başlıklarını gizler.";
+"Hides pop-ups, newsletter prompts, and notification requests." = "Açılır pencereleri, bülten istemlerini ve bildirim isteklerini gizler.";
+"Hides banners that push a site's mobile app." = "Bir sitenin mobil uygulamasını öne süren afişleri gizler.";
 "Hides share buttons and social media widgets." = "Paylaş düğmelerini ve sosyal medya bileşenlerini gizler.";
 "Hides live chat and support widgets." = "Canlı sohbet ve destek bileşenlerini gizler.";
 "Hides overlays, promotions, and other distractions." = "Katmanları, promosyonları ve diğer dikkat dağıtıcıları gizler.";

@@ -48,11 +48,11 @@ enum AnnoyanceTopic: String, CaseIterable, Sendable {
 
 /// What onboarding and Annoyances Info offer in place of the whole list of
 /// annoyance lists, none of which is on by default (#1087). Each choice turns
-/// on the lists it names. All five built-in annoyance choices use AdGuard's
-/// lists (plus uBO's for Cookie Notices and General), which are updated far
-/// more often than EasyList's (#1112).
+/// on the lists it names. All built-in annoyance choices use AdGuard's lists
+/// (plus uBO's for Cookie Notices and General), which are updated far more
+/// often than EasyList's (#1112).
 enum AnnoyanceChoice: String, CaseIterable, Identifiable, Sendable {
-    case general, cookies, popups, social, chat, ai
+    case general, cookies, popups, banners, social, chat, ai
 
     var id: String { rawValue }
 
@@ -64,7 +64,8 @@ enum AnnoyanceChoice: String, CaseIterable, Identifiable, Sendable {
     var title: String {
         switch self {
         case .cookies: "Cookie Notices"
-        case .popups: "Pop-ups & Banners"
+        case .popups: "Pop-ups"
+        case .banners: "Mobile App Banners"
         case .social: "Social"
         case .chat: "Chat"
         case .general: "General"
@@ -75,7 +76,8 @@ enum AnnoyanceChoice: String, CaseIterable, Identifiable, Sendable {
     var subtitle: String {
         switch self {
         case .cookies: String(localized: "Hides cookie consent banners and pop-ups.")
-        case .popups: String(localized: "Hides pop-ups, newsletter prompts, and mobile app banners.")
+        case .popups: String(localized: "Hides pop-ups, newsletter prompts, and notification requests.")
+        case .banners: String(localized: "Hides banners that push a site's mobile app.")
         case .social: String(localized: "Hides share buttons and social media widgets.")
         case .chat: String(localized: "Hides live chat and support widgets.")
         case .general: String(localized: "Hides overlays, promotions, and other distractions.")
@@ -86,7 +88,8 @@ enum AnnoyanceChoice: String, CaseIterable, Identifiable, Sendable {
     var filterNames: [String] {
         switch self {
         case .cookies: ["uBlock filters – Cookie Notices", "AdGuard Cookie Notices"]
-        case .popups: ["AdGuard Popups", "AdGuard Mobile App Banners"]
+        case .popups: ["AdGuard Popups"]
+        case .banners: ["AdGuard Mobile App Banners"]
         case .social: ["AdGuard Social Media Filter"]
         case .chat: ["AdGuard Widgets"]
         case .general: ["uBlock filters – Annoyances", "AdGuard Other Annoyances"]

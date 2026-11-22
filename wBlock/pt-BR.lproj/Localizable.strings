@@ -1004,11 +1004,14 @@ Para reativá-los, desative outros filtros grandes e aplique as alterações nov
 "Pop-ups & Banners" = "Pop-ups e banners";
 "Social & Chat" = "Redes sociais e chat";
 "Enable Recommended" = "Ativar recomendadas";
+"Pop-ups" = "Pop-ups";
+"Mobile App Banners" = "Banners de aplicativos móveis";
 "Social" = "Redes sociais";
 "Chat" = "Chat";
 "Anti-AI" = "Anti-IA";
 "Hides cookie consent banners and pop-ups." = "Oculta banners e pop-ups de consentimento de cookies.";
-"Hides pop-ups, newsletter prompts, and mobile app banners." = "Oculta pop-ups, avisos de newsletter e banners de aplicativos móveis.";
+"Hides pop-ups, newsletter prompts, and notification requests." = "Oculta pop-ups, avisos de newsletter e pedidos de notificação.";
+"Hides banners that push a site's mobile app." = "Oculta banners que promovem o app de um site.";
 "Hides share buttons and social media widgets." = "Oculta botões de compartilhar e widgets de redes sociais.";
 "Hides live chat and support widgets." = "Oculta widgets de chat ao vivo e suporte.";
 "Hides overlays, promotions, and other distractions." = "Oculta sobreposições, promoções e outras distrações.";

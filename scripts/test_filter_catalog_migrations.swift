@@ -236,13 +236,11 @@ private final class TestLoader: FilterListLoader {
         let topicByName = Dictionary(topicAlpha.map { ($0.name, $0) }, uniquingKeysWith: { a, _ in a })
         precondition(
             Set(topicAlpha.filter(\.isSelected).map(\.name))
-                == ["AdGuard Popups", "AdGuard Mobile App Banners", "AdGuard Social Media Filter", "AdGuard Widgets"],
+                == ["AdGuard Popups", "AdGuard Social Media Filter", "AdGuard Widgets"],
             "topic annoyance swap: \(topicAlpha.filter(\.isSelected).map(\.name))"
         )
         precondition(topicByName["AdGuard Popups"]!.excludedSites == ["a.com", "b.com"]
                      && !topicByName["AdGuard Popups"]!.updatesAutomatically, "popups inherits combined settings")
-        precondition(topicByName["AdGuard Mobile App Banners"]!.excludedSites == ["a.com", "b.com"]
-                     && !topicByName["AdGuard Mobile App Banners"]!.updatesAutomatically, "banners inherits combined settings")
         precondition(topicByName["AdGuard Social Media Filter"]!.excludedSites == ["kept.com"], "existing AdGuard list keeps its settings")
         precondition(topicByName["AdGuard Widgets"]!.excludedSites == ["chat.com"], "widgets inherits chat settings")
         precondition(FilterListLoader.swappingToAdGuardTopicAnnoyances(topicAlpha) == topicAlpha, "topic swap is idempotent")

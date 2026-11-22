@@ -1004,11 +1004,14 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Pop-ups & Banners" = "Всплывающие окна и баннеры";
 "Social & Chat" = "Соцсети и чаты";
 "Enable Recommended" = "Включить рекомендуемые";
+"Pop-ups" = "Всплывающие окна";
+"Mobile App Banners" = "Баннеры мобильных приложений";
 "Social" = "Соцсети";
 "Chat" = "Чат";
 "Anti-AI" = "Анти-ИИ";
 "Hides cookie consent banners and pop-ups." = "Скрывает баннеры и окна согласия на cookie.";
-"Hides pop-ups, newsletter prompts, and mobile app banners." = "Скрывает всплывающие окна, предложения подписки на рассылки и баннеры мобильных приложений.";
+"Hides pop-ups, newsletter prompts, and notification requests." = "Скрывает всплывающие окна, предложения подписки на рассылки и запросы на уведомления.";
+"Hides banners that push a site's mobile app." = "Скрывает баннеры, навязывающие мобильное приложение сайта.";
 "Hides share buttons and social media widgets." = "Скрывает кнопки «Поделиться» и виджеты соцсетей.";
 "Hides live chat and support widgets." = "Скрывает виджеты онлайн-чата и поддержки.";
 "Hides overlays, promotions, and other distractions." = "Скрывает оверлеи, промоакции и прочие отвлекающие элементы.";

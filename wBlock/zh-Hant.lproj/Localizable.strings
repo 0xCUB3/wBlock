@@ -1004,11 +1004,14 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Pop-ups & Banners" = "彈出視窗與橫幅";
 "Social & Chat" = "社群與聊天";
 "Enable Recommended" = "啟用建議項目";
+"Pop-ups" = "彈出式視窗";
+"Mobile App Banners" = "行動應用程式橫幅";
 "Social" = "社群";
 "Chat" = "聊天";
 "Anti-AI" = "反 AI";
 "Hides cookie consent banners and pop-ups." = "隱藏 Cookie 同意橫幅和彈出式視窗。";
-"Hides pop-ups, newsletter prompts, and mobile app banners." = "隱藏彈出視窗、電子報提示和行動應用程式橫幅。";
+"Hides pop-ups, newsletter prompts, and notification requests." = "隱藏彈出視窗、電子報提示和通知要求。";
+"Hides banners that push a site's mobile app." = "隱藏推銷網站行動 App 的橫幅。";
 "Hides share buttons and social media widgets." = "隱藏分享按鈕和社群媒體小工具。";
 "Hides live chat and support widgets." = "隱藏即時聊天和客服小工具。";
 "Hides overlays, promotions, and other distractions." = "隱藏覆蓋層、推廣內容和其他干擾。";

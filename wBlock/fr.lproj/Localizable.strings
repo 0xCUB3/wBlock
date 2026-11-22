@@ -1004,11 +1004,14 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Pop-ups & Banners" = "Pop-ups et bannières";
 "Social & Chat" = "Réseaux sociaux et chat";
 "Enable Recommended" = "Activer les recommandées";
+"Pop-ups" = "Pop-ups";
+"Mobile App Banners" = "Bannières d’application mobile";
 "Social" = "Réseaux sociaux";
 "Chat" = "Chat";
 "Anti-AI" = "Anti-IA";
 "Hides cookie consent banners and pop-ups." = "Masque les bannières et fenêtres de consentement aux cookies.";
-"Hides pop-ups, newsletter prompts, and mobile app banners." = "Masque les fenêtres pop-up, les invitations aux newsletters et les bannières d’application mobile.";
+"Hides pop-ups, newsletter prompts, and notification requests." = "Masque les fenêtres pop-up, les invitations aux newsletters et les demandes de notifications.";
+"Hides banners that push a site's mobile app." = "Masque les bannières qui poussent l’app mobile d’un site.";
 "Hides share buttons and social media widgets." = "Masque les boutons de partage et les widgets de réseaux sociaux.";
 "Hides live chat and support widgets." = "Masque les widgets de chat en direct et d’assistance.";
 "Hides overlays, promotions, and other distractions." = "Masque les superpositions, promotions et autres distractions.";
