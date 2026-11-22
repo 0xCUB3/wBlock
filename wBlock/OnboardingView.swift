@@ -924,6 +924,7 @@ struct OnboardingView: View {
         // from Settings would otherwise leave the user there (#1087).
         dismiss()
         NotificationCenter.default.post(name: .wBlockSelectTabRequest, object: 0)
+        NotificationCenter.default.post(name: .wBlockScrollFiltersToTopRequest, object: nil)
         filterManager.checkAndEnableFilters(forceReload: true)
     }
 
@@ -1002,6 +1003,8 @@ struct OnboardingView: View {
         guard applied else { return }
         guard await dataManager.setHasCompletedOnboarding(true) else { return }
         dismiss()
+        NotificationCenter.default.post(name: .wBlockSelectTabRequest, object: 0)
+        NotificationCenter.default.post(name: .wBlockScrollFiltersToTopRequest, object: nil)
     }
 
     private func updateRegionalRecommendations(for languages: Set<String>) {

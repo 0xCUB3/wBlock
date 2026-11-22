@@ -31,6 +31,7 @@ extension Notification.Name {
     static let wBlockCheckScriptUpdatesRequest = Notification.Name("wBlockCheckScriptUpdatesRequest")
     /// macOS menu bar items (#999). The tab request carries the tab index.
     static let wBlockSelectTabRequest = Notification.Name("wBlockSelectTabRequest")
+    static let wBlockScrollFiltersToTopRequest = Notification.Name("wBlockScrollFiltersToTopRequest")
     static let wBlockUpdateRequest = Notification.Name("wBlockUpdateRequest")
     static let wBlockToggleEnabledOnlyRequest = Notification.Name("wBlockToggleEnabledOnlyRequest")
     static let wBlockShowLogsRequest = Notification.Name("wBlockShowLogsRequest")

@@ -236,16 +236,19 @@ struct MacReorderableList: NSViewRepresentable {
     var sections: [MacListSection]
     let header: AnyView
     var emptyContent: AnyView? = nil
+    var scrollToTopToken: Int = 0
     let onMove: (MacListMove) -> Bool
     private var topContentInset: CGFloat? = nil
 
     init(
         sections: [MacListSection], header: AnyView, emptyContent: AnyView? = nil,
+        scrollToTopToken: Int = 0,
         onMove: @escaping (MacListMove) -> Bool
     ) {
         self.sections = sections
         self.header = header
         self.emptyContent = emptyContent
+        self.scrollToTopToken = scrollToTopToken
         self.onMove = onMove
     }
 
@@ -315,6 +318,12 @@ struct MacReorderableList: NSViewRepresentable {
     func updateNSView(_ scroll: NSScrollView, context: Context) {
         updateContentInsets(scroll)
         context.coordinator.update(self, environment: context.environment)
+        if scrollToTopToken != context.coordinator.lastScrollToTopToken {
+            context.coordinator.lastScrollToTopToken = scrollToTopToken
+            let origin = scroll.contentView.bounds.origin
+            scroll.contentView.scroll(to: NSPoint(x: origin.x, y: -scroll.contentInsets.top))
+            scroll.reflectScrolledClipView(scroll.contentView)
+        }
     }
 
     private func updateContentInsets(_ scroll: NSScrollView) {
@@ -348,6 +357,7 @@ struct MacReorderableList: NSViewRepresentable {
 
         var model: MacReorderableList
         weak var outline: NSOutlineView?
+        var lastScrollToTopToken: Int
         private var environment = EnvironmentValues()
         private var roots: [Node] = []
         private var structure: [[Node.ID]] { roots.map { [$0.id] + $0.children.map(\.id) } }
@@ -369,7 +379,10 @@ struct MacReorderableList: NSViewRepresentable {
         /// whole row; a controller asks SwiftUI's layout directly.
         private let sizer = NSHostingController(rootView: AnyView(EmptyView()))
 
-        init(_ model: MacReorderableList) { self.model = model }
+        init(_ model: MacReorderableList) {
+            self.model = model
+            self.lastScrollToTopToken = model.scrollToTopToken
+        }
 
         func update(_ model: MacReorderableList, environment: EnvironmentValues) {
             self.model = model

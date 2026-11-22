@@ -65,6 +65,7 @@ struct ContentView: View {
     /// arrives before that tab has been built is still honored on appear.
     @State private var addUserScriptRequest = 0
     @State private var userScriptSearchRequest = 0
+    @State private var filtersScrollToTopToken = 0
     @State private var showingLogs = false
     @Environment(\.scenePhase) var scenePhase
 
@@ -277,6 +278,9 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: .wBlockSelectTabRequest)) { note in
             if let tab = note.object as? Int { selectedTab = tab }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .wBlockScrollFiltersToTopRequest)) { _ in
+            filtersScrollToTopToken += 1
+        }
         .onReceive(NotificationCenter.default.publisher(for: .wBlockUpdateRequest)) { _ in
             guard !filterManager.isLoading, !filterManager.showingApplyProgressSheet else { return }
             applyPendingChanges()
@@ -487,46 +491,56 @@ struct ContentView: View {
     private var nativeFiltersListView: some View {
         #if os(iOS)
         let sections = categorizedFilters
-        return List {
-            Section {
-                statsCardsView
-                    .unifiedTabCardSectionRow()
-            }
+        return ScrollViewReader { proxy in
+            List {
+                Section {
+                    statsCardsView
+                        .unifiedTabCardSectionRow()
+                        .id("filters-top")
+                }
 
-            ForEach(sections, id: \.category) { item in
-                if item.category == .annoyances {
-                    // One card per topic; the category title heads the first.
-                    let groups = AnnoyanceTopic.groups(item.filters)
-                    ForEach(groups, id: \.topic) { group in
-                        ContentListSection {
-                            if group.topic == groups.first?.topic {
-                                VStack(alignment: .leading, spacing: 14) {
-                                    categoryHeader(item.category)
+                ForEach(sections, id: \.category) { item in
+                    if item.category == .annoyances {
+                        // One card per topic; the category title heads the first.
+                        let groups = AnnoyanceTopic.groups(item.filters)
+                        ForEach(groups, id: \.topic) { group in
+                            ContentListSection {
+                                if group.topic == groups.first?.topic {
+                                    VStack(alignment: .leading, spacing: 14) {
+                                        categoryHeader(item.category)
+                                        ListTopicHeader(title: group.topic.title)
+                                    }
+                                } else {
                                     ListTopicHeader(title: group.topic.title)
                                 }
-                            } else {
-                                ListTopicHeader(title: group.topic.title)
+                            } content: {
+                                filterRows(group.filters)
                             }
-                        } content: {
-                            filterRows(group.filters)
                         }
-                    }
-                } else {
-                    ContentListSection { categoryHeader(item.category) } content: {
-                        filterRows(item.category == .foreign ? visibleForeignFilters(item.filters) : item.filters)
+                    } else {
+                        ContentListSection { categoryHeader(item.category) } content: {
+                            filterRows(item.category == .foreign ? visibleForeignFilters(item.filters) : item.filters)
+                        }
                     }
                 }
             }
-        }
-        .unifiedTabListStyle()
-        .refreshable {
-            guard !filterManager.isLoading else { return }
-            await filterManager.checkForUpdates(scope: .filters, presentation: .refresh)
+            .unifiedTabListStyle()
+            .refreshable {
+                guard !filterManager.isLoading else { return }
+                await filterManager.checkForUpdates(scope: .filters, presentation: .refresh)
+            }
+            .onChangeCompat(of: filtersScrollToTopToken) { _, _ in
+                proxy.scrollTo("filters-top", anchor: .top)
+                DispatchQueue.main.async {
+                    proxy.scrollTo("filters-top", anchor: .top)
+                }
+            }
         }
         #else
         MacReorderableList(
             sections: macFilterSections,
             header: AnyView(statsCardsView.padding(.vertical, 16)),
+            scrollToTopToken: filtersScrollToTopToken,
             onMove: commitFilterMove
         )
         .scrollingUnderToolbar()
