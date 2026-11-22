@@ -32,10 +32,15 @@
   // Injected functions and files are exempt from the page's CSP, unlike a
   // page script element. Runs as a function, so it must not close over anything.
   const queueScriptletCalls = calls => {
-    const queue = globalThis.__wbeScriptletCalls || (globalThis.__wbeScriptletCalls = {});
-    for (const [name, ...args] of calls) {
-      const pending = queue[name] || (queue[name] = []);
-      if (!pending.some(call => call.length === args.length && call.every((value, i) => value === args[i]))) pending.push(args);
+    try {
+      const queue = globalThis.__wbeScriptletCalls || (globalThis.__wbeScriptletCalls = {});
+      for (const [name, ...args] of calls) {
+        const pending = queue[name] || (queue[name] = []);
+        if (!pending.some(call => call.length === args.length && call.every((value, i) => value === args[i]))) pending.push(args);
+      }
+      return true;
+    } catch (_) {
+      return false;
     }
   };
   // AdGuard-syntax rules with no uBO equivalent arrive as `adg:<name>` calls,
@@ -48,21 +53,30 @@
   // A page script element, like AdGuard's injector, so the code runs as the
   // page wrote it. Runs as a function, so it must not close over anything.
   const runPageScript = code => {
-    // Pages that enforce Trusted Types (YouTube) reject a plain string.
-    const key = Symbol.for('wBlock.pageScriptPolicy');
-    let policy = window[key];
-    if (policy === undefined) {
-      try {
-        policy = window.trustedTypes ? window.trustedTypes.createPolicy('wblock-scripts', { createScript: text => text }) : null;
-      } catch (_) {
-        policy = null;
+    try {
+      const parent = document.head || document.documentElement;
+      if (!parent) return false;
+      // Pages that enforce Trusted Types (YouTube) reject a plain string.
+      const key = Symbol.for('wBlock.pageScriptPolicy');
+      let policy = window[key];
+      if (policy === undefined) {
+        try {
+          policy = window.trustedTypes ? window.trustedTypes.createPolicy('wblock-scripts', { createScript: text => text }) : null;
+        } catch (_) {
+          policy = null;
+        }
+        try {
+          Object.defineProperty(window, key, { value: policy });
+        } catch (_) {}
       }
-      Object.defineProperty(window, key, { value: policy });
+      const script = document.createElement('script');
+      script.textContent = policy ? policy.createScript(code) : code;
+      parent.appendChild(script);
+      script.remove();
+      return true;
+    } catch (_) {
+      return false;
     }
-    const script = document.createElement('script');
-    script.textContent = policy ? policy.createScript(code) : code;
-    (document.head || document.documentElement).appendChild(script);
-    script.remove();
   };
   const runAdguardCalls = async (target, calls) => {
     const library = calls.some(([name]) => name !== 'adg:js') ? await loadAdguardScriptlets() : null;
@@ -177,12 +191,20 @@
       pending.push((async () => {
         const applied = await executeInFrame({ target, world, func: filters => {
           if (!globalThis.wbeProcedural) return false;
-          globalThis.wbeProcedural.apply(filters);
+          try {
+            globalThis.wbeProcedural.apply(filters);
+          } catch (_) {}
           return true;
         }, args: [filters] });
         if (applied?.result) return;
-        await executeInFrame({ target, world, files: ['procedural.js'], injectImmediately: true });
-        await executeInFrame({ target, world, func: filters => wbeProcedural.apply(filters), args: [filters] });
+        const loaded = await executeInFrame({ target, world, files: ['procedural.js'], injectImmediately: true });
+        if (!loaded) return;
+        await executeInFrame({ target, world, func: filters => {
+          try {
+            globalThis.wbeProcedural?.apply(filters);
+          } catch (_) {}
+          return true;
+        }, args: [filters] });
       })());
     }
     return Promise.allSettled(pending).then(results => {

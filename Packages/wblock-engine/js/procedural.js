@@ -317,8 +317,10 @@
     attr = token();
     state.styles.set(pseudo + css, attr);
     if (!state.styleEl) {
+      const parent = document.head || document.documentElement;
+      if (!parent) return attr;
       state.styleEl = document.createElement('style');
-      (document.head || document.documentElement).append(state.styleEl);
+      parent.append(state.styleEl);
     }
     state.styleEl.textContent += `[${attr}]${pseudo}{${css}}\n`;
     for (const sheet of state.shadowStyles.values()) sheet.textContent = state.styleEl.textContent;
@@ -452,9 +454,13 @@
       // Keep the page usable; the next mutation retries.
     } finally {
       if (state.observe) {
-        const options = observeOptions();
-        observer.observe(document, options);
-        for (const root of state.shadowRoots) if (root.host.isConnected) observer.observe(root, options);
+        try {
+          const options = observeOptions();
+          observer.observe(document, options);
+          for (const root of state.shadowRoots) if (root.host.isConnected) observer.observe(root, options);
+        } catch {
+          // Non-HTML or disconnected documents may reject MutationObserver.
+        }
       }
     }
   };
@@ -491,4 +497,5 @@
   };
 
   globalThis.wbeProcedural = { apply };
+  return null;
 })();

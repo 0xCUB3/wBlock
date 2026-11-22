@@ -38,6 +38,10 @@ const byName = new Map(resources.map(r => [r.name, r]));
 const responseHook = byName.get('replace-fetch-response.fn');
 if (!responseHook) throw new Error('missing replace-fetch-response.fn');
 responseHook.content = readFileSync(path.join(here, 'replace-fetch-response.js'), 'utf8');
+// Share one Function.prototype.toString proxy per page and guard against recursive page wrappers.
+const proxyApply = byName.get('proxy-apply.fn');
+if (!proxyApply) throw new Error('missing proxy-apply.fn');
+proxyApply.content = readFileSync(path.join(here, 'proxy-apply.js'), 'utf8');
 const source = r => (/^[A-Za-z0-9+/=\s]+$/.test(r.content) ? Buffer.from(r.content, 'base64').toString('utf8') : r.content);
 
 // Dependencies first, each once.
@@ -64,14 +68,17 @@ for (const resource of resources) {
   const body = withDependencies(resource.name).join('\n')
     + (incremental ? '\n' + readFileSync(path.join(here, 'dom-token-removal.js'), 'utf8') : '');
   const file = `(function () {
+try {
 const queue = globalThis.__wbeScriptletCalls;
 const calls = queue && queue[${JSON.stringify(name)}];
-if (!calls) return;
+if (!calls) return null;
 delete queue[${JSON.stringify(name)}];
 ${body}
 for (const args of calls) {
 try { ${incremental ? `if (removeDOMTokens(${JSON.stringify(name)}, ...args)) continue; ` : ''}${fn[1]}(...args); } catch (_) {}
 }
+} catch (_) {}
+return null;
 })();
 `;
   writeFileSync(path.join(out, `${name}.js`), file);
