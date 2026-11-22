@@ -1,0 +1,373 @@
+import SwiftUI
+import wBlockCoreService
+
+/// Basic mode Extras tab: curated Video & Reading cards with bespoke IconBadges,
+/// Dark Reader live appearance swatch badge, inline settings pills revealed only
+/// when enabled, automatic scripts hidden, and active advanced/custom scripts
+/// surfaced truthfully under "Also on".
+struct BasicExtrasView: View {
+    @ObservedObject var userScriptManager: UserScriptManager
+    @ObservedObject var filterManager: AppFilterManager
+    let onRefresh: () async -> Void
+    let onSwitchToAdvanced: () -> Void
+
+    @State private var downloadingScriptIDs = Set<UUID>()
+    @State private var pendingBetaScript: UserScript?
+    @Environment(\.colorScheme) private var colorScheme
+
+    private static var sharedDefaults: UserDefaults {
+        UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
+    }
+
+    private var activeLanguageCodes: Set<String> {
+        let stored = Self.sharedDefaults.stringArray(forKey: OnboardingView.selectedLanguagesDefaultsKey) ?? []
+        if !stored.isEmpty {
+            return Set(stored.map { $0.lowercased() })
+        }
+        return Set(Locale.preferredLanguages.compactMap {
+            Locale(identifier: $0).languageCode?.lowercased()
+        })
+    }
+
+    private func featuredScripts(in group: BuiltInUserScriptBasicGroup) -> [UserScript] {
+        let preferredOrder: [String] = group == .video
+            ? ["Tube Cleaner", "Player Cleaner", "DeArrow", "Return YouTube Dislike", "TwitchAdSolutions (vaft)"]
+            : ["Dark Reader", "Disable AMP", "Bypass Paywalls Clean"]
+
+        let langs = activeLanguageCodes
+        let matching = userScriptManager.userScripts.filter { script in
+            guard userScriptManager.builtInTier(for: script) == .featured,
+                  userScriptManager.builtInBasicGroup(for: script) == group else {
+                return false
+            }
+            let scriptLangs = userScriptManager.builtInLanguages(for: script)
+            if scriptLangs.isEmpty || script.isEnabled {
+                return true
+            }
+            return !Set(scriptLangs).isDisjoint(with: langs)
+        }
+        return matching.sorted { lhs, rhs in
+            let lIdx = preferredOrder.firstIndex(of: lhs.name) ?? Int.max
+            let rIdx = preferredOrder.firstIndex(of: rhs.name) ?? Int.max
+            if lIdx != rIdx { return lIdx < rIdx }
+            return lhs.localizedDisplayName.localizedCaseInsensitiveCompare(rhs.localizedDisplayName) == .orderedAscending
+        }
+    }
+
+    /// Advanced-only built-in scripts and custom user-added scripts/styles
+    /// surfaced ONLY when currently enabled. Automatic scripts (`tinyShield`)
+    /// stay hidden with their state untouched.
+    private var alsoOnScripts: [UserScript] {
+        userScriptManager.userScripts.filter { script in
+            guard script.isEnabled else { return false }
+            let tier = userScriptManager.builtInTier(for: script)
+            return tier == .advancedOnly || tier == nil
+        }
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                let video = featuredScripts(in: .video)
+                if !video.isEmpty {
+                    groupSection(title: "Video", scripts: video)
+                }
+
+                let reading = featuredScripts(in: .reading)
+                if !reading.isEmpty {
+                    groupSection(title: "Reading", scripts: reading)
+                }
+
+                if !alsoOnScripts.isEmpty {
+                    groupSection(title: "Also on", scripts: alsoOnScripts)
+                }
+
+                Button {
+                    onSwitchToAdvanced()
+                } label: {
+                    Text("Manage All Userscripts")
+                        .font(.footnote.weight(.medium))
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 6)
+                }
+                .buttonStyle(.plain)
+                .noFocusRingCompat()
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .frame(maxWidth: 680)
+            .frame(maxWidth: .infinity)
+        }
+        #if os(iOS)
+        .refreshable {
+            await onRefresh()
+        }
+        #endif
+        .alert("Enable Beta Feature?", isPresented: Binding(
+            get: { pendingBetaScript != nil },
+            set: { if !$0 { pendingBetaScript = nil } }
+        ), presenting: pendingBetaScript) { script in
+            Button("Cancel", role: .cancel) { pendingBetaScript = nil }
+            Button("Enable") {
+                pendingBetaScript = nil
+                BetaUserscriptWarning.acknowledge()
+                setScriptEnabled(script, enabled: true)
+            }
+        } message: { _ in
+            Text("These are beta features that we're still testing. They may behave strangely on some sites. You can disable them anytime.")
+        }
+    }
+
+    private func groupSection(title: LocalizedStringKey, scripts: [UserScript]) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 4)
+
+            VStack(spacing: 0) {
+                ForEach(Array(scripts.enumerated()), id: \.element.id) { index, script in
+                    extraRow(script)
+                    if index < scripts.count - 1 {
+                        Divider().padding(.leading, 56)
+                    }
+                }
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(cardBackground)
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(cardBorderColor, lineWidth: 1)
+            }
+        }
+    }
+
+    private func extraRow(_ script: UserScript) -> some View {
+        let toggleState = userScriptManager.userScriptToggleState(for: script.id)
+        let isEnabled = toggleState?.desired ?? script.isEnabled
+        let isInFlight = (toggleState?.isInFlight ?? false) || downloadingScriptIDs.contains(script.id)
+        let isBeta = userScriptManager.isBeta(for: script)
+        let ringPhase: BadgeRingPhase = isInFlight ? .applying(progress: nil) : .idle
+
+        return HStack(alignment: .top, spacing: 12) {
+            badgeView(for: script, isOn: isEnabled, ringPhase: ringPhase)
+                .padding(.top, 2)
+
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 6) {
+                    Text(script.localizedDisplayName)
+                        .font(.body.weight(.medium))
+                        .foregroundStyle(.primary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if isBeta {
+                        Text("Beta")
+                            .font(.caption2.weight(.medium))
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 1.5)
+                            .background(Color.primary.opacity(0.07), in: Capsule())
+                    }
+                }
+
+                let subtitle = plainDescription(for: script)
+                if !subtitle.isEmpty {
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                // Inline settings pills reveal ONLY when toggled ON.
+                if isEnabled {
+                    inlineSettingsControls(for: script)
+                        .padding(.top, 4)
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                }
+            }
+
+            Spacer(minLength: 8)
+
+            Toggle("", isOn: Binding(
+                get: { isEnabled },
+                set: { newValue in
+                    handleToggle(script, enabled: newValue)
+                }
+            ))
+            .labelsHidden()
+            .toggleStyle(.switch)
+            .fixedSize()
+            .disabled(isInFlight)
+            .padding(.top, 2)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 11)
+        .animation(.easeInOut(duration: 0.2), value: isEnabled)
+    }
+
+    @ViewBuilder
+    private func badgeView(for script: UserScript, isOn: Bool, ringPhase: BadgeRingPhase) -> some View {
+        if userScriptManager.isDarkReader(script) {
+            DarkReaderSwatchBadge(
+                isOn: isOn,
+                followsSystem: userScriptManager.darkReaderFollowsSystemAppearance,
+                pureBlack: userScriptManager.darkReaderPureBlack,
+                ringPhase: ringPhase
+            )
+        } else {
+            let style = badgeStyle(for: script)
+            IconBadge(
+                systemName: style.symbol,
+                tint: style.tint,
+                isOn: isOn,
+                ringPhase: ringPhase
+            )
+        }
+    }
+
+    @ViewBuilder
+    private func inlineSettingsControls(for script: UserScript) -> some View {
+        if userScriptManager.isDarkReader(script) {
+            DarkReaderAppearancePicker(
+                followsSystemAppearance: Binding(
+                    get: { userScriptManager.darkReaderFollowsSystemAppearance },
+                    set: { userScriptManager.setDarkReaderFollowsSystemAppearance($0) }
+                ),
+                pureBlack: Binding(
+                    get: { userScriptManager.darkReaderPureBlack },
+                    set: { userScriptManager.setDarkReaderPureBlack($0) }
+                )
+            )
+        } else if userScriptManager.isTubeCleaner(script) {
+            if #available(iOS 16.0, macOS 13.0, *) {
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 6) { tubeCleanerControls(script) }
+                    VStack(alignment: .leading, spacing: 4) { tubeCleanerControls(script) }
+                }
+            } else {
+                VStack(alignment: .leading, spacing: 4) { tubeCleanerControls(script) }
+            }
+        } else if userScriptManager.isPlayerCleaner(script) {
+            PlayerCleanerFeaturesPicker(
+                features: Binding(
+                    get: { userScriptManager.playerCleanerFeatures },
+                    set: { userScriptManager.setPlayerCleanerFeatures($0) }
+                )
+            )
+        } else if userScriptManager.isDeArrow(script) {
+            DeArrowSettingsPicker(
+                settings: Binding(
+                    get: { userScriptManager.tubeCleanerDeArrow },
+                    set: { userScriptManager.setTubeCleanerDeArrow($0) }
+                )
+            )
+        }
+    }
+
+    @ViewBuilder
+    private func tubeCleanerControls(_ script: UserScript) -> some View {
+        SponsorBlockTransferButton(scriptID: script.id)
+        TubeCleanerFeaturesPicker(
+            features: Binding(
+                get: { userScriptManager.tubeCleanerFeatures },
+                set: { userScriptManager.setTubeCleanerFeatures($0) }
+            )
+        )
+    }
+
+    private func handleToggle(_ script: UserScript, enabled: Bool) {
+        if enabled && userScriptManager.isBeta(for: script) && !BetaUserscriptWarning.hasAcknowledged {
+            pendingBetaScript = script
+            return
+        }
+        setScriptEnabled(script, enabled: enabled)
+    }
+
+    private func setScriptEnabled(_ script: UserScript, enabled: Bool) {
+        let needsDownload = enabled && !userScriptManager.hasDownloadedContent(for: script) && !script.isLocal && script.url != nil
+        if needsDownload {
+            downloadingScriptIDs.insert(script.id)
+        }
+
+        // Pairing Bypass Paywalls Clean with its filter list (same as OnboardingView.swift:936).
+        if userScriptManager.isBypassPaywallsClean(script) {
+            togglePairedBypassPaywallsFilter(enabled: enabled)
+        }
+
+        Task {
+            await userScriptManager.setUserScript(script, isEnabled: enabled)
+            await MainActor.run {
+                _ = downloadingScriptIDs.remove(script.id)
+            }
+        }
+    }
+
+    private func togglePairedBypassPaywallsFilter(enabled: Bool) {
+        guard let filter = filterManager.filterLists.first(where: BasicBundle.isPairedBypassPaywallsFilter) else { return }
+        if filterManager.setFilterListSelection(id: filter.id, selected: enabled) {
+            filterManager.flushPendingSave()
+            filterManager.scheduleBasicAutoApply()
+        }
+    }
+
+    private func badgeStyle(for script: UserScript) -> (symbol: String, tint: Color) {
+        if userScriptManager.isTubeCleaner(script) {
+            return ("play.rectangle.fill", Color(red: 0.92, green: 0.23, blue: 0.24))
+        }
+        if userScriptManager.isPlayerCleaner(script) {
+            return ("pip.enter", Color(red: 0.16, green: 0.54, blue: 0.94))
+        }
+        if userScriptManager.isDeArrow(script) {
+            return ("text.badge.checkmark", Color(red: 0.25, green: 0.62, blue: 0.95))
+        }
+        if script.name.localizedCaseInsensitiveContains("return youtube dislike") {
+            return ("hand.thumbsdown.fill", Color(red: 0.93, green: 0.36, blue: 0.25))
+        }
+        if script.name.localizedCaseInsensitiveContains("twitch") {
+            return ("tv.fill", Color(red: 0.57, green: 0.28, blue: 0.92))
+        }
+        if script.name.localizedCaseInsensitiveContains("disable amp") {
+            return ("bolt.slash.fill", Color(red: 0.92, green: 0.56, blue: 0.14))
+        }
+        if userScriptManager.isBypassPaywallsClean(script) {
+            return ("newspaper.fill", Color(red: 0.16, green: 0.66, blue: 0.56))
+        }
+        return ("puzzlepiece.extension.fill", Color(red: 0.48, green: 0.50, blue: 0.55))
+    }
+
+    private func plainDescription(for script: UserScript) -> String {
+        let lower = script.name.lowercased()
+        if lower.contains("return youtube dislike") {
+            return NSLocalizedString(
+                "Shows dislike counts on YouTube again, using data from the Return YouTube Dislike community.",
+                comment: "Default userscript description"
+            )
+        }
+        if lower.contains("bypass paywalls") {
+            return NSLocalizedString(
+                "Gets past paywalls on English-language news sites, and some in other languages.",
+                comment: "Default userscript description"
+            )
+        }
+        let desc = script.localizedDisplayDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+        if desc.lowercased() == "default userscript" {
+            return ""
+        }
+        return desc
+    }
+
+    private var cardBackground: Color {
+        #if os(iOS)
+        Color(uiColor: .secondarySystemGroupedBackground)
+        #else
+        colorScheme == .dark ? Color.white.opacity(0.055) : Color.white.opacity(0.82)
+        #endif
+    }
+
+    private var cardBorderColor: Color {
+        colorScheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.06)
+    }
+}

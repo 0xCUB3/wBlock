@@ -1,0 +1,1260 @@
+import SwiftUI
+import wBlockCoreService
+
+/// Basic mode Filters screen: atmospheric Hero, switchless 3-up Core Trio with
+/// Peek + scoped All Lists, 7 Annoyances rows, More (Languages + Also on), and
+/// a plain footer button to view all filter lists.
+struct BasicFiltersView: View {
+    @ObservedObject var filterManager: AppFilterManager
+    @ObservedObject var safariHealth: SafariHealthMonitor
+    @ObservedObject private var userScriptManager = UserScriptManager.shared
+    @AppStorage(AppMode.storageKey) private var appMode: AppMode = .basic
+
+    let lastUpdatedDate: Date?
+    let onOpenHealthDetail: () -> Void
+    let onCheckForUpdates: () -> Void
+    let onHealthAction: (SafariHealthStatus.Action) -> Void
+    let onHeroVisibilityChange: (Bool) -> Void
+    let onSwitchToAdvanced: () -> Void
+
+    @State private var toggleMemory = BasicBundleToggleMemory()
+    @State private var peekBundle: BasicBundle?
+    @State private var scopedBundle: BasicBundle?
+    @State private var showingUnownedSheet = false
+    @State private var showingLanguagesSheet = false
+    @State private var showingHeroPopover = false
+    @AppStorage("wBlock.basicStricterBlockingExpanded") private var showStricterBlocking = false
+    @State private var scrollOffset: CGFloat = 0
+    @State private var selectedLanguages: Set<String> = BasicFiltersView.loadStoredLanguages()
+
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    private static var sharedDefaults: UserDefaults {
+        UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
+    }
+
+    private static func loadStoredLanguages() -> Set<String> {
+        let stored = sharedDefaults.stringArray(forKey: OnboardingView.selectedLanguagesDefaultsKey) ?? []
+        if !stored.isEmpty {
+            return Set(stored.map { $0.lowercased() })
+        }
+        let detected = Locale.preferredLanguages.compactMap {
+            Locale(identifier: $0).languageCode.map(RegionalLanguageOption.canonicalCode)
+        }
+        return Set(detected)
+    }
+
+    private var healthStatus: SafariHealthStatus {
+        safariHealth.status(filterManager: filterManager, lastUpdatedDate: lastUpdatedDate)
+    }
+
+    private var applyProgress: Double? {
+        guard filterManager.isLoading || filterManager.isApplyInFlight else { return nil }
+        let p = Double(filterManager.progress)
+        return p > 0.02 && p < 0.99 ? p : nil
+    }
+
+    private var isBypassPaywallsCleanEnabled: Bool {
+        userScriptManager.userScripts.contains {
+            userScriptManager.isBypassPaywallsClean($0) && $0.isEnabled
+        }
+    }
+
+    private var unownedActiveFilters: [FilterList] {
+        BasicBundle.unownedActiveFilters(
+            in: filterManager.filterLists,
+            isBypassPaywallsCleanEnabled: isBypassPaywallsCleanEnabled
+        )
+    }
+
+    private var languageOptions: [RegionalLanguageOption] {
+        RegionalLanguageOption.fromForeignFilters(filterManager.filterLists)
+    }
+
+    private var languageSummary: String {
+        let foreignSelected = filterManager.filterLists.filter { !$0.isCustom && $0.category == .foreign && $0.isSelected }
+        let activeCodes: Set<String>
+        if !selectedLanguages.isEmpty {
+            activeCodes = selectedLanguages
+        } else {
+            activeCodes = Set(foreignSelected.flatMap(\.languages).map(RegionalLanguageOption.canonicalCode))
+        }
+        let names = languageOptions.filter { activeCodes.contains($0.code) }.map(\.nativeName)
+        if names.isEmpty {
+            return String(localized: "None")
+        }
+        return ListFormatter.localizedString(byJoining: names)
+    }
+
+    private var atmosphereFade: Double {
+        let fadeDistance: CGFloat = 110
+        return max(0, min(1, Double(1 - max(0, scrollOffset) / fadeDistance)))
+    }
+
+    var body: some View {
+        ZStack(alignment: .top) {
+            ProtectionAtmosphereWash(tone: healthStatus.tone, scrollFade: atmosphereFade)
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    heroSection
+                        .background(ScrollOffsetTracker())
+
+                    coreTrioSection
+
+                    annoyancesSection
+
+                    moreSection
+
+                    footerSection
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 4)
+                .padding(.bottom, 28)
+                .frame(maxWidth: 680)
+                .frame(maxWidth: .infinity)
+            }
+            .coordinateSpace(name: "basicFiltersScroll")
+            .onPreferenceChange(BasicScrollOffsetKey.self) { offset in
+                scrollOffset = offset
+                onHeroVisibilityChange(offset < 110)
+            }
+            #if os(iOS)
+            .refreshable {
+                guard !filterManager.isLoading else { return }
+                await filterManager.checkForUpdates(scope: .filters, presentation: .refresh)
+            }
+            #endif
+        }
+        .onAppear {
+            syncLanguagesFromSelectedForeignListsIfNeeded()
+            if hasActiveStricterAnnoyance {
+                showStricterBlocking = true
+            }
+        }
+        .onChangeCompat(of: selectedLanguages) { _, newValue in
+            applyLanguageSelection(newValue)
+        }
+        .infoPresentation(item: $peekBundle) { bundle in
+            BasicBundlePeekView(
+                bundle: bundle,
+                filterManager: filterManager,
+                state: bundle.state(in: filterManager.filterLists),
+                onToggle: { turnOn in
+                    toggleBundle(bundle, turnOn: turnOn)
+                },
+                onResetToRecommended: {
+                    resetBundleToRecommended(bundle)
+                },
+                onOpenAllLists: {
+                    peekBundle = nil
+                    DispatchQueue.main.async {
+                        scopedBundle = bundle
+                    }
+                }
+            )
+        }
+        .sheet(item: $scopedBundle) { bundle in
+            ScopedBundleListsSheet(
+                title: bundle.localizedTitle,
+                filters: scopedFilters(for: bundle),
+                filterManager: filterManager,
+                onMutation: {
+                    filterManager.scheduleBasicAutoApply()
+                }
+            )
+        }
+        .sheet(isPresented: $showingUnownedSheet) {
+            ScopedBundleListsSheet(
+                title: String(localized: "Also on"),
+                filters: unownedActiveFilters,
+                filterManager: filterManager,
+                onMutation: {
+                    filterManager.scheduleBasicAutoApply()
+                }
+            )
+        }
+        #if os(iOS)
+        .sheet(isPresented: $showingLanguagesSheet) {
+            BasicLanguagesSheet(
+                selectedLanguages: $selectedLanguages,
+                options: languageOptions
+            )
+        }
+        #endif
+    }
+
+    // MARK: - Hero
+
+    private var heroSection: some View {
+        ProtectionHero(
+            status: healthStatus,
+            arcStates: safariHealth.arcStates,
+            isWelded: safariHealth.hysteresis.isWelded,
+            weldCelebrationCount: safariHealth.weldCelebrationCount,
+            applyProgress: applyProgress,
+            onTapHero: {
+                #if os(macOS)
+                showingHeroPopover = true
+                #else
+                onOpenHealthDetail()
+                #endif
+            },
+            onAction: onHealthAction
+        )
+        #if os(macOS)
+        .modalPopover(isPresented: $showingHeroPopover, arrowEdge: .bottom) {
+            SafariHealthDetailView(
+                filterManager: filterManager,
+                safariHealth: safariHealth,
+                status: healthStatus,
+                lastUpdatedDate: lastUpdatedDate,
+                onCheckForUpdates: onCheckForUpdates
+            )
+        }
+        #endif
+        .modifier(HeroScrollVisibilityCompat(onVisibilityChange: onHeroVisibilityChange))
+    }
+
+    // MARK: - Core Protection Trio
+
+    private var coreTrioSection: some View {
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                stackedCoreCard
+            } else if #available(iOS 16.0, macOS 13.0, *) {
+                ViewThatFits(in: .horizontal) {
+                    horizontalCoreTrio
+                    stackedCoreCard
+                }
+            } else {
+                horizontalCoreTrio
+            }
+        }
+    }
+
+    private var horizontalCoreTrio: some View {
+        HStack(spacing: 10) {
+            ForEach(CoreProtectionBundle.allCases) { core in
+                coreTile(core)
+            }
+        }
+    }
+
+    private func coreTile(_ core: CoreProtectionBundle) -> some View {
+        let bundle = BasicBundle.core(core)
+        let state = bundle.state(in: filterManager.filterLists)
+        let isActive = state != .off
+        let tileFill = isActive
+            ? core.tint.opacity(colorScheme == .dark ? 0.16 : 0.09)
+            : cardBackground
+        let cutoutBg = isActive
+            ? blendedCutoutColor(tint: core.tint)
+            : cardBackground
+
+        return Button {
+            peekBundle = bundle
+        } label: {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .top) {
+                    CoreTileBadge(
+                        bundle: core,
+                        state: state,
+                        size: IconBadge.defaultSize,
+                        ringPhase: ringPhase(for: bundle),
+                        showsFailedDot: hasFailed(for: bundle),
+                        cutoutBackground: cutoutBg
+                    )
+                    Spacer(minLength: 4)
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.tertiary)
+                        .accessibilityHidden(true)
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    // fixedSize(horizontal: true) lets ViewThatFits fall back to
+                    // stacked rows whenever a long localized title (Russian,
+                    // Polish, French) would otherwise truncate on one line.
+                    Text(core.localizedTitle)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
+
+                    Text(state.accessibilityLabel)
+                        .font(.caption2.weight(.medium))
+                        .foregroundStyle(state == .partlyOn ? Color.orange : Color.secondary)
+                        .lineLimit(1)
+                }
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(tileFill)
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(
+                        isActive ? core.tint.opacity(colorScheme == .dark ? 0.30 : 0.22) : cardBorderColor,
+                        lineWidth: 1
+                    )
+            }
+            .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .noFocusRingCompat()
+        .infoPopoverAnchor(bundle.id)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(core.localizedTitle))
+        .accessibilityValue(Text(state.accessibilityLabel))
+        .accessibilityAddTraits(.isButton)
+    }
+
+    private var stackedCoreCard: some View {
+        groupedCard {
+            ForEach(Array(CoreProtectionBundle.allCases.enumerated()), id: \.element.id) { index, core in
+                let bundle = BasicBundle.core(core)
+                let state = bundle.state(in: filterManager.filterLists)
+
+                Button {
+                    peekBundle = bundle
+                } label: {
+                    HStack(spacing: 12) {
+                        CoreTileBadge(
+                            bundle: core,
+                            state: state,
+                            size: IconBadge.defaultSize,
+                            ringPhase: ringPhase(for: bundle),
+                            showsFailedDot: hasFailed(for: bundle),
+                            cutoutBackground: cardBackground
+                        )
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(core.localizedTitle)
+                                .font(.body.weight(.medium))
+                                .foregroundStyle(.primary)
+                            Text(core.subtitle)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(2)
+                        }
+
+                        Spacer(minLength: 8)
+
+                        Text(state.accessibilityLabel)
+                            .font(.subheadline)
+                            .foregroundStyle(state == .partlyOn ? Color.orange : Color.secondary)
+
+                        RowDisclosureChevron()
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 11)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .noFocusRingCompat()
+                .infoPopoverAnchor(bundle.id)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(core.localizedTitle))
+                .accessibilityValue(Text(state.accessibilityLabel))
+                .accessibilityAddTraits(.isButton)
+
+                if index < CoreProtectionBundle.allCases.count - 1 {
+                    Divider().padding(.leading, 56)
+                }
+            }
+        }
+    }
+
+    // MARK: - Annoyances
+
+    private var primaryAnnoyances: [AnnoyanceChoice] {
+        AnnoyanceChoice.basicPrimaryChoices()
+    }
+
+    private var stricterAnnoyances: [AnnoyanceChoice] {
+        AnnoyanceChoice.basicStricterChoices
+    }
+
+    private var activeStricterAnnoyanceCount: Int {
+        stricterAnnoyances.filter {
+            BasicBundle.annoyance($0).state(in: filterManager.filterLists) != .off
+        }.count
+    }
+
+    private var hasActiveStricterAnnoyance: Bool {
+        activeStricterAnnoyanceCount > 0
+    }
+
+    private var annoyancesSection: some View {
+        let primary = primaryAnnoyances
+        let stricter = stricterAnnoyances
+
+        return VStack(alignment: .leading, spacing: 8) {
+            sectionTitle("Annoyances")
+            groupedCard {
+                ForEach(Array(primary.enumerated()), id: \.element.id) { index, choice in
+                    annoyanceRow(choice)
+                    Divider().padding(.leading, 56)
+                }
+
+                stricterBlockingRow
+
+                if showStricterBlocking {
+                    ForEach(Array(stricter.enumerated()), id: \.element.id) { index, choice in
+                        Divider().padding(.leading, 56)
+                        annoyanceRow(choice)
+                    }
+                }
+            }
+            Text("Cookie Notices is recommended by default. The other filters can sometimes break parts of a website.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 4)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var stricterBlockingRow: some View {
+        let activeCount = activeStricterAnnoyanceCount
+        let summaryValue: String = activeCount > 0
+            ? String.localizedStringWithFormat(
+                NSLocalizedString("%d On", comment: "Count of active stricter blocking toggles"),
+                activeCount
+            )
+            : NSLocalizedString("Off", comment: "Stricter blocking inactive value")
+
+        return Button {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                showStricterBlocking.toggle()
+            }
+        } label: {
+            HStack(spacing: 12) {
+                IconBadge(
+                    systemName: "slider.horizontal.3",
+                    tint: Color.orange,
+                    isOn: activeCount > 0
+                )
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Stricter Blocking")
+                        .font(.body.weight(.medium))
+                        .foregroundStyle(.primary)
+                    Text("Social, chat, AI, and general")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                }
+
+                Spacer(minLength: 8)
+
+                Text(summaryValue)
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(activeCount > 0 ? Color.orange : Color.secondary)
+
+                Image(systemName: showStricterBlocking ? "chevron.up" : "chevron.down")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+                    .accessibilityHidden(true)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .noFocusRingCompat()
+    }
+
+    private func annoyanceRow(_ choice: AnnoyanceChoice) -> some View {
+        let bundle = BasicBundle.annoyance(choice)
+        let state = bundle.state(in: filterManager.filterLists)
+        let isOn = state != .off
+        let rowSubtitle: String = choice == .general
+            ? "\(choice.subtitle) \(NSLocalizedString("Also hides Google AI Overview.", comment: "General annoyance caveat"))"
+            : choice.subtitle
+
+        return HStack(spacing: 12) {
+            Button {
+                peekBundle = bundle
+            } label: {
+                HStack(spacing: 12) {
+                    IconBadge(
+                        systemName: choice.symbolName,
+                        tint: choice.tint,
+                        isOn: isOn,
+                        ringPhase: ringPhase(for: bundle),
+                        showsFailedDot: hasFailed(for: bundle)
+                    )
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 6) {
+                            Text(LocalizedStringKey(choice.title))
+                                .font(.body.weight(.medium))
+                                .foregroundStyle(.primary)
+                                .fixedSize(horizontal: false, vertical: true)
+                            if choice == .cookies {
+                                Text("Recommended")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            if state == .partlyOn {
+                                Text("Partly on")
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(.orange)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(Color.orange.opacity(0.14), in: Capsule())
+                            }
+                        }
+                        Text(rowSubtitle)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer(minLength: 4)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .noFocusRingCompat()
+            .infoPopoverAnchor(bundle.id)
+            .accessibilityLabel(Text(LocalizedStringKey(choice.title)))
+            .accessibilityValue(Text(state.accessibilityLabel))
+
+            Toggle("", isOn: Binding(
+                get: { isOn },
+                set: { newValue in
+                    toggleBundle(bundle, turnOn: newValue)
+                }
+            ))
+            .labelsHidden()
+            .toggleStyle(.switch)
+            .fixedSize()
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+    }
+
+    // MARK: - More
+
+    private var moreSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            sectionTitle("More")
+            groupedCard {
+                languagesRow
+
+                if !unownedActiveFilters.isEmpty {
+                    Divider().padding(.leading, 56)
+                    alsoOnRow
+                }
+            }
+        }
+    }
+
+    private var languagesRow: some View {
+        let isDirty = BasicBundle.isLanguagesDirty(
+            in: filterManager.filterLists,
+            appliedSelectedIDs: filterManager.appliedSelectedFilterIDs
+        )
+        let hasActiveForeign = filterManager.filterLists.contains { !$0.isCustom && $0.category == .foreign && $0.isSelected }
+
+        return Button {
+            showingLanguagesSheet = true
+        } label: {
+            HStack(spacing: 12) {
+                IconBadge(
+                    systemName: "globe",
+                    tint: Color(red: 0.16, green: 0.56, blue: 0.88),
+                    isOn: hasActiveForeign || !selectedLanguages.isEmpty,
+                    ringPhase: rowRingPhase(isDirty: isDirty),
+                    showsFailedDot: filterManager.lastBasicApplyFailed && isDirty
+                )
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Languages")
+                        .font(.body.weight(.medium))
+                        .foregroundStyle(.primary)
+                    Text(verbatim: languageSummary)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                }
+
+                Spacer(minLength: 8)
+
+                RowDisclosureChevron()
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .noFocusRingCompat()
+        #if os(macOS)
+        .popover(isPresented: $showingLanguagesSheet) {
+            BasicLanguagesPopover(
+                selectedLanguages: $selectedLanguages,
+                options: languageOptions
+            )
+        }
+        #endif
+    }
+
+    private var alsoOnSummary: String {
+        let active = unownedActiveFilters
+        let customCount = active.filter(\.isCustom).count
+        let otherCount = active.count - customCount
+        if customCount > 0 && otherCount > 0 {
+            return String.localizedStringWithFormat(
+                NSLocalizedString("%d custom, %d other", comment: "Also on custom and built-in list count"),
+                customCount,
+                otherCount
+            )
+        }
+        if customCount > 0 {
+            return customCount == 1
+                ? NSLocalizedString("1 custom list", comment: "Also on single custom list")
+                : String.localizedStringWithFormat(
+                    NSLocalizedString("%d custom lists", comment: "Also on multiple custom lists"),
+                    customCount
+                )
+        }
+        return active.count == 1
+            ? NSLocalizedString("1 list", comment: "Also on single list")
+            : String.localizedStringWithFormat(
+                NSLocalizedString("%d lists", comment: "Also on active unowned lists count"),
+                active.count
+            )
+    }
+
+    private var alsoOnRow: some View {
+        let isDirty = BasicBundle.isUnownedDirty(
+            in: filterManager.filterLists,
+            appliedSelectedIDs: filterManager.appliedSelectedFilterIDs,
+            isBypassPaywallsCleanEnabled: isBypassPaywallsCleanEnabled
+        )
+        return Button {
+            showingUnownedSheet = true
+        } label: {
+            HStack(spacing: 12) {
+                IconBadge(
+                    systemName: "square.stack.3d.up.fill",
+                    tint: Color(red: 0.48, green: 0.50, blue: 0.55),
+                    isOn: true,
+                    ringPhase: rowRingPhase(isDirty: isDirty),
+                    showsFailedDot: filterManager.lastBasicApplyFailed && isDirty
+                )
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Also on")
+                        .font(.body.weight(.medium))
+                        .foregroundStyle(.primary)
+                    Text(alsoOnSummary)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer(minLength: 8)
+
+                RowDisclosureChevron()
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .noFocusRingCompat()
+    }
+
+    // MARK: - Footer
+
+    private var footerSection: some View {
+        Button {
+            onSwitchToAdvanced()
+        } label: {
+            Text("Show All Filter Lists")
+                .font(.footnote.weight(.medium))
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 6)
+        }
+        .buttonStyle(.plain)
+        .noFocusRingCompat()
+    }
+
+    // MARK: - Actions & Derivation
+
+    private func toggleBundle(_ bundle: BasicBundle, turnOn: Bool) {
+        let changes = toggleMemory.selectionChanges(
+            for: bundle,
+            turnOn: turnOn,
+            in: filterManager.filterLists
+        )
+        guard !changes.isEmpty else { return }
+        for change in changes {
+            filterManager.setFilterListSelection(id: change.id, selected: change.selected)
+        }
+        filterManager.flushPendingSave()
+        filterManager.scheduleBasicAutoApply()
+    }
+
+    private func resetBundleToRecommended(_ bundle: BasicBundle) {
+        let changes = toggleMemory.resetToRecommendedChanges(
+            for: bundle,
+            in: filterManager.filterLists
+        )
+        guard !changes.isEmpty else { return }
+        for change in changes {
+            filterManager.setFilterListSelection(id: change.id, selected: change.selected)
+        }
+        filterManager.flushPendingSave()
+        filterManager.scheduleBasicAutoApply()
+    }
+
+    private func scopedFilters(for bundle: BasicBundle) -> [FilterList] {
+        switch bundle {
+        case .core(let core):
+            return filterManager.filterLists.filter { $0.category == core.category }
+        case .annoyance(let choice):
+            let owned = bundle.ownedFilters(in: filterManager.filterLists)
+            if !owned.isEmpty { return owned }
+            return filterManager.filterLists.filter { $0.category == .annoyances && choice.filterNames.contains($0.name) }
+        }
+    }
+
+    private func syncLanguagesFromSelectedForeignListsIfNeeded() {
+        let stored = Self.sharedDefaults.stringArray(forKey: OnboardingView.selectedLanguagesDefaultsKey) ?? []
+        if !stored.isEmpty {
+            selectedLanguages = Set(stored.map { $0.lowercased() })
+        }
+    }
+
+    private func applyLanguageSelection(_ languages: Set<String>) {
+        Self.sharedDefaults.set(Array(languages).sorted(), forKey: OnboardingView.selectedLanguagesDefaultsKey)
+        let expanded = RegionalLanguageOption.expanding(languages)
+        let foreignLists = filterManager.filterLists.filter { !$0.isCustom && $0.category == .foreign }
+        let matching = foreignLists.filter {
+            !Set($0.languages.map { $0.lowercased() }).isDisjoint(with: expanded)
+        }
+        let recommendedIDs = Set(ForeignFilterOrganizer.recommendationBuckets(from: matching).recommended.map(\.id))
+
+        var mutated = false
+        for filter in foreignLists {
+            let shouldBeSelected = recommendedIDs.contains(filter.id)
+            if filter.isSelected != shouldBeSelected {
+                if filterManager.setFilterListSelection(id: filter.id, selected: shouldBeSelected) {
+                    mutated = true
+                }
+            }
+        }
+        if mutated {
+            filterManager.flushPendingSave()
+            filterManager.scheduleBasicAutoApply()
+        }
+    }
+
+    private func ringPhase(for bundle: BasicBundle) -> BadgeRingPhase {
+        let isDirty = bundle.isDirty(
+            in: filterManager.filterLists,
+            appliedSelectedIDs: filterManager.appliedSelectedFilterIDs
+        )
+        return rowRingPhase(isDirty: isDirty)
+    }
+
+    private func rowRingPhase(isDirty: Bool) -> BadgeRingPhase {
+        if filterManager.isApplyInFlight && isDirty {
+            return .applying(progress: applyProgress)
+        }
+        if filterManager.hasQueuedBasicAutoApply && isDirty {
+            return .queued
+        }
+        if filterManager.lastBasicApplyFailed && isDirty {
+            return .failed
+        }
+        if filterManager.basicApplyCompletionToken > 0 && !isDirty && !filterManager.isApplyInFlight {
+            return .idle
+        }
+        return .idle
+    }
+
+    private func hasFailed(for bundle: BasicBundle) -> Bool {
+        guard filterManager.lastBasicApplyFailed else { return false }
+        let ownedIDs = Set(bundle.ownedFilters(in: filterManager.filterLists).map(\.id))
+        return !ownedIDs.isDisjoint(with: filterManager.lastBasicApplyFailedFilterIDs)
+    }
+
+    // MARK: - Chrome Helpers
+
+    private func sectionTitle(_ title: LocalizedStringKey) -> some View {
+        Text(title)
+            .font(.footnote.weight(.semibold))
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 4)
+    }
+
+    private func groupedCard<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        VStack(spacing: 0) {
+            content()
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(cardBackground)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(cardBorderColor, lineWidth: 1)
+        }
+    }
+
+    private var cardBackground: Color {
+        #if os(iOS)
+        Color(uiColor: .secondarySystemGroupedBackground)
+        #else
+        colorScheme == .dark ? Color.white.opacity(0.055) : Color.white.opacity(0.82)
+        #endif
+    }
+
+    private var cardBorderColor: Color {
+        colorScheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.06)
+    }
+
+    private func blendedCutoutColor(tint: Color) -> Color {
+        #if os(iOS)
+        return Color(uiColor: .secondarySystemGroupedBackground)
+        #else
+        return colorScheme == .dark ? Color(white: 0.16) : Color(white: 0.97)
+        #endif
+    }
+}
+
+// MARK: - Peek Popover / Sheet
+
+struct BasicBundlePeekView: View {
+    let bundle: BasicBundle
+    @ObservedObject var filterManager: AppFilterManager
+    let state: BasicBundleState
+    let onToggle: (Bool) -> Void
+    let onResetToRecommended: () -> Void
+    let onOpenAllLists: () -> Void
+
+    @Environment(\.dismiss) private var dismiss
+
+    private var ownedFilters: [FilterList] {
+        bundle.ownedFilters(in: filterManager.filterLists)
+    }
+
+    private var activeOwnedFilters: [FilterList] {
+        ownedFilters.filter(\.isSelected)
+    }
+
+    private var categoryListCount: Int {
+        switch bundle {
+        case .core(let core):
+            return filterManager.filterLists.filter { $0.category == core.category }.count
+        case .annoyance:
+            return ownedFilters.count
+        }
+    }
+
+    var body: some View {
+        #if os(macOS)
+        peekBody
+            .padding(16)
+            .frame(width: 340)
+        #else
+        ScrollView {
+            peekBody
+                .padding(SheetDesign.contentHorizontalPadding)
+        }
+        .scrollBounceBasedOnSizeCompat()
+        .opaqueSheetBackgroundCompat()
+        .modifier(PeekSheetDetentsModifier())
+        #endif
+    }
+
+    private var peekBody: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 12) {
+                IconBadge(
+                    systemName: bundle.symbolName,
+                    tint: bundle.tint,
+                    isOn: state != .off,
+                    size: 34
+                )
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(bundle.localizedTitle)
+                        .font(.headline)
+                    Text(state.accessibilityLabel)
+                        .font(.caption)
+                        .foregroundStyle(state == .partlyOn ? Color.orange : Color.secondary)
+                }
+
+                Spacer(minLength: 8)
+
+                SheetDoneButton { dismiss() }
+            }
+
+            // Deliberate master switch
+            HStack {
+                Text(bundle.subtitle)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 12)
+                Toggle("", isOn: Binding(
+                    get: { state != .off },
+                    set: { onToggle($0) }
+                ))
+                .labelsHidden()
+                .toggleStyle(.switch)
+                .fixedSize()
+            }
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(Color.primary.opacity(0.05))
+            )
+
+            // 3 plain examples
+            VStack(alignment: .leading, spacing: 6) {
+                Text("What this blocks")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .textCase(.uppercase)
+
+                ForEach(bundle.examples, id: \.self) { example in
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Image(systemName: "checkmark")
+                            .font(.caption2.weight(.bold))
+                            .foregroundStyle(bundle.tint)
+                        Text(example)
+                            .font(.subheadline)
+                            .foregroundStyle(.primary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+
+            if state == .partlyOn {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Active lists")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .textCase(.uppercase)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        ForEach(activeOwnedFilters) { filter in
+                            HStack(spacing: 6) {
+                                Circle()
+                                    .fill(Color.orange)
+                                    .frame(width: 6, height: 6)
+                                Text(filter.localizedDisplayName)
+                                    .font(.caption)
+                                    .foregroundStyle(.primary)
+                            }
+                        }
+                    }
+
+                    Button("Reset to Recommended") {
+                        onResetToRecommended()
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                }
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color.orange.opacity(0.09))
+                )
+            }
+
+            Divider()
+
+            Button {
+                onOpenAllLists()
+            } label: {
+                HStack {
+                    Text(
+                        String.localizedStringWithFormat(
+                            NSLocalizedString("All %d lists", comment: "Peek button to open scoped category lists"),
+                            categoryListCount
+                        )
+                    )
+                    .font(.subheadline.weight(.medium))
+                    Spacer()
+                    RowDisclosureChevron()
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .noFocusRingCompat()
+        }
+    }
+}
+
+#if os(iOS)
+private struct PeekSheetDetentsModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 16.0, *) {
+            content
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+                .fittedFormSheetSizingCompat()
+        } else {
+            content
+        }
+    }
+}
+#endif
+
+// MARK: - Scoped Category / Unowned Lists Sheet
+
+/// Shows ONLY a single category's or unowned group's real filter lists and
+/// returns straight to Basic on dismiss without ever flipping global AppMode.
+/// Snapshots the presented filter IDs on open so toggling a custom or unowned
+/// list off keeps its row visible until the sheet closes.
+struct ScopedBundleListsSheet: View {
+    let title: String
+    @ObservedObject var filterManager: AppFilterManager
+    let onMutation: () -> Void
+
+    @State private var capturedFilterIDs: [UUID]
+    @Environment(\.dismiss) private var dismiss
+
+    init(
+        title: String,
+        filters: [FilterList],
+        filterManager: AppFilterManager,
+        onMutation: @escaping () -> Void
+    ) {
+        self.title = title
+        self.filterManager = filterManager
+        self.onMutation = onMutation
+        // Surface custom lists first so users switching from Advanced spot them right away.
+        let ordered = filters.filter(\.isCustom) + filters.filter { !$0.isCustom }
+        _capturedFilterIDs = State(initialValue: ordered.map(\.id))
+    }
+
+    private var liveFilters: [FilterList] {
+        let byID = Dictionary(uniqueKeysWithValues: filterManager.filterLists.map { ($0.id, $0) })
+        return capturedFilterIDs.compactMap { byID[$0] }
+    }
+
+    var body: some View {
+        #if os(macOS)
+        VStack(spacing: 0) {
+            SheetHeader(verbatim: title) { dismiss() }
+            Divider()
+            List {
+                ForEach(liveFilters) { filter in
+                    scopedRow(filter)
+                }
+            }
+            .listStyle(.inset)
+        }
+        .frame(width: 460, height: 420)
+        #else
+        CompatibleNavigationStack {
+            List {
+                ForEach(liveFilters) { filter in
+                    scopedRow(filter)
+                }
+            }
+            .unifiedTabListStyle()
+            .navigationTitle(title)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+        #endif
+    }
+
+    private func scopedRow(_ filter: FilterList) -> some View {
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 6) {
+                    Text(filter.localizedDisplayName)
+                        .font(.body.weight(.medium))
+                        .foregroundStyle(.primary)
+                    if filter.isCustom {
+                        Text("Custom")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.primary.opacity(0.08), in: Capsule())
+                    }
+                }
+                if !filter.localizedDisplayDescription.isEmpty {
+                    Text(filter.localizedDisplayDescription)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
+            }
+            Spacer(minLength: 8)
+            Toggle("", isOn: Binding(
+                get: { filter.isSelected },
+                set: { newValue in
+                    if filterManager.setFilterListSelection(id: filter.id, selected: newValue) {
+                        filterManager.flushPendingSave()
+                        onMutation()
+                    }
+                }
+            ))
+            .labelsHidden()
+            .toggleStyle(.switch)
+            .fixedSize()
+        }
+        .padding(.vertical, 2)
+    }
+}
+
+// MARK: - Languages Picker Wrappers
+
+#if os(macOS)
+private struct BasicLanguagesPopover: View {
+    @Binding var selectedLanguages: Set<String>
+    let options: [RegionalLanguageOption]
+    @State private var query = ""
+    @State private var ordered: [RegionalLanguageOption] = []
+
+    private var visible: [RegionalLanguageOption] {
+        query.trimmingCharacters(in: .whitespaces).isEmpty ? ordered : ordered.filter { $0.matches(query) }
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            TextField("Search languages", text: $query, prompt: Text("Search languages"))
+                .textFieldStyle(.roundedBorder)
+                .labelsHidden()
+                .padding(10)
+            Divider()
+            List(visible) { language in
+                Button {
+                    if selectedLanguages.contains(language.code) {
+                        selectedLanguages.remove(language.code)
+                    } else {
+                        selectedLanguages.insert(language.code)
+                    }
+                } label: {
+                    HStack(spacing: 10) {
+                        LanguageCodeBadge(code: language.code)
+                        Text(verbatim: language.nativeName).foregroundStyle(.primary)
+                        Spacer()
+                        if selectedLanguages.contains(language.code) {
+                            Image(systemName: "checkmark")
+                                .font(.body.weight(.semibold))
+                                .foregroundStyle(Color.accentColor)
+                        }
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .frame(width: 320, height: 400)
+        .onAppear {
+            ordered = options.filter { selectedLanguages.contains($0.code) }
+                + options.filter { !selectedLanguages.contains($0.code) }
+        }
+    }
+}
+#else
+private struct BasicLanguagesSheet: View {
+    @Binding var selectedLanguages: Set<String>
+    let options: [RegionalLanguageOption]
+    @Environment(\.dismiss) private var dismiss
+    @State private var query = ""
+    @State private var ordered: [RegionalLanguageOption] = []
+
+    private var visible: [RegionalLanguageOption] {
+        query.trimmingCharacters(in: .whitespaces).isEmpty ? ordered : ordered.filter { $0.matches(query) }
+    }
+
+    var body: some View {
+        CompatibleNavigationStack {
+            List(visible) { language in
+                Button {
+                    if selectedLanguages.contains(language.code) {
+                        selectedLanguages.remove(language.code)
+                    } else {
+                        selectedLanguages.insert(language.code)
+                    }
+                } label: {
+                    HStack(spacing: 10) {
+                        LanguageCodeBadge(code: language.code)
+                        Text(verbatim: language.nativeName).foregroundStyle(.primary)
+                        Spacer()
+                        if selectedLanguages.contains(language.code) {
+                            Image(systemName: "checkmark")
+                                .font(.body.weight(.semibold))
+                                .foregroundStyle(Color.accentColor)
+                        }
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+            .searchable(text: $query, prompt: Text("Search languages"))
+            .searchKeepsBarCompat()
+            .navigationTitle(Text("Languages"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+        .onAppear {
+            ordered = options.filter { selectedLanguages.contains($0.code) }
+                + options.filter { !selectedLanguages.contains($0.code) }
+        }
+    }
+}
+#endif
+
+// MARK: - Scroll Tracking
+
+private struct BasicScrollOffsetKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
+}
+
+private struct ScrollOffsetTracker: View {
+    var body: some View {
+        GeometryReader { proxy in
+            Color.clear.preference(
+                key: BasicScrollOffsetKey.self,
+                value: -proxy.frame(in: .named("basicFiltersScroll")).minY
+            )
+        }
+    }
+}
+
+private struct HeroScrollVisibilityCompat: ViewModifier {
+    let onVisibilityChange: (Bool) -> Void
+
+    func body(content: Content) -> some View {
+        if #available(iOS 18.0, macOS 15.0, *) {
+            content.onScrollVisibilityChange(threshold: 0.15) { visible in
+                onVisibilityChange(visible)
+            }
+        } else {
+            content
+        }
+    }
+}

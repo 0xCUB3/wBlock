@@ -10,6 +10,7 @@ import AppKit
 struct OnboardingView: View {
     enum OnboardingStep: Int, CaseIterable, Identifiable {
         case welcome
+        case quickReview
         case regional
         case annoyances
         case userscripts
@@ -21,11 +22,13 @@ struct OnboardingView: View {
 
     @StateObject private var dataManager: ProtobufDataManager
     @StateObject private var userScriptManager = UserScriptManager.shared
+    @StateObject private var setupHealth = SafariHealthMonitor()
     
     private var hasCompletedOnboarding: Bool {
         dataManager.hasCompletedOnboarding
     }
 
+    @State private var chosenMode: AppMode = .basic
     @State private var selectedUserscripts: Set<String> = []
     @State private var step: OnboardingStep = .welcome
     @State private var selectedLanguages: Set<String>
@@ -219,6 +222,7 @@ struct OnboardingView: View {
             userScriptManager.prefetchDefaultUserScriptMetadataIfNeeded()
             seedSelectedUserscriptsIfNeeded()
             syncBaselineUserscriptSelection()
+            setupHealth.startIfNeeded()
         }
         .task {
             await userScriptManager.waitUntilReady()
@@ -227,13 +231,28 @@ struct OnboardingView: View {
             userScriptManager.prefetchDefaultUserScriptMetadataIfNeeded()
             await refreshScriptsExtensionState(retryingWhenDisabled: true)
             await refreshContentBlockerStates()
+            await setupHealth.refreshNow()
         }
         .onChangeCompat(of: scenePhase) { _, newValue in
+            setupHealth.setSceneActive(newValue == .active)
             guard newValue == .active else { return }
             Task {
                 await refreshScriptsExtensionState(retryingWhenDisabled: true)
                 await refreshContentBlockerStates()
+                await setupHealth.refreshNow()
             }
+        }
+        .onChangeCompat(of: setupHealth.blockerSlots.map(\.isEnabled)) { _, _ in
+            guard !setupHealth.blockerSlots.isEmpty else { return }
+            detectedContentBlockerStates = setupHealth.blockerSlots
+            if setupHealth.blockerSlots.allSatisfy(\.isEnabled) {
+                hasEnabledContentBlockers = true
+            }
+        }
+        .onChangeCompat(of: setupHealth.scriptsExtensionEnabled) { _, enabled in
+            guard let enabled else { return }
+            detectedScriptsExtensionEnabled = enabled
+            if enabled { hasEnabledAdvanced = true }
         }
         .onChangeCompat(of: wantsCloudSync) { _, wantsSync in
             if wantsSync { probeForExistingICloudSetupIfNeeded() }
@@ -294,7 +313,12 @@ struct OnboardingView: View {
     }
 
     private var activeOnboardingSteps: [OnboardingStep] {
-        [.welcome, .regional, .annoyances, .userscripts, .sync, .setup]
+        switch chosenMode {
+        case .basic:
+            [.welcome, .quickReview, .setup]
+        case .advanced:
+            [.welcome, .regional, .annoyances, .userscripts, .sync, .setup]
+        }
     }
 
     private var currentStepIndex: Int {
@@ -316,18 +340,32 @@ struct OnboardingView: View {
 
                 Spacer()
 
-                Text(
-                    LocalizedStrings.format(
-                        "%d/%d",
-                        comment: "Onboarding step counter",
-                        currentStepIndex + 1,
-                        activeOnboardingSteps.count
-                    )
-                )
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                stepCounterText
             }
 
+        }
+    }
+
+    @ViewBuilder
+    private var stepCounterText: some View {
+        let label = Text(
+            LocalizedStrings.format(
+                "%d/%d",
+                comment: "Onboarding step counter",
+                currentStepIndex + 1,
+                activeOnboardingSteps.count
+            )
+        )
+        .font(.caption.monospacedDigit())
+        .foregroundStyle(.secondary)
+
+        if #available(iOS 16.0, macOS 13.0, *) {
+            label
+                .contentTransition(.numericText())
+                .animation(.easeInOut(duration: 0.2), value: activeOnboardingSteps.count)
+                .animation(.easeInOut(duration: 0.2), value: currentStepIndex)
+        } else {
+            label
         }
     }
 
@@ -336,6 +374,8 @@ struct OnboardingView: View {
         switch step {
         case .welcome:
             welcomeStep
+        case .quickReview:
+            quickReviewStep
         case .regional:
             regionalStep
         case .annoyances:
@@ -411,32 +451,152 @@ struct OnboardingView: View {
     }
 
     private var welcomeStep: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 18) {
             #if os(macOS)
             Image(nsImage: NSApp.applicationIconImage ?? NSImage())
                 .resizable()
                 .scaledToFit()
-                .frame(width: 128, height: 128)
+                .frame(width: 72, height: 72)
             #else
             Image("AppIcon")
                 .resizable()
                 .scaledToFit()
-                .frame(width: 128, height: 128)
+                .frame(width: 72, height: 72)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             #endif
 
-            VStack(spacing: 10) {
+            VStack(spacing: 6) {
                 Text("Welcome to wBlock!")
-                    .font(.largeTitle.bold())
+                    .font(.title.bold())
                     .multilineTextAlignment(.center)
-                Text("The end of Safari ad-blocking B.S.")
-                    .font(.title3)
+                Text("Select which setup suits you.")
+                    .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
             .frame(maxWidth: .infinity)
+
+            ModeChooserCards(selectedMode: $chosenMode)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 36)
+        .padding(.vertical, 8)
+    }
+
+    /// Basic mode step 2: single scroll page with sensible defaults preselected
+    /// so Next is always enabled.
+    private var quickReviewStep: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Text("Here are your selected starting options (change later).")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            // Detected languages
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Languages")
+                    .font(.headline)
+                VStack(alignment: .leading, spacing: 8) {
+                    languagePicker
+                }
+                .padding(12)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+            }
+
+            // Annoyances: primary everyday defaults only (3 on iOS, 2 on macOS), Cookie Notices preselected
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Annoyances")
+                    .font(.headline)
+                let primaryAnnoyances = AnnoyanceChoice.basicPrimaryChoices()
+
+                VStack(spacing: 0) {
+                    ForEach(Array(primaryAnnoyances.enumerated()), id: \.element.id) { index, choice in
+                        let isOn = selectedAnnoyances.contains(choice)
+                        HStack(spacing: 12) {
+                            IconBadge(
+                                systemName: choice.symbolName,
+                                tint: choice.tint,
+                                isOn: isOn
+                            )
+                            VStack(alignment: .leading, spacing: 2) {
+                                HStack(spacing: 6) {
+                                    Text(LocalizedStringKey(choice.title))
+                                        .font(.subheadline.weight(.medium))
+                                    if choice == .cookies {
+                                        Text("Recommended")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
+                                Text(choice.subtitle)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(2)
+                            }
+                            Spacer(minLength: 8)
+                            Toggle("", isOn: Binding(
+                                get: { isOn },
+                                set: { enabled in
+                                    if enabled { selectedAnnoyances.insert(choice) }
+                                    else { selectedAnnoyances.remove(choice) }
+                                }
+                            ))
+                            .labelsHidden()
+                            .toggleStyle(.switch)
+                            .fixedSize()
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 9)
+                        if index < primaryAnnoyances.count - 1 {
+                            Divider().padding(.leading, 52)
+                        }
+                    }
+                }
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+
+                Text("More options like social, chat, and AI are in Filters, though they can break some sites.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            // Featured non-beta extras (tinyShield remains silently enabled in baseline)
+            let featuredExtras = basicOnboardingFeaturedExtras
+            if !featuredExtras.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Extras")
+                        .font(.headline)
+                    SelectableRowGroup(data: featuredExtras) { item in
+                        userscriptCard(for: item)
+                    }
+                }
+            }
+
+            // iCloud Sync
+            if CloudSyncManager.shared.isCloudKitAvailable {
+                cloudSyncCard
+            }
+        }
+    }
+
+    private var basicOnboardingFeaturedExtras: [OnboardingUserScriptItem] {
+        userScriptManager.userScripts
+            .filter { script in
+                userScriptManager.builtInTier(for: script) == .featured
+                    && !userScriptManager.isBeta(for: script)
+            }
+            .filter { script in
+                let languages = userScriptManager.builtInLanguages(for: script)
+                return languages.isEmpty || !Set(languages).isDisjoint(with: selectedLanguages)
+            }
+            .map { script in
+                OnboardingUserScriptItem(
+                    id: script.id.uuidString,
+                    name: script.localizedDisplayName,
+                    description: resolvedUserscriptDescription(for: script),
+                    isBaselineEnabledByDefault: isBaselineUserscriptEnabledByDefault(script),
+                    languageCodes: userScriptManager.builtInLanguages(for: script),
+                    isBeta: userScriptManager.isBeta(for: script)
+                )
+            }
     }
 
     private var availableFilterLanguages: [RegionalLanguageOption] {
@@ -565,11 +725,68 @@ struct OnboardingView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    private var setupRingStatus: SafariHealthStatus {
+        let blockerBools = detectedContentBlockerStates.isEmpty
+            ? setupHealth.blockerSlots.map(\.isEnabled)
+            : detectedContentBlockerStates.map(\.isEnabled)
+        let effectiveScripts = detectedScriptsExtensionEnabled ?? setupHealth.scriptsExtensionEnabled
+        let blockersAllOn = !blockerBools.isEmpty && blockerBools.allSatisfy { $0 }
+        let scriptsOK = !setupHealth.isScriptsStateKnowable || effectiveScripts == true || hasEnabledAdvanced
+        let welded = (hasEnabledContentBlockers || blockersAllOn) && scriptsOK
+        return SafariHealthResolver.resolve(
+            SafariHealthInput(
+                hasReadExtensions: !blockerBools.isEmpty || setupHealth.hysteresis.hasReadOnce,
+                blockerStates: blockerBools,
+                scriptsEnabled: effectiveScripts,
+                isScriptsStateKnowable: setupHealth.isScriptsStateKnowable,
+                isWelded: welded,
+                pausedComponents: [],
+                hasHitRuleLimit: false,
+                isApplying: false,
+                hasFailed: false,
+                failedDuringUpdate: false,
+                lastUpdatedDate: nil
+            )
+        )
+    }
+
+    private var setupArcStates: [Bool] {
+        let slotBools: [Bool]
+        if !detectedContentBlockerStates.isEmpty {
+            slotBools = detectedContentBlockerStates.map(\.isEnabled)
+        } else if !setupHealth.blockerSlots.isEmpty {
+            slotBools = setupHealth.blockerSlots.map(\.isEnabled)
+        } else {
+            slotBools = Array(repeating: hasEnabledContentBlockers, count: 5)
+        }
+        if setupHealth.isScriptsStateKnowable {
+            let scriptsOn = (detectedScriptsExtensionEnabled ?? setupHealth.scriptsExtensionEnabled) == true
+            return slotBools + [scriptsOn]
+        }
+        return slotBools
+    }
+
     private var setupStep: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Enable the Safari extensions so wBlock can block ads and run userscripts.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+            HStack(spacing: 14) {
+                ExtensionStatusRing(
+                    arcStates: setupArcStates,
+                    isWelded: setupRingStatus.isProtected,
+                    status: setupRingStatus,
+                    weldCelebrationCount: setupHealth.weldCelebrationCount,
+                    medallionSize: 54
+                )
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(setupRingStatus.isProtected ? String(localized: "Safari is ready") : setupRingStatus.title)
+                        .font(.headline)
+                    Text("Enable the Safari extensions so wBlock can block ads and run userscripts.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(.bottom, 2)
 
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
@@ -909,6 +1126,7 @@ struct OnboardingView: View {
         await dataManager.setHasEnabledContentBlockers(hasEnabledContentBlockers)
         await dataManager.setHasEnabledPlatformExtension(hasEnabledAdvanced)
         await dataManager.setHasSetAllWebsitesPermission(hasEnabledAdvanced)
+        UserDefaults.standard.set(chosenMode.rawValue, forKey: AppMode.storageKey)
 
         if !restoredFromBackup {
             if wantsCloudSync && startsFreshInICloud {

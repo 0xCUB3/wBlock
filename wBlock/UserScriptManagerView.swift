@@ -122,7 +122,7 @@ private struct SelectedUserScript: Identifiable {
     let action: UserScriptContextMenuAction
 }
 
-private enum BetaUserscriptWarning {
+enum BetaUserscriptWarning {
     static let acknowledgedKey = "wBlock.hasAcknowledgedBetaUserscriptWarning"
 
     private static var defaults: UserDefaults {
@@ -1401,7 +1401,7 @@ struct Badge: View {
     }
 }
 
-private struct DarkReaderAppearancePicker: View {
+struct DarkReaderAppearancePicker: View {
     @Binding var followsSystemAppearance: Bool
     @Binding var pureBlack: Bool
 
@@ -1450,7 +1450,7 @@ private struct DarkReaderAppearancePicker: View {
 
 /// Per-feature switches for Tube Cleaner (#671). Ad handling and native
 /// controls are the script's purpose, so they are not listed.
-private struct TubeCleanerFeaturesPicker: View {
+struct TubeCleanerFeaturesPicker: View {
     @Binding var features: TubeCleanerDeArrowPreference.Features
 
     private var summary: String {
@@ -1482,7 +1482,7 @@ private struct TubeCleanerFeaturesPicker: View {
     }
 }
 
-private struct PlayerCleanerFeaturesPicker: View {
+struct PlayerCleanerFeaturesPicker: View {
     @Binding var features: PlayerCleanerPreference.Features
 
     private var summary: String {
@@ -1507,7 +1507,7 @@ private struct PlayerCleanerFeaturesPicker: View {
     }
 }
 
-private struct DeArrowSettingsPicker: View {
+struct DeArrowSettingsPicker: View {
     @Binding var settings: TubeCleanerDeArrowPreference.Settings
     @State private var showingChannels = false
 
