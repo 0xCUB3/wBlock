@@ -249,30 +249,9 @@ struct SettingsView: View {
     private static let modeFooterKey: LocalizedStringKey =
         "Standard is best for most people. Both modes block the same things, and switching never changes your filters. Advanced adds manual control of lists and userscripts."
 
+    #if os(iOS)
     @ViewBuilder
     private var modeSection: some View {
-        #if os(macOS)
-        Section {
-            CompatibleLabeledContent("Mode") {
-                Picker("Mode", selection: modeBinding) {
-                    ForEach(AppMode.allCases) { mode in
-                        Text(mode.title).tag(mode)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .fixedSize()
-            }
-        } header: {
-            if appMode == .advanced {
-                // The form draws a header without a card, so the pills ride here.
-                statusPills.frame(maxWidth: .infinity)
-                    .padding(.bottom, 10)
-            }
-        } footer: {
-            Text(Self.modeFooterKey)
-        }
-        #else
         Section {
             Picker("Mode", selection: modeBinding) {
                 ForEach(AppMode.allCases) { mode in
@@ -286,14 +265,29 @@ struct SettingsView: View {
         } footer: {
             Text(Self.modeFooterKey)
         }
-        #endif
     }
+    #endif
 
-    /// Autoplay and Appearance lead Settings; the site pages follow under
+    /// Mode, Autoplay and Appearance lead Settings; the site pages follow under
     /// Websites (#999).
     @ViewBuilder
     private var generalSection: some View {
         Section {
+            #if os(macOS)
+            CompatibleLabeledContent {
+                Picker("Mode", selection: modeBinding) {
+                    ForEach(AppMode.allCases) { mode in
+                        Text(mode.title).tag(mode)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .fixedSize()
+                .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] }
+            } label: {
+                rowLabel("Mode", detail: Text(Self.modeFooterKey))
+            }
+            #endif
             Toggle(isOn: autoplayBinding) {
                 rowLabel(
                     "Autoplay",
@@ -321,7 +315,19 @@ struct SettingsView: View {
             }
             #endif
         } header: {
+            #if os(macOS)
+            if appMode == .advanced {
+                // The form draws a header without a card, so the pills ride here.
+                VStack(alignment: .leading, spacing: 16) {
+                    statusPills.frame(maxWidth: .infinity)
+                    sectionHeader(.general)
+                }
+            } else {
+                sectionHeader(.general)
+            }
+            #else
             sectionHeader(.general)
+            #endif
         }
     }
 
@@ -952,7 +958,9 @@ struct SettingsView: View {
 
     @ViewBuilder
     private var settingsSections: some View {
+        #if os(iOS)
         modeSection
+        #endif
         generalSection.settingsAnchor(.general)
         websitesSection.settingsAnchor(.websites)
         autoUpdateSection.settingsAnchor(.autoUpdate)
