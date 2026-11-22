@@ -177,15 +177,20 @@
   const runScriptlets = async (target, calls, url) => {
     const adguard = calls.filter(([name]) => name.startsWith(ADGUARD_PREFIX));
     const ubo = adguard.length > 0 ? calls.filter(([name]) => !name.startsWith(ADGUARD_PREFIX)) : calls;
-    const warmCalls = ubo.filter(([name]) => typeof name === 'string' && name && !name.startsWith('trusted-'));
-    if (url) syncWarmScriptlets(url, warmCalls);
+    const isTopFrame = Array.isArray(target?.frameIds) && target.frameIds.length === 1 && target.frameIds[0] === 0;
+    const warmCalls = isTopFrame
+      ? ubo.filter(([name]) => typeof name === 'string' && name && !name.startsWith('trusted-'))
+      : [];
+    if (isTopFrame && url) syncWarmScriptlets(url, warmCalls);
     const pending = adguard.map(async call => {
       const [result] = await runAdguardCalls(target, [call]);
       return result ? [] : [call];
     });
     if (ubo.length > 0) {
-      const warm = warmCalls.length > 0 ? { exp: Date.now() + WARM_SCRIPTLET_LEASE_MS, calls: warmCalls } : null;
-      const queued = await executeInFrame({ target, world: 'MAIN', injectImmediately: true, func: queueScriptletCalls, args: [ubo, warm] });
+      const warm = isTopFrame
+        ? (warmCalls.length > 0 ? { exp: Date.now() + WARM_SCRIPTLET_LEASE_MS, calls: warmCalls } : null)
+        : undefined;
+      const queued = await executeInFrame({ target, world: 'MAIN', injectImmediately: true, func: queueScriptletCalls, args: warm === undefined ? [ubo] : [ubo, warm] });
       if (!queued) pending.push(ubo);
       else {
         const names = Array.isArray(queued.result)
