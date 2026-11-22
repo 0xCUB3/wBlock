@@ -415,6 +415,14 @@ public enum ContentBlockerIncrementalCache {
         try? FilterArtifactStorage.write(data, to: url)
     }
 
+    private static func isReadableRegularFile(at url: URL) -> Bool {
+        guard FileManager.default.isReadableFile(atPath: url.path),
+              let values = try? url.resourceValues(forKeys: [.isRegularFileKey]),
+              values.isRegularFile == true
+        else { return false }
+        return true
+    }
+
     /// A cache hit is valid only when every artifact needed to reproduce the
     /// target exists. In particular, a missing advanced sidecar must force a
     /// conversion rather than silently dropping advanced rules.
@@ -433,14 +441,13 @@ public enum ContentBlockerIncrementalCache {
         let compilerURL = containerURL.appendingPathComponent(baseCompilerFilename(for: targetRulesFilename))
         // The base JSON is parsed once at the call site, which also compares
         // the parsed rule count against the .count sidecar. Here we only check
-        // the sidecars and the outer array shape so a multi-megabyte file is
-        // not deserialized twice.
+        // the sidecars and the outer array shape so multi-megabyte JSON and
+        // advanced rule files are not deserialized during validation.
         guard let countText = try? String(contentsOf: countURL, encoding: .utf8),
               let count = Int(countText.trimmingCharacters(in: .whitespacesAndNewlines)),
               count >= 0,
               looksLikeJSONArrayFile(at: baseURL),
-              FileManager.default.fileExists(atPath: advancedURL.path),
-              (try? String(contentsOf: advancedURL, encoding: .utf8)) != nil,
+              isReadableRegularFile(at: advancedURL),
               // Written last, so it also marks the cache complete.
               (try? String(contentsOf: compilerURL, encoding: .utf8)) == SafariVersionDetection.compilerIdentity
         else { return false }

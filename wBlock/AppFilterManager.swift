@@ -735,7 +735,8 @@ class AppFilterManager: ObservableObject {
                 return [target.rulesFilename, base, "\(base).count", "\(base).sha256",
                         ContentBlockerIncrementalCache.baseCompilerFilename(for: target.rulesFilename),
                         ContentBlockerIncrementalCache.baseAdvancedRulesFilename(for: target.rulesFilename),
-                        "\(target.rulesFilename).incremental-state.json", "\(target.rulesFilename).source-rule-provenance.json"]
+                        "\(target.rulesFilename).incremental-state.json", "\(target.rulesFilename).source-rule-provenance.json",
+                        "\(target.rulesFilename).published-state.json"]
             }
             let generated = sources + baselines + rules + [
                 RemoveParamDNRRuleGenerator.rulesFilename, RemoveParamDNRRuleGenerator.blockedCountRulesFilename,

@@ -215,6 +215,7 @@ compile_core_test issue-645-compile-order scripts/test_issue_645_compile_order.s
 compile_core_test compilation-provenance scripts/test_compilation_provenance.swift
 compile_core_test target-compilation scripts/test_target_compilation.swift
 compile_core_test reload-pass-timing scripts/test_reload_pass_timing.swift
+compile_core_test content-blocker-cache-fast-paths scripts/test_content_blocker_cache_fast_paths.swift
 compile_core_test issue-729-headless-rebuild-gate scripts/test_issue_729_headless_rebuild_gate.swift
 compile_core_test foreign-filter-groups scripts/test_foreign_filter_groups.swift \
   wBlock/AnnoyanceTopic.swift wBlock/LocalizationHelpers.swift wBlock/FilterListLoader.swift wBlock/ConcurrentLogManager.swift wBlock/LogTimeZone.swift
