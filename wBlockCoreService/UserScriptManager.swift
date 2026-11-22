@@ -143,6 +143,7 @@ public class UserScriptManager: ObservableObject {
         didSet {
             rebuildUserScriptIndex()
             cachedPayloadRevision = nil
+            cachedPayloadManifestToken = nil
         }
     }
     @Published public var isLoading: Bool = false
@@ -184,17 +185,27 @@ public class UserScriptManager: ObservableObject {
     /// is rejected once any script changes. It is derived from the state alone,
     /// so a restarted native host accepts a copy that is still current.
     public var payloadMutationRevision: UInt64 {
-        if let cachedPayloadRevision { return cachedPayloadRevision }
+        let manifestToken = currentAdGuardExtraManifestRevisionToken()
+        if let cachedPayloadRevision, cachedPayloadManifestToken == manifestToken {
+            return cachedPayloadRevision
+        }
         let encoder = JSONEncoder()
         encoder.outputFormatting = .sortedKeys
+        var payload = (try? encoder.encode(userScripts)) ?? Data()
+        if let manifestToken {
+            payload.append(0)
+            payload.append(Data(manifestToken.utf8))
+        }
         // Scripts are plain Codable values; a failure here leaves revision 0.
-        let digest = SHA256.hash(data: (try? encoder.encode(userScripts)) ?? Data())
+        let digest = SHA256.hash(data: payload)
         // 53 bits: the injector and JSON carry it as a safe integer.
         let revision = digest.prefix(8).reduce(UInt64(0)) { $0 << 8 | UInt64($1) } >> 11
         cachedPayloadRevision = revision
+        cachedPayloadManifestToken = manifestToken
         return revision
     }
     private var cachedPayloadRevision: UInt64?
+    private var cachedPayloadManifestToken: String?
     private var contentMutationRevisions: [UUID: UInt64] = [:]
     private var userScriptsPendingPersistence = Set<UUID>()
 
@@ -663,6 +674,9 @@ public class UserScriptManager: ObservableObject {
     /// Skips the default-script downloads that start after launch. They reach the
     /// live network and change the scripts at an arbitrary point in a test.
     nonisolated(unsafe) public static var skipsStartupDownloadsForTesting = false
+
+    /// Overrides the remote URL used to fetch the AdGuard Extra host manifest in tests.
+    nonisolated(unsafe) public static var adGuardExtraHostManifestURLOverrideForTesting: URL?
     #endif
 
     private static var startsDownloadsAtLaunch: Bool {
@@ -1475,6 +1489,8 @@ public class UserScriptManager: ObservableObject {
             // Heal Dark Reader installs whose persisted adapter cannot honor the
             // appearance preference (pre-preference builds themed pages unconditionally).
             await self.refreshOutdatedDarkReaderContentIfNeeded()
+            // Fetch the version-pinned host list for AdGuard Extra when enabled (#1139).
+            await self.refreshAdGuardExtraHostManifestIfNeeded()
         }
     }
 
@@ -1936,6 +1952,9 @@ public class UserScriptManager: ObservableObject {
                     // The persistence helper keeps it pending for retry.
                     let saved = (try? await self.persistDownloadedUserScript(scriptID)) ?? false
                     if saved { self.logger.info("✅ Downloaded and saved: \(updated.name)") }
+                    if self.isOfficialAdGuardExtra(updated) {
+                        await self.refreshAdGuardExtraHostManifestIfNeeded(for: updated)
+                    }
                     return saved
                 }
             )
@@ -2830,6 +2849,14 @@ public class UserScriptManager: ObservableObject {
         }
         finishUserScriptIntent(userScript.id, revision: revision)
         logger.info("💾 Userscripts saved after setEnabled")
+        if isEnabled,
+           Self.startsDownloadsAtLaunch,
+           let enabledScript = self.userScript(withId: userScript.id),
+           isOfficialAdGuardExtra(enabledScript) {
+            Task { @MainActor [weak self] in
+                await self?.refreshAdGuardExtraHostManifestIfNeeded(for: enabledScript)
+            }
+        }
     }
 
     /// Sets the userscript category used for local organization and sync.
@@ -3022,6 +3049,12 @@ public class UserScriptManager: ObservableObject {
                 )
             )
             logger.info("💾 Userscripts saved after batch setEnabled")
+            if Self.startsDownloadsAtLaunch,
+               let adGuardExtra = userScripts.first(where: { isOfficialAdGuardExtra($0) && $0.isEnabled && $0.isDownloaded }) {
+                Task { @MainActor [weak self] in
+                    await self?.refreshAdGuardExtraHostManifestIfNeeded(for: adGuardExtra)
+                }
+            }
         } else {
             logger.info("ℹ️ No userscript enable state changes to persist (batch)")
         }
@@ -3502,6 +3535,9 @@ public class UserScriptManager: ObservableObject {
             if let remoteVersion = remoteVersion, !candidate.version.isEmpty {
                 // Both versions available: compare
                 if !UserScript.isVersionNewer(remoteVersion, than: candidate.version) {
+                    if isOfficialAdGuardExtra(candidate) {
+                        await refreshAdGuardExtraHostManifestIfNeeded(for: candidate)
+                    }
                     return false // Not newer, skip
                 }
                 // Newer version found, proceed to full download
@@ -3536,6 +3572,9 @@ public class UserScriptManager: ObservableObject {
                 // a CDN can still serve the old file after .meta.js shows the bump.
                 if self.userScripts[index].content == processedContent,
                    self.userScripts[index].resourceContents == resourceContents {
+                    if self.isOfficialAdGuardExtra(self.userScripts[index]) {
+                        await self.refreshAdGuardExtraHostManifestIfNeeded(for: self.userScripts[index])
+                    }
                     if needsPersistenceRetry {
                         return try await self.persistDownloadedUserScript(candidate.id)
                     }
@@ -3555,6 +3594,9 @@ public class UserScriptManager: ObservableObject {
                 if recordMutation {
                     self.recordScriptMutation(candidate.id)
                 }
+                if self.isOfficialAdGuardExtra(updated) {
+                    await self.refreshAdGuardExtraHostManifestIfNeeded(for: updated)
+                }
                 if persistChanges {
                     return try await self.persistDownloadedUserScript(candidate.id)
                 }
@@ -3569,7 +3611,8 @@ public class UserScriptManager: ObservableObject {
         let enabledScripts = userScripts.filter { $0.isEnabled }
         let matchingScripts = enabledScripts.filter { $0.matches(url: url) }
         let runnableScripts = matchingScripts.filter {
-            !isUserScript($0, disabledOnHost: host) && !isTwitchAdGuardExtraSuppressed($0, host: host)
+            !isUserScript($0, disabledOnHost: host)
+                && !isSuppressedOrOutsideScopedHosts($0, host: host)
         }
 
         #if DEBUG
@@ -3586,7 +3629,7 @@ public class UserScriptManager: ObservableObject {
         let host = URL(string: url)?.host ?? ""
         let pageScripts = userScripts
             .filter { $0.isEnabled && $0.matches(url: url) }
-            .filter { !isTwitchAdGuardExtraSuppressed($0, host: host) }
+            .filter { !isSuppressedOrOutsideScopedHosts($0, host: host) }
             .map { script in
                 (script: script, disabledForSite: isUserScript(script, disabledOnHost: host))
             }
@@ -3594,8 +3637,66 @@ public class UserScriptManager: ObservableObject {
         return pageScripts
     }
 
+    private func isOfficialAdGuardExtra(_ script: UserScript) -> Bool {
+        !script.isLocal && script.url?.absoluteString == BuiltInUserScripts.adGuardExtraURL
+    }
+
+    private func isStandaloneTinyShield(_ script: UserScript) -> Bool {
+        guard !script.isLocal else { return false }
+        if script.url?.absoluteString == BuiltInUserScripts.tinyShieldURL {
+            return true
+        }
+        return script.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == "tinyshield"
+    }
+
+    private var isStandaloneTinyShieldEnabled: Bool {
+        userScripts.contains { isStandaloneTinyShield($0) && $0.isEnabled && $0.isDownloaded }
+    }
+
+    private func activeAdGuardExtraManifest(for script: UserScript) -> AdGuardExtraHostManifest? {
+        guard isOfficialAdGuardExtra(script), !script.version.isEmpty else { return nil }
+        guard let manifest = AdGuardExtraHostManifest.loadCached(directories: Self.scriptsDirectoryURLs()),
+              manifest.matchesVersion(script.version)
+        else { return nil }
+        return manifest
+    }
+
+    private func currentAdGuardExtraManifestRevisionToken() -> String? {
+        guard let adGuardExtra = userScripts.first(where: { isOfficialAdGuardExtra($0) && $0.isEnabled }),
+              let manifest = activeAdGuardExtraManifest(for: adGuardExtra)
+        else { return nil }
+        return manifest.revisionToken
+    }
+
+    private func isSuppressedOrOutsideScopedHosts(_ script: UserScript, host: String) -> Bool {
+        if isTwitchAdGuardExtraSuppressed(script, host: host) {
+            return true
+        }
+
+        if isOfficialAdGuardExtra(script),
+           let manifest = activeAdGuardExtraManifest(for: script) {
+            return !manifest.allowsAdGuardExtra(
+                onHost: host,
+                standaloneTinyShieldActive: isStandaloneTinyShieldEnabled
+            )
+        }
+
+        if isStandaloneTinyShield(script),
+           let adGuardExtra = userScripts.first(where: { isOfficialAdGuardExtra($0) && $0.isEnabled && $0.isDownloaded }),
+           let manifest = activeAdGuardExtraManifest(for: adGuardExtra),
+           manifest.matchesExtraHost(host),
+           !isUserScript(adGuardExtra, disabledOnHost: host),
+           !isTwitchAdGuardExtraSuppressed(adGuardExtra, host: host),
+           manifest.shouldSuppressStandaloneTinyShield(onHost: host, adGuardExtraRunningOnHost: true) {
+            return true
+        }
+
+        return false
+    }
+
     private func isTwitchAdGuardExtraSuppressed(_ script: UserScript, host: String) -> Bool {
-        let isTwitchHost = host == "twitch.tv" || host.hasSuffix(".twitch.tv")
+        let normalizedHost = host.lowercased()
+        let isTwitchHost = normalizedHost == "twitch.tv" || normalizedHost.hasSuffix(".twitch.tv")
         guard isTwitchHost else { return false }
         let name = script.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         let isAdGuardExtra = name == "adguard extra"
@@ -3604,6 +3705,67 @@ public class UserScriptManager: ObservableObject {
             candidate.isEnabled
                 && candidate.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
                     == "twitchadsolutions (vaft)"
+        }
+    }
+
+    /// Fetches and caches the version-pinned host manifest for AdGuard Extra so wBlock
+    /// can skip injecting the 900+ KB script on non-matching hosts (#1139).
+    /// Best-effort: failures leave existing behavior (`*://*/*` fallback) intact.
+    @discardableResult
+    public func refreshAdGuardExtraHostManifestIfNeeded(
+        for explicitScript: UserScript? = nil,
+        force: Bool = false
+    ) async -> Bool {
+        let targetScript = explicitScript
+            ?? userScripts.first(where: { isOfficialAdGuardExtra($0) && $0.isEnabled && $0.isDownloaded })
+        guard let script = targetScript,
+              isOfficialAdGuardExtra(script),
+              !script.version.isEmpty
+        else { return false }
+
+        let directories = Self.scriptsDirectoryURLs()
+        if !force,
+           let cached = AdGuardExtraHostManifest.loadCached(directories: directories),
+           cached.matchesVersion(script.version) {
+            return false
+        }
+
+        let manifestURL: URL
+        #if DEBUG
+        manifestURL = Self.adGuardExtraHostManifestURLOverrideForTesting ?? AdGuardExtraHostManifest.defaultRemoteURL
+        #else
+        manifestURL = AdGuardExtraHostManifest.defaultRemoteURL
+        #endif
+
+        do {
+            var request = URLRequest(url: manifestURL)
+            request.cachePolicy = .reloadIgnoringLocalCacheData
+            let (data, response) = try await urlSession.data(for: request)
+            if let http = response as? HTTPURLResponse, http.statusCode != 200 {
+                return false
+            }
+            guard let manifest = AdGuardExtraHostManifest.decode(data: data) else {
+                logger.warning("⚠️ Ignored invalid AdGuard Extra host manifest payload")
+                return false
+            }
+            if let cached = AdGuardExtraHostManifest.loadCached(directories: directories),
+               cached.version == manifest.version,
+               cached.scriptSha256 == manifest.scriptSha256 {
+                return false
+            }
+            guard AdGuardExtraHostManifest.saveCached(data: data, directories: directories) else {
+                return false
+            }
+            cachedPayloadRevision = nil
+            cachedPayloadManifestToken = nil
+            Self.invalidateDocumentStartExecutionCache()
+            logger.info(
+                "✅ Cached AdGuard Extra host manifest v\(manifest.version) (\(manifest.hostCount) hosts, \(manifest.tinyShieldDomainCount) tinyShield domains)"
+            )
+            return true
+        } catch {
+            logger.warning("⚠️ Failed to refresh AdGuard Extra host manifest: \(error.localizedDescription)")
+            return false
         }
     }
 

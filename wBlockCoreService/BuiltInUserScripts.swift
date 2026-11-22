@@ -39,6 +39,10 @@ enum BuiltInUserScripts {
     static let popupBlockerName = "AdGuard Popup Blocker"
     static let popupBlockerStableURL =
         "https://userscripts.adtidy.org/release/popup-blocker/2.5/popupblocker.user.js"
+    static let adGuardExtraURL =
+        "https://userscripts.adtidy.org/release/adguard-extra/1.0/adguard-extra.user.js"
+    static let adGuardExtraHostManifestURL =
+        "https://raw.githubusercontent.com/0xCUB3/wBlock-userscripts/main/manifests/adguard-extra-hosts.json"
     static let tinyShieldURL =
         "https://cdn.jsdelivr.net/npm/@filteringdev/tinyshield@latest/dist/tinyShield.user.js"
     static let tinyShieldDescription =
@@ -130,7 +134,7 @@ enum BuiltInUserScripts {
         ),
         BuiltInUserScriptDefinition(
             name: "AdGuard Extra",
-            url: "https://userscripts.adtidy.org/release/adguard-extra/1.0/adguard-extra.user.js",
+            url: adGuardExtraURL,
             isEnabledByDefault: false,
             description: "Blocks Twitch ads and handles complicated anti-adblock cases, from the AdGuard project. It slows page loads.",
             displayRole: .functionality,
