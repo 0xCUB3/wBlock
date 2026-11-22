@@ -1329,7 +1329,7 @@ extension SettingsView {
             return
         }
         scheduleRefreshTimer.start(interval: 30) {
-            await updateScheduleLine()
+            await updateScheduleLine(shouldTriggerOverdue: false)
         }
     }
 

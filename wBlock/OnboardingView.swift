@@ -1001,7 +1001,14 @@ struct OnboardingView: View {
             trigger: "Onboarding-AdoptRemote"
         )
 
-        guard applied else { return }
+        guard applied else {
+            filterManager.isLoading = false
+            filterManager.showingApplyProgressSheet = false
+            filterManager.applyProgressViewModel.cancelProgressRun()
+            CloudSyncManager.shared.setEnabled(false, startSync: false)
+            wantsCloudSync = false
+            return
+        }
         filterManager.markFreshInstallMigrationsComplete(preservingPendingHandover: false)
         guard await dataManager.setHasCompletedOnboarding(true) else { return }
         dismiss()

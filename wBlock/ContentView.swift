@@ -428,7 +428,6 @@ struct ContentView: View {
             .disabled(filterManager.isLoading)
         if !filterManager.failedReloadTargets.isEmpty {
             Button {
-                filterManager.showingApplyProgressSheet = true
                 filterManager.retryFailedReloads()
             } label: {
                 Text(
