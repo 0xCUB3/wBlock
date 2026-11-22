@@ -88,6 +88,9 @@ message FilterListData {
   // Applies only on selected_sites, ignoring excluded_sites. Absent in older
   // saves, where a present selected_sites turned the mode on.
   optional bool only_selected_sites = 20;
+  // Subcategory a custom Annoyances list sits under (general, cookies, popups,
+  // social). Absent means Other.
+  optional string annoyance_topic = 21;
 }
 
 // Filter list categories

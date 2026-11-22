@@ -82,6 +82,8 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
     public var rawSourceRuleCount: Int?  // Pre-expansion count (NOT persisted; in-memory only)
     public var lastUpdated: Date?
     public var languages: [String] = []
+    /// Subcategory a custom Annoyances list sits under (e.g. "cookies"); nil means Other.
+    public var annoyanceTopic: String? = nil
     public var trustLevel: String? = nil
     public var etag: String? = nil
     public var serverLastModified: String? = nil
@@ -100,7 +102,7 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
 
     private enum CodingKeys: String, CodingKey {
         case id, name, url, category, isCustom, isSelected, updatesAutomatically, description,
-             version, sourceRuleCount, lastUpdated, languages, trustLevel,
+             version, sourceRuleCount, lastUpdated, languages, annoyanceTopic, trustLevel,
              etag, serverLastModified, limitExceededReason, hasUserProvidedName,
              hasUserProvidedDescription, excludedSites, selectedSites, onlySelectedSites, admittedSourceRuleCount,
              uniqueRuleCount
@@ -121,6 +123,7 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
                 rawSourceRuleCount: Int? = nil,
                 lastUpdated: Date? = nil,
                 languages: [String] = [],
+                annoyanceTopic: String? = nil,
                 trustLevel: String? = nil,
                 etag: String? = nil,
                 serverLastModified: String? = nil,
@@ -144,6 +147,7 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
         self.rawSourceRuleCount = rawSourceRuleCount
         self.lastUpdated = lastUpdated
         self.languages = languages
+        self.annoyanceTopic = annoyanceTopic
         self.trustLevel = trustLevel
         self.etag = etag
         self.serverLastModified = serverLastModified
@@ -170,6 +174,7 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
         sourceRuleCount = try container.decodeIfPresent(Int.self, forKey: .sourceRuleCount)
         lastUpdated = try container.decodeIfPresent(Date.self, forKey: .lastUpdated)
         languages = try container.decodeIfPresent([String].self, forKey: .languages) ?? []
+        annoyanceTopic = try container.decodeIfPresent(String.self, forKey: .annoyanceTopic)
         trustLevel = try container.decodeIfPresent(String.self, forKey: .trustLevel)
         etag = try container.decodeIfPresent(String.self, forKey: .etag)
         serverLastModified = try container.decodeIfPresent(String.self, forKey: .serverLastModified)
@@ -202,6 +207,7 @@ public struct FilterList: Identifiable, Codable, Hashable, Sendable {
         try container.encodeIfPresent(sourceRuleCount, forKey: .sourceRuleCount)
         try container.encodeIfPresent(lastUpdated, forKey: .lastUpdated)
         try container.encode(languages, forKey: .languages)
+        try container.encodeIfPresent(annoyanceTopic, forKey: .annoyanceTopic)
         try container.encodeIfPresent(trustLevel, forKey: .trustLevel)
         try container.encodeIfPresent(etag, forKey: .etag)
         try container.encodeIfPresent(serverLastModified, forKey: .serverLastModified)

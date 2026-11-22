@@ -176,6 +176,7 @@
 "Calculated source rule count for filter" = "Filtrenin kaynak kural sayısı hesaplandı";
 "Cancel" = "İptal";
 "Category" = "Kategori";
+"Subcategory" = "Alt Kategori";
 "Element Zapper changes take full effect after the next apply." = "Öğe gizleyici değişiklikleri, bir sonraki uygulama işleminden sonra etkinleşecektir.";
 "Check for Updates" = "Güncellemeleri denetle";
 "Checked %@" = "%@ kontrol edildi";

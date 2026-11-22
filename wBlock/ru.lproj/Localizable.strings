@@ -176,6 +176,7 @@
 "Calculated source rule count for filter" = "Подсчитано количество исходных правил фильтра";
 "Cancel" = "Отмена";
 "Category" = "Категория";
+"Subcategory" = "Подкатегория";
 "Element Zapper changes take full effect after the next apply." = "Изменения скрытия элементов полностью вступят в силу после следующего применения.";
 "Check for Updates" = "Проверить обновления";
 "Checked %@" = "Проверено %@";

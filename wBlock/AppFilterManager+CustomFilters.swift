@@ -11,7 +11,8 @@ extension AppFilterManager {
         hasUserProvidedDescription: Bool = false,
         isSelected: Bool = true,
         description: String? = nil,
-        languages: [String] = []
+        languages: [String] = [],
+        annoyanceTopic: String? = nil
     ) {
         guard let url = FilterListURLSupport.validatedRemoteURL(from: urlString)
         else {
@@ -58,6 +59,7 @@ extension AppFilterManager {
             description: trimmedDescription ?? "",
             sourceRuleCount: nil,
             languages: Self.regionalLanguages(languages, category: category),
+            annoyanceTopic: Self.normalizedAnnoyanceTopic(annoyanceTopic, category: category),
             hasUserProvidedName: hasUserProvidedName,
             hasUserProvidedDescription: hasUserProvidedDescription)
         addCustomFilterList(newFilter)
@@ -67,6 +69,14 @@ extension AppFilterManager {
     /// Regional recommendations (#921).
     static func regionalLanguages(_ languages: [String], category: FilterListCategory) -> [String] {
         category == .foreign ? Array(Set(languages.map { $0.lowercased() })).sorted() : []
+    }
+
+    /// Only custom Annoyances lists carry a non-Other subcategory (#1142).
+    static func normalizedAnnoyanceTopic(_ topic: String?, category: FilterListCategory) -> String? {
+        guard category == .annoyances, let topic, let parsed = AnnoyanceTopic(rawValue: topic), parsed != .other else {
+            return nil
+        }
+        return parsed.rawValue
     }
 
     private static func singleLineUserMetadata(_ value: String) -> String {
@@ -83,7 +93,8 @@ extension AppFilterManager {
         category: FilterListCategory = .custom,
         isSelected: Bool = true,
         lastUpdated: Date = Date(),
-        languages: [String] = []
+        languages: [String] = [],
+        annoyanceTopic: String? = nil
     ) {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedDescription = description?.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -121,7 +132,8 @@ extension AppFilterManager {
             description: trimmedDescription?.isEmpty == false ? trimmedDescription! : "",
             sourceRuleCount: Self.countRulesInUserListContent(trimmedContent),
             lastUpdated: lastUpdated,
-            languages: Self.regionalLanguages(languages, category: category)
+            languages: Self.regionalLanguages(languages, category: category),
+            annoyanceTopic: Self.normalizedAnnoyanceTopic(annoyanceTopic, category: category)
         )
 
         guard let destinationURL = loader.localFileURL(for: newFilter) else {
@@ -387,7 +399,8 @@ extension AppFilterManager {
 
     @discardableResult
     func updateCustomFilterList(
-        id: UUID, name: String, category: FilterListCategory, description: String? = nil, languages: [String] = []
+        id: UUID, name: String, category: FilterListCategory, description: String? = nil,
+        languages: [String] = [], annoyanceTopic: String? = nil
     ) -> Bool {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return false }
@@ -418,6 +431,7 @@ extension AppFilterManager {
         filterLists[index].name = trimmed
         filterLists[index].category = category
         filterLists[index].languages = Self.regionalLanguages(languages, category: category)
+        filterLists[index].annoyanceTopic = Self.normalizedAnnoyanceTopic(annoyanceTopic, category: category)
         filterLists[index].hasUserProvidedName = true
         if let description {
             filterLists[index].description = description.trimmingCharacters(in: .whitespacesAndNewlines)

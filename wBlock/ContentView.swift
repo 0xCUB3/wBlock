@@ -750,15 +750,23 @@ struct ContentView: View {
         FilterListPresentation.ordered(filterManager.filterLists, order: filterDisplayOrder)
     }
 
-    private func moveFilter(_ id: UUID, to category: FilterListCategory) {
+    private func moveFilter(_ id: UUID, to category: FilterListCategory, annoyanceTopic: AnnoyanceTopic? = nil) {
         guard category != .foreign,
-              let index = filterManager.filterLists.firstIndex(where: { $0.id == id }),
-              filterManager.filterLists[index].category != .foreign,
-              filterManager.filterLists[index].category != category else { return }
+              let index = filterManager.filterLists.firstIndex(where: { $0.id == id }) else { return }
+        let existing = filterManager.filterLists[index]
+        guard existing.category != .foreign else { return }
+        let newTopic = category == .annoyances
+            ? AnnoyanceTopic.storedValue(annoyanceTopic ?? .other, category: .annoyances)
+            : nil
+        guard existing.category != category || existing.annoyanceTopic != newTopic else { return }
+        let categoryChanged = existing.category != category
         filterManager.filterLists[index].category = category
+        filterManager.filterLists[index].annoyanceTopic = newTopic
         filterManager.saveFilterListsCoalesced()
-        // Moving a list back to where it was applied clears Apply again (#953).
-        filterManager.refreshPendingChanges()
+        if categoryChanged {
+            // Moving a list back to where it was applied clears Apply again (#953).
+            filterManager.refreshPendingChanges()
+        }
     }
 
     @ViewBuilder
@@ -839,8 +847,8 @@ struct ContentView: View {
         }
     }
 
-    /// One section per topic, each reorderable (#1112). Only Other, where custom
-    /// lists show, takes lists from other sections.
+    /// One section per topic, each reorderable (#1112). Custom lists can be
+    /// dragged into any topic section (#1142); built-in rows stay in theirs.
     private func annoyanceSections(_ filters: [FilterList]) -> [MacListSection] {
         var groups = AnnoyanceTopic.groups(filters)
         if !groups.contains(where: { $0.topic == .other }) { groups.append((.other, [])) }
@@ -857,7 +865,7 @@ struct ContentView: View {
                 rows: group.filters.map { filter in
                     MacListRow(filter.id, leavesSection: filter.isCustom) { filterRowView(for: filter) }
                 },
-                allowsCrossSectionMoves: isOther,
+                allowsCrossSectionMoves: true,
                 revealsOnlyWhileDragging: isOther && group.filters.isEmpty)
         }
     }
@@ -881,18 +889,20 @@ struct ContentView: View {
     }
 
     private func commitFilterMove(_ move: MacListMove) -> Bool {
-        // Annoyances topic sections are "Annoyances#topic".
-        guard let category = FilterListCategory(rawValue: String(move.sectionID.prefix { $0 != "#" })),
+        // Annoyances topic sections are "Annoyances#topic" (no suffix for Other).
+        let parts = move.sectionID.split(separator: "#", maxSplits: 1)
+        let targetTopic = parts.count > 1 ? AnnoyanceTopic(rawValue: String(parts[1])) : AnnoyanceTopic.other
+        guard let category = FilterListCategory(rawValue: String(parts[0])),
               let filter = filterManager.filterLists.first(where: { $0.id == move.itemID }),
-              // Built-in lists keep the category wBlock gives them (#1028).
-              filter.category == category
+              // Built-in lists keep the category and topic wBlock gives them (#1028).
+              (filter.category == category && (category != .annoyances || filter.isCustom || AnnoyanceTopic.topic(for: filter) == targetTopic))
                 || (filter.isCustom && FilterListCategory.moveTargets.contains(category)) else { return false }
         let all = orderedFilters
         let byID = Dictionary(uniqueKeysWithValues: all.map { ($0.id, $0) })
         let moved = move.orderedIDs.compactMap { byID[$0] }
         guard moved.count == move.orderedIDs.count else { return false }
         filterDisplayOrder = ListDisplayOrder.saving(moved, in: all)
-        moveFilter(move.itemID, to: category)
+        moveFilter(move.itemID, to: category, annoyanceTopic: category == .annoyances ? targetTopic : nil)
         let live = Dictionary(uniqueKeysWithValues: filterManager.filterLists.map { ($0.id, $0) })
         let previous = filterPresentation.sections
         // Give the native outline the accepted arrangement immediately. The background
@@ -1355,7 +1365,9 @@ struct AddFilterListView: View {
 
     @State private var isReviewingURLs = false
     @State private var urlCategories: [String: FilterListCategory] = [:]
+    @State private var urlAnnoyanceTopics: [String: AnnoyanceTopic] = [:]
     @State private var urlLanguages: [String: Set<String>] = [:]
+    @State private var userListAnnoyanceTopic: AnnoyanceTopic = .other
     @State private var userListLanguages: Set<String> = []
     @State private var urlEntryMode: URLEntryMode = .single
     @State private var urlInput: String = ""
@@ -1617,6 +1629,10 @@ struct AddFilterListView: View {
                     set: { urlCategories[url.absoluteString] = $0 }
                 ),
                 categories: FilterListCategory.userListCategories,
+                annoyanceTopic: Binding(
+                    get: { urlAnnoyanceTopics[url.absoluteString] ?? userListAnnoyanceTopic },
+                    set: { urlAnnoyanceTopics[url.absoluteString] = $0 }
+                ),
                 languages: Binding(
                     get: { urlLanguages[url.absoluteString] ?? [] },
                     set: { urlLanguages[url.absoluteString] = $0 }
@@ -1722,14 +1738,17 @@ struct AddFilterListView: View {
                     let automaticDescription = urlReview.metadata[key]?.description
                     let description = ImportMetadataReview.userProvided(
                         customURLDescriptions[key], automatic: automaticDescription)
+                    let category = urlCategories[url.absoluteString] ?? selectedCategory
+                    let topic = urlAnnoyanceTopics[url.absoluteString] ?? userListAnnoyanceTopic
                     filterManager.addFilterList(
                         name: name.flatMap { $0.isEmpty ? nil : $0 } ?? automaticName,
                         urlString: url.absoluteString,
-                        category: urlCategories[url.absoluteString] ?? selectedCategory,
+                        category: category,
                         hasUserProvidedName: name?.isEmpty == false,
                         hasUserProvidedDescription: description != nil,
                         description: description ?? automaticDescription,
-                        languages: Array(urlLanguages[url.absoluteString] ?? [])
+                        languages: Array(urlLanguages[url.absoluteString] ?? []),
+                        annoyanceTopic: AnnoyanceTopic.storedValue(topic, category: category)
                     )
                 }
                 dismiss()
@@ -1763,7 +1782,8 @@ struct AddFilterListView: View {
                     content: finalRules,
                     category: selectedCategory,
                     isSelected: true,
-                    languages: Array(userListLanguages)
+                    languages: Array(userListLanguages),
+                    annoyanceTopic: AnnoyanceTopic.storedValue(userListAnnoyanceTopic, category: selectedCategory)
                 )
                 isSaving = false
                 if !filterManager.hasError {
@@ -1785,7 +1805,8 @@ struct AddFilterListView: View {
                     content: stagedFile.content,
                     category: selectedCategory,
                     isSelected: true,
-                    languages: Array(userListLanguages)
+                    languages: Array(userListLanguages),
+                    annoyanceTopic: AnnoyanceTopic.storedValue(userListAnnoyanceTopic, category: selectedCategory)
                 )
                 isSaving = false
                 if !filterManager.hasError {
@@ -1816,7 +1837,7 @@ struct AddFilterListView: View {
     private var userListMetaFields: some View {
         AddContentMetadataFields(name: $userListTitle, description: $userListDescription,
                                  category: $selectedCategory, categories: FilterListCategory.userListCategories,
-                                 languages: $userListLanguages)
+                                 annoyanceTopic: $userListAnnoyanceTopic, languages: $userListLanguages)
     }
 
     private var filterImportTypes: [UTType] {
@@ -2053,6 +2074,7 @@ struct EditCustomFilterView: View {
     @State private var name: String
     @State private var description: String
     @State private var selectedCategory: FilterListCategory
+    @State private var annoyanceTopic: AnnoyanceTopic
     @State private var languages: Set<String>
     @State private var errorMessage: String?
 
@@ -2062,6 +2084,7 @@ struct EditCustomFilterView: View {
         self._name = State(initialValue: filter.name)
         self._description = State(initialValue: filter.description)
         self._selectedCategory = State(initialValue: filter.category)
+        self._annoyanceTopic = State(initialValue: AnnoyanceTopic.topic(for: filter))
         self._languages = State(initialValue: Set(filter.languages))
     }
 
@@ -2070,7 +2093,7 @@ struct EditCustomFilterView: View {
             Section {
                 AddContentMetadataFields(name: $name, description: $description,
                     category: $selectedCategory, categories: FilterListCategory.userListCategories,
-                    languages: $languages)
+                    annoyanceTopic: $annoyanceTopic, languages: $languages)
             } footer: {
                 VStack(alignment: .leading, spacing: 4) {
                     if !filter.isInlineUserList {
@@ -2119,7 +2142,8 @@ struct EditCustomFilterView: View {
             name: trimmedName,
             category: selectedCategory,
             description: description,
-            languages: Array(languages)
+            languages: Array(languages),
+            annoyanceTopic: AnnoyanceTopic.storedValue(annoyanceTopic, category: selectedCategory)
         ) {
             dismiss()
         } else {

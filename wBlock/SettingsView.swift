@@ -853,6 +853,7 @@ struct SettingsView: View {
             settingsSections
         }
         .unifiedTabListStyle()
+        .topScrollEdgeEffectCompat()
         .navigationTitle("Settings")
         .navigationBarTitleDisplayMode(.inline)
         #else

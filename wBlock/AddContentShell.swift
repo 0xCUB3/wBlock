@@ -129,13 +129,15 @@ struct AddContentNote: View {
     }
 }
 
-/// Form rows for a list's name, description, category, and Regional languages.
+/// Form rows for a list's name, description, category, Annoyances subcategory, and Regional languages.
 struct AddContentMetadataFields: View {
     @Binding var name: String
     @Binding var description: String
     @Binding var category: FilterListCategory
     let categories: [FilterListCategory]
     var categoryName: (FilterListCategory) -> String = { $0.localizedName }
+    /// Filter lists pass this so an Annoyances list can choose its subcategory (#1142).
+    var annoyanceTopic: Binding<AnnoyanceTopic>? = nil
     /// Filter lists pass this so a Regional list can name its languages.
     var languages: Binding<Set<String>>? = nil
 
@@ -156,9 +158,27 @@ struct AddContentMetadataFields: View {
             .textInputAutocapitalization(.sentences)
             #endif
         ContentCategoryPicker(selection: $category, categories: categories, categoryName: categoryName)
+        if let annoyanceTopic, category == .annoyances {
+            AnnoyanceTopicPicker(selection: annoyanceTopic)
+        }
         if let languages {
             RegionalListLanguagesField(category: category, languages: languages)
         }
+    }
+}
+
+struct AnnoyanceTopicPicker: View {
+    @Binding var selection: AnnoyanceTopic
+
+    var body: some View {
+        Picker(selection: $selection) {
+            ForEach(AnnoyanceTopic.allCases) { topic in
+                Text(LocalizedStringKey(topic.title)).tag(topic)
+            }
+        } label: {
+            Text("Subcategory")
+        }
+        .pickerStyle(.menu)
     }
 }
 
@@ -260,13 +280,15 @@ struct AddContentURLMetadataSection<Footer: View>: View {
     @Binding var category: FilterListCategory
     let categories: [FilterListCategory]
     var categoryName: (FilterListCategory) -> String = { $0.localizedName }
+    var annoyanceTopic: Binding<AnnoyanceTopic>? = nil
     var languages: Binding<Set<String>>? = nil
     @ViewBuilder var footer: () -> Footer
 
     var body: some View {
         Section {
             AddContentMetadataFields(name: $name, description: $description, category: $category,
-                                     categories: categories, categoryName: categoryName, languages: languages)
+                                     categories: categories, categoryName: categoryName,
+                                     annoyanceTopic: annoyanceTopic, languages: languages)
         } header: {
             Text(verbatim: url.absoluteString)
                 .textCase(nil)

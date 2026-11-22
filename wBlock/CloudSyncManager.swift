@@ -1078,6 +1078,7 @@ final class CloudSyncManager: ObservableObject {
                 && left.resolvedUpdatesAutomatically == right.resolvedUpdatesAutomatically
                 && left.content == right.content
                 && (left.languages ?? []) == (right.languages ?? [])
+                && left.annoyanceTopic == right.annoyanceTopic
                 && left.resolvedUserProvidedName == right.resolvedUserProvidedName
                 && left.resolvedUserProvidedDescription == right.resolvedUserProvidedDescription
                 && left.siteScope == right.siteScope
@@ -1296,6 +1297,10 @@ final class CloudSyncManager: ObservableObject {
                         filterLists[index].languages = languages
                         nonSelectionChanged = true
                     }
+                    let syncedTopic = filterLists[index].category == .annoyances ? remoteCustom.annoyanceTopic : nil
+                    if filterLists[index].annoyanceTopic != syncedTopic {
+                        filterLists[index].annoyanceTopic = syncedTopic
+                    }
                     if let scope = remoteCustom.siteScope, scope != SyncPayload.SiteScope.of(filterLists[index]) {
                         scope.apply(to: &filterLists[index])
                         nonSelectionChanged = true
@@ -1318,6 +1323,7 @@ final class CloudSyncManager: ObservableObject {
                 description: remoteCustom.resolvedDescription ?? "",
                 sourceRuleCount: nil,
                 languages: remoteCustom.languages ?? [],
+                annoyanceTopic: category == .annoyances ? remoteCustom.annoyanceTopic : nil,
                 hasUserProvidedName: remoteCustom.resolvedUserProvidedName,
                 hasUserProvidedDescription: remoteCustom.resolvedUserProvidedDescription
             )
@@ -1989,6 +1995,7 @@ final class CloudSyncManager: ObservableObject {
                     description: remoteCustom.resolvedDescription ?? "",
                     sourceRuleCount: nil,
                     languages: remoteCustom.languages ?? [],
+                    annoyanceTopic: remoteCustom.resolvedCategory == .annoyances ? remoteCustom.annoyanceTopic : nil,
                     hasUserProvidedName: remoteCustom.resolvedUserProvidedName,
                     hasUserProvidedDescription: remoteCustom.resolvedUserProvidedDescription
                 ))
@@ -2179,6 +2186,7 @@ final class CloudSyncManager: ObservableObject {
                     userProvidedDescription: list.hasUserProvidedDescription,
                     content: inlineContents[list.url.absoluteString],
                     languages: list.languages.isEmpty ? nil : list.languages,
+                    annoyanceTopic: list.category == .annoyances ? list.annoyanceTopic : nil,
                     siteScope: SyncPayload.SiteScope.of(list)
                 )
             }
@@ -2885,6 +2893,8 @@ private struct SyncPayload: Codable {
         let content: String?
         /// Languages a custom regional list covers; nil from older clients.
         var languages: [String]? = nil
+        /// Subcategory a custom Annoyances list sits under; nil means Other.
+        var annoyanceTopic: String? = nil
         /// Nil from older clients, which leaves the local scope alone.
         var siteScope: SiteScope? = nil
 
