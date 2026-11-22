@@ -22,9 +22,9 @@
     "content_scripts": [
         {
             "js": [
+                "content.js",
                 "zapper-content.js",
-                "procedural.js",
-                "content.js"
+                "procedural.js"
             ],
             "matches": [
                 "<all_urls>"

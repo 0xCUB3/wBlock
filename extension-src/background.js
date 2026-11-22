@@ -31,16 +31,98 @@
   // files injected right after; each file runs and removes its own queue.
   // Injected functions and files are exempt from the page's CSP, unlike a
   // page script element. Runs as a function, so it must not close over anything.
-  const queueScriptletCalls = calls => {
+  const WARM_SCRIPTLET_PREFIX = 'wblock-early-';
+  const WARM_SCRIPTLET_LIMIT = 32;
+  const WARM_SCRIPTLET_LEASE_MS = 30 * 60 * 1000;
+  const warmScriptletFiles = new Map();
+  let warmScriptletSync = Promise.resolve();
+  const warmOriginFromUrl = url => {
+    if (typeof url !== 'string') return '';
     try {
-      const queue = globalThis.__wbeScriptletCalls || (globalThis.__wbeScriptletCalls = {});
-      for (const [name, ...args] of calls) {
-        const pending = queue[name] || (queue[name] = []);
-        if (!pending.some(call => call.length === args.length && call.every((value, i) => value === args[i]))) pending.push(args);
-      }
-      return true;
+      const parsed = new URL(url);
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return '';
+      return parsed.origin;
     } catch (_) {
-      return false;
+      return '';
+    }
+  };
+  const syncWarmScriptlets = (url, uboCalls) => {
+    if (!(browser.scripting && typeof browser.scripting.registerContentScripts === 'function')) return;
+    const origin = warmOriginFromUrl(url);
+    if (!origin) return;
+    const names = [...new Set(uboCalls.map(([name]) => name).filter(name => typeof name === 'string' && name && !name.startsWith('trusted-')))];
+    const id = WARM_SCRIPTLET_PREFIX + origin;
+    const js = names.length > 0 ? ['early/warm-scriptlets.js', ...names.map(name => `scriptlets/${name}.js`)] : [];
+    const signature = js.join('\0');
+    if (warmScriptletFiles.get(id) === signature) return;
+    if (js.length === 0 && !warmScriptletFiles.has(id)) return;
+    warmScriptletSync = warmScriptletSync.then(async () => {
+      if (js.length === 0) {
+        warmScriptletFiles.delete(id);
+        await browser.scripting.unregisterContentScripts({ ids: [id] }).catch(() => {});
+        return;
+      }
+      const existing = await browser.scripting.getRegisteredContentScripts({ ids: [id] }).catch(() => []);
+      if (existing.length > 0) {
+        await browser.scripting.unregisterContentScripts({ ids: [id] }).catch(() => {});
+      }
+      await browser.scripting.registerContentScripts([{
+        id,
+        matches: [origin + '/*'],
+        js,
+        runAt: 'document_start',
+        world: 'MAIN',
+        allFrames: true,
+        persistAcrossSessions: false
+      }]);
+      warmScriptletFiles.delete(id);
+      warmScriptletFiles.set(id, signature);
+      while (warmScriptletFiles.size > WARM_SCRIPTLET_LIMIT) {
+        const oldestId = warmScriptletFiles.keys().next().value;
+        warmScriptletFiles.delete(oldestId);
+        await browser.scripting.unregisterContentScripts({ ids: [oldestId] }).catch(() => {});
+      }
+    }).catch(() => {});
+  };
+  const clearWarmScriptlets = () => {
+    warmScriptletFiles.clear();
+    if (!(browser.scripting && typeof browser.scripting.getRegisteredContentScripts === 'function'
+      && typeof browser.scripting.unregisterContentScripts === 'function')) return Promise.resolve();
+    warmScriptletSync = warmScriptletSync.then(async () => {
+      const scripts = await browser.scripting.getRegisteredContentScripts().catch(() => []);
+      const ids = (scripts || [])
+        .map(script => script && script.id)
+        .filter(id => typeof id === 'string' && id.startsWith(WARM_SCRIPTLET_PREFIX));
+      if (ids.length > 0) {
+        await browser.scripting.unregisterContentScripts({ ids }).catch(() => {});
+      }
+    }).catch(() => {});
+    return warmScriptletSync;
+  };
+  const queueScriptletCalls = (calls, warm) => {
+    try {
+      if (warm === null) {
+        try { localStorage.removeItem('__wblock_scriptlets_v1'); } catch (_) {}
+      } else if (warm && Array.isArray(warm.calls)) {
+        try { localStorage.setItem('__wblock_scriptlets_v1', JSON.stringify(warm)); } catch (_) {}
+      }
+      const ran = globalThis[Symbol.for('wbe.warmScriptletKeys')];
+      const queue = globalThis.__wbeScriptletCalls || (globalThis.__wbeScriptletCalls = {});
+      const needed = [];
+      for (const call of calls) {
+        if (ran) {
+          try {
+            if (ran.has(JSON.stringify(call))) continue;
+          } catch (_) {}
+        }
+        const [name, ...args] = call;
+        const pending = queue[name] || (queue[name] = []);
+        if (!pending.some(item => item.length === args.length && item.every((value, i) => value === args[i]))) pending.push(args);
+        if (!needed.includes(name)) needed.push(name);
+      }
+      return needed;
+    } catch (_) {
+      return [];
     }
   };
   // AdGuard-syntax rules with no uBO equivalent arrive as `adg:<name>` calls,
@@ -89,19 +171,27 @@
       return executeInFrame({ target, world: 'MAIN', injectImmediately: true, func, args: [source, args] });
     }));
   };
-  const runScriptlets = async (target, calls) => {
+  const runScriptlets = async (target, calls, url) => {
     const adguard = calls.filter(([name]) => name.startsWith(ADGUARD_PREFIX));
     const ubo = adguard.length > 0 ? calls.filter(([name]) => !name.startsWith(ADGUARD_PREFIX)) : calls;
+    const warmCalls = ubo.filter(([name]) => typeof name === 'string' && name && !name.startsWith('trusted-'));
+    if (url) syncWarmScriptlets(url, warmCalls);
     const pending = adguard.map(async call => {
       const [result] = await runAdguardCalls(target, [call]);
       return result ? [] : [call];
     });
     if (ubo.length > 0) {
-      const queued = await executeInFrame({ target, world: 'MAIN', injectImmediately: true, func: queueScriptletCalls, args: [ubo] });
+      const warm = warmCalls.length > 0 ? { exp: Date.now() + WARM_SCRIPTLET_LEASE_MS, calls: warmCalls } : null;
+      const queued = await executeInFrame({ target, world: 'MAIN', injectImmediately: true, func: queueScriptletCalls, args: [ubo, warm] });
       if (!queued) pending.push(ubo);
-      else for (const name of new Set(ubo.map(([name]) => name))) {
-        const result = await executeInFrame({ target, world: 'MAIN', injectImmediately: true, files: [`scriptlets/${name}.js`] });
-        pending.push(result ? [] : ubo.filter(call => call[0] === name));
+      else {
+        const names = Array.isArray(queued.result)
+          ? queued.result
+          : [...new Set(ubo.map(([name]) => name))];
+        for (const name of names) {
+          const result = await executeInFrame({ target, world: 'MAIN', injectImmediately: true, files: [`scriptlets/${name}.js`] });
+          pending.push(result ? [] : ubo.filter(call => call[0] === name));
+        }
       }
     }
     return (await Promise.all(pending)).flat();
@@ -181,10 +271,10 @@
     }
     return { state: "applied" };
   };
-  const applyConfiguration = (tabId, frameId, configuration) => {
+  const applyConfiguration = (tabId, frameId, configuration, url) => {
     const target = { tabId, frameIds: [frameId] };
     const procedural = configuration.procedural || [];
-    const pending = [runScriptlets(target, configuration.scriptlets || []), insertFrameStyles(target, configuration)];
+    const pending = [runScriptlets(target, configuration.scriptlets || [], url), insertFrameStyles(target, configuration)];
     for (const world of ['ISOLATED', 'MAIN']) {
       const filters = procedural.filter(rule => /"type"\s*:\s*"matches-(?:prop|property)"/.test(rule) === (world === 'MAIN'));
       if (!filters.length) continue;
@@ -470,6 +560,8 @@
                 return browser.tabs.sendMessage(tab.id, { type: "wblock:zapper:reloadRules" }).catch(() => {});
               }))).catch(() => {});
             }
+          } else {
+            void clearWarmScriptlets();
           }
         });
       }
@@ -531,6 +623,7 @@
       // Pause and site state reach beyond this URL, and reads already in
       // flight must not restart freshness afterward.
       forgetRecentNativeState();
+      void clearWarmScriptlets();
       return configuration;
     }
     if (generation !== configurationGeneration) return configuration;
@@ -540,6 +633,7 @@
     if (configuration.engineTimestamp !== engineTimestamp) {
       cache.clear();
       forgetRecentNativeState();
+      void clearWarmScriptlets();
       engineTimestamp = configuration.engineTimestamp;
     }
     if (fresh) configValidatedAt.set(key, Date.now());
@@ -594,7 +688,18 @@
     void checkPopup(tab.id, tab.url);
   });
   browser.tabs.onUpdated?.addListener((id, change) => {
-    if (change.url) void checkPopup(id, change.url);
+    if (change.url) {
+      void checkPopup(id, change.url);
+      if (/^https?:\/\//i.test(change.url)) {
+        // Warm the top-frame lookup while the HTML response is still in flight
+        // so InitContentScript hits memory with zero native hops.
+        void getConfiguration(
+          frameLookupMessage({ url: change.url, frameId: 0 }, false),
+          change.url,
+          undefined
+        ).catch(() => {});
+      }
+    }
   });
   browser.tabs.onRemoved?.addListener(id => popupCandidates.delete(id));
 
@@ -695,6 +800,7 @@
       }
       if (cachedBlockingState.disabled || cachedBlockingState.paused) {
         forgetRecentNativeState();
+        void clearWarmScriptlets();
         configuration = emptyConfigurationForState(
           cachedBlockingState.disabled,
           cachedBlockingState.paused
@@ -1144,6 +1250,11 @@
         // User actions must not wait behind queued filter or userscript updates.
         const response = await sendPriorityNativeMessage(nativeRequest);
         if (/^setNoAutoplay/.test(nativeRequest.action) || nativeRequest.action === "setAllSiteComponentsDisabled") await syncNoAutoplayScripts(true);
+        if (nativeRequest.action === "setSiteDisabledState"
+          || nativeRequest.action === "setSiteFilterDisabledState"
+          || nativeRequest.action === "setAllSiteComponentsDisabled") {
+          await clearWarmScriptlets();
+        }
         return { ok: true, response };
       } catch (error) {
         return { ok: false, error: String(error && error.message ? error.message : error) };
@@ -1213,7 +1324,8 @@
       pendingConfigurationRequests.clear();
       await Promise.all([
         clearPersistedConfigCache(),
-        clearDocumentStartSessionCache()
+        clearDocumentStartSessionCache(),
+        clearWarmScriptlets()
       ]);
       await scheduleInstallRemoveParamDNRRules(true);
       await refreshActionStateForActiveTabs();
@@ -1563,7 +1675,7 @@
     if (message && message.action === "wblock:injectScriptlets") {
       const tabId = sender.tab && sender.tab.id;
       if (!tabId || !Array.isArray(message.scriptlets)) return { injected: false };
-      const failedScriptlets = await runScriptlets({ tabId, frameIds: [sender.frameId ?? 0] }, message.scriptlets);
+      const failedScriptlets = await runScriptlets({ tabId, frameIds: [sender.frameId ?? 0] }, message.scriptlets, sender.url);
       return { injected: failedScriptlets.length === 0, failedScriptlets };
     }
     if (message && message.action === "validateUserScriptExecutions") {
@@ -1638,7 +1750,7 @@
       if (applies) {
         // Retry only failed scriptlets; CSS and completed hooks stay applied.
         try {
-          const failedScriptlets = await applyConfiguration(tabId, frameId, configuration);
+          const failedScriptlets = await applyConfiguration(tabId, frameId, configuration, url);
           if (failedScriptlets.length > 0) response.payload = { scriptlets: failedScriptlets };
         } catch (error) {
           if (!isSkippedTarget(error)) {

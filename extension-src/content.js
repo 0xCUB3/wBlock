@@ -211,7 +211,10 @@
     }
     initializationStatePromise = configPromise.then(stateFromInitResponse);
     const response = await configPromise;
-    if (await initializationStatePromise) return;
+    if (await initializationStatePromise) {
+      try { localStorage.removeItem('__wblock_scriptlets_v1'); } catch (_) {}
+      return;
+    }
     // If the background page returned payload with configuration, it means
     // that it cannot apply it on its own and commands the content script
     // to do that.
