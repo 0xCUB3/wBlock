@@ -696,18 +696,7 @@
     void checkPopup(tab.id, tab.url);
   });
   browser.tabs.onUpdated?.addListener((id, change) => {
-    if (change.url) {
-      void checkPopup(id, change.url);
-      if (/^https?:\/\//i.test(change.url)) {
-        // Warm the top-frame lookup while the HTML response is still in flight
-        // so InitContentScript hits memory with zero native hops.
-        void getConfiguration(
-          frameLookupMessage({ url: change.url, frameId: 0 }, false),
-          change.url,
-          undefined
-        ).catch(() => {});
-      }
-    }
+    if (change.url) void checkPopup(id, change.url);
   });
   browser.tabs.onRemoved?.addListener(id => popupCandidates.delete(id));
 
@@ -766,6 +755,17 @@
     isTopFrame: sender.frameId === 0,
     includeContent: true,
     maxInlineContentBytes: 512 * 1024
+  });
+  browser.tabs.onUpdated?.addListener((_id, change) => {
+    if (change.url && /^https?:\/\//i.test(change.url)) {
+      // Warm the top-frame lookup while the HTML response is still in flight
+      // so InitContentScript hits memory with zero native hops.
+      void getConfiguration(
+        frameLookupMessage({ url: change.url, frameId: 0 }, false),
+        change.url,
+        undefined
+      ).catch(() => {});
+    }
   });
   // Native configuration and site state for one frame. Page loads and bfcache
   // restores both read through here so the state checks cannot drift apart.
