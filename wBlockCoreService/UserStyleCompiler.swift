@@ -70,36 +70,54 @@ public enum UserStylePreprocessorService {
         digest(options.keys.sorted().map { "\($0)=\(options[$0] ?? "")" }.joined(separator: "\n"))
     }
 
-    /// SHA256 hex digest of `source`. Memoized: cache keys derived from userstyle
-    /// content are recomputed on every `compiledStyleBody` access and every
-    /// parse-cache lookup, so hashing a large stylesheet each time was defeating
-    /// the caches it was meant to serve. A dictionary lookup compares the string
-    /// bytes once instead of hashing them. The cache is bounded both by entry
-    /// count and by retained key bytes, since a single key may be a multi-megabyte
-    /// stylesheet or compiled body.
+    /// The SHA-256 digest of the source's UTF-8 bytes as lowercase hex.
     public static func digest(_ source: String) -> String {
-        digestCacheLock.lock()
-        defer { digestCacheLock.unlock() }
-        if let cached = digestCache[source] {
-            return cached
-        }
-        let digest = SHA256.hash(data: Data(source.utf8)).map { String(format: "%02x", $0) }.joined()
-        let sourceBytes = source.utf8.count
-        if digestCache.count >= digestCacheLimit
-            || digestCacheBytes + sourceBytes > digestCacheByteLimit {
-            digestCache.removeAll(keepingCapacity: true)
-            digestCacheBytes = 0
-        }
-        digestCache[source] = digest
-        digestCacheBytes += sourceBytes
-        return digest
+        digest(segments: [source[...]])
     }
 
-    private static let digestCacheLock = NSLock()
-    private static let digestCacheLimit = 512
-    private static let digestCacheByteLimit = 32 * 1024 * 1024
-    nonisolated(unsafe) private static var digestCache: [String: String] = [:]
-    nonisolated(unsafe) private static var digestCacheBytes = 0
+    static func digest(segments: [Substring]) -> String {
+        // Hash the slices directly to avoid joining them into a new string.
+        var hasher = SHA256()
+        for segment in segments where !segment.isEmpty {
+            updateHasher(&hasher, with: segment.utf8)
+        }
+        return hexString(for: hasher.finalize())
+    }
+
+    private static func updateHasher(_ hasher: inout SHA256, with utf8: Substring.UTF8View) {
+        if utf8.withContiguousStorageIfAvailable({ buffer in
+            hasher.update(bufferPointer: UnsafeRawBufferPointer(buffer))
+            return true
+        }) == true {
+            return
+        }
+        var chunk: [UInt8] = []
+        chunk.reserveCapacity(4_096)
+        for byte in utf8 {
+            chunk.append(byte)
+            if chunk.count == 4_096 {
+                chunk.withUnsafeBytes { hasher.update(bufferPointer: $0) }
+                chunk.removeAll(keepingCapacity: true)
+            }
+        }
+        if !chunk.isEmpty {
+            chunk.withUnsafeBytes { hasher.update(bufferPointer: $0) }
+        }
+    }
+
+    private static let hexDigits: [UInt8] = Array("0123456789abcdef".utf8)
+
+    private static func hexString(for digest: SHA256Digest) -> String {
+        String(unsafeUninitializedCapacity: 64) { buffer in
+            var index = 0
+            for byte in digest {
+                buffer[index] = hexDigits[Int(byte >> 4)]
+                buffer[index + 1] = hexDigits[Int(byte & 0x0f)]
+                index += 2
+            }
+            return index
+        }
+    }
 
     public static func backend(for preprocessor: String) -> (any UserStylePreprocessorBackend)? {
         switch normalize(preprocessor) {

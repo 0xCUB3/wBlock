@@ -112,6 +112,7 @@ private final class GMBoundedResponseLoader: NSObject, URLSessionDataDelegate, @
 public enum WebExtensionRequestHandler {
     private static let sharedWebExtensionLogFilename = "web_extension.log"
     private static let userScriptPayloadDataCache = UserScriptPayloadDataCache()
+    @MainActor private static let userScriptPreparedPayloadCache = UserScriptPreparedPayloadCache()
     private static let maximumGMXHRResponseBytes = 25 * 1024 * 1024
     private static let maximumGMXHRRequestBodyBytes = 2 * 1024 * 1024
     private static let maximumGMXHRHeaders = 128
@@ -1281,7 +1282,20 @@ public enum WebExtensionRequestHandler {
                 continue
             }
 
-            var descriptor = userScriptDescriptor(script)
+            let runtimePrefix = runtimeConfigurationPrefix(for: script)
+            let shouldInline = includeContent && !script.content.isEmpty
+            let prepared = (runtimePrefix != nil || shouldInline)
+                ? userScriptPreparedPayloadCache.payload(
+                    for: script,
+                    payloadRevision: payloadMutationRevision,
+                    runtimePrefix: runtimePrefix
+                )
+                : nil
+
+            var descriptor = userScriptDescriptor(
+                script,
+                contentDigest: runtimePrefix != nil ? prepared?.contentDigest(from: script.content) : nil
+            )
             descriptor["disabledHosts"] = ProtobufDataManager.shared.getUserScriptDisabledHosts(
                 forScriptID: script.id.uuidString
             )
@@ -1292,22 +1306,26 @@ public enum WebExtensionRequestHandler {
                     for: script.id.uuidString
                 )
             }
-            if includeContent, !script.content.isEmpty {
-                let executableContent = configuredExecutableContent(for: script)
-                let inlinePayloadBytes = executableContent.utf8.count
+            if shouldInline, let prepared {
+                let inlinePayloadBytes = prepared.utf8ByteCount
                     + script.resourceContents.values.reduce(0) { $0 + $1.utf8.count }
                 let perScriptCap = script.runAt == "document-start"
                     ? documentStartInlineCap
                     : maxInlineContentBytes
                 if inlinePayloadBytes <= perScriptCap, inlinePayloadBytes <= remainingInlineBudget {
-                    descriptor["content"] = executableContent
-                    if !script.resourceContents.isEmpty {
+                    remainingInlineBudget -= inlinePayloadBytes
+                    if script.resourceContents.isEmpty {
+                        let digest = prepared.contentDigest(from: script.content)
+                        descriptor["contentKey"] = digest
+                        if cachedContent[script.id.uuidString] != digest {
+                            descriptor["content"] = prepared.materializeContent(from: script.content)
+                        }
+                    } else {
+                        descriptor["content"] = prepared.materializeContent(from: script.content)
                         descriptor["resources"] = script.resourceContents
                     }
-                    remainingInlineBudget -= inlinePayloadBytes
                 }
             }
-            omitCachedContent(&descriptor, cachedContent: cachedContent)
 
             descriptor["payloadRevision"] = payloadMutationRevision
             descriptorsByIndex[index] = descriptor
@@ -1329,7 +1347,7 @@ public enum WebExtensionRequestHandler {
     private static func omitCachedContent(_ descriptor: inout [String: Any], cachedContent: [String: String]) {
         guard let content = descriptor["content"] as? String, descriptor["resources"] == nil,
               let id = descriptor["id"] as? String else { return }
-        let key = UserStylePreprocessorService.digest(content)
+        let key = (descriptor["contentDigest"] as? String) ?? UserStylePreprocessorService.digest(content)
         descriptor["contentKey"] = key
         if cachedContent[id] == key {
             descriptor.removeValue(forKey: "content")
@@ -1348,26 +1366,24 @@ public enum WebExtensionRequestHandler {
         return response
     }
 
-    /// Built-ins whose behaviour is configured from the app (Dark Reader's
-    /// appearance, DeArrow options and Tube Cleaner features) get the preference
-    /// prepended as a constant. Returns nil for every other script.
-    private static func runtimeConfiguredExecutableContent(for script: UserScript) -> String? {
+    /// App settings as JavaScript constants for built-ins that read them at startup.
+    private static func runtimeConfigurationPrefix(for script: UserScript) -> String? {
         if DarkReaderAppearancePreference.matches(scriptURL: script.url) {
             return DarkReaderAppearancePreference.configuredExecutableContent(
-                script.executableContent,
+                "",
                 followsSystemAppearance: DarkReaderAppearancePreference.followsSystemAppearance(),
                 pureBlack: DarkReaderAppearancePreference.pureBlack()
             )
         }
         if DeArrowPreference.matches(scriptURL: script.url) {
             return DeArrowPreference.configuredExecutableContent(
-                script.executableContent,
+                "",
                 settings: TubeCleanerDeArrowPreference.settings()
             )
         }
         if PlayerCleanerPreference.matches(scriptURL: script.url) {
             return PlayerCleanerPreference.configuredExecutableContent(
-                script.executableContent,
+                "",
                 features: PlayerCleanerPreference.features()
             )
         }
@@ -1376,7 +1392,7 @@ public enum WebExtensionRequestHandler {
             var legacySettings = TubeCleanerDeArrowPreference.settings()
             legacySettings.enabled = false
             return TubeCleanerDeArrowPreference.configuredExecutableContent(
-                script.executableContent,
+                "",
                 settings: legacySettings,
                 features: TubeCleanerDeArrowPreference.features()
             )
@@ -1384,11 +1400,10 @@ public enum WebExtensionRequestHandler {
         return nil
     }
 
-    private static func configuredExecutableContent(for script: UserScript) -> String {
-        runtimeConfiguredExecutableContent(for: script) ?? script.executableContent
-    }
-
-    private static func userScriptDescriptor(_ script: UserScript) -> [String: Any] {
+    private static func userScriptDescriptor(
+        _ script: UserScript,
+        contentDigest: String? = nil
+    ) -> [String: Any] {
         let resourceNames = !script.resourceContents.isEmpty
             ? Array(script.resourceContents.keys).sorted()
             : Array(Set(script.resource.map(\.name))).sorted()
@@ -1423,8 +1438,8 @@ public enum WebExtensionRequestHandler {
             "downloadURL": script.downloadURL ?? "",
             "resourceNames": resourceNames
         ]
-        if let configured = runtimeConfiguredExecutableContent(for: script) {
-            descriptor["contentDigest"] = UserStylePreprocessorService.digest(configured)
+        if let contentDigest {
+            descriptor["contentDigest"] = contentDigest
         }
         return descriptor
     }
@@ -2019,12 +2034,25 @@ public enum WebExtensionRequestHandler {
                             "payloadRevision": manager.payloadMutationRevision]
                 }
                 if request.keys.contains("contentDigest") {
-                    let expected = script.isUserStyle
-                        ? UserStyleSupport.effectiveCSS(forContent: script.content, compiledBody: script.compiledStyleBody, url: pageURL)
-                        : runtimeConfiguredExecutableContent(for: script)
-                    guard let expected, let digest = request["contentDigest"] as? String,
+                    let expectedDigest: String?
+                    if script.isUserStyle {
+                        expectedDigest = UserStyleSupport.effectiveCSS(
+                            forContent: script.content,
+                            compiledBody: script.compiledStyleBody,
+                            url: pageURL
+                        ).map { UserStylePreprocessorService.digest($0) }
+                    } else if let runtimePrefix = runtimeConfigurationPrefix(for: script) {
+                        expectedDigest = userScriptPreparedPayloadCache.payload(
+                            for: script,
+                            payloadRevision: manager.payloadMutationRevision,
+                            runtimePrefix: runtimePrefix
+                        ).contentDigest(from: script.content)
+                    } else {
+                        expectedDigest = nil
+                    }
+                    guard let expectedDigest, let digest = request["contentDigest"] as? String,
                           digest.range(of: "^[0-9a-f]{64}$", options: .regularExpression) != nil,
-                          digest == UserStylePreprocessorService.digest(expected) else {
+                          digest == expectedDigest else {
                         return ["ok": false, "error": "userscript-integrity-mismatch",
                                 "payloadRevision": manager.payloadMutationRevision]
                     }
@@ -2099,28 +2127,33 @@ public enum WebExtensionRequestHandler {
             let data: Data?
             switch kind {
             case .content:
-                let pageURL = message["url"] as? String
-                let artifactIdentity: String = {
-                    guard let body = script.compiledStyleBody,
-                          let style = UserStyleSupport.parsed(from: script.content, compiledBody: nil, compileSource: false),
-                          let revision = UserStylePreprocessorService.compilerRevision(for: style.preprocessor)
-                    else { return "none" }
-                    return "\(revision):\(UserStylePreprocessorService.digest(body))"
-                }()
-                let cacheKey = "content:\(scriptId.uuidString):\(pageURL ?? ""):\(artifactIdentity)"
-                if let configured = runtimeConfiguredExecutableContent(for: script) {
-                    // Key on the configured body so a preference change is
-                    // served fresh instead of from the previous payload.
-                    data = userScriptPayloadDataCache.data(
-                        for: "\(cacheKey):configured-\(UserStylePreprocessorService.digest(configured))",
-                        source: configured
-                    )
+                if script.isUserStyle {
+                    let compiledBody = script.compiledStyleBody
+                    let artifactIdentity: String = {
+                        guard let compiledBody,
+                              let style = UserStyleSupport.parsed(from: script.content, compiledBody: nil, compileSource: false),
+                              let revision = UserStylePreprocessorService.compilerRevision(for: style.preprocessor)
+                        else { return "none" }
+                        return "\(revision):\(UserStylePreprocessorService.digest(compiledBody))"
+                    }()
+                    let key = "content:\(scriptId.uuidString):\(pageURL):\(artifactIdentity)"
+                    data = userScriptPayloadDataCache.data(for: key, source: script.content) { source in
+                        UserStyleSupport.effectiveCSS(forContent: source, compiledBody: compiledBody, url: pageURL)
+                    }
                 } else {
-                    data = userScriptPayloadDataCache.data(for: cacheKey, source: script.content) { source in
-                        if script.isUserStyle, let pageURL, !pageURL.isEmpty {
-                            return UserStyleSupport.effectiveCSS(forContent: source, compiledBody: script.compiledStyleBody, url: pageURL)
-                        }
-                        return UserScript.executableContent(from: source)
+                    let runtimePrefix = runtimeConfigurationPrefix(for: script)
+                    let prepared = userScriptPreparedPayloadCache.payload(
+                        for: script,
+                        payloadRevision: payloadRevision,
+                        runtimePrefix: runtimePrefix
+                    )
+                    // App settings can change while the script source stays the same.
+                    let cacheKey = "content:\(scriptId.uuidString)"
+                    let key = runtimePrefix != nil
+                        ? "\(cacheKey):configured-\(prepared.contentDigest(from: script.content))"
+                        : cacheKey
+                    data = userScriptPayloadDataCache.data(for: key, source: script.content) { source in
+                        prepared.materializeContent(from: source)
                     }
                 }
             case .resource:

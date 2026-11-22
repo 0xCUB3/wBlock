@@ -223,6 +223,136 @@ final class UserScriptPayloadDataCache: @unchecked Sendable {
     }
 }
 
+private struct UserScriptExecutableContent {
+    let source: String
+    let metadataRemovalRange: Range<String.Index>?
+    let runtimePrefix: String?
+
+    private var beforeMetadata: Substring {
+        source[..<(metadataRemovalRange?.lowerBound ?? source.startIndex)]
+    }
+
+    private var afterMetadata: Substring {
+        source[(metadataRemovalRange?.upperBound ?? source.startIndex)...]
+    }
+
+    func materialize(utf8ByteCount: Int? = nil) -> String {
+        if runtimePrefix == nil {
+            guard let metadataRemovalRange else { return source }
+            if metadataRemovalRange.lowerBound == source.startIndex {
+                return String(afterMetadata)
+            }
+        }
+
+        let before = beforeMetadata
+        let after = afterMetadata
+        var result = String()
+        result.reserveCapacity(utf8ByteCount ?? ((runtimePrefix?.utf8.count ?? 0) + before.utf8.count + after.utf8.count))
+        if let runtimePrefix {
+            result.append(runtimePrefix)
+        }
+        result.append(contentsOf: before)
+        result.append(contentsOf: after)
+        return result
+    }
+
+    func digest() -> String {
+        if let runtimePrefix {
+            return UserStylePreprocessorService.digest(segments: [runtimePrefix[...], beforeMetadata, afterMetadata])
+        }
+        return UserStylePreprocessorService.digest(segments: [beforeMetadata, afterMetadata])
+    }
+}
+
+/// Stores offsets to avoid retaining the script source. Pass the original
+/// source when materializing or hashing the payload.
+@MainActor
+final class UserScriptPreparedPayload {
+    let runtimePrefix: String?
+    let utf8ByteCount: Int
+    private let metadataRemovalUTF8Range: Range<Int>?
+    private(set) var cachedDigest: String?
+
+    init(source: String, runtimePrefix: String?) {
+        self.runtimePrefix = runtimePrefix
+        let sourceUTF8 = source.utf8
+        if let removal = UserScript.metadataRemovalRange(in: source) {
+            let start = sourceUTF8.distance(from: sourceUTF8.startIndex, to: removal.lowerBound)
+            let length = sourceUTF8.distance(from: removal.lowerBound, to: removal.upperBound)
+            metadataRemovalUTF8Range = start..<(start + length)
+        } else {
+            metadataRemovalUTF8Range = nil
+        }
+        utf8ByteCount = sourceUTF8.count - (metadataRemovalUTF8Range?.count ?? 0) + (runtimePrefix?.utf8.count ?? 0)
+    }
+
+    func materializeContent(from source: String) -> String {
+        executableContent(from: source).materialize(utf8ByteCount: utf8ByteCount)
+    }
+
+    func contentDigest(from source: String) -> String {
+        if let cachedDigest { return cachedDigest }
+        let digest = executableContent(from: source).digest()
+        cachedDigest = digest
+        return digest
+    }
+
+    private func executableContent(from source: String) -> UserScriptExecutableContent {
+        let removal = metadataRemovalUTF8Range.map { offsets in
+            let utf8 = source.utf8
+            let lower = utf8.index(utf8.startIndex, offsetBy: offsets.lowerBound)
+            let upper = utf8.index(lower, offsetBy: offsets.count)
+            return lower..<upper
+        }
+        return UserScriptExecutableContent(source: source, metadataRemovalRange: removal, runtimePrefix: runtimePrefix)
+    }
+}
+
+@MainActor
+final class UserScriptPreparedPayloadCache {
+    private struct CacheEntry {
+        let payloadRevision: UInt64
+        let payload: UserScriptPreparedPayload
+        var hits: UInt64
+        var lastUsed: UInt64
+    }
+
+    private static let maximumEntries = 128
+    private var entries: [UUID: CacheEntry] = [:]
+    private var clock: UInt64 = 0
+
+    func payload(
+        for script: UserScript,
+        payloadRevision: UInt64,
+        runtimePrefix: String?
+    ) -> UserScriptPreparedPayload {
+        clock &+= 1
+        if var cached = entries[script.id],
+           cached.payloadRevision == payloadRevision,
+           cached.payload.runtimePrefix == runtimePrefix {
+            cached.hits &+= 1
+            cached.lastUsed = clock
+            entries[script.id] = cached
+            return cached.payload
+        }
+        let prepared = UserScriptPreparedPayload(source: script.content, runtimePrefix: runtimePrefix)
+
+        if entries[script.id] == nil, entries.count >= Self.maximumEntries,
+           let victim = entries.min(by: {
+               $0.value.hits != $1.value.hits ? $0.value.hits < $1.value.hits : $0.value.lastUsed > $1.value.lastUsed
+           })?.key {
+            entries.removeValue(forKey: victim)
+        }
+        entries[script.id] = CacheEntry(
+            payloadRevision: payloadRevision,
+            payload: prepared,
+            hits: 1,
+            lastUsed: clock
+        )
+        return prepared
+    }
+}
+
 public enum UserScriptRestoreMatcher {
     public static func matchingIndex(for restoredScript: UserScript, in existingScripts: [UserScript]) -> Int? {
         let restoredIsLocal = restoredScript.isLocal
@@ -514,13 +644,26 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
     ]
 
     public static func executableContent(from content: String) -> String {
-        guard let metadataStart = content.range(of: "// ==UserScript==")?.lowerBound,
-              let metadataEndRange = content.range(
-                of: "// ==/UserScript==",
+        UserScriptExecutableContent(
+            source: content,
+            metadataRemovalRange: metadataRemovalRange(in: content),
+            runtimePrefix: nil
+        ).materialize()
+    }
+
+    fileprivate static func metadataRemovalRange(in content: String) -> Range<String.Index>? {
+        guard let metadataStart = graphemeAlignedLiteralRange(
+                "// ==UserScript==",
+                in: content,
+                range: content.startIndex..<content.endIndex
+              )?.lowerBound,
+              let metadataEndRange = graphemeAlignedLiteralRange(
+                "// ==/UserScript==",
+                in: content,
                 range: metadataStart..<content.endIndex
               )
         else {
-            return content
+            return nil
         }
 
         var bodyStart = metadataEndRange.upperBound
@@ -530,16 +673,31 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
         if bodyStart < content.endIndex, content[bodyStart] == "\n" {
             bodyStart = content.index(after: bodyStart)
         }
+        return metadataStart..<bodyStart
+    }
 
-        if metadataStart == content.startIndex {
-            return String(content[bodyStart...])
+    private static func isCharacterBoundary(_ index: String.Index, in content: String) -> Bool {
+        index == content.startIndex
+            || index == content.endIndex
+            || content.index(after: content.index(before: index)) == index
+    }
+
+    private static func graphemeAlignedLiteralRange(
+        _ marker: String,
+        in content: String,
+        range searchRange: Range<String.Index>
+    ) -> Range<String.Index>? {
+        var cursor = searchRange.lowerBound
+        while cursor < searchRange.upperBound,
+              let match = content.range(of: marker, options: .literal, range: cursor..<searchRange.upperBound) {
+            // A literal match can split a character, such as "=" followed by a combining accent.
+            if isCharacterBoundary(match.lowerBound, in: content),
+               isCharacterBoundary(match.upperBound, in: content) {
+                return match
+            }
+            cursor = match.upperBound
         }
-
-        var stripped = String()
-        stripped.reserveCapacity(content.count - content[metadataStart..<bodyStart].count)
-        stripped.append(contentsOf: content[..<metadataStart])
-        stripped.append(contentsOf: content[bodyStart...])
-        return stripped
+        return nil
     }
     
     public init(id: UUID = UUID(), name: String, url: URL? = nil, content: String = "") {
