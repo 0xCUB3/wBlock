@@ -3,6 +3,7 @@ import Foundation
 
 @main
 struct UserScriptMatchingAndPayloadTests {
+    @MainActor
     static func main() {
         if CommandLine.arguments.contains("--hostile-regex-probe") {
             let hostileURL = String(repeating: "a", count: 12_000) + "!"
@@ -297,6 +298,10 @@ struct UserScriptMatchingAndPayloadTests {
         granted.grant.append("none")
         expect(!granted.allowsGMXMLHttpRequest, "grant none overrides mixed request grants")
 
+        testStreamingDigest()
+        testPreparedPayloadCache()
+        testMetadataMarkerBoundaries()
+
         print("PASS: userscript matching and payload")
     }
 
@@ -371,5 +376,100 @@ struct UserScriptMatchingAndPayloadTests {
             return
         }
         expectEqual(process.terminationStatus, 0, "hostile regex should fail closed without timing out")
+    }
+
+    private static func testStreamingDigest() {
+        expectEqual(
+            UserStylePreprocessorService.digest("🔥 café"),
+            "904f75fa52b79d70d6b1fe2eea03e599bdabcba35c3ed6c7e6f8ed8f555686d0",
+            "SHA-256 must hash the original UTF-8 bytes"
+        )
+
+        let prefix = "const flag = true;\n"
+        let half = String(repeating: "a🔥", count: 1_500)
+        let bridged = NSMutableString(string: half)
+        bridged.append(half)
+        let bridgedSource = bridged as String
+        expectEqual(
+            UserStylePreprocessorService.digest(segments: [prefix[...], bridgedSource[...]]),
+            UserStylePreprocessorService.digest(prefix + half + half),
+            "hashing a bridged string in segments must match hashing the joined source"
+        )
+    }
+
+    @MainActor
+    private static func testPreparedPayloadCache() {
+        let cache = UserScriptPreparedPayloadCache()
+        let dependency = "/* helper 🔧 */\n"
+        let metadata = "// ==UserScript==\n// @name Cached Script\n// ==/UserScript==\n"
+        let body = "console.log('🔥 café');\n"
+        var script = UserScript(name: "Cached Script", content: dependency + metadata + body)
+
+        let prefix = "const enabled = true;\n"
+        let expected = prefix + dependency + body
+        let prepared = cache.payload(for: script, payloadRevision: 1, runtimePrefix: prefix)
+        expectEqual(prepared.materializeContent(from: script.content), expected, "keep the runtime prefix and dependency when stripping metadata")
+        expectEqual(prepared.utf8ByteCount, expected.utf8.count, "inline size must count the executable UTF-8 bytes")
+        expect(prepared.cachedDigest == nil, "preparing and materializing content must skip hashing")
+
+        let digest = prepared.contentDigest(from: script.content)
+        expectEqual(digest, UserStylePreprocessorService.digest(expected), "digest must match the executable bytes")
+        let hit = cache.payload(for: script, payloadRevision: 1, runtimePrefix: prefix)
+        expect(hit === prepared && hit.cachedDigest == digest, "repeat lookups must reuse the prepared payload and digest")
+
+        let updatedPrefix = "const enabled = false;\n"
+        let reconfigured = cache.payload(for: script, payloadRevision: 1, runtimePrefix: updatedPrefix)
+        expectEqual(
+            reconfigured.contentDigest(from: script.content),
+            UserStylePreprocessorService.digest(updatedPrefix + dependency + body),
+            "changing settings must refresh the digest at the same revision"
+        )
+
+        let edit = "\nvoid 0;"
+        script.content += edit
+        let revised = cache.payload(for: script, payloadRevision: 2, runtimePrefix: updatedPrefix)
+        expectEqual(
+            revised.contentDigest(from: script.content),
+            UserStylePreprocessorService.digest(updatedPrefix + dependency + body + edit),
+            "changing the source revision must refresh the digest"
+        )
+
+        let evictionCache = UserScriptPreparedPayloadCache()
+        let scripts = (0..<129).map { index in
+            UserScript(name: "Script \(index)", content: "console.log(\(index));")
+        }
+        let oldest = evictionCache.payload(for: scripts[0], payloadRevision: 1, runtimePrefix: nil)
+        var newest: UserScriptPreparedPayload?
+        for index in 1..<128 {
+            newest = evictionCache.payload(for: scripts[index], payloadRevision: 1, runtimePrefix: nil)
+        }
+        _ = evictionCache.payload(for: scripts[128], payloadRevision: 1, runtimePrefix: nil)
+        expect(
+            evictionCache.payload(for: scripts[127], payloadRevision: 1, runtimePrefix: nil) === newest,
+            "eviction with tied hit counts must keep the most recently used entry"
+        )
+        expect(
+            evictionCache.payload(for: scripts[0], payloadRevision: 1, runtimePrefix: nil) !== oldest,
+            "eviction with tied hit counts must drop the least recently used entry"
+        )
+    }
+
+    @MainActor
+    private static func testMetadataMarkerBoundaries() {
+        // The accent is part of the final "=" in each false marker.
+        let source = """
+        // ==UserScript==\u{0301}
+        // ==UserScript==
+        // @description Contains // ==/UserScript==\u{0301} inside metadata
+        // ==/UserScript==
+        const ok = 1;
+        """
+        let script = UserScript(name: "Grapheme", content: source)
+        let prepared = UserScriptPreparedPayloadCache().payload(for: script, payloadRevision: 1, runtimePrefix: nil)
+        expectEqual(
+            prepared.materializeContent(from: source),
+            "// ==UserScript==\u{0301}\nconst ok = 1;",
+            "metadata stripping must skip markers split by combining accents"
+        )
     }
 }
