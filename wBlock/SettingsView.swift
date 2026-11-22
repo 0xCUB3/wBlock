@@ -303,6 +303,9 @@ struct SettingsView: View {
                     )
                 }
             }
+            if appMode == .basic {
+                Toggle("Automatic Updates", isOn: autoUpdateToggleBinding)
+            }
             appearancePicker
             #if os(iOS)
             if PortraitOrientationLock.isAvailable {
@@ -963,7 +966,9 @@ struct SettingsView: View {
         #endif
         generalSection.settingsAnchor(.general)
         websitesSection.settingsAnchor(.websites)
-        autoUpdateSection.settingsAnchor(.autoUpdate)
+        if appMode == .advanced {
+            autoUpdateSection.settingsAnchor(.autoUpdate)
+        }
         syncSection.settingsAnchor(.sync)
         if appMode == .advanced {
             advancedSection.settingsAnchor(.advanced)
