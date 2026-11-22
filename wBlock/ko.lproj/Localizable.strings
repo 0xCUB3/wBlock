@@ -1071,7 +1071,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides live chat and support widgets, from the EasyList project." = "실시간 채팅 및 지원 위젯을 숨깁니다. EasyList 프로젝트에서 제공합니다.";
 "Hides newsletter sign-up prompts, from the EasyList project." = "뉴스레터 구독 안내를 숨깁니다. EasyList 프로젝트에서 제공합니다.";
 "Hides newsletter prompts, in-page pop-ups, app banners, and other annoyances, from the EasyList project." = "뉴스레터 구독 요청, 페이지 내 팝업, 앱 배너 등 방해 요소를 숨깁니다. EasyList 프로젝트에서 제공합니다.";
-"Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project. Works alongside AdGuard Other Annoyances or EasyList – Other Annoyances." = "오버레이, 프로모션 배너 및 기타 방해 요소를 숨깁니다. uBlock Origin 프로젝트에서 제공하며 AdGuard Other Annoyances 또는 EasyList – Other Annoyances와 함께 작동합니다.";
+"Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project. Works alongside AdGuard or EasyList annoyance filters." = "오버레이, 프로모션 배너 및 기타 방해 요소를 숨깁니다. uBlock Origin 프로젝트에서 제공하며 AdGuard 또는 EasyList 방해 요소 필터와 함께 작동합니다.";
 "Hides pop-ups that sites don't need to work, from the AdGuard project." = "사이트 작동에 필요하지 않은 팝업을 숨깁니다. AdGuard 프로젝트에서 제공합니다.";
 "Hides promotions, copy restrictions, and other annoyances, from the AdGuard project." = "프로모션, 복사 제한 및 기타 방해 요소를 숨깁니다. AdGuard 프로젝트에서 제공합니다.";
 "Hides prompts that ask to show notifications, from the EasyList project." = "알림 표시를 요청하는 안내를 숨깁니다. EasyList 프로젝트에서 제공합니다.";

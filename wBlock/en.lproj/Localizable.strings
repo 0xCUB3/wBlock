@@ -1080,7 +1080,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides live chat and support widgets, from the EasyList project." = "Hides live chat and support widgets, from the EasyList project.";
 "Hides newsletter sign-up prompts, from the EasyList project." = "Hides newsletter sign-up prompts, from the EasyList project.";
 "Hides newsletter prompts, in-page pop-ups, app banners, and other annoyances, from the EasyList project." = "Hides newsletter prompts, in-page pop-ups, app banners, and other annoyances, from the EasyList project.";
-"Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project. Works alongside AdGuard Other Annoyances or EasyList – Other Annoyances." = "Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project. Works alongside AdGuard Other Annoyances or EasyList – Other Annoyances.";
+"Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project. Works alongside AdGuard or EasyList annoyance filters." = "Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project. Works alongside AdGuard or EasyList annoyance filters.";
 "Hides pop-ups that sites don't need to work, from the AdGuard project." = "Hides pop-ups that sites don't need to work, from the AdGuard project.";
 "Hides promotions, copy restrictions, and other annoyances, from the AdGuard project." = "Hides promotions, copy restrictions, and other annoyances, from the AdGuard project.";
 "Hides prompts that ask to show notifications, from the EasyList project." = "Hides prompts that ask to show notifications, from the EasyList project.";

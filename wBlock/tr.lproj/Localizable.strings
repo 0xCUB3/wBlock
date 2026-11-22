@@ -1080,7 +1080,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Hides live chat and support widgets, from the EasyList project." = "Canlı sohbet ve destek widget'larını gizler. EasyList projesinden.";
 "Hides newsletter sign-up prompts, from the EasyList project." = "Bülten abonelik istemlerini gizler. EasyList projesinden.";
 "Hides newsletter prompts, in-page pop-ups, app banners, and other annoyances, from the EasyList project." = "Bülten abonelik istemlerini, sayfa içi açılır pencereleri, uygulama afişlerini ve diğer can sıkıcı öğeleri gizler. EasyList projesinden.";
-"Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project. Works alongside AdGuard Other Annoyances or EasyList – Other Annoyances." = "Kaplamaları, tanıtım afişlerini ve diğer can sıkıcı öğeleri gizler. uBlock Origin projesinden. AdGuard Other Annoyances veya EasyList – Other Annoyances ile birlikte çalışır.";
+"Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project. Works alongside AdGuard or EasyList annoyance filters." = "Kaplamaları, tanıtım afişlerini ve diğer can sıkıcı öğeleri gizler. uBlock Origin projesinden. AdGuard veya EasyList can sıkıcı öğe filtreleriyle birlikte çalışır.";
 "Hides pop-ups that sites don't need to work, from the AdGuard project." = "Sitelerin çalışması için gerekli olmayan açılır pencereleri gizler. AdGuard projesinden.";
 "Hides promotions, copy restrictions, and other annoyances, from the AdGuard project." = "Promosyonları, kopyalama kısıtlamalarını ve diğer can sıkıcı öğeleri gizler. AdGuard projesinden.";
 "Hides prompts that ask to show notifications, from the EasyList project." = "Bildirim gösterme isteyen istemleri gizler. EasyList projesinden.";

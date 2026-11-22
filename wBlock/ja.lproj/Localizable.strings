@@ -1080,7 +1080,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides live chat and support widgets, from the EasyList project." = "ライブチャットとサポートのウィジェットを非表示にします。EasyListプロジェクトのリストです。";
 "Hides newsletter sign-up prompts, from the EasyList project." = "ニュースレター登録の案内を非表示にします。EasyListプロジェクトのリストです。";
 "Hides newsletter prompts, in-page pop-ups, app banners, and other annoyances, from the EasyList project." = "ニュースレターの登録案内、ページ内ポップアップ、アプリのバナーなどの迷惑要素を非表示にします。EasyListプロジェクトのリストです。";
-"Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project. Works alongside AdGuard Other Annoyances or EasyList – Other Annoyances." = "オーバーレイ、プロモーションバナー、その他の迷惑要素を非表示にします。uBlock Originプロジェクトのリストで、AdGuard Other AnnoyancesやEasyList – Other Annoyancesと併用できます。";
+"Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project. Works alongside AdGuard or EasyList annoyance filters." = "オーバーレイ、プロモーションバナー、その他の迷惑要素を非表示にします。uBlock Originプロジェクトのリストで、AdGuardやEasyListの迷惑要素フィルターと併用できます。";
 "Hides pop-ups that sites don't need to work, from the AdGuard project." = "サイトの動作に必要のないポップアップを非表示にします。AdGuardプロジェクトのリストです。";
 "Hides promotions, copy restrictions, and other annoyances, from the AdGuard project." = "プロモーション、コピー制限、その他の迷惑要素を非表示にします。AdGuardプロジェクトのリストです。";
 "Hides prompts that ask to show notifications, from the EasyList project." = "通知の表示を求めるプロンプトを非表示にします。EasyListプロジェクトのリストです。";

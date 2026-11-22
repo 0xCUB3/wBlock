@@ -601,7 +601,7 @@ class FilterListLoader {
                 id: UUID(), name: "uBlock filters – Annoyances",
                 url: URL(string: "https://ublockorigin.github.io/uAssetsCDN/filters/annoyances.min.txt")!,
                 category: FilterListCategory.annoyances,
-                description: "Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project. Works alongside AdGuard Other Annoyances or EasyList – Other Annoyances.",
+                description: "Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project. Works alongside AdGuard or EasyList annoyance filters.",
                 trustLevel: "high"),
             FilterList(
                 id: UUID(), name: "uBlock filters – Cookie Notices",

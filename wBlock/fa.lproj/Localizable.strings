@@ -1080,7 +1080,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides live chat and support widgets, from the EasyList project." = "ابزارک‌های گفتگوی زنده و پشتیبانی را پنهان می‌کند. از پروژه EasyList.";
 "Hides newsletter sign-up prompts, from the EasyList project." = "درخواست‌های عضویت در خبرنامه را پنهان می‌کند. از پروژه EasyList.";
 "Hides newsletter prompts, in-page pop-ups, app banners, and other annoyances, from the EasyList project." = "درخواست‌های عضویت در خبرنامه، پاپ‌آپ‌های درون صفحه، بنرهای اپ و سایر عناصر آزاردهنده را پنهان می‌کند. از پروژه EasyList.";
-"Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project. Works alongside AdGuard Other Annoyances or EasyList – Other Annoyances." = "پوشش‌ها، بنرهای تبلیغاتی و سایر عناصر آزاردهنده را پنهان می‌کند. از پروژه uBlock Origin. در کنار AdGuard Other Annoyances یا EasyList – Other Annoyances کار می‌کند.";
+"Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project. Works alongside AdGuard or EasyList annoyance filters." = "پوشش‌ها، بنرهای تبلیغاتی و سایر عناصر آزاردهنده را پنهان می‌کند. از پروژه uBlock Origin. در کنار فیلترهای عناصر آزاردهنده AdGuard یا EasyList کار می‌کند.";
 "Hides pop-ups that sites don't need to work, from the AdGuard project." = "پنجره‌های پاپ‌آپی را که سایت‌ها برای کار کردن به آن‌ها نیاز ندارند پنهان می‌کند. از پروژه AdGuard.";
 "Hides promotions, copy restrictions, and other annoyances, from the AdGuard project." = "تبلیغات ترویجی، محدودیت‌های کپی و سایر عناصر آزاردهنده را پنهان می‌کند. از پروژه AdGuard.";
 "Hides prompts that ask to show notifications, from the EasyList project." = "درخواست‌هایی را که برای نمایش اعلان می‌پرسند پنهان می‌کند. از پروژه EasyList.";

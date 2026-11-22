@@ -1071,7 +1071,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides live chat and support widgets, from the EasyList project." = "隐藏在线聊天和支持小组件，来自 EasyList 项目。";
 "Hides newsletter sign-up prompts, from the EasyList project." = "隐藏电子邮件订阅提示，来自 EasyList 项目。";
 "Hides newsletter prompts, in-page pop-ups, app banners, and other annoyances, from the EasyList project." = "隐藏新闻通讯订阅提示、页内弹窗、应用横幅和其他烦人元素，来自 EasyList 项目。";
-"Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project. Works alongside AdGuard Other Annoyances or EasyList – Other Annoyances." = "隐藏遮罩层、推广横幅和其他烦人元素，来自 uBlock Origin 项目。可与 AdGuard Other Annoyances 或 EasyList – Other Annoyances 配合使用。";
+"Hides overlays, promotional banners, and other annoyances, from the uBlock Origin project. Works alongside AdGuard or EasyList annoyance filters." = "隐藏遮罩层、推广横幅和其他烦人元素，来自 uBlock Origin 项目。可与 AdGuard 或 EasyList 烦人元素过滤器配合使用。";
 "Hides pop-ups that sites don't need to work, from the AdGuard project." = "隐藏网站正常运行并不需要的弹出窗口，来自 AdGuard 项目。";
 "Hides promotions, copy restrictions, and other annoyances, from the AdGuard project." = "隐藏促销内容、复制限制和其他烦人元素，来自 AdGuard 项目。";
 "Hides prompts that ask to show notifications, from the EasyList project." = "隐藏请求显示通知的提示，来自 EasyList 项目。";
