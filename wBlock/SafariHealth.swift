@@ -66,6 +66,12 @@ struct SafariExtensionHysteresis: Equatable, Sendable {
     var effectiveScriptsEnabled: Bool? {
         lastKnownScriptsEnabled
     }
+
+    /// True after a single off read while still welded, awaiting a second read
+    /// to confirm whether the extension is genuinely disabled.
+    var isAwaitingOffConfirmation: Bool {
+        hasReadOnce && isWelded && consecutiveOffReads == 1
+    }
 }
 
 /// Pure input snapshot for `SafariHealthResolver`.
@@ -321,6 +327,11 @@ final class SafariHealthMonitor: ObservableObject {
         return !hysteresis.isWelded
     }
 
+    private var needsActivePolling: Bool {
+        guard hysteresis.hasReadOnce else { return false }
+        return !hysteresis.isWelded || hysteresis.isAwaitingOffConfirmation
+    }
+
     func setSceneActive(_ active: Bool) {
         let becameActive = active && !isSceneActive
         isSceneActive = active
@@ -329,7 +340,7 @@ final class SafariHealthMonitor: ObservableObject {
                 Task { [weak self] in
                     await self?.refreshNow()
                 }
-            } else if isDegraded {
+            } else if needsActivePolling {
                 ensurePollingLoopIfNeeded()
             }
         } else {
@@ -340,7 +351,7 @@ final class SafariHealthMonitor: ObservableObject {
 
     func startIfNeeded() {
         guard !hysteresis.hasReadOnce else {
-            if isSceneActive && isDegraded { ensurePollingLoopIfNeeded() }
+            if isSceneActive && needsActivePolling { ensurePollingLoopIfNeeded() }
             return
         }
         Task { [weak self] in
@@ -375,7 +386,7 @@ final class SafariHealthMonitor: ObservableObject {
             weldCelebrationCount += 1
         }
 
-        if isSceneActive && !next.isWelded {
+        if isSceneActive && (!next.isWelded || next.isAwaitingOffConfirmation) {
             ensurePollingLoopIfNeeded()
         } else if next.isWelded {
             pollTask?.cancel()
@@ -390,9 +401,9 @@ final class SafariHealthMonitor: ObservableObject {
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 1_000_000_000)
                 guard !Task.isCancelled, let self else { break }
-                guard self.isSceneActive, !self.hysteresis.isWelded else { break }
+                guard self.isSceneActive, self.needsActivePolling else { break }
                 await self.refreshNow()
-                if self.hysteresis.isWelded { break }
+                if !self.needsActivePolling { break }
             }
         }
     }

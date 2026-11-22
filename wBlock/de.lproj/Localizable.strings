@@ -1241,3 +1241,7 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "1 custom list" = "1 eigene Liste";
 "%d custom lists" = "%d eigene Listen";
 "1 list" = "1 Liste";
+"Basic and Advanced modes" = "Einfacher und erweiterter Modus";
+"Basic is wBlock's new simpler view, alongside the full Advanced interface. You stayed in Advanced so nothing moved, and you can switch anytime in Settings or try Basic below." = "Einfach ist die neue, übersichtlichere Ansicht von wBlock neben der vollständigen erweiterten Oberfläche. Du bleibst in Erweitert, damit nichts verschoben wird, und kannst jederzeit in den Einstellungen wechseln oder Einfach unten testen.";
+"This upgrade replaces the AdGuard converter with wBlock's own engine built for uBlock Origin rules, so more rules work in Safari. Your enabled AdGuard lists were swapped for matching uBO lists." = "Dieses Update ersetzt den AdGuard-Konverter durch wBlocks eigene Engine für uBlock-Origin-Regeln, sodass mehr Regeln in Safari funktionieren. Deine aktivierten AdGuard-Listen wurden gegen passende uBO-Listen ausgetauscht.";
+"Try Basic Mode" = "Einfachen Modus testen";

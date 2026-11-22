@@ -1241,3 +1241,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "1 custom list" = "1 свой список";
 "%d custom lists" = "%d своих списков";
 "1 list" = "1 список";
+"Basic and Advanced modes" = "Базовый и расширенный режимы";
+"Basic is wBlock's new simpler view, alongside the full Advanced interface. You stayed in Advanced so nothing moved, and you can switch anytime in Settings or try Basic below." = "Базовый режим — это новый упрощённый интерфейс wBlock рядом с полным расширенным видом. Вы остались в расширенном режиме, чтобы ничего не пропало, и можете переключиться в любой момент в Настройках или попробовать базовый ниже.";
+"This upgrade replaces the AdGuard converter with wBlock's own engine built for uBlock Origin rules, so more rules work in Safari. Your enabled AdGuard lists were swapped for matching uBO lists." = "Это обновление заменяет конвертер AdGuard собственным движком wBlock для правил uBlock Origin, поэтому в Safari работает больше правил. Включённые списки AdGuard заменены на соответствующие списки uBO.";
+"Try Basic Mode" = "Попробовать базовый режим";

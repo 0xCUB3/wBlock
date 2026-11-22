@@ -1250,3 +1250,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "1 custom list" = "۱ فهرست سفارشی";
 "%d custom lists" = "%d فهرست سفارشی";
 "1 list" = "۱ فهرست";
+"Basic and Advanced modes" = "حالت‌های پایه و پیشرفته";
+"Basic is wBlock's new simpler view, alongside the full Advanced interface. You stayed in Advanced so nothing moved, and you can switch anytime in Settings or try Basic below." = "حالت پایه نمای ساده‌تر جدید wBlock در کنار رابط کامل پیشرفته است. شما در حالت پیشرفته مانده‌اید تا چیزی جابه‌جا نشود و هر زمان بخواهید می‌توانید از تنظیمات تغییر دهید یا حالت پایه را در پایین امتحان کنید.";
+"This upgrade replaces the AdGuard converter with wBlock's own engine built for uBlock Origin rules, so more rules work in Safari. Your enabled AdGuard lists were swapped for matching uBO lists." = "این به‌روزرسانی مبدل AdGuard را با موتور اختصاصی wBlock برای قواعد uBlock Origin جایگزین می‌کند تا قواعد بیشتری در Safari کار کنند. فهرست‌های فعال AdGuard شما با فهرست‌های مشابه uBO جایگزین شدند.";
+"Try Basic Mode" = "امتحان حالت پایه";

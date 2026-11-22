@@ -153,14 +153,7 @@ struct OnboardingView: View {
         .map { ($0.id.uuidString, $0.name) }
     }
     var bypassPaywallsFilterName: String? {
-        let candidates = [
-            "Bypass Paywalls Filter",
-            "Bypass Paywalls",
-            "Bypass Paywalls (Custom)"
-        ]
-        return filterManager.filterLists.first(where: { filter in
-            candidates.contains(where: { filter.name.localizedCaseInsensitiveContains($0) })
-        })?.name
+        filterManager.filterLists.first(where: BasicBundle.isPairedBypassPaywallsFilter)?.name
     }
 
     var body: some View {
@@ -1220,6 +1213,7 @@ struct OnboardingView: View {
         )
 
         guard applied else { return }
+        UserDefaults.standard.set(chosenMode.rawValue, forKey: AppMode.storageKey)
         filterManager.markFreshInstallMigrationsComplete(preservingPendingHandover: false)
         guard await dataManager.setHasCompletedOnboarding(true) else { return }
         dismiss()

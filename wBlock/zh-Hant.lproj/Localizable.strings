@@ -1241,3 +1241,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "1 custom list" = "1 個自訂清單";
 "%d custom lists" = "%d 個自訂清單";
 "1 list" = "1 個清單";
+"Basic and Advanced modes" = "基礎模式與進階模式";
+"Basic is wBlock's new simpler view, alongside the full Advanced interface. You stayed in Advanced so nothing moved, and you can switch anytime in Settings or try Basic below." = "基礎模式是 wBlock 全新的簡潔介面，與完整的進階檢視並存。你已維持在進階模式，原有配置不變，隨時可在設定中切換，或在下方試用基礎模式。";
+"This upgrade replaces the AdGuard converter with wBlock's own engine built for uBlock Origin rules, so more rules work in Safari. Your enabled AdGuard lists were swapped for matching uBO lists." = "這次更新以 wBlock 自研的 uBlock Origin 規則引擎取代 AdGuard 轉換器，讓更多規則能在 Safari 中生效。你已啟用的 AdGuard 清單也已替換為對應的 uBO 清單。";
+"Try Basic Mode" = "試用基礎模式";

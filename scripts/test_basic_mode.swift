@@ -376,8 +376,10 @@ struct BasicModeTests {
         // Two consecutive off reads -> un-welds!
         h.record(blockerStates: [true, true, false, true, true], rawScriptsEnabled: true, isScriptsStateKnowable: true)
         precondition(h.isWelded, "First of two off reads must stay welded")
+        precondition(h.isAwaitingOffConfirmation, "First off read while welded must request confirmation poll")
         h.record(blockerStates: [true, true, false, true, true], rawScriptsEnabled: true, isScriptsStateKnowable: true)
         precondition(!h.isWelded, "Second consecutive off read must un-weld")
+        precondition(!h.isAwaitingOffConfirmation, "Once un-welded, confirmation state clears")
 
         // OS where scripts state is not knowable (iOS < 26.2): welds on 5/5 blockers alone
         var iosLegacy = SafariExtensionHysteresis()

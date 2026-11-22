@@ -1250,3 +1250,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "1 custom list" = "1 özel liste";
 "%d custom lists" = "%d özel liste";
 "1 list" = "1 liste";
+"Basic and Advanced modes" = "Temel ve Gelişmiş modlar";
+"Basic is wBlock's new simpler view, alongside the full Advanced interface. You stayed in Advanced so nothing moved, and you can switch anytime in Settings or try Basic below." = "Temel mod, tam Gelişmiş arayüzün yanında wBlock'un yeni ve daha sade görünümüdür. Hiçbir şeyin yeri değişmemesi için Gelişmiş modda kaldınız; istediğiniz zaman Ayarlar'dan geçiş yapabilir veya aşağıdan Temel modu deneyebilirsiniz.";
+"This upgrade replaces the AdGuard converter with wBlock's own engine built for uBlock Origin rules, so more rules work in Safari. Your enabled AdGuard lists were swapped for matching uBO lists." = "Bu güncelleme, Safari'de daha fazla kuralın çalışması için AdGuard dönüştürücüsünü wBlock'un uBlock Origin kuralları için geliştirilmiş kendi motoruyla değiştirir. Etkin AdGuard listeleriniz eşleşen uBO listeleriyle değiştirildi.";
+"Try Basic Mode" = "Temel Modu Dene";

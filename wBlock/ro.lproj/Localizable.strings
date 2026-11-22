@@ -1241,3 +1241,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "1 custom list" = "1 listă personalizată";
 "%d custom lists" = "%d liste personalizate";
 "1 list" = "1 listă";
+"Basic and Advanced modes" = "Modurile Simplu și Avansat";
+"Basic is wBlock's new simpler view, alongside the full Advanced interface. You stayed in Advanced so nothing moved, and you can switch anytime in Settings or try Basic below." = "Simplu este noua interfață mai curată a wBlock, alături de vederea Avansată completă. Ai rămas în Avansat ca să nu se schimbe nimic și poți comuta oricând din Configurări sau poți încerca Simplu mai jos.";
+"This upgrade replaces the AdGuard converter with wBlock's own engine built for uBlock Origin rules, so more rules work in Safari. Your enabled AdGuard lists were swapped for matching uBO lists." = "Această actualizare înlocuiește convertorul AdGuard cu motorul propriu al wBlock pentru reguli uBlock Origin, astfel încât mai multe reguli funcționează în Safari. Listele AdGuard active au fost înlocuite cu listele uBO corespunzătoare.";
+"Try Basic Mode" = "Încearcă modul Simplu";

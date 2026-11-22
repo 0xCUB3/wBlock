@@ -8,7 +8,6 @@ struct BasicFiltersView: View {
     @ObservedObject var filterManager: AppFilterManager
     @ObservedObject var safariHealth: SafariHealthMonitor
     @ObservedObject private var userScriptManager = UserScriptManager.shared
-    @AppStorage(AppMode.storageKey) private var appMode: AppMode = .basic
 
     let lastUpdatedDate: Date?
     let onOpenHealthDetail: () -> Void
@@ -25,24 +24,12 @@ struct BasicFiltersView: View {
     @State private var showingHeroPopover = false
     @AppStorage("wBlock.basicStricterBlockingExpanded") private var showStricterBlocking = false
     @State private var scrollOffset: CGFloat = 0
-    @State private var selectedLanguages: Set<String> = BasicFiltersView.loadStoredLanguages()
 
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private static var sharedDefaults: UserDefaults {
         UserDefaults(suiteName: GroupIdentifier.shared.value) ?? .standard
-    }
-
-    private static func loadStoredLanguages() -> Set<String> {
-        let stored = sharedDefaults.stringArray(forKey: OnboardingView.selectedLanguagesDefaultsKey) ?? []
-        if !stored.isEmpty {
-            return Set(stored.map { $0.lowercased() })
-        }
-        let detected = Locale.preferredLanguages.compactMap {
-            Locale(identifier: $0).languageCode.map(RegionalLanguageOption.canonicalCode)
-        }
-        return Set(detected)
     }
 
     private var healthStatus: SafariHealthStatus {
@@ -72,19 +59,21 @@ struct BasicFiltersView: View {
         RegionalLanguageOption.fromForeignFilters(filterManager.filterLists)
     }
 
-    private var languageSummary: String {
+    private var activeLanguageCodes: Set<String> {
         let foreignSelected = filterManager.filterLists.filter { !$0.isCustom && $0.category == .foreign && $0.isSelected }
-        let activeCodes: Set<String>
-        if !selectedLanguages.isEmpty {
-            activeCodes = selectedLanguages
-        } else {
-            activeCodes = Set(foreignSelected.flatMap(\.languages).map(RegionalLanguageOption.canonicalCode))
-        }
-        let names = languageOptions.filter { activeCodes.contains($0.code) }.map(\.nativeName)
-        if names.isEmpty {
-            return String(localized: "None")
-        }
-        return ListFormatter.localizedString(byJoining: names)
+        return Set(foreignSelected.flatMap(\.languages).map(RegionalLanguageOption.canonicalCode))
+    }
+
+    private var languageSelectionBinding: Binding<Set<String>> {
+        Binding(
+            get: { activeLanguageCodes },
+            set: { applyLanguageSelection($0) }
+        )
+    }
+
+    private var languageSummary: String {
+        let names = languageOptions.filter { activeLanguageCodes.contains($0.code) }.map(\.nativeName)
+        return names.isEmpty ? String(localized: "None") : ListFormatter.localizedString(byJoining: names)
     }
 
     private var atmosphereFade: Double {
@@ -128,13 +117,9 @@ struct BasicFiltersView: View {
             #endif
         }
         .onAppear {
-            syncLanguagesFromSelectedForeignListsIfNeeded()
             if hasActiveStricterAnnoyance {
                 showStricterBlocking = true
             }
-        }
-        .onChangeCompat(of: selectedLanguages) { _, newValue in
-            applyLanguageSelection(newValue)
         }
         .infoPresentation(item: $peekBundle) { bundle in
             BasicBundlePeekView(
@@ -177,8 +162,8 @@ struct BasicFiltersView: View {
         }
         #if os(iOS)
         .sheet(isPresented: $showingLanguagesSheet) {
-            BasicLanguagesSheet(
-                selectedLanguages: $selectedLanguages,
+            RegionalLanguageList(
+                selectedLanguages: languageSelectionBinding,
                 options: languageOptions
             )
         }
@@ -250,7 +235,7 @@ struct BasicFiltersView: View {
             ? core.tint.opacity(colorScheme == .dark ? 0.16 : 0.09)
             : cardBackground
         let cutoutBg = isActive
-            ? blendedCutoutColor(tint: core.tint)
+            ? blendedCutoutColor
             : cardBackground
 
         return Button {
@@ -598,8 +583,8 @@ struct BasicFiltersView: View {
         .noFocusRingCompat()
         #if os(macOS)
         .popover(isPresented: $showingLanguagesSheet) {
-            BasicLanguagesPopover(
-                selectedLanguages: $selectedLanguages,
+            RegionalLanguageList(
+                selectedLanguages: languageSelectionBinding,
                 options: languageOptions
             )
         }
@@ -728,13 +713,6 @@ struct BasicFiltersView: View {
         }
     }
 
-    private func syncLanguagesFromSelectedForeignListsIfNeeded() {
-        let stored = Self.sharedDefaults.stringArray(forKey: OnboardingView.selectedLanguagesDefaultsKey) ?? []
-        if !stored.isEmpty {
-            selectedLanguages = Set(stored.map { $0.lowercased() })
-        }
-    }
-
     private func applyLanguageSelection(_ languages: Set<String>) {
         Self.sharedDefaults.set(Array(languages).sorted(), forKey: OnboardingView.selectedLanguagesDefaultsKey)
         let expanded = RegionalLanguageOption.expanding(languages)
@@ -776,9 +754,6 @@ struct BasicFiltersView: View {
         }
         if filterManager.lastBasicApplyFailed && isDirty {
             return .failed
-        }
-        if filterManager.basicApplyCompletionToken > 0 && !isDirty && !filterManager.isApplyInFlight {
-            return .idle
         }
         return .idle
     }
@@ -824,7 +799,7 @@ struct BasicFiltersView: View {
         colorScheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.06)
     }
 
-    private func blendedCutoutColor(tint: Color) -> Color {
+    private var blendedCutoutColor: Color {
         #if os(iOS)
         return Color(uiColor: .secondarySystemGroupedBackground)
         #else
@@ -1120,110 +1095,6 @@ struct ScopedBundleListsSheet: View {
         .padding(.vertical, 2)
     }
 }
-
-// MARK: - Languages Picker Wrappers
-
-#if os(macOS)
-private struct BasicLanguagesPopover: View {
-    @Binding var selectedLanguages: Set<String>
-    let options: [RegionalLanguageOption]
-    @State private var query = ""
-    @State private var ordered: [RegionalLanguageOption] = []
-
-    private var visible: [RegionalLanguageOption] {
-        query.trimmingCharacters(in: .whitespaces).isEmpty ? ordered : ordered.filter { $0.matches(query) }
-    }
-
-    var body: some View {
-        VStack(spacing: 0) {
-            TextField("Search languages", text: $query, prompt: Text("Search languages"))
-                .textFieldStyle(.roundedBorder)
-                .labelsHidden()
-                .padding(10)
-            Divider()
-            List(visible) { language in
-                Button {
-                    if selectedLanguages.contains(language.code) {
-                        selectedLanguages.remove(language.code)
-                    } else {
-                        selectedLanguages.insert(language.code)
-                    }
-                } label: {
-                    HStack(spacing: 10) {
-                        LanguageCodeBadge(code: language.code)
-                        Text(verbatim: language.nativeName).foregroundStyle(.primary)
-                        Spacer()
-                        if selectedLanguages.contains(language.code) {
-                            Image(systemName: "checkmark")
-                                .font(.body.weight(.semibold))
-                                .foregroundStyle(Color.accentColor)
-                        }
-                    }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .frame(width: 320, height: 400)
-        .onAppear {
-            ordered = options.filter { selectedLanguages.contains($0.code) }
-                + options.filter { !selectedLanguages.contains($0.code) }
-        }
-    }
-}
-#else
-private struct BasicLanguagesSheet: View {
-    @Binding var selectedLanguages: Set<String>
-    let options: [RegionalLanguageOption]
-    @Environment(\.dismiss) private var dismiss
-    @State private var query = ""
-    @State private var ordered: [RegionalLanguageOption] = []
-
-    private var visible: [RegionalLanguageOption] {
-        query.trimmingCharacters(in: .whitespaces).isEmpty ? ordered : ordered.filter { $0.matches(query) }
-    }
-
-    var body: some View {
-        CompatibleNavigationStack {
-            List(visible) { language in
-                Button {
-                    if selectedLanguages.contains(language.code) {
-                        selectedLanguages.remove(language.code)
-                    } else {
-                        selectedLanguages.insert(language.code)
-                    }
-                } label: {
-                    HStack(spacing: 10) {
-                        LanguageCodeBadge(code: language.code)
-                        Text(verbatim: language.nativeName).foregroundStyle(.primary)
-                        Spacer()
-                        if selectedLanguages.contains(language.code) {
-                            Image(systemName: "checkmark")
-                                .font(.body.weight(.semibold))
-                                .foregroundStyle(Color.accentColor)
-                        }
-                    }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-            }
-            .searchable(text: $query, prompt: Text("Search languages"))
-            .searchKeepsBarCompat()
-            .navigationTitle(Text("Languages"))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
-                }
-            }
-        }
-        .onAppear {
-            ordered = options.filter { selectedLanguages.contains($0.code) }
-                + options.filter { !selectedLanguages.contains($0.code) }
-        }
-    }
-}
-#endif
 
 // MARK: - Scroll Tracking
 

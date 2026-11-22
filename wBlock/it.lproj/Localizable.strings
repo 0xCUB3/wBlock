@@ -1241,3 +1241,7 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "1 custom list" = "1 elenco personalizzato";
 "%d custom lists" = "%d elenchi personalizzati";
 "1 list" = "1 elenco";
+"Basic and Advanced modes" = "Modalità Base e Avanzata";
+"Basic is wBlock's new simpler view, alongside the full Advanced interface. You stayed in Advanced so nothing moved, and you can switch anytime in Settings or try Basic below." = "Base è la nuova vista semplificata di wBlock, accanto all'interfaccia Avanzata completa. Sei rimasto in Avanzata così non è cambiato nulla, e puoi passare quando vuoi nelle Impostazioni o provare Base qui sotto.";
+"This upgrade replaces the AdGuard converter with wBlock's own engine built for uBlock Origin rules, so more rules work in Safari. Your enabled AdGuard lists were swapped for matching uBO lists." = "Questo aggiornamento sostituisce il convertitore AdGuard con il motore di wBlock pensato per le regole uBlock Origin, così più regole funzionano in Safari. Le tue liste AdGuard attive sono state sostituite con le liste uBO equivalenti.";
+"Try Basic Mode" = "Prova la modalità Base";

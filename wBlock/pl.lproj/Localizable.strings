@@ -1241,3 +1241,7 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "1 custom list" = "1 własna lista";
 "%d custom lists" = "%d własne listy";
 "1 list" = "1 lista";
+"Basic and Advanced modes" = "Tryb Podstawowy i Zaawansowany";
+"Basic is wBlock's new simpler view, alongside the full Advanced interface. You stayed in Advanced so nothing moved, and you can switch anytime in Settings or try Basic below." = "Tryb Podstawowy to nowy, prostszy widok wBlock obok pełnego interfejsu Zaawansowanego. Zostałeś w trybie Zaawansowanym, aby nic się nie zmieniło — możesz przełączyć tryb w Ustawieniach albo wypróbować Podstawowy poniżej.";
+"This upgrade replaces the AdGuard converter with wBlock's own engine built for uBlock Origin rules, so more rules work in Safari. Your enabled AdGuard lists were swapped for matching uBO lists." = "Ta aktualizacja zastępuje konwerter AdGuard własnym silnikiem wBlock stworzonym dla reguł uBlock Origin, dzięki czemu więcej reguł działa w Safari. Włączone listy AdGuard zostały zamienione na odpowiadające listy uBO.";
+"Try Basic Mode" = "Wypróbuj tryb Podstawowy";

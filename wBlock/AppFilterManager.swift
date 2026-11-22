@@ -402,6 +402,17 @@ class AppFilterManager: ObservableObject {
         scheduleAutoApplyDebounce(delay: 2, showProgress: false)
     }
 
+    /// Drains any Basic mode edits queued while loading or applying was active.
+    func drainFollowUpBasicApplyIfNeeded() {
+        guard needsFollowUpBasicApply, !isLoading, !isApplyInFlight else { return }
+        needsFollowUpBasicApply = false
+        hasQueuedBasicAutoApply = false
+        guard hasUnappliedChanges, !pausedComponents.contains(.filters) else { return }
+        Task { @MainActor [weak self] in
+            await self?.performFilterUpdate(showProgress: false, checkForUpdates: false, downloadMissing: true)
+        }
+    }
+
     /// Immediately flushes any pending Basic auto-apply when the user switches
     /// to Safari (`scenePhase != .active`) or switches between Basic and Advanced.
     func flushBasicAutoApplyIfNeeded() {
@@ -1106,15 +1117,7 @@ class AppFilterManager: ObservableObject {
                 lastBasicApplyFailedFilterIDs = dirtyBeforeRun
             }
 
-            if needsFollowUpBasicApply {
-                needsFollowUpBasicApply = false
-                hasQueuedBasicAutoApply = false
-                if hasUnappliedChanges && !pausedComponents.contains(.filters) {
-                    Task { @MainActor [weak self] in
-                        await self?.performFilterUpdate(showProgress: false, checkForUpdates: false, downloadMissing: true)
-                    }
-                }
-            }
+            drainFollowUpBasicApplyIfNeeded()
         }
 
         if !started {

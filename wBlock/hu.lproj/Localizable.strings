@@ -1241,3 +1241,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "1 custom list" = "1 egyéni lista";
 "%d custom lists" = "%d egyéni lista";
 "1 list" = "1 lista";
+"Basic and Advanced modes" = "Alap és Haladó mód";
+"Basic is wBlock's new simpler view, alongside the full Advanced interface. You stayed in Advanced so nothing moved, and you can switch anytime in Settings or try Basic below." = "Az Alap mód a wBlock új, egyszerűbb nézete a teljes Haladó felület mellett. Haladó módban maradtál, így semmi sem mozdult el, és bármikor válthatsz a Beállításokban vagy kipróbálhatod lent az Alap módot.";
+"This upgrade replaces the AdGuard converter with wBlock's own engine built for uBlock Origin rules, so more rules work in Safari. Your enabled AdGuard lists were swapped for matching uBO lists." = "Ez a frissítés az AdGuard konvertert a wBlock saját, uBlock Origin szabályokra épülő motorjára cseréli, így több szabály működik a Safariban. A bekapcsolt AdGuard listáid megfelelő uBO listákra lettek cserélve.";
+"Try Basic Mode" = "Alap mód kipróbálása";
