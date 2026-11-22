@@ -20,11 +20,15 @@ import wBlockCoreService
 struct ContentView: View {
     @ObservedObject var filterManager: AppFilterManager
     @StateObject private var userScriptManager = UserScriptManager.shared
+    @StateObject private var safariHealth = SafariHealthMonitor()
+    @AppStorage(AppMode.storageKey) private var appMode: AppMode = .basic
     // Not observed: every save would redraw the whole list. The two values
     // read here are followed on their own below.
     private let dataManager = ProtobufDataManager.shared
     @State private var filterLastModified = ProtobufDataManager.shared.filterLastModified
     @State private var showingAddFilterSheet = false
+    @State private var showingHealthDetail = false
+    @State private var isBasicHeroVisible = true
     @State private var downloadingFilterIDs: Set<UUID> = []
     @State private var showingFilterDownloadError = false
     @AppStorage(ListDisplayOrder.filtersEnabledOnlyKey) private var showOnlyEnabledLists = false
@@ -201,11 +205,161 @@ struct ContentView: View {
         .accessibilityHidden(true)
     }
 
+    private var latestFilterUpdateDate: Date? {
+        let fromLists = filterManager.filterLists.compactMap(\.lastUpdated).max()
+        let autoTs = dataManager.autoUpdateLastSuccessfulTime
+        let fromAuto = autoTs > 0 ? Date(timeIntervalSince1970: TimeInterval(autoTs)) : nil
+        switch (fromLists, fromAuto) {
+        case let (a?, b?): return max(a, b)
+        case let (a?, nil): return a
+        case let (nil, b?): return b
+        case (nil, nil): return nil
+        }
+    }
+
+    private var healthStatus: SafariHealthStatus {
+        safariHealth.status(filterManager: filterManager, lastUpdatedDate: latestFilterUpdateDate)
+    }
+
+    private var showBasicBottomAccessory: Bool {
+        appMode == .basic && !healthStatus.isProtected && (!isBasicHeroVisible || tabSelection.value != 0)
+    }
+
+    private func handleHealthAction(_ action: SafariHealthStatus.Action) {
+        switch action {
+        case .openSafariSettings:
+            SafariExtensionSetupSupport.openScriptsExtensionSettings()
+        case .resume:
+            Task { await filterManager.setBlockingPaused(false) }
+        case .reviewRuleLimit:
+            showingCapacityPopover = true
+        case .tryAgain:
+            if !filterManager.failedReloadTargets.isEmpty {
+                filterManager.retryFailedReloads()
+            } else {
+                filterManager.forceApplyChanges()
+            }
+        }
+    }
+
+    private func switchAppMode(to newMode: AppMode) {
+        guard appMode != newMode else { return }
+        filterManager.flushBasicAutoApplyIfNeeded()
+        appMode = newMode
+    }
+
     var body: some View {
-        AppTabView(selection: tabSelection, filters: filtersView,
-                   userscripts: userscriptsView, settings: settingsView)
+        tabRootView
+            .onReceive(tabSelection.$value.removeDuplicates().dropFirst()) { _ in
+                selectedFilterInfo = nil
+                selectedFilterSettings = nil
+                selectedFilterFallbacks = nil
+                selectedCategoryInfo = nil
+                filterSearchText = ""
+                showFilterSearch = false
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .wBlockAddFilterListRequest)) { _ in
+                guard appMode == .advanced else { return }
+                selectedTab = 0
+                showingAddFilterSheet = true
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .wBlockAddUserScriptRequest)) { _ in
+                guard appMode == .advanced else { return }
+                selectedTab = 1
+                addUserScriptRequest += 1
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .wBlockSearchRequest)) { _ in
+                guard appMode == .advanced else { return }
+                if selectedTab == 1 {
+                    userScriptSearchRequest += 1
+                } else {
+                    selectedTab = 0
+                    showFilterSearch = true
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .wBlockCheckFilterUpdatesRequest)) { _ in
+                checkForUpdates(scope: .filters)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .wBlockCheckScriptUpdatesRequest)) { _ in
+                checkForUpdates(scope: .scripts)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .wBlockSelectTabRequest)) { note in
+                if let tab = note.object as? Int { selectedTab = tab }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .wBlockScrollFiltersToTopRequest)) { _ in
+                filtersScrollToTopToken += 1
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .wBlockUpdateRequest)) { _ in
+                guard !filterManager.isLoading, !filterManager.showingApplyProgressSheet else { return }
+                applyPendingChanges()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .wBlockToggleEnabledOnlyRequest)) { _ in
+                guard appMode == .advanced else { return }
+                if selectedTab == 0 { showOnlyEnabledLists.toggle() }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .wBlockShowLogsRequest)) { _ in
+                showingLogs = true
+            }
+            .onReceive(dataManager.isForeignFiltersExpandedChanges) { newValue in
+                guard isForeignFiltersExpanded != newValue else { return }
+                isForeignFiltersExpanded = newValue
+            }
+            .onReceive(dataManager.filterLastModifiedChanges) { newValue in
+                guard filterLastModified != newValue else { return }
+                filterLastModified = newValue
+            }
+            .onChangeCompat(of: isForeignFiltersExpanded) { _, newValue in
+                recentlyDisabledForeignFilterIDs.removeAll()
+                guard dataManager.isForeignFiltersExpanded != newValue else { return }
+                Task {
+                    await dataManager.setIsForeignFiltersExpanded(newValue)
+                }
+            }
+            .onChangeCompat(of: filterManager.appliedSelectedFilterIDs) { _, current in
+                guard !recentlyDisabledForeignFilterIDs.isSubset(of: current) else { return }
+                recentlyDisabledForeignFilterIDs.formIntersection(current)
+            }
+            .onChangeCompat(of: recentlyDisabledForeignFilterIDs.isEmpty ? [] : filterManager.selectedFilterIDs) { _, selected in
+                guard !recentlyDisabledForeignFilterIDs.isDisjoint(with: selected) else { return }
+                recentlyDisabledForeignFilterIDs.subtract(selected)
+            }
+    }
+
+    private var tabRootView: some View {
+        AppTabView(
+            selection: tabSelection,
+            filters: filtersView,
+            userscripts: userscriptsView,
+            settings: settingsView,
+            secondTabTitle: appMode == .basic ? "Extras" : "Userscripts",
+            isBottomAccessoryEnabled: showBasicBottomAccessory
+        ) {
+            SafariHealthBottomAccessory(
+                status: healthStatus,
+                onTap: { showingHealthDetail = true },
+                onAction: handleHealthAction
+            )
+        }
         .background(keyboardShortcutHandlers)
         .keyboardScrollingCompat()
+        .onAppear {
+            safariHealth.startIfNeeded()
+        }
+        .onChangeCompat(of: scenePhase) { _, newPhase in
+            safariHealth.setSceneActive(newPhase == .active)
+        }
+        .onChangeCompat(of: appMode) { _, _ in
+            filterManager.flushBasicAutoApplyIfNeeded()
+        }
+        .sheet(isPresented: $showingHealthDetail) {
+            SafariHealthDetailView(
+                filterManager: filterManager,
+                safariHealth: safariHealth,
+                status: healthStatus,
+                lastUpdatedDate: latestFilterUpdateDate,
+                onCheckForUpdates: { checkForUpdates(scope: .all) }
+            )
+        }
         .task(id: filterPresentationInput) {
             let input = filterPresentationInput
             if let prepared = try? await FilterListPresentation.prepare(input),
@@ -245,52 +399,6 @@ struct ContentView: View {
             }
         }
         .infoPresentation(item: $selectedCategoryInfo, content: filterCategoryInfoContent)
-        .onReceive(tabSelection.$value.removeDuplicates().dropFirst()) { _ in
-            selectedFilterInfo = nil
-            selectedFilterSettings = nil
-            selectedFilterFallbacks = nil
-            selectedCategoryInfo = nil
-            filterSearchText = ""
-            showFilterSearch = false
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .wBlockAddFilterListRequest)) { _ in
-            selectedTab = 0
-            showingAddFilterSheet = true
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .wBlockAddUserScriptRequest)) { _ in
-            selectedTab = 1
-            addUserScriptRequest += 1
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .wBlockSearchRequest)) { _ in
-            if selectedTab == 1 {
-                userScriptSearchRequest += 1
-            } else {
-                selectedTab = 0
-                showFilterSearch = true
-            }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .wBlockCheckFilterUpdatesRequest)) { _ in
-            checkForUpdates(scope: .filters)
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .wBlockCheckScriptUpdatesRequest)) { _ in
-            checkForUpdates(scope: .scripts)
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .wBlockSelectTabRequest)) { note in
-            if let tab = note.object as? Int { selectedTab = tab }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .wBlockScrollFiltersToTopRequest)) { _ in
-            filtersScrollToTopToken += 1
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .wBlockUpdateRequest)) { _ in
-            guard !filterManager.isLoading, !filterManager.showingApplyProgressSheet else { return }
-            applyPendingChanges()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .wBlockToggleEnabledOnlyRequest)) { _ in
-            if selectedTab == 0 { showOnlyEnabledLists.toggle() }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .wBlockShowLogsRequest)) { _ in
-            showingLogs = true
-        }
         .sheet(isPresented: $showingLogs) {
             #if os(iOS)
             LogsView { showingLogs = false }
@@ -326,29 +434,6 @@ struct ContentView: View {
         // The info sheet shows its own copy; presenting this one too would
         // dismiss the sheet and then the alert with it.
         .riskyFilterAlert(selectedFilterInfo == nil ? $pendingRiskyEnable : .constant(nil))
-        .onReceive(dataManager.isForeignFiltersExpandedChanges) { newValue in
-            guard isForeignFiltersExpanded != newValue else { return }
-            isForeignFiltersExpanded = newValue
-        }
-        .onReceive(dataManager.filterLastModifiedChanges) { newValue in
-            guard filterLastModified != newValue else { return }
-            filterLastModified = newValue
-        }
-        .onChangeCompat(of: isForeignFiltersExpanded) { _, newValue in
-            recentlyDisabledForeignFilterIDs.removeAll()
-            guard dataManager.isForeignFiltersExpanded != newValue else { return }
-            Task {
-                await dataManager.setIsForeignFiltersExpanded(newValue)
-            }
-        }
-        .onChangeCompat(of: filterManager.appliedSelectedFilterIDs) { _, current in
-            guard !recentlyDisabledForeignFilterIDs.isSubset(of: current) else { return }
-            recentlyDisabledForeignFilterIDs.formIntersection(current)
-        }
-        .onChangeCompat(of: recentlyDisabledForeignFilterIDs.isEmpty ? [] : filterManager.selectedFilterIDs) { _, selected in
-            guard !recentlyDisabledForeignFilterIDs.isDisjoint(with: selected) else { return }
-            recentlyDisabledForeignFilterIDs.subtract(selected)
-        }
     }
 
     private func applyPendingChanges() {
@@ -441,29 +526,87 @@ struct ContentView: View {
         }
     }
 
+    @ViewBuilder
     private var filtersView: some View {
-        CompatibleNavigationStack(requiresNavigationView: false) {
-            nativeFiltersListView
-                .modifier(topBanners)
-            #if os(iOS)
+        if appMode == .basic {
+            CompatibleNavigationStack(requiresNavigationView: false) {
+                BasicFiltersView(
+                    filterManager: filterManager,
+                    safariHealth: safariHealth,
+                    lastUpdatedDate: latestFilterUpdateDate,
+                    onOpenHealthDetail: { showingHealthDetail = true },
+                    onCheckForUpdates: { checkForUpdates(scope: .all) },
+                    onHealthAction: handleHealthAction,
+                    onHeroVisibilityChange: { visible in
+                        if isBasicHeroVisible != visible { isBasicHeroVisible = visible }
+                    },
+                    onSwitchToAdvanced: { switchAppMode(to: .advanced) }
+                )
+                .sheet(isPresented: $showingCapacityPopover) {
+                    RuleCapacityPopoverView(filterManager: filterManager)
+                }
+                #if os(iOS)
                 .navigationBarTitleDisplayMode(.inline)
-            #endif
-                // Inside the stack, like Userscripts; iOS ignores toolbar items attached outside it.
-                .modifier(filtersToolbar)
-        }
-        #if os(iOS)
-            .searchableCompat(
-                text: $filterSearchText,
-                isPresented: $showFilterSearch,
-                prompt: "Search filters"
-            )
-        #endif
-        #if os(macOS)
+                #endif
+                .modifier(basicToolbar)
+            }
+            #if os(macOS)
             .frame(
                 minWidth: 480, idealWidth: 540, maxWidth: .infinity,
                 minHeight: 550, idealHeight: 720, maxHeight: .infinity
             )
-        #endif
+            #endif
+        } else {
+            CompatibleNavigationStack(requiresNavigationView: false) {
+                nativeFiltersListView
+                    .modifier(topBanners)
+                #if os(iOS)
+                    .navigationBarTitleDisplayMode(.inline)
+                #endif
+                    // Inside the stack, like Userscripts; iOS ignores toolbar items attached outside it.
+                    .modifier(filtersToolbar)
+            }
+            #if os(iOS)
+                .searchableCompat(
+                    text: $filterSearchText,
+                    isPresented: $showFilterSearch,
+                    prompt: "Search filters"
+                )
+            #endif
+            #if os(macOS)
+                .frame(
+                    minWidth: 480, idealWidth: 540, maxWidth: .infinity,
+                    minHeight: 550, idealHeight: 720, maxHeight: .infinity
+                )
+            #endif
+        }
+    }
+
+    private var basicToolbar: some ViewModifier {
+        BasicActionsToolbar {
+            basicUpdateToolbarButton
+        } leading: {
+            PauseBlockingButton(filterManager: filterManager, allowsComponentMenu: false)
+        }
+    }
+
+    private var basicUpdateToolbarButton: some View {
+        let isBusy = filterManager.isLoading || filterManager.isAutoUpdateRunning
+        return ApplyChangesButton(
+            isDisabled: isBusy,
+            hasPendingChanges: false,
+            onTap: {
+                guard !filterManager.isLoading else { return }
+                Task { await filterManager.checkForUpdates(scope: .all, presentation: .blocking) }
+            },
+            onBusyTap: filterManager.showBackgroundApplyProgress
+        ) {
+            #if os(iOS)
+            Image(systemName: applyChangesSymbolName)
+            #else
+            Label("Update", systemImage: applyChangesSymbolName)
+            #endif
+        }
     }
 
     private var filtersToolbar: some ViewModifier {
@@ -546,31 +689,55 @@ struct ContentView: View {
         #endif
     }
 
+    @ViewBuilder
     private var userscriptsView: some View {
-        CompatibleNavigationStack(requiresNavigationView: false) {
-            UserScriptManagerView(
-                userScriptManager: userScriptManager,
-                tabSelection: tabSelection,
-                addRequest: addUserScriptRequest,
-                searchRequest: userScriptSearchRequest,
-                onRefresh: {
-                    guard !filterManager.isLoading else { return }
-                    await filterManager.checkForUpdates(scope: .scripts, presentation: .refresh)
-                },
-                applyButton: AnyView(applyChangesToolbarButton),
-                splitsApply: splitsApply,
-                pauseButton: AnyView(PauseBlockingButton(filterManager: filterManager)),
-                isApplying: filterManager.showingApplyProgressSheet
-            )
-                .modifier(topBanners)
+        if appMode == .basic {
+            CompatibleNavigationStack(requiresNavigationView: false) {
+                BasicExtrasView(
+                    userScriptManager: userScriptManager,
+                    filterManager: filterManager,
+                    onRefresh: {
+                        guard !filterManager.isLoading else { return }
+                        await filterManager.checkForUpdates(scope: .scripts, presentation: .refresh)
+                    },
+                    onSwitchToAdvanced: { switchAppMode(to: .advanced) }
+                )
+                .modifier(basicToolbar)
                 #if os(iOS)
-                    .navigationBarTitleDisplayMode(.inline)
+                .navigationBarTitleDisplayMode(.inline)
                 #endif
+            }
+        } else {
+            CompatibleNavigationStack(requiresNavigationView: false) {
+                UserScriptManagerView(
+                    userScriptManager: userScriptManager,
+                    tabSelection: tabSelection,
+                    addRequest: addUserScriptRequest,
+                    searchRequest: userScriptSearchRequest,
+                    onRefresh: {
+                        guard !filterManager.isLoading else { return }
+                        await filterManager.checkForUpdates(scope: .scripts, presentation: .refresh)
+                    },
+                    applyButton: AnyView(applyChangesToolbarButton),
+                    splitsApply: splitsApply,
+                    pauseButton: AnyView(PauseBlockingButton(filterManager: filterManager)),
+                    isApplying: filterManager.showingApplyProgressSheet
+                )
+                    .modifier(topBanners)
+                    #if os(iOS)
+                        .navigationBarTitleDisplayMode(.inline)
+                    #endif
+            }
         }
     }
 
     private var settingsView: some View {
-        SettingsView(filterManager: filterManager)
+        SettingsView(
+            filterManager: filterManager,
+            safariHealth: safariHealth,
+            lastUpdatedDate: latestFilterUpdateDate,
+            onCheckForUpdates: { checkForUpdates(scope: .all) }
+        )
     }
 
     private var topBanners: some ViewModifier {
@@ -578,8 +745,17 @@ struct ContentView: View {
             filterManager: filterManager,
             applyProgress: filterManager.applyProgressViewModel
         ) {
-            if filterManager.isBlockingPaused {
-                PauseBlockingBanner(filterManager: filterManager)
+            VStack(spacing: 0) {
+                if safariHealth.isDegraded && healthStatus.isExtensionDegraded {
+                    SafariHealthCompactBanner(
+                        status: healthStatus,
+                        onTapDetail: { showingHealthDetail = true },
+                        onOpenSettings: { SafariExtensionSetupSupport.openScriptsExtensionSettings() }
+                    )
+                }
+                if filterManager.isBlockingPaused {
+                    PauseBlockingBanner(filterManager: filterManager)
+                }
             }
         }
     }

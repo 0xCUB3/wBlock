@@ -5,8 +5,13 @@ import wBlockCoreService
 
 struct SettingsView: View {
     let filterManager: AppFilterManager
+    @ObservedObject var safariHealth: SafariHealthMonitor
+    var lastUpdatedDate: Date? = nil
+    var onCheckForUpdates: () -> Void = {}
     @ObservedObject private var dataManager = ProtobufDataManager.shared
     @ObservedObject private var syncManager = CloudSyncManager.shared
+    @AppStorage(AppMode.storageKey) private var appMode: AppMode = .basic
+    @State private var showingHealthDetail = false
     private static let autoUpdateIntervalPresets: [Double] = [1, 2, 4, 6, 12, 24, 48, 72, 168]
     static let reportIssueURL = URL(string: "https://github.com/0xCUB3/wBlock/issues/new/choose")!
     static let sourceCodeURL = URL(string: "https://github.com/0xCUB3/wBlock")!
@@ -215,7 +220,7 @@ struct SettingsView: View {
                     await dataManager.setBackgroundAgentDisabled(!newValue)
                     let desired = dataManager.autoUpdateEnabled && !dataManager.backgroundAgentDisabled
                     await MainActor.run {
-                        AutoUpdateLaunchAgentManager.shared.reconcileWithAutoUpdateSetting(desired)
+                        _ = AutoUpdateLaunchAgentManager.shared.reconcileWithAutoUpdateSetting(desired)
                     }
                     await updateScheduleLine(shouldTriggerOverdue: false)
                 }
@@ -234,13 +239,120 @@ struct SettingsView: View {
         )
     }
 
+    private var healthStatus: SafariHealthStatus {
+        safariHealth.status(filterManager: filterManager, lastUpdatedDate: lastUpdatedDate)
+    }
+
+    private var modeBinding: Binding<AppMode> {
+        Binding(
+            get: { appMode },
+            set: { newMode in
+                guard newMode != appMode else { return }
+                filterManager.flushBasicAutoApplyIfNeeded()
+                appMode = newMode
+            }
+        )
+    }
+
+    @ViewBuilder
+    private var protectionStatusSection: some View {
+        Section {
+            Button {
+                showingHealthDetail = true
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: healthStatus.symbolName)
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(healthStatus.tone.color)
+                        .frame(width: 24)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(healthStatus.title)
+                            .font(.body.weight(.medium))
+                            .foregroundStyle(.primary)
+                        Text(healthStatus.subtitle())
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer(minLength: 8)
+                    RowDisclosureChevron()
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .noFocusRingCompat()
+            #if os(macOS)
+            .modalPopover(isPresented: $showingHealthDetail, arrowEdge: .trailing) {
+                SafariHealthDetailView(
+                    filterManager: filterManager,
+                    safariHealth: safariHealth,
+                    status: healthStatus,
+                    lastUpdatedDate: lastUpdatedDate,
+                    onCheckForUpdates: onCheckForUpdates
+                )
+            }
+            #else
+            .sheet(isPresented: $showingHealthDetail) {
+                SafariHealthDetailView(
+                    filterManager: filterManager,
+                    safariHealth: safariHealth,
+                    status: healthStatus,
+                    lastUpdatedDate: lastUpdatedDate,
+                    onCheckForUpdates: onCheckForUpdates
+                )
+            }
+            #endif
+        }
+    }
+
+    @ViewBuilder
+    private var modeSection: some View {
+        #if os(macOS)
+        Section {
+            HStack {
+                Text("Mode")
+                Spacer()
+                Picker("Mode", selection: modeBinding) {
+                    ForEach(AppMode.allCases) { mode in
+                        Text(mode.title).tag(mode)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .frame(width: 210)
+            }
+        } footer: {
+            Text("Switching modes keeps all your current settings active.")
+        }
+        #else
+        Section {
+            Picker("Mode", selection: modeBinding) {
+                ForEach(AppMode.allCases) { mode in
+                    Text(mode.title).tag(mode)
+                }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+        } header: {
+            Text("Mode")
+        } footer: {
+            Text("Switching modes keeps all your current settings active.")
+        }
+        #endif
+    }
+
     /// Autoplay and Appearance lead Settings; the site pages follow under
     /// Websites (#999).
     @ViewBuilder
     private var generalSection: some View {
         Section {
-            Toggle("Autoplay", isOn: autoplayBinding)
-            if !ProtobufDataManager.safariHasGlobalPrivacyControl {
+            Toggle(isOn: autoplayBinding) {
+                rowLabel(
+                    "Autoplay",
+                    detail: Text("Turn this on to allow video and audio playback without user action.")
+                )
+            }
+            if appMode == .advanced && !ProtobufDataManager.safariHasGlobalPrivacyControl {
                 Toggle(isOn: globalPrivacyControlBinding) {
                     rowLabel(
                         "Global Privacy Control",
@@ -262,9 +374,13 @@ struct SettingsView: View {
             #endif
         } header: {
             #if os(macOS)
-            // The form draws a header without a card, so the pills ride here.
-            VStack(alignment: .leading, spacing: 16) {
-                statusPills.frame(maxWidth: .infinity)
+            if appMode == .advanced {
+                // The form draws a header without a card, so the pills ride here.
+                VStack(alignment: .leading, spacing: 16) {
+                    statusPills.frame(maxWidth: .infinity)
+                    sectionHeader(.general)
+                }
+            } else {
                 sectionHeader(.general)
             }
             #else
@@ -545,9 +661,9 @@ struct SettingsView: View {
     @ViewBuilder
     private var autoUpdateSection: some View {
         Section {
-            Toggle("Auto-Update Filters & Userscripts", isOn: autoUpdateToggleBinding)
+            Toggle("Automatic Updates", isOn: autoUpdateToggleBinding)
 
-            if autoUpdateEnabled {
+            if appMode == .advanced && autoUpdateEnabled {
                 Picker("Update Interval", selection: autoUpdateIntervalBinding) {
                     ForEach(Self.autoUpdateIntervalPresets, id: \.self) { hours in
                         Text(intervalDescription(hours: hours)).tag(hours)
@@ -568,7 +684,7 @@ struct SettingsView: View {
             sectionHeader(.autoUpdate)
         } footer: {
             // The Filters and Userscripts toolbars already check for updates.
-            if autoUpdateEnabled {
+            if appMode == .advanced && autoUpdateEnabled {
                 nextScheduleSubtitle
             }
         }
@@ -673,31 +789,36 @@ struct SettingsView: View {
 
     @ViewBuilder
     private var syncSection: some View {
+        if appMode == .basic && !syncManager.isCloudKitAvailable {
+            EmptyView()
+        } else {
         Section {
             Toggle("iCloud Sync", isOn: syncEnabledBinding)
                 .disabled(!syncManager.isCloudKitAvailable)
 
             if syncManager.isCloudKitAvailable && syncManager.isEnabled {
-                Toggle(isOn: Binding(
-                    get: { syncManager.syncUserScriptEnabledStates },
-                    set: { syncManager.setSyncUserScriptEnabledStates($0) }
-                )) {
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("Sync Userscript Enabled States")
-                        Text("When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                        // Changing what syncs mid-cycle would change what that cycle
-                        // merges, so the switch waits; say so instead of looking stuck (#936).
-                        if syncManager.isSyncing {
-                            Text("Available when the current sync finishes.")
+                if appMode == .advanced {
+                    Toggle(isOn: Binding(
+                        get: { syncManager.syncUserScriptEnabledStates },
+                        set: { syncManager.setSyncUserScriptEnabledStates($0) }
+                    )) {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("Sync Userscript Enabled States")
+                            Text("When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device.")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                            // Changing what syncs mid-cycle would change what that cycle
+                            // merges, so the switch waits; say so instead of looking stuck (#936).
+                            if syncManager.isSyncing {
+                                Text("Available when the current sync finishes.")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
                     }
+                    .disabled(syncManager.isSyncing)
                 }
-                .disabled(syncManager.isSyncing)
 
                 #if os(macOS)
                 CompatibleLabeledContent {
@@ -747,6 +868,7 @@ struct SettingsView: View {
                     }
                 }
             }
+        }
         }
     }
 
@@ -827,7 +949,12 @@ struct SettingsView: View {
             // can scroll to them in a page that has grown long (#999).
             ScrollViewReader { proxy in
                 settingsList
-                    .toolbar { PauseBlockingToolbarItem(filterManager: filterManager) }
+                    .toolbar {
+                        PauseBlockingToolbarItem(
+                            filterManager: filterManager,
+                            allowsComponentMenu: appMode == .advanced
+                        )
+                    }
                     .topBarCompat {
                         if filterManager.isBlockingPaused {
                             PauseBlockingBanner(filterManager: filterManager)
@@ -846,9 +973,11 @@ struct SettingsView: View {
     private var settingsList: some View {
         #if os(iOS)
         List {
-            Section {
-                statusPills
-                    .unifiedTabCardSectionRow()
+            if appMode == .advanced {
+                Section {
+                    statusPills
+                        .unifiedTabCardSectionRow()
+                }
             }
             settingsSections
         }
@@ -887,13 +1016,25 @@ struct SettingsView: View {
 
     @ViewBuilder
     private var settingsSections: some View {
-        generalSection.settingsAnchor(.general)
-        websitesSection.settingsAnchor(.websites)
-        autoUpdateSection.settingsAnchor(.autoUpdate)
-        syncSection.settingsAnchor(.sync)
-        advancedSection.settingsAnchor(.advanced)
-        aboutSection.settingsAnchor(.about)
-        dangerZoneSection.settingsAnchor(.reset)
+        if appMode == .basic {
+            protectionStatusSection
+            modeSection
+            generalSection.settingsAnchor(.general)
+            websitesSection.settingsAnchor(.websites)
+            autoUpdateSection.settingsAnchor(.autoUpdate)
+            syncSection.settingsAnchor(.sync)
+            aboutSection.settingsAnchor(.about)
+            dangerZoneSection.settingsAnchor(.reset)
+        } else {
+            generalSection.settingsAnchor(.general)
+            modeSection
+            websitesSection.settingsAnchor(.websites)
+            autoUpdateSection.settingsAnchor(.autoUpdate)
+            syncSection.settingsAnchor(.sync)
+            advancedSection.settingsAnchor(.advanced)
+            aboutSection.settingsAnchor(.about)
+            dangerZoneSection.settingsAnchor(.reset)
+        }
     }
 
     private func handleAutoUpdateConfigChange() async {
@@ -1459,18 +1600,24 @@ struct PauseBlockingBanner: View {
 /// them from View > Pause Blocking.
 struct PauseBlockingToolbarItem: ToolbarContent {
     @ObservedObject var filterManager: AppFilterManager
+    var allowsComponentMenu: Bool = true
 
     var body: some ToolbarContent {
         #if os(macOS)
-        ToolbarItem(placement: .navigation) { PauseBlockingButton(filterManager: filterManager) }
+        ToolbarItem(placement: .navigation) {
+            PauseBlockingButton(filterManager: filterManager, allowsComponentMenu: allowsComponentMenu)
+        }
         #else
-        ToolbarItem(placement: .topBarLeading) { PauseBlockingButton(filterManager: filterManager) }
+        ToolbarItem(placement: .topBarLeading) {
+            PauseBlockingButton(filterManager: filterManager, allowsComponentMenu: allowsComponentMenu)
+        }
         #endif
     }
 }
 
 struct PauseBlockingButton: View {
     @ObservedObject var filterManager: AppFilterManager
+    var allowsComponentMenu: Bool = true
 
     var body: some View {
         let isPaused = !filterManager.pausedComponents.isEmpty
@@ -1484,17 +1631,27 @@ struct PauseBlockingButton: View {
         .help(title)
         .disabled(filterManager.isReloadBusy)
         #else
-        return Menu {
-            Section("Pause Blocking") { PauseBlockingControls(filterManager: filterManager) }
-        } label: {
-            Label(title, systemImage: isPaused ? "pause.circle.fill" : "pause.circle")
-        } primaryAction: {
-            Task { await filterManager.setBlockingPaused(!isPaused) }
+        if allowsComponentMenu {
+            Menu {
+                Section("Pause Blocking") { PauseBlockingControls(filterManager: filterManager) }
+            } label: {
+                Label(title, systemImage: isPaused ? "pause.circle.fill" : "pause.circle")
+            } primaryAction: {
+                Task { await filterManager.setBlockingPaused(!isPaused) }
+            }
+            // A tap pauses or resumes; a long press opens the menu.
+            .menuIndicator(.hidden)
+            .help(title)
+            .disabled(filterManager.isReloadBusy)
+        } else {
+            Button {
+                Task { await filterManager.setBlockingPaused(!isPaused) }
+            } label: {
+                Label(title, systemImage: isPaused ? "pause.circle.fill" : "pause.circle")
+            }
+            .help(title)
+            .disabled(filterManager.isReloadBusy)
         }
-        // A tap pauses or resumes; a long press opens the menu.
-        .menuIndicator(.hidden)
-        .help(title)
-        .disabled(filterManager.isReloadBusy)
         #endif
     }
 }

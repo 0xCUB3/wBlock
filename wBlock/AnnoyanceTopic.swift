@@ -62,7 +62,7 @@ enum AnnoyanceTopic: String, CaseIterable, Identifiable, Sendable {
 /// (plus uBO's for Cookie Notices and General), which are updated far more
 /// often than EasyList's (#1112).
 enum AnnoyanceChoice: String, CaseIterable, Identifiable, Sendable {
-    case general, cookies, popups, banners, social, chat, ai
+    case cookies, popups, banners, social, chat, general, ai
 
     var id: String { rawValue }
 

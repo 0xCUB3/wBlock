@@ -196,6 +196,46 @@ struct ListActionsToolbar<Primary: View, Apply: View, Leading: View>: ViewModifi
     }
 }
 
+/// Basic mode toolbar: ONLY the leading `[Pause, Update]` capsule.
+/// Kept as a separate modifier branched outside the toolbar builder so iOS 15
+/// `ToolbarContentBuilder` never branches (#404).
+struct BasicActionsToolbar<Apply: View, Leading: View>: ViewModifier {
+    @ViewBuilder let apply: () -> Apply
+    @ViewBuilder let leading: () -> Leading
+
+    func body(content: Content) -> some View {
+        #if os(macOS)
+        if #available(macOS 26.0, *) {
+            content.toolbar {
+                ToolbarItem(placement: .navigation) { leading() }
+                    .toolbarVisibilityPriorityCompat(.high)
+                ToolbarItem(placement: .navigation) { apply() }
+                    .toolbarVisibilityPriorityCompat(.high)
+            }
+            .toolbarBackground(.visible, for: .windowToolbar)
+        } else {
+            content.toolbar {
+                ToolbarItem(placement: .navigation) { leading() }
+                ToolbarItem(placement: .navigation) { apply() }
+            }
+        }
+        #else
+        if #available(iOS 26.0, *) {
+            content.toolbar {
+                ToolbarItem(placement: .topBarLeading) { leading() }
+                ToolbarItem(placement: .topBarLeading) { apply() }
+                    .toolbarVisibilityPriorityCompat(.high)
+            }
+        } else {
+            content.toolbar {
+                ToolbarItem(placement: .navigationBarLeading) { leading() }
+                ToolbarItem(placement: .navigationBarLeading) { apply() }
+            }
+        }
+        #endif
+    }
+}
+
 #if os(iOS)
 /// iPhone search on iOS 26 and later: a field that replaces the toolbar
 /// buttons until Close. The system's minimized toolbar search can't be closed

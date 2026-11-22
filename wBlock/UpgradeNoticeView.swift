@@ -24,12 +24,13 @@ enum UpgradeNotice {
 
 struct UpgradeNoticeView: View {
     @Environment(\.dismiss) private var dismiss
+    @AppStorage(AppMode.storageKey) private var appMode: AppMode = .advanced
 
     private let sections: [(symbol: String, title: LocalizedStringKey, body: LocalizedStringKey)] = [
-        ("gearshape.2", "Why things changed",
-         "wBlock used AdGuard's converter to turn filter lists into Safari rules. It skips rules written only for uBlock Origin. That meant many uBO lists didn't work fully in wBlock."),
+        ("rectangle.split.2x1", "Basic and Advanced modes",
+         "Basic is wBlock's new simpler view, alongside the full Advanced interface. You stayed in Advanced so nothing moved, and you can switch anytime in Settings or try Basic below."),
         ("shield.lefthalf.filled", "A new engine",
-         "wBlock's new engine reads lists like uBlock Origin. Your enabled AdGuard lists were swapped for matching uBO lists."),
+         "This upgrade replaces the AdGuard converter with wBlock's own engine built for uBlock Origin rules, so more rules work in Safari. Your enabled AdGuard lists were swapped for matching uBO lists."),
         ("checkmark.circle", "What stays the same",
          "Your custom lists, userscripts, Element Zapper rules and site settings are unchanged. Most AdGuard lists are still in Filters if you want them back."),
         ("wrench.and.screwdriver", "If a site breaks",
@@ -64,6 +65,39 @@ struct UpgradeNoticeView: View {
                 .padding(SheetDesign.contentHorizontalPadding)
             }
             SheetBottomToolbar {
+                #if os(iOS)
+                VStack(spacing: 10) {
+                    Button {
+                        UpgradeNotice.markSeen()
+                        dismiss()
+                    } label: {
+                        Text("Got It").frame(maxWidth: .infinity)
+                    }
+                    .primaryActionButtonStyle()
+
+                    if appMode != .basic {
+                        Button {
+                            appMode = .basic
+                            UpgradeNotice.markSeen()
+                            dismiss()
+                        } label: {
+                            Text("Try Basic Mode").frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.large)
+                    }
+                }
+                #else
+                if appMode != .basic {
+                    Button {
+                        appMode = .basic
+                        UpgradeNotice.markSeen()
+                        dismiss()
+                    } label: {
+                        Text("Try Basic Mode").frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                }
                 Button {
                     UpgradeNotice.markSeen()
                     dismiss()
@@ -72,6 +106,7 @@ struct UpgradeNoticeView: View {
                 }
                 .primaryActionButtonStyle()
                 .keyboardShortcut(.defaultAction)
+                #endif
             }
         }
         #if os(macOS)

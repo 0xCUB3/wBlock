@@ -228,6 +228,10 @@ compile_core_test filter-list-duplicates scripts/test_filter_list_duplicates.swi
 compile_core_test filter-catalog-migrations scripts/test_filter_catalog_migrations.swift \
   wBlock/AnnoyanceTopic.swift wBlock/FilterListLoader.swift wBlock/FilterListSetup.swift wBlock/LocalizationHelpers.swift \
   wBlock/ConcurrentLogManager.swift wBlock/LogTimeZone.swift
+compile_core_test basic-mode scripts/test_basic_mode.swift \
+  wBlock/AppMode.swift wBlock/BasicBundle.swift wBlock/SafariHealth.swift \
+  wBlock/SafariExtensionSetupSupport.swift wBlock/AnnoyanceTopic.swift wBlock/FilterListLoader.swift \
+  wBlock/LocalizationHelpers.swift wBlock/ConcurrentLogManager.swift wBlock/LogTimeZone.swift
 compile_core_test filter-list-fetch-chain scripts/test_filter_list_fetch_chain.swift
 compile_core_test filter-download-processor scripts/test_filter_download_processor.swift
 compile_core_test issue-508-backup scripts/test_issue_508_backup_userscript.swift

@@ -67,6 +67,7 @@ extension AppFilterManager {
             if presentation == .refresh {
                 suppressBlockingOverlay = false
             }
+            drainFollowUpBasicApplyIfNeeded()
         }
 
         // Holds off an auto-update run until the check ends, after waiting out

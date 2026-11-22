@@ -217,6 +217,12 @@ class AppFilterManager: ObservableObject {
     /// A rebuild that came due while an auto-update was rebuilding the same
     /// blockers; it runs when that update finishes, in the same sheet.
     private var autoApplyWaitingForAutoUpdate = false
+    /// Basic mode debounced auto-apply tracking (2s debounce, silent, no modal).
+    @Published private(set) var hasQueuedBasicAutoApply = false
+    @Published private(set) var basicApplyCompletionToken = 0
+    @Published private(set) var lastBasicApplyFailed = false
+    @Published private(set) var lastBasicApplyFailedFilterIDs: Set<UUID> = []
+    private var needsFollowUpBasicApply = false
 
     func markCurrentStateApplied() {
         appliedSelectedFilterIDs = selectedFilterIDs
@@ -226,6 +232,7 @@ class AppFilterManager: ObservableObject {
         hasPendingNonSelectionChanges = false
         hasPendingExternalChanges = false
         hasUnappliedChanges = false
+        hasQueuedBasicAutoApply = false
         autoApplyTask?.cancel()
         autoApplyTask = nil
     }
@@ -349,8 +356,9 @@ class AppFilterManager: ObservableObject {
 
     private func refreshHasUnappliedChanges() {
         hasUnappliedChanges = hasPendingSelectionChanges || hasPendingNonSelectionChanges
-        // Edits wait for Apply (#1003). Only upgrades and disabled-site changes apply on their own.
+        // Edits wait for Apply (#1003). Only upgrades, disabled-site changes, and Basic mode apply on their own.
         if !hasUnappliedChanges {
+            hasQueuedBasicAutoApply = false
             autoApplyTask?.cancel()
             autoApplyTask = nil
         }
@@ -358,12 +366,13 @@ class AppFilterManager: ObservableObject {
 
     /// `delay` is in seconds; a list handover applies at once so its new lists
     /// do not sit undownloaded behind the edit debounce.
-    func scheduleAutoApplyDebounce(delay: UInt64 = 60) {
+    func scheduleAutoApplyDebounce(delay: UInt64 = 60, showProgress: Bool = true) {
         autoApplyTask?.cancel()
         autoApplyTask = Task { @MainActor [weak self] in
             try? await Task.sleep(nanoseconds: delay * 1_000_000_000)
             guard !Task.isCancelled else { return }
             guard let self else { return }
+            self.hasQueuedBasicAutoApply = false
             if self.isAutoUpdateRunning {
                 self.autoApplyWaitingForAutoUpdate = true
                 return
@@ -376,7 +385,49 @@ class AppFilterManager: ObservableObject {
             else { return }
             // Applying pending edits must not double as an update check; only explicit
             // updates and the auto-update scheduler refresh lists already on disk.
-            await self.performFilterUpdate(checkForUpdates: false, downloadMissing: true)
+            await self.performFilterUpdate(showProgress: showProgress, checkForUpdates: false, downloadMissing: true)
+        }
+    }
+
+    /// Basic mode debounced auto-apply (2s delay, silent progress, re-runs once
+    /// if another toggle lands while an apply is already in flight).
+    func scheduleBasicAutoApply() {
+        guard !pausedComponents.contains(.filters) else { return }
+        if isApplyInFlight || isLoading {
+            needsFollowUpBasicApply = true
+            hasQueuedBasicAutoApply = true
+            return
+        }
+        hasQueuedBasicAutoApply = true
+        scheduleAutoApplyDebounce(delay: 2, showProgress: false)
+    }
+
+    /// Drains any Basic mode edits queued while loading or applying was active.
+    func drainFollowUpBasicApplyIfNeeded() {
+        guard needsFollowUpBasicApply, !isLoading, !isApplyInFlight else { return }
+        needsFollowUpBasicApply = false
+        hasQueuedBasicAutoApply = false
+        guard hasUnappliedChanges, !pausedComponents.contains(.filters) else { return }
+        Task { @MainActor [weak self] in
+            await self?.performFilterUpdate(showProgress: false, checkForUpdates: false, downloadMissing: true)
+        }
+    }
+
+    /// Immediately flushes any pending Basic auto-apply when the user switches
+    /// to Safari (`scenePhase != .active`) or switches between Basic and Advanced.
+    func flushBasicAutoApplyIfNeeded() {
+        guard hasQueuedBasicAutoApply || (autoApplyTask != nil && hasUnappliedChanges) else { return }
+        autoApplyTask?.cancel()
+        autoApplyTask = nil
+        hasQueuedBasicAutoApply = false
+        guard hasUnappliedChanges, !pausedComponents.contains(.filters) else { return }
+        if isApplyInFlight || isLoading {
+            needsFollowUpBasicApply = true
+            return
+        }
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            await self.performFilterUpdate(showProgress: false, checkForUpdates: false, downloadMissing: true)
         }
     }
 
@@ -1039,6 +1090,7 @@ class AppFilterManager: ObservableObject {
     ) async -> Bool {
         refreshMissingItems()
 
+        let dirtyBeforeRun = selectedFilterIDs.symmetricDifference(appliedSelectedFilterIDs)
         let started = await performExclusiveApply {
             // Before the snapshot, so the run compiles the handed-over selection.
             await self.completeAdGuardHandover()
@@ -1053,6 +1105,19 @@ class AppFilterManager: ObservableObject {
                 prepareState: false,
                 skipPreApplyUpdates: !checkForUpdates
             )
+        }
+
+        if started {
+            if lastApplySucceeded && !hasError && failedReloadTargets.isEmpty {
+                lastBasicApplyFailed = false
+                lastBasicApplyFailedFilterIDs = []
+                basicApplyCompletionToken += 1
+            } else if hasError || !failedReloadTargets.isEmpty {
+                lastBasicApplyFailed = true
+                lastBasicApplyFailedFilterIDs = dirtyBeforeRun
+            }
+
+            drainFollowUpBasicApplyIfNeeded()
         }
 
         if !started {

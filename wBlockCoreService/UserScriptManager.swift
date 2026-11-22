@@ -716,6 +716,20 @@ public class UserScriptManager: ObservableObject {
         return BuiltInUserScripts.isBetaByURL[urlString] ?? false
     }
 
+    public func builtInTier(for userScript: UserScript) -> BuiltInUserScriptTier? {
+        guard let urlString = userScript.url?.absoluteString else { return nil }
+        return BuiltInUserScripts.tierByURL[urlString]
+    }
+
+    public func builtInBasicGroup(for userScript: UserScript) -> BuiltInUserScriptBasicGroup? {
+        guard let urlString = userScript.url?.absoluteString else { return nil }
+        return BuiltInUserScripts.basicGroupByURL[urlString]
+    }
+
+    public func isBypassPaywallsClean(_ userScript: UserScript) -> Bool {
+        userScript.url?.absoluteString == BuiltInUserScripts.bypassPaywallsCleanURL
+    }
+
     public func isDarkReader(_ userScript: UserScript) -> Bool {
         DarkReaderAppearancePreference.matches(scriptURL: userScript.url)
     }

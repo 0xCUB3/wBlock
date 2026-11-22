@@ -1,0 +1,404 @@
+import SwiftUI
+import wBlockCoreService
+
+extension SafariHealthMonitor {
+    func status(
+        filterManager: AppFilterManager,
+        lastUpdatedDate: Date?
+    ) -> SafariHealthStatus {
+        let hasHitRuleLimit = filterManager.lastRuleCount > 0
+            && filterManager.lastRuleCount >= filterManager.safariRuleCapacity
+        let isApplying = filterManager.isLoading || filterManager.isApplyInFlight || filterManager.isAutoUpdateRunning
+        let hasFailed = filterManager.hasError || !filterManager.failedReloadTargets.isEmpty
+        return status(
+            pausedComponents: filterManager.pausedComponents,
+            hasHitRuleLimit: hasHitRuleLimit,
+            isApplying: isApplying,
+            hasFailed: hasFailed,
+            lastUpdatedDate: lastUpdatedDate
+        )
+    }
+}
+
+/// Segmented-to-fused Safari extension status ring shared by the Filters Hero
+/// and Onboarding Safari Setup.
+///
+/// Arc count `N = 5 + (isScriptsStateKnowable ? 1 : 0)`.
+/// When degraded, draws `N` butt-capped arcs spaced by `gapDegrees` (10°),
+/// with slots 1–5 clockwise from 12 o'clock and Scripts last. When all knowable
+/// extensions turn on, `gapDegrees` animates to `0°` and swaps to a single
+/// seamless `Circle` stroke with a shield bounce and success haptic.
+struct ExtensionStatusRing: View {
+    let arcStates: [Bool]
+    let isWelded: Bool
+    let status: SafariHealthStatus
+    let weldCelebrationCount: Int
+    var applyProgress: Double? = nil
+    var medallionSize: CGFloat = 60
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var gapDegrees: Double = 10
+    @State private var orbitAngle: Double = 0
+    @State private var weldFlash = false
+
+    private var ringLineWidth: CGFloat { medallionSize >= 56 ? 3.5 : 2.5 }
+    private var innerDiscSize: CGFloat { medallionSize * (44.0 / 60.0) }
+    private var symbolSize: CGFloat { medallionSize * (22.0 / 60.0) }
+    private var emerald: Color { Color(red: 0.16, green: 0.78, blue: 0.42) }
+
+    var body: some View {
+        ZStack {
+            // Soft tinted inner disc
+            Circle()
+                .fill(status.tone.color.opacity(0.14))
+                .frame(width: innerDiscSize, height: innerDiscSize)
+
+            // Outer ring: fused circle, segmented arcs, or applying progress arc
+            ringLayer
+                .frame(width: medallionSize, height: medallionSize)
+
+            // Center shield glyph (reserved strictly for the Hero / Setup ring)
+            shieldSymbol
+        }
+        .frame(width: medallionSize, height: medallionSize)
+        .onAppear {
+            gapDegrees = isWelded ? 0 : 10
+            if case .applying = status {
+                startApplyingOrbit()
+            }
+        }
+        .onChangeCompat(of: isWelded) { _, welded in
+            if welded {
+                if reduceMotion {
+                    gapDegrees = 0
+                } else {
+                    withAnimation(.spring(response: 0.46, dampingFraction: 0.82)) {
+                        gapDegrees = 0
+                    }
+                }
+            } else {
+                if reduceMotion {
+                    gapDegrees = 10
+                } else {
+                    withAnimation(.easeOut(duration: 0.25)) {
+                        gapDegrees = 10
+                    }
+                }
+            }
+        }
+        .onChangeCompat(of: status) { _, next in
+            if case .applying = next {
+                startApplyingOrbit()
+            }
+        }
+        .modifier(WeldHapticModifier(trigger: weldCelebrationCount))
+        .accessibilityHidden(true)
+    }
+
+    @ViewBuilder
+    private var ringLayer: some View {
+        if case .applying = status {
+            ZStack {
+                Circle()
+                    .stroke(Color.accentColor.opacity(0.18), lineWidth: ringLineWidth)
+                if let applyProgress, applyProgress > 0 {
+                    Circle()
+                        .trim(from: 0, to: max(0.05, min(1, CGFloat(applyProgress))))
+                        .stroke(Color.accentColor, style: StrokeStyle(lineWidth: ringLineWidth, lineCap: .round))
+                        .rotationEffect(.degrees(-90))
+                } else if reduceMotion {
+                    Circle()
+                        .stroke(Color.accentColor.opacity(0.75), lineWidth: ringLineWidth)
+                } else {
+                    Circle()
+                        .trim(from: 0, to: 0.28)
+                        .stroke(Color.accentColor, style: StrokeStyle(lineWidth: ringLineWidth, lineCap: .round))
+                        .rotationEffect(.degrees(-90 + orbitAngle))
+                }
+            }
+        } else if isWelded && gapDegrees <= 0.05 {
+            // Single unbroken circle stroke: zero antialiasing hairlines.
+            Circle()
+                .stroke(status.tone.color, lineWidth: ringLineWidth)
+        } else {
+            SegmentedExtensionRingShapeLayer(
+                arcStates: arcStates.isEmpty ? Array(repeating: false, count: 5) : arcStates,
+                gapDegrees: gapDegrees,
+                lineWidth: ringLineWidth,
+                litColor: emerald,
+                dimColor: Color.primary.opacity(0.14)
+            )
+        }
+    }
+
+    @ViewBuilder
+    private var shieldSymbol: some View {
+        let icon = Image(systemName: status.symbolName)
+            .font(.system(size: symbolSize, weight: .semibold))
+            .foregroundStyle(status.tone.color)
+
+        if #available(iOS 17.0, macOS 14.0, *) {
+            icon
+                .contentTransition(.symbolEffect(.replace))
+                .symbolEffect(.bounce, value: weldCelebrationCount)
+        } else {
+            icon
+        }
+    }
+
+    private func startApplyingOrbit() {
+        guard !reduceMotion else { return }
+        orbitAngle = 0
+        withAnimation(.linear(duration: 1.05).repeatForever(autoreverses: false)) {
+            orbitAngle = 360
+        }
+    }
+}
+
+/// Animatable segmented arc ring so `gapDegrees` interpolates smoothly to 0° during weld.
+private struct SegmentedExtensionRingShapeLayer: View, Animatable {
+    let arcStates: [Bool]
+    var gapDegrees: Double
+    let lineWidth: CGFloat
+    let litColor: Color
+    let dimColor: Color
+
+    var animatableData: Double {
+        get { gapDegrees }
+        set { gapDegrees = newValue }
+    }
+
+    var body: some View {
+        let count = max(1, arcStates.count)
+        let pitch = 360.0 / Double(count)
+        ZStack {
+            ForEach(0..<count, id: \.self) { index in
+                let startDeg = -90.0 + Double(index) * pitch + gapDegrees / 2.0
+                let endDeg = -90.0 + Double(index + 1) * pitch - gapDegrees / 2.0
+                ExtensionArcShape(startDegrees: startDeg, endDegrees: endDeg)
+                    .stroke(
+                        arcStates[index] ? litColor : dimColor,
+                        style: StrokeStyle(lineWidth: lineWidth, lineCap: .butt)
+                    )
+            }
+        }
+    }
+}
+
+private struct ExtensionArcShape: Shape {
+    var startDegrees: Double
+    var endDegrees: Double
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let center = CGPoint(x: rect.midX, y: rect.midY)
+        let radius = min(rect.width, rect.height) / 2
+        path.addArc(
+            center: center,
+            radius: radius,
+            startAngle: .degrees(startDegrees),
+            endAngle: .degrees(endDegrees),
+            clockwise: false
+        )
+        return path
+    }
+}
+
+private struct WeldHapticModifier: ViewModifier {
+    let trigger: Int
+
+    func body(content: Content) -> some View {
+        #if os(iOS)
+        if #available(iOS 17.0, *) {
+            content.sensoryFeedback(.success, trigger: trigger)
+        } else {
+            content
+        }
+        #else
+        content
+        #endif
+    }
+}
+
+/// Subtle `<10%` top radial atmospheric wash drawn on the scroll container behind
+/// the hero. Fades cleanly with scroll offset and is hidden under Reduce Transparency.
+struct ProtectionAtmosphereWash: View {
+    let tone: SafariHealthStatus.Tone
+    var scrollFade: Double = 1.0
+
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        if !reduceTransparency && scrollFade > 0.01 {
+            let peakOpacity = (colorScheme == .dark ? 0.09 : 0.08) * max(0, min(1, scrollFade))
+            RadialGradient(
+                colors: [
+                    tone.color.opacity(peakOpacity),
+                    tone.color.opacity(peakOpacity * 0.35),
+                    Color.clear,
+                ],
+                center: .top,
+                startRadius: 8,
+                endRadius: 230
+            )
+            .frame(height: 240)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .ignoresSafeArea(edges: .top)
+            .allowsHitTesting(false)
+            .animation(.easeInOut(duration: 0.35), value: tone)
+        }
+    }
+}
+
+/// Unboxed atmospheric Hero (~126pt healthy) sitting at the top of Basic Filters.
+struct ProtectionHero: View {
+    let status: SafariHealthStatus
+    let arcStates: [Bool]
+    let isWelded: Bool
+    let weldCelebrationCount: Int
+    var applyProgress: Double? = nil
+    let onTapHero: () -> Void
+    let onAction: (SafariHealthStatus.Action) -> Void
+
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 30)) { context in
+            VStack(spacing: 10) {
+                Button(action: onTapHero) {
+                    VStack(spacing: 8) {
+                        ExtensionStatusRing(
+                            arcStates: arcStates,
+                            isWelded: isWelded,
+                            status: status,
+                            weldCelebrationCount: weldCelebrationCount,
+                            applyProgress: applyProgress,
+                            medallionSize: 60
+                        )
+
+                        VStack(spacing: 2) {
+                            HStack(spacing: 4) {
+                                Text(status.title)
+                                    .font(.title3.weight(.semibold))
+                                    .foregroundStyle(.primary)
+                                Image(systemName: "chevron.right")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.tertiary)
+                                    .accessibilityHidden(true)
+                            }
+                            Text(status.subtitle(now: context.date))
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .noFocusRingCompat()
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(Text("\(status.title). \(status.subtitle(now: context.date))"))
+                .accessibilityHint(Text("Shows Safari extension status"))
+
+                if let action = status.action, let ctaTitle = status.ctaTitle {
+                    Button(ctaTitle) {
+                        onAction(action)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(status.tone == .gray ? Color.accentColor : status.tone.color)
+                    .controlSize(.small)
+                    .padding(.top, 2)
+                }
+            }
+            .padding(.top, 8)
+            .padding(.bottom, 10)
+            .padding(.horizontal, 16)
+            .frame(maxWidth: .infinity)
+        }
+    }
+}
+
+/// Compact unhealthy banner surfaced in Advanced mode when Safari extensions are off.
+struct SafariHealthCompactBanner: View {
+    let status: SafariHealthStatus
+    let onTapDetail: () -> Void
+    let onOpenSettings: () -> Void
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Button(action: onTapDetail) {
+                HStack(spacing: 10) {
+                    Image(systemName: status.symbolName)
+                        .font(.title3)
+                        .foregroundStyle(status.tone.color)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(status.title)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.primary)
+                        Text(status.subtitle())
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
+                    }
+                    Spacer(minLength: 4)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .noFocusRingCompat()
+
+            Button(String(localized: "Open Settings")) {
+                onOpenSettings()
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(status.tone.color)
+            .controlSize(.small)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.bar)
+        .overlay(alignment: .bottom) { Divider() }
+    }
+}
+
+/// Compact bottom status accessory for iOS when status != Protected and the Hero
+/// has scrolled off screen or the user is on Extras / Settings.
+struct SafariHealthBottomAccessory: View {
+    let status: SafariHealthStatus
+    let onTap: () -> Void
+    let onAction: (SafariHealthStatus.Action) -> Void
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Button(action: onTap) {
+                HStack(spacing: 8) {
+                    Image(systemName: status.symbolName)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(status.tone.color)
+                    Text(status.title)
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+                    Spacer(minLength: 4)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            if let action = status.action, let ctaTitle = status.ctaTitle {
+                Button(ctaTitle) {
+                    onAction(action)
+                }
+                .font(.caption.weight(.semibold))
+                .buttonStyle(.borderedProminent)
+                .tint(status.tone == .gray ? Color.accentColor : status.tone.color)
+                .controlSize(.mini)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+    }
+}

@@ -1,5 +1,18 @@
 import Foundation
 
+public enum BuiltInUserScriptTier: String, Sendable {
+    case featured
+    case automatic
+    case advancedOnly
+}
+
+public enum BuiltInUserScriptBasicGroup: String, CaseIterable, Identifiable, Sendable {
+    case video
+    case reading
+
+    public var id: String { rawValue }
+}
+
 struct BuiltInUserScriptDefinition {
     let name: String
     let url: String
@@ -11,6 +24,8 @@ struct BuiltInUserScriptDefinition {
     /// Shown before the script is downloaded and kept afterwards (#1106).
     let author: String
     let homepage: String
+    let tier: BuiltInUserScriptTier
+    let basicGroup: BuiltInUserScriptBasicGroup?
 
     init(
         name: String,
@@ -21,7 +36,9 @@ struct BuiltInUserScriptDefinition {
         displayRole: BuiltInUserScriptDisplayRole? = nil,
         isBeta: Bool = false,
         author: String,
-        homepage: String
+        homepage: String,
+        tier: BuiltInUserScriptTier = .advancedOnly,
+        basicGroup: BuiltInUserScriptBasicGroup? = nil
     ) {
         self.name = name
         self.url = url
@@ -32,6 +49,8 @@ struct BuiltInUserScriptDefinition {
         self.isBeta = isBeta
         self.author = author
         self.homepage = homepage
+        self.tier = tier
+        self.basicGroup = basicGroup
     }
 }
 
@@ -73,7 +92,9 @@ enum BuiltInUserScripts {
             displayRole: .functionality,
             isBeta: true,
             author: "wBlock",
-            homepage: "https://github.com/0xCUB3/wBlock-userscripts"
+            homepage: "https://github.com/0xCUB3/wBlock-userscripts",
+            tier: .featured,
+            basicGroup: .video
         ),
         BuiltInUserScriptDefinition(
             name: "DeArrow",
@@ -83,7 +104,9 @@ enum BuiltInUserScripts {
             displayRole: .functionality,
             isBeta: true,
             author: "wBlock",
-            homepage: "https://dearrow.ajay.app/"
+            homepage: "https://dearrow.ajay.app/",
+            tier: .featured,
+            basicGroup: .video
         ),
         BuiltInUserScriptDefinition(
             name: "Player Cleaner",
@@ -93,7 +116,9 @@ enum BuiltInUserScripts {
             displayRole: .functionality,
             isBeta: true,
             author: "wBlock",
-            homepage: "https://github.com/0xCUB3/wBlock-userscripts"
+            homepage: "https://github.com/0xCUB3/wBlock-userscripts",
+            tier: .featured,
+            basicGroup: .video
         ),
         BuiltInUserScriptDefinition(
             name: "Dark Reader",
@@ -103,7 +128,9 @@ enum BuiltInUserScripts {
             displayRole: .functionality,
             isBeta: true,
             author: "Dark Reader Ltd. and wBlock",
-            homepage: "https://darkreader.org/"
+            homepage: "https://darkreader.org/",
+            tier: .featured,
+            basicGroup: .reading
         ),
         // Content blockers can't redirect, so AMP pages need AdGuard's script (#1095).
         BuiltInUserScriptDefinition(
@@ -113,7 +140,9 @@ enum BuiltInUserScripts {
             description: disableAMPDescription,
             displayRole: .functionality,
             author: "AdGuard",
-            homepage: "https://adguard.com/"
+            homepage: "https://adguard.com/",
+            tier: .featured,
+            basicGroup: .reading
         ),
         BuiltInUserScriptDefinition(
             name: "Return YouTube Dislike",
@@ -121,7 +150,9 @@ enum BuiltInUserScripts {
             isEnabledByDefault: false,
             displayRole: .functionality,
             author: "Anarios & JRWR",
-            homepage: "https://www.returnyoutubedislike.com/"
+            homepage: "https://www.returnyoutubedislike.com/",
+            tier: .featured,
+            basicGroup: .video
         ),
         BuiltInUserScriptDefinition(
             name: "Bypass Paywalls Clean",
@@ -130,7 +161,9 @@ enum BuiltInUserScripts {
             languages: ["en"],
             displayRole: .functionality,
             author: "magnolia1234",
-            homepage: "https://gitflic.ru/project/magnolia1234/bypass-paywalls-clean-filters"
+            homepage: "https://gitflic.ru/project/magnolia1234/bypass-paywalls-clean-filters",
+            tier: .featured,
+            basicGroup: .reading
         ),
         BuiltInUserScriptDefinition(
             name: "AdGuard Extra",
@@ -139,7 +172,8 @@ enum BuiltInUserScripts {
             description: "Blocks Twitch ads and handles complicated anti-adblock cases, from the AdGuard project. It slows page loads.",
             displayRole: .functionality,
             author: "AdGuard",
-            homepage: "https://adguard.com/"
+            homepage: "https://adguard.com/",
+            tier: .advancedOnly
         ),
         BuiltInUserScriptDefinition(
             name: "TwitchAdSolutions (vaft)",
@@ -148,7 +182,9 @@ enum BuiltInUserScripts {
             description: "Blocks Twitch ads with the vaft script from TwitchAdSolutions.",
             displayRole: .blocking,
             author: "ryanbr (Fanboy)",
-            homepage: "https://github.com/ryanbr/TwitchAdSolutions"
+            homepage: "https://github.com/ryanbr/TwitchAdSolutions",
+            tier: .featured,
+            basicGroup: .video
         ),
         BuiltInUserScriptDefinition(
             name: "tinyShield",
@@ -157,7 +193,8 @@ enum BuiltInUserScripts {
             description: tinyShieldDescription,
             displayRole: .blocking,
             author: "PiQuark6046 and contributors",
-            homepage: "https://github.com/FilteringDev/tinyShield"
+            homepage: "https://github.com/FilteringDev/tinyShield",
+            tier: .automatic
         ),
         BuiltInUserScriptDefinition(
             name: popupBlockerName,
@@ -166,7 +203,8 @@ enum BuiltInUserScripts {
             description: "Blocks pop-up and pop-under windows that pages open when you click, from the AdGuard project.",
             displayRole: .blocking,
             author: "AdGuard",
-            homepage: "https://popupblocker.adguard.com/release/v1"
+            homepage: "https://popupblocker.adguard.com/release/v1",
+            tier: .advancedOnly
         ),
     ]
 
@@ -183,6 +221,14 @@ enum BuiltInUserScripts {
     static let isEnabledByDefaultByURL = Dictionary(
         uniqueKeysWithValues: definitions.map { ($0.url, $0.isEnabledByDefault) }
     )
+    static let tierByURL = Dictionary(
+        uniqueKeysWithValues: definitions.map { ($0.url, $0.tier) }
+    )
+    static let basicGroupByURL = Dictionary(uniqueKeysWithValues: definitions.compactMap { definition in
+        definition.basicGroup.map { (definition.url, $0) }
+    })
+    static let bypassPaywallsCleanURL =
+        "https://greasyfork.org/scripts/542351-bypass-paywalls-clean-en/code/Bypass%20Paywalls%20Clean%20(EN).user.js"
 
     static func definition(for url: URL?) -> BuiltInUserScriptDefinition? {
         guard let source = url?.absoluteString else { return nil }

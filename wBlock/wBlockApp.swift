@@ -40,6 +40,9 @@ struct wBlockApp: App {
 
         Task {
             await WBlockLaunchSetup.run()
+            await MainActor.run {
+                AppMode.seedIfNeeded(hasCompletedOnboarding: ProtobufDataManager.shared.hasCompletedOnboarding)
+            }
             // Migration and the auto-rebuild run in AppFilterManager's setup task. The launch
             // CloudSync sync must not read or write settings while they are in flight.
             await filterManager.waitUntilReady()
@@ -62,6 +65,7 @@ struct wBlockApp: App {
     #endif
 
     @AppStorage(AppAppearance.storageKey) private var appearance = AppAppearance.system
+    @AppStorage(AppMode.storageKey) private var appMode: AppMode = .basic
 
     var body: some Scene {
         WindowGroup {
@@ -84,7 +88,11 @@ struct wBlockApp: App {
                     startLaunchSetupIfNeeded()
                 }
                 .onChangeCompat(of: scenePhase) { _, newPhase in
-                    guard newPhase == .active, hasCompletedLaunchSetup else { return }
+                    if newPhase != .active {
+                        filterManager.flushBasicAutoApplyIfNeeded()
+                        return
+                    }
+                    guard hasCompletedLaunchSetup else { return }
                     Task { await filterManager.refreshRuleCountsOnForeground() }
                     Task { await CloudSyncManager.shared.syncNow(trigger: "AppActive") }
                 }
@@ -137,27 +145,31 @@ struct wBlockApp: App {
                     NotificationCenter.default.post(name: .wBlockAddFilterListRequest, object: nil)
                 }
                 .keyboardShortcut("n", modifiers: .command)
+                .disabled(appMode == .basic)
                 Button("Add Userscript or Userstyle…") {
                     NotificationCenter.default.post(name: .wBlockAddUserScriptRequest, object: nil)
                 }
                 .keyboardShortcut("n", modifiers: [.command, .shift])
+                .disabled(appMode == .basic)
             }
             CommandGroup(after: .textEditing) {
                 Button("Search") {
                     NotificationCenter.default.post(name: .wBlockSearchRequest, object: nil)
                 }
                 .keyboardShortcut("l", modifiers: .command)
+                .disabled(appMode == .basic)
             }
             CommandGroup(before: .toolbar) {
                 Button("Filters") { post(.wBlockSelectTabRequest, 0) }
                     .keyboardShortcut("1", modifiers: .command)
-                Button("Userscripts") { post(.wBlockSelectTabRequest, 1) }
+                Button(appMode == .basic ? "Extras" : "Userscripts") { post(.wBlockSelectTabRequest, 1) }
                     .keyboardShortcut("2", modifiers: .command)
                 Button("Settings") { post(.wBlockSelectTabRequest, 2) }
                     .keyboardShortcut("3", modifiers: .command)
                 Divider()
                 Button("Show Enabled Only") { post(.wBlockToggleEnabledOnlyRequest) }
                     .keyboardShortcut("e", modifiers: [.command, .option])
+                    .disabled(appMode == .basic)
                 Button("Logs") { post(.wBlockShowLogsRequest) }
                     .keyboardShortcut("l", modifiers: [.command, .option])
                 #if os(macOS)

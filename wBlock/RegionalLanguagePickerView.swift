@@ -75,7 +75,7 @@ struct RegionalLanguagePickerView: View {
 /// the list as it opens and stay put while you tap, so rows never jump.
 /// iOS shows it in a sheet with a search bar; macOS in a popover with a
 /// search field on top, which closes when you click outside it.
-private struct RegionalLanguageList: View {
+struct RegionalLanguageList: View {
     @Binding var selectedLanguages: Set<String>
     let options: [RegionalLanguageOption]
 
