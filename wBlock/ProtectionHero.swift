@@ -26,11 +26,10 @@ extension SafariHealthMonitor {
 /// Safari extension status medallion shared by the Filters Hero and Onboarding
 /// Safari Setup.
 ///
-/// Shows a calm, ring-free shield medallion when healthy, paused, or applying
-/// (relying on native `ProgressView` in `ProtectionHero` while applying). Only
-/// draws the segmented `N`-arc ring when Safari extensions are partially or
-/// fully turned off, so progress toward turning them all on stays visible
-/// without leaving a ring-like spinner around the healthy state.
+/// Shows a calm soft-tinted shield medallion with a 1pt hairline edge when
+/// healthy, paused, or failed. Draws a flush 2.5pt progress stroke along the
+/// same perimeter while applying (zero extra height or layout shift), and a
+/// segmented `N`-arc ring only when Safari extensions are turned off.
 struct ExtensionStatusRing: View {
     let arcStates: [Bool]
     let isWelded: Bool
@@ -41,13 +40,14 @@ struct ExtensionStatusRing: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var gapDegrees: Double = 10
+    @State private var orbitAngle: Double = 0
 
     private var showsSegmentedRing: Bool {
-        status.isExtensionDegraded || (!isWelded && gapDegrees > 0.05)
+        status != .applying && (status.isExtensionDegraded || (!isWelded && gapDegrees > 0.05))
     }
 
     private var ringLineWidth: CGFloat { medallionSize >= 56 ? 2.5 : 2 }
-    private var innerDiscSize: CGFloat { showsSegmentedRing ? medallionSize - 11 : medallionSize }
+    private var innerDiscSize: CGFloat { showsSegmentedRing ? medallionSize - 10 : medallionSize }
     private var symbolSize: CGFloat { medallionSize * (24.0 / 56.0) }
     private var emerald: Color { Color(red: 0.16, green: 0.78, blue: 0.42) }
 
@@ -59,14 +59,18 @@ struct ExtensionStatusRing: View {
                 .overlay(
                     Circle()
                         .strokeBorder(
-                            status.tone.color.opacity(showsSegmentedRing ? 0 : 0.22),
+                            status.tone.color.opacity((showsSegmentedRing || status == .applying) ? 0 : 0.22),
                             lineWidth: 1
                         )
                 )
                 .frame(width: innerDiscSize, height: innerDiscSize)
 
-            // Segmented arc ring only while Safari extensions need attention
-            if showsSegmentedRing {
+            // Flush perimeter progress ring while applying (zero moat, zero height shift)
+            if case .applying = status {
+                applyingRingLayer
+                    .frame(width: medallionSize, height: medallionSize)
+            } else if showsSegmentedRing {
+                // Segmented arc ring only while Safari extensions need attention
                 SegmentedExtensionRingShapeLayer(
                     arcStates: arcStates.isEmpty ? Array(repeating: false, count: 5) : arcStates,
                     gapDegrees: gapDegrees,
@@ -85,6 +89,9 @@ struct ExtensionStatusRing: View {
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: showsSegmentedRing)
         .onAppear {
             gapDegrees = isWelded ? 0 : 10
+            if case .applying = status {
+                startApplyingOrbit()
+            }
         }
         .onChangeCompat(of: isWelded) { _, welded in
             if welded {
@@ -105,8 +112,36 @@ struct ExtensionStatusRing: View {
                 }
             }
         }
+        .onChangeCompat(of: status) { _, next in
+            if case .applying = next {
+                startApplyingOrbit()
+            }
+        }
         .modifier(WeldHapticModifier(trigger: weldCelebrationCount))
         .accessibilityHidden(true)
+    }
+
+    @ViewBuilder
+    private var applyingRingLayer: some View {
+        ZStack {
+            Circle()
+                .stroke(Color.accentColor.opacity(0.16), lineWidth: ringLineWidth)
+            if let applyProgress, applyProgress > 0 {
+                Circle()
+                    .trim(from: 0, to: max(0.05, min(1, CGFloat(applyProgress))))
+                    .stroke(Color.accentColor, style: StrokeStyle(lineWidth: ringLineWidth, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                    .animation(reduceMotion ? nil : .easeOut(duration: 0.2), value: applyProgress)
+            } else if reduceMotion {
+                Circle()
+                    .stroke(Color.accentColor.opacity(0.65), lineWidth: ringLineWidth)
+            } else {
+                Circle()
+                    .trim(from: 0, to: 0.28)
+                    .stroke(Color.accentColor, style: StrokeStyle(lineWidth: ringLineWidth, lineCap: .round))
+                    .rotationEffect(.degrees(-90 + orbitAngle))
+            }
+        }
     }
 
     @ViewBuilder
@@ -119,9 +154,16 @@ struct ExtensionStatusRing: View {
             icon
                 .contentTransition(.symbolEffect(.replace))
                 .symbolEffect(.bounce, value: weldCelebrationCount)
-                .symbolEffect(.pulse, options: .repeating, isActive: status == .applying && !reduceMotion)
         } else {
             icon
+        }
+    }
+
+    private func startApplyingOrbit() {
+        guard !reduceMotion else { return }
+        orbitAngle = 0
+        withAnimation(.linear(duration: 1.05).repeatForever(autoreverses: false)) {
+            orbitAngle = 360
         }
     }
 }
@@ -249,12 +291,8 @@ struct ProtectionHero: View {
                             medallionSize: 56
                         )
 
-                        VStack(spacing: 4) {
-                            HStack(spacing: 6) {
-                                if status == .applying {
-                                    ProgressView()
-                                        .controlSize(.small)
-                                }
+                        VStack(spacing: 2) {
+                            HStack(spacing: 4) {
                                 Text(status.title)
                                     .font(.title3.weight(.semibold))
                                     .foregroundStyle(.primary)
@@ -268,13 +306,6 @@ struct ProtectionHero: View {
                                 .foregroundStyle(.secondary)
                                 .multilineTextAlignment(.center)
                                 .fixedSize(horizontal: false, vertical: true)
-
-                            if status == .applying, let applyProgress, applyProgress > 0 {
-                                ProgressView(value: max(0.05, min(1, applyProgress)))
-                                    .progressViewStyle(.linear)
-                                    .frame(maxWidth: 160)
-                                    .padding(.top, 2)
-                            }
                         }
                     }
                     .frame(maxWidth: .infinity)
