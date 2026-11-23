@@ -546,6 +546,7 @@ struct ContentView: View {
                     RuleCapacityPopoverView(filterManager: filterManager)
                 }
                 #if os(iOS)
+                .navigationTitle("")
                 .navigationBarTitleDisplayMode(.inline)
                 #endif
                 .modifier(basicToolbar)
@@ -714,6 +715,7 @@ struct ContentView: View {
                 )
                 .modifier(basicToolbar)
                 #if os(iOS)
+                .navigationTitle("")
                 .navigationBarTitleDisplayMode(.inline)
                 #endif
             }

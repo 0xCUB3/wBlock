@@ -98,40 +98,39 @@ struct BasicFiltersView: View {
     }
 
     var body: some View {
-        ZStack(alignment: .top) {
-            ProtectionAtmosphereWash(tone: healthStatus.tone, scrollFade: atmosphereFade)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                heroSection
+                    .background(ScrollOffsetTracker())
 
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    heroSection
-                        .background(ScrollOffsetTracker())
+                coreTrioSection
 
-                    coreTrioSection
+                annoyancesSection
 
-                    annoyancesSection
+                moreSection
 
-                    moreSection
-
-                    footerSection
-                }
-                .padding(.horizontal, 16)
-                .padding(.top, 4)
-                .padding(.bottom, 28)
-                .frame(maxWidth: 680)
-                .frame(maxWidth: .infinity)
+                footerSection
             }
-            .coordinateSpace(name: "basicFiltersScroll")
-            .onPreferenceChange(BasicScrollOffsetKey.self) { offset in
-                scrollOffset = offset
-                onHeroVisibilityChange(offset < 110)
-            }
-            #if os(iOS)
-            .refreshable {
-                guard !filterManager.isLoading else { return }
-                await filterManager.checkForUpdates(scope: .filters, presentation: .refresh)
-            }
-            #endif
+            .padding(.horizontal, 16)
+            .padding(.top, 4)
+            .padding(.bottom, 28)
+            .frame(maxWidth: 680)
+            .frame(maxWidth: .infinity)
         }
+        .background(alignment: .top) {
+            ProtectionAtmosphereWash(tone: healthStatus.tone, scrollFade: atmosphereFade)
+        }
+        .coordinateSpace(name: "basicFiltersScroll")
+        .onPreferenceChange(BasicScrollOffsetKey.self) { offset in
+            scrollOffset = offset
+            onHeroVisibilityChange(offset < 110)
+        }
+        #if os(iOS)
+        .refreshable {
+            guard !filterManager.isLoading else { return }
+            await filterManager.checkForUpdates(scope: .filters, presentation: .refresh)
+        }
+        #endif
         .onAppear {
             if hasActiveStricterAnnoyance {
                 showStricterBlocking = true
@@ -388,15 +387,18 @@ struct BasicFiltersView: View {
 
                 stricterBlockingRow
 
-                if showStricterBlocking {
-                    VStack(spacing: 0) {
-                        ForEach(Array(stricter.enumerated()), id: \.element.id) { _, choice in
-                            Divider().padding(.leading, 56)
-                            annoyanceRow(choice)
+                VStack(spacing: 0) {
+                    if showStricterBlocking {
+                        VStack(spacing: 0) {
+                            ForEach(Array(stricter.enumerated()), id: \.element.id) { _, choice in
+                                Divider().padding(.leading, 56)
+                                annoyanceRow(choice)
+                            }
                         }
+                        .transition(.opacity.combined(with: .move(edge: .top)))
                     }
-                    .transition(.opacity.combined(with: .move(edge: .top)))
                 }
+                .clipped()
             }
             .clipped()
             .animation(.spring(response: 0.32, dampingFraction: 0.86), value: showStricterBlocking)
@@ -817,14 +819,6 @@ struct BasicBundlePeekView: View {
     @State private var showAllLists = false
     @Environment(\.dismiss) private var dismiss
 
-    private var ownedFilters: [FilterList] {
-        bundle.ownedFilters(in: filterManager.filterLists)
-    }
-
-    private var activeOwnedFilters: [FilterList] {
-        ownedFilters.filter(\.isSelected)
-    }
-
     private var scopedFilters: [FilterList] {
         FilterListPresentation.ordered(
             bundle.scopedFilters(in: filterManager.filterLists),
@@ -844,7 +838,7 @@ struct BasicBundlePeekView: View {
         }
         .scrollBounceBasedOnSizeCompat()
         .opaqueSheetBackgroundCompat()
-        .modifier(PeekSheetDetentsModifier())
+        .modifier(PeekSheetDetentsCompat(showAllLists: $showAllLists))
         #endif
     }
 
@@ -876,22 +870,43 @@ struct BasicBundlePeekView: View {
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
-            // Deliberate master switch
-            HStack {
-                Text("Enabled")
-                    .font(.body.weight(.medium))
-                    .foregroundStyle(.primary)
-                Spacer(minLength: 12)
-                Toggle("", isOn: Binding(
-                    get: { state != .off },
-                    set: { onToggle($0) }
-                ))
-                .labelsHidden()
-                .toggleStyle(.switch)
-                .fixedSize()
+            // Deliberate master switch (+ Reset to Recommended when customized)
+            VStack(spacing: 0) {
+                HStack {
+                    Text("Enabled")
+                        .font(.body.weight(.medium))
+                        .foregroundStyle(.primary)
+                    Spacer(minLength: 12)
+                    Toggle("", isOn: Binding(
+                        get: { state != .off },
+                        set: { onToggle($0) }
+                    ))
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+                    .fixedSize()
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+
+                if state == .partlyOn {
+                    Divider().padding(.leading, 12)
+                    Button {
+                        onResetToRecommended()
+                    } label: {
+                        HStack {
+                            Text("Reset to Recommended")
+                                .font(.subheadline.weight(.medium))
+                                .foregroundStyle(Color.accentColor)
+                            Spacer()
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 9)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .noFocusRingCompat()
+                }
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
             .background(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .fill(Color.primary.opacity(0.05))
@@ -915,42 +930,6 @@ struct BasicBundlePeekView: View {
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
-            }
-
-            if state == .partlyOn {
-                VStack(alignment: .leading, spacing: 8) {
-                    if !showAllLists {
-                        Text("Active lists")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                            .textCase(.uppercase)
-
-                        VStack(alignment: .leading, spacing: 4) {
-                            ForEach(activeOwnedFilters) { filter in
-                                HStack(spacing: 6) {
-                                    Circle()
-                                        .fill(Color.orange)
-                                        .frame(width: 6, height: 6)
-                                    Text(filter.localizedDisplayName)
-                                        .font(.caption)
-                                        .foregroundStyle(.primary)
-                                }
-                            }
-                        }
-                    }
-
-                    Button("Reset to Recommended") {
-                        onResetToRecommended()
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                }
-                .padding(12)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(Color.orange.opacity(0.09))
-                )
             }
 
             Divider()
@@ -981,12 +960,14 @@ struct BasicBundlePeekView: View {
                 .buttonStyle(.plain)
                 .noFocusRingCompat()
 
-                if showAllLists {
-                    inlineScopedLists
-                        .transition(.opacity.combined(with: .move(edge: .top)))
+                VStack(spacing: 0) {
+                    if showAllLists {
+                        inlineScopedLists
+                            .transition(.opacity.combined(with: .move(edge: .top)))
+                    }
                 }
+                .clipped()
             }
-            .clipped()
             .animation(.spring(response: 0.32, dampingFraction: 0.86), value: showAllLists)
         }
     }
@@ -1064,16 +1045,41 @@ struct BasicBundlePeekView: View {
 }
 
 #if os(iOS)
-private struct PeekSheetDetentsModifier: ViewModifier {
+private struct PeekSheetDetentsCompat: ViewModifier {
+    @Binding var showAllLists: Bool
+
     func body(content: Content) -> some View {
         if #available(iOS 16.0, *) {
-            content
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
-                .fittedFormSheetSizingCompat()
+            content.modifier(PeekSheetDetentsModifier(showAllLists: $showAllLists))
         } else {
             content
         }
+    }
+}
+
+@available(iOS 16.0, *)
+private struct PeekSheetDetentsModifier: ViewModifier {
+    @Binding var showAllLists: Bool
+    @State private var selectedDetent: PresentationDetent = .medium
+
+    func body(content: Content) -> some View {
+        content
+            .presentationDetents([.medium, .large], selection: $selectedDetent)
+            .presentationDragIndicator(.visible)
+            .onChangeCompat(of: showAllLists) { _, expanded in
+                let target: PresentationDetent = expanded ? .large : .medium
+                if selectedDetent != target {
+                    selectedDetent = target
+                }
+            }
+            .onChangeCompat(of: selectedDetent) { _, detent in
+                let shouldExpand = detent == .large
+                if showAllLists != shouldExpand {
+                    withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
+                        showAllLists = shouldExpand
+                    }
+                }
+            }
     }
 }
 #endif
