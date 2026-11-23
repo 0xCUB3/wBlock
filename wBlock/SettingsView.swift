@@ -1,3 +1,6 @@
+#if os(macOS)
+import AppKit
+#endif
 import SafariServices
 import SwiftUI
 import UniformTypeIdentifiers
@@ -790,9 +793,15 @@ struct SettingsView: View {
                         as? String ?? "Unknown"
                 )
             }
-            Link(destination: Self.faqURL) {
-                SettingsRowLabel("FAQ", systemImage: "questionmark.circle", accessory: .external)
+            aboutLinkRow("FAQ", systemImage: "questionmark.circle", destination: Self.faqURL)
+            #if os(macOS)
+            Button {
+                presentMacHelpAndSupportMenu()
+            } label: {
+                SettingsRowLabel("Help & Support", systemImage: "bubble.left", accessory: .popover)
             }
+            .buttonStyle(.plain)
+            #else
             Menu {
                 Button {
                     openURL(Self.reportIssueURL)
@@ -807,22 +816,60 @@ struct SettingsView: View {
             } label: {
                 SettingsRowLabel("Help & Support", systemImage: "bubble.left", accessory: .popover)
             }
-            #if os(macOS)
-            .menuStyle(.borderlessButton)
-            .menuIndicator(.hidden)
             #endif
             if appMode == .advanced {
-                Link(destination: Self.sourceCodeURL) {
-                    SettingsRowLabel("Source Code", systemImage: "chevron.left.forwardslash.chevron.right", accessory: .external)
-                }
+                aboutLinkRow("Source Code", systemImage: "chevron.left.forwardslash.chevron.right", destination: Self.sourceCodeURL)
             }
-            Link(destination: Self.privacyPolicyURL) {
-                SettingsRowLabel("Privacy Policy", systemImage: "hand.raised", accessory: .external)
-            }
+            aboutLinkRow("Privacy Policy", systemImage: "hand.raised", destination: Self.privacyPolicyURL)
         } header: {
             sectionHeader(.about)
         }
     }
+
+    @ViewBuilder
+    private func aboutLinkRow(_ title: LocalizedStringKey, systemImage: String, destination: URL) -> some View {
+        #if os(macOS)
+        Button {
+            openURL(destination)
+        } label: {
+            SettingsRowLabel(title, systemImage: systemImage, accessory: .external)
+        }
+        .buttonStyle(.plain)
+        #else
+        Link(destination: destination) {
+            SettingsRowLabel(title, systemImage: systemImage, accessory: .external)
+        }
+        #endif
+    }
+
+    #if os(macOS)
+    private func presentMacHelpAndSupportMenu() {
+        let menu = NSMenu()
+        menu.addItem(makeMacURLMenuItem(
+            title: String(localized: "Report an Issue"),
+            symbolName: "exclamationmark.triangle",
+            url: Self.reportIssueURL
+        ))
+        menu.addItem(makeMacURLMenuItem(
+            title: String(localized: "Discord"),
+            symbolName: "bubble.left",
+            url: Self.contactURL
+        ))
+        menu.popUp(positioning: nil, at: NSEvent.mouseLocation, in: nil)
+    }
+
+    private func makeMacURLMenuItem(title: String, symbolName: String, url: URL) -> NSMenuItem {
+        let item = NSMenuItem(
+            title: title,
+            action: #selector(MacURLMenuTarget.open(_:)),
+            keyEquivalent: ""
+        )
+        item.image = NSImage(systemSymbolName: symbolName, accessibilityDescription: nil)
+        item.representedObject = url
+        item.target = MacURLMenuTarget.shared
+        return item
+    }
+    #endif
 
     @ViewBuilder
     private var dangerZoneSection: some View {
@@ -1593,3 +1640,14 @@ private extension View {
         #endif
     }
 }
+
+#if os(macOS)
+private final class MacURLMenuTarget: NSObject {
+    static let shared = MacURLMenuTarget()
+
+    @objc func open(_ sender: NSMenuItem) {
+        guard let url = sender.representedObject as? URL else { return }
+        NSWorkspace.shared.open(url)
+    }
+}
+#endif

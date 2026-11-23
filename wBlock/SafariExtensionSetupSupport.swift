@@ -1,7 +1,9 @@
 import Foundation
 import SafariServices
 import wBlockCoreService
-#if os(iOS)
+#if os(macOS)
+import AppKit
+#elseif os(iOS)
 import UIKit
 #endif
 
@@ -10,7 +12,23 @@ enum SafariExtensionSetupSupport {
         let id: Int
         let name: String
         let bundleIdentifier: String
+        /// `nil` when Safari returned an error instead of a confirmed state.
+        let rawIsEnabled: Bool?
         let isEnabled: Bool
+
+        init(
+            id: Int,
+            name: String,
+            bundleIdentifier: String,
+            rawIsEnabled: Bool? = nil,
+            isEnabled: Bool? = nil
+        ) {
+            self.id = id
+            self.name = name
+            self.bundleIdentifier = bundleIdentifier
+            self.rawIsEnabled = rawIsEnabled
+            self.isEnabled = isEnabled ?? (rawIsEnabled ?? false)
+        }
     }
 
     #if os(macOS)
@@ -28,10 +46,10 @@ enum SafariExtensionSetupSupport {
         let targets = ContentBlockerTargetManager.shared.allTargets(forPlatform: platform)
         var results: [ContentBlockerSlotState] = []
         for target in targets {
-            let isEnabled: Bool = await withCheckedContinuation { continuation in
+            let rawIsEnabled: Bool? = await withCheckedContinuation { continuation in
                 SFContentBlockerManager.getStateOfContentBlocker(withIdentifier: target.bundleIdentifier) { state, error in
                     guard error == nil, let state = state else {
-                        continuation.resume(returning: false)
+                        continuation.resume(returning: nil)
                         return
                     }
                     continuation.resume(returning: state.isEnabled)
@@ -42,7 +60,7 @@ enum SafariExtensionSetupSupport {
                     id: target.slot,
                     name: target.displayName,
                     bundleIdentifier: target.bundleIdentifier,
-                    isEnabled: isEnabled
+                    rawIsEnabled: rawIsEnabled
                 )
             )
         }
@@ -60,7 +78,14 @@ enum SafariExtensionSetupSupport {
         #if os(macOS)
         SFSafariApplication.showPreferencesForExtension(
             withIdentifier: scriptsExtensionIdentifier
-        ) { _ in }
+        ) { error in
+            guard error != nil else { return }
+            DispatchQueue.main.async {
+                if let safariURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.Safari") {
+                    NSWorkspace.shared.openApplication(at: safariURL, configuration: NSWorkspace.OpenConfiguration())
+                }
+            }
+        }
         #elseif os(iOS)
         if #available(iOS 26.2, *) {
             SFSafariSettings.openExtensionsSettings(

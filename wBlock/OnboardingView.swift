@@ -67,6 +67,20 @@ struct OnboardingView: View {
     private static let englishLanguageCode = "en"
     private static let otherLanguagesCode = "other"
 
+    #if os(iOS)
+    private static let iosAppIconImage: UIImage? = {
+        guard
+            let icons = Bundle.main.infoDictionary?["CFBundleIcons"] as? [String: Any],
+            let primary = icons["CFBundlePrimaryIcon"] as? [String: Any],
+            let files = primary["CFBundleIconFiles"] as? [String],
+            let iconName = files.last
+        else {
+            return nil
+        }
+        return UIImage(named: iconName)
+    }()
+    #endif
+
     // Helper to look up canonical filter metadata from filterManager instead of loading separately
     private func foreignFilterMetadata(for url: String) -> FilterList? {
         filterManager.filterLists.first { $0.url.absoluteString == url && $0.category == .foreign }
@@ -516,11 +530,22 @@ struct OnboardingView: View {
                     .scaledToFit()
                     .frame(width: 56, height: 56)
                 #else
-                Image("AppIcon")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 60, height: 60)
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                if let appIcon = Self.iosAppIconImage {
+                    Image(uiImage: appIcon)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 60, height: 60)
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5)
+                        )
+                } else {
+                    Image(systemName: "shield.lefthalf.filled")
+                        .font(.system(size: 44))
+                        .foregroundStyle(Color.accentColor)
+                        .symbolRenderingMode(.hierarchical)
+                }
                 #endif
 
                 VStack(spacing: 4) {

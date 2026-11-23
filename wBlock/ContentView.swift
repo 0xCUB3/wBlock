@@ -357,9 +357,9 @@ struct ContentView: View {
         .onChangeCompat(of: scenePhase) { _, newPhase in
             safariHealth.setSceneActive(newPhase == .active)
         }
-        .onChangeCompat(of: appMode) { _, _ in
+        .onChangeCompat(of: appMode) { _, newMode in
             clearFilterPopoverSelections()
-            filterManager.flushBasicAutoApplyIfNeeded()
+            filterManager.flushBasicAutoApplyIfNeeded(includeUnqueued: newMode == .basic)
         }
         .sheet(isPresented: $showingHealthDetail) {
             SafariHealthDetailView(

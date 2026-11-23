@@ -372,10 +372,23 @@ final class SafariHealthMonitor: ObservableObject {
             ? await SafariExtensionSetupSupport.scriptsExtensionEnabledState()
             : nil
 
-        blockerSlots = slots
+        // Transient Safari XPC errors return `rawIsEnabled == nil`; preserve
+        // each slot's last known state instead of falsely marking it off.
+        let previousByID = Dictionary(uniqueKeysWithValues: blockerSlots.map { ($0.id, $0.isEnabled) })
+        let resolvedSlots = slots.map { slot in
+            SafariExtensionSetupSupport.ContentBlockerSlotState(
+                id: slot.id,
+                name: slot.name,
+                bundleIdentifier: slot.bundleIdentifier,
+                rawIsEnabled: slot.rawIsEnabled,
+                isEnabled: slot.rawIsEnabled ?? previousByID[slot.id] ?? false
+            )
+        }
+
+        blockerSlots = resolvedSlots
         var next = hysteresis
         next.record(
-            blockerStates: slots.map(\.isEnabled),
+            blockerStates: resolvedSlots.map(\.isEnabled),
             rawScriptsEnabled: rawScripts,
             isScriptsStateKnowable: isScriptsStateKnowable
         )
