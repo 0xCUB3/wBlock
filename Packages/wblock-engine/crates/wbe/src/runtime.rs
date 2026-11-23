@@ -21,8 +21,8 @@ pub struct Engine {
     /// Page exceptions, as `page_exception` writes them.
     pages: Scriptlets,
     /// Popup and page call regexes, compiled when a URL first contains their literal.
-    popup_regexes: RefCell<HashMap<u32, Option<regex::Regex>>>,
-    page_regexes: RefCell<HashMap<u32, Option<regex::Regex>>>,
+    popup_regexes: RefCell<HashMap<u32, Option<regex::bytes::Regex>>>,
+    page_regexes: RefCell<HashMap<u32, Option<regex::bytes::Regex>>>,
 }
 
 /// Cosmetic actions for one page URL.
@@ -58,18 +58,32 @@ struct Scriptlets {
     patterns: Vec<String>,
     /// Compiled on the first lookup that needs it, so opening an engine that
     /// answers no regex domain compiles no DFAs.
-    regexes: OnceLock<regex::RegexSet>,
+    regexes: OnceLock<regex::bytes::RegexSet>,
     // Global calls are consulted on every lookup; their scopes are decoded on
     // the first, so an engine that only answers pages never decodes popups'.
     generic_rules: OnceLock<Vec<(u32, Box<[String]>)>>,
     /// Whether any key is `name>>`; a subframe lookup tries ancestor keys only then.
-    ancestors: OnceLock<bool>,
+    ancestors: bool,
+}
+
+fn build_regex(pattern: &str, case_insensitive: bool) -> Result<regex::bytes::Regex, regex::Error> {
+    regex::bytes::RegexBuilder::new(pattern)
+        .case_insensitive(case_insensitive)
+        .unicode(false)
+        .build()
+        .or_else(|_| regex::bytes::RegexBuilder::new(pattern).case_insensitive(case_insensitive).build())
 }
 
 impl Scriptlets {
-    fn regexes(&self) -> &regex::RegexSet {
+    fn regexes(&self) -> &regex::bytes::RegexSet {
         // The patterns were validated when the engine was built.
-        self.regexes.get_or_init(|| regex::RegexSet::new(&self.patterns).unwrap_or_else(|_| regex::RegexSet::empty()))
+        self.regexes.get_or_init(|| {
+            regex::bytes::RegexSetBuilder::new(&self.patterns)
+                .unicode(false)
+                .build()
+                .or_else(|_| regex::bytes::RegexSet::new(&self.patterns))
+                .unwrap_or_else(|_| regex::bytes::RegexSet::empty())
+        })
     }
 }
 
@@ -80,7 +94,7 @@ struct ScriptletRules {
     index: HashMap<Vec<String>, u32>,
     rules: BTreeMap<String, Vec<(u32, Vec<String>)>>,
     exceptions: BTreeMap<String, Vec<Option<u32>>>,
-    regexes: HashMap<String, regex::Regex>,
+    regexes: HashSet<String>,
 }
 
 impl ScriptletRules {
@@ -90,9 +104,12 @@ impl ScriptletRules {
     fn add_filter(&mut self, exception: bool, mut domains: DomainList, call: Vec<String>) {
         let exclude = std::mem::take(&mut domains.exclude);
         if !exception && !exclude.is_empty() {
-            self.add(true, DomainList { include: exclude.clone(), exclude: Vec::new() }, call.clone());
+            self.register(&exclude);
+            if exclude.iter().any(|m| matches!(m, DomainMatcher::Regex(r) if !self.regexes.contains(r))) {
+                return;
+            }
+            self.add(true, DomainList { include: exclude, exclude: Vec::new() }, call.clone());
         }
-        if !exception { domains.exclude = exclude; }
         self.add(exception, domains, call);
     }
 
@@ -100,10 +117,8 @@ impl ScriptletRules {
     fn register<'a>(&mut self, matchers: impl IntoIterator<Item = &'a DomainMatcher>) {
         for matcher in matchers {
             if let DomainMatcher::Regex(pattern) = matcher {
-                if !self.regexes.contains_key(pattern) {
-                    if let Ok(regex) = regex::Regex::new(pattern) {
-                        self.regexes.insert(pattern.clone(), regex);
-                    }
+                if !self.regexes.contains(pattern) && build_regex(pattern, false).is_ok() {
+                    self.regexes.insert(pattern.clone());
                 }
             }
         }
@@ -124,7 +139,7 @@ impl ScriptletRules {
         // An exclusion is the host key it matches; an invalid regex one is
         // `""`, which every host has, so it never widens a rule.
         let exclude: Vec<String> = domains.exclude.iter().map(|m| match m {
-            DomainMatcher::Regex(r) if !self.regexes.contains_key(r) => String::new(),
+            DomainMatcher::Regex(r) if !self.regexes.contains(r) => String::new(),
             m => key(m),
         }).collect();
         for k in keys {
@@ -137,6 +152,7 @@ impl ScriptletRules {
     }
 
     fn finish(self) -> Scriptlets {
+        let ancestors = self.rules.keys().chain(self.exceptions.keys()).any(|k| k.ends_with(">>"));
         let rules = Table::encode(self.rules.iter().map(|(k, rules)| {
             let mut value = Vec::new();
             put_varint(&mut value, rules.len());
@@ -148,8 +164,8 @@ impl ScriptletRules {
         }));
         Scriptlets {
             generic_rules: OnceLock::new(),
-            ancestors: OnceLock::new(),
-            patterns: self.regexes.into_keys().collect(),
+            ancestors,
+            patterns: self.regexes.into_iter().collect(),
             regexes: OnceLock::new(),
             calls: Table::encode(self.calls.iter().map(|call| {
                 let mut value = Vec::new();
@@ -363,8 +379,10 @@ impl Scriptlets {
     /// `host_keys`, and `/regex/` for each regex domain `host` matches.
     fn keys(&self, host: &str) -> Vec<String> {
         let mut keys = host_keys(host);
-        let regexes = self.regexes();
-        keys.extend(regexes.matches(host).iter().map(|i| format!("/{}/", regexes.patterns()[i])));
+        if !self.patterns.is_empty() {
+            let regexes = self.regexes();
+            keys.extend(regexes.matches(host.as_bytes()).iter().map(|i| format!("/{}/", regexes.patterns()[i])));
+        }
         keys
     }
 
@@ -405,8 +423,7 @@ impl Scriptlets {
     /// `top`, the host of a subframe's top page, also selects `name>>` rules.
     fn lookup(&self, host: &str, top: Option<&str>, site_cosmetic: bool, generic_hides: bool) -> Vec<Vec<&str>> {
         let mut keys = self.keys(host);
-        if let Some(top) = top.filter(|_| *self.ancestors.get_or_init(|| [&self.rules, &self.exceptions].iter()
-            .any(|t| (0..t.len()).any(|i| t.key_value(i).0.ends_with(b">>"))))) {
+        if let Some(top) = top.filter(|_| self.ancestors) {
             keys.extend(host_keys(top).into_iter().skip(1).map(|k| k + ">>"));
         }
         let (ids, excepted, all_scriptlets_excepted) = self.ids_for(&keys, site_cosmetic, generic_hides);
@@ -564,6 +581,7 @@ impl Engine {
             for table in [&index.calls, &index.rules, &index.exceptions] { put(&mut out, table.bytes()); }
             let patterns: std::collections::BTreeSet<_> = index.patterns.iter().collect();
             put(&mut out, &serde_json::to_vec(&patterns).expect("regex patterns serialize"));
+            out.push(u8::from(index.ancestors));
         }
         out
     }
@@ -586,22 +604,32 @@ impl Engine {
     fn load(blob: Arc<Blob>, offset: usize) -> Result<Self, String> {
         let bytes = &blob[..];
         let mut at = offset;
-        let mut take = || -> Result<Range<usize>, String> {
-            let len = bytes
-                .get(at..at + 4)
-                .map(|w| u32::from_le_bytes(w.try_into().unwrap()) as usize)
-                .ok_or("engine: truncated")?;
-            let section = at + 4..at + 4 + len;
-            bytes.get(section.clone()).ok_or("engine: truncated")?;
-            at = section.end;
-            Ok(section)
-        };
         let mut index = || -> Result<Scriptlets, String> {
+            let mut take = || -> Result<Range<usize>, String> {
+                let len = bytes
+                    .get(at..at + 4)
+                    .map(|w| u32::from_le_bytes(w.try_into().unwrap()) as usize)
+                    .ok_or("engine: truncated")?;
+                let section = at + 4..at + 4 + len;
+                bytes.get(section.clone()).ok_or("engine: truncated")?;
+                at = section.end;
+                Ok(section)
+            };
             let (calls, rules, exceptions) = (Table::parse(&blob, take()?)?, Table::parse(&blob, take()?)?, Table::parse(&blob, take()?)?);
             let patterns = serde_json::from_slice::<Vec<String>>(&bytes[take()?]).map_err(|e| e.to_string())?;
-            Ok(Scriptlets { calls, generic_rules: OnceLock::new(), ancestors: OnceLock::new(), rules, exceptions, patterns, regexes: OnceLock::new() })
+            let ancestors = match bytes.get(at) {
+                Some(0) => false,
+                Some(1) => true,
+                Some(_) => return Err("engine: malformed ancestors".into()),
+                None => return Err("engine: truncated".into()),
+            };
+            at += 1;
+            Ok(Scriptlets { calls, generic_rules: OnceLock::new(), ancestors, rules, exceptions, patterns, regexes: OnceLock::new() })
         };
         let (scriptlets, popups, pages) = (index()?, index()?, index()?);
+        if at != bytes.len() {
+            return Err("engine: trailing bytes".into());
+        }
         Ok(Self { scriptlets, popups, pages, popup_regexes: Default::default(), page_regexes: Default::default() })
     }
 
@@ -623,8 +651,8 @@ impl Engine {
             if !to.is_empty() && !to.split('\n').any(has) || !not_to.is_empty() && not_to.split('\n').any(has) { continue; }
             if pattern != ".*" {
                 if !needle.split_first().is_none_or(|(first, rest)| memchr::memchr_iter(*first, lowered.as_bytes()).any(|i| lowered.as_bytes()[i + 1..].starts_with(rest))) { continue; }
-                let regex = regexes.entry(id).or_insert_with(|| regex::RegexBuilder::new(pattern).case_insensitive(case != b"1").build().ok());
-                if !regex.as_ref().is_some_and(|r| r.is_match(url)) { continue; }
+                let regex = regexes.entry(id).or_insert_with(|| build_regex(pattern, case != b"1").ok());
+                if !regex.as_ref().is_some_and(|r| r.is_match(url.as_bytes())) { continue; }
             }
             scope |= bits;
         }
@@ -705,8 +733,8 @@ impl Engine {
             // nearly all of them first.
             if !party_ok || !needle.split_first().is_none_or(|(first, rest)| memchr::memchr_iter(*first, lowered.as_bytes()).any(|i| lowered.as_bytes()[i + 1..].starts_with(rest))) { continue; }
             let Some(pattern) = call.str() else { continue };
-            let regex = regexes.entry(id).or_insert_with(|| regex::RegexBuilder::new(pattern).case_insensitive(match_case != b'1').build().ok());
-            if !regex.as_ref().is_some_and(|r| r.is_match(target)) { continue; }
+            let regex = regexes.entry(id).or_insert_with(|| build_regex(pattern, match_case != b'1').ok());
+            if !regex.as_ref().is_some_and(|r| r.is_match(target.as_bytes())) { continue; }
             match (allows == b'1', important == b'1') {
                 (false, false) => block |= !(genericblock && generic == b'1'),
                 (true, false) => allow = true,
@@ -1386,6 +1414,10 @@ example.com##+js(set-constant, adsEnabled, false)
         let empty = Engine::deserialize(&Engine::build(&[]).serialize()).unwrap();
         assert!(empty.lookup("https://site1.example/").scriptlets.is_empty());
         assert!(Engine::deserialize(&bytes[..bytes.len() - 1]).is_err());
+        let mut bad = bytes.clone();
+        *bad.last_mut().unwrap() = 2;
+        assert!(Engine::deserialize(&bad).is_err());
+        assert!(Engine::deserialize(&[bytes.as_slice(), &[0]].concat()).is_err());
     }
 
     #[test]
@@ -1411,6 +1443,8 @@ example.com##+js(set-constant, adsEnabled, false)
         let set = call(&["set-constant", "a", "1"]);
         assert_eq!(calls(&[r"/example\.com$/##+js(set, a, 1)"], "https://www.example.com/"), [set.clone()]);
         assert!(calls(&[r"/example\.com$/##+js(set, a, 1)"], "https://other.com/").is_empty());
+        assert_eq!(calls(&[r"/^[^.]+\.example\..+$/##+js(set, a, 1)"], "https://sub.example.org/"), [set.clone()]);
+        assert!(calls(&[r"/^[^.]+\.example\..+$/##+js(set, a, 1)"], "https://example.org/").is_empty());
         // uBO ignores the negated hostnames of an exception (uBlock#3375): it
         // covers all of example.com, and one with only negated hostnames is
         // dropped for scriptlets but global for cosmetics.
@@ -1427,10 +1461,13 @@ example.com##+js(set-constant, adsEnabled, false)
         // uBO compiles `~foo.example.com` as an exception on that host
         // (scriptlet-filtering-core.js, cosmetic-filtering.js).
         let rules = lines("~foo.example.com,example.com##+js(aopr, x)\nfoo.example.com##+js(aopr, x)\nexample.com##+js(aopr, y)\n~foo.example.com,example.com##.a\nfoo.example.com##.a\n");
-        let page = Engine::build(&rules).lookup("https://foo.example.com/");
+        let engine = Engine::build(&rules);
+        let page = engine.lookup("https://foo.example.com/");
         assert_eq!(page.scriptlets, [call(&["abort-on-property-read", "y"])]);
         assert!(page.hide.is_empty());
-        assert_eq!(Engine::build(&rules).lookup("https://example.com/").hide, [".a"]);
+        assert_eq!(engine.lookup("https://example.com/").hide, [".a"]);
+        assert!(engine.scriptlets.rules.rules("example.com").iter().all(|(_, ex)| ex.is_empty()));
+        assert!(calls(&["~/[invalid/##+js(aopr, x)"], "https://example.com/").is_empty());
         // A network filter's negated domain only narrows it.
         let popups = "||ads.example^$popup,domain=~foo.example.com\n||ads.example^$popup,domain=foo.example.com\n";
         assert!(popup_blocked(popups, "https://foo.example.com/", "https://ads.example/"));
