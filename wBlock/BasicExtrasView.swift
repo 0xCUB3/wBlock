@@ -20,13 +20,13 @@ struct BasicExtrasView: View {
     }
 
     private var activeLanguageCodes: Set<String> {
-        let stored = Self.sharedDefaults.stringArray(forKey: OnboardingView.selectedLanguagesDefaultsKey) ?? []
-        if !stored.isEmpty {
-            return Set(stored.map { $0.lowercased() })
-        }
-        return Set(Locale.preferredLanguages.compactMap {
+        var codes = Set(Locale.preferredLanguages.compactMap {
             Locale(identifier: $0).languageCode?.lowercased()
         })
+        if let stored = Self.sharedDefaults.stringArray(forKey: OnboardingView.selectedLanguagesDefaultsKey) {
+            codes.formUnion(stored.map { $0.lowercased() })
+        }
+        return codes
     }
 
     private func featuredScripts(in group: BuiltInUserScriptBasicGroup) -> [UserScript] {

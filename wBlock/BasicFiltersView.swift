@@ -770,7 +770,9 @@ struct BasicFiltersView: View {
     }
 
     private func applyLanguageSelection(_ languages: Set<String>) {
-        let normalized = Set(languages.map(RegionalLanguageOption.canonicalCode))
+        let regionalOptionCodes = Set(languageOptions.map(\.code))
+        let preservedNonRegional = storedLanguageCodes.filter { !regionalOptionCodes.contains($0) }
+        let normalized = Set(languages.map(RegionalLanguageOption.canonicalCode)).union(preservedNonRegional)
         storedLanguageCodes = normalized
         Self.sharedDefaults.set(Array(normalized).sorted(), forKey: OnboardingView.selectedLanguagesDefaultsKey)
 
