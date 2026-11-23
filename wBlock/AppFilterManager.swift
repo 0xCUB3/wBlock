@@ -393,16 +393,16 @@ class AppFilterManager: ObservableObject {
     /// if another toggle lands while an apply is already in flight).
     func scheduleBasicAutoApply() {
         guard !pausedComponents.contains(.filters) else { return }
+        if isApplyInFlight || isLoading {
+            needsFollowUpBasicApply = true
+            hasQueuedBasicAutoApply = true
+            return
+        }
         if !hasUnappliedChanges {
             autoApplyTask?.cancel()
             autoApplyTask = nil
             hasQueuedBasicAutoApply = false
             needsFollowUpBasicApply = false
-            return
-        }
-        if isApplyInFlight || isLoading {
-            needsFollowUpBasicApply = true
-            hasQueuedBasicAutoApply = true
             return
         }
         hasQueuedBasicAutoApply = true
@@ -433,11 +433,12 @@ class AppFilterManager: ObservableObject {
         autoApplyTask?.cancel()
         autoApplyTask = nil
         hasQueuedBasicAutoApply = false
-        guard hasUnappliedChanges, !pausedComponents.contains(.filters) else { return }
+        guard !pausedComponents.contains(.filters) else { return }
         if isApplyInFlight || isLoading {
             needsFollowUpBasicApply = true
             return
         }
+        guard hasUnappliedChanges else { return }
         Task { @MainActor [weak self] in
             guard let self else { return }
             await self.performFilterUpdate(showProgress: false, checkForUpdates: false, downloadMissing: true)
