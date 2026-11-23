@@ -131,6 +131,19 @@ struct IncludeResolverURLEncodingTests {
             await fetched.record(url)
         })
         let listURL = URL(string: "https://example.com/filters/Foo.txt")!
+        let plain = "! Title: Test\n!#safari_cb_affinity(general)\n||a.example^\n!#if_not_directive\n"
+        let preprocessingCases = [
+            (plain, plain),
+            ("||a.example^\r\n||b.example^", "||a.example^\n\n||b.example^"),
+            ("||a.example^\n!#if\u{00a0}", "||a.example^"),
+            ("\u{00a0}!#if false\n||drop.example^\n!#endif\n||keep.example^", "||keep.example^"),
+        ]
+        for (content, expected) in preprocessingCases {
+            let result = await preprocessor.preprocess(content: content, listURL: listURL)
+            guard result.utf8.elementsEqual(expected.utf8) else {
+                fail("preprocessing \(content.debugDescription) got \(result.debugDescription), expected \(expected.debugDescription)")
+            }
+        }
         _ = await preprocessor.preprocess(content: "!#include foo.txt\n!#include Foo.txt", listURL: listURL)
         let requests = await fetched.urls
         guard requests == ["https://example.com/filters/foo.txt"] else {
