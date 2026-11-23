@@ -110,6 +110,7 @@ extension AppFilterManager {
             } else {
                 applyProgressViewModel.presentReview()
                 showingApplyProgressSheet = true
+                Haptics.play(.found)
                 statusDescription = LocalizedStrings.format(
                     "Found %d update(s) available.",
                     comment: "Updates found status",
@@ -122,6 +123,7 @@ extension AppFilterManager {
             } else {
                 showingNoUpdatesAlert = true
             }
+            Haptics.play(.upToDate)
             statusDescription = LocalizedStrings.text("No updates available.", comment: "No updates status")
             Task {
                 await ConcurrentLogManager.shared.info(
@@ -180,7 +182,7 @@ extension AppFilterManager {
         showProgressSheet: Bool = true
     ) async {
         let started = await performExclusiveApply {
-            self.prepareApplyRunState()
+            self.prepareApplyRunState(announcesOutcome: true)
             self.showingApplyProgressSheet = showProgressSheet
 
             let downloadingStatus = LocalizedStrings.text(

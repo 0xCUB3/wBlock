@@ -909,6 +909,7 @@ struct BasicBundlePeekView: View {
                 if state == .partlyOn {
                     Divider().padding(.leading, 12)
                     Button {
+                        Haptics.play(.tap)
                         onResetToRecommended()
                     } label: {
                         HStack {

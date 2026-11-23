@@ -117,7 +117,9 @@ struct ExtensionStatusRing: View {
                 startApplyingOrbit()
             }
         }
-        .modifier(WeldHapticModifier(trigger: weldCelebrationCount))
+        .onChangeCompat(of: weldCelebrationCount) { _, _ in
+            Haptics.play(.success)
+        }
         .accessibilityHidden(true)
     }
 
@@ -214,22 +216,6 @@ private struct ExtensionArcShape: Shape {
             clockwise: false
         )
         return path
-    }
-}
-
-private struct WeldHapticModifier: ViewModifier {
-    let trigger: Int
-
-    func body(content: Content) -> some View {
-        #if os(iOS)
-        if #available(iOS 17.0, *) {
-            content.sensoryFeedback(.success, trigger: trigger)
-        } else {
-            content
-        }
-        #else
-        content
-        #endif
     }
 }
 

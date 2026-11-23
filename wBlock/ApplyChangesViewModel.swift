@@ -111,6 +111,9 @@ private extension ClosedRange where Bound == Double {
 @MainActor
 class ApplyChangesViewModel: ObservableObject {
     @Published private(set) var state = ApplyChangesState()
+    /// Armed only for user-initiated runs so background auto-updates, sync,
+    /// and pause/resume runs stay silent when their apply finishes.
+    var announcesOutcome = false
 
     // MARK: - Public API expected by AppFilterManager
 
@@ -129,6 +132,7 @@ class ApplyChangesViewModel: ObservableObject {
 
     /// Clears a progress run that never started or aborted before applying.
     func cancelProgressRun() {
+        announcesOutcome = false
         state = ApplyChangesState(mode: .result, isLoading: false)
     }
 
@@ -268,6 +272,7 @@ class ApplyChangesViewModel: ObservableObject {
 
         // Never let a finished run overwrite a hard failure (e.g. advanced engine publish failed).
         if state.mode == .failed {
+            announcesOutcome = false
             if let statusMessage, !statusMessage.isEmpty {
                 state.statusMessage = statusMessage
             }
@@ -280,6 +285,10 @@ class ApplyChangesViewModel: ObservableObject {
         state.resultWarning = resultWarning ?? ""
         if let statusMessage, !statusMessage.isEmpty {
             state.statusMessage = statusMessage
+        }
+        if announcesOutcome {
+            Haptics.play(state.resultNeedsAttention ? .warning : .success)
+            announcesOutcome = false
         }
     }
 
@@ -294,6 +303,10 @@ class ApplyChangesViewModel: ObservableObject {
             var phases = state.phases
             phases[activeIndex].status = .failed
             state.phases = phases
+        }
+        if announcesOutcome {
+            Haptics.play(.failure)
+            announcesOutcome = false
         }
     }
 

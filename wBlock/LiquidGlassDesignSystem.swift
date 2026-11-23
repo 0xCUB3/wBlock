@@ -81,7 +81,14 @@ struct ListActionsToolbar<Primary: View, Apply: View, Leading: View>: ViewModifi
 
     /// A button-style toggle, so the system draws the selected state.
     private var filter: some View {
-        Toggle(isOn: $showEnabledOnly) {
+        Toggle(isOn: Binding(
+            get: { showEnabledOnly },
+            set: { newValue in
+                guard newValue != showEnabledOnly else { return }
+                showEnabledOnly = newValue
+                Haptics.play(.toggle)
+            }
+        )) {
             Label("Show Enabled Only", systemImage: "line.3.horizontal.decrease")
         }
         .toggleStyle(.button)

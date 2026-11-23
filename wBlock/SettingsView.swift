@@ -115,6 +115,11 @@ struct SettingsView: View {
         } message: {
             Text(backupStatusMessage ?? "")
         }
+        .onChangeCompat(of: showingBackupStatus) { _, shown in
+            if shown {
+                Haptics.play(.failure)
+            }
+        }
         .fileImporter(
             isPresented: $showingImportDialog,
             allowedContentTypes: [.json],
@@ -131,6 +136,7 @@ struct SettingsView: View {
         ) { result in
             switch result {
             case .success:
+                Haptics.play(.success)
                 Task { await ConcurrentLogManager.shared.operation("settings-export", fields: ["result": "saved"]) }
             case .failure(let error):
                 let failure = error as NSError
@@ -1576,12 +1582,19 @@ struct PauseBlockingButton: View {
     @ObservedObject var filterManager: AppFilterManager
     var allowsComponentMenu: Bool = true
 
+    private func toggle(isPaused: Bool) {
+        if !isPaused {
+            Haptics.play(.paused)
+        }
+        Task { await filterManager.setBlockingPaused(!isPaused) }
+    }
+
     var body: some View {
         let isPaused = !filterManager.pausedComponents.isEmpty
         let title: LocalizedStringKey = isPaused ? "Resume Blocking" : "Pause Blocking"
         #if os(macOS)
         return Button {
-            Task { await filterManager.setBlockingPaused(!isPaused) }
+            toggle(isPaused: isPaused)
         } label: {
             Label(title, systemImage: isPaused ? "pause.circle.fill" : "pause.circle")
         }
@@ -1594,7 +1607,7 @@ struct PauseBlockingButton: View {
             } label: {
                 Label(title, systemImage: isPaused ? "pause.circle.fill" : "pause.circle")
             } primaryAction: {
-                Task { await filterManager.setBlockingPaused(!isPaused) }
+                toggle(isPaused: isPaused)
             }
             // A tap pauses or resumes; a long press opens the menu.
             .menuIndicator(.hidden)
@@ -1602,7 +1615,7 @@ struct PauseBlockingButton: View {
             .disabled(filterManager.isReloadBusy)
         } else {
             Button {
-                Task { await filterManager.setBlockingPaused(!isPaused) }
+                toggle(isPaused: isPaused)
             } label: {
                 Label(title, systemImage: isPaused ? "pause.circle.fill" : "pause.circle")
             }

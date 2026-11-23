@@ -1225,7 +1225,7 @@ struct OnboardingView: View {
         dismiss()
         NotificationCenter.default.post(name: .wBlockSelectTabRequest, object: 0)
         NotificationCenter.default.post(name: .wBlockScrollFiltersToTopRequest, object: nil)
-        filterManager.checkAndEnableFilters(forceReload: true)
+        filterManager.checkAndEnableFilters(forceReload: true, announcesOutcome: true)
     }
 
     private func applyOnboardingChoices() async {

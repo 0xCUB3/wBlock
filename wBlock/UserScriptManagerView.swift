@@ -1899,6 +1899,12 @@ struct AddUserScriptView: View {
         }
     }
 
+    private func finishAdding() {
+        Haptics.play(.success)
+        onScriptAdded()
+        dismiss()
+    }
+
     private func submit() {
         switch addMode {
         case .url:
@@ -1925,6 +1931,7 @@ struct AddUserScriptView: View {
                         await MainActor.run {
                             urlImportError = message
                             isAdding = false
+                            Haptics.play(.failure)
                         }
                         return
                     }
@@ -1933,8 +1940,7 @@ struct AddUserScriptView: View {
 
                 await MainActor.run {
                     isAdding = false
-                    onScriptAdded()
-                    dismiss()
+                    finishAdding()
                 }
             }
         case .text:
@@ -1959,12 +1965,12 @@ struct AddUserScriptView: View {
                     await MainActor.run {
                         fileImportError = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
                         isAdding = false
+                        Haptics.play(.failure)
                     }
                 } else {
                     await MainActor.run {
                         isAdding = false
-                        onScriptAdded()
-                        dismiss()
+                        finishAdding()
                     }
                 }
             }
@@ -2021,14 +2027,14 @@ struct AddUserScriptView: View {
                 await MainActor.run {
                     editorImportError = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
                     isAdding = false
+                    Haptics.play(.failure)
                 }
             } else {
                 await ConcurrentLogManager.shared.info(.userScript, LocalizedStrings.text("Added userscript from editor"))
 
                 await MainActor.run {
                     isAdding = false
-                    onScriptAdded()
-                    dismiss()
+                    finishAdding()
                 }
             }
         }

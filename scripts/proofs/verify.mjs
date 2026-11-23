@@ -357,6 +357,7 @@ try {
     "wBlock/CloudSyncRemoteUserScriptSync.swift",
     "wBlock/CloudSyncUserScriptSync.swift",
     "wBlock/ApplyChangesViewModel.swift",
+    "wBlock/Haptics.swift",
     "wBlock/InfoPresentation.swift",
     "scripts/proofs/PolicyProbe.swift",
   ];

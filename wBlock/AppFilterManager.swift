@@ -399,7 +399,11 @@ class AppFilterManager: ObservableObject {
 
     /// `delay` is in seconds; a list handover applies at once so its new lists
     /// do not sit undownloaded behind the edit debounce.
-    func scheduleAutoApplyDebounce(delay: UInt64 = 60, showProgress: Bool = true) {
+    func scheduleAutoApplyDebounce(
+        delay: UInt64 = 60,
+        showProgress: Bool = true,
+        announcesOutcome: Bool = false
+    ) {
         autoApplyTask?.cancel()
         autoApplyTask = Task { @MainActor [weak self] in
             try? await Task.sleep(nanoseconds: delay * 1_000_000_000)
@@ -418,7 +422,12 @@ class AppFilterManager: ObservableObject {
             else { return }
             // Applying pending edits must not double as an update check; only explicit
             // updates and the auto-update scheduler refresh lists already on disk.
-            await self.performFilterUpdate(showProgress: showProgress, checkForUpdates: false, downloadMissing: true)
+            await self.performFilterUpdate(
+                showProgress: showProgress,
+                checkForUpdates: false,
+                downloadMissing: true,
+                announcesOutcome: announcesOutcome
+            )
         }
     }
 
@@ -429,6 +438,8 @@ class AppFilterManager: ObservableObject {
         if isApplyInFlight || isLoading {
             needsFollowUpBasicApply = true
             hasQueuedBasicAutoApply = true
+            // Only the final apply in a chain should buzz.
+            applyProgressViewModel.announcesOutcome = false
             return
         }
         if !hasUnappliedChanges {
@@ -439,7 +450,7 @@ class AppFilterManager: ObservableObject {
             return
         }
         hasQueuedBasicAutoApply = true
-        scheduleAutoApplyDebounce(delay: 2, showProgress: false)
+        scheduleAutoApplyDebounce(delay: 2, showProgress: false, announcesOutcome: true)
     }
 
     /// Drains any Basic mode edits queued while loading or applying was active.
@@ -449,7 +460,12 @@ class AppFilterManager: ObservableObject {
         hasQueuedBasicAutoApply = false
         guard hasUnappliedChanges, !pausedComponents.contains(.filters) else { return }
         Task { @MainActor [weak self] in
-            await self?.performFilterUpdate(showProgress: false, checkForUpdates: false, downloadMissing: true)
+            await self?.performFilterUpdate(
+                showProgress: false,
+                checkForUpdates: false,
+                downloadMissing: true,
+                announcesOutcome: true
+            )
         }
     }
 
@@ -469,12 +485,18 @@ class AppFilterManager: ObservableObject {
         guard !pausedComponents.contains(.filters) else { return }
         if isApplyInFlight || isLoading {
             needsFollowUpBasicApply = true
+            applyProgressViewModel.announcesOutcome = false
             return
         }
         guard hasUnappliedChanges else { return }
         Task { @MainActor [weak self] in
             guard let self else { return }
-            await self.performFilterUpdate(showProgress: false, checkForUpdates: false, downloadMissing: true)
+            await self.performFilterUpdate(
+                showProgress: false,
+                checkForUpdates: false,
+                downloadMissing: true,
+                announcesOutcome: true
+            )
         }
     }
 
@@ -1134,7 +1156,10 @@ class AppFilterManager: ObservableObject {
     /// been fetched are downloaded only when `downloadMissing` (default: `checkForUpdates`) is true.
     @discardableResult
     func performFilterUpdate(
-        showProgress: Bool = true, checkForUpdates: Bool = true, downloadMissing: Bool? = nil
+        showProgress: Bool = true,
+        checkForUpdates: Bool = true,
+        downloadMissing: Bool? = nil,
+        announcesOutcome: Bool = false
     ) async -> Bool {
         refreshMissingItems()
 
@@ -1142,7 +1167,7 @@ class AppFilterManager: ObservableObject {
         let started = await performExclusiveApply {
             // Before the snapshot, so the run compiles the handed-over selection.
             await self.completeAdGuardHandover()
-            self.prepareApplyRunState()
+            self.prepareApplyRunState(announcesOutcome: announcesOutcome)
             self.showingApplyProgressSheet = showProgress
 
             if downloadMissing ?? checkForUpdates, !self.missingFilters.isEmpty || !self.missingUserScripts.isEmpty {
@@ -1181,12 +1206,12 @@ class AppFilterManager: ObservableObject {
         return started
     }
 
-    func checkAndEnableFilters(forceReload: Bool = false) {
+    func checkAndEnableFilters(forceReload: Bool = false, announcesOutcome: Bool = false) {
         refreshMissingItems()
         let hasMissingItems = !missingFilters.isEmpty || !missingUserScripts.isEmpty
         if hasMissingItems || forceReload || hasUnappliedChanges {
             Task {
-                await self.performFilterUpdate()
+                await self.performFilterUpdate(announcesOutcome: announcesOutcome)
             }
         }
     }
@@ -1317,7 +1342,10 @@ class AppFilterManager: ObservableObject {
             if self.filterUpdater.userScriptManager == nil {
                 self.setUserScriptManager(UserScriptManager.shared)
             }
-            let started = await self.performFilterUpdate(checkForUpdates: checkForUpdates)
+            let started = await self.performFilterUpdate(
+                checkForUpdates: checkForUpdates,
+                announcesOutcome: true
+            )
             if !started {
                 if !self.isApplyInFlight {
                     self.showingApplyProgressSheet = false

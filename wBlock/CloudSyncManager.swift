@@ -771,7 +771,12 @@ final class CloudSyncManager: ObservableObject {
         isSyncing = true
         setStatus(.checking)
         lastErrorMessage = nil
-        defer { finishSyncCycle() }
+        defer {
+            if trigger == "Manual" {
+                Haptics.play(lastErrorMessage == nil ? .success : .failure)
+            }
+            finishSyncCycle()
+        }
 
         do {
             let additionsAtStart = pendingRemoteScriptAdditions()

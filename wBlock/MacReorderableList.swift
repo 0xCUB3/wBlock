@@ -777,9 +777,12 @@ struct MacReorderableList: NSViewRepresentable {
             endDragging()
         }
 
+        private var lastDropTarget: (Node.ID, Int)?
+
         func beginDragging(_ items: [Any] = []) {
             dragging = true
             accepted = false
+            lastDropTarget = nil
             // Rows that stay put (Regional, or built-ins #1034) reveal no other drop targets.
             revealsDropTargets = items.allSatisfy {
                 (section(for: outline?.parent(forItem: $0))?.allowsCrossSectionMoves ?? true) && (row(for: $0)?.leavesSection ?? true)
@@ -789,6 +792,7 @@ struct MacReorderableList: NSViewRepresentable {
         func endDragging() {
             dragging = false
             accepted = false
+            lastDropTarget = nil
             noteConcealableSections()
             DispatchQueue.main.async { [weak self] in
                 guard let self else { return }
@@ -826,7 +830,14 @@ struct MacReorderableList: NSViewRepresentable {
         func outlineView(_ outlineView: NSOutlineView, validateDrop info: NSDraggingInfo,
                          proposedItem item: Any?, proposedChildIndex index: Int) -> NSDragOperation {
             guard proposal(info, item: item, index: index) != nil,
-                  let target = destination(info, item: item, index: index) else { return [] }
+                  let target = destination(info, item: item, index: index) else {
+                lastDropTarget = nil
+                return []
+            }
+            if lastDropTarget?.0 != target.node.id || lastDropTarget?.1 != target.index {
+                lastDropTarget = (target.node.id, target.index)
+                Haptics.alignment()
+            }
             info.animatesToDestination = true
             outlineView.setDropItem(target.node, dropChildIndex: target.index)
             return .move

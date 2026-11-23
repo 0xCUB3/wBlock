@@ -123,6 +123,7 @@ extension AppFilterManager {
         await MainActor.run {
             self.isLoading = false
             self.showingApplyProgressSheet = false
+            self.applyProgressViewModel.announcesOutcome = false
             self.applyProgressViewModel.updateIsLoading(false)
         }
     }
@@ -1333,6 +1334,7 @@ extension AppFilterManager {
         if normalized.isEmpty {
             let result = await resumeBlocking()
             await ConcurrentLogManager.shared.operation("resume-result", fields: ["result": result ? "succeeded" : "failed"], level: result ? .info : .error)
+            Haptics.play(result ? .resumed : .failure)
             return result
         }
 
@@ -1395,6 +1397,9 @@ extension AppFilterManager {
         let succeeded = started && lastApplySucceeded && !hasError
         if started && !succeeded {
             await failClosedAfterStartedPauseTransition()
+        }
+        if !succeeded {
+            Haptics.play(.failure)
         }
         await ConcurrentLogManager.shared.operation("pause-result", fields: ["result": succeeded ? "succeeded" : "failed", "started": String(started), "components": String(BlockingPauseStore.pausedComponents().rawValue)], level: succeeded ? .info : .error)
         return succeeded
@@ -1501,7 +1506,7 @@ extension AppFilterManager {
         return resumed
     }
 
-    func prepareApplyRunState() {
+    func prepareApplyRunState(announcesOutcome: Bool = false) {
         captureApplySnapshot()
         // A retry offered by an earlier run must not outlive the run that replaces its rules.
         failedReloadTargets = []
@@ -1511,6 +1516,7 @@ extension AppFilterManager {
         progress = 0
         statusDescription = LocalizedStrings.text("Checking for updates...", comment: "Apply pipeline status")
 
+        applyProgressViewModel.announcesOutcome = announcesOutcome
         applyProgressViewModel.beginProgressRun()
 
         sourceRulesCount = 0
@@ -1572,6 +1578,7 @@ extension AppFilterManager {
         guard !targets.isEmpty, !isLoading, !isApplyInFlight else { return }
         showingApplyProgressSheet = true
         isLoading = true
+        applyProgressViewModel.announcesOutcome = true
         applyProgressViewModel.updateIsLoading(true)
         // Nothing before the reload runs again, so the sheet opens on that
         // phase instead of replaying the update check from zero.

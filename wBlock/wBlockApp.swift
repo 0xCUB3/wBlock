@@ -74,6 +74,7 @@ struct wBlockApp: App {
         WindowGroup {
             ContentView(filterManager: filterManager)
                 .modifier(AppAppearanceModifier(appearance: appearance))
+                .modifier(HapticHostModifier())
                 .onAppear {
                     #if os(macOS)
                     if HeadlessLaunch.isHeadlessProcess {

@@ -77,6 +77,7 @@ struct CopyURLButton: View {
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(url.absoluteString, forType: .string)
             #endif
+            Haptics.play(.tap)
             withAnimation(.easeInOut(duration: 0.15)) { copied = true }
             resetTask?.cancel()
             resetTask = Task {

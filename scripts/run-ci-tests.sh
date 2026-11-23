@@ -160,7 +160,7 @@ compile_direct_test shared-auto-update-lease \
 # Core-module API tests. Source-only wBlock tests add their production source
 # explicitly; the remaining tests use the freshly built core framework.
 compile_core_test apply-progress-presentation scripts/test_apply_progress_presentation.swift \
-  wBlock/ApplyChangesViewModel.swift
+  wBlock/ApplyChangesViewModel.swift wBlock/Haptics.swift
 compile_core_test safari-setup-query-isolation scripts/test_safari_setup_query_isolation.swift \
   wBlock/SafariExtensionSetupSupport.swift
 job core "policy proofs and Swift conformance"

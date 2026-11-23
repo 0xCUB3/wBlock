@@ -1912,6 +1912,11 @@ struct AddFilterListView: View {
         }
     }
 
+    private func finishAdding() {
+        Haptics.play(.success)
+        dismiss()
+    }
+
     private func submit() {
         switch addMode {
         case .url:
@@ -1945,12 +1950,13 @@ struct AddFilterListView: View {
                         annoyanceTopic: AnnoyanceTopic.storedValue(topic, category: category)
                     )
                 }
-                dismiss()
+                finishAdding()
             }
         case .paste:
             if !isReviewingText {
                 if let message = AppFilterManager.userListContentError(pastedRules) {
                     importErrorMessage = message
+                    Haptics.play(.failure)
                     return
                 }
                 let metadata = FilterListMetadataParser.parse(from: pastedRules, maxLines: 80)
@@ -1981,10 +1987,11 @@ struct AddFilterListView: View {
                 )
                 isSaving = false
                 if !filterManager.hasError {
-                    dismiss()
+                    finishAdding()
                 } else {
                     namesBeforeSave = nil
                     importErrorMessage = filterManager.statusDescription
+                    Haptics.play(.failure)
                 }
             }
         case .file:
@@ -2004,10 +2011,11 @@ struct AddFilterListView: View {
                 )
                 isSaving = false
                 if !filterManager.hasError {
-                    dismiss()
+                    finishAdding()
                 } else {
                     namesBeforeSave = nil
                     importErrorMessage = filterManager.statusDescription
+                    Haptics.play(.failure)
                 }
             }
         }
