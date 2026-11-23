@@ -179,7 +179,7 @@ public enum FilterDiffUpdater {
     /// Parses a `.patch` file into a map of `diff-name` -> block. Returns `nil`
     /// if the file contains no valid block (or any block is structurally invalid).
     public static func parsePatchFile(_ patchText: String) -> [String: FilterDiffPatchBlock]? {
-        let diffLines = patchText.components(separatedBy: "\n")
+        let diffLines = splitLF(patchText)
         let lineCount = diffLines.count
         var index = 0
         var result: [String: FilterDiffPatchBlock] = [:]
@@ -195,7 +195,7 @@ public enum FilterDiffUpdater {
             var declaredLines = 0
             for token in tokens {
                 guard let colonIndex = token.firstIndex(of: ":") else { continue }
-                let key = String(token[..<colonIndex])
+                let key = token[..<colonIndex]
                 if key.isEmpty { continue }
                 let value = String(token[token.index(after: colonIndex)...])
                 switch key {
@@ -245,9 +245,13 @@ public enum FilterDiffUpdater {
     public static func applyRCSDiff(_ rcsDiff: String, to baseline: String) -> String? {
         // Match uBO: split on `\n` only (preserves a trailing empty element when
         // the baseline ends with a newline, which acts as a sentinel for appends).
-        var lines = baseline.components(separatedBy: "\n")
-        let diffLines = rcsDiff.components(separatedBy: "\n")
+        let baseLines = splitLF(baseline)
+        let diffLines = splitLF(rcsDiff)
         let diffCount = diffLines.count
+
+        var output: [Substring] = []
+        output.reserveCapacity(baseLines.count)
+        var origCursor = 0
 
         var diffIndex = 0
         var adjust = 0
@@ -258,35 +262,52 @@ public enum FilterDiffUpdater {
             if diffLine.isEmpty { break }
 
             guard let parsed = parseRCSCommand(diffLine) else { return nil }
-            let op = parsed.operation
-            let line = parsed.line
             let count = parsed.count
-            let adjustedLine = line + adjust
+            let (adjustedLine, overflowed) = parsed.line.addingReportingOverflow(adjust)
+            guard !overflowed else { return nil }
+            let currentCount = output.count + (baseLines.count - origCursor)
 
-            switch op {
+            switch parsed.operation {
             case .delete:
                 // `d<line> <count>`: remove `count` elements starting at
                 // 0-based index `line - 1`. uBO clamps implicitly via splice.
-                guard adjustedLine >= 1, adjustedLine <= lines.count else { return nil }
+                guard adjustedLine >= 1, adjustedLine <= currentCount else { return nil }
                 let startIndex = adjustedLine - 1
-                let removable = min(count, lines.count - startIndex)
-                if removable > 0 {
-                    lines.removeSubrange(startIndex..<(startIndex + removable))
+                guard startIndex >= output.count else { return nil }
+                let origStart = origCursor + (startIndex - output.count)
+                if origStart > origCursor {
+                    output.append(contentsOf: baseLines[origCursor..<origStart])
                 }
-                adjust -= count
+                let removable = min(count, baseLines.count - origStart)
+                origCursor = origStart + removable
+                let (nextAdjust, overflowed) = adjust.subtractingReportingOverflow(count)
+                guard !overflowed else { return nil }
+                adjust = nextAdjust
             case .add:
                 // `a<line> <count>`: insert `count` new lines (read from the
                 // following diff lines) at 0-based index `line`.
-                guard adjustedLine >= 0, adjustedLine <= lines.count else { return nil }
-                guard diffIndex + count <= diffCount else { return nil }
-                let insertion = Array(diffLines[diffIndex..<(diffIndex + count)])
-                lines.insert(contentsOf: insertion, at: adjustedLine)
-                diffIndex += count
-                adjust += count
+                guard adjustedLine >= 0, adjustedLine <= currentCount, adjustedLine >= output.count else { return nil }
+                guard count <= diffCount - diffIndex else { return nil }
+                let insertionEnd = diffIndex + count
+                let origInsert = origCursor + (adjustedLine - output.count)
+                if origInsert > origCursor {
+                    output.append(contentsOf: baseLines[origCursor..<origInsert])
+                }
+                if count > 0 {
+                    output.append(contentsOf: diffLines[diffIndex..<insertionEnd])
+                }
+                origCursor = origInsert
+                diffIndex = insertionEnd
+                let (nextAdjust, overflowed) = adjust.addingReportingOverflow(count)
+                guard !overflowed else { return nil }
+                adjust = nextAdjust
             }
         }
 
-        return lines.joined(separator: "\n")
+        if origCursor < baseLines.count {
+            output.append(contentsOf: baseLines[origCursor...])
+        }
+        return output.joined(separator: "\n")
     }
 
     /// Applies `block` to `baseline` and verifies the SHA-1 checksum prefix.
@@ -302,7 +323,8 @@ public enum FilterDiffUpdater {
         guard let patched = applyRCSDiff(block.diffText, to: baseline) else {
             return .badPatch
         }
-        let digest = Insecure.SHA1.hash(data: Data(patched.utf8))
+        var patchedCopy = patched
+        let digest = patchedCopy.withUTF8 { Insecure.SHA1.hash(data: UnsafeRawBufferPointer($0)) }
         let computed = digest.map { String(format: "%02x", $0) }.joined()
         if computed.hasPrefix(block.checksum.lowercased()) {
             return .success(patchedText: patched)
@@ -328,41 +350,84 @@ public enum FilterDiffUpdater {
         return try! NSRegularExpression(pattern: pattern, options: [])
     }()
 
-    private static let commandRegex: NSRegularExpression = {
-        let pattern = #"^([ad])(\d+) (\d+)$"#
-        return try! NSRegularExpression(pattern: pattern, options: [])
-    }()
+    private static func splitLF(_ text: String) -> [Substring] {
+        var text = text
+        text.makeContiguousUTF8()
+        let utf8 = text.utf8
+        func line(_ from: Int, _ to: Int) -> Substring {
+            text[utf8.index(utf8.startIndex, offsetBy: from)..<utf8.index(utf8.startIndex, offsetBy: to)]
+        }
+        return utf8.withContiguousStorageIfAvailable { bytes in
+            var result: [Substring] = []
+            result.reserveCapacity(max(16, bytes.count / 48))
+            var start = 0
+            for i in 0..<bytes.count where bytes[i] == 0x0A {
+                result.append(line(start, i))
+                start = i + 1
+            }
+            result.append(line(start, bytes.count))
+            return result
+        } ?? text.components(separatedBy: "\n").map { $0[...] }
+    }
 
     private static func isValidChecksum(_ checksum: String) -> Bool {
-        let bytes = Array(checksum.utf8)
-        guard (1...40).contains(bytes.count) else {
+        let utf8 = checksum.utf8
+        guard (1...40).contains(utf8.count) else {
             return false
         }
-        return bytes.allSatisfy { byte in
-            (byte >= 48 && byte <= 57)
-                || (byte >= 97 && byte <= 102)
-                || (byte >= 65 && byte <= 70)
+        return utf8.allSatisfy { byte in
+            (byte >= UInt8(ascii: "0") && byte <= UInt8(ascii: "9"))
+                || (byte >= UInt8(ascii: "a") && byte <= UInt8(ascii: "f"))
+                || (byte >= UInt8(ascii: "A") && byte <= UInt8(ascii: "F"))
         }
     }
 
-    private static func parseRCSCommand(_ line: String) -> RCSCommand? {
-        let range = NSRange(location: 0, length: line.utf16.count)
-        guard let match = commandRegex.firstMatch(in: line, range: range),
-              match.numberOfRanges >= 4,
-              let opRange = Range(match.range(at: 1), in: line),
-              let lineRange = Range(match.range(at: 2), in: line),
-              let countRange = Range(match.range(at: 3), in: line),
-              let lineNumber = Int(line[lineRange]),
-              let count = Int(line[countRange])
-        else {
-            return nil
-        }
+    private static func parseRCSCommand(_ line: Substring) -> RCSCommand? {
+        let utf8 = line.utf8
+        var index = utf8.startIndex
+        // Strip a trailing CR from CRLF command lines while leaving payload lines intact.
+        let end = utf8.last == UInt8(ascii: "\r") ? utf8.index(before: utf8.endIndex) : utf8.endIndex
+        guard index < end else { return nil }
+
         let operation: RCSOperation
-        switch line[opRange] {
-        case "a": operation = .add
-        case "d": operation = .delete
+        switch utf8[index] {
+        case UInt8(ascii: "a"): operation = .add
+        case UInt8(ascii: "d"): operation = .delete
         default: return nil
         }
+        utf8.formIndex(after: &index)
+
+        var lineNumber = 0
+        var sawLineDigit = false
+        while index < end {
+            let b = utf8[index]
+            if b >= UInt8(ascii: "0") && b <= UInt8(ascii: "9") {
+                let (mul, o1) = lineNumber.multipliedReportingOverflow(by: 10)
+                let (add, o2) = mul.addingReportingOverflow(Int(b - UInt8(ascii: "0")))
+                guard !o1 && !o2 else { return nil }
+                lineNumber = add
+                sawLineDigit = true
+                utf8.formIndex(after: &index)
+            } else {
+                break
+            }
+        }
+        guard sawLineDigit, index < end, utf8[index] == UInt8(ascii: " ") else { return nil }
+        utf8.formIndex(after: &index)
+
+        var count = 0
+        var sawCountDigit = false
+        while index < end {
+            let b = utf8[index]
+            guard b >= UInt8(ascii: "0") && b <= UInt8(ascii: "9") else { return nil }
+            let (mul, o1) = count.multipliedReportingOverflow(by: 10)
+            let (add, o2) = mul.addingReportingOverflow(Int(b - UInt8(ascii: "0")))
+            guard !o1 && !o2 else { return nil }
+            count = add
+            sawCountDigit = true
+            utf8.formIndex(after: &index)
+        }
+        guard sawCountDigit else { return nil }
         return RCSCommand(operation: operation, line: lineNumber, count: count)
     }
 
