@@ -1285,6 +1285,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides notification prompts." = "Hides notification prompts.";
 "Help & Support" = "Help & Support";
 "Report an Issue" = "Report an Issue";
+"Request a Feature" = "Request a Feature";
 "Discord" = "Discord";
 "Show All Lists" = "Show All Lists";
 "Shows every filter list and userscript, with search, reordering, custom lists, and a manual Apply button." = "Shows every filter list and userscript, with search, reordering, custom lists, and a manual Apply button.";

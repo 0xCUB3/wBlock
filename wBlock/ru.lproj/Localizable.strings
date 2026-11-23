@@ -1276,6 +1276,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides notification prompts." = "Скрывает запросы на отправку уведомлений.";
 "Help & Support" = "Помощь и поддержка";
 "Report an Issue" = "Сообщить о проблеме";
+"Request a Feature" = "Предложить функцию";
 "Discord" = "Discord";
 "Show All Lists" = "Показать все списки";
 "Shows every filter list and userscript, with search, reordering, custom lists, and a manual Apply button." = "Показывает все списки фильтров и пользовательские скрипты с поиском, сортировкой, своими списками и ручной кнопкой «Применить».";

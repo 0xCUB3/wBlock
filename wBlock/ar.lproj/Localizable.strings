@@ -1276,6 +1276,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides notification prompts." = "يخفي مطالبات الإشعارات.";
 "Help & Support" = "المساعدة والدعم";
 "Report an Issue" = "الإبلاغ عن مشكلة";
+"Request a Feature" = "اقتراح ميزة";
 "Discord" = "Discord";
 "Show All Lists" = "إظهار جميع القوائم";
 "Shows every filter list and userscript, with search, reordering, custom lists, and a manual Apply button." = "يعرض كل قائمة فلاتر وسكربت مستخدم، مع البحث وإعادة الترتيب والقوائم المخصصة وزر تطبيق يدوي.";

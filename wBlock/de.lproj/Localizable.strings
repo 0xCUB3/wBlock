@@ -1276,6 +1276,7 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Hides notification prompts." = "Blendet Benachrichtigungsaufforderungen aus.";
 "Help & Support" = "Hilfe & Support";
 "Report an Issue" = "Problem melden";
+"Request a Feature" = "Funktion vorschlagen";
 "Discord" = "Discord";
 "Show All Lists" = "Alle Listen anzeigen";
 "Shows every filter list and userscript, with search, reordering, custom lists, and a manual Apply button." = "Zeigt jede Filterliste und jedes Userscript mit Suche, Neuanordnung, eigenen Listen und einer manuellen Anwenden-Taste.";

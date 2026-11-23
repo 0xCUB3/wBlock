@@ -1276,6 +1276,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Hides notification prompts." = "Elrejti az értesítési kéréseket.";
 "Help & Support" = "Súgó és támogatás";
 "Report an Issue" = "Probléma jelentése";
+"Request a Feature" = "Funkció kérése";
 "Discord" = "Discord";
 "Show All Lists" = "Összes lista megjelenítése";
 "Shows every filter list and userscript, with search, reordering, custom lists, and a manual Apply button." = "Minden szűrőlistát és felhasználói szkriptet megjelenít, kereséssel, átrendezéssel, egyéni listákkal és kézi Alkalmaz gombbal.";

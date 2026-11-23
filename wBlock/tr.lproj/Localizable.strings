@@ -1285,6 +1285,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Hides notification prompts." = "Bildirim istemlerini gizler.";
 "Help & Support" = "Yardım ve Destek";
 "Report an Issue" = "Sorun Bildir";
+"Request a Feature" = "Özellik İste";
 "Discord" = "Discord";
 "Show All Lists" = "Tüm Listeleri Göster";
 "Shows every filter list and userscript, with search, reordering, custom lists, and a manual Apply button." = "Arama, yeniden sıralama, özel listeler ve manuel Uygula düğmesiyle tüm filtre listelerini ve kullanıcı betiklerini gösterir.";

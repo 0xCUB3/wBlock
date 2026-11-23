@@ -1276,6 +1276,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides notification prompts." = "Κρύβει προτροπές ειδοποιήσεων.";
 "Help & Support" = "Βοήθεια και υποστήριξη";
 "Report an Issue" = "Αναφορά προβλήματος";
+"Request a Feature" = "Αίτημα λειτουργίας";
 "Discord" = "Discord";
 "Show All Lists" = "Εμφάνιση όλων των λιστών";
 "Shows every filter list and userscript, with search, reordering, custom lists, and a manual Apply button." = "Εμφανίζει κάθε λίστα φίλτρων και userscript, με αναζήτηση, αναδιάταξη, προσαρμοσμένες λίστες και χειροκίνητο κουμπί Εφαρμογής.";

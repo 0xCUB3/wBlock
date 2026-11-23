@@ -1285,6 +1285,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides notification prompts." = "通知許可の案内を非表示にします。";
 "Help & Support" = "ヘルプとサポート";
 "Report an Issue" = "問題を報告";
+"Request a Feature" = "機能をリクエスト";
 "Discord" = "Discord";
 "Show All Lists" = "すべてのリストを表示";
 "Shows every filter list and userscript, with search, reordering, custom lists, and a manual Apply button." = "検索、並び替え、カスタムリスト、手動の適用ボタン付きですべてのフィルターリストとユーザースクリプトを表示します。";

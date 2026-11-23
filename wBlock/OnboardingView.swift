@@ -433,29 +433,37 @@ struct OnboardingView: View {
                 .buttonStyle(.plain)
             }
             #else
-            HStack(spacing: 12) {
-                Button(String(localized: "Restore from backup…")) {
-                    showingBackupImporter = true
-                }
-                .glassButtonStyleCompat()
-
-                Spacer()
-
-                Button("Choose Filter Lists Myself") {
+            VStack(spacing: 10) {
+                Button {
                     chosenMode = .advanced
                     withAnimation(.easeInOut(duration: 0.2)) {
                         step = .regional
                     }
+                } label: {
+                    Text("Choose Filter Lists Myself")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(Color.accentColor)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                .glassButtonStyleCompat()
+                .buttonStyle(.plain)
 
-                Button("Continue") {
-                    chosenMode = .basic
-                    advanceToNextStep()
+                HStack(spacing: 12) {
+                    Button(String(localized: "Restore from backup…")) {
+                        showingBackupImporter = true
+                    }
+                    .glassButtonStyleCompat()
+
+                    Spacer()
+
+                    Button("Continue") {
+                        chosenMode = .basic
+                        advanceToNextStep()
+                    }
+                    .glassButtonStyleCompat(prominent: true)
+                    .disabled(footerButtonDisabled)
+                    .keyboardShortcut(.defaultAction)
                 }
-                .glassButtonStyleCompat(prominent: true)
-                .disabled(footerButtonDisabled)
-                .keyboardShortcut(.defaultAction)
             }
             #endif
         } else {

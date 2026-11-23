@@ -1285,6 +1285,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides notification prompts." = "پنجره‌های درخواست اعلان را پنهان می‌کند.";
 "Help & Support" = "راهنما و پشتیبانی";
 "Report an Issue" = "گزارش مشکل";
+"Request a Feature" = "درخواست ویژگی";
 "Discord" = "Discord";
 "Show All Lists" = "نمایش همه فهرست‌ها";
 "Shows every filter list and userscript, with search, reordering, custom lists, and a manual Apply button." = "همه فهرست‌های فیلتر و اسکریپت‌های کاربری را همراه با جستجو، مرتب‌سازی، فهرست‌های سفارشی و دکمه اعمال دستی نمایش می‌دهد.";

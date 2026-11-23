@@ -1276,6 +1276,7 @@ Para reativá-los, desative outros filtros grandes e aplique as alterações nov
 "Hides notification prompts." = "Oculta pedidos de notificação.";
 "Help & Support" = "Ajuda e suporte";
 "Report an Issue" = "Relatar um problema";
+"Request a Feature" = "Solicitar um recurso";
 "Discord" = "Discord";
 "Show All Lists" = "Mostrar todas as listas";
 "Shows every filter list and userscript, with search, reordering, custom lists, and a manual Apply button." = "Mostra todas as listas de filtros e userscripts, com busca, reordenação, listas personalizadas e botão manual de Aplicar.";

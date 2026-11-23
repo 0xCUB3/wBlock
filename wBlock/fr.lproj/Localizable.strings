@@ -1276,6 +1276,7 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Hides notification prompts." = "Masque les demandes de notifications.";
 "Help & Support" = "Aide et assistance";
 "Report an Issue" = "Signaler un problème";
+"Request a Feature" = "Suggérer une fonctionnalité";
 "Discord" = "Discord";
 "Show All Lists" = "Afficher toutes les listes";
 "Shows every filter list and userscript, with search, reordering, custom lists, and a manual Apply button." = "Affiche chaque liste de filtres et userscript, avec recherche, réorganisation, listes personnalisées et un bouton Appliquer manuel.";

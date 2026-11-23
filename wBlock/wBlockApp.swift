@@ -195,6 +195,7 @@ struct wBlockApp: App {
             CommandGroup(replacing: .help) {
                 Link("FAQ", destination: SettingsView.faqURL)
                 Link("Report Issues", destination: SettingsView.reportIssueURL)
+                Link("Request a Feature", destination: SettingsView.featureRequestURL)
                 Link("Contact Us", destination: SettingsView.contactURL)
                 Link("Source Code", destination: SettingsView.sourceCodeURL)
             }

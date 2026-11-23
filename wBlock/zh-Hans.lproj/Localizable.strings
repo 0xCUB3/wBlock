@@ -1276,6 +1276,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides notification prompts." = "隐藏通知提示。";
 "Help & Support" = "帮助与支持";
 "Report an Issue" = "报告问题";
+"Request a Feature" = "请求功能";
 "Discord" = "Discord";
 "Show All Lists" = "显示所有列表";
 "Shows every filter list and userscript, with search, reordering, custom lists, and a manual Apply button." = "显示所有过滤列表和用户脚本，支持搜索、排序、自定义列表和手动应用按钮。";

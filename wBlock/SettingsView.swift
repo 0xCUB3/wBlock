@@ -20,7 +20,8 @@ struct SettingsView: View {
     #endif
     @Environment(\.openURL) private var openURL
     private static let autoUpdateIntervalPresets: [Double] = [1, 2, 4, 6, 12, 24, 48, 72, 168]
-    static let reportIssueURL = URL(string: "https://github.com/0xCUB3/wBlock/issues/new/choose")!
+    static let reportIssueURL = URL(string: "https://github.com/0xCUB3/wBlock/issues/new?template=bug-report.yml")!
+    static let featureRequestURL = URL(string: "https://github.com/0xCUB3/wBlock/issues/new?template=feature-request.yml")!
     static let sourceCodeURL = URL(string: "https://github.com/0xCUB3/wBlock")!
     private static let privacyPolicyURL = URL(string: "https://github.com/0xCUB3/wBlock/blob/main/PRIVACY_POLICY.md")!
     static let faqURL = URL(string: "https://github.com/0xCUB3/wBlock#faq")!
@@ -835,6 +836,11 @@ struct SettingsView: View {
                     Label("Report an Issue", systemImage: "exclamationmark.triangle")
                 }
                 Button {
+                    openURL(Self.featureRequestURL)
+                } label: {
+                    Label("Request a Feature", systemImage: "lightbulb")
+                }
+                Button {
                     openURL(Self.contactURL)
                 } label: {
                     Label("Discord", systemImage: "bubble.left")
@@ -875,6 +881,11 @@ struct SettingsView: View {
             title: String(localized: "Report an Issue"),
             symbolName: "exclamationmark.triangle",
             url: Self.reportIssueURL
+        ))
+        menu.addItem(makeMacURLMenuItem(
+            title: String(localized: "Request a Feature"),
+            symbolName: "lightbulb",
+            url: Self.featureRequestURL
         ))
         menu.addItem(makeMacURLMenuItem(
             title: String(localized: "Discord"),

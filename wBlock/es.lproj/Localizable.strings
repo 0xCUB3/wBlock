@@ -1276,6 +1276,7 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Hides notification prompts." = "Oculta solicitudes de notificaciones.";
 "Help & Support" = "Ayuda y soporte";
 "Report an Issue" = "Informar de un problema";
+"Request a Feature" = "Solicitar una función";
 "Discord" = "Discord";
 "Show All Lists" = "Mostrar todas las listas";
 "Shows every filter list and userscript, with search, reordering, custom lists, and a manual Apply button." = "Muestra cada lista de filtros y userscript, con búsqueda, reordenación, listas personalizadas y un botón manual de Aplicar.";

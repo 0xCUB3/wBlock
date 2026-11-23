@@ -1276,6 +1276,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Hides notification prompts." = "알림 요청을 숨깁니다.";
 "Help & Support" = "도움말 및 지원";
 "Report an Issue" = "문제 신고";
+"Request a Feature" = "기능 요청";
 "Discord" = "Discord";
 "Show All Lists" = "모든 목록 표시";
 "Shows every filter list and userscript, with search, reordering, custom lists, and a manual Apply button." = "검색, 순서 변경, 사용자 지정 목록 및 수동 적용 버튼과 함께 모든 필터 목록과 유저스크립트를 표시합니다.";
