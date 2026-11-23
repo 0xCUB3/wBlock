@@ -152,6 +152,11 @@ struct FilterListValidationTests {
                 == "||a.example^\n||b.example^",
             "expected hosts entries to become domain rules"
         )
+        let mixedHosts = "0.0.0.0 K.example\r\nfe80::1%en0 _sub.Example.com bad_tld.com_\u{2028}!#unsupported arg\n"
+        var stripped: [String] = []
+        let normalizedHosts = FilterListContentProcessing.normalizedContent(from: mixedHosts) { stripped.append($0) }
+        expectEqual(normalizedHosts, "||k.example^\n||_sub.example.com^\n", "hosts normalization preserves valid lowercase domains and IPv6 zones")
+        expectEqual(stripped, ["!#unsupported arg"], "normalization still reports stripped directives")
         precondition(
             FilterListContentProcessing.normalizedContent(from: "! Title: Domains\nAds.example\n\nb.example")
                 == "! Title: Domains\n||ads.example^\n\n||b.example^"
