@@ -50,11 +50,36 @@ public enum UserScriptModifiedStore {
         return HTTPModifiedDate.date(from: map[urlString])
     }
 
+    /// Resolves the newest recorded Last-Modified date across a script's
+    /// `@downloadURL` and catalog/source URL so updates fetched from a
+    /// script-declared `@downloadURL` never display a stale initial-install date.
+    public static func date(for script: UserScript) -> Date? {
+        let candidates = [script.resolvedDownloadURL, script.url].compactMap { date(for: $0) }
+        return candidates.max()
+    }
+
     public static func record(_ headerValue: String?, for url: URL?) {
-        guard let headerValue, !headerValue.isEmpty, let urlString = url?.absoluteString else { return }
+        guard let url else { return }
+        record(headerValue, for: [url])
+    }
+
+    public static func record(_ headerValue: String?, for urls: [URL]) {
+        guard !urls.isEmpty else { return }
+        let urlStrings = Set(urls.map(\.absoluteString))
         var map = (defaults.dictionary(forKey: key) as? [String: String]) ?? [:]
-        guard map[urlString] != headerValue else { return }
-        map[urlString] = headerValue
-        defaults.set(map, forKey: key)
+        var changed = false
+        if let headerValue, !headerValue.isEmpty {
+            for urlString in urlStrings where map[urlString] != headerValue {
+                map[urlString] = headerValue
+                changed = true
+            }
+        } else {
+            for urlString in urlStrings where map.removeValue(forKey: urlString) != nil {
+                changed = true
+            }
+        }
+        if changed {
+            defaults.set(map, forKey: key)
+        }
     }
 }

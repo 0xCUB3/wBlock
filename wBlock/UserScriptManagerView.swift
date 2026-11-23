@@ -82,7 +82,7 @@ private struct UserScriptListItem: Identifiable, Hashable {
             NSLocalizedString(script.isUserStyle ? "Userstyle" : "Userscript", comment: "Content type"),
             ContentRowMetadata.versionLabel(isDownloaded || script.isLocal ? script.version : ""),
             ContentRowMetadata.updatedLabel(
-                isDownloaded || script.isLocal ? (UserScriptModifiedStore.date(for: script.url) ?? script.lastUpdated) : nil
+                isDownloaded || script.isLocal ? (UserScriptModifiedStore.date(for: script) ?? script.lastUpdated) : nil
             ),
         ])
         url = script.url

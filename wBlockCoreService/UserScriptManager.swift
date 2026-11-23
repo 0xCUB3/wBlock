@@ -634,14 +634,22 @@ public class UserScriptManager: ObservableObject {
         UserScriptContentValidation.isProtectionPage(content)
     }
 
-    private func downloadUserScriptContent(from url: URL) async throws -> String {
+    private func downloadUserScriptContent(
+        from url: URL,
+        recordingModifiedFor modifiedURLs: [URL]? = nil
+    ) async throws -> String {
         let downloaded = try await UserScriptDownload.fetch(from: url) { endpoint in
             try await self.downloadData(from: endpoint, maximumBytes: Self.maximumUserScriptBytes)
         }
         let content = try await inlineRemoteStyleImports(in: downloaded.text)
-        // A mirror's timestamp is not an upstream Last-Modified value.
-        if downloaded.sourceURL == url, let response = downloaded.response as? HTTPURLResponse {
-            UserScriptModifiedStore.record(response.value(forHTTPHeaderField: "Last-Modified"), for: url)
+        let targetURLs = modifiedURLs ?? [url]
+        if !targetURLs.isEmpty {
+            // A mirror's timestamp is not an upstream Last-Modified value; clear
+            // stale dates when falling back to a mirror or omitting Last-Modified.
+            let headerValue = downloaded.sourceURL == url
+                ? (downloaded.response as? HTTPURLResponse)?.value(forHTTPHeaderField: "Last-Modified")
+                : nil
+            UserScriptModifiedStore.record(headerValue, for: targetURLs)
         }
         return content
     }
@@ -3349,7 +3357,7 @@ public class UserScriptManager: ObservableObject {
     /// Returns nil if fetch fails, content is empty, or no version found.
     private func fetchRemoteVersion(from url: URL) async -> String? {
         do {
-            let content = try await downloadUserScriptContent(from: url)
+            let content = try await downloadUserScriptContent(from: url, recordingModifiedFor: [])
             var temp = UserScript(name: "", content: content)
             temp.parseMetadata()
             return temp.version.isEmpty ? nil : temp.version
@@ -3569,7 +3577,10 @@ public class UserScriptManager: ObservableObject {
         return try await UserScriptUpdateOperation.run(
             downloadURL: downloadURL,
             fetch: { url in
-                try await self.downloadUserScriptContent(from: url)
+                try await self.downloadUserScriptContent(
+                    from: url,
+                    recordingModifiedFor: [url, candidate.url].compactMap { $0 }
+                )
             },
             isCurrent: {
                 mutationRevision == self.scriptMutationRevision(candidate.id)
