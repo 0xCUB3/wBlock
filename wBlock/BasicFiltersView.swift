@@ -16,6 +16,7 @@ struct BasicFiltersView: View {
     let onHeroVisibilityChange: (Bool) -> Void
     let onSwitchToAdvanced: () -> Void
 
+    @AppStorage(ListDisplayOrder.filtersKey) private var filterDisplayOrder = Data()
     @State private var toggleMemory = BasicBundleToggleMemory()
     @State private var peekBundle: BasicBundle?
     @State private var showingUnownedSheet = false
@@ -152,7 +153,7 @@ struct BasicFiltersView: View {
         .sheet(isPresented: $showingUnownedSheet) {
             ScopedBundleListsSheet(
                 title: String(localized: "Also on"),
-                filters: unownedActiveFilters,
+                filters: FilterListPresentation.ordered(unownedActiveFilters, order: filterDisplayOrder),
                 filterManager: filterManager,
                 onMutation: {
                     filterManager.scheduleBasicAutoApply()
@@ -812,6 +813,7 @@ struct BasicBundlePeekView: View {
     let onToggle: (Bool) -> Void
     let onResetToRecommended: () -> Void
 
+    @AppStorage(ListDisplayOrder.filtersKey) private var filterDisplayOrder = Data()
     @State private var showAllLists = false
     @Environment(\.dismiss) private var dismiss
 
@@ -824,8 +826,10 @@ struct BasicBundlePeekView: View {
     }
 
     private var scopedFilters: [FilterList] {
-        let all = bundle.scopedFilters(in: filterManager.filterLists)
-        return all.filter(\.isCustom) + all.filter { !$0.isCustom }
+        FilterListPresentation.ordered(
+            bundle.scopedFilters(in: filterManager.filterLists),
+            order: filterDisplayOrder
+        )
     }
 
     var body: some View {
@@ -1097,9 +1101,7 @@ struct ScopedBundleListsSheet: View {
         self.title = title
         self.filterManager = filterManager
         self.onMutation = onMutation
-        // Surface custom lists first so users switching from Advanced spot them right away.
-        let ordered = filters.filter(\.isCustom) + filters.filter { !$0.isCustom }
-        _capturedFilterIDs = State(initialValue: ordered.map(\.id))
+        _capturedFilterIDs = State(initialValue: filters.map(\.id))
     }
 
     private var liveFilters: [FilterList] {
