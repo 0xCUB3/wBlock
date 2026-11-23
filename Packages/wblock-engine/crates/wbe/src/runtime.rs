@@ -117,7 +117,9 @@ impl ScriptletRules {
     fn register<'a>(&mut self, matchers: impl IntoIterator<Item = &'a DomainMatcher>) {
         for matcher in matchers {
             if let DomainMatcher::Regex(pattern) = matcher {
-                if !self.regexes.contains(pattern) && build_regex(pattern, false).is_ok() {
+                // Keep UTF-8 regex validation so a raw byte pattern cannot
+                // break the RegexSet Unicode fallback if another pattern needs it.
+                if !self.regexes.contains(pattern) && regex::Regex::new(pattern).is_ok() {
                     self.regexes.insert(pattern.clone());
                 }
             }
