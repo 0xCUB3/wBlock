@@ -72,12 +72,12 @@ private struct BasicModeMiniPreview: View {
                         VStack(alignment: .leading, spacing: 5) {
                             HStack {
                                 RoundedRectangle(cornerRadius: 5, style: .continuous)
-                                    .fill(lit ? bundle.tint : Color.primary.opacity(0.12))
+                                    .fill(lit ? Color.accentColor.opacity(colorScheme == .dark ? 0.24 : 0.14) : Color.primary.opacity(0.08))
                                     .frame(width: 16, height: 16)
                                     .overlay {
                                         Image(systemName: bundle.symbolName)
                                             .font(.system(size: 8, weight: .bold))
-                                            .foregroundStyle(lit ? .white : .secondary)
+                                            .foregroundStyle(lit ? Color.accentColor : .secondary)
                                     }
                                 Spacer(minLength: 0)
                             }
@@ -89,11 +89,11 @@ private struct BasicModeMiniPreview: View {
                         .frame(maxWidth: .infinity)
                         .background(
                             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                .fill(lit ? bundle.tint.opacity(colorScheme == .dark ? 0.18 : 0.10) : Color.primary.opacity(0.05))
+                                .fill(Color.primary.opacity(colorScheme == .dark ? 0.08 : 0.05))
                         )
                         .overlay {
                             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                .stroke(lit ? bundle.tint.opacity(0.25) : Color.clear, lineWidth: 0.75)
+                                .stroke(Color.primary.opacity(colorScheme == .dark ? 0.12 : 0.08), lineWidth: 0.75)
                         }
                         .scaleEffect(lit ? 1.0 : 0.96)
                     }

@@ -78,11 +78,7 @@ enum CoreProtectionBundle: String, CaseIterable, Identifiable, Hashable, Sendabl
     }
 
     var tint: Color {
-        switch self {
-        case .ads: Color(red: 0.90, green: 0.27, blue: 0.27)
-        case .privacy: Color(red: 0.20, green: 0.49, blue: 0.96)
-        case .security: Color(red: 0.35, green: 0.34, blue: 0.84)
-        }
+        .accentColor
     }
 }
 
@@ -101,15 +97,7 @@ extension AnnoyanceChoice {
     }
 
     var tint: Color {
-        switch self {
-        case .cookies: Color(red: 0.93, green: 0.54, blue: 0.14)
-        case .popups: Color(red: 0.91, green: 0.29, blue: 0.49)
-        case .banners: Color(red: 0.15, green: 0.67, blue: 0.66)
-        case .social: Color(red: 0.62, green: 0.36, blue: 0.88)
-        case .chat: Color(red: 0.15, green: 0.62, blue: 0.89)
-        case .general: Color(red: 0.48, green: 0.50, blue: 0.55)
-        case .ai: Color(red: 0.45, green: 0.39, blue: 0.90)
-        }
+        .accentColor
     }
 
     var examples: [String] {

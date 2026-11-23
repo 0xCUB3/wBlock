@@ -229,13 +229,6 @@ struct BasicFiltersView: View {
     private func coreTile(_ core: CoreProtectionBundle) -> some View {
         let bundle = BasicBundle.core(core)
         let state = bundle.state(in: filterManager.filterLists)
-        let isActive = state != .off
-        let tileFill = isActive
-            ? core.tint.opacity(colorScheme == .dark ? 0.16 : 0.09)
-            : cardBackground
-        let cutoutBg = isActive
-            ? blendedCutoutColor
-            : cardBackground
 
         return Button {
             peekBundle = bundle
@@ -248,7 +241,7 @@ struct BasicFiltersView: View {
                         size: IconBadge.defaultSize,
                         ringPhase: ringPhase(for: bundle),
                         showsFailedDot: hasFailed(for: bundle),
-                        cutoutBackground: cutoutBg
+                        cutoutBackground: cardBackground
                     )
                     Spacer(minLength: 4)
                     Image(systemName: "chevron.right")
@@ -277,14 +270,11 @@ struct BasicFiltersView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(tileFill)
+                    .fill(cardBackground)
             )
             .overlay {
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .strokeBorder(
-                        isActive ? core.tint.opacity(colorScheme == .dark ? 0.30 : 0.22) : cardBorderColor,
-                        lineWidth: 1
-                    )
+                    .strokeBorder(cardBorderColor, lineWidth: 1)
             }
             .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
@@ -428,7 +418,7 @@ struct BasicFiltersView: View {
             HStack(spacing: 12) {
                 IconBadge(
                     systemName: "slider.horizontal.3",
-                    tint: Color.orange,
+                    tint: .accentColor,
                     isOn: activeCount > 0
                 )
 
@@ -447,7 +437,7 @@ struct BasicFiltersView: View {
 
                 Text(summaryValue)
                     .font(.caption.weight(.medium))
-                    .foregroundStyle(activeCount > 0 ? Color.orange : Color.secondary)
+                    .foregroundStyle(.secondary)
 
                 Image(systemName: "chevron.down")
                     .font(.caption.weight(.semibold))
@@ -563,7 +553,7 @@ struct BasicFiltersView: View {
             HStack(spacing: 12) {
                 IconBadge(
                     systemName: "globe",
-                    tint: Color(red: 0.16, green: 0.56, blue: 0.88),
+                    tint: .accentColor,
                     isOn: hasActiveForeign,
                     ringPhase: rowRingPhase(isDirty: isDirty),
                     showsFailedDot: filterManager.lastBasicApplyFailed && isDirty
@@ -639,7 +629,7 @@ struct BasicFiltersView: View {
             HStack(spacing: 12) {
                 IconBadge(
                     systemName: "square.stack.3d.up.fill",
-                    tint: Color(red: 0.48, green: 0.50, blue: 0.55),
+                    tint: .accentColor,
                     isOn: true,
                     ringPhase: rowRingPhase(isDirty: isDirty),
                     showsFailedDot: filterManager.lastBasicApplyFailed && isDirty
@@ -795,14 +785,6 @@ struct BasicFiltersView: View {
 
     private var cardBorderColor: Color {
         colorScheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.06)
-    }
-
-    private var blendedCutoutColor: Color {
-        #if os(iOS)
-        return Color(uiColor: .secondarySystemGroupedBackground)
-        #else
-        return colorScheme == .dark ? Color(white: 0.16) : Color(white: 0.97)
-        #endif
     }
 }
 

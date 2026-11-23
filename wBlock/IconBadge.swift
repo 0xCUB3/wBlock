@@ -67,6 +67,7 @@ struct IconBadge: View {
     var showsFailedDot: Bool = false
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.colorSchemeContrast) private var colorSchemeContrast
 
     @State private var orbitPhase: CGFloat = 0
@@ -126,26 +127,15 @@ struct IconBadge: View {
         ZStack {
             if isOn {
                 shape
-                    .fill(
-                        LinearGradient(
-                            colors: [tint.opacity(0.86), tint],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
+                    .fill(tint.opacity(colorScheme == .dark ? 0.22 : 0.12))
                     .overlay {
-                        shape.strokeBorder(
-                            LinearGradient(
-                                colors: [Color.white.opacity(0.32), Color.white.opacity(0.0)],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            ),
-                            lineWidth: 1
-                        )
+                        if colorSchemeContrast == .increased {
+                            shape.strokeBorder(tint.opacity(0.45), lineWidth: 1)
+                        }
                     }
             } else {
                 shape
-                    .fill(Color.primary.opacity(0.08))
+                    .fill(Color.primary.opacity(colorScheme == .dark ? 0.08 : 0.06))
                     .overlay {
                         if colorSchemeContrast == .increased {
                             shape.strokeBorder(Color.primary.opacity(0.32), lineWidth: 1)
@@ -155,7 +145,7 @@ struct IconBadge: View {
 
             Image(systemName: systemName)
                 .font(.system(size: size * 0.5, weight: .semibold))
-                .foregroundStyle(isOn ? Color.white : Color.secondary)
+                .foregroundStyle(isOn ? tint : Color.secondary)
         }
         .frame(width: size, height: size)
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: isOn)

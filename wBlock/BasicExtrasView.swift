@@ -326,36 +326,36 @@ struct BasicExtrasView: View {
 
     private func badgeStyle(for script: UserScript) -> (symbol: String, tint: Color) {
         if userScriptManager.isTubeCleaner(script) {
-            return ("play.rectangle.fill", Color(red: 0.92, green: 0.23, blue: 0.24))
+            return ("play.rectangle.fill", .accentColor)
         }
         if userScriptManager.isPlayerCleaner(script) {
-            return ("pip.enter", Color(red: 0.16, green: 0.54, blue: 0.94))
+            return ("pip.enter", .accentColor)
         }
         if userScriptManager.isDeArrow(script) {
-            return ("text.badge.checkmark", Color(red: 0.25, green: 0.62, blue: 0.95))
+            return ("text.badge.checkmark", .accentColor)
         }
         if script.name.localizedCaseInsensitiveContains("return youtube dislike") {
-            return ("hand.thumbsdown.fill", Color(red: 0.93, green: 0.36, blue: 0.25))
+            return ("hand.thumbsdown.fill", .accentColor)
         }
         if script.name.localizedCaseInsensitiveContains("twitch") {
-            return ("tv.fill", Color(red: 0.57, green: 0.28, blue: 0.92))
+            return ("tv.fill", .accentColor)
         }
         if script.name.localizedCaseInsensitiveContains("disable amp") {
-            return ("bolt.slash.fill", Color(red: 0.92, green: 0.56, blue: 0.14))
+            return ("bolt.slash.fill", .accentColor)
         }
         if userScriptManager.isBypassPaywallsClean(script) {
-            return ("newspaper.fill", Color(red: 0.16, green: 0.66, blue: 0.56))
+            return ("newspaper.fill", .accentColor)
         }
         if script.name.localizedCaseInsensitiveContains("tinyshield") {
-            return ("hand.raised.fill", Color(red: 0.16, green: 0.68, blue: 0.48))
+            return ("hand.raised.fill", .accentColor)
         }
         if script.name.localizedCaseInsensitiveContains("popup blocker") {
-            return ("macwindow.badge.plus", Color(red: 0.91, green: 0.29, blue: 0.49))
+            return ("macwindow.badge.plus", .accentColor)
         }
         if script.name.localizedCaseInsensitiveContains("adguard extra") {
-            return ("sparkles", Color(red: 0.35, green: 0.38, blue: 0.88))
+            return ("sparkles", .accentColor)
         }
-        return ("puzzlepiece.extension.fill", Color(red: 0.48, green: 0.50, blue: 0.55))
+        return ("puzzlepiece.extension.fill", .accentColor)
     }
 
     private func plainDescription(for script: UserScript) -> String {
