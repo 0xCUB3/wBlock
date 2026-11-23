@@ -1795,7 +1795,7 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         }
         if Task.isCancelled || isCancelled?() == true { throw CancellationError() }
         let fingerprintIdentity = "|\(SafariVersionDetection.compilerIdentity)"
-        let fingerprintFilename = "\(ContentBlockerIncrementalCache.baseRulesFilename(for: rulesFilename)).plan-fingerprint"
+        let fingerprintFilename = planFingerprintFilename(for: rulesFilename)
         // Another blocker's list changed but nothing this blocker compiles did:
         // the saved output is still current, which the engine tells from the
         // fingerprint saved with it.
@@ -1813,6 +1813,13 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
             do {
                 let outcome = try reuseCachedBase(provenanceSignature: reuse.stored)
                 if outcome.truncatedRuleCount == 0 {
+                    if let planExtrasJSON = inputs.planExtrasJSON,
+                       savedFingerprint(filename: packFingerprintFilename(for: rulesFilename), containerURL: containerURL) == nil {
+                        let packFingerprint = try plan.targetFingerprint(targetIndex, extras: planExtrasJSON)
+                        try? saveBlockerListFile(contents: String(packFingerprint) + fingerprintIdentity,
+                            groupIdentifier: groupIdentifier, filename: packFingerprintFilename(for: rulesFilename),
+                            containerURL: containerURL)
+                    }
                     ContentBlockerIncrementalCache.saveInputSignature(reuse.current, targetRulesFilename: rulesFilename,
                         groupIdentifier: groupIdentifier, containerURL: containerURL)
                     saveTargetSourceRuleProvenance(outcome.admittedSourceRuleCountsByFilterID, targetRulesFilename: rulesFilename,
@@ -1843,8 +1850,10 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
                           advancedRulesText: advanced, outputChanged: finalized.outputChanged,
                           admittedSourceRuleCountsByFilterID: admitted)
         if finalized.truncatedRuleCount == 0 {
-            // The fingerprint names the base it was saved with, so it goes last.
+            // The fingerprints name the base they were saved with, so they go last.
+            let packFingerprintFilename = Self.packFingerprintFilename(for: rulesFilename)
             try? FileManager.default.removeItem(at: containerURL.appendingPathComponent(fingerprintFilename))
+            try? FileManager.default.removeItem(at: containerURL.appendingPathComponent(packFingerprintFilename))
             let savedBase = try saveContentBlockerIfChangedWithIdentity(jsonRules: baseJSON, groupIdentifier: groupIdentifier,
                 targetRulesFilename: baseFilename, containerURL: containerURL, knownRuleCount: baseCount,
                 sharingBlocksWith: rulesFilename)
@@ -1854,6 +1863,13 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
             try saveBlockerListFile(contents: DigestSupport.sha256Hex(requestJSON + extrasJSON + fingerprints),
                 groupIdentifier: groupIdentifier, filename: "\(baseFilename).sha256", containerURL: containerURL)
             if let fingerprint = compiled.stats.fingerprint {
+                // Lets the next plan's packing take this output's size as
+                // saved instead of compiling the blocker without its own rules.
+                if let planExtrasJSON = inputs.planExtrasJSON {
+                    let packFingerprint = try plan.targetFingerprint(targetIndex, extras: planExtrasJSON)
+                    try saveBlockerListFile(contents: String(packFingerprint) + fingerprintIdentity, groupIdentifier: groupIdentifier,
+                        filename: packFingerprintFilename, containerURL: containerURL)
+                }
                 try saveBlockerListFile(contents: fingerprint + fingerprintIdentity, groupIdentifier: groupIdentifier,
                     filename: fingerprintFilename, containerURL: containerURL)
             }
@@ -2052,16 +2068,20 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         )
     }
 
-    private struct EnginePlanInputs {
+    struct EnginePlanInputs {
         let plan: WBEngine.Plan
         let targetIndex: Int
         let requestJSON: String
+        /// The extras this blocker compiles with.
         let extrasJSON: String
+        /// The extras the plan packs by, when this blocker compiles more than
+        /// those; nil when it compiles exactly the plan's.
+        let planExtrasJSON: String?
         let fingerprints: String
     }
 
     /// The engine plan that builds every blocker for one selection.
-    private static func enginePlanInputs(
+    static func enginePlanInputs(
         filters: [FilterList],
         orderedSelectedFilters: [FilterList],
         targetInfo: ContentBlockerTargetInfo,
@@ -2101,19 +2121,30 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         }
         let safari = SafariVersionDetection.current
         let limits = nativePlanLimits(disabledSites: disabledSites)
-        let extras: [[String: Any]] = [
-            ["text": embeddedCompatibilityRules, "trusted": true, "every_blocker": true],
-            ["text": extraRulesText ?? "", "trusted": true],
-            ["text": RemoveParamDNRRuleGenerator.savedRedirectCarveOuts(containerURL: containerURL), "trusted": false]
-        ]
-        let extrasJSON = String(decoding: try JSONSerialization.data(withJSONObject: extras), as: UTF8.self)
+        let carveOuts = RemoveParamDNRRuleGenerator.savedRedirectCarveOuts(containerURL: containerURL)
+        func extras(ownRules: String) -> [[String: Any]] {
+            [["text": embeddedCompatibilityRules, "trusted": true, "every_blocker": true],
+             ["text": ownRules, "trusted": true],
+             ["text": carveOuts, "trusted": false]]
+        }
+        func json(_ list: [[String: Any]]) throws -> String {
+            String(decoding: try JSONSerialization.data(withJSONObject: list), as: UTF8.self)
+        }
+        // Every blocker plans with the same extras, so all blockers of a
+        // selection share one plan. Rules only this blocker compiles (Element
+        // Zapper's) fill the empty entry at compile time; blockers without any
+        // compile with the plan's own extras and keep their saved fingerprints.
+        let planExtras = extras(ownRules: "")
+        let planExtrasJSON = try json(planExtras)
+        let ownRules = extraRulesText ?? ""
+        let extrasJSON = ownRules.isEmpty ? planExtrasJSON : try json(extras(ownRules: ownRules))
         // The output each blocker was last saved with, so the engine can tell which blockers the selection changes.
         let knownTargets: [Any] = allTargets.map { target -> Any in
             guard let saved = savedTargetBase(rulesFilename: target.rulesFilename, containerURL: containerURL) else {
                 return NSNull()
             }
             // The engine compares these as 16 lowercase hex digits, its `{:016x}` form.
-            return ["fingerprint": String(format: "%016llx", saved.fingerprint), "rules": saved.rules, "bytes": saved.bytes] as [String: Any]
+            return ["fingerprint": String(format: "%016llx", saved.packFingerprint), "rules": saved.rules, "bytes": saved.bytes] as [String: Any]
         }
         #if os(iOS)
         let packOutputsMaxBytes = ProcessInfo.processInfo.physicalMemory <= 4 * 1024 * 1024 * 1024
@@ -2122,7 +2153,7 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         let packOutputsMaxBytes = 100 * 1024 * 1024
         #endif
         let request: [String: Any] = ["safari": [safari.major, safari.minor], "lists": lists, "targets": targets,
-            "extras": extras, "known_targets": knownTargets, "cache_pack_outputs_max_bytes": packOutputsMaxBytes,
+            "extras": planExtras, "known_targets": knownTargets, "cache_pack_outputs_max_bytes": packOutputsMaxBytes,
             // The engine moves blocks between blockers only when every blocker
             // is built from this same plan.
             "limits": ["rules": followsPlan ? limits.rules : 0, "bytes": limits.bytes],
@@ -2138,16 +2169,29 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         let planKey = "wbe-plan|\(SafariVersionDetection.compilerIdentity)|\(requestJSON)|\(fingerprints)"
         let makePlan = { try WBEngine.Plan(requestJSON: requestJSON) }
         let plan = try CompilationScope.current.map { try $0.memoized(planKey, makePlan) } ?? makePlan()
-        return EnginePlanInputs(plan: plan, targetIndex: targetIndex, requestJSON: requestJSON,
-                                extrasJSON: extrasJSON, fingerprints: fingerprints)
+        return EnginePlanInputs(plan: plan, targetIndex: targetIndex, requestJSON: requestJSON, extrasJSON: extrasJSON,
+                                planExtrasJSON: ownRules.isEmpty ? nil : planExtrasJSON, fingerprints: fingerprints)
+    }
+
+    static func planFingerprintFilename(for rulesFilename: String) -> String {
+        "\(ContentBlockerIncrementalCache.baseRulesFilename(for: rulesFilename)).plan-fingerprint"
+    }
+
+    /// Saved beside the plan fingerprint only for a blocker compiled with rules
+    /// of its own: its fingerprint under the plan's extras, which `pack` measures by.
+    static func packFingerprintFilename(for rulesFilename: String) -> String {
+        "\(ContentBlockerIncrementalCache.baseRulesFilename(for: rulesFilename)).pack-fingerprint"
     }
 
     /// The plan fingerprint a blocker's saved output was built with. The file holds it
     /// with the compiler identity appended, so output from another compiler never matches.
     static func savedPlanFingerprint(rulesFilename: String, containerURL: URL) -> UInt64? {
+        savedFingerprint(filename: planFingerprintFilename(for: rulesFilename), containerURL: containerURL)
+    }
+
+    private static func savedFingerprint(filename: String, containerURL: URL) -> UInt64? {
         let identity = "|\(SafariVersionDetection.compilerIdentity)"
-        let fileURL = containerURL.appendingPathComponent(
-            "\(ContentBlockerIncrementalCache.baseRulesFilename(for: rulesFilename)).plan-fingerprint")
+        let fileURL = containerURL.appendingPathComponent(filename)
         guard let saved = try? String(contentsOf: fileURL, encoding: .utf8), saved.hasSuffix(identity) else {
             return nil
         }
@@ -2157,6 +2201,9 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
     /// A blocker's saved base output: its plan fingerprint, rule count, and JSON size.
     struct SavedTargetBase {
         let fingerprint: UInt64
+        /// The fingerprint `pack` gives this output. It differs from `fingerprint`
+        /// only for a blocker compiled with rules of its own, which the plan packs without.
+        let packFingerprint: UInt64
         let rules: Int
         let bytes: Int
     }
@@ -2165,6 +2212,8 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         guard let fingerprint = savedPlanFingerprint(rulesFilename: rulesFilename, containerURL: containerURL) else {
             return nil
         }
+        let packFingerprint = savedFingerprint(filename: packFingerprintFilename(for: rulesFilename), containerURL: containerURL)
+            ?? fingerprint
         let baseFilename = ContentBlockerIncrementalCache.baseRulesFilename(for: rulesFilename)
         guard let countText = try? String(
                 contentsOf: containerURL.appendingPathComponent("\(baseFilename).count"), encoding: .utf8),
@@ -2172,7 +2221,7 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
               let bytes = (try? FileManager.default.attributesOfItem(
                   atPath: containerURL.appendingPathComponent(baseFilename).path))?[.size] as? Int
         else { return nil }
-        return SavedTargetBase(fingerprint: fingerprint, rules: rules, bytes: bytes)
+        return SavedTargetBase(fingerprint: fingerprint, packFingerprint: packFingerprint, rules: rules, bytes: bytes)
     }
 
     /// What a rebuild of `allTargets` would change, judged by each blocker's plan
