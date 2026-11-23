@@ -402,9 +402,38 @@ enum BasicBundle: Hashable, Identifiable, Sendable {
         filters.contains { !$0.isCustom && $0.category == .foreign && ($0.isSelected != appliedSelectedIDs.contains($0.id)) }
     }
 
+    /// Returns the built-in `.foreign` filter IDs to enable for `languages` in
+    /// Standard mode. Uses recommended filters for each language, falling back
+    /// to non-superseded optional filters when a language only has low-trust
+    /// lists (such as Albanian or Dhivehi) so every picker entry is selectable.
+    static func recommendedRegionalFilterIDs(
+        for languages: Set<String>,
+        in filters: [FilterList]
+    ) -> Set<UUID> {
+        let foreignLists = filters.filter { !$0.isCustom && $0.category == .foreign }
+        guard !languages.isEmpty, !foreignLists.isEmpty else { return [] }
+
+        var selectedIDs = Set<UUID>()
+        for code in Set(languages.map(RegionalLanguageOption.canonicalCode)) {
+            let targets = RegionalLanguageOption.expanding([code])
+            let matching = foreignLists.filter { filter in
+                !Set(filter.languages.map(RegionalLanguageOption.canonicalCode)).isDisjoint(with: targets)
+            }
+            guard !matching.isEmpty else { continue }
+            let buckets = ForeignFilterOrganizer.recommendationBuckets(from: matching)
+            if !buckets.recommended.isEmpty {
+                selectedIDs.formUnion(buckets.recommended.map(\.id))
+            } else {
+                let fallback = buckets.optional.filter { !ForeignFilterOrganizer.isSuperseded($0) }
+                selectedIDs.formUnion((fallback.isEmpty ? buckets.optional : fallback).map(\.id))
+            }
+        }
+        return selectedIDs
+    }
+
     /// Derives the checked language codes for Standard mode's Languages picker
     /// from the live selected `.foreign` filters without expanding single-choice
-    /// selections into sibling languages of shared multi-language lists.
+    /// or fallback selections into sibling languages of shared lists.
     static func activeRegionalLanguageCodes(
         in filters: [FilterList],
         storedCodes: Set<String>
@@ -413,11 +442,16 @@ enum BasicBundle: Hashable, Identifiable, Sendable {
         guard !foreignSelected.isEmpty else { return [] }
 
         let normalizedStored = Set(storedCodes.map(RegionalLanguageOption.canonicalCode))
+        let expandedByStored = Dictionary(
+            uniqueKeysWithValues: normalizedStored.map { ($0, RegionalLanguageOption.expanding([$0])) }
+        )
         var active = Set<String>()
 
         for filter in foreignSelected {
             let filterCodes = Set(filter.languages.map(RegionalLanguageOption.canonicalCode))
-            let matchedStored = filterCodes.intersection(normalizedStored)
+            let matchedStored = normalizedStored.filter { code in
+                !(expandedByStored[code] ?? [code]).isDisjoint(with: filterCodes)
+            }
             if !matchedStored.isEmpty {
                 active.formUnion(matchedStored)
             } else {
@@ -437,6 +471,9 @@ enum BasicBundle: Hashable, Identifiable, Sendable {
         in filters: [FilterList]
     ) -> Set<String> {
         let normalizedStored = Set(storedCodes.map(RegionalLanguageOption.canonicalCode))
+        let expandedByStored = Dictionary(
+            uniqueKeysWithValues: normalizedStored.map { ($0, RegionalLanguageOption.expanding([$0])) }
+        )
         let removed = previousVisible.subtracting(newVisible)
         let added = newVisible.subtracting(previousVisible)
 
@@ -447,7 +484,10 @@ enum BasicBundle: Hashable, Identifiable, Sendable {
         let foreignSelected = filters.filter { !$0.isCustom && $0.category == .foreign && $0.isSelected }
         for filter in foreignSelected {
             let filterCodes = Set(filter.languages.map(RegionalLanguageOption.canonicalCode))
-            guard filterCodes.isDisjoint(with: normalizedStored) else { continue }
+            let hasMatchedStored = normalizedStored.contains { code in
+                !(expandedByStored[code] ?? [code]).isDisjoint(with: filterCodes)
+            }
+            guard !hasMatchedStored else { continue }
             if filterCodes.isDisjoint(with: removed) {
                 next.formUnion(filterCodes.intersection(newVisible))
             }

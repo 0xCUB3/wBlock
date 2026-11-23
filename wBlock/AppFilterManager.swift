@@ -431,6 +431,20 @@ class AppFilterManager: ObservableObject {
         }
     }
 
+    /// Marks pending Basic edits so app-backgrounding or mode switching flushes
+    /// them without starting the auto-apply timer while a picker is still open.
+    func markPendingBasicAutoApply() {
+        guard !pausedComponents.contains(.filters) else { return }
+        if !hasUnappliedChanges {
+            autoApplyTask?.cancel()
+            autoApplyTask = nil
+            hasQueuedBasicAutoApply = false
+            needsFollowUpBasicApply = false
+            return
+        }
+        hasQueuedBasicAutoApply = true
+    }
+
     /// Basic mode debounced auto-apply (2s delay, silent progress, re-runs once
     /// if another toggle lands while an apply is already in flight).
     func scheduleBasicAutoApply() {
@@ -1358,15 +1372,35 @@ class AppFilterManager: ObservableObject {
     /// Sets a filter's selection state without depending on the caller's stale toggle state.
     @discardableResult
     func setFilterListSelection(id: UUID, selected: Bool) -> Bool {
-        guard let index = filterListIndex(for: id), filterLists[index].isSelected != selected else {
-            return false
+        setFilterListSelections([(id: id, selected: selected)])
+    }
+
+    /// Applies multiple filter selection changes in a single published update.
+    @discardableResult
+    func setFilterListSelections(_ updates: [(id: UUID, selected: Bool)]) -> Bool {
+        var updatedLists = filterLists
+        var selectedIDsToClear: Set<UUID> = []
+        var mutated = false
+
+        for update in updates {
+            guard let index = filterListIndex(for: update.id),
+                  updatedLists[index].isSelected != update.selected else {
+                continue
+            }
+            updatedLists[index].isSelected = update.selected
+            if update.selected {
+                updatedLists[index].limitExceededReason = nil
+                selectedIDsToClear.insert(update.id)
+            }
+            mutated = true
         }
 
+        guard mutated else { return false }
+
         selectionMutationRevision &+= 1
-        filterLists[index].isSelected = selected
-        if selected {
-            filterLists[index].limitExceededReason = nil
-            autoDisabledFilters.removeAll { $0.id == id }
+        filterLists = updatedLists
+        if !selectedIDsToClear.isEmpty {
+            autoDisabledFilters.removeAll { selectedIDsToClear.contains($0.id) }
         }
 
         saveFilterListsCoalesced()

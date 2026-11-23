@@ -20,9 +20,26 @@ extension Locale {
         "sms": "nuõrttsääʹmǩiõll",
     ]
 
+    private static let nativeNameCacheLock = NSLock()
+    private static var nativeNameCache: [String: String?] = [:]
+
     /// A language in its own name ("Deutsch" for de).
     static func nativeLanguageName(for code: String) -> String? {
-        nativeNameOverrides[code] ?? Locale(identifier: code).localizedString(forLanguageCode: code)
+        if let override = nativeNameOverrides[code] {
+            return override
+        }
+        nativeNameCacheLock.lock()
+        if let cached = nativeNameCache[code] {
+            nativeNameCacheLock.unlock()
+            return cached
+        }
+        nativeNameCacheLock.unlock()
+
+        let resolved = Locale(identifier: code).localizedString(forLanguageCode: code)
+        nativeNameCacheLock.lock()
+        nativeNameCache[code] = resolved
+        nativeNameCacheLock.unlock()
+        return resolved
     }
 
     static var appCurrent: Locale {
@@ -103,14 +120,38 @@ struct RegionalLanguageOption: Identifiable, Hashable {
         Locale(identifier: Bundle.main.preferredLocalizations.first ?? Locale.current.identifier)
     }
 
+    private struct ForeignOptionsCacheKey: Hashable {
+        let localeIdentifier: String
+        let coveredCodes: [String]
+    }
+
+    private static let foreignOptionsCacheLock = NSLock()
+    private static var foreignOptionsCache: [ForeignOptionsCacheKey: [RegionalLanguageOption]] = [:]
+
     /// Covered languages and the languages that can recommend them.
     static func fromForeignFilters(
         _ filters: [FilterList],
         locale: Locale = displayLocale
     ) -> [RegionalLanguageOption] {
         let covered = Set(filters.filter { $0.category == .foreign }.flatMap(\.languages).map(canonicalCode))
+        let cacheKey = ForeignOptionsCacheKey(
+            localeIdentifier: locale.identifier,
+            coveredCodes: covered.sorted()
+        )
+        foreignOptionsCacheLock.lock()
+        if let cached = foreignOptionsCache[cacheKey] {
+            foreignOptionsCacheLock.unlock()
+            return cached
+        }
+        foreignOptionsCacheLock.unlock()
+
         let fallbacks = regionalFallbacks.filter { !covered.isDisjoint(with: $0.value) }.map(\.key)
-        return options(for: Array(covered) + fallbacks, locale: locale)
+        let built = options(for: Array(covered) + fallbacks, locale: locale)
+
+        foreignOptionsCacheLock.lock()
+        foreignOptionsCache[cacheKey] = built
+        foreignOptionsCacheLock.unlock()
+        return built
     }
 
     /// Chinese varieties share Chinese regional lists, so they pick Chinese

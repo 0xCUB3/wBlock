@@ -278,6 +278,58 @@ struct BasicModeTests {
             in: lists
         )
         precondition(afterRemovingSyncedCzech == ["ja"], "Unchecking one code from an untracked multi-language list must disable its group while preserving unrelated languages")
+
+        // Fallback language (Catalan -> Spanish/Portuguese, Kashmiri -> IndianList, Luxembourgish -> German+French)
+        // must show only the selected fallback language, never auto-check main sibling languages (#1155).
+        let spanishPortuguese = FilterList(
+            id: UUID(),
+            name: "AdGuard Spanish/Portuguese filter",
+            url: URL(string: "https://example.com/es-pt.txt")!,
+            category: .foreign,
+            isSelected: true,
+            languages: ["es", "pt"],
+            trustLevel: "full"
+        )
+        let indian = FilterList(
+            id: UUID(),
+            name: "IndianList",
+            url: URL(string: "https://example.com/indian.txt")!,
+            category: .foreign,
+            isSelected: true,
+            languages: ["hi", "bn", "ta", "te"],
+            trustLevel: "high"
+        )
+        let albanianLowTrust = FilterList(
+            id: UUID(),
+            name: "Adblock List for Albania",
+            url: URL(string: "https://example.com/sq.txt")!,
+            category: .foreign,
+            isSelected: false,
+            languages: ["sq"],
+            trustLevel: "low"
+        )
+        let fallbackCatalog = [spanishPortuguese, indian, albanianLowTrust]
+
+        let activeCatalan = BasicBundle.activeRegionalLanguageCodes(in: [spanishPortuguese], storedCodes: ["ca"])
+        precondition(activeCatalan == ["ca"], "Fallback language Catalan must display itself rather than Spanish/Portuguese")
+
+        let activeKashmiri = BasicBundle.activeRegionalLanguageCodes(in: [indian], storedCodes: ["ks"])
+        precondition(activeKashmiri == ["ks"], "Fallback language Kashmiri must display itself rather than all Indic languages")
+
+        let afterRemovingCatalan = BasicBundle.updatedStoredRegionalLanguageCodes(
+            previousVisible: activeCatalan,
+            newVisible: [],
+            storedCodes: ["ca"],
+            in: [spanishPortuguese]
+        )
+        precondition(afterRemovingCatalan.isEmpty, "Unchecking fallback language Catalan must clear stored selection")
+
+        // Languages whose only available list has low trust must still resolve to a selectable list (#1155).
+        let albanianIDs = BasicBundle.recommendedRegionalFilterIDs(for: ["sq"], in: fallbackCatalog)
+        precondition(albanianIDs == [albanianLowTrust.id], "Low-trust-only language must still select its list")
+
+        let catalanIDs = BasicBundle.recommendedRegionalFilterIDs(for: ["ca"], in: fallbackCatalog)
+        precondition(catalanIDs == [spanishPortuguese.id], "Fallback language must select its fallback filter")
     }
 
     private static func testSafariHealthPriorityOrder() {

@@ -25,6 +25,8 @@ struct BasicFiltersView: View {
     @State private var peekBundle: BasicBundle?
     @State private var unownedSheetItem: AlsoOnSheetItem?
     @State private var showingLanguagesSheet = false
+    @State private var storedLanguageCodes: Set<String> = BasicFiltersView.readStoredLanguageCodes()
+    @State private var hasPendingLanguageApply = false
     @State private var showingHeroPopover = false
     private static let stricterBlockingExpandedKey = "wBlock.basicStricterBlockingExpanded"
     @State private var showStricterBlocking: Bool
@@ -97,8 +99,8 @@ struct BasicFiltersView: View {
         RegionalLanguageOption.fromForeignFilters(filterManager.filterLists)
     }
 
-    private var storedLanguageCodes: Set<String> {
-        Set((Self.sharedDefaults.stringArray(forKey: OnboardingView.selectedLanguagesDefaultsKey) ?? [])
+    private static func readStoredLanguageCodes() -> Set<String> {
+        Set((sharedDefaults.stringArray(forKey: OnboardingView.selectedLanguagesDefaultsKey) ?? [])
             .map(RegionalLanguageOption.canonicalCode))
     }
 
@@ -210,6 +212,25 @@ struct BasicFiltersView: View {
             )
         }
         #endif
+        .onAppear {
+            storedLanguageCodes = Self.readStoredLanguageCodes()
+        }
+        .onDisappear {
+            if hasPendingLanguageApply {
+                hasPendingLanguageApply = false
+                filterManager.flushPendingSave()
+                filterManager.scheduleBasicAutoApply()
+            }
+        }
+        .onChangeCompat(of: showingLanguagesSheet) { _, isShowing in
+            if isShowing {
+                storedLanguageCodes = Self.readStoredLanguageCodes()
+            } else if hasPendingLanguageApply {
+                hasPendingLanguageApply = false
+                filterManager.flushPendingSave()
+                filterManager.scheduleBasicAutoApply()
+            }
+        }
     }
 
     // MARK: - Hero
@@ -749,26 +770,27 @@ struct BasicFiltersView: View {
     }
 
     private func applyLanguageSelection(_ languages: Set<String>) {
-        Self.sharedDefaults.set(Array(languages).sorted(), forKey: OnboardingView.selectedLanguagesDefaultsKey)
-        let expanded = RegionalLanguageOption.expanding(languages)
-        let foreignLists = filterManager.filterLists.filter { !$0.isCustom && $0.category == .foreign }
-        let matching = foreignLists.filter {
-            !Set($0.languages.map { $0.lowercased() }).isDisjoint(with: expanded)
-        }
-        let recommendedIDs = Set(ForeignFilterOrganizer.recommendationBuckets(from: matching).recommended.map(\.id))
+        let normalized = Set(languages.map(RegionalLanguageOption.canonicalCode))
+        storedLanguageCodes = normalized
+        Self.sharedDefaults.set(Array(normalized).sorted(), forKey: OnboardingView.selectedLanguagesDefaultsKey)
 
-        var mutated = false
-        for filter in foreignLists {
+        let foreignLists = filterManager.filterLists.filter { !$0.isCustom && $0.category == .foreign }
+        let recommendedIDs = BasicBundle.recommendedRegionalFilterIDs(for: normalized, in: foreignLists)
+        let updates = foreignLists.compactMap { filter -> (id: UUID, selected: Bool)? in
             let shouldBeSelected = recommendedIDs.contains(filter.id)
-            if filter.isSelected != shouldBeSelected {
-                if filterManager.setFilterListSelection(id: filter.id, selected: shouldBeSelected) {
-                    mutated = true
-                }
-            }
+            return filter.isSelected != shouldBeSelected ? (id: filter.id, selected: shouldBeSelected) : nil
         }
-        if mutated {
-            filterManager.flushPendingSave()
-            filterManager.scheduleBasicAutoApply()
+
+        if !updates.isEmpty, filterManager.setFilterListSelections(updates) {
+            if showingLanguagesSheet {
+                // Wait until the picker closes before starting compile/reload
+                // work so toggling multiple languages stays instant.
+                hasPendingLanguageApply = true
+                filterManager.markPendingBasicAutoApply()
+            } else {
+                filterManager.flushPendingSave()
+                filterManager.scheduleBasicAutoApply()
+            }
         }
     }
 
