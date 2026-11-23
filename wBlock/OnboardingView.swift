@@ -637,7 +637,7 @@ struct OnboardingView: View {
                     Text("Extras")
                         .font(.headline)
                     SelectableRowGroup(data: featuredExtras) { item in
-                        userscriptCard(for: item)
+                        userscriptCard(for: item, showLanguageCaption: true)
                     }
                 }
             }
@@ -1098,11 +1098,20 @@ struct OnboardingView: View {
         }
     }
 
-    private func userscriptCard(for script: OnboardingUserScriptItem) -> some View {
+    private func userscriptCard(
+        for script: OnboardingUserScriptItem,
+        showLanguageCaption: Bool = false
+    ) -> some View {
         let isSelected = selectedUserscripts.contains(script.id)
+        let languageCaption: String = showLanguageCaption && !script.languageCodes.isEmpty
+            ? script.languageCodes
+                .map { RegionalLanguageOption(code: $0).nativeName }
+                .joined(separator: ", ")
+            : ""
 
         return SelectableRow(
             title: Text(script.name),
+            caption: languageCaption,
             subtitle: script.description,
             badge: script.isBeta ? "Beta" : nil,
             isSelected: isSelected

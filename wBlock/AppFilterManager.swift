@@ -222,7 +222,27 @@ class AppFilterManager: ObservableObject {
     @Published private(set) var basicApplyCompletionToken = 0
     @Published private(set) var lastBasicApplyFailed = false
     @Published private(set) var lastBasicApplyFailedFilterIDs: Set<UUID> = []
+    @Published private(set) var showingBasicUpToDateStatus = false
     private var needsFollowUpBasicApply = false
+    private var basicUpToDateTask: Task<Void, Never>?
+
+    func showBasicUpToDateBriefly() {
+        basicUpToDateTask?.cancel()
+        showingBasicUpToDateStatus = true
+        basicUpToDateTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 3_500_000_000)
+            guard !Task.isCancelled else { return }
+            self?.showingBasicUpToDateStatus = false
+        }
+    }
+
+    func clearBasicUpToDateStatus() {
+        basicUpToDateTask?.cancel()
+        basicUpToDateTask = nil
+        if showingBasicUpToDateStatus {
+            showingBasicUpToDateStatus = false
+        }
+    }
 
     func markCurrentStateApplied() {
         appliedSelectedFilterIDs = selectedFilterIDs

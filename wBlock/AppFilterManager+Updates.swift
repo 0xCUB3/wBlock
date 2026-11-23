@@ -47,15 +47,19 @@ extension AppFilterManager {
 
     func checkForUpdates(
         scope: UpdateCheckScope = .all,
-        presentation: UpdateCheckPresentation = .blocking
+        presentation: UpdateCheckPresentation = .blocking,
+        autoApply: Bool = false
     ) async {
         // A running auto-update is already checking and applying the same lists;
         // show its progress instead of ignoring the request.
         guard !isAutoUpdateRunning else {
-            showBackgroundApplyProgress()
+            if !autoApply {
+                showBackgroundApplyProgress()
+            }
             return
         }
-        if presentation == .refresh {
+        clearBasicUpToDateStatus()
+        if presentation == .refresh || autoApply {
             suppressBlockingOverlay = true
         }
         updateCheckProgress = nil
@@ -64,7 +68,7 @@ extension AppFilterManager {
         defer {
             isLoading = false
             updateCheckProgress = nil
-            if presentation == .refresh {
+            if presentation == .refresh || autoApply {
                 suppressBlockingOverlay = false
             }
             drainFollowUpBasicApplyIfNeeded()
@@ -95,15 +99,29 @@ extension AppFilterManager {
 
         let totalUpdates = availableUpdates.count + availableScriptUpdates.count
         if totalUpdates > 0 {
-            applyProgressViewModel.presentReview()
-            showingApplyProgressSheet = true
-            statusDescription = LocalizedStrings.format(
-                "Found %d update(s) available.",
-                comment: "Updates found status",
-                totalUpdates
-            )
+            if autoApply {
+                let filtersToUpdate = availableUpdates
+                let scriptsToUpdate = availableScriptUpdates
+                await downloadAndApplySelectedUpdates(
+                    filters: filtersToUpdate,
+                    scripts: scriptsToUpdate,
+                    showProgressSheet: false
+                )
+            } else {
+                applyProgressViewModel.presentReview()
+                showingApplyProgressSheet = true
+                statusDescription = LocalizedStrings.format(
+                    "Found %d update(s) available.",
+                    comment: "Updates found status",
+                    totalUpdates
+                )
+            }
         } else {
-            showingNoUpdatesAlert = true
+            if autoApply {
+                showBasicUpToDateBriefly()
+            } else {
+                showingNoUpdatesAlert = true
+            }
             statusDescription = LocalizedStrings.text("No updates available.", comment: "No updates status")
             Task {
                 await ConcurrentLogManager.shared.info(
@@ -158,11 +176,12 @@ extension AppFilterManager {
     /// Downloads the selected filter/script updates, then runs the shared apply pipeline.
     func downloadAndApplySelectedUpdates(
         filters selectedFilters: [FilterList],
-        scripts selectedScripts: [UserScript]
+        scripts selectedScripts: [UserScript],
+        showProgressSheet: Bool = true
     ) async {
         let started = await performExclusiveApply {
             self.prepareApplyRunState()
-            self.showingApplyProgressSheet = true
+            self.showingApplyProgressSheet = showProgressSheet
 
             let downloadingStatus = LocalizedStrings.text(
                 "Downloading selected updates...",

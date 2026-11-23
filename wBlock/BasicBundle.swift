@@ -283,17 +283,19 @@ enum BasicBundle: Hashable, Identifiable, Sendable {
     }
 
     /// Derives `.off`, `.on`, or `.partlyOn` directly from `filters`.
+    /// Core bundles inspect `scopedFilters` so custom lists placed in that
+    /// category also participate in custom state and Reset to Recommended.
     func state(
         in filters: [FilterList],
         recommendedNames: Set<String> = FilterListLoader.recommendedFilterNames
     ) -> BasicBundleState {
-        let owned = ownedFilters(in: filters, recommendedNames: recommendedNames)
-        let selectedOwnedIDs = Set(owned.filter(\.isSelected).map(\.id))
-        if selectedOwnedIDs.isEmpty {
+        let scoped = scopedFilters(in: filters, recommendedNames: recommendedNames)
+        let selectedScopedIDs = Set(scoped.filter(\.isSelected).map(\.id))
+        if selectedScopedIDs.isEmpty {
             return .off
         }
         let memberIDs = Set(memberFilters(in: filters, recommendedNames: recommendedNames).map(\.id))
-        if !memberIDs.isEmpty && selectedOwnedIDs == memberIDs {
+        if !memberIDs.isEmpty && selectedScopedIDs == memberIDs {
             return .on
         }
         return .partlyOn
@@ -508,21 +510,21 @@ struct BasicBundleToggleMemory: Sendable {
         in filters: [FilterList],
         recommendedNames: Set<String> = FilterListLoader.recommendedFilterNames
     ) -> [(id: UUID, selected: Bool)] {
-        let owned = bundle.ownedFilters(in: filters, recommendedNames: recommendedNames)
-        let ownedIDs = Set(owned.map(\.id))
+        let scoped = bundle.scopedFilters(in: filters, recommendedNames: recommendedNames)
+        let scopedIDs = Set(scoped.map(\.id))
         let currentState = bundle.state(in: filters, recommendedNames: recommendedNames)
 
         if !turnOn {
             if currentState == .partlyOn {
-                snapshots[bundle.id] = Set(owned.filter(\.isSelected).map(\.id))
+                snapshots[bundle.id] = Set(scoped.filter(\.isSelected).map(\.id))
             } else {
                 snapshots.removeValue(forKey: bundle.id)
             }
-            return owned.filter(\.isSelected).map { ($0.id, false) }
+            return scoped.filter(\.isSelected).map { ($0.id, false) }
         } else {
             let targetIDs: Set<UUID>
             if let saved = snapshots.removeValue(forKey: bundle.id) {
-                let valid = saved.intersection(ownedIDs)
+                let valid = saved.intersection(scopedIDs)
                 if !valid.isEmpty {
                     targetIDs = valid
                 } else {
@@ -531,23 +533,24 @@ struct BasicBundleToggleMemory: Sendable {
             } else {
                 targetIDs = Set(bundle.memberFilters(in: filters, recommendedNames: recommendedNames).map(\.id))
             }
-            return owned.compactMap { filter in
+            return scoped.compactMap { filter in
                 let desired = targetIDs.contains(filter.id)
                 return filter.isSelected == desired ? nil : (filter.id, desired)
             }
         }
     }
 
-    /// Normalizes a bundle to its recommended `members` and clears any snapshot.
+    /// Normalizes a bundle to its recommended `members` (including disabling
+    /// custom lists placed in the category) and clears any snapshot.
     mutating func resetToRecommendedChanges(
         for bundle: BasicBundle,
         in filters: [FilterList],
         recommendedNames: Set<String> = FilterListLoader.recommendedFilterNames
     ) -> [(id: UUID, selected: Bool)] {
         snapshots.removeValue(forKey: bundle.id)
-        let owned = bundle.ownedFilters(in: filters, recommendedNames: recommendedNames)
+        let scoped = bundle.scopedFilters(in: filters, recommendedNames: recommendedNames)
         let memberIDs = Set(bundle.memberFilters(in: filters, recommendedNames: recommendedNames).map(\.id))
-        return owned.compactMap { filter in
+        return scoped.compactMap { filter in
             let desired = memberIDs.contains(filter.id)
             return filter.isSelected == desired ? nil : (filter.id, desired)
         }

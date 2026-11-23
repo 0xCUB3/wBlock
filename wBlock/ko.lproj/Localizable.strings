@@ -1287,3 +1287,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Try Simpler Layout" = "간단한 레이아웃 사용해 보기";
 "wBlock now opens with a simpler layout, with a few switches in place of the long list. It uses the same engine, and every list and userscript you had on is still on. To see the full list view, tap Show All Filter Lists at the bottom of Filters or turn on Show All Lists in Settings → Advanced." = "이제 wBlock이 긴 목록 대신 몇 개의 스위치로 구성된 간단한 레이아웃으로 열립니다. 동일한 엔진을 사용하며 켜 두었던 모든 목록과 유저스크립트는 그대로 유지됩니다. 전체 목록을 보려면 필터 하단의 모든 필터 목록 표시를 탭하거나 설정 → 고급에서 모든 목록 표시를 켜세요.";
 "wBlock has a new simpler layout with a few switches in place of the long list. You have custom lists or userscripts, so wBlock kept showing all your lists and nothing moved. Try the simpler layout below or toggle Show All Lists anytime in Settings → Advanced." = "wBlock에 긴 목록 대신 몇 개의 스위치로 구성된 새로운 간단한 레이아웃이 추가되었습니다. 사용자 지정 목록이나 유저스크립트가 있어 모든 목록이 그대로 표시되며 아무것도 변경되지 않았습니다. 아래에서 간단한 레이아웃을 사용해 보거나 설정 → 고급에서 언제든 모든 목록 표시를 전환할 수 있습니다.";
+"Customize Lists" = "목록 사용자화";
+"Filters are up to date." = "필터가 최신 상태입니다.";

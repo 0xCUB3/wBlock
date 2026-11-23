@@ -222,7 +222,10 @@ struct ContentView: View {
     }
 
     private var showBasicBottomAccessory: Bool {
-        appMode == .basic && !healthStatus.isProtected && (!isBasicHeroVisible || tabSelection.value != 0)
+        appMode == .basic
+            && !healthStatus.isProtected
+            && healthStatus != .applying
+            && (!isBasicHeroVisible || tabSelection.value != 0)
     }
 
     private func handleHealthAction(_ action: SafariHealthStatus.Action) {
@@ -535,7 +538,10 @@ struct ContentView: View {
                     safariHealth: safariHealth,
                     lastUpdatedDate: latestFilterUpdateDate,
                     onOpenHealthDetail: { showingHealthDetail = true },
-                    onCheckForUpdates: { checkForUpdates(scope: .all) },
+                    onCheckForUpdates: {
+                        guard !filterManager.isLoading else { return }
+                        Task { await filterManager.checkForUpdates(scope: .all, presentation: .refresh, autoApply: true) }
+                    },
                     onHealthAction: handleHealthAction,
                     onHeroVisibilityChange: { visible in
                         if isBasicHeroVisible != visible { isBasicHeroVisible = visible }
@@ -608,7 +614,7 @@ struct ContentView: View {
             hasPendingChanges: false,
             onTap: {
                 guard !filterManager.isLoading else { return }
-                Task { await filterManager.checkForUpdates(scope: .all, presentation: .blocking) }
+                Task { await filterManager.checkForUpdates(scope: .all, presentation: .refresh, autoApply: true) }
             },
             onBusyTap: filterManager.showBackgroundApplyProgress
         ) {

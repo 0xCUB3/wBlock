@@ -261,11 +261,14 @@ struct ProtectionHero: View {
     let isWelded: Bool
     let weldCelebrationCount: Int
     var applyProgress: Double? = nil
+    var statusSubtitleOverride: String? = nil
     let onTapHero: () -> Void
     let onAction: (SafariHealthStatus.Action) -> Void
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 30)) { context in
+            let subtitleText = (status.isProtected ? statusSubtitleOverride : nil)
+                ?? status.subtitle(now: context.date)
             VStack(spacing: 10) {
                 Button(action: onTapHero) {
                     VStack(spacing: 8) {
@@ -288,7 +291,7 @@ struct ProtectionHero: View {
                                     .foregroundStyle(.tertiary)
                                     .accessibilityHidden(true)
                             }
-                            Text(status.subtitle(now: context.date))
+                            Text(subtitleText)
                                 .font(.footnote)
                                 .foregroundStyle(.secondary)
                                 .multilineTextAlignment(.center)
@@ -301,7 +304,7 @@ struct ProtectionHero: View {
                 .buttonStyle(.plain)
                 .noFocusRingCompat()
                 .accessibilityElement(children: .combine)
-                .accessibilityLabel(Text("\(status.title). \(status.subtitle(now: context.date))"))
+                .accessibilityLabel(Text("\(status.title). \(subtitleText)"))
                 .accessibilityHint(Text("Shows Safari extension status"))
 
                 if let action = status.action, let ctaTitle = status.ctaTitle {

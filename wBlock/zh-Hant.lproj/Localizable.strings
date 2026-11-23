@@ -1287,3 +1287,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Try Simpler Layout" = "試用簡潔版面";
 "wBlock now opens with a simpler layout, with a few switches in place of the long list. It uses the same engine, and every list and userscript you had on is still on. To see the full list view, tap Show All Filter Lists at the bottom of Filters or turn on Show All Lists in Settings → Advanced." = "wBlock 現在以更簡潔的版面開啟，用幾個開關取代了長清單。引擎完全相同，你先前啟用的所有清單和使用者腳本都保持開啟。若要檢視完整清單，請點一下「過濾器」底部的「顯示所有過濾清單」，或在「設定 → 進階」中開啟「顯示所有清單」。";
 "wBlock has a new simpler layout with a few switches in place of the long list. You have custom lists or userscripts, so wBlock kept showing all your lists and nothing moved. Try the simpler layout below or toggle Show All Lists anytime in Settings → Advanced." = "wBlock 新增了更簡潔的版面，用幾個開關取代了長清單。因為你有自訂清單或使用者腳本，wBlock 維持顯示所有清單且未做任何更動。你可以在下方試用簡潔版面，或隨時在「設定 → 進階」中切換「顯示所有清單」。";
+"Customize Lists" = "自訂清單";
+"Filters are up to date." = "過濾清單已是最新。";

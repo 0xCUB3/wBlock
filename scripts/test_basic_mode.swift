@@ -147,6 +147,23 @@ struct BasicModeTests {
         apply(resetChanges, to: &lists)
         precondition(adsBundle.state(in: lists) == .on, "Reset to Recommended must normalize bundle to .on")
         precondition(!memory.hasSnapshot(for: adsBundle))
+
+        // Custom list inside a core category puts the bundle in .partlyOn and
+        // Reset to Recommended disables it (#1150).
+        var customInAds = FilterList(
+            id: UUID(),
+            name: "Custom Ads List",
+            url: URL(string: "https://example.com/custom-ads-reset.txt")!,
+            category: .ads,
+            isSelected: true
+        )
+        customInAds.isCustom = true
+        lists.append(customInAds)
+        precondition(adsBundle.state(in: lists) == .partlyOn, "Custom list enabled in Ads must yield .partlyOn")
+        let resetCustomChanges = memory.resetToRecommendedChanges(for: adsBundle, in: lists)
+        apply(resetCustomChanges, to: &lists)
+        precondition(adsBundle.state(in: lists) == .on, "Reset to Recommended must normalize Ads with custom list to .on")
+        precondition(!(lists.first { $0.id == customInAds.id }?.isSelected ?? true), "Reset to Recommended must disable custom lists in category")
     }
 
     private static func testBasicBundleUnownedActiveAndDirty() {

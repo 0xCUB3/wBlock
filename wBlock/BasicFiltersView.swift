@@ -16,15 +16,52 @@ struct BasicFiltersView: View {
     let onHeroVisibilityChange: (Bool) -> Void
     let onSwitchToAdvanced: () -> Void
 
+    private struct AlsoOnSheetItem: Identifiable {
+        let id = "alsoOn"
+    }
+
     @AppStorage(ListDisplayOrder.filtersKey) private var filterDisplayOrder = Data()
     @State private var toggleMemory = BasicBundleToggleMemory()
     @State private var peekBundle: BasicBundle?
-    @State private var showingUnownedSheet = false
+    @State private var unownedSheetItem: AlsoOnSheetItem?
     @State private var showingLanguagesSheet = false
     @State private var showingHeroPopover = false
     private static let stricterBlockingExpandedKey = "wBlock.basicStricterBlockingExpanded"
-    @State private var showStricterBlocking = UserDefaults.standard.bool(forKey: BasicFiltersView.stricterBlockingExpandedKey)
+    @State private var showStricterBlocking: Bool
     @State private var scrollOffset: CGFloat = 0
+
+    init(
+        filterManager: AppFilterManager,
+        safariHealth: SafariHealthMonitor,
+        lastUpdatedDate: Date?,
+        onOpenHealthDetail: @escaping () -> Void,
+        onCheckForUpdates: @escaping () -> Void,
+        onHealthAction: @escaping (SafariHealthStatus.Action) -> Void,
+        onHeroVisibilityChange: @escaping (Bool) -> Void,
+        onSwitchToAdvanced: @escaping () -> Void
+    ) {
+        self.filterManager = filterManager
+        self.safariHealth = safariHealth
+        self.lastUpdatedDate = lastUpdatedDate
+        self.onOpenHealthDetail = onOpenHealthDetail
+        self.onCheckForUpdates = onCheckForUpdates
+        self.onHealthAction = onHealthAction
+        self.onHeroVisibilityChange = onHeroVisibilityChange
+        self.onSwitchToAdvanced = onSwitchToAdvanced
+
+        // Respect the user's saved dropdown state when set; on first visit,
+        // start already expanded (without an appear animation) if any stricter
+        // annoyance list is active (#1150).
+        let initialExpanded: Bool
+        if UserDefaults.standard.object(forKey: Self.stricterBlockingExpandedKey) != nil {
+            initialExpanded = UserDefaults.standard.bool(forKey: Self.stricterBlockingExpandedKey)
+        } else {
+            initialExpanded = AnnoyanceChoice.basicStricterChoices.contains {
+                BasicBundle.annoyance($0).state(in: filterManager.filterLists) != .off
+            }
+        }
+        _showStricterBlocking = State(initialValue: initialExpanded)
+    }
 
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -128,14 +165,9 @@ struct BasicFiltersView: View {
         #if os(iOS)
         .refreshable {
             guard !filterManager.isLoading else { return }
-            await filterManager.checkForUpdates(scope: .filters, presentation: .refresh)
+            await filterManager.checkForUpdates(scope: .filters, presentation: .refresh, autoApply: true)
         }
         #endif
-        .onAppear {
-            if hasActiveStricterAnnoyance {
-                showStricterBlocking = true
-            }
-        }
         .infoPresentation(item: $peekBundle) { bundle in
             BasicBundlePeekView(
                 bundle: bundle,
@@ -149,7 +181,7 @@ struct BasicFiltersView: View {
                 }
             )
         }
-        .sheet(isPresented: $showingUnownedSheet) {
+        .infoPresentation(item: $unownedSheetItem) { _ in
             ScopedBundleListsSheet(
                 title: String(localized: "Also on"),
                 filters: FilterListPresentation.ordered(unownedActiveFilters, order: filterDisplayOrder),
@@ -178,6 +210,9 @@ struct BasicFiltersView: View {
             isWelded: safariHealth.hysteresis.isWelded,
             weldCelebrationCount: safariHealth.weldCelebrationCount,
             applyProgress: applyProgress,
+            statusSubtitleOverride: filterManager.showingBasicUpToDateStatus
+                ? String(localized: "Filters are up to date.")
+                : nil,
             onTapHero: {
                 #if os(macOS)
                 showingHeroPopover = true
@@ -624,7 +659,7 @@ struct BasicFiltersView: View {
             isBypassPaywallsCleanEnabled: isBypassPaywallsCleanEnabled
         )
         return Button {
-            showingUnownedSheet = true
+            unownedSheetItem = AlsoOnSheetItem()
         } label: {
             HStack(spacing: 12) {
                 IconBadge(
@@ -654,6 +689,7 @@ struct BasicFiltersView: View {
         }
         .buttonStyle(.plain)
         .noFocusRingCompat()
+        .infoPopoverAnchor("alsoOn")
     }
 
     // MARK: - Footer
@@ -923,13 +959,8 @@ struct BasicBundlePeekView: View {
                     }
                 } label: {
                     HStack {
-                        Text(
-                            String.localizedStringWithFormat(
-                                NSLocalizedString("All %d lists", comment: "Peek button to toggle scoped category lists"),
-                                scopedFilters.count
-                            )
-                        )
-                        .font(.subheadline.weight(.medium))
+                        Text("Customize Lists")
+                            .font(.subheadline.weight(.medium))
                         Spacer()
                         Image(systemName: "chevron.down")
                             .font(.caption.weight(.semibold))
@@ -1101,43 +1132,77 @@ struct ScopedBundleListsSheet: View {
 
     var body: some View {
         #if os(macOS)
-        VStack(spacing: 0) {
-            SheetHeader(verbatim: title) { dismiss() }
-            Divider()
-            List {
-                ForEach(liveFilters) { filter in
-                    scopedRow(filter)
-                }
-            }
-            .listStyle(.inset)
-        }
-        .frame(width: 460, height: 420)
+        sheetBody
+            .padding(16)
+            .frame(width: 360)
         #else
-        CompatibleNavigationStack {
-            List {
-                ForEach(liveFilters) { filter in
-                    scopedRow(filter)
-                }
-            }
-            .unifiedTabListStyle()
-            .navigationTitle(title)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
-                }
-            }
+        ScrollView {
+            sheetBody
+                .padding(SheetDesign.contentHorizontalPadding)
         }
+        .scrollBounceBasedOnSizeCompat()
+        .opaqueSheetBackgroundCompat()
+        .modifier(AlsoOnSheetDetentsCompat())
         #endif
     }
 
+    private var sheetBody: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 12) {
+                IconBadge(
+                    systemName: "square.stack.3d.up.fill",
+                    tint: .accentColor,
+                    isOn: liveFilters.contains(where: \.isSelected),
+                    size: 34
+                )
+
+                Text(title)
+                    .font(.headline)
+
+                Spacer(minLength: 8)
+
+                SheetDoneButton { dismiss() }
+            }
+
+            Divider()
+
+            let rows = VStack(spacing: 0) {
+                ForEach(Array(liveFilters.enumerated()), id: \.element.id) { index, filter in
+                    scopedRow(filter)
+                    if index < liveFilters.count - 1 {
+                        Divider()
+                    }
+                }
+            }
+            .padding(.horizontal, 6)
+
+            #if os(macOS)
+            if liveFilters.count > 5 {
+                ScrollView {
+                    rows
+                        .padding(.trailing, 4)
+                }
+                .frame(height: 260)
+                .padding(.horizontal, -6)
+            } else {
+                rows
+                    .padding(.horizontal, -6)
+            }
+            #else
+            rows
+                .padding(.horizontal, -6)
+            #endif
+        }
+    }
+
     private func scopedRow(_ filter: FilterList) -> some View {
-        HStack(alignment: .center, spacing: 12) {
-            VStack(alignment: .leading, spacing: 3) {
+        HStack(alignment: .center, spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
                     Text(filter.localizedDisplayName)
-                        .font(.body.weight(.medium))
+                        .font(.subheadline.weight(.medium))
                         .foregroundStyle(.primary)
+                        .fixedSize(horizontal: false, vertical: true)
                     if filter.isCustom {
                         Text("Custom")
                             .font(.caption2.weight(.semibold))
@@ -1152,6 +1217,7 @@ struct ScopedBundleListsSheet: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
             Spacer(minLength: 8)
@@ -1166,11 +1232,28 @@ struct ScopedBundleListsSheet: View {
             ))
             .labelsHidden()
             .toggleStyle(.switch)
+            #if os(macOS)
+            .controlSize(.small)
+            #endif
             .fixedSize()
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, 7)
     }
 }
+
+#if os(iOS)
+private struct AlsoOnSheetDetentsCompat: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 16.0, *) {
+            content
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+        } else {
+            content
+        }
+    }
+}
+#endif
 
 // MARK: - Scroll Tracking
 
