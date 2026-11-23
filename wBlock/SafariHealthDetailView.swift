@@ -104,37 +104,6 @@ struct SafariHealthDetailView: View {
                 .buttonStyle(.borderedProminent)
                 .tint(status.tone.color)
             }
-
-            Divider()
-
-            // Filter updates metadata + Check for Updates
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("Filter Lists")
-                        .font(.subheadline.weight(.medium))
-                    Spacer()
-                    Text(lastUpdatedSummary)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-
-                Button {
-                    dismiss()
-                    onCheckForUpdates()
-                } label: {
-                    HStack {
-                        if filterManager.isLoading || filterManager.isAutoUpdateRunning {
-                            ProgressView().controlSize(.small)
-                        } else {
-                            Image(systemName: "arrow.triangle.2.circlepath")
-                        }
-                        Text("Check for Updates")
-                    }
-                    .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.bordered)
-                .disabled(filterManager.isLoading || filterManager.isAutoUpdateRunning)
-            }
         }
         .task {
             await safariHealth.refreshNow()
@@ -194,14 +163,6 @@ struct SafariHealthDetailView: View {
             .buttonStyle(.plain)
         }
     }
-
-    private var lastUpdatedSummary: String {
-        guard let lastUpdatedDate else {
-            return String(localized: "Not updated yet")
-        }
-        let formatter = LocalizedFormatting.relativeDateTimeFormatter(unitsStyle: .full)
-        return formatter.localizedString(for: lastUpdatedDate, relativeTo: Date())
-    }
 }
 
 #if os(iOS)
@@ -211,7 +172,6 @@ private struct DetailSheetDetentsModifier: ViewModifier {
             content
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
-                .fittedFormSheetSizingCompat()
         } else {
             content
         }
