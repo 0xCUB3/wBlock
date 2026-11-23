@@ -66,11 +66,34 @@ if [[ -d "$OUT/WBE.xcframework" && "$(cat "$STAMP" 2>/dev/null)" == "$inputs" ]]
 fi
 
 # Xcode Cloud and some CI images ship without Rust. Their network sometimes
-# refuses the first connection (build 1656), so the installer download retries.
+# refuses early connections (build 1656, 1711), including inside rustup-init.sh
+# and rustup's own downloads, so retry the whole install/toolchain/target steps.
+retry() {
+    local attempt=1
+    local max_attempts=5
+    while true; do
+        if "$@"; then
+            return 0
+        fi
+        local status=$?
+        if [[ "$attempt" -ge "$max_attempts" ]]; then
+            return "$status"
+        fi
+        echo "Command failed with exit $status (attempt $attempt/$max_attempts); retrying in 5s: $*" >&2
+        attempt=$((attempt + 1))
+        sleep 5
+    done
+}
+
+install_rustup() {
+    curl --proto '=https' --tlsv1.2 -sSf --retry 5 --retry-all-errors --retry-delay 5 https://sh.rustup.rs \
+        | sh -s -- -y --profile minimal --default-toolchain none
+}
+
 export PATH="$HOME/.cargo/bin:$PATH"
-command -v rustup >/dev/null || curl --proto '=https' --tlsv1.2 -sSf --retry 5 --retry-all-errors --retry-delay 5 https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain none
+command -v rustup >/dev/null || retry install_rustup
 if ! rustup toolchain list | grep -q "^${TOOLCHAIN}"; then
-    rustup toolchain install "$TOOLCHAIN" --profile minimal
+    retry rustup toolchain install "$TOOLCHAIN" --profile minimal
 fi
 INSTALLED_TARGETS="$(rustup target list --toolchain "$TOOLCHAIN" --installed)"
 MISSING_TARGETS=()
@@ -80,7 +103,7 @@ for target in "${TARGETS[@]}"; do
     fi
 done
 if [[ "${#MISSING_TARGETS[@]}" -gt 0 ]]; then
-    rustup target add --toolchain "$TOOLCHAIN" "${MISSING_TARGETS[@]}"
+    retry rustup target add --toolchain "$TOOLCHAIN" "${MISSING_TARGETS[@]}"
 fi
 
 # Build all requested targets in one cargo invocation so build scripts and
