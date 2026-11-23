@@ -945,10 +945,12 @@ struct BasicBundlePeekView: View {
                 VStack(spacing: 0) {
                     if showAllLists {
                         inlineScopedLists
+                            .padding(.horizontal, 6)
                             .transition(.opacity.combined(with: .move(edge: .top)))
                     }
                 }
                 .clipped()
+                .padding(.horizontal, -6)
             }
             .animation(.spring(response: 0.32, dampingFraction: 0.86), value: showAllLists)
         }
