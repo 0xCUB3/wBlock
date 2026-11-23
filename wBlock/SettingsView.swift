@@ -8,6 +8,7 @@ struct SettingsView: View {
     @ObservedObject private var dataManager = ProtobufDataManager.shared
     @ObservedObject private var syncManager = CloudSyncManager.shared
     @AppStorage(AppMode.storageKey) private var appMode: AppMode = .basic
+    @Environment(\.openURL) private var openURL
     private static let autoUpdateIntervalPresets: [Double] = [1, 2, 4, 6, 12, 24, 48, 72, 168]
     static let reportIssueURL = URL(string: "https://github.com/0xCUB3/wBlock/issues/new/choose")!
     static let sourceCodeURL = URL(string: "https://github.com/0xCUB3/wBlock")!
@@ -249,29 +250,8 @@ struct SettingsView: View {
     private static let modeFooterKey: LocalizedStringKey =
         "Standard is best for most people. Both modes block the same things, and switching never changes your filters. Advanced adds manual control of lists and userscripts."
 
-    #if os(iOS)
     @ViewBuilder
     private var modeSection: some View {
-        Section {
-            Picker("Mode", selection: modeBinding) {
-                ForEach(AppMode.allCases) { mode in
-                    Text(mode.title).tag(mode)
-                }
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-        } header: {
-            Text("Mode")
-        } footer: {
-            Text(Self.modeFooterKey)
-        }
-    }
-    #endif
-
-    /// Mode, Autoplay and Appearance lead Settings; the site pages follow under
-    /// Websites (#999).
-    @ViewBuilder
-    private var generalSection: some View {
         Section {
             #if os(macOS)
             CompatibleLabeledContent {
@@ -283,11 +263,42 @@ struct SettingsView: View {
                 .pickerStyle(.segmented)
                 .labelsHidden()
                 .fixedSize()
-                .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] }
             } label: {
-                rowLabel("Mode", detail: Text(Self.modeFooterKey))
+                Text("Mode")
             }
+            #else
+            Picker("Mode", selection: modeBinding) {
+                ForEach(AppMode.allCases) { mode in
+                    Text(mode.title).tag(mode)
+                }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
             #endif
+        } header: {
+            #if os(macOS)
+            if appMode == .advanced {
+                // The form draws a header without a card, so the pills ride here.
+                VStack(alignment: .leading, spacing: 16) {
+                    statusPills.frame(maxWidth: .infinity)
+                    Text("Mode")
+                }
+            } else {
+                Text("Mode")
+            }
+            #else
+            Text("Mode")
+            #endif
+        } footer: {
+            Text(Self.modeFooterKey)
+        }
+    }
+
+    /// Autoplay and Appearance lead General; the site pages follow under
+    /// Websites (#999).
+    @ViewBuilder
+    private var generalSection: some View {
+        Section {
             Toggle(isOn: autoplayBinding) {
                 rowLabel(
                     "Autoplay",
@@ -318,19 +329,7 @@ struct SettingsView: View {
             }
             #endif
         } header: {
-            #if os(macOS)
-            if appMode == .advanced {
-                // The form draws a header without a card, so the pills ride here.
-                VStack(alignment: .leading, spacing: 16) {
-                    statusPills.frame(maxWidth: .infinity)
-                    sectionHeader(.general)
-                }
-            } else {
-                sectionHeader(.general)
-            }
-            #else
             sectionHeader(.general)
-            #endif
         }
     }
 
@@ -830,14 +829,28 @@ struct SettingsView: View {
             Link(destination: Self.faqURL) {
                 SettingsRowLabel("FAQ", systemImage: "questionmark.circle", accessory: .external)
             }
-            Link(destination: Self.reportIssueURL) {
-                SettingsRowLabel("Report Issues", systemImage: "exclamationmark.triangle", accessory: .external)
+            Menu {
+                Button {
+                    openURL(Self.reportIssueURL)
+                } label: {
+                    Label("Report an Issue", systemImage: "exclamationmark.triangle")
+                }
+                Button {
+                    openURL(Self.contactURL)
+                } label: {
+                    Label("Discord", systemImage: "bubble.left")
+                }
+            } label: {
+                SettingsRowLabel("Help & Support", systemImage: "bubble.left", accessory: .popover)
             }
-            Link(destination: Self.contactURL) {
-                SettingsRowLabel("Contact Us", systemImage: "bubble.left", accessory: .external)
-            }
-            Link(destination: Self.sourceCodeURL) {
-                SettingsRowLabel("Source Code", systemImage: "chevron.left.forwardslash.chevron.right", accessory: .external)
+            #if os(macOS)
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            #endif
+            if appMode == .advanced {
+                Link(destination: Self.sourceCodeURL) {
+                    SettingsRowLabel("Source Code", systemImage: "chevron.left.forwardslash.chevron.right", accessory: .external)
+                }
             }
             Link(destination: Self.privacyPolicyURL) {
                 SettingsRowLabel("Privacy Policy", systemImage: "hand.raised", accessory: .external)
@@ -961,9 +974,7 @@ struct SettingsView: View {
 
     @ViewBuilder
     private var settingsSections: some View {
-        #if os(iOS)
         modeSection
-        #endif
         generalSection.settingsAnchor(.general)
         websitesSection.settingsAnchor(.websites)
         if appMode == .advanced {

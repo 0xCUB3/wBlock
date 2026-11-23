@@ -1283,3 +1283,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Works alongside AdGuard or EasyList." = "AdGuardまたはEasyListと併用して動作します。";
 "Hides newsletter sign-up prompts." = "ニュースレター登録の案内を非表示にします。";
 "Hides notification prompts." = "通知許可の案内を非表示にします。";
+"Help & Support" = "ヘルプとサポート";
+"Report an Issue" = "問題を報告";
+"Discord" = "Discord";

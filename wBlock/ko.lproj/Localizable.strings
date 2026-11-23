@@ -1274,3 +1274,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Works alongside AdGuard or EasyList." = "AdGuard 또는 EasyList와 함께 작동합니다.";
 "Hides newsletter sign-up prompts." = "뉴스레터 구독 요청을 숨깁니다.";
 "Hides notification prompts." = "알림 요청을 숨깁니다.";
+"Help & Support" = "도움말 및 지원";
+"Report an Issue" = "문제 신고";
+"Discord" = "Discord";

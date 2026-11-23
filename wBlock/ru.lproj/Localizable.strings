@@ -1274,3 +1274,6 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Works alongside AdGuard or EasyList." = "Работает вместе с AdGuard или EasyList.";
 "Hides newsletter sign-up prompts." = "Скрывает предложения подписаться на рассылку.";
 "Hides notification prompts." = "Скрывает запросы на отправку уведомлений.";
+"Help & Support" = "Помощь и поддержка";
+"Report an Issue" = "Сообщить о проблеме";
+"Discord" = "Discord";
