@@ -113,9 +113,7 @@ public enum NetworkRequestFactory {
 }
 
 public enum FilterDirectivePolicy {
-    private static let directiveIntroducer = "!#"
-
-    private static let preservedDirectiveNames: Set<String> = [
+    private static let preservedDirectiveNames: Set<Substring> = [
         "include",
         "if",
         "else",
@@ -124,16 +122,20 @@ public enum FilterDirectivePolicy {
     ]
 
     public static func shouldStripUnsupportedDirective(_ trimmedLine: String) -> Bool {
+        shouldStripUnsupportedDirective(trimmedLine[...])
+    }
+
+    static func shouldStripUnsupportedDirective(_ trimmedLine: Substring) -> Bool {
         guard let directiveName = preprocessorDirectiveName(in: trimmedLine) else { return false }
 
         return !preservedDirectiveNames.contains(directiveName)
     }
 
-    private static func preprocessorDirectiveName(in trimmedLine: String) -> String? {
-        var index = trimmedLine.startIndex
-        guard trimmedLine[index...].hasPrefix(directiveIntroducer) else { return nil }
+    private static func preprocessorDirectiveName(in trimmedLine: Substring) -> Substring? {
+        let utf8 = trimmedLine.utf8
+        guard utf8.starts(with: "!#".utf8) else { return nil }
 
-        index = trimmedLine.index(index, offsetBy: directiveIntroducer.count)
+        var index = utf8.index(utf8.startIndex, offsetBy: 2)
         guard index < trimmedLine.endIndex, trimmedLine[index].isLetter else { return nil }
 
         let nameStart = index
@@ -141,7 +143,7 @@ public enum FilterDirectivePolicy {
             index = trimmedLine.index(after: index)
         }
 
-        return String(trimmedLine[nameStart..<index])
+        return trimmedLine[nameStart..<index]
     }
 
     private static func isDirectiveNameCharacter(_ character: Character) -> Bool {
@@ -190,32 +192,91 @@ public enum FilterListContentProcessing {
         from content: String,
         onStrip: ((String) -> Void)? = nil
     ) -> String {
-        let lines = RuleText.lines(content, emptyLines: .kept)
-            .map { ($0, String(RuleText.trimmed($0, newlines: true))) }
+        let needsNewlineNormalization = hasNonLFNewline(in: content)
+
         // Converted as-is, a bare hostname is a substring match anywhere in the URL.
         // Only anchor it when every rule is a domain, since ABP lists use
         // hostname-shaped substrings such as `_werbung.php` on purpose. Rules
         // already anchored count as domains, so domains added while editing a
         // converted list are anchored too (#1107).
-        let isDomainList = lines.contains { matches(hostsHostname, $0.1) }
-            && lines.allSatisfy { line in
-                line.1.isEmpty || "!#[".contains(line.1.first!) || matches(hostsHostname, line.1)
-                    || (line.1.hasPrefix("||") && line.1.hasSuffix("^")
-                        && matches(hostsHostname, String(line.1.dropFirst(2).dropLast())))
+        var sawBareHostname = false
+        var allDomainCompatible = true
+        var needsRewrite = needsNewlineNormalization
+
+        RuleText.forEachLine(content, emptyLines: .kept) { line in
+            if !allDomainCompatible && needsRewrite { return }
+            let trimmed = RuleText.trimmed(line, newlines: true)
+            let utf8 = trimmed.utf8
+
+            if allDomainCompatible, let firstByte = utf8.first {
+                let isCommentOrHeader = firstByte == UInt8(ascii: "!")
+                    || firstByte == UInt8(ascii: "#")
+                    || firstByte == UInt8(ascii: "[")
+                if !isCommentOrHeader {
+                    if isHostsHostname(utf8) {
+                        sawBareHostname = true
+                    } else if !(utf8.starts(with: "||".utf8)
+                        && utf8.last == UInt8(ascii: "^")
+                        && isHostsHostname(utf8.dropFirst(2).dropLast())) {
+                        allDomainCompatible = false
+                    }
+                }
             }
-        var result: [String] = []
-        for (line, trimmed) in lines {
-            if isDomainList, matches(hostsHostname, trimmed) {
-                result.append("||\(trimmed.lowercased())^")
+
+            if !needsRewrite {
+                if hostsEntryHosts(trimmed) != nil || FilterDirectivePolicy.shouldStripUnsupportedDirective(trimmed) {
+                    needsRewrite = true
+                }
+            }
+        }
+
+        let isDomainList = sawBareHostname && allDomainCompatible
+        if !isDomainList && !needsRewrite {
+            return content
+        }
+
+        var output = ""
+        output.reserveCapacity(content.utf8.count)
+        var wroteAny = false
+        func appendLine<S: StringProtocol>(_ item: S) {
+            if wroteAny { output.append("\n") }
+            output.append(contentsOf: item)
+            wroteAny = true
+        }
+
+        RuleText.forEachLine(content, emptyLines: .kept) { line in
+            let trimmed = RuleText.trimmed(line, newlines: true)
+            if isDomainList, isHostsHostname(trimmed.utf8) {
+                appendLine("||\(RuleText.lowercased(trimmed))^")
             } else if let hosts = hostsEntryHosts(trimmed) {
-                result += hosts.map { "||\($0)^" }
+                for host in hosts {
+                    appendLine("||\(host)^")
+                }
             } else if FilterDirectivePolicy.shouldStripUnsupportedDirective(trimmed) {
                 onStrip?(String(trimmed.prefix(60)))
             } else {
-                result.append(String(line))
+                appendLine(line)
             }
         }
-        return result.joined(separator: "\n")
+        return output
+    }
+
+    private static func hasNonLFNewline(in text: String) -> Bool {
+        var text = text
+        return text.withUTF8 { bytes in
+            var i = 0
+            while i < bytes.count {
+                let b = bytes[i]
+                if b >= 0x0B && b <= 0x0D { return true }
+                if b == 0xC2, i + 1 < bytes.count, bytes[i + 1] == 0x85 { return true }
+                if b == 0xE2, i + 2 < bytes.count, bytes[i + 1] == 0x80,
+                   bytes[i + 2] == 0xA8 || bytes[i + 2] == 0xA9 {
+                    return true
+                }
+                i += 1
+            }
+            return false
+        }
     }
 
     /// The text a pasted or edited user list saves as. Saving the same text
@@ -224,35 +285,136 @@ public enum FilterListContentProcessing {
         normalizedContent(from: text.trimmingCharacters(in: .whitespacesAndNewlines))
     }
 
-    private static let hostsAddress = try! NSRegularExpression(
-        pattern: "^(?:\\d{1,3}(?:\\.\\d{1,3}){3}|[0-9A-Fa-f]*:[0-9A-Fa-f]*:[0-9A-Fa-f:.]*(?:%\\w+)?)$"
-    )
-    private static let hostsHostname = try! NSRegularExpression(
-        pattern: "^(?:[A-Za-z0-9_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?\\.)+[A-Za-z][A-Za-z0-9-]*$"
-    )
     private static let loopbackHostnames: Set<String> = ["localhost.localdomain", "ip6-localhost", "ip6-loopback"]
+
+    private static func isASCIIDigit(_ byte: UInt8) -> Bool {
+        byte >= UInt8(ascii: "0") && byte <= UInt8(ascii: "9")
+    }
+
+    private static func isASCIIHexDigit(_ byte: UInt8) -> Bool {
+        (byte >= UInt8(ascii: "0") && byte <= UInt8(ascii: "9"))
+            || (byte >= UInt8(ascii: "A") && byte <= UInt8(ascii: "F"))
+            || (byte >= UInt8(ascii: "a") && byte <= UInt8(ascii: "f"))
+    }
+
+    private static func isASCIIAlpha(_ byte: UInt8) -> Bool {
+        (byte >= UInt8(ascii: "A") && byte <= UInt8(ascii: "Z"))
+            || (byte >= UInt8(ascii: "a") && byte <= UInt8(ascii: "z"))
+    }
+
+    private static func isHostLabelEdge(_ byte: UInt8) -> Bool {
+        isASCIIAlpha(byte) || isASCIIDigit(byte) || byte == UInt8(ascii: "_")
+    }
+
+    private static func isHostTLDTail(_ byte: UInt8) -> Bool {
+        isASCIIAlpha(byte) || isASCIIDigit(byte) || byte == UInt8(ascii: "-")
+    }
+
+    /// Matches `^(?:[A-Za-z0-9_](?:[A-Za-z0-9_-]*[A-Za-z0-9_])?\.)+[A-Za-z][A-Za-z0-9-]*$`.
+    static func isHostsHostname<S: Sequence>(_ utf8: S) -> Bool where S.Element == UInt8 {
+        var dotCount = 0
+        var labelLen = 0
+        var labelLastByte: UInt8 = 0
+        var inLastLabelStart = false
+        var lastLabelValid = false
+
+        for byte in utf8 {
+            if byte == UInt8(ascii: ".") {
+                guard labelLen > 0, isHostLabelEdge(labelLastByte) else { return false }
+                dotCount += 1
+                labelLen = 0
+                inLastLabelStart = true
+                lastLabelValid = false
+                continue
+            }
+            if labelLen == 0 {
+                guard isHostLabelEdge(byte) else { return false }
+                if inLastLabelStart { lastLabelValid = isASCIIAlpha(byte) }
+            } else {
+                guard isHostLabelEdge(byte) || byte == UInt8(ascii: "-") else { return false }
+                if inLastLabelStart { lastLabelValid = lastLabelValid && isHostTLDTail(byte) }
+            }
+            labelLastByte = byte
+            labelLen += 1
+        }
+        return dotCount >= 1 && labelLen > 0 && lastLabelValid
+    }
+
+    /// Matches `^(?:\d{1,3}(?:\.\d{1,3}){3}|[0-9A-Fa-f]*:[0-9A-Fa-f]*:[0-9A-Fa-f:.]*(?:%\w+)?)$`.
+    static func isHostsAddress(_ value: Substring) -> Bool {
+        let utf8 = value.utf8
+        guard !utf8.isEmpty else { return false }
+
+        if utf8.contains(UInt8(ascii: ":")) {
+            var colonCount = 0
+            var seeingZone = false
+            var zoneLen = 0
+            for byte in utf8 {
+                if seeingZone {
+                    guard isHostLabelEdge(byte) else { return false }
+                    zoneLen += 1
+                    continue
+                }
+                if byte == UInt8(ascii: "%") {
+                    guard colonCount >= 2 else { return false }
+                    seeingZone = true
+                    continue
+                }
+                if byte == UInt8(ascii: ":") {
+                    colonCount += 1
+                } else if byte == UInt8(ascii: ".") {
+                    guard colonCount >= 2 else { return false }
+                } else if !isASCIIHexDigit(byte) {
+                    return false
+                }
+            }
+            return colonCount >= 2 && (!seeingZone || zoneLen > 0)
+        }
+
+        var dotCount = 0
+        var digitCount = 0
+        for byte in utf8 {
+            if byte == UInt8(ascii: ".") {
+                guard (1...3).contains(digitCount), dotCount < 3 else { return false }
+                dotCount += 1
+                digitCount = 0
+            } else if isASCIIDigit(byte) {
+                digitCount += 1
+                guard digitCount <= 3 else { return false }
+            } else {
+                return false
+            }
+        }
+        return dotCount == 3 && (1...3).contains(digitCount)
+    }
 
     /// The hostnames of a hosts-file line, or nil when the line is not one.
     /// Loopback names such as `localhost` map to an empty list.
     public static func hostsEntryHosts(_ trimmedLine: String) -> [String]? {
+        hostsEntryHosts(trimmedLine[...])
+    }
+
+    static func hostsEntryHosts(_ trimmedLine: Substring) -> [String]? {
         // An address, then whitespace before the first name.
         let utf8 = trimmedLine.utf8
         guard let first = utf8.first,
               (first >= 0x30 && first <= 0x3A) || ((first | 0x20) >= 0x61 && (first | 0x20) <= 0x66),
               utf8.contains(where: { $0 == 0x20 || $0 == 0x09 || $0 >= 0x80 })
         else { return nil }
-        let entry = trimmedLine.split(separator: "#", maxSplits: 1, omittingEmptySubsequences: false)[0]
-        let fields = entry.split(whereSeparator: \.isWhitespace).map(String.init)
-        guard fields.count >= 2, matches(hostsAddress, fields[0]) else { return nil }
+        let entry = utf8.firstIndex(of: UInt8(ascii: "#")).map { trimmedLine[..<$0] } ?? trimmedLine
+        let fields = entry.split(whereSeparator: \.isWhitespace)
+        guard fields.count >= 2, isHostsAddress(fields[0]) else { return nil }
         let names = fields.dropFirst()
-        guard names.allSatisfy({ !$0.contains("/") && !$0.contains("$") }) else { return nil }
-        return names
-            .map { $0.lowercased() }
-            .filter { matches(hostsHostname, $0) && !loopbackHostnames.contains($0) }
-    }
-
-    private static func matches(_ regex: NSRegularExpression, _ value: String) -> Bool {
-        regex.firstMatch(in: value, range: NSRange(value.startIndex..., in: value)) != nil
+        guard names.allSatisfy({ !$0.utf8.contains(UInt8(ascii: "/")) && !$0.utf8.contains(UInt8(ascii: "$")) }) else { return nil }
+        var hosts: [String] = []
+        hosts.reserveCapacity(names.count)
+        for name in names where isHostsHostname(name.utf8) {
+            let lower = RuleText.lowercased(name)
+            if !loopbackHostnames.contains(lower) {
+                hosts.append(lower)
+            }
+        }
+        return hosts
     }
 
     public static func localDataForComparison(filter: FilterList, containerURL: URL) -> Data? {
