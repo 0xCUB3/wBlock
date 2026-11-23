@@ -1260,3 +1260,17 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Switch to Advanced Mode" = "切换到高级模式";
 "Here are your starting options. You can change any of them later." = "以下是你的初始选项，之后可以随时修改。";
 "Protection" = "保护";
+"Works alongside EasyList." = "与 EasyList 配合使用。";
+"Recommended for iPhone." = "推荐用于 iPhone。";
+"Fixes sites broken by other lists." = "修复被其他列表破坏的网站。";
+"Keeps sites working when other lists break them." = "在其他列表导致网站异常时保持其正常运行。";
+"Also removes tracking parameters from URLs." = "同时移除网址中的跟踪参数。";
+"Removes tracking parameters from URLs." = "移除网址中的跟踪参数。";
+"Cleans unneeded parameters from links." = "清除链接中不需要的参数。";
+"Catches hosts other lists miss." = "拦截其他列表遗漏的主机。";
+"Stops public sites from reaching your local network." = "阻止公共网站访问你的本地网络。";
+"Blocks phishing pages." = "拦截钓鱼网页。";
+"Blocks malware redirects and scams." = "拦截恶意软件重定向和诈骗。";
+"Works alongside AdGuard or EasyList." = "与 AdGuard 或 EasyList 配合使用。";
+"Hides newsletter sign-up prompts." = "隐藏新闻订阅提示。";
+"Hides notification prompts." = "隐藏通知提示。";

@@ -1260,3 +1260,17 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Switch to Advanced Mode" = "Váltás Haladó módra";
 "Here are your starting options. You can change any of them later." = "Íme a kezdő beállításaid. Bármelyiket módosíthatod később.";
 "Protection" = "Védelem";
+"Works alongside EasyList." = "Az EasyList mellett működik.";
+"Recommended for iPhone." = "iPhone-ra ajánlott.";
+"Fixes sites broken by other lists." = "Javítja a más listák által elrontott oldalakat.";
+"Keeps sites working when other lists break them." = "Működőképesen tartja az oldalakat, ha más listák elrontják őket.";
+"Also removes tracking parameters from URLs." = "A követési paramétereket is eltávolítja az URL-ekből.";
+"Removes tracking parameters from URLs." = "Eltávolítja a követési paramétereket az URL-ekből.";
+"Cleans unneeded parameters from links." = "Eltávolítja a felesleges paramétereket a linkekből.";
+"Catches hosts other lists miss." = "Elkapja a más listák által kihagyott hosztokat.";
+"Stops public sites from reaching your local network." = "Megakadályozza, hogy nyilvános oldalak elérjék a helyi hálózatodat.";
+"Blocks phishing pages." = "Blokkolja az adathalász oldalakat.";
+"Blocks malware redirects and scams." = "Blokkolja a kártékony átirányításokat és csalásokat.";
+"Works alongside AdGuard or EasyList." = "Az AdGuard vagy az EasyList mellett működik.";
+"Hides newsletter sign-up prompts." = "Elrejti a hírlevél-feliratkozási felhívásokat.";
+"Hides notification prompts." = "Elrejti az értesítési kéréseket.";

@@ -1260,3 +1260,17 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Switch to Advanced Mode" = "Passer en mode Avancé";
 "Here are your starting options. You can change any of them later." = "Voici vos options de départ. Vous pourrez les modifier plus tard.";
 "Protection" = "Protection";
+"Works alongside EasyList." = "Fonctionne avec EasyList.";
+"Recommended for iPhone." = "Recommandé pour iPhone.";
+"Fixes sites broken by other lists." = "Corrige les sites cassés par d'autres listes.";
+"Keeps sites working when other lists break them." = "Maintient le bon fonctionnement des sites quand d'autres listes les cassent.";
+"Also removes tracking parameters from URLs." = "Supprime aussi les paramètres de suivi des URL.";
+"Removes tracking parameters from URLs." = "Supprime les paramètres de suivi des URL.";
+"Cleans unneeded parameters from links." = "Nettoie les paramètres inutiles des liens.";
+"Catches hosts other lists miss." = "Intercepte les hôtes manqués par les autres listes.";
+"Stops public sites from reaching your local network." = "Empêche les sites publics d'accéder à votre réseau local.";
+"Blocks phishing pages." = "Bloque les pages de phishing.";
+"Blocks malware redirects and scams." = "Bloque les redirections malveillantes et les arnaques.";
+"Works alongside AdGuard or EasyList." = "Fonctionne avec AdGuard ou EasyList.";
+"Hides newsletter sign-up prompts." = "Masque les demandes d'inscription aux newsletters.";
+"Hides notification prompts." = "Masque les demandes de notifications.";

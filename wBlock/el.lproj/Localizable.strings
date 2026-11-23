@@ -1260,3 +1260,17 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Switch to Advanced Mode" = "Εναλλαγή σε Προηγμένη λειτουργία";
 "Here are your starting options. You can change any of them later." = "Αυτές είναι οι αρχικές σου επιλογές. Μπορείς να αλλάξεις οποιαδήποτε αργότερα.";
 "Protection" = "Προστασία";
+"Works alongside EasyList." = "Λειτουργεί παράλληλα με την EasyList.";
+"Recommended for iPhone." = "Προτείνεται για iPhone.";
+"Fixes sites broken by other lists." = "Διορθώνει ιστότοπους που χάλασαν από άλλες λίστες.";
+"Keeps sites working when other lists break them." = "Διατηρεί τους ιστότοπους λειτουργικούς όταν άλλες λίστες τους χαλάνε.";
+"Also removes tracking parameters from URLs." = "Αφαιρεί επίσης παραμέτρους παρακολούθησης από τα URL.";
+"Removes tracking parameters from URLs." = "Αφαιρεί παραμέτρους παρακολούθησης από τα URL.";
+"Cleans unneeded parameters from links." = "Καθαρίζει περιττές παραμέτρους από συνδέσμους.";
+"Catches hosts other lists miss." = "Πιάνει κεντρικούς υπολογιστές που χάνουν άλλες λίστες.";
+"Stops public sites from reaching your local network." = "Εμποδίζει δημόσιους ιστότοπους να φτάσουν στο τοπικό σου δίκτυο.";
+"Blocks phishing pages." = "Αποκλείει σελίδες ηλεκτρονικού ψαρέματος.";
+"Blocks malware redirects and scams." = "Αποκλείει ανακατευθύνσεις κακόβουλου λογισμικού και απάτες.";
+"Works alongside AdGuard or EasyList." = "Λειτουργεί παράλληλα με AdGuard ή EasyList.";
+"Hides newsletter sign-up prompts." = "Κρύβει προτροπές εγγραφής σε ενημερωτικά δελτία.";
+"Hides notification prompts." = "Κρύβει προτροπές ειδοποιήσεων.";

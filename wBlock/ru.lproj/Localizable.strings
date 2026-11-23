@@ -1260,3 +1260,17 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Switch to Advanced Mode" = "Переключиться на расширенный режим";
 "Here are your starting options. You can change any of them later." = "Вот стартовые настройки. Любую из них можно изменить позже.";
 "Protection" = "Защита";
+"Works alongside EasyList." = "Работает вместе с EasyList.";
+"Recommended for iPhone." = "Рекомендуется для iPhone.";
+"Fixes sites broken by other lists." = "Исправляет сайты, сломанные другими списками.";
+"Keeps sites working when other lists break them." = "Сохраняет работу сайтов, если другие списки их ломают.";
+"Also removes tracking parameters from URLs." = "Также удаляет параметры отслеживания из URL.";
+"Removes tracking parameters from URLs." = "Удаляет параметры отслеживания из URL.";
+"Cleans unneeded parameters from links." = "Очищает ссылки от лишних параметров.";
+"Catches hosts other lists miss." = "Ловит хосты, пропущенные другими списками.";
+"Stops public sites from reaching your local network." = "Не даёт публичным сайтам обращаться к вашей локальной сети.";
+"Blocks phishing pages." = "Блокирует фишинговые страницы.";
+"Blocks malware redirects and scams." = "Блокирует вредоносные перенаправления и мошенничество.";
+"Works alongside AdGuard or EasyList." = "Работает вместе с AdGuard или EasyList.";
+"Hides newsletter sign-up prompts." = "Скрывает предложения подписаться на рассылку.";
+"Hides notification prompts." = "Скрывает запросы на отправку уведомлений.";

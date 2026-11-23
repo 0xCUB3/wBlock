@@ -1260,3 +1260,17 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Switch to Advanced Mode" = "التبديل إلى الوضع المتقدم";
 "Here are your starting options. You can change any of them later." = "إليك خيارات البداية. يمكنك تغيير أي منها لاحقاً.";
 "Protection" = "الحماية";
+"Works alongside EasyList." = "يعمل جنبًا إلى جنب مع EasyList.";
+"Recommended for iPhone." = "موصى به لجهاز iPhone.";
+"Fixes sites broken by other lists." = "يصلح المواقع التي تعطلت بسبب قوائم أخرى.";
+"Keeps sites working when other lists break them." = "يبقي المواقع تعمل عندما تعطلها قوائم أخرى.";
+"Also removes tracking parameters from URLs." = "يزيل أيضًا معلمات التتبع من الروابط.";
+"Removes tracking parameters from URLs." = "يزيل معلمات التتبع من الروابط.";
+"Cleans unneeded parameters from links." = "ينظف الروابط من المعلمات غير الضرورية.";
+"Catches hosts other lists miss." = "يلتقط المضيفين الذين تفوتهم القوائم الأخرى.";
+"Stops public sites from reaching your local network." = "يمنع المواقع العامة من الوصول إلى شبكتك المحلية.";
+"Blocks phishing pages." = "يحظر صفحات التصيد الاحتيالي.";
+"Blocks malware redirects and scams." = "يحظر عمليات إعادة التوجيه الخبيثة وعمليات الاحتيال.";
+"Works alongside AdGuard or EasyList." = "يعمل جنبًا إلى جنب مع AdGuard أو EasyList.";
+"Hides newsletter sign-up prompts." = "يخفي مطالبات الاشتراك في النشرات الإخبارية.";
+"Hides notification prompts." = "يخفي مطالبات الإشعارات.";

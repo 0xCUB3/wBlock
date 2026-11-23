@@ -1269,3 +1269,17 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Switch to Advanced Mode" = "Switch to Advanced Mode";
 "Here are your starting options. You can change any of them later." = "Here are your starting options. You can change any of them later.";
 "Protection" = "Protection";
+"Works alongside EasyList." = "Works alongside EasyList.";
+"Recommended for iPhone." = "Recommended for iPhone.";
+"Fixes sites broken by other lists." = "Fixes sites broken by other lists.";
+"Keeps sites working when other lists break them." = "Keeps sites working when other lists break them.";
+"Also removes tracking parameters from URLs." = "Also removes tracking parameters from URLs.";
+"Removes tracking parameters from URLs." = "Removes tracking parameters from URLs.";
+"Cleans unneeded parameters from links." = "Cleans unneeded parameters from links.";
+"Catches hosts other lists miss." = "Catches hosts other lists miss.";
+"Stops public sites from reaching your local network." = "Stops public sites from reaching your local network.";
+"Blocks phishing pages." = "Blocks phishing pages.";
+"Blocks malware redirects and scams." = "Blocks malware redirects and scams.";
+"Works alongside AdGuard or EasyList." = "Works alongside AdGuard or EasyList.";
+"Hides newsletter sign-up prompts." = "Hides newsletter sign-up prompts.";
+"Hides notification prompts." = "Hides notification prompts.";

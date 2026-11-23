@@ -1260,3 +1260,17 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Switch to Advanced Mode" = "Comută la modul Avansat";
 "Here are your starting options. You can change any of them later." = "Iată opțiunile de început. Le poți schimba pe oricare mai târziu.";
 "Protection" = "Protecție";
+"Works alongside EasyList." = "Funcționează împreună cu EasyList.";
+"Recommended for iPhone." = "Recomandat pentru iPhone.";
+"Fixes sites broken by other lists." = "Repară site-urile afectate de alte liste.";
+"Keeps sites working when other lists break them." = "Menține site-urile funcționale când alte liste le afectează.";
+"Also removes tracking parameters from URLs." = "Elimină și parametrii de urmărire din URL-uri.";
+"Removes tracking parameters from URLs." = "Elimină parametrii de urmărire din URL-uri.";
+"Cleans unneeded parameters from links." = "Curăță parametrii inutili din linkuri.";
+"Catches hosts other lists miss." = "Prinde gazdele omise de alte liste.";
+"Stops public sites from reaching your local network." = "Împiedică site-urile publice să acceseze rețeaua ta locală.";
+"Blocks phishing pages." = "Blochează paginile de phishing.";
+"Blocks malware redirects and scams." = "Blochează redirecționările malware și escrocheriile.";
+"Works alongside AdGuard or EasyList." = "Funcționează împreună cu AdGuard sau EasyList.";
+"Hides newsletter sign-up prompts." = "Ascunde solicitările de abonare la newsletter.";
+"Hides notification prompts." = "Ascunde solicitările de notificări.";

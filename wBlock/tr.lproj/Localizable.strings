@@ -1269,3 +1269,17 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Switch to Advanced Mode" = "Gelişmiş Moda Geç";
 "Here are your starting options. You can change any of them later." = "Başlangıç seçenekleriniz burada. İstediğinizi daha sonra değiştirebilirsiniz.";
 "Protection" = "Koruma";
+"Works alongside EasyList." = "EasyList ile birlikte çalışır.";
+"Recommended for iPhone." = "iPhone için önerilir.";
+"Fixes sites broken by other lists." = "Diğer listelerin bozduğu siteleri düzeltir.";
+"Keeps sites working when other lists break them." = "Diğer listeler siteleri bozduğunda çalışmaya devam etmelerini sağlar.";
+"Also removes tracking parameters from URLs." = "URL'lerdeki izleme parametrelerini de kaldırır.";
+"Removes tracking parameters from URLs." = "URL'lerdeki izleme parametrelerini kaldırır.";
+"Cleans unneeded parameters from links." = "Bağlantılardaki gereksiz parametreleri temizler.";
+"Catches hosts other lists miss." = "Diğer listelerin kaçırdığı sunucuları yakalar.";
+"Stops public sites from reaching your local network." = "Genel sitelerin yerel ağınıza erişmesini engeller.";
+"Blocks phishing pages." = "Kimlik avı sayfalarını engeller.";
+"Blocks malware redirects and scams." = "Kötü amaçlı yazılım yönlendirmelerini ve dolandırıcılıkları engeller.";
+"Works alongside AdGuard or EasyList." = "AdGuard veya EasyList ile birlikte çalışır.";
+"Hides newsletter sign-up prompts." = "Bülten abonelik istemlerini gizler.";
+"Hides notification prompts." = "Bildirim istemlerini gizler.";

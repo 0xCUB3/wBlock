@@ -106,6 +106,14 @@ struct BasicModeTests {
             lists[idx].isSelected = true
         }
         precondition(BasicBundle.annoyance(.cookies).state(in: lists) == .on, "Both Cookie lists must be .on")
+
+        // Concise peek notes omit redundant category restatements and keep differentiating notes
+        if let easyList = lists.first(where: { $0.name == "EasyList" }) {
+            precondition(BasicBundle.concisePeekNote(for: easyList) == nil, "EasyList should omit redundant description in Peek")
+        }
+        if let uboAds = lists.first(where: { $0.name == "uBlock filters – Ads" }) {
+            precondition(BasicBundle.concisePeekNote(for: uboAds) != nil, "uBlock Ads should keep its Works alongside EasyList note")
+        }
     }
 
     private static func testBasicBundlePartlyOnSnapshotIdentityAndReset() {

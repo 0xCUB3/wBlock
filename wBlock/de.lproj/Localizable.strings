@@ -1260,3 +1260,17 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Switch to Advanced Mode" = "Zum erweiterten Modus wechseln";
 "Here are your starting options. You can change any of them later." = "Hier sind deine Startoptionen. Du kannst sie jederzeit später ändern.";
 "Protection" = "Schutz";
+"Works alongside EasyList." = "Arbeitet zusammen mit EasyList.";
+"Recommended for iPhone." = "Empfohlen für das iPhone.";
+"Fixes sites broken by other lists." = "Behebt Websites, die durch andere Listen kaputtgehen.";
+"Keeps sites working when other lists break them." = "Hält Websites funktionsfähig, wenn andere Listen sie stören.";
+"Also removes tracking parameters from URLs." = "Entfernt auch Tracking-Parameter aus URLs.";
+"Removes tracking parameters from URLs." = "Entfernt Tracking-Parameter aus URLs.";
+"Cleans unneeded parameters from links." = "Entfernt unnötige Parameter aus Links.";
+"Catches hosts other lists miss." = "Erfasst Hosts, die andere Listen übersehen.";
+"Stops public sites from reaching your local network." = "Verhindert, dass öffentliche Websites dein lokales Netzwerk erreichen.";
+"Blocks phishing pages." = "Blockiert Phishing-Seiten.";
+"Blocks malware redirects and scams." = "Blockiert Malware-Weiterleitungen und Betrug.";
+"Works alongside AdGuard or EasyList." = "Arbeitet zusammen mit AdGuard oder EasyList.";
+"Hides newsletter sign-up prompts." = "Blendet Newsletter-Anmeldeaufforderungen aus.";
+"Hides notification prompts." = "Blendet Benachrichtigungsaufforderungen aus.";

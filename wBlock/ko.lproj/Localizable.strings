@@ -1260,3 +1260,17 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Switch to Advanced Mode" = "고급 모드로 전환";
 "Here are your starting options. You can change any of them later." = "기본 시작 옵션입니다. 나중에 언제든 변경할 수 있습니다.";
 "Protection" = "보호";
+"Works alongside EasyList." = "EasyList와 함께 작동합니다.";
+"Recommended for iPhone." = "iPhone에 권장됩니다.";
+"Fixes sites broken by other lists." = "다른 목록으로 인해 깨진 사이트를 수정합니다.";
+"Keeps sites working when other lists break them." = "다른 목록이 사이트를 깨뜨릴 때 정상 작동을 유지합니다.";
+"Also removes tracking parameters from URLs." = "URL의 추적 매개변수도 제거합니다.";
+"Removes tracking parameters from URLs." = "URL의 추적 매개변수를 제거합니다.";
+"Cleans unneeded parameters from links." = "링크에서 불필요한 매개변수를 정리합니다.";
+"Catches hosts other lists miss." = "다른 목록이 놓치는 호스트를 차단합니다.";
+"Stops public sites from reaching your local network." = "공개 웹사이트가 로컬 네트워크에 접근하지 못하도록 막습니다.";
+"Blocks phishing pages." = "피싱 페이지를 차단합니다.";
+"Blocks malware redirects and scams." = "악성코드 리디렉션과 사기를 차단합니다.";
+"Works alongside AdGuard or EasyList." = "AdGuard 또는 EasyList와 함께 작동합니다.";
+"Hides newsletter sign-up prompts." = "뉴스레터 구독 요청을 숨깁니다.";
+"Hides notification prompts." = "알림 요청을 숨깁니다.";

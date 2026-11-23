@@ -18,7 +18,6 @@ struct BasicFiltersView: View {
 
     @State private var toggleMemory = BasicBundleToggleMemory()
     @State private var peekBundle: BasicBundle?
-    @State private var scopedBundle: BasicBundle?
     @State private var showingUnownedSheet = false
     @State private var showingLanguagesSheet = false
     @State private var showingHeroPopover = false
@@ -147,22 +146,6 @@ struct BasicFiltersView: View {
                 },
                 onResetToRecommended: {
                     resetBundleToRecommended(bundle)
-                },
-                onOpenAllLists: {
-                    peekBundle = nil
-                    DispatchQueue.main.async {
-                        scopedBundle = bundle
-                    }
-                }
-            )
-        }
-        .sheet(item: $scopedBundle) { bundle in
-            ScopedBundleListsSheet(
-                title: bundle.localizedTitle,
-                filters: scopedFilters(for: bundle),
-                filterManager: filterManager,
-                onMutation: {
-                    filterManager.scheduleBasicAutoApply()
                 }
             )
         }
@@ -725,10 +708,6 @@ struct BasicFiltersView: View {
         filterManager.scheduleBasicAutoApply()
     }
 
-    private func scopedFilters(for bundle: BasicBundle) -> [FilterList] {
-        bundle.scopedFilters(in: filterManager.filterLists)
-    }
-
     private func applyLanguageSelection(_ languages: Set<String>) {
         Self.sharedDefaults.set(Array(languages).sorted(), forKey: OnboardingView.selectedLanguagesDefaultsKey)
         let expanded = RegionalLanguageOption.expanding(languages)
@@ -832,8 +811,8 @@ struct BasicBundlePeekView: View {
     let state: BasicBundleState
     let onToggle: (Bool) -> Void
     let onResetToRecommended: () -> Void
-    let onOpenAllLists: () -> Void
 
+    @State private var showAllLists = false
     @Environment(\.dismiss) private var dismiss
 
     private var ownedFilters: [FilterList] {
@@ -844,15 +823,16 @@ struct BasicBundlePeekView: View {
         ownedFilters.filter(\.isSelected)
     }
 
-    private var categoryListCount: Int {
-        bundle.scopedFilters(in: filterManager.filterLists).count
+    private var scopedFilters: [FilterList] {
+        let all = bundle.scopedFilters(in: filterManager.filterLists)
+        return all.filter(\.isCustom) + all.filter { !$0.isCustom }
     }
 
     var body: some View {
         #if os(macOS)
         peekBody
             .padding(16)
-            .frame(width: 340)
+            .frame(width: 360)
         #else
         ScrollView {
             peekBody
@@ -935,20 +915,22 @@ struct BasicBundlePeekView: View {
 
             if state == .partlyOn {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Active lists")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .textCase(.uppercase)
+                    if !showAllLists {
+                        Text("Active lists")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .textCase(.uppercase)
 
-                    VStack(alignment: .leading, spacing: 4) {
-                        ForEach(activeOwnedFilters) { filter in
-                            HStack(spacing: 6) {
-                                Circle()
-                                    .fill(Color.orange)
-                                    .frame(width: 6, height: 6)
-                                Text(filter.localizedDisplayName)
-                                    .font(.caption)
-                                    .foregroundStyle(.primary)
+                        VStack(alignment: .leading, spacing: 4) {
+                            ForEach(activeOwnedFilters) { filter in
+                                HStack(spacing: 6) {
+                                    Circle()
+                                        .fill(Color.orange)
+                                        .frame(width: 6, height: 6)
+                                    Text(filter.localizedDisplayName)
+                                        .font(.caption)
+                                        .foregroundStyle(.primary)
+                                }
                             }
                         }
                     }
@@ -969,25 +951,111 @@ struct BasicBundlePeekView: View {
 
             Divider()
 
-            Button {
-                onOpenAllLists()
-            } label: {
-                HStack {
-                    Text(
-                        String.localizedStringWithFormat(
-                            NSLocalizedString("All %d lists", comment: "Peek button to open scoped category lists"),
-                            categoryListCount
+            VStack(alignment: .leading, spacing: 10) {
+                Button {
+                    withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
+                        showAllLists.toggle()
+                    }
+                } label: {
+                    HStack {
+                        Text(
+                            String.localizedStringWithFormat(
+                                NSLocalizedString("All %d lists", comment: "Peek button to toggle scoped category lists"),
+                                scopedFilters.count
+                            )
                         )
-                    )
-                    .font(.subheadline.weight(.medium))
-                    Spacer()
-                    RowDisclosureChevron()
+                        .font(.subheadline.weight(.medium))
+                        Spacer()
+                        Image(systemName: "chevron.down")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.tertiary)
+                            .rotationEffect(.degrees(showAllLists ? 180 : 0))
+                            .accessibilityHidden(true)
+                    }
+                    .contentShape(Rectangle())
                 }
-                .contentShape(Rectangle())
+                .buttonStyle(.plain)
+                .noFocusRingCompat()
+
+                if showAllLists {
+                    inlineScopedLists
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                }
             }
-            .buttonStyle(.plain)
-            .noFocusRingCompat()
+            .clipped()
+            .animation(.spring(response: 0.32, dampingFraction: 0.86), value: showAllLists)
         }
+    }
+
+    @ViewBuilder
+    private var inlineScopedLists: some View {
+        let lists = scopedFilters
+        let rows = VStack(spacing: 0) {
+            ForEach(Array(lists.enumerated()), id: \.element.id) { index, filter in
+                inlineScopedRow(filter)
+                if index < lists.count - 1 {
+                    Divider()
+                }
+            }
+        }
+        #if os(macOS)
+        if lists.count > 4 {
+            ScrollView {
+                rows
+                    .padding(.trailing, 4)
+            }
+            .frame(height: 220)
+        } else {
+            rows
+        }
+        #else
+        rows
+        #endif
+    }
+
+    private func inlineScopedRow(_ filter: FilterList) -> some View {
+        let note = BasicBundle.concisePeekNote(for: filter)
+        return HStack(alignment: .center, spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 6) {
+                    Text(filter.localizedDisplayName)
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.primary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if filter.isCustom {
+                        Text("Custom")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.primary.opacity(0.08), in: Capsule())
+                    }
+                }
+                if let note {
+                    Text(note)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            Spacer(minLength: 8)
+            Toggle("", isOn: Binding(
+                get: { filter.isSelected },
+                set: { newValue in
+                    if filterManager.setFilterListSelection(id: filter.id, selected: newValue) {
+                        filterManager.flushPendingSave()
+                        filterManager.scheduleBasicAutoApply()
+                    }
+                }
+            ))
+            .labelsHidden()
+            .toggleStyle(.switch)
+            #if os(macOS)
+            .controlSize(.small)
+            #endif
+            .fixedSize()
+        }
+        .padding(.vertical, 7)
     }
 }
 

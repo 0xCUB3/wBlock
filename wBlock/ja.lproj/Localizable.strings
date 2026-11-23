@@ -1269,3 +1269,17 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Switch to Advanced Mode" = "アドバンスドモードに切り替え";
 "Here are your starting options. You can change any of them later." = "初期設定は以下になります。あとからいつでも変更できます。";
 "Protection" = "保護";
+"Works alongside EasyList." = "EasyListと併用して動作します。";
+"Recommended for iPhone." = "iPhoneにおすすめです。";
+"Fixes sites broken by other lists." = "ほかのリストで崩れたサイトを修正します。";
+"Keeps sites working when other lists break them." = "ほかのリストでサイトが壊れないようにします。";
+"Also removes tracking parameters from URLs." = "URLから追跡パラメータも削除します。";
+"Removes tracking parameters from URLs." = "URLから追跡パラメータを削除します。";
+"Cleans unneeded parameters from links." = "リンクから不要なパラメータを取り除きます。";
+"Catches hosts other lists miss." = "ほかのリストが見逃すホストをブロックします。";
+"Stops public sites from reaching your local network." = "外部サイトからローカルネットワークへのアクセスを防ぎます。";
+"Blocks phishing pages." = "フィッシングページをブロックします。";
+"Blocks malware redirects and scams." = "マルウェアのリダイレクトや詐欺をブロックします。";
+"Works alongside AdGuard or EasyList." = "AdGuardまたはEasyListと併用して動作します。";
+"Hides newsletter sign-up prompts." = "ニュースレター登録の案内を非表示にします。";
+"Hides notification prompts." = "通知許可の案内を非表示にします。";

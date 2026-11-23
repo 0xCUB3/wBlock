@@ -328,6 +328,48 @@ enum BasicBundle: Hashable, Identifiable, Sendable {
         }
     }
 
+    /// Concise differentiating note for a filter list inside Standard mode's
+    /// inline bundle list dropdown. Returns `nil` when the bundle header and
+    /// examples already cover what the list does.
+    static func concisePeekNote(for filter: FilterList) -> String? {
+        if filter.isCustom {
+            let trimmed = filter.localizedDisplayDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+            return trimmed.isEmpty ? nil : trimmed
+        }
+        switch filter.name {
+        case "uBlock filters – Ads", "AdGuard Base Filter", "EasyPrivacy":
+            return NSLocalizedString("Works alongside EasyList.", comment: "Concise bundle list note")
+        case "AdGuard Mobile Filter":
+            return NSLocalizedString("Recommended for iPhone.", comment: "Concise bundle list note")
+        case "uBlock filters – Quick fixes":
+            return NSLocalizedString("Fixes sites broken by other lists.", comment: "Concise bundle list note")
+        case "uBlock filters – Unbreak":
+            return NSLocalizedString("Keeps sites working when other lists break them.", comment: "Concise bundle list note")
+        case "uBlock filters – Privacy":
+            return NSLocalizedString("Also removes tracking parameters from URLs.", comment: "Concise bundle list note")
+        case "AdGuard URL Tracking Protection Filter":
+            return NSLocalizedString("Removes tracking parameters from URLs.", comment: "Concise bundle list note")
+        case "Actually Legitimate URL Shortener Tool":
+            return NSLocalizedString("Cleans unneeded parameters from links.", comment: "Concise bundle list note")
+        case "wBlock Ad and Tracking Hosts":
+            return NSLocalizedString("Catches hosts other lists miss.", comment: "Concise bundle list note")
+        case "Block Outsider Intrusion into LAN":
+            return NSLocalizedString("Stops public sites from reaching your local network.", comment: "Concise bundle list note")
+        case "Phishing URL Blocklist":
+            return NSLocalizedString("Blocks phishing pages.", comment: "Concise bundle list note")
+        case "Dandelion Sprout's Anti-Malware List":
+            return NSLocalizedString("Blocks malware redirects and scams.", comment: "Concise bundle list note")
+        case "uBlock filters – Cookie Notices", "uBlock filters – Annoyances":
+            return NSLocalizedString("Works alongside AdGuard or EasyList.", comment: "Concise bundle list note")
+        case "EasyList – Newsletter Notices":
+            return NSLocalizedString("Hides newsletter sign-up prompts.", comment: "Concise bundle list note")
+        case "EasyList – Notifications":
+            return NSLocalizedString("Hides notification prompts.", comment: "Concise bundle list note")
+        default:
+            return nil
+        }
+    }
+
     /// True iff any filter surfaced under this bundle differs from `appliedSelectedIDs`.
     func isDirty(
         in filters: [FilterList],
