@@ -1202,7 +1202,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Some blocking is paused right now; you can toggle it again to resume." = "部分保护已暂时关闭。";
 "Too many filters on" = "开启的过滤器过多";
 "Safari has reached its rule limit so some rules won't be loaded; try turning off a category." = "Safari 存在规则数量限制，部分规则已被跳过。关闭某个类别即可解决。";
-"Updating Safari…" = "正在更新 Safari…";
+"Applying filters…" = "正在应用过滤器…";
 "Applying your changes to Safari; this can take a few seconds." = "您的更改将很快生效。";
 "Couldn't update filters" = "无法更新过滤器";
 "Couldn't apply your changes" = "无法应用您的更改";

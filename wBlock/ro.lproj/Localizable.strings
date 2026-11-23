@@ -1202,7 +1202,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Some blocking is paused right now; you can toggle it again to resume." = "O parte din protecție este oprită momentan.";
 "Too many filters on" = "Prea multe filtre active";
 "Safari has reached its rule limit so some rules won't be loaded; try turning off a category." = "Safari are o limită, așa că unele reguli sunt omise. Oprește o categorie pentru a rezolva.";
-"Updating Safari…" = "Se actualizează Safari…";
+"Applying filters…" = "Se aplică filtre…";
 "Applying your changes to Safari; this can take a few seconds." = "Modificările tale vor fi gata într-o clipă.";
 "Couldn't update filters" = "Nu s-au putut actualiza filtrele";
 "Couldn't apply your changes" = "Nu s-au putut aplica modificările";

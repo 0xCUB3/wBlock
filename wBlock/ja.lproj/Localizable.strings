@@ -1211,7 +1211,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Some blocking is paused right now; you can toggle it again to resume." = "一部の保護が一時的にオフになっています。";
 "Too many filters on" = "フィルタがオンになりすぎています";
 "Safari has reached its rule limit so some rules won't be loaded; try turning off a category." = "Safariの上限により一部のルールがスキップされます。カテゴリをオフにして修正してください。";
-"Updating Safari…" = "Safariを更新中…";
+"Applying filters…" = "フィルターを適用中…";
 "Applying your changes to Safari; this can take a few seconds." = "変更はまもなく反映されます。";
 "Couldn't update filters" = "フィルタを更新できませんでした";
 "Couldn't apply your changes" = "変更を適用できませんでした";

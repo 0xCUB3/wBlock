@@ -1202,7 +1202,7 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Some blocking is paused right now; you can toggle it again to resume." = "Część ochrony jest chwilowo wyłączona.";
 "Too many filters on" = "Zbyt wiele włączonych filtrów";
 "Safari has reached its rule limit so some rules won't be loaded; try turning off a category." = "Safari ma limit, więc część reguł jest pomijana. Wyłącz kategorię, aby to naprawić.";
-"Updating Safari…" = "Aktualizowanie Safari…";
+"Applying filters…" = "Stosowanie filtrów…";
 "Applying your changes to Safari; this can take a few seconds." = "Zmiany będą gotowe za chwilę.";
 "Couldn't update filters" = "Nie udało się zaktualizować filtrów";
 "Couldn't apply your changes" = "Nie udało się zastosować zmian";

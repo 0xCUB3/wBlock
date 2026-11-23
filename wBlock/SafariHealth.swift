@@ -176,7 +176,7 @@ enum SafariHealthStatus: Equatable, Sendable {
         case .ruleLimitHit:
             NSLocalizedString("Too many filters on", comment: "Hero status title: rule limit hit")
         case .applying:
-            NSLocalizedString("Updating Safari…", comment: "Hero status title: applying")
+            NSLocalizedString("Applying filters…", comment: "Hero status title: applying")
         case .failed(let isUpdate):
             isUpdate
                 ? NSLocalizedString("Couldn't update filters", comment: "Hero status title: update failed")

@@ -1202,7 +1202,7 @@ Para reativá-los, desative outros filtros grandes e aplique as alterações nov
 "Some blocking is paused right now; you can toggle it again to resume." = "Parte da proteção está desativada por enquanto.";
 "Too many filters on" = "Filtros demais ativados";
 "Safari has reached its rule limit so some rules won't be loaded; try turning off a category." = "O Safari tem um limite, então algumas regras são ignoradas. Desative uma categoria para corrigir.";
-"Updating Safari…" = "Atualizando o Safari…";
+"Applying filters…" = "Aplicando filtros…";
 "Applying your changes to Safari; this can take a few seconds." = "Suas alterações ficarão prontas em instantes.";
 "Couldn't update filters" = "Não foi possível atualizar os filtros";
 "Couldn't apply your changes" = "Não foi possível aplicar suas alterações";

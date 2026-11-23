@@ -1202,7 +1202,7 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Some blocking is paused right now; you can toggle it again to resume." = "Une partie de la protection est désactivée pour l'instant.";
 "Too many filters on" = "Trop de filtres activés";
 "Safari has reached its rule limit so some rules won't be loaded; try turning off a category." = "Safari impose une limite, donc certaines règles sont ignorées. Désactivez une catégorie pour corriger cela.";
-"Updating Safari…" = "Mise à jour de Safari…";
+"Applying filters…" = "Application des filtres…";
 "Applying your changes to Safari; this can take a few seconds." = "Vos modifications seront prêtes dans un instant.";
 "Couldn't update filters" = "Impossible de mettre à jour les filtres";
 "Couldn't apply your changes" = "Impossible d'appliquer vos modifications";

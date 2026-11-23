@@ -1202,7 +1202,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Some blocking is paused right now; you can toggle it again to resume." = "جزء من الحماية متوقف مؤقتًا.";
 "Too many filters on" = "تم تفعيل عدد كبير جدًا من الفلاتر";
 "Safari has reached its rule limit so some rules won't be loaded; try turning off a category." = "يفرض Safari حدًا للقواعد، لذا يتم تخطي بعضها. أوقف فئة لحل المشكلة.";
-"Updating Safari…" = "جارٍ تحديث Safari…";
+"Applying filters…" = "جارٍ تطبيق الفلاتر…";
 "Applying your changes to Safari; this can take a few seconds." = "ستصبح تغييراتك جاهزة خلال لحظات.";
 "Couldn't update filters" = "تعذّر تحديث الفلاتر";
 "Couldn't apply your changes" = "تعذّر تطبيق تغييراتك";

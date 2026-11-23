@@ -197,7 +197,7 @@ enum BasicBundleState: Equatable, Sendable {
         switch self {
         case .off: NSLocalizedString("Off", comment: "Bundle state")
         case .on: NSLocalizedString("On", comment: "Bundle state")
-        case .partlyOn: NSLocalizedString("Partly on", comment: "Bundle state")
+        case .partlyOn: NSLocalizedString("Custom", comment: "Bundle state")
         }
     }
 }

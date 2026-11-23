@@ -319,7 +319,7 @@ struct CoreTileBadge: View {
             symbol = "checkmark.circle.fill"
             color = Color(red: 0.16, green: 0.78, blue: 0.42)
         case .partlyOn:
-            symbol = "circle.lefthalf.filled"
+            symbol = "checkmark.circle.fill"
             color = .orange
         case .off:
             symbol = "circle"

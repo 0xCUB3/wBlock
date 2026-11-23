@@ -1202,7 +1202,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Some blocking is paused right now; you can toggle it again to resume." = "A védelem egy része jelenleg ki van kapcsolva.";
 "Too many filters on" = "Túl sok szűrő van bekapcsolva";
 "Safari has reached its rule limit so some rules won't be loaded; try turning off a category." = "A Safari korlátja miatt néhány szabály kimarad. Kapcsolj ki egy kategóriát a javításhoz.";
-"Updating Safari…" = "Safari frissítése…";
+"Applying filters…" = "Szűrők alkalmazása…";
 "Applying your changes to Safari; this can take a few seconds." = "A módosítások egy pillanat múlva elkészülnek.";
 "Couldn't update filters" = "A szűrők frissítése sikertelen";
 "Couldn't apply your changes" = "A módosítások alkalmazása sikertelen";

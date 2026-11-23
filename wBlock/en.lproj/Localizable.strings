@@ -1211,7 +1211,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Some blocking is paused right now; you can toggle it again to resume." = "Some blocking is paused right now; you can toggle it again to resume.";
 "Too many filters on" = "Too many filters on";
 "Safari has reached its rule limit so some rules won't be loaded; try turning off a category." = "Safari has reached its rule limit so some rules won't be loaded; try turning off a category.";
-"Updating Safari…" = "Updating Safari…";
+"Applying filters…" = "Applying filters…";
 "Applying your changes to Safari; this can take a few seconds." = "Applying your changes to Safari; this can take a few seconds.";
 "Couldn't update filters" = "Couldn't update filters";
 "Couldn't apply your changes" = "Couldn't apply your changes";

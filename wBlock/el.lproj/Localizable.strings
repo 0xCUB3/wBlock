@@ -1202,7 +1202,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Some blocking is paused right now; you can toggle it again to resume." = "Μέρος της προστασίας είναι προσωρινά απενεργοποιημένο.";
 "Too many filters on" = "Πάρα πολλά ενεργά φίλτρα";
 "Safari has reached its rule limit so some rules won't be loaded; try turning off a category." = "Το Safari έχει όριο κανόνων, οπότε ορισμένοι παραλείπονται. Απενεργοποιήστε μια κατηγορία.";
-"Updating Safari…" = "Ενημέρωση Safari…";
+"Applying filters…" = "Εφαρμογή φίλτρων…";
 "Applying your changes to Safari; this can take a few seconds." = "Οι αλλαγές σας θα είναι έτοιμες σε λίγο.";
 "Couldn't update filters" = "Αδυναμία ενημέρωσης φίλτρων";
 "Couldn't apply your changes" = "Αδυναμία εφαρμογής των αλλαγών σας";

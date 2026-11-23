@@ -510,7 +510,7 @@ struct BasicFiltersView: View {
                                     .foregroundStyle(.secondary)
                             }
                             if state == .partlyOn {
-                                Text("Partly on")
+                                Text("Custom")
                                     .font(.caption2.weight(.semibold))
                                     .foregroundStyle(.orange)
                                     .padding(.horizontal, 6)
