@@ -228,6 +228,7 @@ struct ContentView: View {
         appMode == .basic
             && !healthStatus.isProtected
             && healthStatus != .applying
+            && healthStatus != .checkingForUpdates
             && (!isBasicHeroVisible || tabSelection.value != 0)
     }
 

@@ -1290,3 +1290,5 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "wBlock has a new simpler layout with a few switches in place of the long list. You have custom lists or userscripts, so wBlock kept showing all your lists and nothing moved. Try the simpler layout below or toggle Show All Lists anytime in Settings → Advanced." = "wBlock ma nowy, prostszy układ z kilkoma przełącznikami zamiast długiej listy. Masz własne listy lub skrypty, więc wBlock nadal pokazuje wszystkie listy i nic się nie zmieniło. Wypróbuj prostszy układ poniżej lub przełączaj Pokaż wszystkie listy w dowolnym momencie w Ustawienia → Zaawansowane.";
 "Customize Lists" = "Dostosuj listy";
 "Filters are up to date." = "Filtry są aktualne.";
+"Checking for updates…" = "Sprawdzanie aktualizacji…";
+"Looking for newer filter lists and extras." = "Szukanie nowszych list filtrów i dodatków.";

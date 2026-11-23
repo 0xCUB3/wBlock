@@ -1290,3 +1290,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "wBlock has a new simpler layout with a few switches in place of the long list. You have custom lists or userscripts, so wBlock kept showing all your lists and nothing moved. Try the simpler layout below or toggle Show All Lists anytime in Settings → Advanced." = "Το wBlock έχει μια νέα πιο απλή διάταξη με λίγους διακόπτες αντί για τη μεγάλη λίστα. Επειδή έχεις προσαρμοσμένες λίστες ή userscripts, το wBlock συνέχισε να εμφανίζει όλες τις λίστες σου χωρίς αλλαγές. Δοκίμασε την απλούστερη διάταξη παρακάτω ή άλλαξε την Εμφάνιση όλων των λιστών στις Ρυθμίσεις → Για προχωρημένους.";
 "Customize Lists" = "Προσαρμογή λιστών";
 "Filters are up to date." = "Τα φίλτρα είναι ενημερωμένα.";
+"Checking for updates…" = "Έλεγχος για ενημερώσεις…";
+"Looking for newer filter lists and extras." = "Αναζήτηση για νεότερες λίστες φίλτρων και πρόσθετα.";

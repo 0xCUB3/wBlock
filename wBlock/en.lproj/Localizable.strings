@@ -1299,3 +1299,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "wBlock has a new simpler layout with a few switches in place of the long list. You have custom lists or userscripts, so wBlock kept showing all your lists and nothing moved. Try the simpler layout below or toggle Show All Lists anytime in Settings → Advanced." = "wBlock has a new simpler layout with a few switches in place of the long list. You have custom lists or userscripts, so wBlock kept showing all your lists and nothing moved. Try the simpler layout below or toggle Show All Lists anytime in Settings → Advanced.";
 "Customize Lists" = "Customize Lists";
 "Filters are up to date." = "Filters are up to date.";
+"Checking for updates…" = "Checking for updates…";
+"Looking for newer filter lists and extras." = "Looking for newer filter lists and extras.";

@@ -77,9 +77,9 @@ struct BasicFiltersView: View {
     }
 
     private var applyProgress: Double? {
-        guard filterManager.isLoading || filterManager.isApplyInFlight else { return nil }
+        guard filterManager.isApplyInFlight else { return nil }
         let p = Double(filterManager.progress)
-        return p > 0.02 && p < 0.99 ? p : nil
+        return p >= 0.02 ? min(1, p) : nil
     }
 
     private var isBypassPaywallsCleanEnabled: Bool {

@@ -1290,3 +1290,5 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "wBlock has a new simpler layout with a few switches in place of the long list. You have custom lists or userscripts, so wBlock kept showing all your lists and nothing moved. Try the simpler layout below or toggle Show All Lists anytime in Settings → Advanced." = "wBlock propose une nouvelle présentation plus simple avec quelques interrupteurs à la place de la longue liste. Comme vous utilisez des listes ou userscripts personnalisés, wBlock continue d'afficher toutes vos listes sans rien changer. Essayez la vue simplifiée ci-dessous ou basculez Afficher toutes les listes dans Réglages → Avancé.";
 "Customize Lists" = "Personnaliser les listes";
 "Filters are up to date." = "Les filtres sont à jour.";
+"Checking for updates…" = "Recherche de mises à jour…";
+"Looking for newer filter lists and extras." = "Recherche de listes de filtres et d’extras plus récents.";

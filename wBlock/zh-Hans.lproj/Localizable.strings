@@ -1290,3 +1290,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "wBlock has a new simpler layout with a few switches in place of the long list. You have custom lists or userscripts, so wBlock kept showing all your lists and nothing moved. Try the simpler layout below or toggle Show All Lists anytime in Settings → Advanced." = "wBlock 新增了更简洁的布局，用几个开关替代了长列表。因为你有自定义列表或用户脚本，wBlock 保持显示所有列表且未做改动。你可以在下方试用简洁布局，或随时在“设置 → 高级”中切换“显示所有列表”。";
 "Customize Lists" = "自定义列表";
 "Filters are up to date." = "过滤列表已是最新。";
+"Checking for updates…" = "正在检查更新…";
+"Looking for newer filter lists and extras." = "正在查找更新的过滤列表和扩展功能。";

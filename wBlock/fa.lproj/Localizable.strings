@@ -1299,3 +1299,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "wBlock has a new simpler layout with a few switches in place of the long list. You have custom lists or userscripts, so wBlock kept showing all your lists and nothing moved. Try the simpler layout below or toggle Show All Lists anytime in Settings → Advanced." = "wBlock چیدمان ساده‌تر جدیدی با چند کلید به‌جای فهرست طولانی دارد. از آنجا که فهرست‌ها یا اسکریپت‌های سفارشی دارید، wBlock همچنان همه فهرست‌های شما را نمایش می‌دهد و چیزی تغییر نکرد. چیدمان ساده‌تر را در پایین امتحان کنید یا هر زمان خواستید نمایش همه فهرست‌ها را در تنظیمات ← پیشرفته تغییر دهید.";
 "Customize Lists" = "سفارشی‌سازی فهرست‌ها";
 "Filters are up to date." = "فیلترها به‌روز هستند.";
+"Checking for updates…" = "در حال بررسی به‌روزرسانی‌ها…";
+"Looking for newer filter lists and extras." = "در حال جستجو برای فهرست‌های فیلتر و امکانات جدیدتر.";

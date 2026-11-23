@@ -1290,3 +1290,5 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "wBlock has a new simpler layout with a few switches in place of the long list. You have custom lists or userscripts, so wBlock kept showing all your lists and nothing moved. Try the simpler layout below or toggle Show All Lists anytime in Settings → Advanced." = "wBlock are un nou aspect mai simplu, cu câteva comutatoare în locul listei lungi. Deoarece ai liste sau scripturi personalizate, wBlock a continuat să afișeze toate listele fără modificări. Încearcă aspectul mai simplu mai jos sau comută Afișează toate listele oricând în Setări → Avansat.";
 "Customize Lists" = "Personalizează listele";
 "Filters are up to date." = "Filtrele sunt actualizate.";
+"Checking for updates…" = "Se verifică actualizările…";
+"Looking for newer filter lists and extras." = "Se caută liste de filtre și opțiuni extra mai noi.";

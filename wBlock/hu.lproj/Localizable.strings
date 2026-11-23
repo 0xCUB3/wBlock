@@ -1290,3 +1290,5 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "wBlock has a new simpler layout with a few switches in place of the long list. You have custom lists or userscripts, so wBlock kept showing all your lists and nothing moved. Try the simpler layout below or toggle Show All Lists anytime in Settings → Advanced." = "A wBlock új, egyszerűbb elrendezést kapott néhány kapcsolóval a hosszú lista helyett. Mivel egyéni listáid vagy szkriptjeid vannak, a wBlock továbbra is minden listát megjelenít, semmi sem változott. Próbáld ki alább az egyszerűbb elrendezést, vagy kapcsold át bármikor az Összes lista megjelenítése opciót a Beállítások → Haladó menüben.";
 "Customize Lists" = "Listák testreszabása";
 "Filters are up to date." = "A szűrők naprakészek.";
+"Checking for updates…" = "Frissítések keresése…";
+"Looking for newer filter lists and extras." = "Újabb szűrőlisták és extrák keresése.";

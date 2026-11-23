@@ -1290,3 +1290,5 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "wBlock has a new simpler layout with a few switches in place of the long list. You have custom lists or userscripts, so wBlock kept showing all your lists and nothing moved. Try the simpler layout below or toggle Show All Lists anytime in Settings → Advanced." = "wBlock incluye un nuevo diseño más simple con unos pocos interruptores en lugar de la lista larga. Como tienes listas o userscripts personalizados, wBlock siguió mostrando todas tus listas sin cambios. Prueba el diseño más simple abajo o cambia Mostrar todas las listas cuando quieras en Ajustes → Avanzado.";
 "Customize Lists" = "Personalizar listas";
 "Filters are up to date." = "Los filtros están actualizados.";
+"Checking for updates…" = "Buscando actualizaciones…";
+"Looking for newer filter lists and extras." = "Buscando listas de filtros y extras más recientes.";

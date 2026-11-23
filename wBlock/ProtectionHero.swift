@@ -8,15 +8,15 @@ extension SafariHealthMonitor {
     ) -> SafariHealthStatus {
         let hasHitRuleLimit = filterManager.lastRuleCount > 0
             && filterManager.lastRuleCount >= filterManager.safariRuleCapacity
-        let isApplying = filterManager.isLoading
-            || filterManager.isApplyInFlight
-            || filterManager.isAutoUpdateRunning
-            || filterManager.hasQueuedBasicAutoApply
+        let isApplying = filterManager.isApplyInFlight || filterManager.hasQueuedBasicAutoApply
+        let isCheckingForUpdates = !isApplying
+            && (filterManager.isLoading || filterManager.isAutoUpdateRunning)
         let hasFailed = filterManager.hasError || !filterManager.failedReloadTargets.isEmpty
         return status(
             pausedComponents: filterManager.pausedComponents,
             hasHitRuleLimit: hasHitRuleLimit,
             isApplying: isApplying,
+            isCheckingForUpdates: isCheckingForUpdates,
             hasFailed: hasFailed,
             lastUpdatedDate: lastUpdatedDate
         )
@@ -40,10 +40,13 @@ struct ExtensionStatusRing: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var gapDegrees: Double = 10
-    @State private var orbitAngle: Double = 0
+
+    private var showsProgressRing: Bool {
+        status == .applying || status == .checkingForUpdates
+    }
 
     private var showsSegmentedRing: Bool {
-        status != .applying && (status.isExtensionDegraded || (!isWelded && gapDegrees > 0.05))
+        !showsProgressRing && (status.isExtensionDegraded || (!isWelded && gapDegrees > 0.05))
     }
 
     private var ringLineWidth: CGFloat { medallionSize >= 56 ? 2.5 : 2 }
@@ -59,14 +62,14 @@ struct ExtensionStatusRing: View {
                 .overlay(
                     Circle()
                         .strokeBorder(
-                            status.tone.color.opacity((showsSegmentedRing || status == .applying) ? 0 : 0.22),
+                            status.tone.color.opacity((showsSegmentedRing || showsProgressRing) ? 0 : 0.22),
                             lineWidth: 1
                         )
                 )
                 .frame(width: innerDiscSize, height: innerDiscSize)
 
-            // Flush perimeter progress ring while applying (zero moat, zero height shift)
-            if case .applying = status {
+            // Flush perimeter progress ring while applying or checking (zero moat, zero height shift)
+            if showsProgressRing {
                 applyingRingLayer
                     .frame(width: medallionSize, height: medallionSize)
             } else if showsSegmentedRing {
@@ -89,9 +92,6 @@ struct ExtensionStatusRing: View {
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: showsSegmentedRing)
         .onAppear {
             gapDegrees = isWelded ? 0 : 10
-            if case .applying = status {
-                startApplyingOrbit()
-            }
         }
         .onChangeCompat(of: isWelded) { _, welded in
             if welded {
@@ -112,11 +112,6 @@ struct ExtensionStatusRing: View {
                 }
             }
         }
-        .onChangeCompat(of: status) { _, next in
-            if case .applying = next {
-                startApplyingOrbit()
-            }
-        }
         .onChangeCompat(of: weldCelebrationCount) { _, _ in
             Haptics.play(.success)
         }
@@ -128,7 +123,7 @@ struct ExtensionStatusRing: View {
         ZStack {
             Circle()
                 .stroke(Color.accentColor.opacity(0.16), lineWidth: ringLineWidth)
-            if let applyProgress, applyProgress > 0 {
+            if status == .applying, let applyProgress, applyProgress > 0 {
                 Circle()
                     .trim(from: 0, to: max(0.05, min(1, CGFloat(applyProgress))))
                     .stroke(Color.accentColor, style: StrokeStyle(lineWidth: ringLineWidth, lineCap: .round))
@@ -138,10 +133,7 @@ struct ExtensionStatusRing: View {
                 Circle()
                     .stroke(Color.accentColor.opacity(0.65), lineWidth: ringLineWidth)
             } else {
-                Circle()
-                    .trim(from: 0, to: 0.28)
-                    .stroke(Color.accentColor, style: StrokeStyle(lineWidth: ringLineWidth, lineCap: .round))
-                    .rotationEffect(.degrees(-90 + orbitAngle))
+                IndeterminateOrbitArc(lineWidth: ringLineWidth)
             }
         }
     }
@@ -154,19 +146,27 @@ struct ExtensionStatusRing: View {
 
         if #available(iOS 17.0, macOS 14.0, *) {
             icon
-                .contentTransition(.symbolEffect(.replace))
                 .symbolEffect(.bounce, value: weldCelebrationCount)
         } else {
             icon
         }
     }
+}
 
-    private func startApplyingOrbit() {
-        guard !reduceMotion else { return }
-        orbitAngle = 0
-        withAnimation(.linear(duration: 1.05).repeatForever(autoreverses: false)) {
-            orbitAngle = 360
-        }
+private struct IndeterminateOrbitArc: View {
+    let lineWidth: CGFloat
+    @State private var spinning = false
+
+    var body: some View {
+        Circle()
+            .trim(from: 0, to: 0.28)
+            .stroke(Color.accentColor, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+            .rotationEffect(.degrees(spinning ? 270 : -90))
+            .onAppear {
+                withAnimation(.linear(duration: 1.05).repeatForever(autoreverses: false)) {
+                    spinning = true
+                }
+            }
     }
 }
 

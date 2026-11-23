@@ -1299,3 +1299,5 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "wBlock has a new simpler layout with a few switches in place of the long list. You have custom lists or userscripts, so wBlock kept showing all your lists and nothing moved. Try the simpler layout below or toggle Show All Lists anytime in Settings → Advanced." = "wBlock artık uzun liste yerine birkaç anahtarla daha sade bir görünüme sahip. Özel listeleriniz veya kullanıcı betikleriniz olduğu için wBlock tüm listelerinizi göstermeye devam etti ve hiçbir şey değişmedi. Aşağıdan daha sade görünümü deneyin veya Ayarlar → Gelişmiş'te Tüm Listeleri Göster seçeneğini istediğiniz zaman değiştirin.";
 "Customize Lists" = "Listeleri Özelleştir";
 "Filters are up to date." = "Filtreler güncel.";
+"Checking for updates…" = "Güncellemeler denetleniyor…";
+"Looking for newer filter lists and extras." = "Daha yeni filtre listeleri ve ekstralar aranıyor.";

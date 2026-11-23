@@ -84,6 +84,7 @@ struct SafariHealthInput: Equatable, Sendable {
     var pausedComponents: BlockingPauseComponents
     var hasHitRuleLimit: Bool
     var isApplying: Bool
+    var isCheckingForUpdates: Bool = false
     var hasFailed: Bool
     var failedDuringUpdate: Bool
     var lastUpdatedDate: Date?
@@ -98,6 +99,7 @@ enum SafariHealthStatus: Equatable, Sendable {
     case paused(partial: Bool)
     case ruleLimitHit
     case applying
+    case checkingForUpdates
     case failed(isUpdate: Bool)
     case protected(lastUpdated: Date?)
 
@@ -145,7 +147,7 @@ enum SafariHealthStatus: Equatable, Sendable {
         case .allBlockersOff: .red
         case .someBlockersOff, .scriptsExtensionOff, .ruleLimitHit, .failed: .orange
         case .paused: .gray
-        case .applying: .accent
+        case .applying, .checkingForUpdates: .accent
         case .protected: .green
         }
     }
@@ -158,7 +160,7 @@ enum SafariHealthStatus: Equatable, Sendable {
             "shield.slash.fill"
         case .applying:
             "shield.fill"
-        case .protected:
+        case .checkingForUpdates, .protected:
             "checkmark.shield.fill"
         }
     }
@@ -177,6 +179,8 @@ enum SafariHealthStatus: Equatable, Sendable {
             NSLocalizedString("Too many filters on", comment: "Hero status title: rule limit hit")
         case .applying:
             NSLocalizedString("Applying filters…", comment: "Hero status title: applying")
+        case .checkingForUpdates:
+            NSLocalizedString("Checking for updates…", comment: "Hero status title: checking for updates")
         case .failed(let isUpdate):
             isUpdate
                 ? NSLocalizedString("Couldn't update filters", comment: "Hero status title: update failed")
@@ -202,6 +206,8 @@ enum SafariHealthStatus: Equatable, Sendable {
             return NSLocalizedString("Safari has reached its rule limit so some rules won't be loaded; try turning off a category.", comment: "Hero status subtitle: rule limit hit")
         case .applying:
             return NSLocalizedString("Applying your changes to Safari; this can take a few seconds.", comment: "Hero status subtitle: applying")
+        case .checkingForUpdates:
+            return NSLocalizedString("Looking for newer filter lists and extras.", comment: "Hero status subtitle: checking for updates")
         case .failed:
             return NSLocalizedString("Something went wrong; try again to refresh Safari's blockers.", comment: "Hero status subtitle: failed")
         case .protected(let lastUpdated):
@@ -248,7 +254,7 @@ enum SafariHealthStatus: Equatable, Sendable {
             .reviewRuleLimit
         case .failed:
             .tryAgain
-        case .applying, .protected:
+        case .applying, .checkingForUpdates, .protected:
             nil
         }
     }
@@ -278,6 +284,9 @@ enum SafariHealthResolver {
         }
         if input.isApplying {
             return .applying
+        }
+        if input.isCheckingForUpdates {
+            return .checkingForUpdates
         }
         if input.hasFailed {
             return .failed(isUpdate: input.failedDuringUpdate)
@@ -425,6 +434,7 @@ final class SafariHealthMonitor: ObservableObject {
         pausedComponents: BlockingPauseComponents,
         hasHitRuleLimit: Bool,
         isApplying: Bool,
+        isCheckingForUpdates: Bool = false,
         hasFailed: Bool,
         failedDuringUpdate: Bool = false,
         lastUpdatedDate: Date?
@@ -439,6 +449,7 @@ final class SafariHealthMonitor: ObservableObject {
                 pausedComponents: pausedComponents,
                 hasHitRuleLimit: hasHitRuleLimit,
                 isApplying: isApplying,
+                isCheckingForUpdates: isCheckingForUpdates,
                 hasFailed: hasFailed,
                 failedDuringUpdate: failedDuringUpdate,
                 lastUpdatedDate: lastUpdatedDate

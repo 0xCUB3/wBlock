@@ -1299,3 +1299,5 @@ To re-enable these filters, disable other large filters and apply changes again.
 "wBlock has a new simpler layout with a few switches in place of the long list. You have custom lists or userscripts, so wBlock kept showing all your lists and nothing moved. Try the simpler layout below or toggle Show All Lists anytime in Settings → Advanced." = "wBlockに長いリストの代わりに数個のスイッチを備えたシンプルな表示が追加されました。カスタムリストやユーザースクリプトがあるため、引き続きすべてのリストを表示したまま何も変更していません。下からシンプルな表示を試すか、設定 → 詳細でいつでも「すべてのリストを表示」を切り替えられます。";
 "Customize Lists" = "リストをカスタマイズ";
 "Filters are up to date." = "フィルターは最新です。";
+"Checking for updates…" = "アップデートを確認中…";
+"Looking for newer filter lists and extras." = "新しいフィルターリストとエクストラを確認しています。";
