@@ -118,6 +118,48 @@ struct UserScriptMatchingAndPayloadTests {
         includeFragment.includes = ["https://example.com/page#section"]
         expect(includeFragment.matches(url: "https://example.com/page#section"), "raw @include subject must retain its fragment")
 
+        // Magic `.tld` keyword in @match / @exclude-match / @include / @exclude (#1151).
+        expect(UserScript.matchesMatchPattern("*://google.tld/*", url: "https://google.com/search"), "@match .tld matches single-label TLD")
+        expect(UserScript.matchesMatchPattern("*://google.tld/*", url: "https://google.co.uk/search"), "@match .tld matches multi-label public suffix")
+        expect(UserScript.matchesMatchPattern("*://google.tld/*", url: "https://google.com.au/search"), "@match .tld matches .com.au")
+        expect(!UserScript.matchesMatchPattern("*://google.tld/*", url: "https://www.google.com/search"), "@match bare .tld must not match subdomain")
+        expect(!UserScript.matchesMatchPattern("*://google.tld/*", url: "https://google.evil.com/search"), "@match .tld must not match unrelated registrable domain")
+        expect(!UserScript.matchesMatchPattern("*://google.tld/*", url: "https://google.yahoo.com/search"), "@match .tld must not match another site")
+        expect(!UserScript.matchesMatchPattern("*://google.tld/*", url: "https://co.uk/"), "@match .tld must not match bare public suffix")
+        expect(!UserScript.matchesMatchPattern("*://google.tld/*", url: "https://localhost/"), "@match .tld must not match localhost")
+        expect(!UserScript.matchesMatchPattern("*://google.tld/*", url: "http://127.0.0.1/"), "@match .tld must not match IPv4")
+        expect(!UserScript.matchesMatchPattern("*://*.tld/*", url: "https://example.com/"), "@match *.tld must fail closed")
+        expect(!UserScript.matchesMatchPattern("*://.tld/*", url: "https://example.com/"), "@match bare .tld must fail closed")
+
+        expect(UserScript.matchesMatchPattern("*://*.google.tld/*", url: "https://google.com/"), "@match *.google.tld matches apex")
+        expect(UserScript.matchesMatchPattern("*://*.google.tld/*", url: "https://www.google.co.jp/maps"), "@match *.google.tld matches subdomain + multi-label suffix")
+        expect(!UserScript.matchesMatchPattern("*://*.google.tld/*", url: "https://google.evil.com/"), "@match *.google.tld must not match evil.com")
+        expect(!UserScript.matchesMatchPattern("*://*.google.tld/*", url: "https://evilgoogle.com/"), "@match *.google.tld must not match suffix-spoofed domain")
+        expect(UserScript.matchesMatchPattern("*://google.tld:8080/*", url: "https://google.co.uk:8080/x"), "@match .tld supports explicit port")
+        expect(!UserScript.matchesMatchPattern("*://google.tld:8080/*", url: "https://google.co.uk/x"), "@match .tld with port requires matching port")
+
+        expect(UserScript.matchesIncludePattern("https://www.google.tld/search*", url: "https://www.google.co.uk/search?q=1"), "@include .tld matches multi-label public suffix")
+        expect(UserScript.matchesIncludePattern("http*://*.amazon.tld/dp/*", url: "https://www.amazon.co.jp/dp/B001"), "@include *.amazon.tld matches subdomain")
+        expect(UserScript.matchesIncludePattern("http*://amazon.tld:8443/*", url: "https://amazon.de:8443/x"), "@include .tld supports port")
+        expect(!UserScript.matchesIncludePattern("https://www.google.tld/*", url: "https://www.google.evil.com/x"), "@include .tld must reject unrelated registrable domain")
+        expect(!UserScript.matchesIncludePattern("https://*.tld/*", url: "https://example.com/x"), "@include *.tld must fail closed")
+        expect(UserScript.matchesIncludePattern("https://example.com/file.tld", url: "https://example.com/file.tld"), "@include literal .tld in path still matches literally")
+        expect(!UserScript.matchesIncludePattern("https://example.com/file.tld", url: "https://example.com/file.com"), "@include .tld in path must not expand as TLD")
+
+        var indexedTLD = UserScript(name: "indexed tld")
+        indexedTLD.matches = (0..<80).map { "https://pad\($0).invalid/*" } + ["*://*.google.tld/*"]
+        indexedTLD.excludeMatches = (0..<80).map { "https://ex\($0).invalid/*" } + ["*://mail.google.tld/*"]
+        expect(indexedTLD.matches(url: "https://www.google.co.uk/search"), "indexed @match .tld must fall back and match")
+        expect(!indexedTLD.matches(url: "https://mail.google.co.uk/inbox"), "indexed @exclude-match .tld must exclude")
+        expect(!indexedTLD.matches(url: "https://google.evil.com/"), "indexed @match .tld must reject unrelated domain")
+
+        var indexedIncludeTLD = UserScript(name: "indexed include tld")
+        indexedIncludeTLD.includes = (0..<80).map { "https://pad\($0).invalid/*" } + ["https://www.google.tld/*"]
+        indexedIncludeTLD.excludes = (0..<80).map { "https://ex\($0).invalid/*" } + ["https://www.google.tld/private/*"]
+        expect(indexedIncludeTLD.matches(url: "https://www.google.de/search"), "indexed @include .tld must fall back and match")
+        expect(!indexedIncludeTLD.matches(url: "https://www.google.de/private/x"), "indexed @exclude .tld must exclude")
+        expect(!indexedIncludeTLD.matches(url: "https://www.google.evil.com/search"), "indexed @include .tld must reject unrelated domain")
+
         let executable = script.executableContent
         expectEqual(executable, requiredPrefix + body, "executable payload should remove metadata and keep required prefix")
         expect(source.utf8.count > 128 * 1024, "test source should exceed the ordinary inline cap")

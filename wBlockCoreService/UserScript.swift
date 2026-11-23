@@ -7,6 +7,9 @@
 
 import CryptoKit
 import Foundation
+#if canImport(WBEngine)
+internal import WBEngine
+#endif
 
 public enum UserScriptImportIdentity {
     public static func forFileURL(_ url: URL) -> String {
@@ -802,9 +805,11 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
                     continue
                 }
                 let host = String(pattern[separator.upperBound..<slash]).lowercased()
-                // @include globs let wildcards cross URL separators. Only a
-                // literal scheme/authority can safely use the host index.
-                if globs && (!["http", "https", "ftp"].contains(String(pattern[..<separator.lowerBound]))
+                // @include globs let wildcards cross URL separators, and `.tld`
+                // magic keywords match any public suffix rather than literal "tld".
+                if UserScript.isMagicTLDHostPattern(host) {
+                    fallback.append(pattern)
+                } else if globs && (!["http", "https", "ftp"].contains(String(pattern[..<separator.lowerBound]))
                     || host.contains(where: { "*?@%[".contains($0) }) || !host.utf8.allSatisfy({ $0 < 128 })) {
                     fallback.append(pattern)
                 } else if host.hasPrefix("*.") && !host.dropFirst(2).contains("*") {
@@ -1154,6 +1159,7 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
     private struct ParsedMatchURL {
         let scheme: String
         let host: String
+        let port: Int?
         let hostWithPort: String
         let pathAndSuffix: String
     }
@@ -1183,6 +1189,7 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
         return ParsedMatchURL(
             scheme: scheme,
             host: host,
+            port: components.port,
             hostWithPort: hostWithPort,
             pathAndSuffix: pathAndSuffix
         )
@@ -1240,14 +1247,46 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
             return false
         }
 
-        let hostValue = hostPattern.contains(":") ? parsedURL.hostWithPort : parsedURL.host
-        guard matchesHostPattern(hostPattern, host: hostValue) else { return false }
+        let (patternHost, patternPort) = splitHostAndPort(hostPattern)
+        if let patternPort {
+            guard let actualPort = parsedURL.port else { return false }
+            guard wildcardMatch(pattern: patternPort[...], value: String(actualPort)) else { return false }
+        }
+        guard matchesHostPattern(patternHost, host: parsedURL.host) else { return false }
         return wildcardMatch(pattern: pathPattern, value: parsedURL.pathAndSuffix)
+    }
+
+    private static func splitHostAndPort(_ authority: String) -> (host: String, port: String?) {
+        // Leave bracketed IPv6 literals intact unless followed by `:port`.
+        if authority.hasPrefix("[") {
+            guard let closingBracket = authority.firstIndex(of: "]") else {
+                return (authority, nil)
+            }
+            let afterBracket = authority.index(after: closingBracket)
+            if afterBracket < authority.endIndex, authority[afterBracket] == ":" {
+                let portStart = authority.index(after: afterBracket)
+                return (String(authority[...closingBracket]), String(authority[portStart...]))
+            }
+            return (authority, nil)
+        }
+        guard let colon = authority.lastIndex(of: ":") else {
+            return (authority, nil)
+        }
+        return (String(authority[..<colon]), String(authority[authority.index(after: colon)...]))
+    }
+
+    private static func isMagicTLDHostPattern(_ authority: String) -> Bool {
+        let host = splitHostAndPort(authority.lowercased()).host
+        return host.hasSuffix(".tld")
     }
 
     private static func matchesHostPattern(_ pattern: String, host: String) -> Bool {
         if pattern == "*" {
             return true
+        }
+
+        if pattern.hasSuffix(".tld") {
+            return matchesMagicTLDHostPattern(pattern, host: host)
         }
 
         if pattern.hasPrefix("*.") {
@@ -1256,6 +1295,116 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
         }
 
         return wildcardMatch(pattern: pattern[...], value: host)
+    }
+
+    /// Matches Greasemonkey / Tampermonkey / Violentmonkey `.tld` magic keyword
+    /// patterns against `host` using the Public Suffix List so `example.tld`
+    /// matches `example.com` and `example.co.uk` without matching `example.evil.com`.
+    private static func matchesMagicTLDHostPattern(_ pattern: String, host: String) -> Bool {
+        let entityPattern = String(pattern.dropLast(4))
+        guard !entityPattern.isEmpty, entityPattern != "*" else { return false }
+        guard let entityHost = hostEntityWithoutPublicSuffix(for: host) else { return false }
+
+        if entityPattern.hasPrefix("*.") {
+            let base = entityPattern.dropFirst(2)
+            guard !base.isEmpty else { return false }
+            if !base.contains("*") {
+                return entityHost == base || entityHost.hasSuffix(".\(base)")
+            }
+            return wildcardMatch(pattern: base, value: entityHost)
+                || (entityHost.contains(".") && wildcardMatch(pattern: entityPattern[...], value: entityHost))
+        }
+
+        return wildcardMatch(pattern: entityPattern[...], value: entityHost)
+    }
+
+    private static let fallbackMultiLabelPublicSuffixes: Set<String> = [
+        "ac.uk", "co.id", "co.il", "co.in", "co.jp", "co.kr", "co.nz", "co.th",
+        "co.uk", "co.za", "com.ar", "com.au", "com.br", "com.cn", "com.hk",
+        "com.mx", "com.my", "com.pl", "com.sg", "com.tr", "com.tw", "com.ua",
+        "edu.au", "gov.au", "gov.uk", "ne.jp", "net.au", "net.br", "or.jp",
+        "org.au", "org.br", "org.uk"
+    ]
+
+    /// Strips the host's public suffix (eTLD), returning `nil` for bare public
+    /// suffixes, single-label hosts (`localhost`), or IP addresses.
+    private static func hostEntityWithoutPublicSuffix(for host: String) -> String? {
+        var normalized = host.lowercased()
+        if normalized.hasSuffix(".") {
+            normalized.removeLast()
+        }
+        guard !normalized.isEmpty, !normalized.contains(":") else { return nil }
+        let labels = normalized.split(separator: ".", omittingEmptySubsequences: false)
+        guard labels.count >= 2,
+              let lastLabel = labels.last, !lastLabel.isEmpty,
+              !(lastLabel.allSatisfy { $0.isASCII && $0.isNumber })
+        else { return nil }
+
+        #if canImport(WBEngine)
+        guard let root = WBEngine.registrableDomain(of: normalized),
+              let dot = root.firstIndex(of: ".")
+        else { return nil }
+        let suffixLength = root[dot...].count
+        guard normalized.count > suffixLength else { return nil }
+        return String(normalized.dropLast(suffixLength))
+        #else
+        let lastTwo = "\(labels[labels.count - 2]).\(lastLabel)"
+        if fallbackMultiLabelPublicSuffixes.contains(lastTwo) {
+            guard labels.count >= 3 else { return nil }
+            return labels.dropLast(2).joined(separator: ".")
+        }
+        return labels.dropLast(1).joined(separator: ".")
+        #endif
+    }
+
+    /// Rewrites an `@include`/`@exclude` glob whose host ends in `.tld` against
+    /// a subject URL whose real public suffix is replaced by `.tld`.
+    private static func magicTLDIncludeRewrite(
+        pattern: String,
+        url: String
+    ) -> (pattern: String, url: String)? {
+        guard let patternSchemeSep = pattern.range(of: "://") else { return nil }
+        let patternAfterScheme = pattern[patternSchemeSep.upperBound...]
+        let patternAuthorityEnd = patternAfterScheme.firstIndex(where: { $0 == "/" || $0 == "?" || $0 == "#" })
+            ?? patternAfterScheme.endIndex
+        let patternAuthority = String(patternAfterScheme[..<patternAuthorityEnd])
+        let (patternHostRaw, _) = splitHostAndPort(patternAuthority)
+        let patternHostLower = patternHostRaw.lowercased()
+        guard patternHostLower.hasSuffix(".tld") else { return nil }
+
+        // Require a non-empty host entity before `.tld` (reject `.tld` or `*.tld`).
+        let entityPattern = patternHostLower.dropLast(4)
+        guard !entityPattern.isEmpty, entityPattern != "*" else { return nil }
+
+        guard let urlSchemeSep = url.range(of: "://") else { return nil }
+        let urlAfterScheme = url[urlSchemeSep.upperBound...]
+        let urlAuthorityEnd = urlAfterScheme.firstIndex(where: { $0 == "/" || $0 == "?" || $0 == "#" })
+            ?? urlAfterScheme.endIndex
+        let urlAuthority = urlAfterScheme[..<urlAuthorityEnd]
+        let hostStart = urlAuthority.lastIndex(of: "@").map { urlAuthority.index(after: $0) }
+            ?? urlAuthority.startIndex
+        let hostAndPort = String(urlAuthority[hostStart..<urlAuthorityEnd])
+        let (rawURLHost, _) = splitHostAndPort(hostAndPort)
+        guard let entityHost = hostEntityWithoutPublicSuffix(for: rawURLHost) else { return nil }
+
+        let strippedURLHost = rawURLHost.hasSuffix(".") ? String(rawURLHost.dropLast()) : rawURLHost
+        let realSuffixLength = strippedURLHost.count - entityHost.count
+        guard realSuffixLength > 0 else { return nil }
+
+        let suffixEndInURL = url.index(hostStart, offsetBy: strippedURLHost.count)
+        let suffixStartInURL = url.index(suffixEndInURL, offsetBy: -realSuffixLength)
+        var rewrittenURL = url
+        rewrittenURL.replaceSubrange(suffixStartInURL..<suffixEndInURL, with: ".tld")
+
+        // Normalize `.TLD` casing in the pattern's host suffix so it matches `.tld`.
+        let tldEndInPattern = pattern.index(patternSchemeSep.upperBound, offsetBy: patternHostRaw.count)
+        let tldStartInPattern = pattern.index(tldEndInPattern, offsetBy: -4)
+        var normalizedPattern = pattern
+        if normalizedPattern[tldStartInPattern..<tldEndInPattern] != ".tld" {
+            normalizedPattern.replaceSubrange(tldStartInPattern..<tldEndInPattern, with: ".tld")
+        }
+
+        return (normalizedPattern, rewrittenURL)
     }
 
     private static func wildcardMatch(pattern: Substring, value: String) -> Bool {
@@ -1313,14 +1462,36 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
             return boundedRegexMatch(regex, in: url, range: urlRange)
         }
 
+        var effectivePattern = pattern
+        var effectiveURL = url
+        var effectiveRange = urlRange
+        var effectiveASCII = asciiURL
+
+        if pattern.range(of: ".tld", options: .caseInsensitive) != nil,
+           let schemeSep = pattern.range(of: "://") {
+            let afterScheme = pattern[schemeSep.upperBound...]
+            let authorityEnd = afterScheme.firstIndex(where: { $0 == "/" || $0 == "?" || $0 == "#" })
+                ?? afterScheme.endIndex
+            let authorityHost = splitHostAndPort(String(afterScheme[..<authorityEnd])).host
+            if authorityHost.lowercased().hasSuffix(".tld") {
+                guard let rewritten = magicTLDIncludeRewrite(pattern: pattern, url: url) else {
+                    return false
+                }
+                effectivePattern = rewritten.pattern
+                effectiveURL = rewritten.url
+                effectiveRange = NSRange(location: 0, length: effectiveURL.utf16.count)
+                effectiveASCII = effectiveURL.utf8.allSatisfy { $0 >= 32 && $0 < 127 }
+            }
+        }
+
         // Ordinary ASCII globs need no regex compilation or cache entry. Keep
         // ICU for question marks and Unicode/newlines, whose semantics differ.
-        if asciiURL, !pattern.contains("?"), pattern.utf8.allSatisfy({ $0 < 128 }) {
-            return wildcardMatch(pattern: pattern[...], value: url)
+        if effectiveASCII, !effectivePattern.contains("?"), effectivePattern.utf8.allSatisfy({ $0 < 128 }) {
+            return wildcardMatch(pattern: effectivePattern[...], value: effectiveURL)
         }
 
         guard let regex = cachedRegex(
-            for: pattern,
+            for: effectivePattern,
             cache: includeRegexCache,
             buildRegexPattern: { sourcePattern in
                 // Escape first, then restore wildcard semantics.
@@ -1332,7 +1503,7 @@ public struct UserScript: Identifiable, Codable, Hashable, Sendable {
         ) else {
             return false
         }
-        return regex.firstMatch(in: url, options: [], range: urlRange) != nil
+        return regex.firstMatch(in: effectiveURL, options: [], range: effectiveRange) != nil
     }
 
     private static func boundedRegexMatch(
