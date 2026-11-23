@@ -36,7 +36,6 @@
 ||snap.licdn.com^$third-party
 ||snowplowanalytics.com^$third-party
 ||tagmanager.google.com^$third-party
-||target.microsoft.com^
 ||tr.facebook.com^$third-party
 ||udc.yahoo.com^$third-party
 ||udcm.yahoo.com^$third-party
