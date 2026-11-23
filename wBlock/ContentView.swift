@@ -362,6 +362,8 @@ struct ContentView: View {
         }
         .onChangeCompat(of: appMode) { _, newMode in
             clearFilterPopoverSelections()
+            filterManager.showingAppliedBanner = false
+            filterManager.showingNoUpdatesAlert = false
             filterManager.flushBasicAutoApplyIfNeeded(includeUnqueued: newMode == .basic)
         }
         .sheet(isPresented: $showingHealthDetail) {

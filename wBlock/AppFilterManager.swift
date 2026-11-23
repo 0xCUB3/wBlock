@@ -66,12 +66,25 @@ class AppFilterManager: ObservableObject {
         didSet {
             guard showingApplyProgressSheet != oldValue else { return }
             let state = applyProgressViewModel.state
-            showingAppliedBanner = !showingApplyProgressSheet && state.mode == .result
+            let isAdvancedLayout = UserDefaults.standard.string(forKey: AppMode.storageKey) == AppMode.advanced.rawValue
+            showingAppliedBanner = isAdvancedLayout && !showingApplyProgressSheet && state.mode == .result
                 && !state.resultNeedsAttention && failedReloadTargets.isEmpty
         }
     }
     /// Shared by every tab, so closing the card on one closes it on all of them.
-    @Published var showingAppliedBanner = false
+    @Published var showingAppliedBanner = false {
+        didSet {
+            appliedBannerDismissTask?.cancel()
+            appliedBannerDismissTask = nil
+            guard showingAppliedBanner else { return }
+            appliedBannerDismissTask = Task { @MainActor [weak self] in
+                try? await Task.sleep(nanoseconds: 5_000_000_000)
+                guard !Task.isCancelled else { return }
+                self?.showingAppliedBanner = false
+            }
+        }
+    }
+    private var appliedBannerDismissTask: Task<Void, Never>?
     @Published var suppressBlockingOverlay = false
     @Published var isBlockingPaused: Bool = false
     @Published var pausedComponents: BlockingPauseComponents = []
