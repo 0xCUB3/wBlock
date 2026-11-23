@@ -1109,25 +1109,26 @@ private struct PeekSheetDetentsHost<Content: View>: View {
     @Binding var showAllLists: Bool
     @ViewBuilder let content: () -> Content
     @State private var selectedDetent: PresentationDetent = .medium
-
-    private var availableDetents: Set<PresentationDetent> {
-        showAllLists ? [.medium, .large] : [.medium]
-    }
+    @State private var allowsDetentGestureExpand = false
 
     var body: some View {
         Group {
             if #available(iOS 16.4, *) {
                 content()
-                    .presentationContentInteraction(.scrolls)
+                    .presentationContentInteraction(showAllLists ? .scrolls : .resizes)
             } else {
                 content()
             }
         }
-        .presentationDetents(availableDetents, selection: $selectedDetent)
+        .presentationDetents([.medium, .large], selection: $selectedDetent)
         .presentationDragIndicator(.visible)
         .onAppear {
+            allowsDetentGestureExpand = false
             if !showAllLists, selectedDetent != .medium {
                 selectedDetent = .medium
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                allowsDetentGestureExpand = true
             }
         }
         .onChangeCompat(of: showAllLists) { _, expanded in
@@ -1137,7 +1138,15 @@ private struct PeekSheetDetentsHost<Content: View>: View {
             }
         }
         .onChangeCompat(of: selectedDetent) { _, detent in
-            if detent == .medium, showAllLists {
+            if detent == .large, !showAllLists {
+                guard allowsDetentGestureExpand else {
+                    selectedDetent = .medium
+                    return
+                }
+                withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
+                    showAllLists = true
+                }
+            } else if detent == .medium, showAllLists {
                 withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
                     showAllLists = false
                 }
