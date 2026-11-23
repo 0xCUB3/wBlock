@@ -159,22 +159,17 @@ extension AnnoyanceChoice {
         }
     }
 
-    /// Primary everyday annoyances shown directly in Basic Filters and Basic Onboarding.
-    /// Mobile App Banners is omitted on macOS (kept in the catalog for iCloud Sync with iOS).
+    /// Primary everyday annoyances shown directly in Standard Filters and Onboarding.
     static func basicPrimaryChoices(includeMobileAppBanners: Bool = defaultIncludesMobileAppBanners) -> [AnnoyanceChoice] {
         includeMobileAppBanners ? [.cookies, .popups, .banners] : [.cookies, .popups]
     }
 
     /// Opinionated / stricter annoyance bundles housed behind the expandable
-    /// "Stricter Blocking" row in Basic Filters.
+    /// "Stricter Blocking" row in Standard Filters.
     static let basicStricterChoices: [AnnoyanceChoice] = [.social, .chat, .general, .ai]
 
     static var defaultIncludesMobileAppBanners: Bool {
-        #if os(macOS)
-        return false
-        #else
-        return true
-        #endif
+        true
     }
 
     /// Legacy EasyList names that swap into this choice, derived from `FilterListLoader`

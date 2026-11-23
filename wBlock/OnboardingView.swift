@@ -501,7 +501,7 @@ struct OnboardingView: View {
                 .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
             }
 
-            // Annoyances: primary everyday defaults only (3 on iOS, 2 on macOS), Cookie Notices preselected
+            // Annoyances: primary everyday defaults, Cookie Notices preselected
             VStack(alignment: .leading, spacing: 8) {
                 Text("Annoyances")
                     .font(.headline)

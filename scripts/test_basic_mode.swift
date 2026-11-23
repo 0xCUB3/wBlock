@@ -187,17 +187,17 @@ struct BasicModeTests {
             lists[bpcIdx].isSelected = false
         }
 
-        // Mobile App Banners is omitted on macOS, so if enabled (e.g. synced from iOS),
-        // it must surface truthfully under "Also on" on macOS while remaining owned on iOS.
-        precondition(AnnoyanceChoice.basicPrimaryChoices(includeMobileAppBanners: true) == [.cookies, .popups, .banners])
+        // Mobile App Banners is shown by default on both iOS and macOS in Standard mode.
+        precondition(AnnoyanceChoice.defaultIncludesMobileAppBanners, "Mobile App Banners must be included by default on all platforms")
+        precondition(AnnoyanceChoice.basicPrimaryChoices() == [.cookies, .popups, .banners])
         precondition(AnnoyanceChoice.basicPrimaryChoices(includeMobileAppBanners: false) == [.cookies, .popups])
         precondition(AnnoyanceChoice.basicStricterChoices == [.social, .chat, .general, .ai])
         if let bannerIdx = lists.firstIndex(where: { !$0.isCustom && $0.name == "AdGuard Mobile App Banners" }) {
             lists[bannerIdx].isSelected = true
-            let iosUnowned = BasicBundle.unownedActiveFilters(in: lists, includesMobileAppBannersBundle: true)
-            precondition(!iosUnowned.contains { $0.id == lists[bannerIdx].id }, "Mobile App Banners must be owned on iOS")
-            let macUnowned = BasicBundle.unownedActiveFilters(in: lists, includesMobileAppBannersBundle: false)
-            precondition(macUnowned.contains { $0.id == lists[bannerIdx].id }, "Mobile App Banners must surface in Also on on macOS when synced on")
+            let ownedUnowned = BasicBundle.unownedActiveFilters(in: lists)
+            precondition(!ownedUnowned.contains { $0.id == lists[bannerIdx].id }, "Mobile App Banners must be owned in Standard mode")
+            let omittedUnowned = BasicBundle.unownedActiveFilters(in: lists, includesMobileAppBannersBundle: false)
+            precondition(omittedUnowned.contains { $0.id == lists[bannerIdx].id }, "Mobile App Banners must surface in Also on when omitted")
             lists[bannerIdx].isSelected = false
         }
 
