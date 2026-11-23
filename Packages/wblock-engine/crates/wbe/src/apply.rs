@@ -165,7 +165,7 @@ struct Parsed {
     /// 1-based line number, the rule's `source.line`.
     line: u32,
     /// Position of the rule among those its line parses to.
-    index: u32,
+    index: u16,
     identity: u64,
     /// Exceptions and `$badfilter` stay in every shard and drive #681.
     shared: bool,
@@ -179,6 +179,9 @@ struct Parsed {
     route: Route,
     /// Affinity types of the enclosing `!#safari_cb_affinity` block.
     affinity: Option<u8>,
+    /// Byte range `(start, len)` in the rule's line of `StrictHosts::host`,
+    /// when it appears verbatim there; `(0, 0)` otherwise.
+    strict_host: (u16, u16),
 }
 
 struct ParsedList {
@@ -1238,6 +1241,14 @@ impl Plan {
                     }
                 }
             }
+            if scan.takes && self.lists[list].scope.is_empty() {
+                let text: &str = &self.texts[list];
+                for p in self.parsed[list].records().filter(|p| p.strict_host.1 > 0 && self.keeps(target, list, p)) {
+                    let start = p.offset + p.strict_host.0 as usize;
+                    let end = start + p.strict_host.1 as usize;
+                    ctx.add_strict_host(&text[start..end]);
+                }
+            }
             ctx.merge(scan.ctx);
             others.cosmetic.extend(scan.others.cosmetic);
             others.scriptlets.extend(scan.others.scriptlets);
@@ -1501,17 +1512,34 @@ fn parse_lines(list: &ListSpec, full: &str, span: Range<usize>, lines_before: u3
         let offset = line.as_ptr() as usize - full.as_ptr() as usize;
         let parsed_line = parse_list(line, 0, list.trusted, &mut line_stats);
         for (position, rule) in parsed_line.iter().enumerate() {
+            let Ok(index) = u16::try_from(position) else {
+                break;
+            };
+            let (in_context, strict_host) = match rule {
+                Rule::Network(r) if NetworkContext::holds_non_strict(r) => (true, (0, 0)),
+                Rule::Network(r) => match NetworkContext::strict_host(r) {
+                    Some(host) => match line.find(host.as_str()).and_then(|start| {
+                        Some((u16::try_from(start).ok()?, u16::try_from(host.len()).ok()?))
+                    }) {
+                        Some(span) => (false, span),
+                        None => (true, (0, 0)),
+                    },
+                    None => (false, (0, 0)),
+                },
+                _ => (false, (0, 0)),
+            };
             rules.push(Parsed {
                 offset,
                 line: lines_before + n as u32 + 1,
-                index: position as u32,
+                index,
                 identity: identity_in_scope(raw(rule), &list.scope),
                 shared: is_shared(rule),
                 network: matches!(rule, Rule::Network(_)),
-                in_context: matches!(rule, Rule::Network(r) if NetworkContext::holds(r)),
+                in_context,
                 plain: is_plain_block(rule),
                 route: Route::of(rule),
                 affinity,
+                strict_host,
             });
         }
         stats.merge(&line_stats);
@@ -2072,7 +2100,7 @@ mod tests {
             trusted: false,
             scope: SiteScope::default(),
         };
-        let records = |parsed: &ParsedList| -> Vec<(usize, u32, u32, u64, bool, bool, Option<u8>)> {
+        let records = |parsed: &ParsedList| -> Vec<(usize, u32, u16, u64, bool, bool, Option<u8>)> {
             parsed
                 .records()
                 .map(|p| (p.offset, p.line, p.index, p.identity, p.shared, p.network, p.affinity))
@@ -2086,6 +2114,26 @@ mod tests {
             assert_eq!(chunked.has_affinity, whole.has_affinity);
             assert_eq!(chunked.stats.lines, whole.stats.lines);
             assert_eq!(chunked.stats.rules, whole.stats.rules);
+        }
+    }
+
+    #[test]
+    fn strict_host_spans_and_case_fallback_lift_document_blocks() {
+        let plan = plan(
+            json!([{
+                "id": "list",
+                "text": "||bare.example^\n0.0.0.0 hosts.example\n||Mixed.Example^\n||bad.example^$badfilter\n@@||sub.bare.example^\n@@||hosts.example^\n@@||mixed.example^\n"
+            }]),
+            json!([{ "slot": 1, "lists": [{ "list": 0 }] }]),
+            json!({}),
+        );
+        let records: Vec<_> = plan.parsed[0].records().collect();
+        assert!(!records[0].in_context && records[0].strict_host.1 > 0);
+        assert!(!records[1].in_context && records[1].strict_host.1 > 0);
+        assert!(records[2].in_context && records[2].strict_host == (0, 0));
+        assert!(records[3].in_context && records[3].strict_host == (0, 0));
+        for url in ["https://sub.bare.example/", "https://hosts.example/", "https://mixed.example/"] {
+            assert!(!verdict(&plan, url, url, "document", false).blocked, "{url}");
         }
     }
 
