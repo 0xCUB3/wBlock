@@ -74,6 +74,11 @@ struct BasicExtrasView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
+                let protection = featuredScripts(in: .protection)
+                if !protection.isEmpty {
+                    groupSection(title: "Protection", scripts: protection)
+                }
+
                 let video = featuredScripts(in: .video)
                 if !video.isEmpty {
                     groupSection(title: "Video", scripts: video)
@@ -82,11 +87,6 @@ struct BasicExtrasView: View {
                 let reading = featuredScripts(in: .reading)
                 if !reading.isEmpty {
                     groupSection(title: "Reading", scripts: reading)
-                }
-
-                let protection = featuredScripts(in: .protection)
-                if !protection.isEmpty {
-                    groupSection(title: "Protection", scripts: protection)
                 }
 
                 if !alsoOnScripts.isEmpty {
