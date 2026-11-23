@@ -30,9 +30,15 @@ struct BasicExtrasView: View {
     }
 
     private func featuredScripts(in group: BuiltInUserScriptBasicGroup) -> [UserScript] {
-        let preferredOrder: [String] = group == .video
-            ? ["Tube Cleaner", "Player Cleaner", "DeArrow", "Return YouTube Dislike", "TwitchAdSolutions (vaft)"]
-            : ["Dark Reader", "Disable AMP", "Bypass Paywalls Clean"]
+        let preferredOrder: [String]
+        switch group {
+        case .video:
+            preferredOrder = ["Tube Cleaner", "Player Cleaner", "DeArrow", "Return YouTube Dislike", "TwitchAdSolutions (vaft)"]
+        case .reading:
+            preferredOrder = ["Dark Reader", "Disable AMP", "Bypass Paywalls Clean"]
+        case .protection:
+            preferredOrder = ["tinyShield", "AdGuard Popup Blocker", "AdGuard Extra"]
+        }
 
         let langs = activeLanguageCodes
         let matching = userScriptManager.userScripts.filter { script in
@@ -76,6 +82,11 @@ struct BasicExtrasView: View {
                 let reading = featuredScripts(in: .reading)
                 if !reading.isEmpty {
                     groupSection(title: "Reading", scripts: reading)
+                }
+
+                let protection = featuredScripts(in: .protection)
+                if !protection.isEmpty {
+                    groupSection(title: "Protection", scripts: protection)
                 }
 
                 if !alsoOnScripts.isEmpty {
@@ -334,6 +345,15 @@ struct BasicExtrasView: View {
         }
         if userScriptManager.isBypassPaywallsClean(script) {
             return ("newspaper.fill", Color(red: 0.16, green: 0.66, blue: 0.56))
+        }
+        if script.name.localizedCaseInsensitiveContains("tinyshield") {
+            return ("hand.raised.fill", Color(red: 0.16, green: 0.68, blue: 0.48))
+        }
+        if script.name.localizedCaseInsensitiveContains("popup blocker") {
+            return ("macwindow.badge.plus", Color(red: 0.91, green: 0.29, blue: 0.49))
+        }
+        if script.name.localizedCaseInsensitiveContains("adguard extra") {
+            return ("sparkles", Color(red: 0.35, green: 0.38, blue: 0.88))
         }
         return ("puzzlepiece.extension.fill", Color(red: 0.48, green: 0.50, blue: 0.55))
     }

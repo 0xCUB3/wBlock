@@ -1099,7 +1099,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Tests new rules before they reach the main lists, from the AdGuard project. It may break sites." = "قوانین جدید را پیش از رسیدن به فهرست‌های اصلی آزمایش می‌کند. از پروژه AdGuard. ممکن است برخی سایت‌ها را خراب کند.";
 "Tests new rules before they reach the main lists, from the uBlock Origin project. It may break sites." = "قوانین جدید را پیش از رسیدن به فهرست‌های اصلی آزمایش می‌کند. از پروژه uBlock Origin. ممکن است برخی سایت‌ها را خراب کند.";
 "Makes websites dark by restyling their colors, from the Dark Reader project. Some sites may look off, since it doesn't include Dark Reader's site fixes." = "با بازطراحی رنگ‌های وب‌سایت‌ها، آن‌ها را تیره می‌کند. از پروژه Dark Reader. ممکن است برخی سایت‌ها عجیب به نظر برسند، زیرا اصلاحات سایت‌های Dark Reader را شامل نمی‌شود.";
-"Blocks Twitch ads and handles complicated anti-adblock cases, from the AdGuard project. It slows page loads." = "تبلیغات Twitch را مسدود می‌کند و موارد پیچیده ضدمسدودکننده را مدیریت می‌کند. از پروژه AdGuard. سرعت بارگذاری صفحات را کم می‌کند.";
+"Blocks Twitch ads and handles complicated anti-adblock cases on supported sites, from the AdGuard project." = "تبلیغات Twitch را مسدود می‌کند و موارد پیچیده ضدمسدودکننده را در سایت‌های پشتیبانی‌شده مدیریت می‌کند، از پروژه AdGuard.";
 "Shows dislike counts on YouTube again, using data from the Return YouTube Dislike community." = "تعداد نپسندیدن‌ها را دوباره در YouTube نمایش می‌دهد، با استفاده از داده‌های جامعهٔ Return YouTube Dislike.";
 "Gets past paywalls on English-language news sites, and some in other languages." = "از پیوارهای وب‌سایت‌های خبری انگلیسی‌زبان و برخی به زبان‌های دیگر عبور می‌کند.";
 "Blocks Twitch ads." = "تبلیغات Twitch را مسدود می‌کند.";
@@ -1268,3 +1268,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Standard is best for most people. Both modes block the same things, and switching never changes your filters. Advanced adds manual control of lists and userscripts." = "حالت استاندارد برای بیشتر افراد بهترین است. هر دو حالت موارد یکسانی را مسدود می‌کنند و جابه‌جایی هرگز فیلترهای شما را تغییر نمی‌دهد. حالت پیشرفته کنترل دستی فهرست‌ها و اسکریپت‌ها را اضافه می‌کند.";
 "Switch to Advanced Mode" = "تغییر به حالت پیشرفته";
 "Here are your starting options. You can change any of them later." = "این‌ها گزینه‌های اولیه شما هستند. هر کدام را بعداً می‌توانید تغییر دهید.";
+"Protection" = "محافظت";

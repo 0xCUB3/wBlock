@@ -1090,7 +1090,7 @@ Para reativá-los, desative outros filtros grandes e aplique as alterações nov
 "Tests new rules before they reach the main lists, from the AdGuard project. It may break sites." = "Testa novas regras antes que cheguem às listas principais. Do projeto AdGuard. Pode quebrar sites.";
 "Tests new rules before they reach the main lists, from the uBlock Origin project. It may break sites." = "Testa novas regras antes que cheguem às listas principais. Do projeto uBlock Origin. Pode quebrar sites.";
 "Makes websites dark by restyling their colors, from the Dark Reader project. Some sites may look off, since it doesn't include Dark Reader's site fixes." = "Escurece sites ao alterar suas cores. Do projeto Dark Reader. Alguns sites podem ficar com aparência estranha, pois não inclui as correções específicas de sites do Dark Reader.";
-"Blocks Twitch ads and handles complicated anti-adblock cases, from the AdGuard project. It slows page loads." = "Bloqueia anúncios da Twitch e lida com casos complicados de anti-adblock. Do projeto AdGuard. Deixa o carregamento das páginas mais lento.";
+"Blocks Twitch ads and handles complicated anti-adblock cases on supported sites, from the AdGuard project." = "Bloqueia anúncios da Twitch e lida com casos complicados de anti-adblock em sites compatíveis, do projeto AdGuard.";
 "Shows dislike counts on YouTube again, using data from the Return YouTube Dislike community." = "Mostra novamente a contagem de dislikes no YouTube, usando dados da comunidade Return YouTube Dislike.";
 "Gets past paywalls on English-language news sites, and some in other languages." = "Contorna paywalls em sites de notícias em inglês e em alguns em outros idiomas.";
 "Blocks Twitch ads." = "Bloqueia anúncios da Twitch.";
@@ -1259,3 +1259,4 @@ Para reativá-los, desative outros filtros grandes e aplique as alterações nov
 "Standard is best for most people. Both modes block the same things, and switching never changes your filters. Advanced adds manual control of lists and userscripts." = "O modo Padrão é o melhor para a maioria das pessoas. Ambos bloqueiam as mesmas coisas e alternar nunca muda seus filtros. O Avançado adiciona controle manual de listas e userscripts.";
 "Switch to Advanced Mode" = "Mudar para o Modo Avançado";
 "Here are your starting options. You can change any of them later." = "Estas são suas opções iniciais. Você pode alterar qualquer uma depois.";
+"Protection" = "Proteção";

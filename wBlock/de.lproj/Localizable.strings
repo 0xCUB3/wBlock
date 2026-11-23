@@ -1090,7 +1090,7 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Tests new rules before they reach the main lists, from the AdGuard project. It may break sites." = "Testet neue Regeln, bevor sie in die Hauptlisten übernommen werden, aus dem AdGuard-Projekt. Dabei können Websites kaputtgehen.";
 "Tests new rules before they reach the main lists, from the uBlock Origin project. It may break sites." = "Testet neue Regeln, bevor sie in die Hauptlisten übernommen werden, aus dem uBlock-Origin-Projekt. Dabei können Websites kaputtgehen.";
 "Makes websites dark by restyling their colors, from the Dark Reader project. Some sites may look off, since it doesn't include Dark Reader's site fixes." = "Macht Websites dunkel, indem ihre Farben neu gestaltet werden, aus dem Dark-Reader-Projekt. Manche Websites wirken möglicherweise seltsam, da die Website-Korrekturen von Dark Reader nicht enthalten sind.";
-"Blocks Twitch ads and handles complicated anti-adblock cases, from the AdGuard project. It slows page loads." = "Blockiert Twitch-Werbung und behandelt komplizierte Anti-Adblock-Fälle, aus dem AdGuard-Projekt. Verlangsamt das Laden von Seiten.";
+"Blocks Twitch ads and handles complicated anti-adblock cases on supported sites, from the AdGuard project." = "Blockiert Twitch-Werbung und behandelt komplizierte Anti-Adblock-Fälle auf unterstützten Websites, aus dem AdGuard-Projekt.";
 "Shows dislike counts on YouTube again, using data from the Return YouTube Dislike community." = "Zeigt Dislike-Zähler auf YouTube wieder an, mit Daten der Community von Return YouTube Dislike.";
 "Gets past paywalls on English-language news sites, and some in other languages." = "Umgeht Paywalls auf englischsprachigen Nachrichtenseiten und einigen in anderen Sprachen.";
 "Blocks Twitch ads." = "Blockiert Twitch-Werbung.";
@@ -1259,3 +1259,4 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "Standard is best for most people. Both modes block the same things, and switching never changes your filters. Advanced adds manual control of lists and userscripts." = "Standard ist für die meisten ideal. Beide Modi blockieren dasselbe, und ein Wechsel ändert deine Filter nicht. Erweitert bietet manuelle Kontrolle über Listen und Userscripts.";
 "Switch to Advanced Mode" = "Zum erweiterten Modus wechseln";
 "Here are your starting options. You can change any of them later." = "Hier sind deine Startoptionen. Du kannst sie jederzeit später ändern.";
+"Protection" = "Schutz";

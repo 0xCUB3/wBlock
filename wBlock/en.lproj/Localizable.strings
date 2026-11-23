@@ -1099,7 +1099,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Tests new rules before they reach the main lists, from the AdGuard project. It may break sites." = "Tests new rules before they reach the main lists, from the AdGuard project. It may break sites.";
 "Tests new rules before they reach the main lists, from the uBlock Origin project. It may break sites." = "Tests new rules before they reach the main lists, from the uBlock Origin project. It may break sites.";
 "Makes websites dark by restyling their colors, from the Dark Reader project. Some sites may look off, since it doesn't include Dark Reader's site fixes." = "Makes websites dark by restyling their colors, from the Dark Reader project. Some sites may look off, since it doesn't include Dark Reader's site fixes.";
-"Blocks Twitch ads and handles complicated anti-adblock cases, from the AdGuard project. It slows page loads." = "Blocks Twitch ads and handles complicated anti-adblock cases, from the AdGuard project. It slows page loads.";
+"Blocks Twitch ads and handles complicated anti-adblock cases on supported sites, from the AdGuard project." = "Blocks Twitch ads and handles complicated anti-adblock cases on supported sites, from the AdGuard project.";
 "Shows dislike counts on YouTube again, using data from the Return YouTube Dislike community." = "Shows dislike counts on YouTube again, using data from the Return YouTube Dislike community.";
 "Gets past paywalls on English-language news sites, and some in other languages." = "Gets past paywalls on English-language news sites, and some in other languages.";
 "Blocks Twitch ads." = "Blocks Twitch ads.";
@@ -1268,3 +1268,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Standard is best for most people. Both modes block the same things, and switching never changes your filters. Advanced adds manual control of lists and userscripts." = "Standard is best for most people. Both modes block the same things, and switching never changes your filters. Advanced adds manual control of lists and userscripts.";
 "Switch to Advanced Mode" = "Switch to Advanced Mode";
 "Here are your starting options. You can change any of them later." = "Here are your starting options. You can change any of them later.";
+"Protection" = "Protection";

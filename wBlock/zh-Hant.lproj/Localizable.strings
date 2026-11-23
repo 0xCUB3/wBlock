@@ -1090,7 +1090,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Tests new rules before they reach the main lists, from the AdGuard project. It may break sites." = "在新規則進入主清單之前先行測試，來自 AdGuard 專案。可能會導致網站失效。";
 "Tests new rules before they reach the main lists, from the uBlock Origin project. It may break sites." = "在新規則進入主清單之前先行測試，來自 uBlock Origin 專案。可能會導致網站失效。";
 "Makes websites dark by restyling their colors, from the Dark Reader project. Some sites may look off, since it doesn't include Dark Reader's site fixes." = "透過重新調整顏色讓網站變暗，來自 Dark Reader 專案。由於不包含 Dark Reader 的網站修正，部分網站可能顯示異常。";
-"Blocks Twitch ads and handles complicated anti-adblock cases, from the AdGuard project. It slows page loads." = "封鎖 Twitch 廣告並處理複雜的反廣告攔截情況，來自 AdGuard 專案。會拖慢頁面載入速度。";
+"Blocks Twitch ads and handles complicated anti-adblock cases on supported sites, from the AdGuard project." = "在支援的網站上封鎖 Twitch 廣告並處理複雜的反廣告攔截情況，來自 AdGuard 專案。";
 "Shows dislike counts on YouTube again, using data from the Return YouTube Dislike community." = "重新在 YouTube 上顯示不喜歡數，資料來自 Return YouTube Dislike 社群。";
 "Gets past paywalls on English-language news sites, and some in other languages." = "繞過英語新聞網站的付費牆，以及部分其他語言網站的付費牆。";
 "Blocks Twitch ads." = "封鎖 Twitch 廣告。";
@@ -1259,3 +1259,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Standard is best for most people. Both modes block the same things, and switching never changes your filters. Advanced adds manual control of lists and userscripts." = "標準模式最適合大多數使用者。兩種模式的封鎖效果完全相同，切換不會更動你的過濾清單。進階模式提供對清單與使用者腳本的手動控制。";
 "Switch to Advanced Mode" = "切換至進階模式";
 "Here are your starting options. You can change any of them later." = "以下是你的初始選項，之後隨時都可以修改。";
+"Protection" = "保護";

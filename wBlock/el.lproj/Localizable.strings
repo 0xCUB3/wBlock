@@ -1090,7 +1090,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Tests new rules before they reach the main lists, from the AdGuard project. It may break sites." = "Δοκιμάζει νέους κανόνες προτού φτάσουν στις κύριες λίστες, από το έργο AdGuard. Ενδέχεται να χαλάσει ιστότοπους.";
 "Tests new rules before they reach the main lists, from the uBlock Origin project. It may break sites." = "Δοκιμάζει νέους κανόνες προτού φτάσουν στις κύριες λίστες, από το έργο uBlock Origin. Ενδέχεται να χαλάσει ιστότοπους.";
 "Makes websites dark by restyling their colors, from the Dark Reader project. Some sites may look off, since it doesn't include Dark Reader's site fixes." = "Κάνει τους ιστότοπους σκούρους αλλάζοντας τα χρώματά τους, από το έργο Dark Reader. Ορισμένοι ιστότοποι μπορεί να φαίνονται περίεργα, καθώς δεν περιλαμβάνει τις διορθώσεις ιστοτόπων του Dark Reader.";
-"Blocks Twitch ads and handles complicated anti-adblock cases, from the AdGuard project. It slows page loads." = "Αποκλείει διαφημίσεις του Twitch και χειρίζεται πολύπλοκες περιπτώσεις anti-adblock, από το έργο AdGuard. Επιβραδύνει τη φόρτωση σελίδων.";
+"Blocks Twitch ads and handles complicated anti-adblock cases on supported sites, from the AdGuard project." = "Αποκλείει διαφημίσεις του Twitch και χειρίζεται πολύπλοκες περιπτώσεις anti-adblock σε υποστηριζόμενους ιστότοπους, από το έργο AdGuard.";
 "Shows dislike counts on YouTube again, using data from the Return YouTube Dislike community." = "Εμφανίζει ξανά τις καταμετρήσεις “δεν μου αρέσει” στο YouTube, με δεδομένα από την κοινότητα Return YouTube Dislike.";
 "Gets past paywalls on English-language news sites, and some in other languages." = "Παρακάμπτει τα paywall σε αγγλόφωνους ειδησεογραφικούς ιστότοπους και σε ορισμένους σε άλλες γλώσσες.";
 "Blocks Twitch ads." = "Αποκλείει διαφημίσεις του Twitch.";
@@ -1259,3 +1259,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Standard is best for most people. Both modes block the same things, and switching never changes your filters. Advanced adds manual control of lists and userscripts." = "Η Τυπική είναι η καλύτερη επιλογή για τους περισσότερους. Και οι δύο λειτουργίες μπλοκάρουν τα ίδια και η αλλαγή δεν επηρεάζει τα φίλτρα σου. Η Προηγμένη προσθέτει χειροκίνητο έλεγχο λιστών και userscripts.";
 "Switch to Advanced Mode" = "Εναλλαγή σε Προηγμένη λειτουργία";
 "Here are your starting options. You can change any of them later." = "Αυτές είναι οι αρχικές σου επιλογές. Μπορείς να αλλάξεις οποιαδήποτε αργότερα.";
+"Protection" = "Προστασία";

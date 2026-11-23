@@ -1090,7 +1090,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Tests new rules before they reach the main lists, from the AdGuard project. It may break sites." = "주요 목록에 반영되기 전에 새 규칙을 테스트합니다. AdGuard 프로젝트에서 제공합니다. 사이트가 깨질 수 있습니다.";
 "Tests new rules before they reach the main lists, from the uBlock Origin project. It may break sites." = "주요 목록에 반영되기 전에 새 규칙을 테스트합니다. uBlock Origin 프로젝트에서 제공합니다. 사이트가 깨질 수 있습니다.";
 "Makes websites dark by restyling their colors, from the Dark Reader project. Some sites may look off, since it doesn't include Dark Reader's site fixes." = "웹사이트의 색상을 바꿔 어둡게 표시합니다. Dark Reader 프로젝트에서 제공합니다. Dark Reader의 사이트별 수정 사항은 포함되지 않으므로 일부 사이트가 어색하게 보일 수 있습니다.";
-"Blocks Twitch ads and handles complicated anti-adblock cases, from the AdGuard project. It slows page loads." = "Twitch 광고를 차단하고 복잡한 광고 차단 방지 사례도 처리합니다. AdGuard 프로젝트에서 제공합니다. 페이지 로드 속도가 느려집니다.";
+"Blocks Twitch ads and handles complicated anti-adblock cases on supported sites, from the AdGuard project." = "지원되는 사이트에서 Twitch 광고를 차단하고 복잡한 광고 차단 방지 사례도 처리합니다. AdGuard 프로젝트에서 제공합니다.";
 "Shows dislike counts on YouTube again, using data from the Return YouTube Dislike community." = "Return YouTube Dislike 커뮤니티의 데이터를 사용하여 YouTube에 싫어요 수를 다시 표시합니다.";
 "Gets past paywalls on English-language news sites, and some in other languages." = "영어 뉴스 사이트와 일부 다른 언어의 뉴스 사이트에서 유료 구독 장벽을 우회합니다.";
 "Blocks Twitch ads." = "Twitch 광고를 차단합니다.";
@@ -1259,3 +1259,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Standard is best for most people. Both modes block the same things, and switching never changes your filters. Advanced adds manual control of lists and userscripts." = "대부분의 사용자에게는 표준 모드가 가장 좋습니다. 두 모드 모두 동일하게 차단하며 전환해도 필터가 바뀌지 않습니다. 고급 모드에서는 목록과 유저스크립트를 직접 관리할 수 있습니다.";
 "Switch to Advanced Mode" = "고급 모드로 전환";
 "Here are your starting options. You can change any of them later." = "기본 시작 옵션입니다. 나중에 언제든 변경할 수 있습니다.";
+"Protection" = "보호";

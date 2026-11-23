@@ -1090,7 +1090,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Tests new rules before they reach the main lists, from the AdGuard project. It may break sites." = "Testează reguli noi înainte ca acestea să ajungă în listele principale. Din proiectul AdGuard. Poate defecta site-uri.";
 "Tests new rules before they reach the main lists, from the uBlock Origin project. It may break sites." = "Testează reguli noi înainte ca acestea să ajungă în listele principale. Din proiectul uBlock Origin. Poate defecta site-uri.";
 "Makes websites dark by restyling their colors, from the Dark Reader project. Some sites may look off, since it doesn't include Dark Reader's site fixes." = "Face site-urile web întunecate prin modificarea culorilor. Din proiectul Dark Reader. Unele site-uri pot arăta ciudat, deoarece nu include corecțiile Dark Reader pentru site-uri.";
-"Blocks Twitch ads and handles complicated anti-adblock cases, from the AdGuard project. It slows page loads." = "Blochează reclamele Twitch și gestionează cazurile complicate de anti-adblock. Din proiectul AdGuard. Încetinește încărcarea paginilor.";
+"Blocks Twitch ads and handles complicated anti-adblock cases on supported sites, from the AdGuard project." = "Blochează reclamele Twitch și gestionează cazurile complicate de anti-adblock pe site-urile acceptate, din proiectul AdGuard.";
 "Shows dislike counts on YouTube again, using data from the Return YouTube Dislike community." = "Afișează din nou numărul de dislike-uri de pe YouTube, folosind date de la comunitatea Return YouTube Dislike.";
 "Gets past paywalls on English-language news sites, and some in other languages." = "Ocolește paywall-urile de pe site-urile de știri în limba engleză și pe unele în alte limbi.";
 "Blocks Twitch ads." = "Blochează reclamele Twitch.";
@@ -1259,3 +1259,4 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Standard is best for most people. Both modes block the same things, and switching never changes your filters. Advanced adds manual control of lists and userscripts." = "Standard este potrivit pentru majoritatea utilizatorilor. Ambele moduri blochează aceleași lucruri, iar comutarea nu schimbă filtrele. Avansat adaugă control manual pentru liste și scripturi.";
 "Switch to Advanced Mode" = "Comută la modul Avansat";
 "Here are your starting options. You can change any of them later." = "Iată opțiunile de început. Le poți schimba pe oricare mai târziu.";
+"Protection" = "Protecție";

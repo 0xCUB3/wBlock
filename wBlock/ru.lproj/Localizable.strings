@@ -1090,7 +1090,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Tests new rules before they reach the main lists, from the AdGuard project. It may break sites." = "Тестирует новые правила перед их добавлением в основные списки, из проекта AdGuard. Может ломать сайты.";
 "Tests new rules before they reach the main lists, from the uBlock Origin project. It may break sites." = "Тестирует новые правила перед их добавлением в основные списки, из проекта uBlock Origin. Может ломать сайты.";
 "Makes websites dark by restyling their colors, from the Dark Reader project. Some sites may look off, since it doesn't include Dark Reader's site fixes." = "Делает сайты тёмными, меняя их цвета, из проекта Dark Reader. Некоторые сайты могут выглядеть неправильно, так как здесь нет исправлений Dark Reader для отдельных сайтов.";
-"Blocks Twitch ads and handles complicated anti-adblock cases, from the AdGuard project. It slows page loads." = "Блокирует рекламу на Twitch и обрабатывает сложные случаи защиты от блокировщиков рекламы, из проекта AdGuard. Замедляет загрузку страниц.";
+"Blocks Twitch ads and handles complicated anti-adblock cases on supported sites, from the AdGuard project." = "Блокирует рекламу на Twitch и обрабатывает сложные случаи защиты от блокировщиков рекламы на поддерживаемых сайтах, из проекта AdGuard.";
 "Shows dislike counts on YouTube again, using data from the Return YouTube Dislike community." = "Снова показывает количество дизлайков на YouTube, используя данные сообщества Return YouTube Dislike.";
 "Gets past paywalls on English-language news sites, and some in other languages." = "Обходит платные подписки на англоязычных новостных сайтах и некоторых сайтах на других языках.";
 "Blocks Twitch ads." = "Блокирует рекламу на Twitch.";
@@ -1259,3 +1259,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Standard is best for most people. Both modes block the same things, and switching never changes your filters. Advanced adds manual control of lists and userscripts." = "Стандартный режим лучше всего подходит большинству пользователей. Оба режима блокируют одно и то же, а переключение не меняет фильтры. Расширенный даёт ручное управление списками и скриптами.";
 "Switch to Advanced Mode" = "Переключиться на расширенный режим";
 "Here are your starting options. You can change any of them later." = "Вот стартовые настройки. Любую из них можно изменить позже.";
+"Protection" = "Защита";

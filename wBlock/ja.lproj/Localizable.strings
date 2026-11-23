@@ -1099,7 +1099,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Tests new rules before they reach the main lists, from the AdGuard project. It may break sites." = "新しいルールを主要なリストに反映する前にテストします。AdGuardプロジェクトのリストです。サイトが正常に動作しなくなる場合があります。";
 "Tests new rules before they reach the main lists, from the uBlock Origin project. It may break sites." = "新しいルールを主要なリストに反映する前にテストします。uBlock Originプロジェクトのリストです。サイトが正常に動作しなくなる場合があります。";
 "Makes websites dark by restyling their colors, from the Dark Reader project. Some sites may look off, since it doesn't include Dark Reader's site fixes." = "ウェブサイトの色を変更してダーク表示にします。Dark Readerプロジェクトによる機能です。Dark Readerのサイト別修正は含まれないため、一部のサイトの表示がおかしくなる場合があります。";
-"Blocks Twitch ads and handles complicated anti-adblock cases, from the AdGuard project. It slows page loads." = "Twitchの広告をブロックし、複雑なアドブロック対策も処理します。AdGuardプロジェクトのスクリプトです。ページの読み込みが遅くなります。";
+"Blocks Twitch ads and handles complicated anti-adblock cases on supported sites, from the AdGuard project." = "対応サイトでTwitchの広告をブロックし、複雑なアドブロック対策も処理します。AdGuardプロジェクトのスクリプトです。";
 "Shows dislike counts on YouTube again, using data from the Return YouTube Dislike community." = "Return YouTube Dislikeコミュニティのデータを使い、YouTubeの低評価数を再び表示します。";
 "Gets past paywalls on English-language news sites, and some in other languages." = "英語のニュースサイトと、一部の他言語のニュースサイトでペイウォールを回避します。";
 "Blocks Twitch ads." = "Twitchの広告をブロックします。";
@@ -1268,3 +1268,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Standard is best for most people. Both modes block the same things, and switching never changes your filters. Advanced adds manual control of lists and userscripts." = "ほとんどのユーザーには標準が最適です。どちらのモードも同じものをブロックし、切り替えてもフィルターは変わりません。アドバンスドではリストとユーザースクリプトを手動で管理できます。";
 "Switch to Advanced Mode" = "アドバンスドモードに切り替え";
 "Here are your starting options. You can change any of them later." = "初期設定は以下になります。あとからいつでも変更できます。";
+"Protection" = "保護";

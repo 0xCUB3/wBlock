@@ -9,6 +9,7 @@ public enum BuiltInUserScriptTier: String, Sendable {
 public enum BuiltInUserScriptBasicGroup: String, CaseIterable, Identifiable, Sendable {
     case video
     case reading
+    case protection
 
     public var id: String { rawValue }
 }
@@ -169,11 +170,12 @@ enum BuiltInUserScripts {
             name: "AdGuard Extra",
             url: adGuardExtraURL,
             isEnabledByDefault: false,
-            description: "Blocks Twitch ads and handles complicated anti-adblock cases, from the AdGuard project. It slows page loads.",
+            description: "Blocks Twitch ads and handles complicated anti-adblock cases on supported sites, from the AdGuard project.",
             displayRole: .functionality,
             author: "AdGuard",
             homepage: "https://adguard.com/",
-            tier: .advancedOnly
+            tier: .featured,
+            basicGroup: .protection
         ),
         BuiltInUserScriptDefinition(
             name: "TwitchAdSolutions (vaft)",
@@ -194,7 +196,8 @@ enum BuiltInUserScripts {
             displayRole: .blocking,
             author: "PiQuark6046 and contributors",
             homepage: "https://github.com/FilteringDev/tinyShield",
-            tier: .automatic
+            tier: .featured,
+            basicGroup: .protection
         ),
         BuiltInUserScriptDefinition(
             name: popupBlockerName,
@@ -204,7 +207,8 @@ enum BuiltInUserScripts {
             displayRole: .blocking,
             author: "AdGuard",
             homepage: "https://popupblocker.adguard.com/release/v1",
-            tier: .advancedOnly
+            tier: .featured,
+            basicGroup: .protection
         ),
     ]
 

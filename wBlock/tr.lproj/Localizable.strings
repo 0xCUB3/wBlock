@@ -1099,7 +1099,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Tests new rules before they reach the main lists, from the AdGuard project. It may break sites." = "Yeni kuralları ana listelere eklenmeden önce test eder. AdGuard projesinden. Sitelerin çalışmasını bozabilir.";
 "Tests new rules before they reach the main lists, from the uBlock Origin project. It may break sites." = "Yeni kuralları ana listelere eklenmeden önce test eder. uBlock Origin projesinden. Sitelerin çalışmasını bozabilir.";
 "Makes websites dark by restyling their colors, from the Dark Reader project. Some sites may look off, since it doesn't include Dark Reader's site fixes." = "Web sitelerinin renklerini yeniden düzenleyerek koyu temaya çevirir. Dark Reader projesinden. Dark Reader'ın site düzeltmeleri dahil olmadığı için bazı siteler bozuk görünebilir.";
-"Blocks Twitch ads and handles complicated anti-adblock cases, from the AdGuard project. It slows page loads." = "Twitch reklamlarını engeller ve karmaşık reklam engelleyici karşıtı durumları işler. AdGuard projesinden. Sayfa yüklenmesini yavaşlatır.";
+"Blocks Twitch ads and handles complicated anti-adblock cases on supported sites, from the AdGuard project." = "Desteklenen sitelerde Twitch reklamlarını engeller ve karmaşık reklam engelleyici karşıtı durumları işler, AdGuard projesinden.";
 "Shows dislike counts on YouTube again, using data from the Return YouTube Dislike community." = "YouTube'da beğenmeme sayılarını yeniden gösterir; veriler Return YouTube Dislike topluluğundan alınır.";
 "Gets past paywalls on English-language news sites, and some in other languages." = "İngilizce haber sitelerindeki ve diğer dillerdeki bazı sitelerdeki ücret duvarlarını aşar.";
 "Blocks Twitch ads." = "Twitch reklamlarını engeller.";
@@ -1268,3 +1268,4 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Standard is best for most people. Both modes block the same things, and switching never changes your filters. Advanced adds manual control of lists and userscripts." = "Standart mod çoğu kişi için en iyisidir. İki mod da aynı şeyleri engeller ve geçiş yapmak filtrelerinizi değiştirmez. Gelişmiş mod listeler ve betikler üzerinde manuel kontrol sunar.";
 "Switch to Advanced Mode" = "Gelişmiş Moda Geç";
 "Here are your starting options. You can change any of them later." = "Başlangıç seçenekleriniz burada. İstediğinizi daha sonra değiştirebilirsiniz.";
+"Protection" = "Koruma";

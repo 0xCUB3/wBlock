@@ -1090,7 +1090,7 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Tests new rules before they reach the main lists, from the AdGuard project. It may break sites." = "Testuje nowe reguły, zanim trafią do głównych list. Z projektu AdGuard. Może psuć strony.";
 "Tests new rules before they reach the main lists, from the uBlock Origin project. It may break sites." = "Testuje nowe reguły, zanim trafią do głównych list. Z projektu uBlock Origin. Może psuć strony.";
 "Makes websites dark by restyling their colors, from the Dark Reader project. Some sites may look off, since it doesn't include Dark Reader's site fixes." = "Przyciemnia strony, zmieniając ich kolory. Z projektu Dark Reader. Niektóre strony mogą wyglądać dziwnie, ponieważ nie zawiera poprawek Dark Reader dla konkretnych stron.";
-"Blocks Twitch ads and handles complicated anti-adblock cases, from the AdGuard project. It slows page loads." = "Blokuje reklamy Twitcha i radzi sobie ze skomplikowanymi przypadkami blokowania reklam. Z projektu AdGuard. Spowalnia ładowanie stron.";
+"Blocks Twitch ads and handles complicated anti-adblock cases on supported sites, from the AdGuard project." = "Blokuje reklamy Twitcha i radzi sobie ze skomplikowanymi przypadkami blokowania reklam na obsługiwanych stronach, z projektu AdGuard.";
 "Shows dislike counts on YouTube again, using data from the Return YouTube Dislike community." = "Ponownie pokazuje liczbę negatywnych ocen na YouTube, korzystając z danych społeczności Return YouTube Dislike.";
 "Gets past paywalls on English-language news sites, and some in other languages." = "Omija paywalle na anglojęzycznych portalach informacyjnych oraz na niektórych w innych językach.";
 "Blocks Twitch ads." = "Blokuje reklamy Twitcha.";
@@ -1259,3 +1259,4 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Standard is best for most people. Both modes block the same things, and switching never changes your filters. Advanced adds manual control of lists and userscripts." = "Tryb Standardowy sprawdzi się najlepiej dla większości osób. Oba tryby blokują to samo, a przełączanie nigdy nie zmienia filtrów. Zaawansowany dodaje ręczne zarządzanie listami i skryptami.";
 "Switch to Advanced Mode" = "Przełącz na tryb Zaawansowany";
 "Here are your starting options. You can change any of them later." = "Oto twoje początkowe opcje. Możesz je później zmienić w dowolnym momencie.";
+"Protection" = "Ochrona";
