@@ -870,7 +870,8 @@ public actor SharedAutoUpdateManager {
             return cached
         }
 
-        // Cache miss - recompute from protobuf
+        // Cache miss - pick up any cross-process updates (e.g. extension staging) before reading.
+        _ = await ProtobufDataManager.shared.refreshFromDiskIfModified()
         let interval = await getAutoUpdateIntervalHours()
         let nowTimestamp = now.timeIntervalSince1970
         let isRunning = await getAutoUpdateIsRunning()
@@ -1020,6 +1021,7 @@ public actor SharedAutoUpdateManager {
         policy: AutoUpdateExecutionPolicy
     ) async -> AutoUpdateRunOutcome {
         await ProtobufDataManager.shared.waitUntilLoaded()
+        _ = await ProtobufDataManager.shared.refreshFromDiskIfModified()
 
         // Onboarding owns the first download and apply; a rebuild racing it
         // compiles half-written lists. The app's own apply likewise owns the
@@ -1547,21 +1549,28 @@ public actor SharedAutoUpdateManager {
             let successTime = Date().timeIntervalSince1970
             try requireFinalSaveBudget()
             await saveFilterListsToProtobuf(merged, baseline: admissionBaseline)
+            let fullyApplied = !helperStagedUpdates && (rebuildSummary != nil || soleCovered)
             let nextCheckInSeconds: Int
             if helperStagedUpdates {
                 await ProtobufDataManager.shared.setAutoUpdateForceNext(true)
-            } else {
+            } else if fullyApplied {
                 await ProtobufDataManager.shared.setAutoUpdateLastSuccessfulTime(Int64(successTime))
             }
-            var nextEligibleTime = successTime + interval * 3600
-            if hadErrors {
-                let retryDelaySeconds = Self.retryDelaySeconds(intervalHours: interval)
-                nextEligibleTime = min(nextEligibleTime, successTime + retryDelaySeconds)
-                nextCheckInSeconds = Int(retryDelaySeconds)
+            if helperStagedUpdates || fullyApplied {
+                var nextEligibleTime = successTime + interval * 3600
+                if hadErrors {
+                    let retryDelaySeconds = Self.retryDelaySeconds(intervalHours: interval)
+                    nextEligibleTime = min(nextEligibleTime, successTime + retryDelaySeconds)
+                    nextCheckInSeconds = Int(retryDelaySeconds)
+                } else {
+                    nextCheckInSeconds = Int(interval * 3600)
+                }
+                await ProtobufDataManager.shared.setAutoUpdateNextEligibleTime(Int64(nextEligibleTime))
             } else {
-                nextCheckInSeconds = Int(interval * 3600)
+                // A single-blocker background rebuild left other pending downloads unapplied;
+                // keep the schedule due so foreground catch-up finishes them.
+                nextCheckInSeconds = 0
             }
-            await ProtobufDataManager.shared.setAutoUpdateNextEligibleTime(Int64(nextEligibleTime))
             invalidateStatusCache()
 
             appendSharedLog(
@@ -1730,6 +1739,7 @@ public actor SharedAutoUpdateManager {
 
         try Task.checkCancellation()
         await ProtobufDataManager.shared.waitUntilLoaded()
+        _ = await ProtobufDataManager.shared.refreshFromDiskIfModified()
         try Task.checkCancellation()
         guard await getAutoUpdateEnabled() else { return .skipped(reason: "auto_update_disabled") }
         try Task.checkCancellation()
