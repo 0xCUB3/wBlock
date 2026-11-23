@@ -1277,3 +1277,13 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Help & Support" = "Помощь и поддержка";
 "Report an Issue" = "Сообщить о проблеме";
 "Discord" = "Discord";
+"Show All Lists" = "Показать все списки";
+"Shows every filter list and userscript, with search, reordering, custom lists, and a manual Apply button." = "Показывает все списки фильтров и пользовательские скрипты с поиском, сортировкой, своими списками и ручной кнопкой «Применить».";
+"Show All Userscripts" = "Показать все пользовательские скрипты";
+"Welcome to wBlock" = "Добро пожаловать в wBlock";
+"Recommended blocking is ready. Change anything now or later." = "Рекомендуемая блокировка готова. Вы можете изменить любые настройки сейчас или позже.";
+"Choose Filter Lists Myself" = "Выбрать списки фильтров самостоятельно";
+"A simpler layout option" = "Более простой вид";
+"Try Simpler Layout" = "Попробовать простой вид";
+"wBlock now opens with a simpler layout, with a few switches in place of the long list. It uses the same engine, and every list and userscript you had on is still on. To see the full list view, tap Show All Filter Lists at the bottom of Filters or turn on Show All Lists in Settings → Advanced." = "Теперь wBlock открывается в более простом виде с несколькими переключателями вместо длинного списка. Движок остался прежним, и все включённые списки и скрипты по-прежнему активны. Чтобы увидеть полный список, нажмите «Показать все списки фильтров» внизу вкладки «Фильтры» или включите «Показать все списки» в Настройки → Дополнительно.";
+"wBlock has a new simpler layout with a few switches in place of the long list. You have custom lists or userscripts, so wBlock kept showing all your lists and nothing moved. Try the simpler layout below or toggle Show All Lists anytime in Settings → Advanced." = "В wBlock появился новый более простой вид с несколькими переключателями вместо длинного списка. Поскольку у вас есть собственные списки или скрипты, wBlock сохранил полный список без изменений. Попробуйте простой вид ниже или переключайте «Показать все списки» в любое время в Настройки → Дополнительно.";

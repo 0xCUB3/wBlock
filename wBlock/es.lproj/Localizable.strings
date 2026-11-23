@@ -1277,3 +1277,13 @@ Para volver a activarlos, desactiva otros filtros grandes y aplica los cambios d
 "Help & Support" = "Ayuda y soporte";
 "Report an Issue" = "Informar de un problema";
 "Discord" = "Discord";
+"Show All Lists" = "Mostrar todas las listas";
+"Shows every filter list and userscript, with search, reordering, custom lists, and a manual Apply button." = "Muestra cada lista de filtros y userscript, con búsqueda, reordenación, listas personalizadas y un botón manual de Aplicar.";
+"Show All Userscripts" = "Mostrar todos los userscripts";
+"Welcome to wBlock" = "Te damos la bienvenida a wBlock";
+"Recommended blocking is ready. Change anything now or later." = "El bloqueo recomendado está listo. Puedes cambiar cualquier ajuste ahora o más tarde.";
+"Choose Filter Lists Myself" = "Elegir las listas de filtros yo mismo";
+"A simpler layout option" = "Una opción de diseño más simple";
+"Try Simpler Layout" = "Probar el diseño más simple";
+"wBlock now opens with a simpler layout, with a few switches in place of the long list. It uses the same engine, and every list and userscript you had on is still on. To see the full list view, tap Show All Filter Lists at the bottom of Filters or turn on Show All Lists in Settings → Advanced." = "wBlock ahora se abre con un diseño más simple, con unos pocos interruptores en lugar de la lista larga. Usa el mismo motor y todas las listas y userscripts que tenías siguen activos. Para ver la lista completa, toca Mostrar todas las listas de filtros abajo en Filtros o activa Mostrar todas las listas en Ajustes → Avanzado.";
+"wBlock has a new simpler layout with a few switches in place of the long list. You have custom lists or userscripts, so wBlock kept showing all your lists and nothing moved. Try the simpler layout below or toggle Show All Lists anytime in Settings → Advanced." = "wBlock incluye un nuevo diseño más simple con unos pocos interruptores en lugar de la lista larga. Como tienes listas o userscripts personalizados, wBlock siguió mostrando todas tus listas sin cambios. Prueba el diseño más simple abajo o cambia Mostrar todas las listas cuando quieras en Ajustes → Avanzado.";

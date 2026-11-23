@@ -8,28 +8,15 @@ import wBlockCoreService
 /// group, iCloud Sync payload, or local backups). Switching modes never mutates
 /// filter lists or userscripts.
 enum AppMode: String, CaseIterable, Identifiable, Sendable {
-    /// Displayed to users as "Standard"; raw value stays `"basic"` for stored
+    /// Default streamlined layout; raw value stays `"basic"` for stored
     /// preference compatibility.
     case basic
+    /// Full filter-list and userscript layout ("Show All Lists").
     case advanced
 
     static let storageKey = "wBlock.appMode"
 
     var id: String { rawValue }
-
-    var title: LocalizedStringKey {
-        switch self {
-        case .basic: "Standard"
-        case .advanced: "Advanced"
-        }
-    }
-
-    var localizedTitle: String {
-        switch self {
-        case .basic: NSLocalizedString("Standard", comment: "App mode")
-        case .advanced: NSLocalizedString("Advanced", comment: "App mode")
-        }
-    }
 
     /// True when the install has custom filter lists or user-added scripts
     /// that require Advanced mode to manage directly.

@@ -1277,3 +1277,13 @@ Per riattivarli, disattiva altri filtri grandi e applica di nuovo le modifiche."
 "Help & Support" = "Aiuto e supporto";
 "Report an Issue" = "Segnala un problema";
 "Discord" = "Discord";
+"Show All Lists" = "Mostra tutti gli elenchi";
+"Shows every filter list and userscript, with search, reordering, custom lists, and a manual Apply button." = "Mostra ogni elenco di filtri e userscript, con ricerca, riordinamento, elenchi personalizzati e un pulsante Applica manuale.";
+"Show All Userscripts" = "Mostra tutti gli userscript";
+"Welcome to wBlock" = "Benvenuto in wBlock";
+"Recommended blocking is ready. Change anything now or later." = "Il blocco consigliato è pronto. Puoi modificare qualsiasi opzione ora o più tardi.";
+"Choose Filter Lists Myself" = "Scegli gli elenchi di filtri manualmente";
+"A simpler layout option" = "Un layout più semplice";
+"Try Simpler Layout" = "Prova il layout più semplice";
+"wBlock now opens with a simpler layout, with a few switches in place of the long list. It uses the same engine, and every list and userscript you had on is still on. To see the full list view, tap Show All Filter Lists at the bottom of Filters or turn on Show All Lists in Settings → Advanced." = "wBlock ora si apre con un layout più semplice, con pochi interruttori al posto del lungo elenco. Usa lo stesso motore e tutti gli elenchi e gli userscript attivi restano attivi. Per vedere l'elenco completo, tocca Mostra tutti gli elenchi di filtri in fondo a Filtri o attiva Mostra tutti gli elenchi in Impostazioni → Avanzate.";
+"wBlock has a new simpler layout with a few switches in place of the long list. You have custom lists or userscripts, so wBlock kept showing all your lists and nothing moved. Try the simpler layout below or toggle Show All Lists anytime in Settings → Advanced." = "wBlock ha un nuovo layout più semplice con pochi interruttori al posto del lungo elenco. Hai elenchi o userscript personalizzati, quindi wBlock ha continuato a mostrare tutti i tuoi elenchi senza spostare nulla. Prova il layout più semplice qui sotto o attiva/disattiva Mostra tutti gli elenchi in Impostazioni → Avanzate.";

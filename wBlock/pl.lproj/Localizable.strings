@@ -1277,3 +1277,13 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Help & Support" = "Pomoc i wsparcie";
 "Report an Issue" = "Zgłoś problem";
 "Discord" = "Discord";
+"Show All Lists" = "Pokaż wszystkie listy";
+"Shows every filter list and userscript, with search, reordering, custom lists, and a manual Apply button." = "Pokazuje wszystkie listy filtrów i skrypty użytkownika z wyszukiwaniem, zmianą kolejności, własnymi listami i ręcznym przyciskiem Zastosuj.";
+"Show All Userscripts" = "Pokaż wszystkie skrypty użytkownika";
+"Welcome to wBlock" = "Witamy w wBlock";
+"Recommended blocking is ready. Change anything now or later." = "Zalecane blokowanie jest gotowe. Możesz zmienić wszystko teraz lub później.";
+"Choose Filter Lists Myself" = "Wybierz listy filtrów samodzielnie";
+"A simpler layout option" = "Prostszy układ";
+"Try Simpler Layout" = "Wypróbuj prostszy układ";
+"wBlock now opens with a simpler layout, with a few switches in place of the long list. It uses the same engine, and every list and userscript you had on is still on. To see the full list view, tap Show All Filter Lists at the bottom of Filters or turn on Show All Lists in Settings → Advanced." = "wBlock otwiera się teraz w prostszym układzie z kilkoma przełącznikami zamiast długiej listy. Korzysta z tego samego silnika, a wszystkie włączone listy i skrypty nadal działają. Aby zobaczyć pełny widok, stuknij Pokaż wszystkie listy filtrów na dole zakładki Filtry lub włącz Pokaż wszystkie listy w Ustawienia → Zaawansowane.";
+"wBlock has a new simpler layout with a few switches in place of the long list. You have custom lists or userscripts, so wBlock kept showing all your lists and nothing moved. Try the simpler layout below or toggle Show All Lists anytime in Settings → Advanced." = "wBlock ma nowy, prostszy układ z kilkoma przełącznikami zamiast długiej listy. Masz własne listy lub skrypty, więc wBlock nadal pokazuje wszystkie listy i nic się nie zmieniło. Wypróbuj prostszy układ poniżej lub przełączaj Pokaż wszystkie listy w dowolnym momencie w Ustawienia → Zaawansowane.";

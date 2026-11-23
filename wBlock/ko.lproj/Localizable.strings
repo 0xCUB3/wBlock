@@ -1277,3 +1277,13 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Help & Support" = "도움말 및 지원";
 "Report an Issue" = "문제 신고";
 "Discord" = "Discord";
+"Show All Lists" = "모든 목록 표시";
+"Shows every filter list and userscript, with search, reordering, custom lists, and a manual Apply button." = "검색, 순서 변경, 사용자 지정 목록 및 수동 적용 버튼과 함께 모든 필터 목록과 유저스크립트를 표시합니다.";
+"Show All Userscripts" = "모든 유저스크립트 표시";
+"Welcome to wBlock" = "wBlock에 오신 것을 환영합니다";
+"Recommended blocking is ready. Change anything now or later." = "권장 차단 설정이 준비되었습니다. 지금 또는 나중에 언제든 변경할 수 있습니다.";
+"Choose Filter Lists Myself" = "필터 목록 직접 선택";
+"A simpler layout option" = "더 간단한 레이아웃 옵션";
+"Try Simpler Layout" = "간단한 레이아웃 사용해 보기";
+"wBlock now opens with a simpler layout, with a few switches in place of the long list. It uses the same engine, and every list and userscript you had on is still on. To see the full list view, tap Show All Filter Lists at the bottom of Filters or turn on Show All Lists in Settings → Advanced." = "이제 wBlock이 긴 목록 대신 몇 개의 스위치로 구성된 간단한 레이아웃으로 열립니다. 동일한 엔진을 사용하며 켜 두었던 모든 목록과 유저스크립트는 그대로 유지됩니다. 전체 목록을 보려면 필터 하단의 모든 필터 목록 표시를 탭하거나 설정 → 고급에서 모든 목록 표시를 켜세요.";
+"wBlock has a new simpler layout with a few switches in place of the long list. You have custom lists or userscripts, so wBlock kept showing all your lists and nothing moved. Try the simpler layout below or toggle Show All Lists anytime in Settings → Advanced." = "wBlock에 긴 목록 대신 몇 개의 스위치로 구성된 새로운 간단한 레이아웃이 추가되었습니다. 사용자 지정 목록이나 유저스크립트가 있어 모든 목록이 그대로 표시되며 아무것도 변경되지 않았습니다. 아래에서 간단한 레이아웃을 사용해 보거나 설정 → 고급에서 언제든 모든 목록 표시를 전환할 수 있습니다.";

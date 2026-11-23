@@ -31,12 +31,12 @@ struct UpgradeNoticeView: View {
             ? (
                 "rectangle.split.2x1",
                 "A simpler wBlock",
-                "wBlock now opens in Standard mode, with a few switches in place of the long list. It uses the same engine, and every list and userscript you had on is still on. If you want the full list view, switch to Advanced below or anytime in Settings."
+                "wBlock now opens with a simpler layout, with a few switches in place of the long list. It uses the same engine, and every list and userscript you had on is still on. To see the full list view, tap Show All Filter Lists at the bottom of Filters or turn on Show All Lists in Settings → Advanced."
             )
             : (
                 "rectangle.split.2x1",
-                "Standard and Advanced modes",
-                "wBlock has a new Standard mode with a few switches in place of the long list. You have custom lists or userscripts, so you stayed in Advanced and nothing moved. Standard blocks the same things. Try it below or anytime in Settings."
+                "A simpler layout option",
+                "wBlock has a new simpler layout with a few switches in place of the long list. You have custom lists or userscripts, so wBlock kept showing all your lists and nothing moved. Try the simpler layout below or toggle Show All Lists anytime in Settings → Advanced."
             )
 
         return [
@@ -51,7 +51,7 @@ struct UpgradeNoticeView: View {
     }
 
     private var alternateModeLabel: LocalizedStringKey {
-        appMode == .basic ? "Use Advanced Mode" : "Try Standard Mode"
+        appMode == .basic ? "Show All Lists" : "Try Simpler Layout"
     }
 
     private func switchToAlternateMode() {
