@@ -13,7 +13,11 @@ struct SettingsView: View {
     @ObservedObject private var syncManager = CloudSyncManager.shared
     @AppStorage(AppMode.storageKey) private var appMode: AppMode = .basic
     @State private var showAllListsSwitch = UserDefaults.standard.string(forKey: AppMode.storageKey) == AppMode.advanced.rawValue
-    @State private var preserveAdvancedScrollOnModeChange = false
+    #if os(iOS)
+    @State private var showsStatusPills = UserDefaults.standard.string(forKey: AppMode.storageKey) == AppMode.advanced.rawValue
+    @State private var deferStatusPillsSyncOnModeChange = false
+    @State private var isListNearTop = false
+    #endif
     @Environment(\.openURL) private var openURL
     private static let autoUpdateIntervalPresets: [Double] = [1, 2, 4, 6, 12, 24, 48, 72, 168]
     static let reportIssueURL = URL(string: "https://github.com/0xCUB3/wBlock/issues/new/choose")!
@@ -79,7 +83,13 @@ struct SettingsView: View {
             guard !Task.isCancelled else { return }
             await MainActor.run { startTimer() }
         }
-        .onDisappear { stopTimer() }
+        .onDisappear {
+            stopTimer()
+            #if os(iOS)
+            showsStatusPills = (appMode == .advanced)
+            deferStatusPillsSyncOnModeChange = false
+            #endif
+        }
         .alert("Restart Onboarding?", isPresented: $showingRestartConfirmation) {
             Button("Cancel", role: .cancel) {}
             Button("Restart", role: .destructive) { restartOnboarding() }
@@ -254,7 +264,9 @@ struct SettingsView: View {
             set: { showAll in
                 let newMode: AppMode = showAll ? .advanced : .basic
                 showAllListsSwitch = showAll
-                preserveAdvancedScrollOnModeChange = (newMode != appMode)
+                #if os(iOS)
+                deferStatusPillsSyncOnModeChange = (newMode != appMode)
+                #endif
                 if let onSwitchAppMode {
                     onSwitchAppMode(newMode)
                 } else if newMode != appMode {
@@ -405,6 +417,7 @@ struct SettingsView: View {
             }
 
             cosmeticFilteringControls
+                .leadingAlignedListRowSeparatorCompat()
 
             // Opt-in and partial, so it sits with the other power-user settings.
             Toggle(isOn: blockedRequestCountBinding) {
@@ -948,7 +961,12 @@ struct SettingsView: View {
                         scrollTarget = nil
                     }
                     .onAppear {
-                        showAllListsSwitch = (appMode == .advanced)
+                        let isAdvanced = (appMode == .advanced)
+                        showAllListsSwitch = isAdvanced
+                        #if os(iOS)
+                        showsStatusPills = isAdvanced
+                        deferStatusPillsSyncOnModeChange = false
+                        #endif
                     }
                     .onChangeCompat(of: appMode) { _, newMode in
                         let isAdvanced = (newMode == .advanced)
@@ -956,14 +974,16 @@ struct SettingsView: View {
                             showAllListsSwitch = isAdvanced
                         }
                         #if os(iOS)
-                        if preserveAdvancedScrollOnModeChange {
-                            preserveAdvancedScrollOnModeChange = false
-                            DispatchQueue.main.async {
-                                proxy.scrollTo(SettingsSection.advanced, anchor: .center)
+                        if deferStatusPillsSyncOnModeChange {
+                            deferStatusPillsSyncOnModeChange = false
+                            if isListNearTop, showsStatusPills != isAdvanced {
+                                withAnimation(.easeInOut(duration: 0.22)) {
+                                    showsStatusPills = isAdvanced
+                                }
                             }
+                        } else if showsStatusPills != isAdvanced {
+                            showsStatusPills = isAdvanced
                         }
-                        #else
-                        preserveAdvancedScrollOnModeChange = false
                         #endif
                     }
             }
@@ -974,7 +994,7 @@ struct SettingsView: View {
     private var settingsList: some View {
         #if os(iOS)
         List {
-            if appMode == .advanced {
+            if showsStatusPills {
                 Section {
                     statusPills
                         .unifiedTabCardSectionRow()
@@ -983,6 +1003,14 @@ struct SettingsView: View {
             settingsSections
         }
         .unifiedTabListStyle()
+        .modifier(SettingsTopTrackingModifier(isNearTop: $isListNearTop) {
+            let isAdvanced = (appMode == .advanced)
+            if showsStatusPills != isAdvanced {
+                withAnimation(.easeInOut(duration: 0.22)) {
+                    showsStatusPills = isAdvanced
+                }
+            }
+        })
         .topScrollEdgeEffectCompat()
         .navigationTitle("Settings")
         .navigationBarTitleDisplayMode(.inline)
@@ -1679,6 +1707,30 @@ private extension View {
         #endif
     }
 }
+
+#if os(iOS)
+private struct SettingsTopTrackingModifier: ViewModifier {
+    @Binding var isNearTop: Bool
+    let onReachTop: () -> Void
+
+    func body(content: Content) -> some View {
+        if #available(iOS 18.0, *) {
+            content.onScrollGeometryChange(for: Bool.self) { geometry in
+                geometry.contentOffset.y + geometry.contentInsets.top <= 40
+            } action: { _, nearTop in
+                if isNearTop != nearTop {
+                    isNearTop = nearTop
+                }
+                if nearTop {
+                    onReachTop()
+                }
+            }
+        } else {
+            content
+        }
+    }
+}
+#endif
 
 #if os(macOS)
 private final class MacURLMenuTarget: NSObject {

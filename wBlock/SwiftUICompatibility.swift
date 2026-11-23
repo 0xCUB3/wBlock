@@ -367,6 +367,17 @@ extension View {
             self
         }
     }
+
+    /// Starts the row's bottom separator at the leading content edge instead of
+    /// indenting past a `Label` icon, for rows followed by an iconless row.
+    @ViewBuilder
+    func leadingAlignedListRowSeparatorCompat() -> some View {
+        if #available(iOS 16.0, macOS 13.0, *) {
+            alignmentGuide(.listRowSeparatorLeading) { $0[.leading] }
+        } else {
+            self
+        }
+    }
 }
 
 struct CompatibleLabeledContent<Label: View, Content: View>: View {

@@ -71,7 +71,6 @@ struct ContentView: View {
     @State private var userScriptSearchRequest = 0
     @State private var filtersScrollToTopToken = 0
     @State private var showingLogs = false
-    @State private var isTransitioningLayout = false
     @State private var layoutTransitionTask: Task<Void, Never>?
     @State private var deferredModeFlushTask: Task<Void, Never>?
     @Environment(\.scenePhase) var scenePhase
@@ -259,55 +258,23 @@ struct ContentView: View {
     private func switchAppMode(to newMode: AppMode, fromToggle: Bool = false) {
         layoutTransitionTask?.cancel()
         layoutTransitionTask = nil
-        guard appMode != newMode else {
-            if isTransitioningLayout {
-                withAnimation(.easeOut(duration: 0.16)) {
-                    isTransitioningLayout = false
-                }
-            }
-            return
-        }
+        guard appMode != newMode else { return }
         clearFilterPopoverSelections()
         if !fromToggle {
             Haptics.play(.tap)
+            withAnimation(reduceMotion ? .easeInOut(duration: 0.16) : .easeInOut(duration: 0.24)) {
+                appMode = newMode
+            }
+            return
         }
         layoutTransitionTask = Task { @MainActor in
-            if fromToggle {
-                // Let the native switch thumb finish sliding before swapping layouts.
-                try? await Task.sleep(nanoseconds: 110_000_000)
-                guard !Task.isCancelled else { return }
-            }
-
-            if reduceMotion {
-                withAnimation(.easeInOut(duration: 0.14)) {
-                    isTransitioningLayout = true
-                }
-                try? await Task.sleep(nanoseconds: 120_000_000)
-                guard !Task.isCancelled else { return }
-                var transaction = Transaction(animation: nil)
-                transaction.disablesAnimations = true
-                withTransaction(transaction) {
-                    appMode = newMode
-                }
-                withAnimation(.easeInOut(duration: 0.18)) {
-                    isTransitioningLayout = false
-                }
-            } else {
-                withAnimation(.easeIn(duration: 0.13)) {
-                    isTransitioningLayout = true
-                }
-                try? await Task.sleep(nanoseconds: 130_000_000)
-                guard !Task.isCancelled else { return }
-                var transaction = Transaction(animation: nil)
-                transaction.disablesAnimations = true
-                withTransaction(transaction) {
-                    appMode = newMode
-                }
-                try? await Task.sleep(nanoseconds: 16_000_000)
-                guard !Task.isCancelled else { return }
-                withAnimation(.spring(response: 0.36, dampingFraction: 0.84)) {
-                    isTransitioningLayout = false
-                }
+            // Let the native switch thumb finish gliding before rebuilding off-screen tabs.
+            try? await Task.sleep(nanoseconds: 140_000_000)
+            guard !Task.isCancelled else { return }
+            var transaction = Transaction(animation: nil)
+            transaction.disablesAnimations = true
+            withTransaction(transaction) {
+                appMode = newMode
             }
         }
     }
@@ -405,9 +372,6 @@ struct ContentView: View {
                 onAction: handleHealthAction
             )
         }
-        .scaleEffect(isTransitioningLayout && !reduceMotion ? 0.982 : 1)
-        .blur(radius: isTransitioningLayout && !reduceMotion ? 7 : 0)
-        .opacity(isTransitioningLayout ? 0.86 : 1)
         .background(keyboardShortcutHandlers)
         .keyboardScrollingCompat()
         .onAppear {
@@ -620,6 +584,7 @@ struct ContentView: View {
                 #endif
                 .modifier(basicToolbar)
             }
+            .transition(.opacity)
             #if os(macOS)
             .frame(
                 minWidth: 480, idealWidth: 540, maxWidth: .infinity,
@@ -636,6 +601,7 @@ struct ContentView: View {
                     // Inside the stack, like Userscripts; iOS ignores toolbar items attached outside it.
                     .modifier(filtersToolbar)
             }
+            .transition(.opacity)
             #if os(iOS)
                 .searchableCompat(
                     text: $filterSearchText,
@@ -788,6 +754,7 @@ struct ContentView: View {
                 .navigationBarTitleDisplayMode(.inline)
                 #endif
             }
+            .transition(.opacity)
         } else {
             CompatibleNavigationStack(requiresNavigationView: false) {
                 UserScriptManagerView(
@@ -809,6 +776,7 @@ struct ContentView: View {
                         .navigationBarTitleDisplayMode(.inline)
                     #endif
             }
+            .transition(.opacity)
         }
     }
 

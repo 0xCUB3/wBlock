@@ -54,13 +54,16 @@ struct SettingsRowLabel: View {
         // iOS lists draw disclosure chevrons for NavigationLink only, so a
         // sheet-presenting button borrows one to read the same way.
         if accessory == .popover {
-            HStack {
-                Label(title, systemImage: systemImage)
-                    .foregroundStyle(.primary)
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.footnote.weight(.semibold))
-                    .foregroundStyle(.tertiary)
+            Label {
+                HStack {
+                    Text(title)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(.tertiary)
+                }
+            } icon: {
+                Image(systemName: systemImage)
             }
         } else {
             Label(title, systemImage: systemImage)
