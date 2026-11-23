@@ -23,52 +23,68 @@ extension SafariHealthMonitor {
     }
 }
 
-/// Segmented-to-fused Safari extension status ring shared by the Filters Hero
-/// and Onboarding Safari Setup.
+/// Safari extension status medallion shared by the Filters Hero and Onboarding
+/// Safari Setup.
 ///
-/// Arc count `N = 5 + (isScriptsStateKnowable ? 1 : 0)`.
-/// When degraded, draws `N` butt-capped arcs spaced by `gapDegrees` (10°),
-/// with slots 1–5 clockwise from 12 o'clock and Scripts last. When all knowable
-/// extensions turn on, `gapDegrees` animates to `0°` and swaps to a single
-/// seamless `Circle` stroke with a shield bounce and success haptic.
+/// Shows a calm, ring-free shield medallion when healthy, paused, or applying
+/// (relying on native `ProgressView` in `ProtectionHero` while applying). Only
+/// draws the segmented `N`-arc ring when Safari extensions are partially or
+/// fully turned off, so progress toward turning them all on stays visible
+/// without leaving a ring-like spinner around the healthy state.
 struct ExtensionStatusRing: View {
     let arcStates: [Bool]
     let isWelded: Bool
     let status: SafariHealthStatus
     let weldCelebrationCount: Int
     var applyProgress: Double? = nil
-    var medallionSize: CGFloat = 60
+    var medallionSize: CGFloat = 56
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var gapDegrees: Double = 10
-    @State private var orbitAngle: Double = 0
-    @State private var weldFlash = false
 
-    private var ringLineWidth: CGFloat { medallionSize >= 56 ? 3.5 : 2.5 }
-    private var innerDiscSize: CGFloat { medallionSize * (44.0 / 60.0) }
-    private var symbolSize: CGFloat { medallionSize * (22.0 / 60.0) }
+    private var showsSegmentedRing: Bool {
+        status.isExtensionDegraded || (!isWelded && gapDegrees > 0.05)
+    }
+
+    private var ringLineWidth: CGFloat { medallionSize >= 56 ? 2.5 : 2 }
+    private var innerDiscSize: CGFloat { showsSegmentedRing ? medallionSize - 11 : medallionSize }
+    private var symbolSize: CGFloat { medallionSize * (24.0 / 56.0) }
     private var emerald: Color { Color(red: 0.16, green: 0.78, blue: 0.42) }
 
     var body: some View {
         ZStack {
-            // Soft tinted inner disc
+            // Soft tinted medallion disc with subtle hairline edge
             Circle()
-                .fill(status.tone.color.opacity(0.14))
+                .fill(status.tone.color.opacity(0.12))
+                .overlay(
+                    Circle()
+                        .strokeBorder(
+                            status.tone.color.opacity(showsSegmentedRing ? 0 : 0.22),
+                            lineWidth: 1
+                        )
+                )
                 .frame(width: innerDiscSize, height: innerDiscSize)
 
-            // Outer ring: fused circle, segmented arcs, or applying progress arc
-            ringLayer
+            // Segmented arc ring only while Safari extensions need attention
+            if showsSegmentedRing {
+                SegmentedExtensionRingShapeLayer(
+                    arcStates: arcStates.isEmpty ? Array(repeating: false, count: 5) : arcStates,
+                    gapDegrees: gapDegrees,
+                    lineWidth: ringLineWidth,
+                    litColor: emerald,
+                    dimColor: Color.primary.opacity(0.14)
+                )
                 .frame(width: medallionSize, height: medallionSize)
+                .transition(.opacity)
+            }
 
-            // Center shield glyph (reserved strictly for the Hero / Setup ring)
+            // Center shield glyph
             shieldSymbol
         }
         .frame(width: medallionSize, height: medallionSize)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: showsSegmentedRing)
         .onAppear {
             gapDegrees = isWelded ? 0 : 10
-            if case .applying = status {
-                startApplyingOrbit()
-            }
         }
         .onChangeCompat(of: isWelded) { _, welded in
             if welded {
@@ -89,49 +105,8 @@ struct ExtensionStatusRing: View {
                 }
             }
         }
-        .onChangeCompat(of: status) { _, next in
-            if case .applying = next {
-                startApplyingOrbit()
-            }
-        }
         .modifier(WeldHapticModifier(trigger: weldCelebrationCount))
         .accessibilityHidden(true)
-    }
-
-    @ViewBuilder
-    private var ringLayer: some View {
-        if case .applying = status {
-            ZStack {
-                Circle()
-                    .stroke(Color.accentColor.opacity(0.18), lineWidth: ringLineWidth)
-                if let applyProgress, applyProgress > 0 {
-                    Circle()
-                        .trim(from: 0, to: max(0.05, min(1, CGFloat(applyProgress))))
-                        .stroke(Color.accentColor, style: StrokeStyle(lineWidth: ringLineWidth, lineCap: .round))
-                        .rotationEffect(.degrees(-90))
-                } else if reduceMotion {
-                    Circle()
-                        .stroke(Color.accentColor.opacity(0.75), lineWidth: ringLineWidth)
-                } else {
-                    Circle()
-                        .trim(from: 0, to: 0.28)
-                        .stroke(Color.accentColor, style: StrokeStyle(lineWidth: ringLineWidth, lineCap: .round))
-                        .rotationEffect(.degrees(-90 + orbitAngle))
-                }
-            }
-        } else if isWelded && gapDegrees <= 0.05 {
-            // Single unbroken circle stroke: zero antialiasing hairlines.
-            Circle()
-                .stroke(status.tone.color, lineWidth: ringLineWidth)
-        } else {
-            SegmentedExtensionRingShapeLayer(
-                arcStates: arcStates.isEmpty ? Array(repeating: false, count: 5) : arcStates,
-                gapDegrees: gapDegrees,
-                lineWidth: ringLineWidth,
-                litColor: emerald,
-                dimColor: Color.primary.opacity(0.14)
-            )
-        }
     }
 
     @ViewBuilder
@@ -144,16 +119,9 @@ struct ExtensionStatusRing: View {
             icon
                 .contentTransition(.symbolEffect(.replace))
                 .symbolEffect(.bounce, value: weldCelebrationCount)
+                .symbolEffect(.pulse, options: .repeating, isActive: status == .applying && !reduceMotion)
         } else {
             icon
-        }
-    }
-
-    private func startApplyingOrbit() {
-        guard !reduceMotion else { return }
-        orbitAngle = 0
-        withAnimation(.linear(duration: 1.05).repeatForever(autoreverses: false)) {
-            orbitAngle = 360
         }
     }
 }
@@ -278,11 +246,15 @@ struct ProtectionHero: View {
                             status: status,
                             weldCelebrationCount: weldCelebrationCount,
                             applyProgress: applyProgress,
-                            medallionSize: 60
+                            medallionSize: 56
                         )
 
-                        VStack(spacing: 2) {
-                            HStack(spacing: 4) {
+                        VStack(spacing: 4) {
+                            HStack(spacing: 6) {
+                                if status == .applying {
+                                    ProgressView()
+                                        .controlSize(.small)
+                                }
                                 Text(status.title)
                                     .font(.title3.weight(.semibold))
                                     .foregroundStyle(.primary)
@@ -296,6 +268,13 @@ struct ProtectionHero: View {
                                 .foregroundStyle(.secondary)
                                 .multilineTextAlignment(.center)
                                 .fixedSize(horizontal: false, vertical: true)
+
+                            if status == .applying, let applyProgress, applyProgress > 0 {
+                                ProgressView(value: max(0.05, min(1, applyProgress)))
+                                    .progressViewStyle(.linear)
+                                    .frame(maxWidth: 160)
+                                    .padding(.top, 2)
+                            }
                         }
                     }
                     .frame(maxWidth: .infinity)
