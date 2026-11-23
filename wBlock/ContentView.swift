@@ -242,8 +242,16 @@ struct ContentView: View {
         }
     }
 
+    private func clearFilterPopoverSelections() {
+        selectedFilterInfo = nil
+        selectedFilterSettings = nil
+        selectedFilterFallbacks = nil
+        selectedCategoryInfo = nil
+    }
+
     private func switchAppMode(to newMode: AppMode) {
         guard appMode != newMode else { return }
+        clearFilterPopoverSelections()
         filterManager.flushBasicAutoApplyIfNeeded()
         appMode = newMode
     }
@@ -350,6 +358,7 @@ struct ContentView: View {
             safariHealth.setSceneActive(newPhase == .active)
         }
         .onChangeCompat(of: appMode) { _, _ in
+            clearFilterPopoverSelections()
             filterManager.flushBasicAutoApplyIfNeeded()
         }
         .sheet(isPresented: $showingHealthDetail) {
@@ -383,15 +392,6 @@ struct ContentView: View {
         .sheet(item: $editingCustomFilter) { filter in
             EditCustomFilterView(filterManager: filterManager, filter: filter)
         }
-        .infoPresentation(item: $selectedFilterInfo, content: filterInfoContent)
-        .infoPresentation(item: $selectedFilterSettings) { filter in
-            FilterSettingsView(filter: filter, filterManager: filterManager)
-                .infoSheetPresentationCompat()
-        }
-        .infoPresentation(item: $selectedFilterFallbacks) { filter in
-            FilterFallbacksView(filter: filter, urls: FilterListURLMirror.fallbackURLs(for: filter.url))
-                .infoSheetPresentationCompat()
-        }
         .sheet(item: $selectedFilterRules) { filter in
             if filter.isInlineUserList {
                 EditUserListView(filterManager: filterManager, filter: filter)
@@ -399,7 +399,6 @@ struct ContentView: View {
                 FilterRulesView(filter: filter, filterManager: filterManager)
             }
         }
-        .infoPresentation(item: $selectedCategoryInfo, content: filterCategoryInfoContent)
         .sheet(isPresented: $showingLogs) {
             #if os(iOS)
             LogsView { showingLogs = false }
@@ -580,6 +579,16 @@ struct ContentView: View {
                     minHeight: 550, idealHeight: 720, maxHeight: .infinity
                 )
             #endif
+                .infoPresentation(item: $selectedFilterInfo, content: filterInfoContent)
+                .infoPresentation(item: $selectedFilterSettings) { filter in
+                    FilterSettingsView(filter: filter, filterManager: filterManager)
+                        .infoSheetPresentationCompat()
+                }
+                .infoPresentation(item: $selectedFilterFallbacks) { filter in
+                    FilterFallbacksView(filter: filter, urls: FilterListURLMirror.fallbackURLs(for: filter.url))
+                        .infoSheetPresentationCompat()
+                }
+                .infoPresentation(item: $selectedCategoryInfo, content: filterCategoryInfoContent)
         }
     }
 

@@ -244,8 +244,15 @@ private struct InfoPopoverAnchor: ViewModifier {
 /// Its attachment rectangle still follows the visible part of the info button.
 private struct InfoPopoverSource: NSViewRepresentable {
     let presenter: InfoPopoverPresenter
-    func makeNSView(context: Context) -> NSView { InfoPopoverAnchorView() }
+    func makeNSView(context: Context) -> NSView {
+        let view = InfoPopoverAnchorView()
+        presenter.sourceView = view
+        return view
+    }
     func updateNSView(_ view: NSView, context: Context) { presenter.sourceView = view }
+    static func dismantleNSView(_ view: NSView, coordinator: ()) {
+        // Keep weak reference clean on teardown; SwiftUI drops the view shortly after.
+    }
 }
 
 private struct InfoPopoverAnchorRegistration: NSViewRepresentable {
