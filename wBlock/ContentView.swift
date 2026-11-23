@@ -1086,7 +1086,9 @@ struct ContentView: View {
                 id: FilterListCategory.annoyances.rawValue + (isOther ? "" : "#" + group.topic.rawValue),
                 header: header,
                 rows: group.filters.map { filter in
-                    MacListRow(filter.id, leavesSection: filter.isCustom) { filterRowView(for: filter) }
+                    MacListRow(filter.id, leavesSection: filter.isCustom, onTap: { selectedFilterInfo = filter }) {
+                        filterRowView(for: filter)
+                    }
                 },
                 allowsCrossSectionMoves: true,
                 revealsOnlyWhileDragging: isOther && group.filters.isEmpty)
@@ -1097,7 +1099,7 @@ struct ContentView: View {
         if category == .foreign {
             guard !filters.isEmpty else { return nil }
             let rows = visibleForeignFilters(filters).map { filter in
-                MacListRow(filter.id) { filterRowView(for: filter) }
+                MacListRow(filter.id, onTap: { selectedFilterInfo = filter }) { filterRowView(for: filter) }
             }
             return MacListSection(id: category.id, header: AnyView(categoryHeader(category)),
                                   rows: rows, allowsCrossSectionMoves: false)
@@ -1106,7 +1108,9 @@ struct ContentView: View {
         guard acceptsMoves || !filters.isEmpty else { return nil }
         return MacListSection(id: category.id, header: AnyView(categoryHeader(category)),
                               rows: filters.map { filter in
-                                  MacListRow(filter.id, leavesSection: filter.isCustom) { filterRowView(for: filter) }
+                                  MacListRow(filter.id, leavesSection: filter.isCustom, onTap: { selectedFilterInfo = filter }) {
+                                      filterRowView(for: filter)
+                                  }
                               },
                               acceptsMoves: acceptsMoves, revealsOnlyWhileDragging: acceptsMoves)
     }
@@ -1211,6 +1215,7 @@ struct FilterRowView: View, Equatable {
     var body: some View {
         HStack(alignment: .center, spacing: 10) {
             // Keep the iOS info gesture on the text column so it cannot consume switch taps.
+            // On macOS, MacReorderableList fires onTap on a non-drag row click so dragging stays intact.
             filterDetails
                 .accessibilityElement(children: .combine)
                 .accessibilityAddTraits(.isButton)
@@ -1218,13 +1223,9 @@ struct FilterRowView: View, Equatable {
                 .contentShape(.interaction, Rectangle())
                 #if os(iOS)
                 .onTapGesture(perform: onInfo)
+                #else
+                .infoPopoverAnchor(filter.id, capturesClicks: false)
                 #endif
-            #if os(macOS)
-            Button(action: onInfo) { Image(systemName: "info.circle") }
-                .buttonStyle(.plain).noFocusRingCompat()
-                .foregroundStyle(.secondary).accessibilityLabel("Info").help("Info")
-                .infoPopoverAnchor(filter.id)
-            #endif
             if filter.isRemoteURL && (isDownloading || !isDownloaded) {
                 ContentDownloadControl(isDownloading: isDownloading, name: text.name, action: onDownload)
             } else {

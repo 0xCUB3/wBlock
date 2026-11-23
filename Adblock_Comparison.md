@@ -97,7 +97,7 @@ Sources: [Wipr 2 on the App Store](https://apps.apple.com/us/app/wipr-2/id166221
 
 AdGuard splits Safari across two apps. AdGuard Mini (it used to be AdGuard for Safari) is the Mac one, and AdGuard for iOS covers iPhone, iPad, and Vision. The full AdGuard for Mac is a separate paid, system-wide product, and I'm leaving it out.
 
-Mini has six content blockers (General, Privacy, Social, Security, Other, Custom) for a ceiling of 900,000 rules. Filter categories, custom lists, user rules, element blocking, and issue reporting are free. Pro adds real-time filter updates, AdGuard Extra for harder anti-adblock cases, and a few advanced filtering features.
+Mini has six content blockers (General, Privacy, Social, Security, Other, Custom) for a ceiling of 900,000 rules. Filter categories, custom lists, user rules, element blocking, and issue reporting are free. Pro adds real-time filter updates, AdGuard Extra for harder anti-adblock cases, and a few advanced filtering features. Starting in v3.0, Mini also includes an experimental system-wide protection option for macOS 26 and later (with an AdGuard license) built on Apple's URL Filters API with Private Information Retrieval.
 
 AdGuard for iOS has the same six blockers plus a Web Extension for per-site toggles and element blocking. Premium adds advanced rules and scriptlets. There's also DNS protection. It catches ad and tracker domains in other apps, but it only sees hostnames and can't hide anything on a page. AdGuard and AdGuard Pro on the iOS App Store unlock the same features now, and you only need one of them.
 
@@ -117,7 +117,7 @@ Sources: [AdGuard Mini](https://adguard.com/en/adguard-mini-mac/overview.html), 
 | YouTube ads | Yes | Yes, breaks often | Yes, via Wipr Extra | Yes, better with Pro |
 | Twitch ads | Opt-in scripts | No dedicated option | Not documented | AdGuard Extra (Pro) |
 | Strips `utm_*` | Yes, by default | Yes | No | Yes |
-| System-wide | No | No | Filtr (paid, OS 26) | DNS on iOS |
+| System-wide | No | No | Filtr (paid, OS 26) | Mini (experimental, paid, macOS 26+), DNS on iOS |
 
 ### Control
 

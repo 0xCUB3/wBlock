@@ -401,7 +401,9 @@ struct UserScriptManagerView: View {
             let section = UserScriptDisplaySection(id: category, scripts: displayedScripts.filter { $0.displayCategory == category })
             return MacListSection(id: category.id, header: AnyView(displaySectionHeader(section)),
                                   rows: section.scripts.map { script in
-                                      MacListRow(script.id, leavesSection: !script.isBuiltIn) { scriptRowView(script: script) }
+                                      MacListRow(script.id, leavesSection: !script.isBuiltIn, onTap: {
+                                          selectedScriptInfo = SelectedUserScript(id: script.id, action: .info)
+                                      }) { scriptRowView(script: script) }
                                   },
                                   revealsOnlyWhileDragging: true)
         }
@@ -750,14 +752,8 @@ struct UserScriptManagerView: View {
                     selectedScriptInfo = SelectedUserScript(id: script.id, action: .info)
                 }
             }
-            #endif
-            #if os(macOS)
-            Button { selectedScriptInfo = SelectedUserScript(id: script.id, action: .info) } label: {
-                Image(systemName: "info.circle")
-            }
-            .buttonStyle(.plain).noFocusRingCompat()
-            .foregroundStyle(.secondary).accessibilityLabel("Info").help("Info")
-            .infoPopoverAnchor(script.id)
+            #else
+            .infoPopoverAnchor(script.id, capturesClicks: false)
             #endif
 
             if !script.isLocal && (downloadingScriptIDs.contains(script.id) || !script.isDownloaded) {

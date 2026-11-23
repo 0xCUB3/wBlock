@@ -363,15 +363,30 @@ function isIpadDevice() {
     );
 }
 
-function shouldFillIosPhoneSheet() {
-    return CSS.supports('-webkit-touch-callout', 'none') && !isIpadDevice();
+// Unfolded foldable phones (regular-width inner display) present Safari
+// extension popups as an iPad-style popover even though the UA stays iPhone.
+function isIosPopoverHost() {
+    if (isIpadDevice()) return true;
+    const screenWidth = Number(window.screen && window.screen.width);
+    const screenHeight = Number(window.screen && window.screen.height);
+    return Number.isFinite(screenWidth) && Number.isFinite(screenHeight)
+        && Math.min(screenWidth, screenHeight) >= 600;
 }
 
-if (shouldFillIosPhoneSheet()) {
-    document.documentElement.classList.add('ios-phone-sheet');
-} else if (CSS.supports('-webkit-touch-callout', 'none') && isIpadDevice()) {
-    document.documentElement.classList.add('ios-ipad-popover');
+function shouldFillIosPhoneSheet() {
+    return CSS.supports('-webkit-touch-callout', 'none') && !isIosPopoverHost();
 }
+
+function syncIosPopupPresentation() {
+    const root = document.documentElement;
+    const isTouchIos = CSS.supports('-webkit-touch-callout', 'none');
+    const usePopover = isTouchIos && isIosPopoverHost();
+    root.classList.toggle('ios-phone-sheet', isTouchIos && !usePopover);
+    root.classList.toggle('ios-ipad-popover', usePopover);
+}
+
+syncIosPopupPresentation();
+window.addEventListener('resize', syncIosPopupPresentation);
 
 function setError(message) {
     const el = document.getElementById('error');
@@ -652,6 +667,64 @@ async function sendTabMessageWithRetry(tabId, message, { timeoutMs = null, valid
     }
 
     throw lastError || new Error('Failed to deliver tab message.');
+}
+
+async function injectZapperContentScript(tabId) {
+    if (!tabId || !browser.scripting || typeof browser.scripting.executeScript !== 'function') {
+        return false;
+    }
+    try {
+        await browser.scripting.executeScript({
+            target: { tabId, frameIds: [TOP_FRAME_ID] },
+            files: ['zapper-content.js'],
+        });
+        return true;
+    } catch (frameError) {
+        try {
+            await browser.scripting.executeScript({
+                target: { tabId },
+                files: ['zapper-content.js'],
+            });
+            return true;
+        } catch {
+            console.warn('[wBlock] On-demand zapper injection failed:', frameError);
+            return false;
+        }
+    }
+}
+
+async function activateZapperInTab(tabId) {
+    const message = { type: 'wblock:zapper:activate' };
+    try {
+        return await sendTabMessageWithRetry(tabId, message, {
+            validateResponse: isZapperCommandResponse,
+        });
+    } catch (initialError) {
+        // When permission is granted on demand (e.g. a second Safari profile
+        // or a tab opened before enabling wBlock), zapper-content.js may not
+        // have been injected at page load.
+        const injected = await injectZapperContentScript(tabId);
+        if (injected) {
+            try {
+                return await sendTabMessageWithRetry(tabId, message, {
+                    validateResponse: isZapperCommandResponse,
+                });
+            } catch {
+                return await sendTabMessageWithRetry(tabId, message, {
+                    validateResponse: isZapperCommandResponse,
+                    frameId: null,
+                });
+            }
+        }
+        try {
+            return await sendTabMessageWithRetry(tabId, message, {
+                validateResponse: isZapperCommandResponse,
+                frameId: null,
+            });
+        } catch {
+            throw initialError;
+        }
+    }
 }
 
 async function probeTabSupport(tabId) {
@@ -1761,9 +1834,7 @@ function setupListeners() {
         zapperActivate.addEventListener('click', async () => {
             try {
                 setError('');
-                await sendTabMessageWithRetry(tab.id, { type: 'wblock:zapper:activate' }, {
-                    validateResponse: isZapperCommandResponse,
-                });
+                await activateZapperInTab(tab.id);
                 window.close();
             } catch (error) {
                 console.error('[wBlock] Failed to activate zapper:', error);

@@ -44,19 +44,23 @@ struct MacListRow {
     let movableID: UUID?
     /// False keeps the row in its own section, like a section that disallows cross-section moves.
     var leavesSection = true
+    var onTap: (() -> Void)? = nil
     let content: AnyView
 
     init<Content: View>(_ id: UUID, movable: Bool = true, leavesSection: Bool = true, group: String? = nil,
+                        onTap: (() -> Void)? = nil,
                         @ViewBuilder content: () -> Content) {
         self.id = .item(id, group)
         movableID = movable ? id : nil
         self.leavesSection = leavesSection
+        self.onTap = onTap
         self.content = AnyView(content())
     }
 
     init<Content: View>(decoration id: String, @ViewBuilder content: () -> Content) {
         self.id = .decoration(id)
         movableID = nil
+        self.onTap = nil
         self.content = AnyView(content())
     }
 }
@@ -306,6 +310,8 @@ struct MacReorderableList: NSViewRepresentable {
         outline.registerForDraggedTypes([Coordinator.dragType])
         outline.dataSource = context.coordinator
         outline.delegate = context.coordinator
+        outline.target = context.coordinator
+        outline.action = #selector(Coordinator.rowClicked(_:))
         scroll.documentView = outline
         context.coordinator.outline = outline
         context.coordinator.update(self, environment: context.environment)
@@ -760,6 +766,13 @@ struct MacReorderableList: NSViewRepresentable {
         private func row(for item: Any) -> MacListRow? {
             guard let node = item as? Node, case .row(let id) = node.id else { return nil }
             return model.sections.lazy.flatMap(\.rows).first { $0.id == id }
+        }
+        @objc func rowClicked(_ sender: NSOutlineView) {
+            let rowIndex = sender.clickedRow
+            guard rowIndex >= 0,
+                  let node = sender.item(atRow: rowIndex) as? Node,
+                  let tap = row(for: node)?.onTap else { return }
+            tap()
         }
         func movableID(for item: Any) -> UUID? { row(for: item)?.movableID }
         func outlineView(_ outlineView: NSOutlineView, pasteboardWriterForItem item: Any) -> NSPasteboardWriting? {

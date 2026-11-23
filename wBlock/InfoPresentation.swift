@@ -12,9 +12,9 @@ func macOSWindowAction<Action>(_ route: @escaping (Action) -> Void) -> ((Action)
 
 extension View {
     @ViewBuilder
-    func infoPopoverAnchor(_ id: AnyHashable?) -> some View {
+    func infoPopoverAnchor(_ id: AnyHashable?, capturesClicks: Bool = true) -> some View {
         #if os(macOS)
-        if let id { modifier(InfoPopoverAnchor(id: id)) } else { self }
+        if let id { modifier(InfoPopoverAnchor(id: id, capturesClicks: capturesClicks)) } else { self }
         #else
         self
         #endif
@@ -155,6 +155,10 @@ final class InfoPopoverPresenter: ObservableObject {
             return .init(token: token, id: anchor.id, windowNumber: window.windowNumber, frame: view.convert(view.bounds, to: nil))
         }
         let mouseUp = event?.type == .leftMouseUp ? event?.eventNumber : nil
+        if let event, event.type == .leftMouseUp || event.type == .leftMouseDown,
+           let hit = visible.first(where: { $0.windowNumber == event.windowNumber && $0.frame.contains(event.locationInWindow) }) {
+            state.clicked(hit.token, id: id)
+        }
         // An item with no visible anchor, or a closing click, must not leave
         // a selection behind that no popover shows.
         guard let token = state.anchor(for: id, in: visible, fromKeyboard: event?.type == .keyDown),
@@ -218,25 +222,32 @@ private struct InfoPresentationModifier<Item: Identifiable, Info: View>: ViewMod
     }
 }
 
-/// One info button. Its click names this anchor to every enclosing presenter
-/// before the button's action changes the selection.
+/// One info anchor. When `capturesClicks` is true (button anchors), its tap
+/// names this anchor before the button's action changes selection. Row anchors
+/// inside draggable AppKit lists leave `capturesClicks` false so they do not
+/// steal mouseDown from NSOutlineView drags; `select(_:)` matches them by click
+/// location instead.
 private struct InfoPopoverAnchor: ViewModifier {
     let id: AnyHashable
+    let capturesClicks: Bool
     @State private var token = UUID()
     @Environment(\.infoPopoverEntries) private var entries
 
     func body(content: Content) -> some View {
-        content
-            .simultaneousGesture(TapGesture().onEnded {
-                for presenter in entries { presenter.clicked(token, id: id) }
-            })
-            .background {
-                ZStack {
-                    ForEach(entries.indices, id: \.self) { index in
-                        InfoPopoverAnchorRegistration(token: token, id: id, presenter: entries[index])
-                    }
+        let anchored = content.background {
+            ZStack {
+                ForEach(entries.indices, id: \.self) { index in
+                    InfoPopoverAnchorRegistration(token: token, id: id, presenter: entries[index])
                 }
             }
+        }
+        if capturesClicks {
+            anchored.simultaneousGesture(TapGesture().onEnded {
+                for presenter in entries { presenter.clicked(token, id: id) }
+            })
+        } else {
+            anchored
+        }
     }
 }
 
