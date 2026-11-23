@@ -9,7 +9,6 @@ import AppKit
 
 struct OnboardingView: View {
     enum OnboardingStep: Int, CaseIterable, Identifiable {
-        case welcome
         case quickReview
         case regional
         case annoyances
@@ -30,7 +29,7 @@ struct OnboardingView: View {
 
     @State private var chosenMode: AppMode = .basic
     @State private var selectedUserscripts: Set<String> = []
-    @State private var step: OnboardingStep = .welcome
+    @State private var step: OnboardingStep = .quickReview
     @State private var selectedLanguages: Set<String>
     @State private var selectedRegionalFilters: Set<UUID> = []
     @State private var regionalFilters: [FilterList] = []
@@ -308,9 +307,9 @@ struct OnboardingView: View {
     private var activeOnboardingSteps: [OnboardingStep] {
         switch chosenMode {
         case .basic:
-            [.welcome, .quickReview, .setup]
+            [.quickReview, .setup]
         case .advanced:
-            [.welcome, .regional, .annoyances, .userscripts, .sync, .setup]
+            [.regional, .annoyances, .userscripts, .sync, .setup]
         }
     }
 
@@ -365,8 +364,6 @@ struct OnboardingView: View {
     @ViewBuilder
     private var stepContent: some View {
         switch step {
-        case .welcome:
-            welcomeStep
         case .quickReview:
             quickReviewStep
         case .regional:
@@ -382,45 +379,100 @@ struct OnboardingView: View {
         }
     }
 
+    @ViewBuilder
     private var onboardingFooter: some View {
-        HStack(spacing: 12) {
-            if step == .welcome {
+        if step == .quickReview {
+            #if os(iOS)
+            VStack(spacing: 10) {
+                Button {
+                    chosenMode = .basic
+                    advanceToNextStep()
+                } label: {
+                    Text("Continue")
+                        .frame(maxWidth: .infinity)
+                }
+                .primaryActionButtonStyle()
+                .disabled(footerButtonDisabled)
+                .keyboardShortcut(.defaultAction)
+
+                Button {
+                    chosenMode = .advanced
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        step = .regional
+                    }
+                } label: {
+                    Text("Choose Filter Lists Myself")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(Color.accentColor)
+                        .padding(.vertical, 2)
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    showingBackupImporter = true
+                } label: {
+                    Text(String(localized: "Restore from backup…"))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .padding(.vertical, 2)
+                }
+                .buttonStyle(.plain)
+            }
+            #else
+            HStack(spacing: 12) {
                 Button(String(localized: "Restore from backup…")) {
                     showingBackupImporter = true
                 }
                 .glassButtonStyleCompat()
-            }
-            if step != .welcome && !restoredFromBackup {
-                Button("Back") {
-                    retreatToPreviousStep()
+
+                Spacer()
+
+                Button("Choose Filter Lists Myself") {
+                    chosenMode = .advanced
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        step = .regional
+                    }
                 }
                 .glassButtonStyleCompat()
-            }
 
-            Spacer()
-
-            Button(step == .welcome ? "Get Started" : (step == .setup ? "Apply & Finish" : "Next")) {
-                if step == .setup {
-                    Task {
-                        await applySettings()
-                    }
-                } else {
-                    if step == .welcome {
-                        chosenMode = .basic
-                    }
+                Button("Continue") {
+                    chosenMode = .basic
                     advanceToNextStep()
                 }
+                .glassButtonStyleCompat(prominent: true)
+                .disabled(footerButtonDisabled)
+                .keyboardShortcut(.defaultAction)
             }
-            .glassButtonStyleCompat(prominent: true)
-            .disabled(footerButtonDisabled)
-            .keyboardShortcut(.defaultAction)
+            #endif
+        } else {
+            HStack(spacing: 12) {
+                if !restoredFromBackup {
+                    Button("Back") {
+                        retreatToPreviousStep()
+                    }
+                    .glassButtonStyleCompat()
+                }
+
+                Spacer()
+
+                Button(step == .setup ? "Apply & Finish" : "Next") {
+                    if step == .setup {
+                        Task {
+                            await applySettings()
+                        }
+                    } else {
+                        advanceToNextStep()
+                    }
+                }
+                .glassButtonStyleCompat(prominent: true)
+                .disabled(footerButtonDisabled)
+                .keyboardShortcut(.defaultAction)
+            }
         }
     }
 
     private var footerButtonDisabled: Bool {
         switch step {
-        case .welcome:
-            return false
         case .regional:
             return !hasLanguagePickerSelection
         case .setup:
@@ -439,6 +491,13 @@ struct OnboardingView: View {
     }
 
     private func retreatToPreviousStep() {
+        if step == .regional && chosenMode == .advanced {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                chosenMode = .basic
+                step = .quickReview
+            }
+            return
+        }
         let steps = activeOnboardingSteps
         guard let currentIndex = steps.firstIndex(of: step), currentIndex > steps.startIndex else { return }
         withAnimation(.easeInOut(duration: 0.2)) {
@@ -446,49 +505,37 @@ struct OnboardingView: View {
         }
     }
 
-    private var welcomeStep: some View {
-        VStack(spacing: 18) {
-            #if os(macOS)
-            Image(nsImage: NSApp.applicationIconImage ?? NSImage())
-                .resizable()
-                .scaledToFit()
-                .frame(width: 72, height: 72)
-            #else
-            Image("AppIcon")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 72, height: 72)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            #endif
-
-            VStack(spacing: 6) {
-                Text("Welcome to wBlock!")
-                    .font(.title.bold())
-                    .multilineTextAlignment(.center)
-                Text("wBlock sets up recommended blocking for you.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-            .frame(maxWidth: .infinity)
-
-            ModeChooserCards {
-                chosenMode = .advanced
-                advanceToNextStep()
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 8)
-    }
-
-    /// Basic mode step 2: single scroll page with sensible defaults preselected
-    /// so Next is always enabled.
+    /// Express Setup step 1: welcome header plus pre-filled starting options
+    /// so Continue is always enabled.
     private var quickReviewStep: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text("Here are your starting options. You can change any of them later.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+            VStack(spacing: 10) {
+                #if os(macOS)
+                Image(nsImage: NSApp.applicationIconImage ?? NSImage())
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 56, height: 56)
+                #else
+                Image("AppIcon")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 60, height: 60)
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                #endif
+
+                VStack(spacing: 4) {
+                    Text("Welcome to wBlock")
+                        .font(.title2.bold())
+                        .multilineTextAlignment(.center)
+                    Text("Recommended blocking is ready. Change anything now or later.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.top, 2)
 
             // Detected languages
             VStack(alignment: .leading, spacing: 8) {
