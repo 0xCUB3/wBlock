@@ -298,6 +298,11 @@ struct FilterDiffUpdaterTests {
             fail("CRLF patch must apply and verify its checksum")
         }
         expectEqual(actualCRLF, expectedCRLF, "CRLF patch preserves CR in payload and verifies checksum")
+        expectEqual(
+            FilterDiffUpdater.applyRCSDiff("d2 1\r\na2 1\r\nX\r\n\r\n", to: crlfBaseline),
+            expectedCRLF,
+            "CRLF patch stops cleanly on blank CRLF terminator line"
+        )
 
         expectEqual(FilterDiffUpdater.applyRCSDiff("a0 1\nfirst", to: ""), "first\n", "append at 0 on empty baseline")
         expectEqual(FilterDiffUpdater.applyRCSDiff("d3 10", to: "1\n2\n3"), "1\n2", "clamped delete at EOF")

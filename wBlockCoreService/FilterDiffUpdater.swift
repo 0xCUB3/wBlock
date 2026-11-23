@@ -259,7 +259,7 @@ public enum FilterDiffUpdater {
         while diffIndex < diffCount {
             let diffLine = diffLines[diffIndex]
             diffIndex += 1
-            if diffLine.isEmpty { break }
+            if diffLine.isEmpty || diffLine == "\r" { break }
 
             guard let parsed = parseRCSCommand(diffLine) else { return nil }
             let count = parsed.count
