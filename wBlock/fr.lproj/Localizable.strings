@@ -1277,3 +1277,13 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Help & Support" = "Aide et assistance";
 "Report an Issue" = "Signaler un problème";
 "Discord" = "Discord";
+"Show All Lists" = "Afficher toutes les listes";
+"Shows every filter list and userscript, with search, reordering, custom lists, and a manual Apply button." = "Affiche chaque liste de filtres et userscript, avec recherche, réorganisation, listes personnalisées et un bouton Appliquer manuel.";
+"Show All Userscripts" = "Afficher tous les userscripts";
+"Welcome to wBlock" = "Bienvenue dans wBlock";
+"Recommended blocking is ready. Change anything now or later." = "Le blocage recommandé est prêt. Vous pouvez tout modifier maintenant ou plus tard.";
+"Choose Filter Lists Myself" = "Choisir les listes de filtres moi-même";
+"A simpler layout option" = "Une présentation plus simple";
+"Try Simpler Layout" = "Essayer la vue simplifiée";
+"wBlock now opens with a simpler layout, with a few switches in place of the long list. It uses the same engine, and every list and userscript you had on is still on. To see the full list view, tap Show All Filter Lists at the bottom of Filters or turn on Show All Lists in Settings → Advanced." = "wBlock s'ouvre désormais avec une présentation plus simple, avec quelques interrupteurs à la place de la longue liste. Le moteur est identique et toutes vos listes et userscripts actifs le restent. Pour la liste complète, touchez Afficher toutes les listes de filtres en bas de Filtres ou activez Afficher toutes les listes dans Réglages → Avancé.";
+"wBlock has a new simpler layout with a few switches in place of the long list. You have custom lists or userscripts, so wBlock kept showing all your lists and nothing moved. Try the simpler layout below or toggle Show All Lists anytime in Settings → Advanced." = "wBlock propose une nouvelle présentation plus simple avec quelques interrupteurs à la place de la longue liste. Comme vous utilisez des listes ou userscripts personnalisés, wBlock continue d'afficher toutes vos listes sans rien changer. Essayez la vue simplifiée ci-dessous ou basculez Afficher toutes les listes dans Réglages → Avancé.";

@@ -170,6 +170,15 @@ struct wBlockApp: App {
                 Button("Settings") { post(.wBlockSelectTabRequest, 2) }
                     .keyboardShortcut("3", modifiers: .command)
                 Divider()
+                Toggle("Show All Lists", isOn: Binding(
+                    get: { appMode == .advanced },
+                    set: { showAll in
+                        let newMode: AppMode = showAll ? .advanced : .basic
+                        guard newMode != appMode else { return }
+                        filterManager.flushBasicAutoApplyIfNeeded()
+                        appMode = newMode
+                    }
+                ))
                 Button("Show Enabled Only") { post(.wBlockToggleEnabledOnlyRequest) }
                     .keyboardShortcut("e", modifiers: [.command, .option])
                     .disabled(appMode == .basic)

@@ -8,7 +8,10 @@ extension SafariHealthMonitor {
     ) -> SafariHealthStatus {
         let hasHitRuleLimit = filterManager.lastRuleCount > 0
             && filterManager.lastRuleCount >= filterManager.safariRuleCapacity
-        let isApplying = filterManager.isLoading || filterManager.isApplyInFlight || filterManager.isAutoUpdateRunning
+        let isApplying = filterManager.isLoading
+            || filterManager.isApplyInFlight
+            || filterManager.isAutoUpdateRunning
+            || filterManager.hasQueuedBasicAutoApply
         let hasFailed = filterManager.hasError || !filterManager.failedReloadTargets.isEmpty
         return status(
             pausedComponents: filterManager.pausedComponents,

@@ -1277,3 +1277,13 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Help & Support" = "Βοήθεια και υποστήριξη";
 "Report an Issue" = "Αναφορά προβλήματος";
 "Discord" = "Discord";
+"Show All Lists" = "Εμφάνιση όλων των λιστών";
+"Shows every filter list and userscript, with search, reordering, custom lists, and a manual Apply button." = "Εμφανίζει κάθε λίστα φίλτρων και userscript, με αναζήτηση, αναδιάταξη, προσαρμοσμένες λίστες και χειροκίνητο κουμπί Εφαρμογής.";
+"Show All Userscripts" = "Εμφάνιση όλων των userscripts";
+"Welcome to wBlock" = "Καλώς ήρθατε στο wBlock";
+"Recommended blocking is ready. Change anything now or later." = "Ο προτεινόμενος αποκλεισμός είναι έτοιμος. Άλλαξε ό,τι θέλεις τώρα ή αργότερα.";
+"Choose Filter Lists Myself" = "Να επιλέξω μόνος μου τις λίστες φίλτρων";
+"A simpler layout option" = "Μια πιο απλή διάταξη";
+"Try Simpler Layout" = "Δοκιμή απλούστερης διάταξης";
+"wBlock now opens with a simpler layout, with a few switches in place of the long list. It uses the same engine, and every list and userscript you had on is still on. To see the full list view, tap Show All Filter Lists at the bottom of Filters or turn on Show All Lists in Settings → Advanced." = "Το wBlock ανοίγει πλέον με πιο απλή διάταξη και λίγους διακόπτες αντί για τη μεγάλη λίστα. Χρησιμοποιεί την ίδια μηχανή και όλες οι λίστες και τα userscripts σου παραμένουν ενεργά. Για την πλήρη προβολή, πάτησε Εμφάνιση όλων των λιστών φίλτρων στο κάτω μέρος ή ενεργοποίησε την Εμφάνιση όλων των λιστών στις Ρυθμίσεις → Για προχωρημένους.";
+"wBlock has a new simpler layout with a few switches in place of the long list. You have custom lists or userscripts, so wBlock kept showing all your lists and nothing moved. Try the simpler layout below or toggle Show All Lists anytime in Settings → Advanced." = "Το wBlock έχει μια νέα πιο απλή διάταξη με λίγους διακόπτες αντί για τη μεγάλη λίστα. Επειδή έχεις προσαρμοσμένες λίστες ή userscripts, το wBlock συνέχισε να εμφανίζει όλες τις λίστες σου χωρίς αλλαγές. Δοκίμασε την απλούστερη διάταξη παρακάτω ή άλλαξε την Εμφάνιση όλων των λιστών στις Ρυθμίσεις → Για προχωρημένους.";

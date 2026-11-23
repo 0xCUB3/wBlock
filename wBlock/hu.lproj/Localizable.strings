@@ -1277,3 +1277,13 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Help & Support" = "Súgó és támogatás";
 "Report an Issue" = "Probléma jelentése";
 "Discord" = "Discord";
+"Show All Lists" = "Összes lista megjelenítése";
+"Shows every filter list and userscript, with search, reordering, custom lists, and a manual Apply button." = "Minden szűrőlistát és felhasználói szkriptet megjelenít, kereséssel, átrendezéssel, egyéni listákkal és kézi Alkalmaz gombbal.";
+"Show All Userscripts" = "Összes felhasználói szkript megjelenítése";
+"Welcome to wBlock" = "Üdvözöljük a wBlockban";
+"Recommended blocking is ready. Change anything now or later." = "Az ajánlott blokkolás készen áll. Bármit módosíthatsz most vagy később.";
+"Choose Filter Lists Myself" = "Szűrőlisták kiválasztása saját kezűleg";
+"A simpler layout option" = "Egyszerűbb elrendezés";
+"Try Simpler Layout" = "Egyszerűbb elrendezés kipróbálása";
+"wBlock now opens with a simpler layout, with a few switches in place of the long list. It uses the same engine, and every list and userscript you had on is still on. To see the full list view, tap Show All Filter Lists at the bottom of Filters or turn on Show All Lists in Settings → Advanced." = "A wBlock mostantól egyszerűbb elrendezéssel nyílik meg, néhány kapcsolóval a hosszú lista helyett. Ugyanazt a motort használja, és minden bekapcsolt listád és szkripted aktív marad. A teljes listához koppints az Összes szűrőlista megjelenítése gombra a Szűrők alján, vagy kapcsold be az Összes lista megjelenítése opciót a Beállítások → Haladó menüben.";
+"wBlock has a new simpler layout with a few switches in place of the long list. You have custom lists or userscripts, so wBlock kept showing all your lists and nothing moved. Try the simpler layout below or toggle Show All Lists anytime in Settings → Advanced." = "A wBlock új, egyszerűbb elrendezést kapott néhány kapcsolóval a hosszú lista helyett. Mivel egyéni listáid vagy szkriptjeid vannak, a wBlock továbbra is minden listát megjelenít, semmi sem változott. Próbáld ki alább az egyszerűbb elrendezést, vagy kapcsold át bármikor az Összes lista megjelenítése opciót a Beállítások → Haladó menüben.";

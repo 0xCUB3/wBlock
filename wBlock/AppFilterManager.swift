@@ -398,6 +398,13 @@ class AppFilterManager: ObservableObject {
             hasQueuedBasicAutoApply = true
             return
         }
+        if !hasUnappliedChanges {
+            autoApplyTask?.cancel()
+            autoApplyTask = nil
+            hasQueuedBasicAutoApply = false
+            needsFollowUpBasicApply = false
+            return
+        }
         hasQueuedBasicAutoApply = true
         scheduleAutoApplyDebounce(delay: 2, showProgress: false)
     }
@@ -414,17 +421,24 @@ class AppFilterManager: ObservableObject {
     }
 
     /// Immediately flushes any pending Basic auto-apply when the user switches
-    /// to Safari (`scenePhase != .active`) or switches between Basic and Advanced.
-    func flushBasicAutoApplyIfNeeded() {
-        guard hasQueuedBasicAutoApply || (autoApplyTask != nil && hasUnappliedChanges) else { return }
+    /// to Safari (`scenePhase != .active`) or switches layouts. Passing
+    /// `includeUnqueued: true` (when entering the simple layout) also applies
+    /// edits made while Show All Lists was on so they are not left stranded
+    /// without a manual Apply button.
+    func flushBasicAutoApplyIfNeeded(includeUnqueued: Bool = false) {
+        let shouldFlush = hasQueuedBasicAutoApply
+            || (autoApplyTask != nil && hasUnappliedChanges)
+            || (includeUnqueued && hasUnappliedChanges)
+        guard shouldFlush else { return }
         autoApplyTask?.cancel()
         autoApplyTask = nil
         hasQueuedBasicAutoApply = false
-        guard hasUnappliedChanges, !pausedComponents.contains(.filters) else { return }
+        guard !pausedComponents.contains(.filters) else { return }
         if isApplyInFlight || isLoading {
             needsFollowUpBasicApply = true
             return
         }
+        guard hasUnappliedChanges else { return }
         Task { @MainActor [weak self] in
             guard let self else { return }
             await self.performFilterUpdate(showProgress: false, checkForUpdates: false, downloadMissing: true)

@@ -1286,3 +1286,13 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Help & Support" = "Help & Support";
 "Report an Issue" = "Report an Issue";
 "Discord" = "Discord";
+"Show All Lists" = "Show All Lists";
+"Shows every filter list and userscript, with search, reordering, custom lists, and a manual Apply button." = "Shows every filter list and userscript, with search, reordering, custom lists, and a manual Apply button.";
+"Show All Userscripts" = "Show All Userscripts";
+"Welcome to wBlock" = "Welcome to wBlock";
+"Recommended blocking is ready. Change anything now or later." = "Recommended blocking is ready. Change anything now or later.";
+"Choose Filter Lists Myself" = "Choose Filter Lists Myself";
+"A simpler layout option" = "A simpler layout option";
+"Try Simpler Layout" = "Try Simpler Layout";
+"wBlock now opens with a simpler layout, with a few switches in place of the long list. It uses the same engine, and every list and userscript you had on is still on. To see the full list view, tap Show All Filter Lists at the bottom of Filters or turn on Show All Lists in Settings → Advanced." = "wBlock now opens with a simpler layout, with a few switches in place of the long list. It uses the same engine, and every list and userscript you had on is still on. To see the full list view, tap Show All Filter Lists at the bottom of Filters or turn on Show All Lists in Settings → Advanced.";
+"wBlock has a new simpler layout with a few switches in place of the long list. You have custom lists or userscripts, so wBlock kept showing all your lists and nothing moved. Try the simpler layout below or toggle Show All Lists anytime in Settings → Advanced." = "wBlock has a new simpler layout with a few switches in place of the long list. You have custom lists or userscripts, so wBlock kept showing all your lists and nothing moved. Try the simpler layout below or toggle Show All Lists anytime in Settings → Advanced.";

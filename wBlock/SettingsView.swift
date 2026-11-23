@@ -1,3 +1,6 @@
+#if os(macOS)
+import AppKit
+#endif
 import SafariServices
 import SwiftUI
 import UniformTypeIdentifiers
@@ -236,62 +239,16 @@ struct SettingsView: View {
         )
     }
 
-    private var modeBinding: Binding<AppMode> {
+    private var showAllListsBinding: Binding<Bool> {
         Binding(
-            get: { appMode },
-            set: { newMode in
+            get: { appMode == .advanced },
+            set: { showAll in
+                let newMode: AppMode = showAll ? .advanced : .basic
                 guard newMode != appMode else { return }
                 filterManager.flushBasicAutoApplyIfNeeded()
                 appMode = newMode
             }
         )
-    }
-
-    private static let modeFooterKey: LocalizedStringKey =
-        "Standard is best for most people. Both modes block the same things, and switching never changes your filters. Advanced adds manual control of lists and userscripts."
-
-    @ViewBuilder
-    private var modeSection: some View {
-        Section {
-            #if os(macOS)
-            CompatibleLabeledContent {
-                Picker("Mode", selection: modeBinding) {
-                    ForEach(AppMode.allCases) { mode in
-                        Text(mode.title).tag(mode)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .fixedSize()
-            } label: {
-                Text("Mode")
-            }
-            #else
-            Picker("Mode", selection: modeBinding) {
-                ForEach(AppMode.allCases) { mode in
-                    Text(mode.title).tag(mode)
-                }
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            #endif
-        } header: {
-            #if os(macOS)
-            if appMode == .advanced {
-                // The form draws a header without a card, so the pills ride here.
-                VStack(alignment: .leading, spacing: 16) {
-                    statusPills.frame(maxWidth: .infinity)
-                    Text("Mode")
-                }
-            } else {
-                Text("Mode")
-            }
-            #else
-            Text("Mode")
-            #endif
-        } footer: {
-            Text(Self.modeFooterKey)
-        }
     }
 
     /// Autoplay and Appearance lead General; the site pages follow under
@@ -305,7 +262,7 @@ struct SettingsView: View {
                     detail: Text("Turn this on to allow video and audio playback without user action.")
                 )
             }
-            if appMode == .advanced && !ProtobufDataManager.safariHasGlobalPrivacyControl {
+            if !ProtobufDataManager.safariHasGlobalPrivacyControl {
                 Toggle(isOn: globalPrivacyControlBinding) {
                     rowLabel(
                         "Global Privacy Control",
@@ -313,9 +270,6 @@ struct SettingsView: View {
                             + Text(" ") + Text(gpcLearnMore)
                     )
                 }
-            }
-            if appMode == .basic {
-                Toggle("Automatic Updates", isOn: autoUpdateToggleBinding)
             }
             appearancePicker
             #if os(iOS)
@@ -329,7 +283,19 @@ struct SettingsView: View {
             }
             #endif
         } header: {
+            #if os(macOS)
+            if appMode == .advanced {
+                // The form draws a header without a card, so the pills ride here.
+                VStack(alignment: .leading, spacing: 16) {
+                    statusPills.frame(maxWidth: .infinity)
+                    sectionHeader(.general)
+                }
+            } else {
+                sectionHeader(.general)
+            }
+            #else
             sectionHeader(.general)
+            #endif
         }
     }
 
@@ -403,6 +369,13 @@ struct SettingsView: View {
     @ViewBuilder
     private var advancedSection: some View {
         Section {
+            Toggle(isOn: showAllListsBinding) {
+                rowLabel(
+                    "Show All Lists",
+                    detail: Text("Shows every filter list and userscript, with search, reordering, custom lists, and a manual Apply button.")
+                )
+            }
+
             NavigationLink {
                 LogsView()
                     .macToolbarTitle("Logs")
@@ -607,7 +580,7 @@ struct SettingsView: View {
         Section {
             Toggle("Automatic Updates", isOn: autoUpdateToggleBinding)
 
-            if appMode == .advanced && autoUpdateEnabled {
+            if autoUpdateEnabled {
                 Picker("Update Interval", selection: autoUpdateIntervalBinding) {
                     ForEach(Self.autoUpdateIntervalPresets, id: \.self) { hours in
                         Text(intervalDescription(hours: hours)).tag(hours)
@@ -628,7 +601,7 @@ struct SettingsView: View {
             sectionHeader(.autoUpdate)
         } footer: {
             // The Filters and Userscripts toolbars already check for updates.
-            if appMode == .advanced && autoUpdateEnabled {
+            if autoUpdateEnabled {
                 nextScheduleSubtitle
             }
         }
@@ -733,36 +706,31 @@ struct SettingsView: View {
 
     @ViewBuilder
     private var syncSection: some View {
-        if appMode == .basic && !syncManager.isCloudKitAvailable {
-            EmptyView()
-        } else {
         Section {
             Toggle("iCloud Sync", isOn: syncEnabledBinding)
                 .disabled(!syncManager.isCloudKitAvailable)
 
             if syncManager.isCloudKitAvailable && syncManager.isEnabled {
-                if appMode == .advanced {
-                    Toggle(isOn: Binding(
-                        get: { syncManager.syncUserScriptEnabledStates },
-                        set: { syncManager.setSyncUserScriptEnabledStates($0) }
-                    )) {
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text("Sync Userscript Enabled States")
-                            Text("When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device.")
+                Toggle(isOn: Binding(
+                    get: { syncManager.syncUserScriptEnabledStates },
+                    set: { syncManager.setSyncUserScriptEnabledStates($0) }
+                )) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Sync Userscript Enabled States")
+                        Text("When on, userscript on/off choices sync through iCloud. Turn this off to keep those choices on this device.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        // Changing what syncs mid-cycle would change what that cycle
+                        // merges, so the switch waits; say so instead of looking stuck (#936).
+                        if syncManager.isSyncing {
+                            Text("Available when the current sync finishes.")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                            // Changing what syncs mid-cycle would change what that cycle
-                            // merges, so the switch waits; say so instead of looking stuck (#936).
-                            if syncManager.isSyncing {
-                                Text("Available when the current sync finishes.")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
                         }
                     }
-                    .disabled(syncManager.isSyncing)
                 }
+                .disabled(syncManager.isSyncing)
 
                 #if os(macOS)
                 CompatibleLabeledContent {
@@ -813,7 +781,6 @@ struct SettingsView: View {
                 }
             }
         }
-        }
     }
 
 
@@ -826,9 +793,15 @@ struct SettingsView: View {
                         as? String ?? "Unknown"
                 )
             }
-            Link(destination: Self.faqURL) {
-                SettingsRowLabel("FAQ", systemImage: "questionmark.circle", accessory: .external)
+            aboutLinkRow("FAQ", systemImage: "questionmark.circle", destination: Self.faqURL)
+            #if os(macOS)
+            Button {
+                presentMacHelpAndSupportMenu()
+            } label: {
+                SettingsRowLabel("Help & Support", systemImage: "bubble.left", accessory: .popover)
             }
+            .buttonStyle(.plain)
+            #else
             Menu {
                 Button {
                     openURL(Self.reportIssueURL)
@@ -843,22 +816,60 @@ struct SettingsView: View {
             } label: {
                 SettingsRowLabel("Help & Support", systemImage: "bubble.left", accessory: .popover)
             }
-            #if os(macOS)
-            .menuStyle(.borderlessButton)
-            .menuIndicator(.hidden)
             #endif
             if appMode == .advanced {
-                Link(destination: Self.sourceCodeURL) {
-                    SettingsRowLabel("Source Code", systemImage: "chevron.left.forwardslash.chevron.right", accessory: .external)
-                }
+                aboutLinkRow("Source Code", systemImage: "chevron.left.forwardslash.chevron.right", destination: Self.sourceCodeURL)
             }
-            Link(destination: Self.privacyPolicyURL) {
-                SettingsRowLabel("Privacy Policy", systemImage: "hand.raised", accessory: .external)
-            }
+            aboutLinkRow("Privacy Policy", systemImage: "hand.raised", destination: Self.privacyPolicyURL)
         } header: {
             sectionHeader(.about)
         }
     }
+
+    @ViewBuilder
+    private func aboutLinkRow(_ title: LocalizedStringKey, systemImage: String, destination: URL) -> some View {
+        #if os(macOS)
+        Button {
+            openURL(destination)
+        } label: {
+            SettingsRowLabel(title, systemImage: systemImage, accessory: .external)
+        }
+        .buttonStyle(.plain)
+        #else
+        Link(destination: destination) {
+            SettingsRowLabel(title, systemImage: systemImage, accessory: .external)
+        }
+        #endif
+    }
+
+    #if os(macOS)
+    private func presentMacHelpAndSupportMenu() {
+        let menu = NSMenu()
+        menu.addItem(makeMacURLMenuItem(
+            title: String(localized: "Report an Issue"),
+            symbolName: "exclamationmark.triangle",
+            url: Self.reportIssueURL
+        ))
+        menu.addItem(makeMacURLMenuItem(
+            title: String(localized: "Discord"),
+            symbolName: "bubble.left",
+            url: Self.contactURL
+        ))
+        menu.popUp(positioning: nil, at: NSEvent.mouseLocation, in: nil)
+    }
+
+    private func makeMacURLMenuItem(title: String, symbolName: String, url: URL) -> NSMenuItem {
+        let item = NSMenuItem(
+            title: title,
+            action: #selector(MacURLMenuTarget.open(_:)),
+            keyEquivalent: ""
+        )
+        item.image = NSImage(systemSymbolName: symbolName, accessibilityDescription: nil)
+        item.representedObject = url
+        item.target = MacURLMenuTarget.shared
+        return item
+    }
+    #endif
 
     @ViewBuilder
     private var dangerZoneSection: some View {
@@ -974,16 +985,11 @@ struct SettingsView: View {
 
     @ViewBuilder
     private var settingsSections: some View {
-        modeSection
         generalSection.settingsAnchor(.general)
         websitesSection.settingsAnchor(.websites)
-        if appMode == .advanced {
-            autoUpdateSection.settingsAnchor(.autoUpdate)
-        }
+        autoUpdateSection.settingsAnchor(.autoUpdate)
         syncSection.settingsAnchor(.sync)
-        if appMode == .advanced {
-            advancedSection.settingsAnchor(.advanced)
-        }
+        advancedSection.settingsAnchor(.advanced)
         aboutSection.settingsAnchor(.about)
         dangerZoneSection.settingsAnchor(.reset)
     }
@@ -1634,3 +1640,14 @@ private extension View {
         #endif
     }
 }
+
+#if os(macOS)
+private final class MacURLMenuTarget: NSObject {
+    static let shared = MacURLMenuTarget()
+
+    @objc func open(_ sender: NSMenuItem) {
+        guard let url = sender.representedObject as? URL else { return }
+        NSWorkspace.shared.open(url)
+    }
+}
+#endif

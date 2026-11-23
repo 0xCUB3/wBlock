@@ -96,7 +96,7 @@ struct BasicExtrasView: View {
                 Button {
                     onSwitchToAdvanced()
                 } label: {
-                    Text("Switch to Advanced Mode")
+                    Text("Show All Userscripts")
                         .font(.footnote.weight(.medium))
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity)
