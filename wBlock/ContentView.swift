@@ -71,7 +71,11 @@ struct ContentView: View {
     @State private var userScriptSearchRequest = 0
     @State private var filtersScrollToTopToken = 0
     @State private var showingLogs = false
+    @State private var isTransitioningLayout = false
+    @State private var layoutTransitionTask: Task<Void, Never>?
+    @State private var deferredModeFlushTask: Task<Void, Never>?
     @Environment(\.scenePhase) var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var enabledListsCount: Int {
         filterManager.filterLists.filter { $0.isSelected }.count
@@ -252,11 +256,60 @@ struct ContentView: View {
         selectedCategoryInfo = nil
     }
 
-    private func switchAppMode(to newMode: AppMode) {
-        guard appMode != newMode else { return }
+    private func switchAppMode(to newMode: AppMode, fromToggle: Bool = false) {
+        layoutTransitionTask?.cancel()
+        layoutTransitionTask = nil
+        guard appMode != newMode else {
+            if isTransitioningLayout {
+                withAnimation(.easeOut(duration: 0.16)) {
+                    isTransitioningLayout = false
+                }
+            }
+            return
+        }
         clearFilterPopoverSelections()
-        filterManager.flushBasicAutoApplyIfNeeded()
-        appMode = newMode
+        if !fromToggle {
+            Haptics.play(.tap)
+        }
+        layoutTransitionTask = Task { @MainActor in
+            if fromToggle {
+                // Let the native switch thumb finish sliding before swapping layouts.
+                try? await Task.sleep(nanoseconds: 110_000_000)
+                guard !Task.isCancelled else { return }
+            }
+
+            if reduceMotion {
+                withAnimation(.easeInOut(duration: 0.14)) {
+                    isTransitioningLayout = true
+                }
+                try? await Task.sleep(nanoseconds: 120_000_000)
+                guard !Task.isCancelled else { return }
+                var transaction = Transaction(animation: nil)
+                transaction.disablesAnimations = true
+                withTransaction(transaction) {
+                    appMode = newMode
+                }
+                withAnimation(.easeInOut(duration: 0.18)) {
+                    isTransitioningLayout = false
+                }
+            } else {
+                withAnimation(.easeIn(duration: 0.13)) {
+                    isTransitioningLayout = true
+                }
+                try? await Task.sleep(nanoseconds: 130_000_000)
+                guard !Task.isCancelled else { return }
+                var transaction = Transaction(animation: nil)
+                transaction.disablesAnimations = true
+                withTransaction(transaction) {
+                    appMode = newMode
+                }
+                try? await Task.sleep(nanoseconds: 16_000_000)
+                guard !Task.isCancelled else { return }
+                withAnimation(.spring(response: 0.36, dampingFraction: 0.84)) {
+                    isTransitioningLayout = false
+                }
+            }
+        }
     }
 
     var body: some View {
@@ -352,6 +405,9 @@ struct ContentView: View {
                 onAction: handleHealthAction
             )
         }
+        .scaleEffect(isTransitioningLayout && !reduceMotion ? 0.982 : 1)
+        .blur(radius: isTransitioningLayout && !reduceMotion ? 7 : 0)
+        .opacity(isTransitioningLayout ? 0.86 : 1)
         .background(keyboardShortcutHandlers)
         .keyboardScrollingCompat()
         .onAppear {
@@ -364,7 +420,12 @@ struct ContentView: View {
             clearFilterPopoverSelections()
             filterManager.showingAppliedBanner = false
             filterManager.showingNoUpdatesAlert = false
-            filterManager.flushBasicAutoApplyIfNeeded(includeUnqueued: newMode == .basic)
+            deferredModeFlushTask?.cancel()
+            deferredModeFlushTask = Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 380_000_000)
+                guard !Task.isCancelled else { return }
+                filterManager.flushBasicAutoApplyIfNeeded(includeUnqueued: newMode == .basic)
+            }
         }
         .sheet(isPresented: $showingHealthDetail) {
             SafariHealthDetailView(
@@ -752,7 +813,10 @@ struct ContentView: View {
     }
 
     private var settingsView: some View {
-        SettingsView(filterManager: filterManager)
+        SettingsView(
+            filterManager: filterManager,
+            onSwitchAppMode: { switchAppMode(to: $0, fromToggle: true) }
+        )
     }
 
     private var topBanners: some ViewModifier {

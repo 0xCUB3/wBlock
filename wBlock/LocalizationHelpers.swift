@@ -77,16 +77,24 @@ struct RegionalLanguageOption: Identifiable, Hashable {
         let nativeName: String = Locale.nativeLanguageName(for: code) ?? self.name
         self.nativeName = nativeName
         var terms: [String] = [nativeName, self.name, code, Self.english.localizedString(forLanguageCode: code) ?? code]
-        terms += Self.scriptNamesByCode[code] ?? []
         terms += Self.synonymsByCode[code] ?? []
         searchTerms = terms
     }
 
     /// Ignores case and accents, so "espanol" finds español (#951).
+    /// Defers `scriptNamesByCode` (which scans `Locale.availableIdentifiers`)
+    /// until an actual search query runs so building language lists never stalls
+    /// the main thread.
     func matches(_ query: String) -> Bool {
         let query = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty else { return false }
-        return searchTerms.contains { $0.range(of: query, options: [.caseInsensitive, .diacriticInsensitive]) != nil }
+        if searchTerms.contains(where: { $0.range(of: query, options: [.caseInsensitive, .diacriticInsensitive]) != nil }) {
+            return true
+        }
+        if let scriptNames = Self.scriptNamesByCode[code] {
+            return scriptNames.contains { $0.range(of: query, options: [.caseInsensitive, .diacriticInsensitive]) != nil }
+        }
+        return false
     }
 
     /// The locale the app is actually displayed in, so names sort the way the

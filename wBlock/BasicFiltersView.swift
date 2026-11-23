@@ -125,8 +125,18 @@ struct BasicFiltersView: View {
     }
 
     private var languageSummary: String {
-        let names = languageOptions.filter { activeLanguageCodes.contains($0.code) }.map(\.nativeName)
-        return names.isEmpty ? String(localized: "None") : ListFormatter.localizedString(byJoining: names)
+        let codes = activeLanguageCodes
+        guard !codes.isEmpty else { return String(localized: "None") }
+        let displayLocale = RegionalLanguageOption.displayLocale
+        let names = codes
+            .map { code -> (sortKey: String, native: String) in
+                let display = displayLocale.localizedString(forLanguageCode: code) ?? code
+                let native = Locale.nativeLanguageName(for: code) ?? display
+                return (display, native)
+            }
+            .sorted { $0.sortKey.localizedCaseInsensitiveCompare($1.sortKey) == .orderedAscending }
+            .map(\.native)
+        return ListFormatter.localizedString(byJoining: names)
     }
 
     private var atmosphereFade: Double {
@@ -180,6 +190,7 @@ struct BasicFiltersView: View {
                     resetBundleToRecommended(bundle)
                 }
             )
+            .id(bundle.id)
         }
         .infoPresentation(item: $unownedSheetItem) { _ in
             ScopedBundleListsSheet(
@@ -850,13 +861,21 @@ struct BasicBundlePeekView: View {
             .padding(16)
             .frame(width: 360)
         #else
-        ScrollView {
-            peekBody
-                .padding(SheetDesign.contentHorizontalPadding)
+        if #available(iOS 16.0, *) {
+            PeekSheetDetentsHost(showAllLists: $showAllLists) {
+                ScrollView {
+                    peekBody
+                        .padding(SheetDesign.contentHorizontalPadding)
+                }
+                .scrollBounceBasedOnSizeCompat()
+                .opaqueSheetBackgroundCompat()
+            }
+        } else {
+            ScrollView {
+                peekBody
+                    .padding(SheetDesign.contentHorizontalPadding)
+            }
         }
-        .scrollBounceBasedOnSizeCompat()
-        .opaqueSheetBackgroundCompat()
-        .modifier(PeekSheetDetentsCompat(showAllLists: $showAllLists))
         #endif
     }
 
@@ -1061,41 +1080,45 @@ struct BasicBundlePeekView: View {
 }
 
 #if os(iOS)
-private struct PeekSheetDetentsCompat: ViewModifier {
-    @Binding var showAllLists: Bool
-
-    func body(content: Content) -> some View {
-        if #available(iOS 16.0, *) {
-            content.modifier(PeekSheetDetentsModifier(showAllLists: $showAllLists))
-        } else {
-            content
-        }
-    }
-}
-
 @available(iOS 16.0, *)
-private struct PeekSheetDetentsModifier: ViewModifier {
+private struct PeekSheetDetentsHost<Content: View>: View {
     @Binding var showAllLists: Bool
+    @ViewBuilder let content: () -> Content
     @State private var selectedDetent: PresentationDetent = .medium
 
-    func body(content: Content) -> some View {
-        content
-            .presentationDetents([.medium, .large], selection: $selectedDetent)
-            .presentationDragIndicator(.visible)
-            .onChangeCompat(of: showAllLists) { _, expanded in
-                let target: PresentationDetent = expanded ? .large : .medium
-                if selectedDetent != target {
-                    selectedDetent = target
+    private var availableDetents: Set<PresentationDetent> {
+        showAllLists ? [.medium, .large] : [.medium]
+    }
+
+    var body: some View {
+        Group {
+            if #available(iOS 16.4, *) {
+                content()
+                    .presentationContentInteraction(.scrolls)
+            } else {
+                content()
+            }
+        }
+        .presentationDetents(availableDetents, selection: $selectedDetent)
+        .presentationDragIndicator(.visible)
+        .onAppear {
+            if !showAllLists, selectedDetent != .medium {
+                selectedDetent = .medium
+            }
+        }
+        .onChangeCompat(of: showAllLists) { _, expanded in
+            let target: PresentationDetent = expanded ? .large : .medium
+            if selectedDetent != target {
+                selectedDetent = target
+            }
+        }
+        .onChangeCompat(of: selectedDetent) { _, detent in
+            if detent == .medium, showAllLists {
+                withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
+                    showAllLists = false
                 }
             }
-            .onChangeCompat(of: selectedDetent) { _, detent in
-                let shouldExpand = detent == .large
-                if showAllLists != shouldExpand {
-                    withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
-                        showAllLists = shouldExpand
-                    }
-                }
-            }
+        }
     }
 }
 #endif

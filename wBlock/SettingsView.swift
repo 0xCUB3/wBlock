@@ -8,9 +8,12 @@ import wBlockCoreService
 
 struct SettingsView: View {
     let filterManager: AppFilterManager
+    var onSwitchAppMode: ((AppMode) -> Void)? = nil
     @ObservedObject private var dataManager = ProtobufDataManager.shared
     @ObservedObject private var syncManager = CloudSyncManager.shared
     @AppStorage(AppMode.storageKey) private var appMode: AppMode = .basic
+    @State private var showAllListsSwitch = UserDefaults.standard.string(forKey: AppMode.storageKey) == AppMode.advanced.rawValue
+    @State private var preserveAdvancedScrollOnModeChange = false
     @Environment(\.openURL) private var openURL
     private static let autoUpdateIntervalPresets: [Double] = [1, 2, 4, 6, 12, 24, 48, 72, 168]
     static let reportIssueURL = URL(string: "https://github.com/0xCUB3/wBlock/issues/new/choose")!
@@ -247,12 +250,16 @@ struct SettingsView: View {
 
     private var showAllListsBinding: Binding<Bool> {
         Binding(
-            get: { appMode == .advanced },
+            get: { showAllListsSwitch },
             set: { showAll in
                 let newMode: AppMode = showAll ? .advanced : .basic
-                guard newMode != appMode else { return }
-                filterManager.flushBasicAutoApplyIfNeeded()
-                appMode = newMode
+                showAllListsSwitch = showAll
+                preserveAdvancedScrollOnModeChange = (newMode != appMode)
+                if let onSwitchAppMode {
+                    onSwitchAppMode(newMode)
+                } else if newMode != appMode {
+                    appMode = newMode
+                }
             }
         )
     }
@@ -939,6 +946,25 @@ struct SettingsView: View {
                         guard let target else { return }
                         withAnimation { proxy.scrollTo(target, anchor: Self.sectionScrollAnchor) }
                         scrollTarget = nil
+                    }
+                    .onAppear {
+                        showAllListsSwitch = (appMode == .advanced)
+                    }
+                    .onChangeCompat(of: appMode) { _, newMode in
+                        let isAdvanced = (newMode == .advanced)
+                        if showAllListsSwitch != isAdvanced {
+                            showAllListsSwitch = isAdvanced
+                        }
+                        #if os(iOS)
+                        if preserveAdvancedScrollOnModeChange {
+                            preserveAdvancedScrollOnModeChange = false
+                            DispatchQueue.main.async {
+                                proxy.scrollTo(SettingsSection.advanced, anchor: .center)
+                            }
+                        }
+                        #else
+                        preserveAdvancedScrollOnModeChange = false
+                        #endif
                     }
             }
         }
