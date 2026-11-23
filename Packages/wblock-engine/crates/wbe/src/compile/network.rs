@@ -65,9 +65,17 @@ impl Context {
         }
     }
 
-    /// Whether `add` keeps anything of `rule`.
-    pub(crate) fn holds(rule: &NetworkRule) -> bool {
-        rule.badfilter || StrictHosts::host(rule).is_some() || genericblock_host(rule).is_some()
+    pub(crate) fn add_strict_host(&mut self, host: &str) {
+        self.strict.add_host(host);
+    }
+
+    pub(crate) fn strict_host(rule: &NetworkRule) -> Option<String> {
+        StrictHosts::host(rule)
+    }
+
+    /// Whether `add` keeps anything of `rule` beyond `StrictHosts`.
+    pub(crate) fn holds_non_strict(rule: &NetworkRule) -> bool {
+        rule.badfilter || genericblock_host(rule).is_some()
     }
 
     /// Whether a `$genericblock` exception covers pages of `domain`.
@@ -583,8 +591,8 @@ fn page_cond(p: &Pattern, v: SafariVersion) -> Option<Cond> {
 /// can tell whether it lifts one.
 #[derive(Default)]
 struct StrictHosts {
-    hosts: FxHashSet<String>,
-    parents: FxHashSet<String>,
+    hosts: FxHashSet<Box<str>>,
+    parents: FxHashSet<Box<str>>,
 }
 
 impl StrictHosts {
@@ -596,12 +604,22 @@ impl StrictHosts {
         host_only(&r.pattern)
     }
 
+    fn add_host(&mut self, h: &str) {
+        for (i, _) in h.match_indices('.') {
+            let parent = &h[i + 1..];
+            if self.parents.contains(parent) {
+                break;
+            }
+            self.parents.insert(parent.into());
+        }
+        if !self.hosts.contains(h) {
+            self.hosts.insert(h.into());
+        }
+    }
+
     fn add(&mut self, r: &NetworkRule) {
         if let Some(h) = Self::host(r) {
-            for (i, _) in h.match_indices('.') {
-                self.parents.insert(h[i + 1..].to_string());
-            }
-            self.hosts.insert(h);
+            self.add_host(&h);
         }
     }
 

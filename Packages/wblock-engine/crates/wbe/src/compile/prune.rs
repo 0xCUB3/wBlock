@@ -202,6 +202,8 @@ fn pages_meet(a: &Page, b: &Page) -> bool {
     }
 }
 
+const ANY_PAGE: u32 = u32::MAX;
+
 /// A rule without its url, with its page interned in `Pages`.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 struct Sig {
@@ -209,6 +211,13 @@ struct Sig {
     load: u8,
     context: u8,
     page: u32,
+}
+
+fn insert_sig(set: &mut FxHashSet<Sig>, sig: Sig) -> bool {
+    if sig.page != ANY_PAGE && set.contains(&Sig { page: ANY_PAGE, ..sig }) {
+        return false;
+    }
+    set.insert(sig)
 }
 
 /// Interned page conditions and which pairs of them meet.
@@ -221,14 +230,17 @@ struct Pages {
 
 impl Pages {
     fn sig(&mut self, shape: &Shape) -> Sig {
-        let page = match self.ids.get(&shape.page) {
-            Some(&id) => id,
-            None => {
-                let id = self.list.len() as u32;
-                self.ids.insert(shape.page.clone(), id);
-                self.list.push(shape.page.clone());
-                id
-            }
+        let page = match &shape.page {
+            Page::Any => ANY_PAGE,
+            page => match self.ids.get(page) {
+                Some(&id) => id,
+                None => {
+                    let id = self.list.len() as u32;
+                    self.ids.insert(page.clone(), id);
+                    self.list.push(page.clone());
+                    id
+                }
+            },
         };
         Sig { types: shape.types, load: shape.load, context: shape.context, page }
     }
@@ -237,9 +249,18 @@ impl Pages {
         if a.types & b.types == 0 || a.load & b.load == 0 || a.context & b.context == 0 {
             return false;
         }
-        let key = (a.page.min(b.page), a.page.max(b.page));
+        if a.page == ANY_PAGE || b.page == ANY_PAGE {
+            return true;
+        }
+        let (lo, hi) = (a.page.min(b.page), a.page.max(b.page));
         let list = &self.list;
-        *self.meets.entry(key).or_insert_with(|| pages_meet(&list[a.page as usize], &list[b.page as usize]))
+        if lo == hi {
+            return !matches!(&list[lo as usize], Page::If(hosts) if hosts.is_empty());
+        }
+        if matches!((&list[lo as usize], &list[hi as usize]), (Page::Unless(_), Page::Unless(_))) {
+            return true;
+        }
+        *self.meets.entry((lo, hi)).or_insert_with(|| pages_meet(&list[lo as usize], &list[hi as usize]))
     }
 }
 
@@ -263,15 +284,28 @@ impl Seen {
     /// Records a rule that is not an ignore.
     pub(crate) fn add(&mut self, shape: &Shape) {
         let sig = self.pages.sig(shape);
-        self.all.insert(sig);
+        insert_sig(&mut self.all, sig);
         match &shape.url {
             None => {
-                self.floating.insert(sig);
+                insert_sig(&mut self.floating, sig);
             }
             Some(host) => {
-                self.hosts.entry(host.name.clone()).or_default().insert((host.star, sig));
+                let covered = (host.star, Sig { page: ANY_PAGE, ..sig });
+                if let Some(set) = self.hosts.get_mut(&*host.name) {
+                    if sig.page == ANY_PAGE || !set.contains(&covered) {
+                        set.insert((host.star, sig));
+                    }
+                } else {
+                    self.hosts.insert(host.name.clone(), FxHashSet::from_iter([(host.star, sig)]));
+                }
                 for parent in labels(&host.name).skip(1) {
-                    self.below.entry(parent.into()).or_default().insert(sig);
+                    if let Some(set) = self.below.get_mut(parent) {
+                        if !insert_sig(set, sig) {
+                            break;
+                        }
+                    } else {
+                        self.below.insert(parent.into(), FxHashSet::from_iter([sig]));
+                    }
                 }
             }
         }
@@ -283,7 +317,7 @@ impl Seen {
     /// keeps no network exception (`overlaps`).
     pub(crate) fn add_hide(&mut self, shape: &Shape) {
         let sig = self.pages.sig(shape);
-        self.hides.insert(sig);
+        insert_sig(&mut self.hides, sig);
     }
 
     /// Whether some rule seen so far can match a load `ignore` matches. The
@@ -419,6 +453,13 @@ mod tests {
         assert!(overlaps(domain, on(b())));
         let unless = Shape::of_trigger(false, &WkTrigger { url_filter: ".*".into(), unless_domain: Some(vec!["*a.com".into()]), ..Default::default() });
         assert!(!overlaps(unless, on(sub_a())));
+        let not_b = unless_page([top("b.com")].iter().map(String::as_str));
+        assert!(overlaps(on(not_a()), on(not_b)));
+        let mut seen = Seen::default();
+        seen.add(&Shape::new(false, &format!("{HS}a\\.b\\.com/"), None, None, None, a()));
+        seen.add(&Shape::new(false, &format!("{HS}a\\.b\\.com/"), None, None, None, Page::Any));
+        seen.add(&Shape::new(false, &format!("{HS}c\\.b\\.com/"), None, None, None, b()));
+        assert!(seen.overlaps(&Shape::new(true, &format!("{HS}com/"), None, None, None, sub_a()), false));
     }
 
     #[test]
