@@ -201,3 +201,9 @@ test('generated scriptlet observes late backoff and executes its queued call onc
     assert.equal(s.run('Function.prototype.call === originalCall'), true);
     assert.deepEqual(s.reloads, [['video', 12]]);
 });
+test('YouTube Premium pages skip backoff reload', async () => {
+    const s = setup(); s.api();
+    s.context.ytInitialData = { topbar: { desktopTopbarRenderer: { logo: { topbarLogoRenderer: { iconImage: { iconType: 'YOUTUBE_PREMIUM_LOGO' } } } } } };
+    s.install(); s.ready(); await s.advance(11000);
+    assert.deepEqual(s.reloads, []);
+});

@@ -17,6 +17,9 @@ function youtubeBackoffRecovery() {
             && current.get('start') === params.get('start')
             && !/^\/(?:shorts|tv|embed)(?:\/|$)/.test(location.pathname || '');
     };
+    const isPremium = () =>
+        window.ytInitialData?.topbar?.desktopTopbarRenderer?.logo?.topbarLogoRenderer?.iconImage?.iconType === 'YOUTUBE_PREMIUM_LOGO'
+        || document.getElementById?.('masthead')?.getAttribute?.('logo-type') === 'YOUTUBE_PREMIUM_LOGO';
     const call = Function.prototype.call;
     let sawSnapshot = false, backoff = false, missing = false;
     const hasBackoff = (root, maxDepth = 5) => {
@@ -81,7 +84,7 @@ function youtubeBackoffRecovery() {
             state.active = false;
             return;
         }
-        if (!sameVideo()) { state.active = false; return; }
+        if (!sameVideo() || isPremium()) { state.active = false; return; }
         const time = params.get('t') || params.get('start') || '0';
         const parts = /^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$/.exec(time);
         const start = /^\d+(?:\.\d+)?$/.test(time) ? Number(time)

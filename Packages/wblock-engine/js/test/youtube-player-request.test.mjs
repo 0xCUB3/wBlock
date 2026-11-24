@@ -154,3 +154,30 @@ run('desktop leaves player response messages alone',({w})=>{
     const text=JSON.stringify({messages:[{youThereRenderer:{}}]});
     assert.equal(w.JSON.parse(text).messages.length,1);
 });
+run('desktop drops muteOnStart from rewritten player and get_watch responses',async({w})=>{
+    const req=fixture();
+    const serialized=w.JSON.stringify(req);
+    // Re-encoding or constructing a Request with the already-mutated body must keep tracking the videoId.
+    new w.TextEncoder().encode(serialized);
+    new w.Request('https://www.youtube.com/youtubei/v1/player',{method:'POST',body:serialized});
+    const directText=JSON.stringify({videoDetails:{videoId:'video'},playerConfig:{audioConfig:{loudnessDb:-13,muteOnStart:true}}});
+    const directParsed=w.JSON.parse(directText);
+    assert.equal('muteOnStart' in directParsed.playerConfig.audioConfig,false);
+    assert.equal(directParsed.playerConfig.audioConfig.loudnessDb,-13);
+    const getWatchText=JSON.stringify([
+        {playerResponse:{videoDetails:{videoId:'video'},playerConfig:{audioConfig:{muteOnStart:true}}}},
+        {watchNextResponse:{}},
+    ]);
+    const fetched=await new w.Response(getWatchText).json();
+    assert.equal('muteOnStart' in fetched[0].playerResponse.playerConfig.audioConfig,false);
+    // Unrewritten videos keep muteOnStart intact.
+    const otherText=JSON.stringify({videoDetails:{videoId:'other-preview'},playerConfig:{audioConfig:{muteOnStart:true}}});
+    assert.equal(w.JSON.parse(otherText).playerConfig.audioConfig.muteOnStart,true);
+});
+run('desktop skips mutating player requests for YouTube Premium accounts',({w,stringify})=>{
+    w.ytInitialData={topbar:{desktopTopbarRenderer:{logo:{topbarLogoRenderer:{iconImage:{iconType:'YOUTUBE_PREMIUM_LOGO'}}}}}};
+    const input=fixture();
+    assert.equal(w.JSON.stringify(input),stringify(input));
+    assert.equal(input.params,undefined);
+    assert.equal(input.context.client.configInfo.appInstallData,'fixture');
+});

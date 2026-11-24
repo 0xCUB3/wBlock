@@ -11,6 +11,22 @@ function youtubePlayerRequest() {
     const stringify = JSON.stringify.bind(JSON);
     const locked = Object.getOwnPropertyDescriptor(JSON, 'parse')?.writable === false;
     const excluded = () => /^\/(?:shorts(?:\/|$)|tv(?:\/|$))/.test(location.pathname);
+    const isPremium = () =>
+        globalThis.ytInitialData?.topbar?.desktopTopbarRenderer?.logo?.topbarLogoRenderer?.iconImage?.iconType === 'YOUTUBE_PREMIUM_LOGO'
+        || document.getElementById?.('masthead')?.getAttribute?.('logo-type') === 'YOUTUBE_PREMIUM_LOGO';
+    const unmuteVideoIds = new Set();
+    let rewroteAnonymous = false;
+    const rememberUnmute = videoId => {
+        if (typeof videoId === 'string' && videoId) {
+            unmuteVideoIds.delete(videoId);
+            unmuteVideoIds.add(videoId);
+            if (unmuteVideoIds.size > 32) {
+                unmuteVideoIds.delete(unmuteVideoIds.values().next().value);
+            }
+        } else {
+            rewroteAnonymous = true;
+        }
+    };
     const mutate = data => {
         if (excluded() || !data || typeof data !== 'object') return false;
         const client = data.context?.client;
@@ -23,6 +39,7 @@ function youtubePlayerRequest() {
             for (const context of contexts) context.contentPlaybackContext.lactMilliseconds = now;
             return true;
         }
+        if (isPremium()) return false;
         const contexts = [data.playbackContext, data.playerRequest?.playbackContext]
             .filter(context => context?.contentPlaybackContext);
         if (!client || contexts.length === 0 || data.params?.startsWith('YAHI')
@@ -34,6 +51,8 @@ function youtubePlayerRequest() {
             client.clientScreen = 'CHANNEL';
         } else {
             if (client.clientScreen === 'CHANNEL') return false;
+            const hadMuteParam = data.params === 'eAFgAQ' || data.playerRequest?.params === 'eAFgAQ';
+            if (!hadMuteParam) rememberUnmute(data.videoId || data.playerRequest?.videoId);
             data.params = 'eAFgAQ';
             if (data.playerRequest) data.playerRequest.params = 'eAFgAQ';
             for (const context of contexts) context.params = 'eAFgAQ';
@@ -86,23 +105,68 @@ function youtubePlayerRequest() {
         }
         return data;
     };
-    if (mobile) {
-        install(JSON, 'parse', {
-            apply(target, self, args) {
-                const data = Reflect.apply(target, self, args);
-                try { dropIdlePrompt(data); } catch (_) {}
+    // The eAFgAQ player parameter marks the request as an ad-free preview, so
+    // YouTube answers with playerConfig.audioConfig.muteOnStart: true. Drop it
+    // from player and get_watch responses for requests rewritten by this scriptlet.
+    const dropMuteFromResponse = response => {
+        const audioConfig = response?.playerConfig?.audioConfig;
+        if (!audioConfig || !Object.hasOwn(audioConfig, 'muteOnStart')) return;
+        const responseId = response?.videoDetails?.videoId;
+        if (typeof responseId === 'string' && responseId ? unmuteVideoIds.has(responseId) : rewroteAnonymous) {
+            delete audioConfig.muteOnStart;
+        }
+    };
+    const dropMuteOnStart = data => {
+        if (excluded() || (!rewroteAnonymous && unmuteVideoIds.size === 0) || !data || typeof data !== 'object') return data;
+        if (Array.isArray(data)) {
+            for (const item of data) {
+                if (!item || typeof item !== 'object') continue;
+                dropMuteFromResponse(item);
+                if (item.playerResponse && typeof item.playerResponse === 'object') {
+                    dropMuteFromResponse(item.playerResponse);
+                }
+            }
+        } else {
+            dropMuteFromResponse(data);
+            if (data.playerResponse && typeof data.playerResponse === 'object') {
+                dropMuteFromResponse(data.playerResponse);
+            }
+        }
+        return data;
+    };
+    const onResponse = mobile ? dropIdlePrompt : dropMuteOnStart;
+    install(JSON, 'parse', {
+        apply(target, self, args) {
+            const data = Reflect.apply(target, self, args);
+            try { onResponse(data); } catch (_) {}
+            return data;
+        },
+    });
+    install(globalThis.Response?.prototype, 'json', {
+        apply(target, self, args) {
+            return Reflect.apply(target, self, args).then(data => {
+                try { onResponse(data); } catch (_) {}
                 return data;
-            },
-        });
-        install(globalThis.Response?.prototype, 'json', {
-            apply(target, self, args) {
-                return Reflect.apply(target, self, args).then(data => {
-                    try { dropIdlePrompt(data); } catch (_) {}
+            });
+        },
+    });
+    try {
+        const xhrProto = globalThis.XMLHttpRequest?.prototype;
+        const xhrResponse = xhrProto && Object.getOwnPropertyDescriptor(xhrProto, 'response');
+        if (xhrResponse?.get && xhrResponse.configurable) {
+            Object.defineProperty(xhrProto, 'response', {
+                configurable: true,
+                enumerable: xhrResponse.enumerable,
+                get() {
+                    const data = xhrResponse.get.call(this);
+                    if (this.responseType === 'json') {
+                        try { onResponse(data); } catch (_) {}
+                    }
                     return data;
-                });
-            },
-        });
-    }
+                },
+            });
+        }
+    } catch (_) {}
     install(globalThis, 'Request', {
         construct(target, args, newTarget) {
             try {
