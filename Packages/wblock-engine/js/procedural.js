@@ -198,9 +198,9 @@
     return filter((el) => re.test(getComputedStyle(el, pseudo).getPropertyValue(name)));
   };
 
-  const matchesPath = (arg) => {
+  const pathGate = (arg) => {
     const re = toRegex(unquote(arg).replace(/[^\x00-\x7F]/g, encodeURIComponent));
-    return (els) => (re.test(location.pathname + location.search) ? els : []);
+    return () => re.test(location.pathname + location.search);
   };
 
   const minTextLength = (arg) => {
@@ -226,11 +226,11 @@
     });
   };
 
-  const matchesMedia = (arg) => {
+  const mediaGate = (arg) => {
     const media = matchMedia(arg);
     media.addEventListener('change', schedule);
     state.cleanups.push(() => media.removeEventListener('change', schedule));
-    return (els) => media.matches ? els : [];
+    return () => media.matches;
   };
 
   const matchesProperty = (arg) => {
@@ -289,10 +289,17 @@
     return filter(el => (run(el, self).length !== 0) !== negate);
   };
 
+  // Document-level guards that do not depend on candidate elements; checking them
+  // first skips DOM queries on non-matching passes and lets a following CSS or
+  // XPath operator query directly instead of scanning `document.querySelectorAll('*')`.
+  const GATES = new Map([
+    ['matches-path', pathGate],
+    ['matches-media', mediaGate],
+  ]);
+
   const OPS = new Map([
     ['css-selector', cssOp],
     ['has-text', hasText],
-    ['matches-media', matchesMedia],
     ['matches-property', matchesProperty],
     ['matches-prop', matchesProperty],
     ['others', others],
@@ -304,7 +311,6 @@
     ['matches-css', matchesCss],
     ['matches-css-after', (a) => matchesCss(`after, ${a}`)],
     ['matches-css-before', (a) => matchesCss(`before, ${a}`)],
-    ['matches-path', matchesPath],
     ['min-text-length', minTextLength],
     ['upward', upward],
     ['xpath', (a) => expand((el) => xpathNodes(unquote(a), el))],
@@ -361,25 +367,38 @@
 
   const compileSelector = (selector) => {
     if (!Array.isArray(selector) || selector.length === 0) throw new Error('empty selector');
-    const ops = selector.map(({ type, arg }) => {
-      const make = OPS.get(type);
+    const gates = [];
+    const rest = [];
+    const ops = [];
+    for (const step of selector) {
+      const { type, arg } = step;
+      const makeGate = GATES.get(type);
+      const make = makeGate || OPS.get(type);
       if (!make || (typeof arg !== 'string' && !Array.isArray(arg))) throw new Error('bad operator');
       if (arg === '' && type !== 'others' && type !== 'watch-attr' && type !== 'shadow') throw new Error('empty argument');
       const run = make(arg);
       trackOperator(type, arg);
-      return run;
-    });
-    const head = selector[0];
+      if (makeGate) {
+        gates.push(run);
+      } else {
+        rest.push(step);
+        ops.push(run);
+      }
+    }
+    const head = rest[0];
+    const headCss = head?.type === 'css-selector' ? head.arg.trim() : null;
+    const headCssRelative = headCss !== null && (/^[>+~]/.test(headCss) || head.arg !== head.arg.trimStart());
+    const headXpath = head?.type === 'xpath' ? unquote(head.arg) : null;
     return (root = document, self = false) => {
+      for (let i = 0; i < gates.length; i++) if (!gates[i]()) return [];
       let els;
       let skip = 0;
-      if (head.type === 'css-selector') {
-        const css = head.arg.trim();
-        els = self ? (root.matches(css) ? [root] : [])
-          : /^[>+~]/.test(css) ? cssOp(css)([root]) : Array.from(root.querySelectorAll(css));
+      if (headCss !== null) {
+        if (self) els = headCssRelative ? ops[0]([root]) : (root.matches(headCss) ? [root] : []);
+        else els = /^[>+~]/.test(headCss) ? ops[0]([root]) : Array.from(root.querySelectorAll(headCss));
         skip = 1;
-      } else if (head.type === 'xpath') {
-        els = xpathNodes(unquote(head.arg), root);
+      } else if (headXpath !== null) {
+        els = xpathNodes(headXpath, root);
         skip = 1;
       } else {
         els = root === document ? Array.from(document.querySelectorAll('*')).filter(el => el !== state.styleEl) : [root];

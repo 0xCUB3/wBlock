@@ -217,6 +217,47 @@ describe('matches-path', () => {
     api.apply([filt([op('matches-path', '/marketplace?tab=1'), op('css-selector', 'div')])]);
     assert.equal(isHidden(win, document.getElementById('a')), true);
   });
+
+  test('skips DOM queries on non-matching paths and queries the CSS selector directly when matching', () => {
+    const queries = [];
+    const track = (document) => {
+      const real = document.querySelectorAll.bind(document);
+      document.querySelectorAll = (sel) => {
+        queries.push(sel);
+        return real(sel);
+      };
+    };
+
+    const off = setup('<div class="ad" id="a">Ad</div><p>Body</p>', url);
+    track(off.document);
+    off.api.apply([filt([op('matches-path', '/feed'), op('css-selector', '.ad'), op('has-text', 'Ad')])], { observe: false });
+    assert.deepEqual(queries, []);
+    assert.equal(isHidden(off.win, off.document.getElementById('a')), false);
+
+    queries.length = 0;
+    const on = setup('<div class="ad" id="a">Ad</div><p>Body</p>', url);
+    track(on.document);
+    on.api.apply([filt([op('matches-path', '/marketplace'), op('css-selector', '.ad'), op('has-text', 'Ad')])], { observe: false });
+    assert.deepEqual(queries, ['.ad']);
+    assert.equal(isHidden(on.win, on.document.getElementById('a')), true);
+  });
+
+  test('skips XPath and wildcard scans when leading matches-path does not match, and evaluates XPath directly when matching', () => {
+    const run = (path) => {
+      const { document, api, win } = setup('<div id="w"><strong id="s">VPN</strong></div>', url);
+      const qsa = [];
+      let evals = 0;
+      const realQsa = document.querySelectorAll.bind(document);
+      const realEval = document.evaluate.bind(document);
+      document.querySelectorAll = (sel) => { qsa.push(sel); return realQsa(sel); };
+      document.evaluate = (...args) => { evals++; return realEval(...args); };
+      api.apply([filt([op('matches-path', path), op('xpath', '//strong[contains(text(),"VPN")]/..')])], { observe: false });
+      return { qsa, evals, hidden: isHidden(win, document.getElementById('w')) };
+    };
+
+    assert.deepEqual(run('/feed'), { qsa: [], evals: 0, hidden: false });
+    assert.deepEqual(run('/marketplace'), { qsa: [], evals: 1, hidden: true });
+  });
 });
 
 describe('min-text-length', () => {
@@ -724,6 +765,42 @@ describe('compatibility gates', () => {
     api.apply([filt([op('css-selector', 'section'), op('if-not', nested)])]);
     assert.equal(isMarked(document.querySelector('#ad')), false);
     assert.equal(isMarked(document.querySelector('#keep')), true);
+  });
+
+  test('media conditions skip DOM queries while non-matching and query CSS directly when leading', async () => {
+    const { document, api, win } = setup('<div id="ad" class="ad"></div><p>Body</p>');
+    const media = new win.EventTarget();
+    media.matches = false;
+    win.matchMedia = () => media;
+    const queries = [];
+    const real = document.querySelectorAll.bind(document);
+    document.querySelectorAll = (sel) => {
+      queries.push(sel);
+      return real(sel);
+    };
+    api.apply([
+      filt([op('matches-media', '(min-width: 1280px)'), op('css-selector', '.ad')]),
+      filt([op('css-selector', 'p'), op('matches-media', '(min-width: 1280px)')]),
+    ]);
+    assert.deepEqual(queries, []);
+    assert.equal(isMarked(document.querySelector('#ad')), false);
+    assert.equal(isMarked(document.querySelector('p')), false);
+
+    media.matches = true;
+    media.dispatchEvent(new win.Event('change'));
+    await sleep(150);
+    assert.deepEqual(queries, ['.ad', 'p']);
+    assert.equal(isMarked(document.querySelector('#ad')), true);
+    assert.equal(isMarked(document.querySelector('p')), true);
+
+    queries.length = 0;
+    media.matches = false;
+    media.dispatchEvent(new win.Event('change'));
+    await sleep(150);
+    assert.deepEqual(queries, []);
+    assert.equal(isMarked(document.querySelector('#ad')), false);
+    assert.equal(isMarked(document.querySelector('p')), false);
+    api.apply([], { observe: false });
   });
 
   test('watch-attr reapplies removal after attribute mutation', async () => {
