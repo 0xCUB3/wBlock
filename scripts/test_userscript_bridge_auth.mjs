@@ -1071,7 +1071,7 @@ const modes = Object.fromEntries(['sponsor','selfpromo','interaction','intro','o
 const preferences = { enabled:true, showNotice:true, minimumDuration:0, modes, excludedChannels:[] };
 const tube = { ...fakeScript, id:'official-tube', sourceURL:'https://raw.githubusercontent.com/0xCUB3/wBlock-userscripts/main/packages/tube-cleaner/dist/tube-cleaner.user.js',
   matches:['https://*.youtube.com/*'], grant:['GM_getValue','GM_setValue'],
-  storageSnapshot: { 'wblock.tubeCleaner.sponsorBlock':JSON.stringify(preferences), secret:'must-not-reach-page' },
+  storageSnapshot: { 'wblock.tubeCleaner.sponsorBlock':JSON.stringify(preferences), 'wblock.tubeCleaner.quality':JSON.stringify('hd1080'), secret:'must-not-reach-page' },
   content:"window.__tubeHooks = true;" };
 for (const grants of [['GM.getValue', 'GM.setValue', 'GM.info', 'unsafeWindow'], ['GM_getValue', 'GM_setValue', 'GM_info', 'none']]) {
   const base = appendedScripts.length;
@@ -1087,7 +1087,7 @@ const tubeBase = appendedScripts.length;
 const tubeSandbox = buildContentScriptSandbox(null, [tube], 'https://www.youtube.com/watch?v=abc');
 vm.createContext(tubeSandbox); vm.runInContext(source, tubeSandbox); await tick(); await tick();
 const tubeWrapper = appendedScripts[tubeBase] || '';
-check('Tube Cleaner page wrapper retains hooks and only its bounded preference snapshot', tubeWrapper.includes('__tubeHooks') && !tubeWrapper.includes('must-not-reach-page'));
+check('Tube Cleaner page wrapper retains hooks and only its bounded preference snapshot', tubeWrapper.includes('__tubeHooks') && tubeWrapper.includes('hd1080') && !tubeWrapper.includes('must-not-reach-page'));
 tubeSandbox.__listeners = windowMessageListeners;
 vm.runInContext(`globalThis.__fire = data => { for (const fn of __listeners) fn({source: window,data}); };`, tubeSandbox);
 tubeSandbox.__preferences = preferences;
@@ -1098,6 +1098,12 @@ check('Tube preferences persist only to the validated script and fixed key', tub
 vm.runInContext(`__fire({type:'wblock:tube-preferences',settings:{...__preferences,userID:'private'}}); __fire({type:'wblock:tube-preferences',settings:{...__preferences,minimumDuration:Infinity}})`, tubeSandbox);
 await tick();
 check('unknown or unbounded Tube settings never reach native storage', tubeWrites().length === 1);
+vm.runInContext(`__fire({type:'wblock:tube-preferences',quality:'hd720',scriptId:'victim',key:'arbitrary'})`, tubeSandbox);
+await new Promise(resolve => setTimeout(resolve, 300));
+check('Tube quality preference persists only to the validated script and fixed key', tubeWrites().length === 2 && tubeWrites()[1].scriptId === tube.id && tubeWrites()[1].key === 'wblock.tubeCleaner.quality' && JSON.parse(tubeWrites()[1].rawValue) === 'hd720');
+vm.runInContext(`__fire({type:'wblock:tube-preferences',quality:'arbitrary-value'}); __fire({type:'wblock:tube-preferences',quality:123})`, tubeSandbox);
+await new Promise(resolve => setTimeout(resolve, 300));
+check('invalid Tube quality values never reach native storage', tubeWrites().length === 2);
 await tubeSandbox.__onMessage({type:'wblock:clearDocumentStartSessionCache'});
 // Revocation is checked synchronously before the fresh native response can authorize again.
 vm.runInContext(`__fire({type:'wblock-gm-storage-delete',key:'wblock.tubeCleaner.sponsorBlock',requestId:'delete',bridgeId:'known'})`, tubeSandbox);

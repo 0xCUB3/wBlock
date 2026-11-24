@@ -80,6 +80,11 @@ function escapeForJS(str) {
 
 // Page hooks may share these playback preferences, never a general GM capability.
 const TUBE_SETTINGS_KEY = 'wblock.tubeCleaner.sponsorBlock';
+const TUBE_QUALITY_KEY = 'wblock.tubeCleaner.quality';
+const TUBE_QUALITY_VALUES = new Set(['auto', 'hd2160', 'hd1440', 'hd1080', 'hd720', 'large', 'medium', 'small', 'tiny']);
+function boundedTubeQuality(raw) {
+    return typeof raw === 'string' && TUBE_QUALITY_VALUES.has(raw) ? raw : null;
+}
 function isTubeCleanerPageScript(script) {
     return script && script.isLocal === false
         && script.sourceURL === 'https://raw.githubusercontent.com/0xCUB3/wBlock-userscripts/main/packages/tube-cleaner/dist/tube-cleaner.user.js'
@@ -128,11 +133,17 @@ function popupBlockerStorage(snapshot) {
 function pageStorageSnapshot(script) {
     // No arbitrary stored value is exposed to the page.
     if (isTubeCleanerPageScript(script)) {
+        const state = {};
+        const snapshot = script.storageSnapshot || {};
         try {
-            const parsed = boundedTubeSettings(JSON.parse((script.storageSnapshot || {})[TUBE_SETTINGS_KEY]));
-            if (parsed) return { [TUBE_SETTINGS_KEY]: JSON.stringify(parsed) };
-        } catch (_) { /* Fall through to an empty snapshot. */ }
-        return {};
+            const parsed = boundedTubeSettings(JSON.parse(snapshot[TUBE_SETTINGS_KEY]));
+            if (parsed) state[TUBE_SETTINGS_KEY] = JSON.stringify(parsed);
+        } catch (_) { /* Fall through without SponsorBlock snapshot. */ }
+        try {
+            const quality = boundedTubeQuality(JSON.parse(snapshot[TUBE_QUALITY_KEY]));
+            if (quality) state[TUBE_QUALITY_KEY] = JSON.stringify(quality);
+        } catch (_) { /* Fall through without quality snapshot. */ }
+        return state;
     }
     if (!isPopupBlockerPageScript(script)) return {};
     // Version 3 skips migrations, which would delete and rewrite every key.
@@ -361,7 +372,12 @@ if (window.wBlockUserscriptInjectorHasRun) {
 
         tubePreferenceWrite(data) {
             const script = this.tubeCleanerSettingsScript;
-            const settings = script && isTubeCleanerPageScript(script) && boundedTubeSettings(data.settings);
+            if (!script || !isTubeCleanerPageScript(script)) return null;
+            if (Object.prototype.hasOwnProperty.call(data, 'quality') && !Object.prototype.hasOwnProperty.call(data, 'settings')) {
+                const quality = boundedTubeQuality(data.quality);
+                return quality ? { script, key: TUBE_QUALITY_KEY, rawValue: JSON.stringify(quality) } : null;
+            }
+            const settings = boundedTubeSettings(data.settings);
             return settings ? { script, key: TUBE_SETTINGS_KEY, rawValue: JSON.stringify(settings) } : null;
         }
 
@@ -2011,6 +2027,11 @@ if (window.wBlockUserscriptInjectorHasRun) {
         ${isTubeCleanerPageScript(script) ? `
         if (kind === 'set' && key === 'wblock.tubeCleaner.sponsorBlock') {
             try { window.postMessage({ type: 'wblock:tube-preferences', settings: JSON.parse(rawValue) }, '*'); }
+            catch (_) { /* Invalid preference updates have no native effect. */ }
+            return;
+        }
+        if (kind === 'set' && key === 'wblock.tubeCleaner.quality') {
+            try { window.postMessage({ type: 'wblock:tube-preferences', quality: JSON.parse(rawValue) }, '*'); }
             catch (_) { /* Invalid preference updates have no native effect. */ }
             return;
         }
