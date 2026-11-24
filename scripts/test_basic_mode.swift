@@ -201,6 +201,21 @@ struct BasicModeTests {
         precondition(!unowned.contains { $0.id == customAds.id }, "Custom list in Ads must stay in Ads scoped lists instead of duplicating in Also on")
         precondition(BasicBundle.core(.ads).scopedFilters(in: lists).contains { $0.id == customAds.id }, "Custom list in Ads must appear in Ads scoped lists")
 
+        // Turning off an unowned custom list or a remembered unowned built-in list keeps it in Also on until explicitly removed.
+        if let customIdx = lists.firstIndex(where: { $0.id == custom.id }),
+           let multiIdx = lists.firstIndex(where: { $0.category == .multipurpose && $0.isSelected }) {
+            let multiID = lists[multiIdx].id
+            lists[customIdx].isSelected = false
+            lists[multiIdx].isSelected = false
+            let surfacedWhileOff = BasicBundle.unownedFilters(in: lists, rememberedIDs: [multiID])
+            precondition(surfacedWhileOff.contains { $0.id == custom.id }, "Disabled unowned custom list must stay in Also on")
+            precondition(surfacedWhileOff.contains { $0.id == multiID }, "Disabled remembered unowned built-in list must stay in Also on")
+            let afterExplicitRemove = BasicBundle.unownedFilters(in: lists, rememberedIDs: [])
+            precondition(!afterExplicitRemove.contains { $0.id == multiID }, "Explicitly removed unowned built-in list must leave Also on")
+            lists[customIdx].isSelected = true
+            lists[multiIdx].isSelected = true
+        }
+
         // Bypass Paywalls Clean Filter is owned by the Extras toggle while BPC script is on,
         // and surfaces under "Also on" only if enabled standalone without the script.
         if let bpcIdx = lists.firstIndex(where: BasicBundle.isPairedBypassPaywallsFilter) {

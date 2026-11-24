@@ -388,13 +388,36 @@ enum BasicBundle: Hashable, Identifiable, Sendable {
         isBypassPaywallsCleanEnabled: Bool = false,
         includesMobileAppBannersBundle: Bool = AnnoyanceChoice.defaultIncludesMobileAppBanners
     ) -> [FilterList] {
+        unownedFilters(
+            in: filters,
+            rememberedIDs: [],
+            recommendedNames: recommendedNames,
+            isBypassPaywallsCleanEnabled: isBypassPaywallsCleanEnabled,
+            includesMobileAppBannersBundle: includesMobileAppBannersBundle
+        ).filter(\.isSelected)
+    }
+
+    /// Every list surfaced under Standard mode's "Also on" row: unowned custom
+    /// lists stay listed even when turned off until explicitly deleted, and
+    /// unowned built-in lists stay listed while selected or in `rememberedIDs`
+    /// until explicitly removed.
+    static func unownedFilters(
+        in filters: [FilterList],
+        rememberedIDs: Set<UUID> = [],
+        recommendedNames: Set<String> = FilterListLoader.recommendedFilterNames,
+        isBypassPaywallsCleanEnabled: Bool = false,
+        includesMobileAppBannersBundle: Bool = AnnoyanceChoice.defaultIncludesMobileAppBanners
+    ) -> [FilterList] {
         let ownedIDs = ownedFilterIDs(
             in: filters,
             recommendedNames: recommendedNames,
             isBypassPaywallsCleanEnabled: isBypassPaywallsCleanEnabled,
             includesMobileAppBannersBundle: includesMobileAppBannersBundle
         )
-        return filters.filter { $0.isSelected && !ownedIDs.contains($0.id) }
+        return filters.filter { filter in
+            guard !ownedIDs.contains(filter.id) else { return false }
+            return filter.isSelected || filter.isCustom || rememberedIDs.contains(filter.id)
+        }
     }
 
     /// True iff any built-in Regional list differs from `appliedSelectedIDs`.

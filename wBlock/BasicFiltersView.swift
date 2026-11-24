@@ -29,7 +29,9 @@ struct BasicFiltersView: View {
     @State private var hasPendingLanguageApply = false
     @State private var showingHeroPopover = false
     private static let stricterBlockingExpandedKey = "wBlock.basicStricterBlockingExpanded"
+    private static let rememberedAlsoOnFilterIDsKey = "wBlock.basicRememberedAlsoOnFilterIDs"
     @State private var showStricterBlocking: Bool
+    @State private var rememberedAlsoOnFilterIDs: Set<UUID> = BasicFiltersView.readRememberedAlsoOnFilterIDs()
     @State private var scrollOffset: CGFloat = 0
 
     init(
@@ -88,11 +90,64 @@ struct BasicFiltersView: View {
         }
     }
 
-    private var unownedActiveFilters: [FilterList] {
-        BasicBundle.unownedActiveFilters(
+    private var unownedFilters: [FilterList] {
+        BasicBundle.unownedFilters(
             in: filterManager.filterLists,
+            rememberedIDs: rememberedAlsoOnFilterIDs,
             isBypassPaywallsCleanEnabled: isBypassPaywallsCleanEnabled
         )
+    }
+
+    private static func readRememberedAlsoOnFilterIDs() -> Set<UUID> {
+        let raw = UserDefaults.standard.stringArray(forKey: rememberedAlsoOnFilterIDsKey) ?? []
+        return Set(raw.compactMap(UUID.init(uuidString:)))
+    }
+
+    private func saveRememberedAlsoOnFilterIDs(_ ids: Set<UUID>) {
+        guard ids != rememberedAlsoOnFilterIDs else { return }
+        rememberedAlsoOnFilterIDs = ids
+        UserDefaults.standard.set(ids.map(\.uuidString).sorted(), forKey: Self.rememberedAlsoOnFilterIDsKey)
+    }
+
+    private func syncRememberedAlsoOnFilterIDs() {
+        let activeBuiltInUnownedIDs = Set(
+            BasicBundle.unownedActiveFilters(
+                in: filterManager.filterLists,
+                isBypassPaywallsCleanEnabled: isBypassPaywallsCleanEnabled
+            )
+            .filter { !$0.isCustom }
+            .map(\.id)
+        )
+        let validBuiltInUnownedIDs = Set(
+            BasicBundle.unownedFilters(
+                in: filterManager.filterLists,
+                rememberedIDs: rememberedAlsoOnFilterIDs,
+                isBypassPaywallsCleanEnabled: isBypassPaywallsCleanEnabled
+            )
+            .filter { !$0.isCustom }
+            .map(\.id)
+        )
+        let next = rememberedAlsoOnFilterIDs
+            .intersection(validBuiltInUnownedIDs)
+            .union(activeBuiltInUnownedIDs)
+        saveRememberedAlsoOnFilterIDs(next)
+    }
+
+    private func removeAlsoOnFilter(_ filter: FilterList) {
+        var next = rememberedAlsoOnFilterIDs
+        next.remove(filter.id)
+        saveRememberedAlsoOnFilterIDs(next)
+
+        if filter.isCustom {
+            filterManager.removeCustomFilterList(filter)
+            filterManager.flushPendingSave()
+            filterManager.scheduleBasicAutoApply()
+        } else if filter.isSelected {
+            if filterManager.setFilterListSelection(id: filter.id, selected: false) {
+                filterManager.flushPendingSave()
+                filterManager.scheduleBasicAutoApply()
+            }
+        }
     }
 
     private var languageOptions: [RegionalLanguageOption] {
@@ -197,10 +252,13 @@ struct BasicFiltersView: View {
         .infoPresentation(item: $unownedSheetItem) { _ in
             ScopedBundleListsSheet(
                 title: String(localized: "Also on"),
-                filters: FilterListPresentation.ordered(unownedActiveFilters, order: filterDisplayOrder),
+                filters: FilterListPresentation.ordered(unownedFilters, order: filterDisplayOrder),
                 filterManager: filterManager,
                 onMutation: {
                     filterManager.scheduleBasicAutoApply()
+                },
+                onRemove: { filter in
+                    removeAlsoOnFilter(filter)
                 }
             )
         }
@@ -214,6 +272,10 @@ struct BasicFiltersView: View {
         #endif
         .onAppear {
             storedLanguageCodes = Self.readStoredLanguageCodes()
+            syncRememberedAlsoOnFilterIDs()
+        }
+        .onChangeCompat(of: filterManager.filterLists) { _, _ in
+            syncRememberedAlsoOnFilterIDs()
         }
         .onDisappear {
             if hasPendingLanguageApply {
@@ -599,7 +661,7 @@ struct BasicFiltersView: View {
             groupedCard {
                 languagesRow
 
-                if !unownedActiveFilters.isEmpty {
+                if !unownedFilters.isEmpty {
                     Divider().padding(.leading, 56)
                     alsoOnRow
                 }
@@ -660,7 +722,10 @@ struct BasicFiltersView: View {
     }
 
     private var alsoOnSummary: String {
-        let active = unownedActiveFilters
+        let active = unownedFilters.filter(\.isSelected)
+        guard !active.isEmpty else {
+            return NSLocalizedString("Off", comment: "Also on inactive value")
+        }
         let customCount = active.filter(\.isCustom).count
         let otherCount = active.count - customCount
         if customCount > 0 && otherCount > 0 {
@@ -687,7 +752,8 @@ struct BasicFiltersView: View {
     }
 
     private var alsoOnRow: some View {
-        let unownedFilterIDs = Set(unownedActiveFilters.map(\.id))
+        let unownedFilterIDs = Set(unownedFilters.map(\.id))
+        let hasActiveUnowned = unownedFilters.contains(where: \.isSelected)
         let isDirty = BasicBundle.isUnownedDirty(
             in: filterManager.filterLists,
             appliedSelectedIDs: filterManager.appliedSelectedFilterIDs,
@@ -700,7 +766,7 @@ struct BasicFiltersView: View {
                 IconBadge(
                     systemName: "square.stack.3d.up.fill",
                     tint: .accentColor,
-                    isOn: true,
+                    isOn: hasActiveUnowned,
                     ringPhase: rowRingPhase(for: unownedFilterIDs, isDirty: isDirty),
                     showsFailedDot: filterManager.lastBasicApplyFailed && isDirty
                 )
@@ -1165,6 +1231,7 @@ struct ScopedBundleListsSheet: View {
     let title: String
     @ObservedObject var filterManager: AppFilterManager
     let onMutation: () -> Void
+    var onRemove: ((FilterList) -> Void)? = nil
 
     @State private var capturedFilterIDs: [UUID]
     @Environment(\.dismiss) private var dismiss
@@ -1173,11 +1240,13 @@ struct ScopedBundleListsSheet: View {
         title: String,
         filters: [FilterList],
         filterManager: AppFilterManager,
-        onMutation: @escaping () -> Void
+        onMutation: @escaping () -> Void,
+        onRemove: ((FilterList) -> Void)? = nil
     ) {
         self.title = title
         self.filterManager = filterManager
         self.onMutation = onMutation
+        self.onRemove = onRemove
         _capturedFilterIDs = State(initialValue: filters.map(\.id))
     }
 
@@ -1277,6 +1346,24 @@ struct ScopedBundleListsSheet: View {
                 }
             }
             Spacer(minLength: 8)
+            if let onRemove, !filter.isSelected {
+                let removeLabel = filter.isCustom
+                    ? NSLocalizedString("Delete Added List", comment: "Delete custom filter list action")
+                    : NSLocalizedString("Remove", comment: "Remove filter from Also on action")
+                Button {
+                    removeFilter(filter, action: onRemove)
+                } label: {
+                    Image(systemName: filter.isCustom ? "trash" : "minus.circle")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .frame(width: 28, height: 28)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .noFocusRingCompat()
+                .accessibilityLabel(removeLabel)
+                .help(removeLabel)
+            }
             Toggle("", isOn: Binding(
                 get: { filter.isSelected },
                 set: { newValue in
@@ -1294,6 +1381,29 @@ struct ScopedBundleListsSheet: View {
             .fixedSize()
         }
         .padding(.vertical, 7)
+        .contextMenu {
+            if let onRemove {
+                let removeLabel = filter.isCustom
+                    ? NSLocalizedString("Delete Added List", comment: "Delete custom filter list action")
+                    : NSLocalizedString("Remove", comment: "Remove filter from Also on action")
+                Button(role: .destructive) {
+                    removeFilter(filter, action: onRemove)
+                } label: {
+                    Label(
+                        removeLabel,
+                        systemImage: filter.isCustom ? "trash" : "minus.circle"
+                    )
+                }
+            }
+        }
+    }
+
+    private func removeFilter(_ filter: FilterList, action: (FilterList) -> Void) {
+        capturedFilterIDs.removeAll { $0 == filter.id }
+        action(filter)
+        if liveFilters.isEmpty {
+            dismiss()
+        }
     }
 }
 

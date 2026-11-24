@@ -11,8 +11,10 @@ struct BasicExtrasView: View {
     let onRefresh: () async -> Void
     let onSwitchToAdvanced: () -> Void
 
+    private static let rememberedAlsoOnScriptIDsKey = "wBlock.basicRememberedAlsoOnScriptIDs"
     @State private var downloadingScriptIDs = Set<UUID>()
     @State private var pendingBetaScript: UserScript?
+    @State private var rememberedAlsoOnScriptIDs: Set<UUID> = BasicExtrasView.readRememberedAlsoOnScriptIDs()
     @Environment(\.colorScheme) private var colorScheme
 
     private static var sharedDefaults: UserDefaults {
@@ -61,13 +63,53 @@ struct BasicExtrasView: View {
     }
 
     /// Advanced-only built-in scripts and custom user-added scripts/styles
-    /// surfaced ONLY when currently enabled. Automatic scripts (`tinyShield`)
-    /// stay hidden with their state untouched.
+    /// surfaced under "Also on". Custom scripts stay listed even when turned
+    /// off until explicitly deleted; advanced-only built-in scripts stay
+    /// listed once enabled until explicitly removed. Automatic scripts stay
+    /// hidden with their state untouched.
     private var alsoOnScripts: [UserScript] {
         userScriptManager.userScripts.filter { script in
-            guard script.isEnabled else { return false }
             let tier = userScriptManager.builtInTier(for: script)
-            return tier == .advancedOnly || tier == nil
+            guard tier == .advancedOnly || tier == nil else { return false }
+            let isEnabled = userScriptManager.userScriptToggleState(for: script.id)?.desired ?? script.isEnabled
+            return isEnabled || tier == nil || rememberedAlsoOnScriptIDs.contains(script.id)
+        }
+    }
+
+    private static func readRememberedAlsoOnScriptIDs() -> Set<UUID> {
+        let raw = UserDefaults.standard.stringArray(forKey: rememberedAlsoOnScriptIDsKey) ?? []
+        return Set(raw.compactMap(UUID.init(uuidString:)))
+    }
+
+    private func saveRememberedAlsoOnScriptIDs(_ ids: Set<UUID>) {
+        guard ids != rememberedAlsoOnScriptIDs else { return }
+        rememberedAlsoOnScriptIDs = ids
+        UserDefaults.standard.set(ids.map(\.uuidString).sorted(), forKey: Self.rememberedAlsoOnScriptIDsKey)
+    }
+
+    private func syncRememberedAlsoOnScriptIDs() {
+        let advancedOnlyScripts = userScriptManager.userScripts.filter {
+            userScriptManager.builtInTier(for: $0) == .advancedOnly
+        }
+        let validIDs = Set(advancedOnlyScripts.map(\.id))
+        let activeIDs = Set(advancedOnlyScripts.filter { script in
+            userScriptManager.userScriptToggleState(for: script.id)?.desired ?? script.isEnabled
+        }.map(\.id))
+        let next = rememberedAlsoOnScriptIDs.intersection(validIDs).union(activeIDs)
+        saveRememberedAlsoOnScriptIDs(next)
+    }
+
+    private func removeAlsoOnScript(_ script: UserScript) {
+        var next = rememberedAlsoOnScriptIDs
+        next.remove(script.id)
+        saveRememberedAlsoOnScriptIDs(next)
+
+        if userScriptManager.builtInTier(for: script) == nil {
+            Task {
+                await userScriptManager.removeUserScript(script)
+            }
+        } else if script.isEnabled {
+            setScriptEnabled(script, enabled: false)
         }
     }
 
@@ -90,7 +132,7 @@ struct BasicExtrasView: View {
                 }
 
                 if !alsoOnScripts.isEmpty {
-                    groupSection(title: "Also on", scripts: alsoOnScripts)
+                    groupSection(title: "Also on", scripts: alsoOnScripts, allowsRemove: true)
                 }
 
                 Button {
@@ -128,9 +170,15 @@ struct BasicExtrasView: View {
         } message: { _ in
             Text("These are beta features that we're still testing. They may behave strangely on some sites. You can disable them anytime.")
         }
+        .onAppear {
+            syncRememberedAlsoOnScriptIDs()
+        }
+        .onChangeCompat(of: userScriptManager.userScripts) { _, _ in
+            syncRememberedAlsoOnScriptIDs()
+        }
     }
 
-    private func groupSection(title: LocalizedStringKey, scripts: [UserScript]) -> some View {
+    private func groupSection(title: LocalizedStringKey, scripts: [UserScript], allowsRemove: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
                 .font(.footnote.weight(.semibold))
@@ -139,7 +187,7 @@ struct BasicExtrasView: View {
 
             VStack(spacing: 0) {
                 ForEach(Array(scripts.enumerated()), id: \.element.id) { index, script in
-                    extraRow(script)
+                    extraRow(script, allowsRemove: allowsRemove)
                     if index < scripts.count - 1 {
                         Divider().padding(.leading, 56)
                     }
@@ -156,12 +204,16 @@ struct BasicExtrasView: View {
         }
     }
 
-    private func extraRow(_ script: UserScript) -> some View {
+    private func extraRow(_ script: UserScript, allowsRemove: Bool = false) -> some View {
         let toggleState = userScriptManager.userScriptToggleState(for: script.id)
         let isEnabled = toggleState?.desired ?? script.isEnabled
         let isInFlight = (toggleState?.isInFlight ?? false) || downloadingScriptIDs.contains(script.id)
         let isBeta = userScriptManager.isBeta(for: script)
+        let isCustom = userScriptManager.builtInTier(for: script) == nil
         let ringPhase: BadgeRingPhase = isInFlight ? .applying(progress: nil) : .idle
+        let removeLabel = isCustom
+            ? NSLocalizedString(script.isUserStyle ? "Delete Style" : "Delete Script", comment: "Delete custom script or style action")
+            : NSLocalizedString("Remove", comment: "Remove script from Also on action")
 
         return HStack(alignment: .top, spacing: 12) {
             badgeView(for: script, isOn: isEnabled, ringPhase: ringPhase)
@@ -202,6 +254,23 @@ struct BasicExtrasView: View {
 
             Spacer(minLength: 8)
 
+            if allowsRemove && !isEnabled && !isInFlight {
+                Button {
+                    removeAlsoOnScript(script)
+                } label: {
+                    Image(systemName: isCustom ? "trash" : "minus.circle")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .frame(width: 28, height: 28)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .noFocusRingCompat()
+                .accessibilityLabel(removeLabel)
+                .help(removeLabel)
+                .padding(.top, 2)
+            }
+
             Toggle("", isOn: Binding(
                 get: { isEnabled },
                 set: { newValue in
@@ -217,6 +286,15 @@ struct BasicExtrasView: View {
         .padding(.horizontal, 14)
         .padding(.vertical, 11)
         .animation(.easeInOut(duration: 0.2), value: isEnabled)
+        .contextMenu {
+            if allowsRemove {
+                Button(role: .destructive) {
+                    removeAlsoOnScript(script)
+                } label: {
+                    Label(removeLabel, systemImage: isCustom ? "trash" : "minus.circle")
+                }
+            }
+        }
     }
 
     @ViewBuilder
