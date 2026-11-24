@@ -170,6 +170,7 @@ compile_core_test issue-675-rule-analysis scripts/test_issue_675_rule_analysis.s
 compile_core_test issue-679-affinity-cache-behavior scripts/test_issue_679_affinity_cache_behavior.swift
 compile_core_test issue-681-dedup-behavior scripts/test_issue_681_dedup_behavior.swift
 compile_core_test zapper-rule-editing scripts/test_zapper_rule_editing.swift
+compile_core_test zapper-plan-sharing scripts/test_zapper_plan_sharing.swift
 compile_core_test issue-836-cross-target-exceptions scripts/test_issue_836_cross_target_exceptions.swift \
   scripts/helpers/content_blocker_verdict.swift
 compile_core_test spotify-ad-fallback scripts/test_spotify_ad_fallback.swift \

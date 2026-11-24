@@ -872,6 +872,7 @@ class AppFilterManager: ObservableObject {
             let rules = ContentBlockerTargetManager.shared.targets.flatMap { target -> [String] in
                 let base = ContentBlockerIncrementalCache.baseRulesFilename(for: target.rulesFilename)
                 return [target.rulesFilename, base, "\(base).count", "\(base).sha256",
+                        "\(base).plan-fingerprint", "\(base).pack-fingerprint",
                         ContentBlockerIncrementalCache.baseCompilerFilename(for: target.rulesFilename),
                         ContentBlockerIncrementalCache.baseAdvancedRulesFilename(for: target.rulesFilename),
                         "\(target.rulesFilename).incremental-state.json", "\(target.rulesFilename).source-rule-provenance.json",
