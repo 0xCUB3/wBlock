@@ -3,7 +3,7 @@ function youtubePlayerRequest() {
     // Keep all three paths on the same request policy.
     'use strict';
     const mobile = location.hostname === 'm.youtube.com';
-    if (!mobile && !['www.youtube.com', 'youtube.com'].includes(location.hostname)) return;
+    if (!mobile && !['www.youtube.com', 'youtube.com', 'www.youtube-nocookie.com', 'youtube-nocookie.com'].includes(location.hostname)) return;
     const installed = Symbol.for('wBlock.youtubePlayerRequest');
     if (globalThis[installed]) return;
     Object.defineProperty(globalThis, installed, { value: true });
@@ -90,6 +90,12 @@ function youtubePlayerRequest() {
     install(globalThis.TextEncoder?.prototype, 'encode', {
         apply(target, self, args) {
             args[0] = editBody(args[0]);
+            return Reflect.apply(target, self, args);
+        },
+    });
+    install(globalThis.XMLHttpRequest?.prototype, 'send', {
+        apply(target, self, args) {
+            if (typeof args[0] === 'string') args[0] = editBody(args[0]);
             return Reflect.apply(target, self, args);
         },
     });

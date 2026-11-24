@@ -159,7 +159,8 @@ private struct StoredTargetSourceRuleProvenance: Codable {
     // 14: keep Spotify FairPlay song segments out of media ad replacements.
     // 15: swap Spotify ad tracks for a silent in-page stand-in.
     // 16: let Spotify ad media play audibly when the in-page stand-in misses.
-    public static let embeddedCompatibilityRulesVersion = "16"
+    // 17: cover youtube-nocookie.com embeds with YouTube player response/request rules.
+    public static let embeddedCompatibilityRulesVersion = "17"
     /// The engine and Safari level outputs are compiled for; see SafariVersionDetection.
     public static var compilerIdentity: String { SafariVersionDetection.compilerIdentity }
     public static var upgradeSignature: String {
@@ -185,9 +186,9 @@ private struct StoredTargetSourceRuleProvenance: Codable {
     /// YouTube rules use trusted response replacement for pre-parse string
     /// replacement (faster than json-prune-fetch-response which works post-parse).
     /// Sourced from uAssets, translated to AdGuard syntax. Host lists follow
-    /// uAssets where it publishes them; music.youtube.com is also applied to the
-    /// shared player-endpoint rules because it loads ads through the same
-    /// youtubei/v1/player responses.
+    /// uAssets where it publishes them; music.youtube.com and youtube-nocookie.com
+    /// are also applied to the shared player-endpoint rules because they load ads
+    /// through the same youtubei/v1/player responses.
     ///
     /// Diagnostic-site rules are scoped to their hostnames so they do not affect
     /// normal browsing.
@@ -407,14 +408,14 @@ adblock.turtlecute.org##.textads
 ||notes-analytics-events.apple.com^$domain=adblock.turtlecute.org
 
 ! YouTube compatibility
-www.youtube.com,music.youtube.com#%#//scriptlet('trusted-replace-xhr-response', '"adPlacements"', '"no_ads"', 'player?')
-www.youtube.com,music.youtube.com#%#//scriptlet('trusted-replace-xhr-response', '"adSlots"', '"no_ads"', 'player?')
-www.youtube.com,music.youtube.com#%#//scriptlet('trusted-replace-fetch-response', '"adPlacements"', '"no_ads"', 'player?')
-www.youtube.com,music.youtube.com#%#//scriptlet('trusted-replace-fetch-response', '"adSlots"', '"no_ads"', 'player?')
-www.youtube.com,music.youtube.com#%#//scriptlet('trusted-replace-xhr-response', '"adPlacements"', '"no_ads"', 'get_watch?')
-www.youtube.com,music.youtube.com#%#//scriptlet('trusted-replace-xhr-response', '"adSlots"', '"no_ads"', 'get_watch?')
-www.youtube.com,music.youtube.com#%#//scriptlet('trusted-replace-fetch-response', '"adPlacements"', '"no_ads"', 'get_watch?')
-www.youtube.com,music.youtube.com#%#//scriptlet('trusted-replace-fetch-response', '"adSlots"', '"no_ads"', 'get_watch?')
+www.youtube.com,music.youtube.com,youtube-nocookie.com#%#//scriptlet('trusted-replace-xhr-response', '"adPlacements"', '"no_ads"', 'player?')
+www.youtube.com,music.youtube.com,youtube-nocookie.com#%#//scriptlet('trusted-replace-xhr-response', '"adSlots"', '"no_ads"', 'player?')
+www.youtube.com,music.youtube.com,youtube-nocookie.com#%#//scriptlet('trusted-replace-fetch-response', '"adPlacements"', '"no_ads"', 'player?')
+www.youtube.com,music.youtube.com,youtube-nocookie.com#%#//scriptlet('trusted-replace-fetch-response', '"adSlots"', '"no_ads"', 'player?')
+www.youtube.com,music.youtube.com,youtube-nocookie.com#%#//scriptlet('trusted-replace-xhr-response', '"adPlacements"', '"no_ads"', 'get_watch?')
+www.youtube.com,music.youtube.com,youtube-nocookie.com#%#//scriptlet('trusted-replace-xhr-response', '"adSlots"', '"no_ads"', 'get_watch?')
+www.youtube.com,music.youtube.com,youtube-nocookie.com#%#//scriptlet('trusted-replace-fetch-response', '"adPlacements"', '"no_ads"', 'get_watch?')
+www.youtube.com,music.youtube.com,youtube-nocookie.com#%#//scriptlet('trusted-replace-fetch-response', '"adSlots"', '"no_ads"', 'get_watch?')
 m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,youtube-nocookie.com#%#//scriptlet('set-constant', 'ytInitialPlayerResponse.playerAds', 'undefined')
 m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,youtube-nocookie.com#%#//scriptlet('set-constant', 'ytInitialPlayerResponse.adPlacements', 'undefined')
 m.youtube.com,music.youtube.com,tv.youtube.com,www.youtube.com,youtubekids.com,youtube-nocookie.com#%#//scriptlet('set-constant', 'ytInitialPlayerResponse.adSlots', 'undefined')

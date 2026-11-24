@@ -181,3 +181,37 @@ run('desktop skips mutating player requests for YouTube Premium accounts',({w,st
     assert.equal(input.params,undefined);
     assert.equal(input.context.client.configInfo.appInstallData,'fixture');
 });
+for(const host of ['www.youtube-nocookie.com','youtube-nocookie.com']) {
+    run('youtube-nocookie embed rewrites player requests across JSON, Request, TextEncoder, and XHR '+host,async({w,stringify})=>{
+        const makeEmbedFixture=()=>({
+            context:{client:{clientName:'WEB_EMBEDDED_PLAYER',configInfo:{appInstallData:'fixture',other:'keep'}}},
+            videoId:'embed123',
+            playbackContext:{contentPlaybackContext:{}}
+        });
+        const out=JSON.parse(w.JSON.stringify(makeEmbedFixture()));
+        assert.equal(out.params,'eAFgAQ');
+        assert.equal(out.playbackContext.params,'eAFgAQ');
+        assert.match(out.playbackContext.contentPlaybackContext.lactMilliseconds,/^\d+$/);
+        assert.deepEqual(out.context.client.configInfo,{other:'keep'});
+        const rawBody=stringify(makeEmbedFixture());
+        const encoded=JSON.parse(new TextDecoder().decode(new w.TextEncoder().encode(rawBody)));
+        assert.equal(encoded.params,'eAFgAQ');
+        const req=new w.Request('https://'+host+'/youtubei/v1/player?prettyPrint=false',{method:'POST',body:rawBody});
+        assert.equal(JSON.parse(await req.text()).params,'eAFgAQ');
+        const dom2=new JSDOM('<div id="movie_player"></div>',{url:'https://'+host+'/embed/embed123',runScripts:'outside-only'});
+        try {
+            let captured=null;
+            const w2=dom2.window;
+            w2.Request=class extends Request {};
+            w2.Response=class extends Response {};
+            w2.TextEncoder=class extends TextEncoder {};
+            w2.XMLHttpRequest.prototype.send=function(body){captured=body;};
+            const plain=w2.JSON.stringify.bind(w2.JSON);
+            w2.eval(source+'\nyoutubePlayerRequest();');
+            new w2.XMLHttpRequest().send(plain(makeEmbedFixture()));
+            assert.equal(JSON.parse(captured).params,'eAFgAQ');
+            const resp=w2.JSON.parse(JSON.stringify({videoDetails:{videoId:'embed123'},playerConfig:{audioConfig:{muteOnStart:true}}}));
+            assert.equal('muteOnStart' in resp.playerConfig.audioConfig,false);
+        } finally {dom2.window.close()}
+    },{host,path:'/embed/embed123'});
+}

@@ -435,7 +435,10 @@ impl Scriptlets {
         let request_excepted = excepted
             .iter()
             .any(|id| self.call(*id).as_slice() == [REQUEST]);
-        if matches!(host, "youtube.com" | "www.youtube.com")
+        if matches!(
+            host,
+            "youtube.com" | "www.youtube.com" | "youtube-nocookie.com" | "www.youtube-nocookie.com"
+        )
             && !all_scriptlets_excepted
             && !request_excepted
             && calls.iter().any(|call| {
@@ -1288,6 +1291,58 @@ example.com##+js(set-constant, adsEnabled, false)
             let page = Engine::build(&output.runtime).lookup(url);
             assert_eq!(page.scriptlets.contains(&wanted), trusted);
             assert_eq!(page.scriptlets.contains(&watch), trusted);
+        }
+    }
+
+    #[test]
+    fn embedded_youtube_nocookie_embeds_match_player_rules_and_exceptions() {
+        let rules = embedded_compatibility_rules();
+        let wanted = call(&["trusted-youtube-player-request"]);
+        let replace_fetch = call(&[
+            "trusted-replace-fetch-response",
+            "\"adSlots\"",
+            "\"no_ads\"",
+            "player?",
+        ]);
+        let replace_xhr = call(&[
+            "trusted-replace-xhr-response",
+            "\"adPlacements\"",
+            "\"no_ads\"",
+            "player?",
+        ]);
+        let opts = crate::CompileOptions {
+            safari: crate::webkit::SafariVersion::new(18, 0),
+        };
+        let lookup = |exception: &str, url: &str| {
+            let output = crate::compile(
+                &[
+                    crate::ListInput { text: rules, trusted: true },
+                    crate::ListInput { text: exception, trusted: false },
+                ],
+                &opts,
+            );
+            Engine::deserialize(&Engine::build(&output.runtime).serialize())
+                .unwrap()
+                .lookup_frame(url, Some("https://knowyourmeme.com/videos/441349"))
+        };
+        for url in [
+            "https://www.youtube-nocookie.com/embed/mqR7NMVmV5A?autoplay=1",
+            "https://youtube-nocookie.com/embed/mqR7NMVmV5A",
+        ] {
+            let page = lookup("", url);
+            assert!(page.scriptlets.contains(&replace_fetch), "{url}");
+            assert!(page.scriptlets.contains(&replace_xhr), "{url}");
+            assert!(page.scriptlets.contains(&wanted), "{url}");
+            for exception in [
+                "youtube-nocookie.com#@#+js()",
+                "youtube-nocookie.com#@#+js(trusted-youtube-player-request)",
+                "@@||youtube-nocookie.com^$document",
+            ] {
+                assert!(
+                    !lookup(exception, url).scriptlets.contains(&wanted),
+                    "{url} {exception}"
+                );
+            }
         }
     }
 
