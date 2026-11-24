@@ -390,6 +390,36 @@ import SwiftUI
             heights.append(first.height)
         }
         precondition(heights[0] > heights[1] && abs(heights[0] - heights[2]) < 1)
-        print("PASS \(cases) insertion cases, filtered persistence, native source restrictions, hover/cancel/commit, stale deletion, header disclosure, selection, card boundaries, wrapping, scrolling, row reuse, shrink clamping and rapid result replacement")
+
+        // Press highlight applies only to rows with onTap and clears before drag images are captured.
+        var tapped = false
+        let tappableID = UUID()
+        let staticID = UUID()
+        let pressRows = [
+            MacListRow(tappableID, onTap: { tapped = true }) {
+                Text("Tappable").macListRowPressHighlight().padding(16)
+            },
+            MacListRow(staticID) {
+                Text("Static").macListRowPressHighlight().padding(16)
+            }
+        ]
+        host.rootView = list([MacListSection(id: "press", header: AnyView(Text("Press")), rows: pressRows)])
+        try await settle(host)
+        let reorderOutline = outline as! MacReorderableOutlineView
+        precondition(reorderOutline.canTapRow(2) && !reorderOutline.canTapRow(3), "canTapRow must reflect onTap")
+        let tappableCell = outline.view(atColumn: 0, row: 2, makeIfNecessary: true) as! MacListHostingView
+        let staticCell = outline.view(atColumn: 0, row: 3, makeIfNecessary: true) as! MacListHostingView
+        reorderOutline.setRowPressed(3, true)
+        precondition(!staticCell.pressState.isPressed, "rows without onTap must not highlight")
+        reorderOutline.setRowPressed(2, true)
+        precondition(tappableCell.pressState.isPressed, "pressing a tappable row must set isPressed")
+        let draggedItem = outline.item(atRow: 2)!
+        _ = (outline.dataSource as! MacReorderableList.Coordinator).outlineView(outline, pasteboardWriterForItem: draggedItem)
+        precondition(!tappableCell.pressState.isPressed, "starting a drag must clear the press highlight")
+        reorderOutline.setRowPressed(2, true)
+        reorderOutline.clearPressedRow()
+        precondition(!tappableCell.pressState.isPressed && !tapped, "clearPressedRow must reset isPressed")
+
+        print("PASS \(cases) insertion cases, filtered persistence, native source restrictions, hover/cancel/commit, stale deletion, header disclosure, selection, card boundaries, wrapping, scrolling, row reuse, shrink clamping, press highlight and rapid result replacement")
     }
 }

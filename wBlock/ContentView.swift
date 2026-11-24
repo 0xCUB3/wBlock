@@ -1220,18 +1220,25 @@ struct FilterRowView: View, Equatable {
 
     var body: some View {
         HStack(alignment: .center, spacing: 10) {
-            // Keep the iOS info gesture on the text column so it cannot consume switch taps.
-            // On macOS, MacReorderableList fires onTap on a non-drag row click so dragging stays intact.
+            // Keep the iOS info button on the text column so it cannot consume switch taps
+            // while matching Standard mode's plain-button press highlight.
+            // On macOS, MacReorderableList drives both onTap and press highlight on non-drag clicks.
+            #if os(iOS)
+            Button(action: onInfo) {
+                filterDetails
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityElement(children: .combine)
+            #else
             filterDetails
+                .macListRowPressHighlight()
                 .accessibilityElement(children: .combine)
                 .accessibilityAddTraits(.isButton)
                 .accessibilityAction { onInfo() }
                 .contentShape(.interaction, Rectangle())
-                #if os(iOS)
-                .onTapGesture(perform: onInfo)
-                #else
                 .infoPopoverAnchor(filter.id, capturesClicks: false)
-                #endif
+            #endif
             if filter.isRemoteURL && (isDownloading || !isDownloaded) {
                 ContentDownloadControl(isDownloading: isDownloading, name: text.name, action: onDownload)
             } else {

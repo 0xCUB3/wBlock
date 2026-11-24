@@ -16,9 +16,56 @@ struct MacListCardShape: Shape {
     }
 }
 
+@MainActor final class MacListRowPressState: ObservableObject {
+    @Published var isPressed = false
+}
+
+private struct MacListRowPressStateKey: EnvironmentKey {
+    static let defaultValue: MacListRowPressState? = nil
+}
+
+extension EnvironmentValues {
+    var macListRowPressState: MacListRowPressState? {
+        get { self[MacListRowPressStateKey.self] }
+        set { self[MacListRowPressStateKey.self] = newValue }
+    }
+}
+
+private struct MacListRowPressHighlightView<Content: View>: View {
+    @ObservedObject var state: MacListRowPressState
+    let content: Content
+
+    var body: some View {
+        content
+            .opacity(state.isPressed ? 0.5 : 1)
+            .animation(.easeOut(duration: 0.12), value: state.isPressed)
+    }
+}
+
+private struct MacListRowPressHighlightModifier: ViewModifier {
+    @Environment(\.macListRowPressState) private var pressState
+
+    func body(content: Content) -> some View {
+        if let pressState {
+            MacListRowPressHighlightView(state: pressState, content: content)
+        } else {
+            content
+        }
+    }
+}
+
+extension View {
+    /// Mirrors SwiftUI's `.buttonStyle(.plain)` press dimming on the text area
+    /// of clickable `MacReorderableList` rows without interfering with drags.
+    func macListRowPressHighlight() -> some View {
+        modifier(MacListRowPressHighlightModifier())
+    }
+}
+
 /// Give SwiftUI a finite width when AppKit asks for the row's intrinsic height.
 /// An unconstrained hosting view reports a single-line height even when its text wraps.
 final class MacListHostingView: NSHostingView<AnyView> {
+    let pressState = MacListRowPressState()
     private var content = AnyView(EmptyView())
 
     func setContent(_ content: AnyView) {
@@ -33,7 +80,8 @@ final class MacListHostingView: NSHostingView<AnyView> {
     }
 
     private func updateWidth() {
-        rootView = bounds.width > 0 ? AnyView(content.frame(width: bounds.width)) : content
+        let sized = bounds.width > 0 ? AnyView(content.frame(width: bounds.width)) : content
+        rootView = AnyView(sized.environment(\.macListRowPressState, pressState))
         invalidateIntrinsicContentSize()
     }
 }
@@ -91,8 +139,45 @@ final class MacListClipView: NSClipView {
 /// it again until another drag finishes (#834).
 final class MacReorderableOutlineView: NSOutlineView {
     var canDragRow: (Int) -> Bool = { _ in true }
+    var canTapRow: (Int) -> Bool = { _ in false }
     private var clampingScroll = false
     private var liveScrolling = false
+    private var pressedRow: Int?
+
+    func setRowPressed(_ rowIndex: Int, _ pressed: Bool) {
+        if pressed {
+            guard rowIndex >= 0, canTapRow(rowIndex),
+                  let hosted = view(atColumn: 0, row: rowIndex, makeIfNecessary: false) as? MacListHostingView
+            else { return }
+            if pressedRow != rowIndex { clearPressedRow() }
+            pressedRow = rowIndex
+            hosted.pressState.isPressed = true
+        } else if pressedRow == rowIndex {
+            clearPressedRow()
+        }
+    }
+
+    func clearPressedRow() {
+        guard let rowIndex = pressedRow else { return }
+        pressedRow = nil
+        if let hosted = view(atColumn: 0, row: rowIndex, makeIfNecessary: false) as? MacListHostingView {
+            hosted.pressState.isPressed = false
+        }
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        guard !event.modifierFlags.contains(.control) else {
+            super.mouseDown(with: event)
+            return
+        }
+        let point = convert(event.locationInWindow, from: nil)
+        let rowIndex = row(at: point)
+        if rowIndex >= 0, canTapRow(rowIndex) {
+            setRowPressed(rowIndex, true)
+        }
+        defer { clearPressedRow() }
+        super.mouseDown(with: event)
+    }
 
     override func canDragRows(with rowIndexes: IndexSet, at mouseDownPoint: NSPoint) -> Bool {
         rowIndexes.allSatisfy(canDragRow)
@@ -287,6 +372,10 @@ struct MacReorderableList: NSViewRepresentable {
         outline.canDragRow = { [weak coordinator = context.coordinator, weak outline] row in
             guard let coordinator, let outline, let item = outline.item(atRow: row) else { return false }
             return coordinator.movableID(for: item) != nil
+        }
+        outline.canTapRow = { [weak coordinator = context.coordinator, weak outline] row in
+            guard let coordinator, let outline, let item = outline.item(atRow: row) else { return false }
+            return coordinator.hasTapAction(for: item)
         }
         let column = NSTableColumn(identifier: .init("content"))
         outline.addTableColumn(column)
@@ -774,9 +863,11 @@ struct MacReorderableList: NSViewRepresentable {
                   let tap = row(for: node)?.onTap else { return }
             tap()
         }
+        func hasTapAction(for item: Any) -> Bool { row(for: item)?.onTap != nil }
         func movableID(for item: Any) -> UUID? { row(for: item)?.movableID }
         func outlineView(_ outlineView: NSOutlineView, pasteboardWriterForItem item: Any) -> NSPasteboardWriting? {
             guard let id = movableID(for: item) else { return nil }
+            (outlineView as? MacReorderableOutlineView)?.clearPressedRow()
             let writer = NSPasteboardItem()
             writer.setString(id.uuidString, forType: Self.dragType)
             return writer
@@ -793,6 +884,7 @@ struct MacReorderableList: NSViewRepresentable {
         private var lastDropTarget: (Node.ID, Int)?
 
         func beginDragging(_ items: [Any] = []) {
+            (outline as? MacReorderableOutlineView)?.clearPressedRow()
             dragging = true
             accepted = false
             lastDropTarget = nil

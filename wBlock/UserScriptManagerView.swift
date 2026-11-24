@@ -657,87 +657,116 @@ struct UserScriptManagerView: View {
         let displayedEnabled = toggleState?.desired ?? managedScript?.isEnabled ?? script.isEnabled
         let isToggleInFlight = toggleState?.isInFlight ?? false
 
-        return HStack(alignment: .center, spacing: 10) {
-            // Keep the iOS info gesture on the text column so it cannot consume switch taps.
-            HStack(spacing: 0) {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 6) {
-                    Text(script.localizedDisplayName)
-                        .font(.body)
-                        .fontWeight(.medium)
-                        .foregroundStyle(.primary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    if script.isBeta {
-                        Badge(text: "Beta", color: .orange)
-                    }
-                    #if os(iOS)
-                    RowDisclosureChevron()
-                    #endif
-                }
-
-                if !script.localizedDisplayDescription.isEmpty {
-                    Text(script.localizedDisplayDescription)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                // One metadata line: kind, version, and update time. The Info
-                // sheet carries the full detail.
-                Text(script.metadataSummary)
-                    .font(.caption2)
-                    .foregroundStyle(.gray)
-                    .lineLimit(2)
+        let scriptTextDetails = VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 6) {
+                Text(script.localizedDisplayName)
+                    .font(.body)
+                    .fontWeight(.medium)
+                    .foregroundStyle(.primary)
                     .fixedSize(horizontal: false, vertical: true)
-
-                if displayedEnabled && !script.isDownloaded && script.isLocal {
-                    Badge(text: "Not Downloaded", color: .red)
+                if script.isBeta {
+                    Badge(text: "Beta", color: .orange)
                 }
-
-                if script.isDarkReader {
-                    DarkReaderAppearancePicker(
-                        followsSystemAppearance: Binding(
-                            get: { userScriptManager.darkReaderFollowsSystemAppearance },
-                            set: { userScriptManager.setDarkReaderFollowsSystemAppearance($0) }
-                        ),
-                        pureBlack: Binding(
-                            get: { userScriptManager.darkReaderPureBlack },
-                            set: { userScriptManager.setDarkReaderPureBlack($0) }
-                        )
-                    )
-                }
-
-                if script.isTubeCleaner {
-                    // Side by side when the column is wide enough, stacked otherwise.
-                    if #available(iOS 16.0, macOS 13.0, *) {
-                        ViewThatFits(in: .horizontal) {
-                            HStack(spacing: 6) { tubeCleanerControls(script) }
-                            VStack(alignment: .leading, spacing: 4) { tubeCleanerControls(script) }
-                        }
-                    } else {
-                        VStack(alignment: .leading, spacing: 4) { tubeCleanerControls(script) }
-                    }
-                }
-                if script.isPlayerCleaner {
-                    PlayerCleanerFeaturesPicker(
-                        features: Binding(
-                            get: { userScriptManager.playerCleanerFeatures },
-                            set: { userScriptManager.setPlayerCleanerFeatures($0) }
-                        )
-                    )
-                }
-                if script.isDeArrow {
-                    DeArrowSettingsPicker(
-                        settings: Binding(
-                            get: { userScriptManager.tubeCleanerDeArrow },
-                            set: { userScriptManager.setTubeCleanerDeArrow($0) }
-                        )
-                    )
-                }
+                #if os(iOS)
+                RowDisclosureChevron()
+                #endif
             }
 
-            Spacer(minLength: 0)
+            if !script.localizedDisplayDescription.isEmpty {
+                Text(script.localizedDisplayDescription)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            // One metadata line: kind, version, and update time. The Info
+            // sheet carries the full detail.
+            Text(script.metadataSummary)
+                .font(.caption2)
+                .foregroundStyle(.gray)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
+
+            if displayedEnabled && !script.isDownloaded && script.isLocal {
+                Badge(text: "Not Downloaded", color: .red)
+            }
+        }
+
+        let scriptInlineControls = Group {
+            if script.isDarkReader {
+                DarkReaderAppearancePicker(
+                    followsSystemAppearance: Binding(
+                        get: { userScriptManager.darkReaderFollowsSystemAppearance },
+                        set: { userScriptManager.setDarkReaderFollowsSystemAppearance($0) }
+                    ),
+                    pureBlack: Binding(
+                        get: { userScriptManager.darkReaderPureBlack },
+                        set: { userScriptManager.setDarkReaderPureBlack($0) }
+                    )
+                )
+            }
+
+            if script.isTubeCleaner {
+                // Side by side when the column is wide enough, stacked otherwise.
+                if #available(iOS 16.0, macOS 13.0, *) {
+                    ViewThatFits(in: .horizontal) {
+                        HStack(spacing: 6) { tubeCleanerControls(script) }
+                        VStack(alignment: .leading, spacing: 4) { tubeCleanerControls(script) }
+                    }
+                } else {
+                    VStack(alignment: .leading, spacing: 4) { tubeCleanerControls(script) }
+                }
+            }
+            if script.isPlayerCleaner {
+                PlayerCleanerFeaturesPicker(
+                    features: Binding(
+                        get: { userScriptManager.playerCleanerFeatures },
+                        set: { userScriptManager.setPlayerCleanerFeatures($0) }
+                    )
+                )
+            }
+            if script.isDeArrow {
+                DeArrowSettingsPicker(
+                    settings: Binding(
+                        get: { userScriptManager.tubeCleanerDeArrow },
+                        set: { userScriptManager.setTubeCleanerDeArrow($0) }
+                    )
+                )
+            }
+        }
+
+        return HStack(alignment: .center, spacing: 10) {
+            // Keep the iOS info button on the text block so it matches Standard mode's
+            // press highlight without intercepting switch or inline-picker taps.
+            #if os(iOS)
+            VStack(alignment: .leading, spacing: 4) {
+                Button {
+                    // Defer to avoid race with context menu dismissal on iOS.
+                    DispatchQueue.main.async {
+                        selectedScriptInfo = SelectedUserScript(id: script.id, action: .info)
+                    }
+                } label: {
+                    HStack(spacing: 0) {
+                        scriptTextDetails
+                        Spacer(minLength: 0)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityElement(children: .combine)
+
+                scriptInlineControls
+            }
+            #else
+            HStack(spacing: 0) {
+                VStack(alignment: .leading, spacing: 4) {
+                    scriptTextDetails
+                        .macListRowPressHighlight()
+                    scriptInlineControls
+                }
+
+                Spacer(minLength: 0)
             }
             .accessibilityElement(children: .combine)
             .accessibilityAddTraits(.isButton)
@@ -745,14 +774,6 @@ struct UserScriptManagerView: View {
                 selectedScriptInfo = SelectedUserScript(id: script.id, action: .info)
             }
             .contentShape(.interaction, Rectangle())
-            #if os(iOS)
-            .onTapGesture {
-                // Defer to avoid race with context menu dismissal on iOS.
-                DispatchQueue.main.async {
-                    selectedScriptInfo = SelectedUserScript(id: script.id, action: .info)
-                }
-            }
-            #else
             .infoPopoverAnchor(script.id, capturesClicks: false)
             #endif
 
