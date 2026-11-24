@@ -662,12 +662,17 @@ public enum RemoveParamDNRRuleGenerator {
         )
     }
 
-    public static func emptyRulesPayload(offset: Int, limit: Int) -> [String: Any] {
+    public static func emptyRulesPayload(
+        offset: Int,
+        limit: Int,
+        knownVersion: String? = nil
+    ) -> [String: Any] {
         let safeOffset = max(0, offset)
         let safeLimit = max(1, min(limit, 500))
-        return [
+        let version = versionHex(for: [])
+        var payload: [String: Any] = [
             "ok": true,
-            "version": versionHex(for: []),
+            "version": version,
             "offset": safeOffset,
             "limit": safeLimit,
             "count": 0,
@@ -675,21 +680,71 @@ public enum RemoveParamDNRRuleGenerator {
             "ruleIdBase": ruleIDBase,
             "ruleIdLimit": ruleIDLimit
         ]
+        if safeOffset == 0, knownVersion == version {
+            payload["unchanged"] = true
+        }
+        return payload
     }
 
     public static func loadRulesPayload(
         groupIdentifier: String,
         offset: Int,
-        limit: Int
+        limit: Int,
+        knownVersion: String? = nil
+    ) -> [String: Any] {
+        let containerURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: groupIdentifier
+        )
+        return loadRulesPayload(
+            containerURL: containerURL,
+            offset: offset,
+            limit: limit,
+            knownVersion: knownVersion
+        )
+    }
+
+    static func loadRulesPayload(
+        containerURL: URL?,
+        offset: Int,
+        limit: Int,
+        knownVersion: String? = nil
     ) -> [String: Any] {
         let safeOffset = max(0, offset)
         let safeLimit = max(1, min(limit, 500))
-        guard let saved = parsedSavedRules(groupIdentifier: groupIdentifier) else {
-            return emptyRulesPayload(offset: safeOffset, limit: safeLimit)
+        let url = containerURL?.appendingPathComponent(rulesFilename)
+        guard let url, let (header, rawData) = rulesCache.loadHeader(at: url) else {
+            return emptyRulesPayload(offset: safeOffset, limit: safeLimit, knownVersion: knownVersion)
         }
 
-        let version = saved.version
-        guard let json = saved.rules else {
+        let version = header.version
+        if safeOffset == 0, let count = header.count, knownVersion == version {
+            return [
+                "ok": true,
+                "version": version,
+                "offset": safeOffset,
+                "limit": safeLimit,
+                "count": count,
+                "rules": [] as [[String: Any]],
+                "unchanged": true,
+                "ruleIdBase": ruleIDBase,
+                "ruleIdLimit": ruleIDLimit
+            ]
+        }
+
+        if header.count == 0 {
+            return [
+                "ok": true,
+                "version": version,
+                "offset": safeOffset,
+                "limit": safeLimit,
+                "count": 0,
+                "rules": [] as [[String: Any]],
+                "ruleIdBase": ruleIDBase,
+                "ruleIdLimit": ruleIDLimit
+            ]
+        }
+
+        guard let (resolvedHeader, json) = rulesCache.parsedRules(at: url, header: header, rawData: rawData) else {
             return [
                 "ok": false,
                 "error": "Failed to decode saved removeparam DNR rules",
@@ -703,9 +758,12 @@ public enum RemoveParamDNRRuleGenerator {
 
         let end = min(json.count, safeOffset + safeLimit)
         let slice: [[String: Any]] = safeOffset < json.count ? Array(json[safeOffset..<end]) : []
+        if end >= json.count {
+            rulesCache.clearParsed(matching: resolvedHeader)
+        }
         return [
             "ok": true,
-            "version": version,
+            "version": resolvedHeader.version,
             "offset": safeOffset,
             "limit": safeLimit,
             "count": json.count,
@@ -713,6 +771,11 @@ public enum RemoveParamDNRRuleGenerator {
             "ruleIdBase": ruleIDBase,
             "ruleIdLimit": ruleIDLimit
         ]
+    }
+
+    static func savedRulesCount(containerURL: URL?) -> Int {
+        guard let url = containerURL?.appendingPathComponent(rulesFilename) else { return 0 }
+        return rulesCache.loadHeader(at: url)?.header.count ?? 0
     }
 
     private static func saveRules(_ rules: [DeclarativeRule], containerURL: URL) throws {
@@ -723,49 +786,150 @@ public enum RemoveParamDNRRuleGenerator {
         try FilterArtifactStorage.write(data, to: url)
     }
 
-    private struct ParsedSavedRules {
-        /// Atomic writes replace the file, so its number tells rewrites apart
-        /// even when the timestamp and size match.
-        let fileNumber: Int
-        let modified: Date
-        let size: Int
-        let version: String
-        let rules: [[String: Any]]?
+    /// Caches lightweight file metadata (version + rule count) across checks and
+    /// retains parsed Foundation rule objects only while paging through chunks.
+    final class SavedRuleFileCache: @unchecked Sendable {
+        struct FileStamp: Equatable {
+            /// Atomic writes replace the file, so its number tells rewrites apart
+            /// even when the timestamp and size match.
+            let fileNumber: Int
+            let modified: Date
+            let size: Int
+        }
+
+        struct Header: Equatable {
+            let stamp: FileStamp
+            let version: String
+            let count: Int?
+        }
+
+        private struct Parsed {
+            let header: Header
+            let rules: [[String: Any]]
+        }
+
+        private let lock = NSLock()
+        private var header: Header?
+        private var parsed: Parsed?
+
+        var hasCachedParsedRules: Bool {
+            lock.lock()
+            defer { lock.unlock() }
+            return parsed != nil
+        }
+
+        func loadHeader(at url: URL) -> (header: Header, rawData: Data?)? {
+            guard
+                let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),
+                let fileNumber = (attributes[.systemFileNumber] as? NSNumber)?.intValue,
+                let modified = attributes[.modificationDate] as? Date,
+                let size = (attributes[.size] as? NSNumber)?.intValue
+            else {
+                lock.lock()
+                header = nil
+                parsed = nil
+                lock.unlock()
+                return nil
+            }
+            let stamp = FileStamp(fileNumber: fileNumber, modified: modified, size: size)
+            lock.lock()
+            if let cached = header, cached.stamp == stamp {
+                lock.unlock()
+                return (cached, nil)
+            }
+            lock.unlock()
+
+            guard let data = try? Data(contentsOf: url) else { return nil }
+            let nextHeader = Header(
+                stamp: stamp,
+                version: RemoveParamDNRRuleGenerator.sha256Hex(data: data),
+                count: ContentBlockerRuleArray.count(data)
+            )
+            lock.lock()
+            header = nextHeader
+            if parsed?.header != nextHeader {
+                parsed = nil
+            }
+            lock.unlock()
+            return (nextHeader, data)
+        }
+
+        func parsedRules(at url: URL, header: Header, rawData: Data?) -> (header: Header, rules: [[String: Any]])? {
+            lock.lock()
+            if let cached = parsed, cached.header == header {
+                let rules = cached.rules
+                lock.unlock()
+                return (header, rules)
+            }
+            lock.unlock()
+
+            let resolvedHeader: Header
+            let data: Data
+            if let rawData {
+                resolvedHeader = header
+                data = rawData
+            } else {
+                guard let diskData = try? Data(contentsOf: url) else {
+                    lock.lock()
+                    if self.header == header {
+                        self.header = nil
+                        self.parsed = nil
+                    }
+                    lock.unlock()
+                    return nil
+                }
+                let diskVersion = RemoveParamDNRRuleGenerator.sha256Hex(data: diskData)
+                if diskVersion == header.version {
+                    resolvedHeader = header
+                } else if let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),
+                          let fileNumber = (attributes[.systemFileNumber] as? NSNumber)?.intValue,
+                          let modified = attributes[.modificationDate] as? Date,
+                          let size = (attributes[.size] as? NSNumber)?.intValue {
+                    resolvedHeader = Header(
+                        stamp: FileStamp(fileNumber: fileNumber, modified: modified, size: size),
+                        version: diskVersion,
+                        count: ContentBlockerRuleArray.count(diskData)
+                    )
+                } else {
+                    resolvedHeader = Header(
+                        stamp: header.stamp,
+                        version: diskVersion,
+                        count: ContentBlockerRuleArray.count(diskData)
+                    )
+                }
+                data = diskData
+            }
+            guard let rules = (try? JSONSerialization.jsonObject(with: data)) as? [[String: Any]]
+            else { return nil }
+            lock.lock()
+            if resolvedHeader.version != header.version {
+                if resolvedHeader.stamp != header.stamp {
+                    self.header = resolvedHeader
+                    parsed = Parsed(header: resolvedHeader, rules: rules)
+                } else if self.header == header {
+                    self.header = nil
+                    parsed = nil
+                }
+            } else if self.header == header {
+                parsed = Parsed(header: header, rules: rules)
+            }
+            lock.unlock()
+            return (resolvedHeader, rules)
+        }
+
+        func clearParsed(matching header: Header) {
+            lock.lock()
+            if parsed?.header == header {
+                parsed = nil
+            }
+            lock.unlock()
+        }
     }
 
-    private static let parsedRulesLock = NSLock()
-    nonisolated(unsafe) private static var parsedRules: ParsedSavedRules?
+    private static let rulesCache = SavedRuleFileCache()
 
-    /// The extension pages through the saved rules in small chunks; read,
-    /// hash, and parse the file once per write instead of once per chunk.
-    private static func parsedSavedRules(groupIdentifier: String) -> ParsedSavedRules? {
-        guard let containerURL = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: groupIdentifier
-        ) else {
-            return nil
-        }
-        let url = containerURL.appendingPathComponent(rulesFilename)
-        guard
-            let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),
-            let fileNumber = (attributes[.systemFileNumber] as? NSNumber)?.intValue,
-            let modified = attributes[.modificationDate] as? Date,
-            let size = (attributes[.size] as? NSNumber)?.intValue
-        else { return nil }
-        parsedRulesLock.lock()
-        defer { parsedRulesLock.unlock() }
-        if let cached = parsedRules, cached.fileNumber == fileNumber, cached.modified == modified, cached.size == size {
-            return cached
-        }
-        guard let data = try? Data(contentsOf: url) else { return nil }
-        let parsed = ParsedSavedRules(
-            fileNumber: fileNumber,
-            modified: modified,
-            size: size,
-            version: sha256Hex(data: data),
-            rules: (try? JSONSerialization.jsonObject(with: data)) as? [[String: Any]]
-        )
-        parsedRules = parsed
-        return parsed
+    static var hasCachedParsedRules: Bool {
+        rulesCache.hasCachedParsedRules
     }
 
     /// The rules viewer counts both network transforms and page-only selectors.

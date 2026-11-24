@@ -227,9 +227,7 @@ public struct AppliedRuleCounts: Sendable, Equatable {
                 scripts += advanced.split(separator: "\n").filter { !RuleText.trimmed($0, newlines: true).isEmpty }.count
             }
         }
-        let urlParameters = RemoveParamDNRRuleGenerator.loadRulesPayload(
-            groupIdentifier: groupIdentifier, offset: 0, limit: 1
-        )["count"] as? Int ?? 0
+        let urlParameters = RemoveParamDNRRuleGenerator.savedRulesCount(containerURL: container)
         return AppliedRuleCounts(elementHidingByTarget: elementHidingByTarget, scripts: scripts, urlParameters: urlParameters)
     }
 }

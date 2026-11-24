@@ -1203,21 +1203,40 @@
   };
   let gpcSync = Promise.resolve();
   let lastGPCSync = 0;
+  let lastSyncedGPCEnabled = null;
+  // Prevents an in-flight startup sync from caching state over an onInstalled/onStartup reset.
+  let gpcSyncEpoch = 0;
+  // Query only the target rule on modern Safari instead of dumping the full ruleset;
+  // older runtimes throw on the filter object and fall back to fetching all rules.
+  const getDynamicRuleById = async (dnr, id) => {
+    let rules;
+    try {
+      rules = await dnr.getDynamicRules({ ruleIds: [id] });
+    } catch {
+      rules = await dnr.getDynamicRules();
+    }
+    return Array.isArray(rules) ? rules.find(rule => rule && rule.id === id) : undefined;
+  };
   const syncGlobalPrivacyControl = () => {
     const dnr = browser.declarativeNetRequest;
     if (!canRegisterNoAutoplay || !dnr || typeof dnr.getDynamicRules !== "function") return gpcSync;
     if (Date.now() - lastGPCSync < CONFIG_REVALIDATE_INTERVAL_MS) return gpcSync;
     lastGPCSync = Date.now();
     gpcSync = gpcSync.then(async () => {
+      const epoch = gpcSyncEpoch;
       const response = await readNativeRecently({ action: "getGlobalPrivacyControlState" }).catch(() => null);
       if (!response || typeof response.enabled !== "boolean") return;
+      if (epoch !== gpcSyncEpoch) return;
+      if (lastSyncedGPCEnabled === response.enabled) return;
+      lastSyncedGPCEnabled = null;
       const ids = [GPC_SCRIPT.id];
-      const installedRule = (await dnr.getDynamicRules()).find(rule => rule && rule.id === GPC_RULE.id);
+      const installedRule = await getDynamicRuleById(dnr, GPC_RULE.id);
       const ruleInstalled = !!installedRule;
       const scriptLoaded = (await browser.scripting.getRegisteredContentScripts({ ids })).length > 0;
       if (!response.enabled) {
         if (scriptLoaded) await browser.scripting.unregisterContentScripts({ ids });
         if (ruleInstalled) await dnr.updateDynamicRules({ removeRuleIds: [GPC_RULE.id] });
+        if (epoch === gpcSyncEpoch) lastSyncedGPCEnabled = false;
         return;
       }
       // Builds before the blocked-request count installed it at priority 1.
@@ -1225,7 +1244,11 @@
         await dnr.updateDynamicRules({ removeRuleIds: ruleInstalled ? [GPC_RULE.id] : [], addRules: [GPC_RULE] });
       }
       if (!scriptLoaded) await browser.scripting.registerContentScripts([GPC_SCRIPT]);
-    }).catch(error => console.warn("[wBlock] Global Privacy Control setup failed:", error));
+      if (epoch === gpcSyncEpoch) lastSyncedGPCEnabled = true;
+    }).catch(error => {
+      lastSyncedGPCEnabled = null;
+      console.warn("[wBlock] Global Privacy Control setup failed:", error);
+    });
     return gpcSync;
   };
   const handleMessages = async (request, sender) => {
@@ -2274,6 +2297,26 @@
   let removeParamDNRRulesCache = null;
   let removeParamDNRVersion = "";
   let lastRemoveParamDNRCheck = 0;
+  let verifiedDNRInstall = null;
+  // Prevents an in-flight startup verification from caching over an onInstalled/onStartup reset.
+  let dnrVerifyEpoch = 0;
+  const parseSafariVersion = () => {
+    const ua = globalThis.navigator?.userAgent || "";
+    const major = Number(ua.match(/Version\/(\d+)/)?.[1]) || 0;
+    const minor = Number(ua.match(/Version\/\d+\.(\d+)/)?.[1]) || 0;
+    return { major, minor };
+  };
+  // Invalidates cached DNR verification when Safari updates or changes its dynamic-rule cap.
+  const getDNRRuntimeKey = () => {
+    const dnr = browser.declarativeNetRequest;
+    const reported = Number(dnr && dnr.MAX_NUMBER_OF_DYNAMIC_AND_SESSION_RULES);
+    const limit = Number.isFinite(reported) && reported > 0 ? Math.floor(reported) : 0;
+    const { major, minor } = parseSafariVersion();
+    return `${limit}:${major}.${minor}`;
+  };
+  const countExtensionPathRedirects = rules => rules.filter(rule =>
+    rule && rule.action && rule.action.redirect && typeof rule.action.redirect.extensionPath === "string"
+  ).length;
   // Copies of whole-host filter-list blocks. Safari counts them on the
   // toolbar badge even when a content blocker blocked the same request.
   const BLOCKED_COUNT_DNR_CHUNK_SIZE = 1000;
@@ -2290,10 +2333,48 @@
     return Math.max(1, domains) + excluded;
   };
   let blockedCountDNRRulesCache = null;
-  const loadBlockedCountDNRRules = async () => {
-    const rules = [];
-    let header = null;
-    for (let offset = 0; !header || offset < header.count; offset = rules.length) {
+  const probeBlockedCountDNRHeader = async (knownCountVersion = null) => {
+    const request = {
+      action: "getBlockedCountDNRRules",
+      offset: 0,
+      limit: BLOCKED_COUNT_DNR_CHUNK_SIZE
+    };
+    if (knownCountVersion) request.knownVersion = knownCountVersion;
+    const chunk = await sendQueuedNativeMessage(request);
+    if (!chunk || chunk.ok !== true) {
+      throw new Error(chunk && chunk.error ? chunk.error : "Failed to load blocked-count DNR rules at 0");
+    }
+    const enabled = chunk.enabled === true;
+    const version = String(chunk.version || "");
+    const count = Math.max(0, Number(chunk.count) || 0);
+    return {
+      enabled,
+      version,
+      countVersion: `${enabled}:${version}`,
+      count,
+      unchanged: chunk.unchanged === true,
+      firstChunkRules: Array.isArray(chunk.rules) ? chunk.rules : []
+    };
+  };
+  const loadBlockedCountDNRRules = async (initialHeader = null) => {
+    const isCached = h => blockedCountDNRRulesCache
+      && blockedCountDNRRulesCache.enabled === h.enabled
+      && blockedCountDNRRulesCache.version === h.version
+      && blockedCountDNRRulesCache.rules.length === h.count;
+    let header = initialHeader || await probeBlockedCountDNRHeader(null);
+    if (header.unchanged && header.enabled && header.count > 0 && !isCached(header)) {
+      header = await probeBlockedCountDNRHeader(null);
+    }
+    if (isCached(header)) return blockedCountDNRRulesCache;
+    if (!header.enabled || header.count === 0) {
+      blockedCountDNRRulesCache = { enabled: header.enabled, version: header.version, count: 0, rules: [] };
+      return blockedCountDNRRulesCache;
+    }
+    if (header.firstChunkRules.length === 0) {
+      throw new Error("Blocked-count DNR rules ended early at 0");
+    }
+    const rules = header.firstChunkRules.slice();
+    for (let offset = rules.length; offset < header.count; offset = rules.length) {
       const chunk = await sendQueuedNativeMessage({
         action: "getBlockedCountDNRRules",
         offset,
@@ -2302,17 +2383,9 @@
       if (!chunk || chunk.ok !== true) {
         throw new Error(chunk && chunk.error ? chunk.error : `Failed to load blocked-count DNR rules at ${offset}`);
       }
-      const version = String(chunk.version || "");
-      if (!header) {
-        header = { enabled: chunk.enabled === true, version, count: Math.max(0, Number(chunk.count) || 0) };
-        const cached = blockedCountDNRRulesCache;
-        if (cached && cached.enabled === header.enabled && cached.version === version && cached.rules.length === header.count) {
-          return cached;
-        }
-      } else if (version !== header.version) {
+      if (String(chunk.version || "") !== header.version) {
         throw new Error(`Blocked-count DNR rules changed while loading at ${offset}`);
       }
-      if (header.count === 0) break;
       if (!Array.isArray(chunk.rules) || chunk.rules.length === 0) {
         throw new Error(`Blocked-count DNR rules ended early at ${offset}`);
       }
@@ -2321,31 +2394,59 @@
     if (rules.length !== header.count) {
       throw new Error(`Blocked-count DNR rule count mismatch: expected ${header.count}, got ${rules.length}`);
     }
-    blockedCountDNRRulesCache = { ...header, rules };
+    blockedCountDNRRulesCache = { enabled: header.enabled, version: header.version, count: header.count, rules };
     return blockedCountDNRRulesCache;
   };
-  const loadRemoveParamDNRRules = async () => {
-    const firstChunk = await sendQueuedNativeMessage({
+  const probeRemoveParamDNRHeader = async (knownVersion = null) => {
+    const request = {
       action: "getRemoveParamDNRRules",
       offset: 0,
       limit: REMOVE_PARAM_DNR_CHUNK_SIZE
-    });
+    };
+    if (knownVersion) request.knownVersion = knownVersion;
+    const firstChunk = await sendQueuedNativeMessage(request);
     if (!firstChunk || firstChunk.ok !== true) {
       throw new Error(firstChunk && firstChunk.error ? firstChunk.error : "Failed to load removeparam DNR rules");
     }
-    const version = String(firstChunk.version || "");
-    const count = Math.max(0, Number(firstChunk.count) || 0);
-    if (removeParamDNRRulesCache && removeParamDNRVersion === version && removeParamDNRRulesCache.length === count) {
+    return {
+      version: String(firstChunk.version || ""),
+      count: Math.max(0, Number(firstChunk.count) || 0),
+      ruleIdBase: Number(firstChunk.ruleIdBase) || 1500000,
+      ruleIdLimit: Number(firstChunk.ruleIdLimit) || 1650000,
+      unchanged: firstChunk.unchanged === true,
+      firstChunkRules: Array.isArray(firstChunk.rules) ? firstChunk.rules : []
+    };
+  };
+  const loadRemoveParamDNRRules = async (initialHeader = null) => {
+    const isCached = h => removeParamDNRRulesCache
+      && removeParamDNRVersion === h.version
+      && removeParamDNRRulesCache.length === h.count;
+    let header = initialHeader || await probeRemoveParamDNRHeader(null);
+    if (header.unchanged && header.count > 0 && !isCached(header)) {
+      header = await probeRemoveParamDNRHeader(null);
+    }
+    if (isCached(header)) {
       return {
-        version,
-        count,
-        ruleIdBase: Number(firstChunk.ruleIdBase) || 1500000,
-        ruleIdLimit: Number(firstChunk.ruleIdLimit) || 1650000,
+        version: header.version,
+        count: header.count,
+        ruleIdBase: header.ruleIdBase,
+        ruleIdLimit: header.ruleIdLimit,
         rules: removeParamDNRRulesCache
       };
     }
-    const rules = Array.isArray(firstChunk.rules) ? firstChunk.rules.slice() : [];
-    for (let offset = REMOVE_PARAM_DNR_CHUNK_SIZE; offset < count; offset += REMOVE_PARAM_DNR_CHUNK_SIZE) {
+    if (header.count === 0) {
+      removeParamDNRRulesCache = [];
+      removeParamDNRVersion = header.version;
+      return {
+        version: header.version,
+        count: 0,
+        ruleIdBase: header.ruleIdBase,
+        ruleIdLimit: header.ruleIdLimit,
+        rules: []
+      };
+    }
+    const rules = header.firstChunkRules.slice();
+    for (let offset = REMOVE_PARAM_DNR_CHUNK_SIZE; offset < header.count; offset += REMOVE_PARAM_DNR_CHUNK_SIZE) {
       const chunk = await sendQueuedNativeMessage({
         action: "getRemoveParamDNRRules",
         offset,
@@ -2354,23 +2455,23 @@
       if (!chunk || chunk.ok !== true) {
         throw new Error(chunk && chunk.error ? chunk.error : `Failed to load removeparam DNR rules at ${offset}`);
       }
-      if (String(chunk.version || "") !== version) {
+      if (String(chunk.version || "") !== header.version) {
         throw new Error(`Removeparam DNR rules changed while loading at ${offset}`);
       }
       if (Array.isArray(chunk.rules)) {
         rules.push(...chunk.rules);
       }
     }
-    if (rules.length !== count) {
-      throw new Error(`Removeparam DNR rule count mismatch: expected ${count}, got ${rules.length}`);
+    if (rules.length !== header.count) {
+      throw new Error(`Removeparam DNR rule count mismatch: expected ${header.count}, got ${rules.length}`);
     }
     removeParamDNRRulesCache = rules;
-    removeParamDNRVersion = version;
+    removeParamDNRVersion = header.version;
     return {
-      version,
-      count,
-      ruleIdBase: Number(firstChunk.ruleIdBase) || 1500000,
-      ruleIdLimit: Number(firstChunk.ruleIdLimit) || 1650000,
+      version: header.version,
+      count: header.count,
+      ruleIdBase: header.ruleIdBase,
+      ruleIdLimit: header.ruleIdLimit,
       rules
     };
   };
@@ -2401,7 +2502,7 @@
     }
     return { ...rule, condition };
   };
-  const reportRedirectDNRStatus = async (installedRules) => {
+  const reportRedirectDNRStatus = async (installedRulesOrCount) => {
     try {
       let hostAccess = false;
       try {
@@ -2418,9 +2519,9 @@
       } catch {
         privateAccess = null;
       }
-      const installedRedirects = installedRules.filter(rule =>
-        rule && rule.action && rule.action.redirect && typeof rule.action.redirect.extensionPath === "string"
-      ).length;
+      const installedRedirects = typeof installedRulesOrCount === "number"
+        ? installedRulesOrCount
+        : countExtensionPathRedirects(installedRulesOrCount);
       const status = { installedRedirects, hostAccess, privateAccess, at: Date.now() };
       const stored = await browser.storage.local.get(REDIRECT_DNR_STATUS_REPORT_KEY);
       const lastReport = stored && stored[REDIRECT_DNR_STATUS_REPORT_KEY];
@@ -2460,8 +2561,7 @@
       prepared = lostProtection ? [] : legacyRules.filter(Boolean);
     }
     const checked = [];
-    const safariVersion = Number(globalThis.navigator?.userAgent?.match(/Version\/(\d+)/)?.[1]) || 0;
-    const minor = Number(globalThis.navigator?.userAgent?.match(/Version\/\d+\.(\d+)/)?.[1]) || 0;
+    const { major: safariVersion, minor } = parseSafariVersion();
     for (const rule of prepared) {
       // WebKit added regexSubstitution in Safari 17.0, initiatorDomains in 18.4,
       // and requestMethods in 26, independently of the 16.4 quota constant.
@@ -2495,14 +2595,63 @@
     if (!browser.declarativeNetRequest || typeof browser.declarativeNetRequest.updateDynamicRules !== "function") {
       return;
     }
-    const loaded = await loadRemoveParamDNRRules();
-    const { version, ruleIdBase, ruleIdLimit, rules } = loaded;
+    const epoch = dnrVerifyEpoch;
+    const runtimeKey = getDNRRuntimeKey();
+    const finishVerified = async (ver, countVer, installedRedirects) => {
+      if (epoch === dnrVerifyEpoch) {
+        verifiedDNRInstall = { version: ver, countVersion: countVer, installedRedirects, runtimeKey };
+      }
+      removeParamDNRRulesCache = null;
+      removeParamDNRVersion = "";
+      blockedCountDNRRulesCache = null;
+      await reportRedirectDNRStatus(installedRedirects);
+    };
     const stored = await browser.storage.local.get(REMOVE_PARAM_DNR_STORAGE_KEY);
+    const storedState = stored && stored[REMOVE_PARAM_DNR_STORAGE_KEY];
+    const knownRPVersion = (verifiedDNRInstall && verifiedDNRInstall.version)
+      || (storedState && typeof storedState === "object" && typeof storedState.version === "string" ? storedState.version : null);
+    const rpHeader = await probeRemoveParamDNRHeader(knownRPVersion);
+    let bcHeader = null;
+    if (canDisplayActionCount && Number(browser.declarativeNetRequest.MAX_NUMBER_OF_DYNAMIC_AND_SESSION_RULES) > 0) {
+      const knownCountVersion = (verifiedDNRInstall && verifiedDNRInstall.countVersion)
+        || (storedState && typeof storedState === "object" && typeof storedState.countVersion === "string" ? storedState.countVersion : null);
+      bcHeader = await probeBlockedCountDNRHeader(knownCountVersion).catch(error => {
+        console.warn("[wBlock] Failed to load blocked-count DNR rules:", error);
+        return null;
+      });
+    }
+    if (verifiedDNRInstall
+      && verifiedDNRInstall.runtimeKey === runtimeKey
+      && verifiedDNRInstall.version === rpHeader.version
+      && storedState && typeof storedState === "object" && storedState.version === rpHeader.version
+      && (!bcHeader || verifiedDNRInstall.countVersion === bcHeader.countVersion)) {
+      await reportRedirectDNRStatus(verifiedDNRInstall.installedRedirects);
+      return;
+    }
     const dynamicRules = typeof browser.declarativeNetRequest.getDynamicRules === "function"
       ? await browser.declarativeNetRequest.getDynamicRules()
       : [];
-    const trackedRules = dynamicRules.filter(rule => rule && rule.id >= ruleIdBase && rule.id < ruleIdLimit);
+    const trackedRules = dynamicRules.filter(rule => rule && rule.id >= rpHeader.ruleIdBase && rule.id < rpHeader.ruleIdLimit);
     const trackedCountRules = dynamicRules.filter(rule => rule && rule.id >= BLOCKED_COUNT_DNR_ID_BASE && rule.id < BLOCKED_COUNT_DNR_ID_LIMIT);
+    const storedMatchesHeaders = storedState && typeof storedState === "object"
+      && storedState.version === rpHeader.version
+      && typeof storedState.count === "number"
+      && storedState.runtimeKey === runtimeKey
+      && (!bcHeader || (storedState.countVersion === bcHeader.countVersion && typeof storedState.countCount === "number"));
+    if (storedMatchesHeaders
+      && trackedRules.length === storedState.count
+      && (!bcHeader || trackedCountRules.length === storedState.countCount)) {
+      if (bcHeader) {
+        await browser.declarativeNetRequest.setExtensionActionOptions({
+          displayActionCountAsBadgeText: bcHeader.enabled
+        }).catch(error => console.warn("[wBlock] Failed to set action count display:", error));
+      }
+      const installedRedirects = countExtensionPathRedirects(trackedRules);
+      await finishVerified(rpHeader.version, bcHeader ? bcHeader.countVersion : storedState.countVersion, installedRedirects);
+      return;
+    }
+    const loaded = await loadRemoveParamDNRRules(rpHeader);
+    const { version, ruleIdBase, ruleIdLimit, rules } = loaded;
     const unrelatedDynamicCount = Math.max(0, dynamicRules.length - trackedRules.length - trackedCountRules.length);
     const sessionRules = typeof browser.declarativeNetRequest.getSessionRules === "function"
       ? await browser.declarativeNetRequest.getSessionRules()
@@ -2523,8 +2672,9 @@
     let translatedBudget = DNR_TRANSLATED_RULE_BUDGET - sessionRules.reduce((n, r) => n + translatedRuleCost(r), 0);
     let byteBudget = 8 * 1024 * 1024; // Our memory budget, not a Safari per-rule limit.
     let installRules = [];
+    const utf8Encoder = new TextEncoder();
     for (const rule of protectiveRules.concat(redirectRules)) {
-      const cost = translatedRuleCost(rule), bytes = new TextEncoder().encode(JSON.stringify(rule)).length;
+      const cost = translatedRuleCost(rule), bytes = utf8Encoder.encode(JSON.stringify(rule)).length;
       if (installRules.length >= availableCapacity || cost > translatedBudget || bytes > byteBudget) {
         if (rule.action?.type === "allow") { installRules = []; break; }
         continue;
@@ -2534,8 +2684,8 @@
     // The count needs Safari 16.4's action count and modern rule conditions.
     // A failed load keeps whatever counting rules are already installed.
     let blockedCount = null;
-    if (canDisplayActionCount && Number(browser.declarativeNetRequest.MAX_NUMBER_OF_DYNAMIC_AND_SESSION_RULES) > 0) {
-      blockedCount = await loadBlockedCountDNRRules().catch(error => {
+    if (bcHeader) {
+      blockedCount = await loadBlockedCountDNRRules(bcHeader).catch(error => {
         console.warn("[wBlock] Failed to load blocked-count DNR rules:", error);
         return null;
       });
@@ -2571,7 +2721,6 @@
       }
     }
     const countVersion = blockedCount ? `${blockedCount.enabled}:${blockedCount.version}` : null;
-    const storedState = stored && stored[REMOVE_PARAM_DNR_STORAGE_KEY];
     const removeParamCurrent = storedState && typeof storedState === "object"
       && storedState.version === version
       && storedState.count === installRules.length
@@ -2586,9 +2735,16 @@
       }).catch(error => console.warn("[wBlock] Failed to set action count display:", error));
     }
     if (removeParamCurrent && countCurrent) {
-      await reportRedirectDNRStatus(trackedRules);
+      const installedRedirects = countExtensionPathRedirects(trackedRules);
+      if (storedState && storedState.runtimeKey !== runtimeKey) {
+        await browser.storage.local.set({
+          [REMOVE_PARAM_DNR_STORAGE_KEY]: { ...storedState, runtimeKey }
+        });
+      }
+      await finishVerified(version, blockedCount ? countVersion : storedState && storedState.countVersion, installedRedirects);
       return;
     }
+    verifiedDNRInstall = null;
     // Counting rules come off first and go back on last: with them
     // installed, WebKit's doubled quota check would reject the removeparam
     // swap. Only the count is briefly missing in between.
@@ -2636,15 +2792,17 @@
     logSupportDiagnostic({ event: "dnr_install_verified", generated: rules.length, installed: actual.length,
       omitted: rules.length - actual.length, regexRules: actual.filter(rule => rule.condition?.regexFilter).length,
       runtimeLimit: reportedLimit, version });
+    const persistedCountVersion = countVersion !== null ? countVersion : storedState && storedState.countVersion;
     await browser.storage.local.set({
       [REMOVE_PARAM_DNR_STORAGE_KEY]: {
         version,
         count: installRules.length,
-        countVersion: countVersion !== null ? countVersion : storedState && storedState.countVersion,
-        countCount: installCountRules.length
+        countVersion: persistedCountVersion,
+        countCount: installCountRules.length,
+        runtimeKey
       }
     });
-    await reportRedirectDNRStatus(installRules);
+    await finishVerified(version, persistedCountVersion, countExtensionPathRedirects(installRules));
   };
   const runRemoveParamDNRInstall = () => installRemoveParamDNRRules().catch(error => {
     const errorMessage = String(error && error.message || error);
@@ -2671,17 +2829,21 @@
     });
     return removeParamDNRInstallPromise;
   };
+  const resetSyncCachesAndResync = () => {
+    clearDocumentStartSessionCache();
+    gpcSyncEpoch += 1;
+    dnrVerifyEpoch += 1;
+    lastSyncedGPCEnabled = null;
+    lastGPCSync = 0;
+    verifiedDNRInstall = null;
+    scheduleInstallRemoveParamDNRRules(true);
+    syncGlobalPrivacyControl();
+  };
   if (browser.runtime.onInstalled) {
-    browser.runtime.onInstalled.addListener(() => {
-      clearDocumentStartSessionCache();
-      scheduleInstallRemoveParamDNRRules(true);
-    });
+    browser.runtime.onInstalled.addListener(resetSyncCachesAndResync);
   }
   if (browser.runtime.onStartup) {
-    browser.runtime.onStartup.addListener(() => {
-      clearDocumentStartSessionCache();
-      scheduleInstallRemoveParamDNRRules(true);
-    });
+    browser.runtime.onStartup.addListener(resetSyncCachesAndResync);
   }
   // Right-click "Zap Element". Safari exposes contextMenus on macOS only, so
   // the guard leaves iOS without a menu and without errors.

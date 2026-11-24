@@ -332,41 +332,10 @@ extension RemoveParamDNRRuleGenerator {
         )
     }
 
-    private struct ParsedBlockedCountRules {
-        let fileNumber: Int
-        let modified: Date
-        let size: Int
-        let version: String
-        let rules: [[String: Any]]
-    }
+    private static let blockedCountCache = SavedRuleFileCache()
 
-    private static let blockedCountRulesLock = NSLock()
-    nonisolated(unsafe) private static var parsedBlockedCountRules: ParsedBlockedCountRules?
-
-    /// The extension pages through the file, so parse it once per write.
-    private static func blockedCountRules(containerURL: URL) -> ParsedBlockedCountRules? {
-        let url = containerURL.appendingPathComponent(blockedCountRulesFilename)
-        guard
-            let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),
-            let fileNumber = (attributes[.systemFileNumber] as? NSNumber)?.intValue,
-            let modified = attributes[.modificationDate] as? Date,
-            let size = (attributes[.size] as? NSNumber)?.intValue
-        else { return nil }
-        blockedCountRulesLock.lock()
-        defer { blockedCountRulesLock.unlock() }
-        if let cached = parsedBlockedCountRules,
-           cached.fileNumber == fileNumber, cached.modified == modified, cached.size == size {
-            return cached
-        }
-        guard let data = try? Data(contentsOf: url),
-              let rules = (try? JSONSerialization.jsonObject(with: data)) as? [[String: Any]]
-        else { return nil }
-        let parsed = ParsedBlockedCountRules(
-            fileNumber: fileNumber, modified: modified, size: size,
-            version: sha256Hex(data: data), rules: rules
-        )
-        parsedBlockedCountRules = parsed
-        return parsed
+    static var hasCachedParsedBlockedCountRules: Bool {
+        blockedCountCache.hasCachedParsedRules
     }
 
     /// Pages hold up to `limit` rules but stop at about 20,000 domains, since
@@ -375,7 +344,27 @@ extension RemoveParamDNRRuleGenerator {
         groupIdentifier: String,
         enabled: Bool,
         offset: Int,
-        limit: Int
+        limit: Int,
+        knownVersion: String? = nil
+    ) -> [String: Any] {
+        let containerURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: groupIdentifier
+        )
+        return loadBlockedCountRulesPayload(
+            containerURL: containerURL,
+            enabled: enabled,
+            offset: offset,
+            limit: limit,
+            knownVersion: knownVersion
+        )
+    }
+
+    static func loadBlockedCountRulesPayload(
+        containerURL: URL?,
+        enabled: Bool,
+        offset: Int,
+        limit: Int,
+        knownVersion: String? = nil
     ) -> [String: Any] {
         let safeOffset = max(0, offset)
         let safeLimit = max(1, min(limit, 1_000))
@@ -386,12 +375,30 @@ extension RemoveParamDNRRuleGenerator {
             "ruleIdBase": blockedCountRuleIDBase,
             "ruleIdLimit": blockedCountRuleIDLimit
         ]
-        guard enabled,
-              let containerURL = FileManager.default.containerURL(
-                  forSecurityApplicationGroupIdentifier: groupIdentifier
-              ),
-              let parsed = blockedCountRules(containerURL: containerURL)
-        else {
+        let url = enabled ? containerURL?.appendingPathComponent(blockedCountRulesFilename) : nil
+        guard let url, let (header, rawData) = blockedCountCache.loadHeader(at: url) else {
+            payload["version"] = ""
+            payload["count"] = 0
+            payload["rules"] = [] as [[String: Any]]
+            if safeOffset == 0, knownVersion == "\(enabled):" {
+                payload["unchanged"] = true
+            }
+            return payload
+        }
+        if safeOffset == 0, let count = header.count, knownVersion == "true:\(header.version)" {
+            payload["version"] = header.version
+            payload["count"] = count
+            payload["rules"] = [] as [[String: Any]]
+            payload["unchanged"] = true
+            return payload
+        }
+        if header.count == 0 {
+            payload["version"] = header.version
+            payload["count"] = 0
+            payload["rules"] = [] as [[String: Any]]
+            return payload
+        }
+        guard let (resolvedHeader, rules) = blockedCountCache.parsedRules(at: url, header: header, rawData: rawData) else {
             payload["version"] = ""
             payload["count"] = 0
             payload["rules"] = [] as [[String: Any]]
@@ -400,16 +407,19 @@ extension RemoveParamDNRRuleGenerator {
         var page: [[String: Any]] = []
         var domains = 0
         var index = safeOffset
-        while index < parsed.rules.count, page.count < safeLimit {
-            let ruleDomains = ((parsed.rules[index]["condition"] as? [String: Any])?["requestDomains"] as? [Any])?.count ?? 1
+        while index < rules.count, page.count < safeLimit {
+            let ruleDomains = ((rules[index]["condition"] as? [String: Any])?["requestDomains"] as? [Any])?.count ?? 1
             if !page.isEmpty, domains + ruleDomains > 20_000 { break }
-            page.append(parsed.rules[index])
+            page.append(rules[index])
             domains += ruleDomains
             index += 1
         }
-        payload["version"] = parsed.version
-        payload["count"] = parsed.rules.count
+        payload["version"] = resolvedHeader.version
+        payload["count"] = rules.count
         payload["rules"] = page
+        if index >= rules.count {
+            blockedCountCache.clearParsed(matching: resolvedHeader)
+        }
         return payload
     }
 }

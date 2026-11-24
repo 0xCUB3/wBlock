@@ -824,14 +824,20 @@ public enum WebExtensionRequestHandler {
     private static func handleGetRemoveParamDNRRules(message: [String: Any?], context: NSExtensionContext) {
         let offset = message["offset"] as? Int ?? 0
         let limit = message["limit"] as? Int ?? 250
+        let knownVersion = message["knownVersion"] as? String
         let payload: [String: Any]
         if BlockingPauseStore.isPaused(.filters) {
-            payload = RemoveParamDNRRuleGenerator.emptyRulesPayload(offset: offset, limit: limit)
+            payload = RemoveParamDNRRuleGenerator.emptyRulesPayload(
+                offset: offset,
+                limit: limit,
+                knownVersion: knownVersion
+            )
         } else {
             payload = RemoveParamDNRRuleGenerator.loadRulesPayload(
                 groupIdentifier: GroupIdentifier.shared.value,
                 offset: offset,
-                limit: limit
+                limit: limit,
+                knownVersion: knownVersion
             )
         }
         let response = createResponse(with: payload.mapValues { Optional($0) })
@@ -841,16 +847,22 @@ public enum WebExtensionRequestHandler {
     private static func handleGetBlockedCountDNRRules(message: [String: Any?], context: NSExtensionContext) {
         let offset = message["offset"] as? Int ?? 0
         let limit = message["limit"] as? Int ?? 50
+        let knownVersion = message["knownVersion"] as? String
         Task { @MainActor in
             await ProtobufDataManager.shared.waitUntilLoaded()
             _ = await ProtobufDataManager.shared.refreshFromDiskIfModified()
-            let payload = RemoveParamDNRRuleGenerator.loadBlockedCountRulesPayload(
-                groupIdentifier: GroupIdentifier.shared.value,
-                enabled: ProtobufDataManager.shared.isBlockedRequestCountEnabled && !BlockingPauseStore.isPaused(.filters),
-                offset: offset,
-                limit: limit
-            )
-            let response = createResponse(with: payload.mapValues { Optional($0) })
+            let enabled = ProtobufDataManager.shared.isBlockedRequestCountEnabled && !BlockingPauseStore.isPaused(.filters)
+            let groupIdentifier = GroupIdentifier.shared.value
+            let response = await Task.detached(priority: .userInitiated) {
+                let payload = RemoveParamDNRRuleGenerator.loadBlockedCountRulesPayload(
+                    groupIdentifier: groupIdentifier,
+                    enabled: enabled,
+                    offset: offset,
+                    limit: limit,
+                    knownVersion: knownVersion
+                )
+                return createResponse(with: payload.mapValues { Optional($0) })
+            }.value
             context.completeRequest(returningItems: [response])
         }
     }
