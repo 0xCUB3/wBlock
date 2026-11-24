@@ -1206,12 +1206,12 @@ To re-enable these filters, disable other large filters and apply changes again.
 "One or more blockers are off; ads might get through." = "One or more blockers are off; ads might get through.";
 "Allow wBlock Scripts" = "Allow wBlock Scripts";
 "Extras and some ad blocking need the wBlock Scripts extension enabled." = "Extras and some ad blocking need the wBlock Scripts extension enabled.";
-"Protection paused" = "Protection paused";
+"Protection Paused" = "Protection Paused";
 "Blocking is paused right now; you can toggle it again to resume blocking." = "Blocking is paused right now; you can toggle it again to resume blocking.";
 "Some blocking is paused right now; you can toggle it again to resume." = "Some blocking is paused right now; you can toggle it again to resume.";
 "Too many filters on" = "Too many filters on";
 "Safari has reached its rule limit so some rules won't be loaded; try turning off a category." = "Safari has reached its rule limit so some rules won't be loaded; try turning off a category.";
-"Applying filters…" = "Applying filters…";
+"Applying Filters…" = "Applying Filters…";
 "Applying your changes to Safari; this can take a few seconds." = "Applying your changes to Safari; this can take a few seconds.";
 "Couldn't update filters" = "Couldn't update filters";
 "Couldn't apply your changes" = "Couldn't apply your changes";

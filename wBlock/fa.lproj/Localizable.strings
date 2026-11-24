@@ -1206,12 +1206,12 @@ To re-enable these filters, disable other large filters and apply changes again.
 "One or more blockers are off; ads might get through." = "برخی مسدودکننده‌ها خاموش‌اند، بنابراین ممکن است تبلیغات نمایش داده شوند.";
 "Allow wBlock Scripts" = "اجازه به wBlock Scripts";
 "Extras and some ad blocking need the wBlock Scripts extension enabled." = "امکانات اضافی و بخشی از مسدودسازی تبلیغات به این افزونه Safari نیاز دارند.";
-"Protection paused" = "محافظت متوقف شد";
+"Protection Paused" = "محافظت متوقف شد";
 "Blocking is paused right now; you can toggle it again to resume blocking." = "در حال حاضر هیچ موردی مسدود نمی‌شود.";
 "Some blocking is paused right now; you can toggle it again to resume." = "بخشی از محافظت فعلاً خاموش است.";
 "Too many filters on" = "تعداد فیلترهای روشن زیاد است";
 "Safari has reached its rule limit so some rules won't be loaded; try turning off a category." = "Safari محدودیت دارد و برخی قوانین نادیده گرفته شدند. برای رفع مشکل یک دسته را خاموش کنید.";
-"Applying filters…" = "در حال اعمال فیلترها…";
+"Applying Filters…" = "در حال اعمال فیلترها…";
 "Applying your changes to Safari; this can take a few seconds." = "تغییرات شما تا لحظه‌ای دیگر آماده می‌شود.";
 "Couldn't update filters" = "به‌روزرسانی فیلترها ناموفق بود";
 "Couldn't apply your changes" = "اعمال تغییرات ناموفق بود";

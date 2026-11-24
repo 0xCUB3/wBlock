@@ -1338,6 +1338,17 @@ extension AppFilterManager {
             return result
         }
 
+        guard !isApplyInFlight else { return false }
+        // Cancel any pending basic auto-apply and publish the paused state
+        // before performExclusiveApply sets isApplyInFlight so the Hero goes
+        // straight to Protection Paused without flashing "Applying Filters…" (#1162).
+        if normalized.contains(.filters) {
+            cancelQueuedBasicAutoApply()
+        }
+        hasError = false
+        pausedComponents = normalized
+        isBlockingPaused = true
+
         let started = await performExclusiveApply { [self] in
             lastApplySucceeded = false
             if normalized == .all {
@@ -1392,6 +1403,12 @@ extension AppFilterManager {
                     allowPausedResume: false
                 )
             }
+        }
+
+        if !started {
+            let persisted = BlockingPauseStore.pausedComponents()
+            self.pausedComponents = persisted
+            self.isBlockingPaused = !persisted.isEmpty
         }
 
         let succeeded = started && lastApplySucceeded && !hasError

@@ -1206,12 +1206,12 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "One or more blockers are off; ads might get through." = "Bazı engelleyiciler kapalı olduğundan reklamlar görünebilir.";
 "Allow wBlock Scripts" = "wBlock Scripts'e izin verin";
 "Extras and some ad blocking need the wBlock Scripts extension enabled." = "Ekstralar ve bazı reklam engellemeleri bu Safari uzantısını gerektirir.";
-"Protection paused" = "Koruma duraklatıldı";
+"Protection Paused" = "Koruma duraklatıldı";
 "Blocking is paused right now; you can toggle it again to resume blocking." = "Şu anda hiçbir şey engellenmiyor.";
 "Some blocking is paused right now; you can toggle it again to resume." = "Korumanın bir kısmı şimdilik kapalı.";
 "Too many filters on" = "Çok fazla filtre açık";
 "Safari has reached its rule limit so some rules won't be loaded; try turning off a category." = "Safari'nin bir sınırı olduğundan bazı kurallar atlandı. Düzeltmek için bir kategoriyi kapatın.";
-"Applying filters…" = "Filtreler uygulanıyor…";
+"Applying Filters…" = "Filtreler uygulanıyor…";
 "Applying your changes to Safari; this can take a few seconds." = "Değişiklikleriniz birazdan hazır olacak.";
 "Couldn't update filters" = "Filtreler güncellenemedi";
 "Couldn't apply your changes" = "Değişiklikleriniz uygulanamadı";

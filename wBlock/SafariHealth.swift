@@ -174,11 +174,11 @@ enum SafariHealthStatus: Equatable, Sendable {
         case .scriptsExtensionOff:
             NSLocalizedString("Allow wBlock Scripts", comment: "Hero status title: scripts extension off")
         case .paused:
-            NSLocalizedString("Protection paused", comment: "Hero status title: paused")
+            NSLocalizedString("Protection Paused", comment: "Hero status title: paused")
         case .ruleLimitHit:
             NSLocalizedString("Too many filters on", comment: "Hero status title: rule limit hit")
         case .applying:
-            NSLocalizedString("Applying filters…", comment: "Hero status title: applying")
+            NSLocalizedString("Applying Filters…", comment: "Hero status title: applying")
         case .checkingForUpdates:
             NSLocalizedString("Checking for updates…", comment: "Hero status title: checking for updates")
         case .failed(let isUpdate):

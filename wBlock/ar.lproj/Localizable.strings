@@ -1197,12 +1197,12 @@ To re-enable these filters, disable other large filters and apply changes again.
 "One or more blockers are off; ads might get through." = "بعض أدوات الحظر متوقفة، لذا قد تظهر بعض الإعلانات.";
 "Allow wBlock Scripts" = "السماح لـ wBlock Scripts";
 "Extras and some ad blocking need the wBlock Scripts extension enabled." = "تحتاج الإضافات وبعض حظر الإعلانات إلى ملحق Safari هذا.";
-"Protection paused" = "الحماية متوقفة مؤقتًا";
+"Protection Paused" = "الحماية متوقفة مؤقتًا";
 "Blocking is paused right now; you can toggle it again to resume blocking." = "لا يتم حظر أي شيء حاليًا.";
 "Some blocking is paused right now; you can toggle it again to resume." = "جزء من الحماية متوقف مؤقتًا.";
 "Too many filters on" = "تم تفعيل عدد كبير جدًا من الفلاتر";
 "Safari has reached its rule limit so some rules won't be loaded; try turning off a category." = "يفرض Safari حدًا للقواعد، لذا يتم تخطي بعضها. أوقف فئة لحل المشكلة.";
-"Applying filters…" = "جارٍ تطبيق الفلاتر…";
+"Applying Filters…" = "جارٍ تطبيق الفلاتر…";
 "Applying your changes to Safari; this can take a few seconds." = "ستصبح تغييراتك جاهزة خلال لحظات.";
 "Couldn't update filters" = "تعذّر تحديث الفلاتر";
 "Couldn't apply your changes" = "تعذّر تطبيق تغييراتك";

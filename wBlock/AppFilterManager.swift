@@ -432,6 +432,13 @@ class AppFilterManager: ObservableObject {
         }
     }
 
+    func cancelQueuedBasicAutoApply() {
+        autoApplyTask?.cancel()
+        autoApplyTask = nil
+        hasQueuedBasicAutoApply = false
+        needsFollowUpBasicApply = false
+    }
+
     /// Marks pending Basic edits so app-backgrounding or mode switching flushes
     /// them without starting the auto-apply timer while a picker is still open.
     func markPendingBasicAutoApply() {

@@ -1197,12 +1197,12 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "One or more blockers are off; ads might get through." = "Néhány blokkoló ki van kapcsolva, így hirdetések jelenhetnek meg.";
 "Allow wBlock Scripts" = "wBlock Scripts engedélyezése";
 "Extras and some ad blocking need the wBlock Scripts extension enabled." = "Az Extrákhoz és egyes hirdetésblokkolókhoz ez a Safari-bővítmény szükséges.";
-"Protection paused" = "Védelem szüneteltetve";
+"Protection Paused" = "Védelem szüneteltetve";
 "Blocking is paused right now; you can toggle it again to resume blocking." = "Jelenleg semmi nincs blokkolva.";
 "Some blocking is paused right now; you can toggle it again to resume." = "A védelem egy része jelenleg ki van kapcsolva.";
 "Too many filters on" = "Túl sok szűrő van bekapcsolva";
 "Safari has reached its rule limit so some rules won't be loaded; try turning off a category." = "A Safari korlátja miatt néhány szabály kimarad. Kapcsolj ki egy kategóriát a javításhoz.";
-"Applying filters…" = "Szűrők alkalmazása…";
+"Applying Filters…" = "Szűrők alkalmazása…";
 "Applying your changes to Safari; this can take a few seconds." = "A módosítások egy pillanat múlva elkészülnek.";
 "Couldn't update filters" = "A szűrők frissítése sikertelen";
 "Couldn't apply your changes" = "A módosítások alkalmazása sikertelen";

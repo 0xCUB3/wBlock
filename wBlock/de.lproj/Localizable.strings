@@ -1197,12 +1197,12 @@ Um diese Filter wieder zu aktivieren, deaktiviere andere große Filter und wende
 "One or more blockers are off; ads might get through." = "Einige Blocker sind aus, sodass Werbung durchkommen kann.";
 "Allow wBlock Scripts" = "wBlock Scripts erlauben";
 "Extras and some ad blocking need the wBlock Scripts extension enabled." = "Extras und Teile des Werbeblockers benötigen diese Safari-Erweiterung.";
-"Protection paused" = "Schutz pausiert";
+"Protection Paused" = "Schutz pausiert";
 "Blocking is paused right now; you can toggle it again to resume blocking." = "Derzeit wird nichts blockiert.";
 "Some blocking is paused right now; you can toggle it again to resume." = "Ein Teil des Schutzes ist vorübergehend deaktiviert.";
 "Too many filters on" = "Zu viele Filter aktiv";
 "Safari has reached its rule limit so some rules won't be loaded; try turning off a category." = "Safari hat ein Limit, daher werden einige Regeln übersprungen. Deaktiviere eine Kategorie, um dies zu beheben.";
-"Applying filters…" = "Filter werden angewendet…";
+"Applying Filters…" = "Filter werden angewendet…";
 "Applying your changes to Safari; this can take a few seconds." = "Deine Änderungen sind gleich bereit.";
 "Couldn't update filters" = "Filter konnten nicht aktualisiert werden";
 "Couldn't apply your changes" = "Änderungen konnten nicht angewendet werden";

@@ -1197,12 +1197,12 @@ To re-enable these filters, disable other large filters and apply changes again.
 "One or more blockers are off; ads might get through." = "部分封鎖器未開啟，廣告可能會通過。";
 "Allow wBlock Scripts" = "允許 wBlock Scripts";
 "Extras and some ad blocking need the wBlock Scripts extension enabled." = "附加功能與部分廣告封鎖需要此 Safari 延伸功能。";
-"Protection paused" = "保護已暫停";
+"Protection Paused" = "保護已暫停";
 "Blocking is paused right now; you can toggle it again to resume blocking." = "目前沒有封鎖任何內容。";
 "Some blocking is paused right now; you can toggle it again to resume." = "部分保護目前暫時關閉。";
 "Too many filters on" = "開啟的過濾器過多";
 "Safari has reached its rule limit so some rules won't be loaded; try turning off a category." = "Safari 有規則數量上限，因此已略過部分規則。關閉某個類別即可解決。";
-"Applying filters…" = "正在套用過濾器…";
+"Applying Filters…" = "正在套用過濾器…";
 "Applying your changes to Safari; this can take a few seconds." = "您的變更很快就會生效。";
 "Couldn't update filters" = "無法更新過濾器";
 "Couldn't apply your changes" = "無法套用您的變更";

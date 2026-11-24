@@ -1197,12 +1197,12 @@ To re-enable these filters, disable other large filters and apply changes again.
 "One or more blockers are off; ads might get through." = "Ορισμένοι αποκλειστές είναι ανενεργοί, οπότε μπορεί να εμφανιστούν διαφημίσεις.";
 "Allow wBlock Scripts" = "Επιτρέψτε το wBlock Scripts";
 "Extras and some ad blocking need the wBlock Scripts extension enabled." = "Τα Επιπλέον και μέρος του αποκλεισμού χρειάζονται αυτήν την επέκταση Safari.";
-"Protection paused" = "Η προστασία είναι σε παύση";
+"Protection Paused" = "Η προστασία είναι σε παύση";
 "Blocking is paused right now; you can toggle it again to resume blocking." = "Δεν αποκλείεται τίποτα αυτή τη στιγμή.";
 "Some blocking is paused right now; you can toggle it again to resume." = "Μέρος της προστασίας είναι προσωρινά απενεργοποιημένο.";
 "Too many filters on" = "Πάρα πολλά ενεργά φίλτρα";
 "Safari has reached its rule limit so some rules won't be loaded; try turning off a category." = "Το Safari έχει όριο κανόνων, οπότε ορισμένοι παραλείπονται. Απενεργοποιήστε μια κατηγορία.";
-"Applying filters…" = "Εφαρμογή φίλτρων…";
+"Applying Filters…" = "Εφαρμογή φίλτρων…";
 "Applying your changes to Safari; this can take a few seconds." = "Οι αλλαγές σας θα είναι έτοιμες σε λίγο.";
 "Couldn't update filters" = "Αδυναμία ενημέρωσης φίλτρων";
 "Couldn't apply your changes" = "Αδυναμία εφαρμογής των αλλαγών σας";
