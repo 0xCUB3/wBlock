@@ -167,6 +167,28 @@ import Foundation
         let emptyUnchanged = G.emptyRulesPayload(offset: 0, limit: 250, knownVersion: emptyVersion)
         check((emptyUnchanged["unchanged"] as? Bool) == true, "emptyRulesPayload sets unchanged=true when knownVersion matches")
 
+        // Verify parsedRules detects a concurrent file rewrite between loadHeader and parsedRules.
+        let raceDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("wblock-rp-dnr-race-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: raceDir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: raceDir) }
+        let raceFile = raceDir.appendingPathComponent(G.rulesFilename)
+        let raceV1 = G.generateRules(from: "$removeparam=utm_source").rules
+        let raceV2 = G.generateRules(from: "$removeparam=utm_source\n||example.com^$removeparam=fbclid").rules
+        let raceData1 = try encoder.encode(raceV1)
+        let raceData2 = try encoder.encode(raceV2)
+        try FilterArtifactStorage.write(raceData1, to: raceFile)
+        let raceCache = G.SavedRuleFileCache()
+        let initialLoad = raceCache.loadHeader(at: raceFile)
+        check(initialLoad != nil, "race test initial header loads")
+        let cachedLoad = raceCache.loadHeader(at: raceFile)
+        check(cachedLoad != nil && cachedLoad?.rawData == nil, "race test cached header omits rawData")
+        try FilterArtifactStorage.write(raceData2, to: raceFile)
+        let parsedAfterRewrite = raceCache.parsedRules(at: raceFile, header: cachedLoad!.header, rawData: nil)
+        let expectedV2Version = DigestSupport.sha256Hex(raceData2)
+        check(parsedAfterRewrite?.header.version == expectedV2Version, "parsedRules returns fresh version after concurrent rewrite")
+        check(parsedAfterRewrite?.rules.count == raceV2.count, "parsedRules returns fresh rules matching fresh version")
+
         print("PASS removeparam selectors, scopes, exceptions, badfilter and DNR capacity")
     }
 }

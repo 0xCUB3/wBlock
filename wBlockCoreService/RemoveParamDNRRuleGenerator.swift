@@ -744,7 +744,7 @@ public enum RemoveParamDNRRuleGenerator {
             ]
         }
 
-        guard let json = rulesCache.parsedRules(at: url, header: header, rawData: rawData) else {
+        guard let (resolvedHeader, json) = rulesCache.parsedRules(at: url, header: header, rawData: rawData) else {
             return [
                 "ok": false,
                 "error": "Failed to decode saved removeparam DNR rules",
@@ -759,11 +759,11 @@ public enum RemoveParamDNRRuleGenerator {
         let end = min(json.count, safeOffset + safeLimit)
         let slice: [[String: Any]] = safeOffset < json.count ? Array(json[safeOffset..<end]) : []
         if end >= json.count {
-            rulesCache.clearParsed(matching: header)
+            rulesCache.clearParsed(matching: resolvedHeader)
         }
         return [
             "ok": true,
-            "version": version,
+            "version": resolvedHeader.version,
             "offset": safeOffset,
             "limit": safeLimit,
             "count": json.count,
@@ -854,24 +854,67 @@ public enum RemoveParamDNRRuleGenerator {
             return (nextHeader, data)
         }
 
-        func parsedRules(at url: URL, header: Header, rawData: Data?) -> [[String: Any]]? {
+        func parsedRules(at url: URL, header: Header, rawData: Data?) -> (header: Header, rules: [[String: Any]])? {
             lock.lock()
             if let cached = parsed, cached.header == header {
                 let rules = cached.rules
                 lock.unlock()
-                return rules
+                return (header, rules)
             }
             lock.unlock()
 
-            guard let data = rawData ?? (try? Data(contentsOf: url)),
-                  let rules = (try? JSONSerialization.jsonObject(with: data)) as? [[String: Any]]
+            let resolvedHeader: Header
+            let data: Data
+            if let rawData {
+                resolvedHeader = header
+                data = rawData
+            } else {
+                guard let diskData = try? Data(contentsOf: url) else {
+                    lock.lock()
+                    if self.header == header {
+                        self.header = nil
+                        self.parsed = nil
+                    }
+                    lock.unlock()
+                    return nil
+                }
+                let diskVersion = RemoveParamDNRRuleGenerator.sha256Hex(data: diskData)
+                if diskVersion == header.version {
+                    resolvedHeader = header
+                } else if let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),
+                          let fileNumber = (attributes[.systemFileNumber] as? NSNumber)?.intValue,
+                          let modified = attributes[.modificationDate] as? Date,
+                          let size = (attributes[.size] as? NSNumber)?.intValue {
+                    resolvedHeader = Header(
+                        stamp: FileStamp(fileNumber: fileNumber, modified: modified, size: size),
+                        version: diskVersion,
+                        count: ContentBlockerRuleArray.count(diskData)
+                    )
+                } else {
+                    resolvedHeader = Header(
+                        stamp: header.stamp,
+                        version: diskVersion,
+                        count: ContentBlockerRuleArray.count(diskData)
+                    )
+                }
+                data = diskData
+            }
+            guard let rules = (try? JSONSerialization.jsonObject(with: data)) as? [[String: Any]]
             else { return nil }
             lock.lock()
-            if self.header == header {
+            if resolvedHeader.version != header.version {
+                if resolvedHeader.stamp != header.stamp {
+                    self.header = resolvedHeader
+                    parsed = Parsed(header: resolvedHeader, rules: rules)
+                } else if self.header == header {
+                    self.header = nil
+                    parsed = nil
+                }
+            } else if self.header == header {
                 parsed = Parsed(header: header, rules: rules)
             }
             lock.unlock()
-            return rules
+            return (resolvedHeader, rules)
         }
 
         func clearParsed(matching header: Header) {

@@ -398,7 +398,7 @@ extension RemoveParamDNRRuleGenerator {
             payload["rules"] = [] as [[String: Any]]
             return payload
         }
-        guard let rules = blockedCountCache.parsedRules(at: url, header: header, rawData: rawData) else {
+        guard let (resolvedHeader, rules) = blockedCountCache.parsedRules(at: url, header: header, rawData: rawData) else {
             payload["version"] = ""
             payload["count"] = 0
             payload["rules"] = [] as [[String: Any]]
@@ -414,11 +414,11 @@ extension RemoveParamDNRRuleGenerator {
             domains += ruleDomains
             index += 1
         }
-        payload["version"] = header.version
+        payload["version"] = resolvedHeader.version
         payload["count"] = rules.count
         payload["rules"] = page
         if index >= rules.count {
-            blockedCountCache.clearParsed(matching: header)
+            blockedCountCache.clearParsed(matching: resolvedHeader)
         }
         return payload
     }
