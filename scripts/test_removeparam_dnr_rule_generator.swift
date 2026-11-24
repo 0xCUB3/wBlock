@@ -96,6 +96,77 @@ import Foundation
         check(truncated.rules.contains { $0.action.redirect?.regexSubstitution == "https://kittygr.am/\\1" }, "uritransform redirects outrank narrow removeparam rules under budget pressure")
         check(truncated.rules.map(\.id) == Array(G.ruleIDBase..<G.ruleIDBase + capacity), "stable unique rule IDs")
         _ = try JSONEncoder().encode(truncated.rules)
+
+        let tempDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("wblock-rp-dnr-test-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDir) }
+
+        let generated = G.generateRules(from: "$removeparam=utm_source\n||example.com^$removeparam=fbclid").rules
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        try FilterArtifactStorage.write(
+            encoder.encode(generated),
+            to: tempDir.appendingPathComponent(G.rulesFilename)
+        )
+
+        let firstPayload = G.loadRulesPayload(containerURL: tempDir, offset: 0, limit: 250, knownVersion: nil)
+        let savedVersion = firstPayload["version"] as? String ?? ""
+        check((firstPayload["ok"] as? Bool) == true, "initial loadRulesPayload succeeds")
+        check(!savedVersion.isEmpty, "saved version is non-empty")
+        check((firstPayload["rules"] as? [[String: Any]])?.count == generated.count, "nil knownVersion returns all rules")
+        check(firstPayload["unchanged"] == nil, "nil knownVersion omits unchanged flag")
+
+        let unchangedPayload = G.loadRulesPayload(containerURL: tempDir, offset: 0, limit: 250, knownVersion: savedVersion)
+        check((unchangedPayload["unchanged"] as? Bool) == true, "matching knownVersion at offset 0 returns unchanged=true")
+        check((unchangedPayload["rules"] as? [[String: Any]])?.isEmpty == true, "unchanged payload omits rules array entries")
+        check((unchangedPayload["count"] as? Int) == generated.count, "unchanged payload reports exact rule count")
+        check((unchangedPayload["version"] as? String) == savedVersion, "unchanged payload reports matching version")
+
+        let stalePayload = G.loadRulesPayload(containerURL: tempDir, offset: 0, limit: 250, knownVersion: "stale-version")
+        check((stalePayload["rules"] as? [[String: Any]])?.count == generated.count, "stale knownVersion returns full rules")
+        check(stalePayload["unchanged"] == nil, "stale knownVersion omits unchanged flag")
+
+        let offsetPayload = G.loadRulesPayload(containerURL: tempDir, offset: 1, limit: 250, knownVersion: savedVersion)
+        check((offsetPayload["rules"] as? [[String: Any]])?.count == max(0, generated.count - 1), "offset > 0 still returns slice even when knownVersion matches")
+        check(offsetPayload["unchanged"] == nil, "offset > 0 omits unchanged flag")
+        check(!G.hasCachedParsedRules, "final page clears parsed DNR rules from RAM")
+
+        let coldDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("wblock-rp-dnr-cold-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: coldDir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: coldDir) }
+        try FilterArtifactStorage.write(
+            encoder.encode(generated),
+            to: coldDir.appendingPathComponent(G.rulesFilename)
+        )
+        let coldHit = G.loadRulesPayload(containerURL: coldDir, offset: 0, limit: 250, knownVersion: savedVersion)
+        check((coldHit["unchanged"] as? Bool) == true && (coldHit["count"] as? Int) == generated.count, "cold knownVersion hit succeeds")
+        check(!G.hasCachedParsedRules, "cold knownVersion hit skips JSON deserialization")
+        check(G.savedRulesCount(containerURL: coldDir) == generated.count && !G.hasCachedParsedRules, "savedRulesCount reads count without caching parsed rules")
+
+        check(generated.count >= 2, "expected at least 2 generated rules for multi-page test")
+        let page0 = G.loadRulesPayload(containerURL: coldDir, offset: 0, limit: 1, knownVersion: nil)
+        check((page0["rules"] as? [[String: Any]])?.count == 1 && G.hasCachedParsedRules, "non-final page retains parsed rules for subsequent chunks")
+        let page1 = G.loadRulesPayload(containerURL: coldDir, offset: 1, limit: generated.count, knownVersion: nil)
+        check((page1["rules"] as? [[String: Any]])?.count == generated.count - 1 && !G.hasCachedParsedRules, "final page releases parsed rules")
+
+        let corruptDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("wblock-rp-dnr-corrupt-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: corruptDir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: corruptDir) }
+        let corruptData = Data("{not-json".utf8)
+        try FilterArtifactStorage.write(corruptData, to: corruptDir.appendingPathComponent(G.rulesFilename))
+        let corruptVersion = DigestSupport.sha256Hex(corruptData)
+        let corruptPayload = G.loadRulesPayload(containerURL: corruptDir, offset: 0, limit: 250, knownVersion: corruptVersion)
+        check((corruptPayload["ok"] as? Bool) == false, "corrupt JSON still returns ok=false even when knownVersion matches its digest")
+        check(!G.hasCachedParsedRules, "corrupt JSON never caches failed parse")
+
+        let emptyBase = G.emptyRulesPayload(offset: 0, limit: 250)
+        let emptyVersion = emptyBase["version"] as? String ?? ""
+        let emptyUnchanged = G.emptyRulesPayload(offset: 0, limit: 250, knownVersion: emptyVersion)
+        check((emptyUnchanged["unchanged"] as? Bool) == true, "emptyRulesPayload sets unchanged=true when knownVersion matches")
+
         print("PASS removeparam selectors, scopes, exceptions, badfilter and DNR capacity")
     }
 }

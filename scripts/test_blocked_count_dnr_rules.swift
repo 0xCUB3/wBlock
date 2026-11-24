@@ -75,6 +75,93 @@ struct BlockedCountDNRRulesTests {
         ).rules
         expect(!removeParam.isEmpty && removeParam.allSatisfy { $0.priority > G.blockedCountPriority }, "removeparam rules outrank counting rules")
 
+        let tempDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("wblock-bc-dnr-test-\(UUID().uuidString)", isDirectory: true)
+        do {
+            try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+            defer { try? FileManager.default.removeItem(at: tempDir) }
+
+            try G.saveBlockedCountRules(rules, containerURL: tempDir)
+
+            let fullPayload = G.loadBlockedCountRulesPayload(
+                containerURL: tempDir,
+                enabled: true,
+                offset: 0,
+                limit: 1_000,
+                knownVersion: nil
+            )
+            let version = fullPayload["version"] as? String ?? ""
+            expect(!version.isEmpty, "blocked-count payload produces non-empty version")
+            expect((fullPayload["rules"] as? [[String: Any]])?.count == rules.count, "nil knownVersion returns blocked-count rules")
+            expect(fullPayload["unchanged"] == nil, "nil knownVersion omits unchanged flag")
+
+            let unchangedPayload = G.loadBlockedCountRulesPayload(
+                containerURL: tempDir,
+                enabled: true,
+                offset: 0,
+                limit: 1_000,
+                knownVersion: "true:\(version)"
+            )
+            expect((unchangedPayload["unchanged"] as? Bool) == true, "matching enabled knownVersion returns unchanged=true")
+            expect((unchangedPayload["rules"] as? [[String: Any]])?.isEmpty == true, "unchanged blocked-count payload omits rules")
+            expect((unchangedPayload["count"] as? Int) == rules.count, "unchanged blocked-count payload reports count")
+
+            let toggledOnPayload = G.loadBlockedCountRulesPayload(
+                containerURL: tempDir,
+                enabled: true,
+                offset: 0,
+                limit: 1_000,
+                knownVersion: "false:"
+            )
+            expect((toggledOnPayload["rules"] as? [[String: Any]])?.count == rules.count, "enabling blocked-count ignores stale disabled knownVersion")
+            expect(toggledOnPayload["unchanged"] == nil, "enabling blocked-count omits unchanged flag")
+
+            let disabledUnchanged = G.loadBlockedCountRulesPayload(
+                containerURL: tempDir,
+                enabled: false,
+                offset: 0,
+                limit: 1_000,
+                knownVersion: "false:"
+            )
+            expect((disabledUnchanged["unchanged"] as? Bool) == true, "disabled knownVersion 'false:' returns unchanged=true")
+            expect((disabledUnchanged["count"] as? Int) == 0, "disabled payload has count=0")
+
+            let disabledChanged = G.loadBlockedCountRulesPayload(
+                containerURL: tempDir,
+                enabled: false,
+                offset: 0,
+                limit: 1_000,
+                knownVersion: "true:\(version)"
+            )
+            expect(disabledChanged["unchanged"] == nil, "disabling blocked-count from 'true:<ver>' does not set unchanged=true")
+            expect(!G.hasCachedParsedBlockedCountRules, "single-page load clears parsed blocked-count rules from RAM")
+
+            let coldDir = FileManager.default.temporaryDirectory
+                .appendingPathComponent("wblock-bc-dnr-cold-\(UUID().uuidString)", isDirectory: true)
+            try FileManager.default.createDirectory(at: coldDir, withIntermediateDirectories: true)
+            defer { try? FileManager.default.removeItem(at: coldDir) }
+            try G.saveBlockedCountRules(rules, containerURL: coldDir)
+
+            let coldHit = G.loadBlockedCountRulesPayload(
+                containerURL: coldDir,
+                enabled: true,
+                offset: 0,
+                limit: 1_000,
+                knownVersion: "true:\(version)"
+            )
+            expect((coldHit["unchanged"] as? Bool) == true && (coldHit["count"] as? Int) == rules.count, "cold blocked-count knownVersion hit succeeds")
+            expect(!G.hasCachedParsedBlockedCountRules, "cold blocked-count knownVersion hit skips JSON deserialization")
+
+            expect(rules.count >= 2, "expected at least 2 blocked-count rules for multi-page test")
+            let page0 = G.loadBlockedCountRulesPayload(containerURL: coldDir, enabled: true, offset: 0, limit: 1, knownVersion: nil)
+            expect((page0["rules"] as? [[String: Any]])?.count == 1 && G.hasCachedParsedBlockedCountRules, "non-final blocked-count page retains cache")
+            let page1 = G.loadBlockedCountRulesPayload(containerURL: coldDir, enabled: true, offset: 1, limit: rules.count, knownVersion: nil)
+            expect((page1["rules"] as? [[String: Any]])?.count == rules.count - 1 && !G.hasCachedParsedBlockedCountRules, "final blocked-count page clears cache")
+        } catch {
+            failures += 1
+            print("FAIL: blocked-count payload knownVersion test threw \(error)")
+        }
+
         guard failures == 0 else {
             print("\(failures) blocked-count DNR check(s) failed")
             exit(1)
