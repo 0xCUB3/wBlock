@@ -235,6 +235,7 @@ class AppFilterManager: ObservableObject {
     @Published private(set) var basicApplyCompletionToken = 0
     @Published private(set) var lastBasicApplyFailed = false
     @Published private(set) var lastBasicApplyFailedFilterIDs: Set<UUID> = []
+    @Published var activeDownloadingFilterIDs: Set<UUID> = []
     @Published private(set) var showingBasicUpToDateStatus = false
     private var needsFollowUpBasicApply = false
     private var basicUpToDateTask: Task<Void, Never>?

@@ -275,9 +275,13 @@ extension AppFilterManager {
     }
 
     func downloadMissingItemsSilently() async {
+        defer { activeDownloadingFilterIDs.removeAll() }
         for filter in missingFilters {
-            if await filterUpdater.fetchAndProcessFilter(filter) {
-                await MainActor.run { self.missingFilters.removeAll { $0.id == filter.id } }
+            activeDownloadingFilterIDs.insert(filter.id)
+            let downloaded = await filterUpdater.fetchAndProcessFilter(filter)
+            activeDownloadingFilterIDs.remove(filter.id)
+            if downloaded {
+                self.missingFilters.removeAll { $0.id == filter.id }
             }
         }
 

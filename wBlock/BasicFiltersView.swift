@@ -608,11 +608,13 @@ struct BasicFiltersView: View {
     }
 
     private var languagesRow: some View {
+        let foreignFilters = filterManager.filterLists.filter { !$0.isCustom && $0.category == .foreign }
+        let foreignFilterIDs = Set(foreignFilters.map(\.id))
         let isDirty = BasicBundle.isLanguagesDirty(
             in: filterManager.filterLists,
             appliedSelectedIDs: filterManager.appliedSelectedFilterIDs
         )
-        let hasActiveForeign = filterManager.filterLists.contains { !$0.isCustom && $0.category == .foreign && $0.isSelected }
+        let hasActiveForeign = foreignFilters.contains(where: \.isSelected)
 
         return Button {
             showingLanguagesSheet = true
@@ -622,7 +624,7 @@ struct BasicFiltersView: View {
                     systemName: "globe",
                     tint: .accentColor,
                     isOn: hasActiveForeign,
-                    ringPhase: rowRingPhase(isDirty: isDirty),
+                    ringPhase: rowRingPhase(for: foreignFilterIDs, isDirty: isDirty),
                     showsFailedDot: filterManager.lastBasicApplyFailed && isDirty
                 )
 
@@ -685,6 +687,7 @@ struct BasicFiltersView: View {
     }
 
     private var alsoOnRow: some View {
+        let unownedFilterIDs = Set(unownedActiveFilters.map(\.id))
         let isDirty = BasicBundle.isUnownedDirty(
             in: filterManager.filterLists,
             appliedSelectedIDs: filterManager.appliedSelectedFilterIDs,
@@ -698,7 +701,7 @@ struct BasicFiltersView: View {
                     systemName: "square.stack.3d.up.fill",
                     tint: .accentColor,
                     isOn: true,
-                    ringPhase: rowRingPhase(isDirty: isDirty),
+                    ringPhase: rowRingPhase(for: unownedFilterIDs, isDirty: isDirty),
                     showsFailedDot: filterManager.lastBasicApplyFailed && isDirty
                 )
 
@@ -797,19 +800,15 @@ struct BasicFiltersView: View {
     }
 
     private func ringPhase(for bundle: BasicBundle) -> BadgeRingPhase {
-        let isDirty = bundle.isDirty(
-            in: filterManager.filterLists,
-            appliedSelectedIDs: filterManager.appliedSelectedFilterIDs
-        )
-        return rowRingPhase(isDirty: isDirty)
+        let scoped = bundle.scopedFilters(in: filterManager.filterLists)
+        let scopedIDs = Set(scoped.map(\.id))
+        let isDirty = scoped.contains { $0.isSelected != filterManager.appliedSelectedFilterIDs.contains($0.id) }
+        return rowRingPhase(for: scopedIDs, isDirty: isDirty)
     }
 
-    private func rowRingPhase(isDirty: Bool) -> BadgeRingPhase {
-        if filterManager.isApplyInFlight && isDirty {
-            return .applying(progress: applyProgress)
-        }
-        if filterManager.hasQueuedBasicAutoApply && isDirty {
-            return .queued
+    private func rowRingPhase(for filterIDs: Set<UUID>, isDirty: Bool) -> BadgeRingPhase {
+        if !filterIDs.isDisjoint(with: filterManager.activeDownloadingFilterIDs) {
+            return .applying(progress: nil)
         }
         if filterManager.lastBasicApplyFailed && isDirty {
             return .failed
