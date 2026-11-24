@@ -205,6 +205,28 @@ struct ZapperPlanSharingTests {
             fail("stale pack fingerprint left behind")
         }
 
+        // A saved zapper blocker whose count exceeds tightened limits must not
+        // poison known_targets and cause a false capacity failure once zapper
+        // rules are removed or limits tighten (the lists alone still fit).
+        let loneZapperSelection = [adsFilter]
+        _ = try ContentBlockerService.compileTargetRules(
+            filters: loneZapperSelection, orderedSelectedFilters: loneZapperSelection,
+            targetInfo: zapperTarget, allTargets: [zapperTarget],
+            disabledSites: [], extraRulesText: updatedZapper,
+            groupIdentifier: group, containerURL: container)
+        let zapperBase = ContentBlockerIncrementalCache.baseRulesFilename(for: zapperTarget.rulesFilename)
+        try "\(ContentBlockerService.safariContentBlockerRuleLimit)".write(
+            to: container.appendingPathComponent("\(zapperBase).count"),
+            atomically: true, encoding: .utf8)
+        let tightenedOutcome = try ContentBlockerService.compileTargetRules(
+            filters: loneZapperSelection, orderedSelectedFilters: loneZapperSelection,
+            targetInfo: zapperTarget, allTargets: [zapperTarget],
+            disabledSites: ["tightened-a.example", "tightened-b.example"], extraRulesText: nil,
+            groupIdentifier: group, containerURL: container)
+        if tightenedOutcome.truncatedRuleCount != 0 {
+            fail("zapper-inflated saved count must not fail or truncate a fitting plan")
+        }
+
         print("PASS zapper rules share the selection's plan")
     }
 }

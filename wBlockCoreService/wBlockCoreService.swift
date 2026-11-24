@@ -1814,8 +1814,8 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
                 let outcome = try reuseCachedBase(provenanceSignature: reuse.stored)
                 if outcome.truncatedRuleCount == 0 {
                     if let planExtrasJSON = inputs.planExtrasJSON,
-                       savedFingerprint(filename: packFingerprintFilename(for: rulesFilename), containerURL: containerURL) == nil {
-                        let packFingerprint = try plan.targetFingerprint(targetIndex, extras: planExtrasJSON)
+                       savedFingerprint(filename: packFingerprintFilename(for: rulesFilename), containerURL: containerURL) == nil,
+                       let packFingerprint = try? plan.targetFingerprint(targetIndex, extras: planExtrasJSON) {
                         try? saveBlockerListFile(contents: String(packFingerprint) + fingerprintIdentity,
                             groupIdentifier: groupIdentifier, filename: packFingerprintFilename(for: rulesFilename),
                             containerURL: containerURL)
@@ -2158,13 +2158,21 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
             let attributes = try? FileManager.default.attributesOfItem(atPath: url.path)
             return "\(attributes?[.size] ?? 0)|\((attributes?[.modificationDate] as? Date)?.timeIntervalSince1970 ?? 0)"
         }.joined(separator: "\n")
-        let planKey = "wbe-plan|\(SafariVersionDetection.compilerIdentity)|\(requestJSON)|\(fingerprints)"
+        let planKey = "wbe-plan|\(SafariVersionDetection.compilerIdentity)|\(containerURL.path)|\(requestJSON)|\(fingerprints)"
         let makePlan = {
             // The output each blocker was last saved with, so the engine can tell
             // which blockers the selection changes. Read only when building the plan
             // so earlier blockers saving mid-apply do not change the shared key.
             let knownTargets: [Any] = allTargets.map { target -> Any in
                 guard let saved = savedTargetBase(rulesFilename: target.rulesFilename, containerURL: containerURL) else {
+                    return NSNull()
+                }
+                // A blocker saved with rules of its own (Element Zapper) records
+                // their rules and bytes too. That upper bound is safe while it
+                // fits the current budgets, but if it exceeds them we must let
+                // the plan measure the lists alone instead of rejecting or
+                // rebalancing over stale zapper rules.
+                if saved.includesOwnRules, followsPlan, saved.rules > limits.rules || saved.bytes > limits.bytes {
                     return NSNull()
                 }
                 // The engine compares these as 16 lowercase hex digits, its `{:016x}` form.
@@ -2211,6 +2219,8 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         /// The fingerprint `pack` gives this output. It differs from `fingerprint`
         /// only for a blocker compiled with rules of its own, which the plan packs without.
         let packFingerprint: UInt64
+        /// True when the saved output includes per-target rules absent from the plan's extras.
+        let includesOwnRules: Bool
         let rules: Int
         let bytes: Int
     }
@@ -2219,8 +2229,8 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         guard let fingerprint = savedPlanFingerprint(rulesFilename: rulesFilename, containerURL: containerURL) else {
             return nil
         }
-        let packFingerprint = savedFingerprint(filename: packFingerprintFilename(for: rulesFilename), containerURL: containerURL)
-            ?? fingerprint
+        let separatePackFingerprint = savedFingerprint(filename: packFingerprintFilename(for: rulesFilename), containerURL: containerURL)
+        let packFingerprint = separatePackFingerprint ?? fingerprint
         let baseFilename = ContentBlockerIncrementalCache.baseRulesFilename(for: rulesFilename)
         guard let countText = try? String(
                 contentsOf: containerURL.appendingPathComponent("\(baseFilename).count"), encoding: .utf8),
@@ -2228,7 +2238,13 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
               let bytes = (try? FileManager.default.attributesOfItem(
                   atPath: containerURL.appendingPathComponent(baseFilename).path))?[.size] as? Int
         else { return nil }
-        return SavedTargetBase(fingerprint: fingerprint, packFingerprint: packFingerprint, rules: rules, bytes: bytes)
+        return SavedTargetBase(
+            fingerprint: fingerprint,
+            packFingerprint: packFingerprint,
+            includesOwnRules: separatePackFingerprint != nil,
+            rules: rules,
+            bytes: bytes
+        )
     }
 
     /// What a rebuild of `allTargets` would change, judged by each blocker's plan
