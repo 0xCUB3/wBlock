@@ -90,13 +90,88 @@ struct SafariHealthInput: Equatable, Sendable {
     var lastUpdatedDate: Date?
 }
 
+/// Shared copy for paused-protection surfaces (Hero, top banner, and detail sheet).
+enum PauseBlockingCopy {
+    static var defaultIsMacOS: Bool {
+        #if os(macOS)
+        true
+        #else
+        false
+        #endif
+    }
+
+    static func componentNames(for components: BlockingPauseComponents) -> [String] {
+        var names: [String] = []
+        if components.contains(.filters) {
+            names.append(NSLocalizedString("Filters", comment: "Paused blocking component"))
+        }
+        if components.contains(.userScripts) {
+            names.append(NSLocalizedString("Userscripts & Userstyles", comment: "Paused blocking component"))
+        }
+        if components.contains(.elementZapper) {
+            names.append(NSLocalizedString("Element Zapper", comment: "Paused blocking component"))
+        }
+        return names
+    }
+
+    static func pausedSummary(for components: BlockingPauseComponents) -> String {
+        let normalized = components.intersection(.all)
+        let joined = ListFormatter.localizedString(byJoining: componentNames(for: normalized))
+        if normalized == .all {
+            return String.localizedStringWithFormat(
+                NSLocalizedString(
+                    "All blocking is paused (%@).",
+                    comment: "Pause blocking status when every component is paused"
+                ),
+                joined
+            )
+        }
+        return String.localizedStringWithFormat(
+            NSLocalizedString(
+                "Paused: %@.",
+                comment: "Pause blocking status listing specific paused components"
+            ),
+            joined
+        )
+    }
+
+    static func componentPickerHint(appMode: AppMode, isMacOS: Bool = defaultIsMacOS) -> String {
+        if isMacOS {
+            return NSLocalizedString(
+                "Use View > Pause Blocking to pause specific components.",
+                comment: "macOS hint for pausing individual blocking components"
+            )
+        }
+        switch appMode {
+        case .basic:
+            return NSLocalizedString(
+                "Turn on Show All Lists in Settings, then hold the Pause button to pause specific components.",
+                comment: "iOS Standard mode hint for pausing individual blocking components"
+            )
+        case .advanced:
+            return NSLocalizedString(
+                "Hold the Pause button to pause specific components.",
+                comment: "iOS Customizable mode hint for pausing individual blocking components"
+            )
+        }
+    }
+
+    static func message(
+        for components: BlockingPauseComponents,
+        appMode: AppMode,
+        isMacOS: Bool = defaultIsMacOS
+    ) -> String {
+        "\(pausedSummary(for: components)) \(componentPickerHint(appMode: appMode, isMacOS: isMacOS))"
+    }
+}
+
 /// Priority-ordered protection health status shown by the Hero, compact
 /// Advanced banner, Settings top row, and iOS bottom accessory.
 enum SafariHealthStatus: Equatable, Sendable {
     case allBlockersOff
     case someBlockersOff
     case scriptsExtensionOff
-    case paused(partial: Bool)
+    case paused(components: BlockingPauseComponents)
     case ruleLimitHit
     case applying
     case checkingForUpdates
@@ -133,6 +208,11 @@ enum SafariHealthStatus: Equatable, Sendable {
         return false
     }
 
+    var isPaused: Bool {
+        if case .paused = self { return true }
+        return false
+    }
+
     var isExtensionDegraded: Bool {
         switch self {
         case .allBlockersOff, .someBlockersOff, .scriptsExtensionOff:
@@ -145,8 +225,7 @@ enum SafariHealthStatus: Equatable, Sendable {
     var tone: Tone {
         switch self {
         case .allBlockersOff: .red
-        case .someBlockersOff, .scriptsExtensionOff, .ruleLimitHit, .failed: .orange
-        case .paused: .gray
+        case .someBlockersOff, .scriptsExtensionOff, .paused, .ruleLimitHit, .failed: .orange
         case .applying, .checkingForUpdates: .accent
         case .protected: .green
         }
@@ -190,7 +269,7 @@ enum SafariHealthStatus: Equatable, Sendable {
         }
     }
 
-    func subtitle(now: Date = Date()) -> String {
+    func subtitle(now: Date = Date(), appMode: AppMode = .basic) -> String {
         switch self {
         case .allBlockersOff:
             return NSLocalizedString("wBlock can't block anything until turned on in Safari's Extensions menu.", comment: "Hero status subtitle: all blockers off")
@@ -198,10 +277,8 @@ enum SafariHealthStatus: Equatable, Sendable {
             return NSLocalizedString("One or more blockers are off; ads might get through.", comment: "Hero status subtitle: some blockers off")
         case .scriptsExtensionOff:
             return NSLocalizedString("Extras and some ad blocking need the wBlock Scripts extension enabled.", comment: "Hero status subtitle: scripts extension off")
-        case .paused(let partial):
-            return partial
-                ? NSLocalizedString("Some blocking is paused right now; you can toggle it again to resume.", comment: "Hero status subtitle: partial pause")
-                : NSLocalizedString("Blocking is paused right now; you can toggle it again to resume blocking.", comment: "Hero status subtitle: full pause")
+        case .paused(let components):
+            return PauseBlockingCopy.message(for: components, appMode: appMode)
         case .ruleLimitHit:
             return NSLocalizedString("Safari has reached its rule limit so some rules won't be loaded; try turning off a category.", comment: "Hero status subtitle: rule limit hit")
         case .applying:
@@ -277,7 +354,7 @@ enum SafariHealthResolver {
             }
         }
         if !input.pausedComponents.isEmpty {
-            return .paused(partial: input.pausedComponents != .all)
+            return .paused(components: input.pausedComponents.intersection(.all))
         }
         if input.hasHitRuleLimit {
             return .ruleLimitHit

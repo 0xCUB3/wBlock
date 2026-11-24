@@ -1575,22 +1575,24 @@ struct PauseBlockingControls: View {
     }
 }
 
-/// Shown while blocking is paused, on the Filters, Userscripts, and Settings pages.
+/// Shown while blocking is paused, on Filters, Extras/Userscripts, and Settings.
 struct PauseBlockingBanner: View {
     @ObservedObject var filterManager: AppFilterManager
+    @AppStorage(AppMode.storageKey) private var appMode: AppMode = .basic
 
     var body: some View {
         HStack(spacing: 10) {
-            Image(systemName: "pause.circle.fill")
+            Image(systemName: "shield.slash.fill")
                 .font(.title3)
                 .foregroundStyle(.orange)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("Pause Blocking")
+                Text("Protection Paused")
                     .font(.subheadline.weight(.semibold))
-                Text("Pause Blocking is on while any selected component is paused. Resume restores all components.")
+                Text(PauseBlockingCopy.message(for: filterManager.pausedComponents, appMode: appMode))
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             Spacer(minLength: 8)

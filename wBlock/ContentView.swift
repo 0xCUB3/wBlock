@@ -225,11 +225,16 @@ struct ContentView: View {
     }
 
     private var showBasicBottomAccessory: Bool {
-        appMode == .basic
-            && !healthStatus.isProtected
-            && healthStatus != .applying
-            && healthStatus != .checkingForUpdates
-            && (!isBasicHeroVisible || tabSelection.value != 0)
+        guard appMode == .basic,
+              !healthStatus.isProtected,
+              healthStatus != .applying,
+              healthStatus != .checkingForUpdates
+        else { return false }
+        // Extras and Settings already show PauseBlockingBanner at the top while paused (#1162).
+        if healthStatus.isPaused && tabSelection.value != 0 {
+            return false
+        }
+        return !isBasicHeroVisible || tabSelection.value != 0
     }
 
     private func handleHealthAction(_ action: SafariHealthStatus.Action) {
@@ -751,6 +756,11 @@ struct ContentView: View {
                     .navigationTitle("")
                     #endif
                     .modifier(basicToolbar)
+                    .topBarCompat {
+                        if filterManager.isBlockingPaused {
+                            PauseBlockingBanner(filterManager: filterManager)
+                        }
+                    }
                     .transition(.opacity)
                 } else {
                     UserScriptManagerView(

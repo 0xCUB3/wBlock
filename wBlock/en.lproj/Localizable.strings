@@ -1301,3 +1301,9 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Filters are up to date." = "Filters are up to date.";
 "Checking for updates…" = "Checking for updates…";
 "Looking for newer filter lists and extras." = "Looking for newer filter lists and extras.";
+"Userscripts & Userstyles" = "Userscripts & Userstyles";
+"All blocking is paused (%@)." = "All blocking is paused (%@).";
+"Paused: %@." = "Paused: %@.";
+"Use View > Pause Blocking to pause specific components." = "Use View > Pause Blocking to pause specific components.";
+"Turn on Show All Lists in Settings, then hold the Pause button to pause specific components." = "Turn on Show All Lists in Settings, then hold the Pause button to pause specific components.";
+"Hold the Pause button to pause specific components." = "Hold the Pause button to pause specific components.";

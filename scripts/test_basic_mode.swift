@@ -412,7 +412,9 @@ struct BasicModeTests {
             failedDuringUpdate: false,
             lastUpdatedDate: now
         ))
-        precondition(s4Full == .paused(partial: false) && s4Full.action == .resume)
+        precondition(s4Full == .paused(components: .all) && s4Full.action == .resume && s4Full.isPaused)
+        precondition(s4Full.title == "Protection Paused", "Paused title must be capitalized")
+        precondition(s4Full.tone == .orange, "Paused tone must match orange pause banners")
 
         let s4Partial = SafariHealthResolver.resolve(SafariHealthInput(
             hasReadExtensions: true,
@@ -427,7 +429,18 @@ struct BasicModeTests {
             failedDuringUpdate: false,
             lastUpdatedDate: now
         ))
-        precondition(s4Partial == .paused(partial: true))
+        precondition(s4Partial == .paused(components: [.filters]) && s4Partial.isPaused)
+
+        // Pause copy reflects paused parts and mode/platform picker instructions (#1162)
+        let fullSummary = PauseBlockingCopy.pausedSummary(for: .all)
+        precondition(fullSummary.contains("All blocking is paused"), "Full pause summary must state everything is paused: \(fullSummary)")
+        precondition(fullSummary.contains("Filters") && fullSummary.contains("Userscripts & Userstyles") && fullSummary.contains("Element Zapper"))
+        let partialSummary = PauseBlockingCopy.pausedSummary(for: [.filters, .elementZapper])
+        precondition(partialSummary.contains("Filters") && partialSummary.contains("Element Zapper") && !partialSummary.contains("Userscripts"))
+        precondition(PauseBlockingCopy.componentPickerHint(appMode: .basic, isMacOS: false).contains("Show All Lists"))
+        precondition(PauseBlockingCopy.componentPickerHint(appMode: .advanced, isMacOS: false).contains("Hold the Pause button"))
+        precondition(PauseBlockingCopy.componentPickerHint(appMode: .basic, isMacOS: true).contains("View > Pause Blocking"))
+        precondition(PauseBlockingCopy.componentPickerHint(appMode: .advanced, isMacOS: true).contains("View > Pause Blocking"))
 
         // 5. Rule limit hit beats applying & failed
         let s5 = SafariHealthResolver.resolve(SafariHealthInput(
@@ -460,6 +473,7 @@ struct BasicModeTests {
             lastUpdatedDate: now
         ))
         precondition(s6 == .applying && s6.action == nil)
+        precondition(s6.title == "Applying Filters…", "Applying title must be capitalized")
 
         // 7. Failed beats protected
         let s7 = SafariHealthResolver.resolve(SafariHealthInput(
