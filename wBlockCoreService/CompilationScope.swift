@@ -50,6 +50,12 @@ final class CompilationScope: @unchecked Sendable {
     private let lock = NSLock()
     private var entries: [AnyHashable: Entry] = [:]
 
+    var entryCount: Int {
+        lock.lock()
+        defer { lock.unlock() }
+        return entries.count
+    }
+
     /// Blockers that ask for the same key wait for the first one to finish
     /// instead of repeating its work; different keys run in parallel. Errors,
     /// including cancellation, are not cached.

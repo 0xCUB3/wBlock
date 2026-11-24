@@ -2138,14 +2138,6 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         let planExtrasJSON = try json(planExtras)
         let ownRules = extraRulesText ?? ""
         let extrasJSON = ownRules.isEmpty ? planExtrasJSON : try json(extras(ownRules: ownRules))
-        // The output each blocker was last saved with, so the engine can tell which blockers the selection changes.
-        let knownTargets: [Any] = allTargets.map { target -> Any in
-            guard let saved = savedTargetBase(rulesFilename: target.rulesFilename, containerURL: containerURL) else {
-                return NSNull()
-            }
-            // The engine compares these as 16 lowercase hex digits, its `{:016x}` form.
-            return ["fingerprint": String(format: "%016llx", saved.packFingerprint), "rules": saved.rules, "bytes": saved.bytes] as [String: Any]
-        }
         #if os(iOS)
         let packOutputsMaxBytes = ProcessInfo.processInfo.physicalMemory <= 4 * 1024 * 1024 * 1024
             ? 24 * 1024 * 1024 : 100 * 1024 * 1024
@@ -2153,7 +2145,7 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         let packOutputsMaxBytes = 100 * 1024 * 1024
         #endif
         let request: [String: Any] = ["safari": [safari.major, safari.minor], "lists": lists, "targets": targets,
-            "extras": planExtras, "known_targets": knownTargets, "cache_pack_outputs_max_bytes": packOutputsMaxBytes,
+            "extras": planExtras, "cache_pack_outputs_max_bytes": packOutputsMaxBytes,
             // The engine moves blocks between blockers only when every blocker
             // is built from this same plan.
             "limits": ["rules": followsPlan ? limits.rules : 0, "bytes": limits.bytes],
@@ -2167,7 +2159,22 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
             return "\(attributes?[.size] ?? 0)|\((attributes?[.modificationDate] as? Date)?.timeIntervalSince1970 ?? 0)"
         }.joined(separator: "\n")
         let planKey = "wbe-plan|\(SafariVersionDetection.compilerIdentity)|\(requestJSON)|\(fingerprints)"
-        let makePlan = { try WBEngine.Plan(requestJSON: requestJSON) }
+        let makePlan = {
+            // The output each blocker was last saved with, so the engine can tell
+            // which blockers the selection changes. Read only when building the plan
+            // so earlier blockers saving mid-apply do not change the shared key.
+            let knownTargets: [Any] = allTargets.map { target -> Any in
+                guard let saved = savedTargetBase(rulesFilename: target.rulesFilename, containerURL: containerURL) else {
+                    return NSNull()
+                }
+                // The engine compares these as 16 lowercase hex digits, its `{:016x}` form.
+                return ["fingerprint": String(format: "%016llx", saved.packFingerprint), "rules": saved.rules, "bytes": saved.bytes] as [String: Any]
+            }
+            var planRequest = request
+            planRequest["known_targets"] = knownTargets
+            let planRequestData = try JSONSerialization.data(withJSONObject: planRequest)
+            return try WBEngine.Plan(requestJSON: String(decoding: planRequestData, as: UTF8.self))
+        }
         let plan = try CompilationScope.current.map { try $0.memoized(planKey, makePlan) } ?? makePlan()
         return EnginePlanInputs(plan: plan, targetIndex: targetIndex, requestJSON: requestJSON, extrasJSON: extrasJSON,
                                 planExtrasJSON: ownRules.isEmpty ? nil : planExtrasJSON, fingerprints: fingerprints)
