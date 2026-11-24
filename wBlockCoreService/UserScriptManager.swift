@@ -142,7 +142,9 @@ public class UserScriptManager: ObservableObject {
     @Published public var userScripts: [UserScript] = [] {
         didSet {
             rebuildUserScriptIndex()
-            // Invalidate any in-flight syncFromDataManager snapshot taken before this mutation.
+            // Invalidate any queued or in-flight syncFromDataManager snapshot taken before this mutation.
+            dataManagerSyncTask?.cancel()
+            dataManagerSyncTask = nil
             dataManagerSyncGeneration &+= 1
             cachedPayloadRevision = nil
             cachedPayloadManifestToken = nil
@@ -175,6 +177,8 @@ public class UserScriptManager: ObservableObject {
     private var initialLoadTask: Task<Void, Never>?
     private var userScriptIndexByID: [UUID: Int] = [:]
     private var dataManagerSyncGeneration: UInt64 = 0
+    private var dataManagerSyncTask: Task<Void, Never>?
+    private var activePersistCount: Int = 0
     private var nextUserScriptIntentRevision: UInt64 = 0
     private var userScriptIntentRevisions: [UUID: UInt64] = [:]
     private var latestUserScriptIntentValues: [UUID: Bool] = [:]
@@ -855,9 +859,7 @@ public class UserScriptManager: ObservableObject {
                 .map { $0.userScripts }
                 .removeDuplicates()
                 .sink { [weak self] _ in
-                    Task { [weak self] in
-                        await self?.syncFromDataManager()
-                    }
+                    self?.scheduleSyncFromDataManager()
                 }
             .store(in: &cancellables)
             logger.info("✅ UserScriptManager data sync observer setup complete")
@@ -895,9 +897,33 @@ public class UserScriptManager: ObservableObject {
         userScripts = hydratedScripts
     }
 
-    private func syncFromDataManager() async {
+    private func scheduleSyncFromDataManager() {
+        guard activePersistCount == 0 else { return }
+        dataManagerSyncTask?.cancel()
         dataManagerSyncGeneration &+= 1
         let generation = dataManagerSyncGeneration
+        dataManagerSyncTask = Task { @MainActor [weak self] in
+            await self?.syncFromDataManager(expectedGeneration: generation)
+        }
+    }
+
+    private func withActivePersist<T>(_ operation: () async -> T) async -> T {
+        dataManagerSyncTask?.cancel()
+        dataManagerSyncTask = nil
+        dataManagerSyncGeneration &+= 1
+        activePersistCount += 1
+        defer { activePersistCount -= 1 }
+        return await operation()
+    }
+
+    private func syncFromDataManager(expectedGeneration generation: UInt64) async {
+        guard !Task.isCancelled,
+              generation == dataManagerSyncGeneration,
+              activePersistCount == 0
+        else {
+            logger.info("🔄 Ignoring stale userscript sync generation \(generation)")
+            return
+        }
         let newUserScripts = dataManager.getUserScripts()
         logger.info("🔄 Syncing userscripts from data manager: \(newUserScripts.count) scripts")
 
@@ -915,7 +941,10 @@ public class UserScriptManager: ObservableObject {
             includeResources: true,
             hydrateDisabled: false
         )
-        guard generation == dataManagerSyncGeneration else {
+        guard !Task.isCancelled,
+              generation == dataManagerSyncGeneration,
+              activePersistCount == 0
+        else {
             logger.info("🔄 Ignoring stale userscript sync generation \(generation)")
             return
         }
@@ -1148,7 +1177,7 @@ public class UserScriptManager: ObservableObject {
 
         userScripts.removeAll { ids.contains($0.id) }
         for script in duplicates { recordScriptMutation(script.id) }
-        guard await dataManager.removeDuplicateUserScripts(withIDs: ids) else {
+        guard await withActivePersist({ await self.dataManager.removeDuplicateUserScripts(withIDs: ids) }) else {
             userScripts = dataManager.getUserScripts(includePersistedContent: true)
             hasError = true
             errorMessage = dataManager.lastError?.localizedDescription
@@ -2035,14 +2064,15 @@ public class UserScriptManager: ObservableObject {
         }
         logger.info("💾 Saving \(self.userScripts.count) userscripts to ProtobufDataManager")
         let records = userScripts.map(persistableUserScript)
-        let persisted: Bool
-        if authoritative {
-            persisted = await dataManager.replaceUserScripts(records)
-        } else {
-            persisted = await dataManager.updateUserScripts(
-                records,
-                explicitEnabledStates: explicitEnabledStates
-            )
+        let persisted: Bool = await withActivePersist {
+            if authoritative {
+                return await self.dataManager.replaceUserScripts(records)
+            } else {
+                return await self.dataManager.updateUserScripts(
+                    records,
+                    explicitEnabledStates: explicitEnabledStates
+                )
+            }
         }
         guard persisted else {
             logger.error("💾 Failed to persist userscripts to ProtobufDataManager")
@@ -3146,7 +3176,9 @@ public class UserScriptManager: ObservableObject {
             // Persist the exact deletion before touching sidecar files or returning. Any
             // stale in-flight upsert is ignored by its ID-based merge, and suspension
             // cannot leave an executable record on disk.
-            await dataManager.removeUserScript(withId: removedScript.id)
+            await withActivePersist {
+                await self.dataManager.removeUserScript(withId: removedScript.id)
+            }
             removeUserScriptFile(removedScript)
 
             statusDescription = "Removed \(removedScript.name)"
