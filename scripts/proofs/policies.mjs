@@ -508,8 +508,139 @@ const popupSteps = [
     s => s.op.eq(5).and(s.st.ne(0), notLive(s))),
 ];
 
+// SwipeBackGestureState (wBlock/SwipeBackNavigation.swift): interactive macOS back-swipe state machine.
+// Progress and amount are encoded in permille (0..1000): 300 = 0.30, 500 = 0.50, 995 = 0.995, 1000 = 1.00.
+// Axis classifies a scroll event after accumulation: 'short' (< 8 pt), 'back' (>= 8 pt right-dominant), 'other' (vertical or left).
+export const swipeOps = ['scroll', 'track', 'finishCommit', 'abort'];
+export const swipePhases = ['none', 'mayBegin', 'began', 'changed', 'ended', 'cancelled'];
+const swipeModes = ['idle', 'pending', 'tracking', 'committing'];
+const swipeActions = ['none', 'start', 'update', 'cancel', 'commit'];
+const swipeBase = rule('swipe back gesture')
+  .inputs({
+    op: oneOf(...swipeOps),
+    phase: oneOf(...swipePhases),
+    hasMomentum: bool,
+    swipeEnabled: bool,
+    reduceMotionIn: bool,
+    axis: oneOf('short', 'back', 'other'),
+    amount: nat,
+    isComplete: bool,
+  })
+  .state({
+    mode: oneOf(...swipeModes).from('idle'),
+    didRelease: bool.from(false),
+    reduceMotion: bool.from(false),
+    progress: 0,
+    action: oneOf(...swipeActions).from('none'),
+    stopped: bool.from(false),
+  })
+  .assume(({ amount }) => amount.atMost(1000));
+
+function swipeStep(e, broken = '') {
+  const active = e.mode.is('tracking').or(e.mode.is('committing'));
+  const canScroll = broken === 'momentum'
+    ? e.op.is('scroll').and(active.not())
+    : e.op.is('scroll').and(active.not(), e.hasMomentum.not());
+  const evalScroll = canScroll.and(e.phase.is('began').or(e.phase.is('changed').and(e.mode.is('pending'))));
+  const starts = evalScroll.and(e.axis.is('back'), e.swipeEnabled);
+  const goesPending = canScroll.and(e.phase.is('mayBegin').or(evalScroll.and(e.axis.is('short'))));
+
+  const isTracking = e.op.is('track').and(e.mode.is('tracking'));
+  const rel = e.didRelease.or(e.phase.is('ended')).or(e.phase.is('cancelled'));
+  const rm = e.reduceMotion;
+
+  const rmCompleteCommit = isTracking.and(rm, e.isComplete, e.amount.atLeast(500));
+  const rmCompleteCancel = isTracking.and(rm, e.isComplete, e.amount.lt(500));
+  const rmEndCommit = broken === 'waitForComplete'
+    ? no
+    : isTracking.and(rm, e.isComplete.not(), e.phase.is('ended'), e.amount.atLeast(300));
+  const rmEndCancel = broken === 'waitForComplete'
+    ? no
+    : isTracking.and(rm, e.isComplete.not(), e.phase.is('ended'), e.amount.lt(300));
+  const rmCancel = isTracking.and(rm, e.isComplete.not(), e.phase.is('cancelled'));
+
+  const normCompleteCommit = isTracking.and(rm.not(), e.isComplete, e.amount.atLeast(500));
+  const normCompleteCancel = isTracking.and(rm.not(), e.isComplete, e.amount.lt(500));
+  const normTailCommit = broken === 'commitWhileHolding'
+    ? isTracking.and(rm.not(), e.isComplete.not(), e.amount.atLeast(995))
+    : broken === 'waitForComplete'
+      ? no
+      : isTracking.and(rm.not(), e.isComplete.not(), rel, e.amount.atLeast(995));
+
+  const commits = rmCompleteCommit.or(rmEndCommit, normCompleteCommit, normTailCommit);
+  const cancels = rmCompleteCancel.or(rmEndCancel, rmCancel, normCompleteCancel);
+  const updates = isTracking.and(commits.not(), cancels.not());
+  const stopped = rmEndCommit.or(rmEndCancel, rmCancel, normTailCommit, e.op.is('track').and(e.mode.is('tracking').not()));
+
+  const commitMode = broken === 'doubleCommit' ? e.mode.of('tracking') : e.mode.of('committing');
+  const nextMode = when(
+    e.op.is('abort'), e.mode.of('idle'),
+    when(
+      e.op.is('finishCommit'), when(e.mode.is('committing'), e.mode.of('idle'), e.mode),
+      when(
+        starts, e.mode.of('tracking'),
+        when(
+          goesPending, e.mode.of('pending'),
+          when(
+            canScroll, e.mode.of('idle'),
+            when(
+              commits, commitMode,
+              when(cancels, e.mode.of('idle'), e.mode),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+
+  return {
+    mode: nextMode,
+    didRelease: when(starts, no, when(updates, rel, when(nextMode.is('tracking'), e.didRelease, no))),
+    reduceMotion: when(starts, e.reduceMotionIn, when(nextMode.is('tracking'), e.reduceMotion, no)),
+    progress: when(
+      starts, 0,
+      when(
+        updates, broken === 'waitForComplete' ? 0 : when(rm, 0, e.amount),
+        when(nextMode.is('tracking'), e.progress, 0),
+      ),
+    ),
+    action: when(
+      starts, e.action.of('start'),
+      when(commits, e.action.of('commit'), when(cancels, e.action.of('cancel'), when(updates, e.action.of('update'), e.action.of('none')))),
+    ),
+    stopped,
+  };
+}
+
+export const swipeRule = swipeBase.step(e => swipeStep(e));
+const swipeInvariants = [
+  swipeRule.law('progress stays within 0..1000', ({ progress }) => progress.atMost(1000)),
+  swipeRule.law('didRelease is only true while tracking', ({ mode, didRelease }) => didRelease.implies(mode.is('tracking'))),
+  swipeRule.law('reduceMotion is only true while tracking', ({ mode, reduceMotion }) => reduceMotion.implies(mode.is('tracking'))),
+];
+const swipeSteps = [
+  swipeRule.stepLaw('momentum scroll never starts tracking', (_, a) => a.action.is('start').not(),
+    e => e.op.is('scroll').and(e.hasMomentum)),
+  swipeRule.stepLaw('vertical or leftward scroll never starts tracking', (_, a) => a.action.is('start').not().and(a.mode.is('tracking').not()),
+    e => e.op.is('scroll').and(e.mode.is('tracking').not(), e.axis.is('other'))),
+  swipeRule.stepLaw('horizontal back scroll past threshold starts tracking immediately', (_, a) => a.action.is('start').and(a.mode.is('tracking')),
+    e => e.op.is('scroll').and(e.mode.is('idle'), e.hasMomentum.not(), e.swipeEnabled, e.phase.is('began'), e.axis.is('back'))),
+  swipeRule.stepLaw('holding a finger down never commits or cancels', (_, a) => a.action.is('update').and(a.mode.is('tracking'), a.stopped.not()),
+    e => e.op.is('track').and(e.mode.is('tracking'), e.didRelease.not(), e.isComplete.not(), e.phase.is('changed'))),
+  swipeRule.stepLaw('normal motion tracks live finger progress immediately', (b, a) => a.progress.eq(b.amount),
+    e => e.op.is('track').and(e.mode.is('tracking'), e.reduceMotion.not(), e.didRelease.not(), e.isComplete.not(), e.phase.is('changed'))),
+  swipeRule.stepLaw('post-release tail past 99.5% snaps and commits immediately', (_, a) => a.action.is('commit').and(a.stopped, a.mode.is('committing')),
+    e => e.op.is('track').and(e.mode.is('tracking'), e.reduceMotion.not(), e.isComplete.not(), e.didRelease, e.amount.atLeast(995))),
+  swipeRule.stepLaw('reduce motion commits on release past 30% without waiting for settle', (_, a) => a.action.is('commit').and(a.stopped, a.mode.is('committing')),
+    e => e.op.is('track').and(e.mode.is('tracking'), e.reduceMotion, e.isComplete.not(), e.phase.is('ended'), e.amount.atLeast(300))),
+  swipeRule.stepLaw('while committing, stray track callbacks are ignored and stopped', (_, a) => a.action.is('none').and(a.stopped, a.mode.is('committing')),
+    e => e.op.is('track').and(e.mode.is('committing'))),
+  swipeRule.stepLaw('abort always returns cleanly to idle without committing', (_, a) => a.mode.is('idle').and(a.action.is('none')),
+    e => e.op.is('abort')),
+];
+
 export function verifyProofs() {
-  for (const [r, invariants, steps] of [[uploadRule,[],uploadLaws],[revisionRule,[],revisionLaws],[railRule,railLaws,railSteps],[gateRule,gateLaws,gateSteps],[infoRule,infoInvariants,infoSteps],[headlessGateRule,headlessInvariants,headlessSteps],[pauseRule,pauseLaws,pauseSteps],[popupRule,popupInvariants,popupSteps]]) {
+  for (const [r, invariants, steps] of [[uploadRule,[],uploadLaws],[revisionRule,[],revisionLaws],[railRule,railLaws,railSteps],[gateRule,gateLaws,gateSteps],[infoRule,infoInvariants,infoSteps],[headlessGateRule,headlessInvariants,headlessSteps],[pauseRule,pauseLaws,pauseSteps],[popupRule,popupInvariants,popupSteps],[swipeRule,swipeInvariants,swipeSteps]]) {
     verdict(proveSteps(r,invariants,steps,{search:false}), invariants.length + steps.length); checked(r.crossCheck(invariants,steps,{rand:draw}));
   }
   for (const [r,invariants,steps] of [
@@ -549,6 +680,12 @@ export function verifyProofs() {
     assert.equal(v.proven,false,`popup ${b} mutation escaped`);
     assert.equal(v.stuck,'sat',JSON.stringify(v));
     assert.ok(v.witness || v.run,'mutation must have counterexample evidence'); mutations++;
+  }
+  for (const b of ['waitForComplete','commitWhileHolding','momentum','doubleCommit']) {
+    const v = proveSteps(swipeBase.step(e => swipeStep(e, b)), swipeInvariants, swipeSteps, { search: false });
+    assert.equal(v.proven, false, `swipe ${b} mutation escaped`);
+    assert.equal(v.stuck, 'sat', JSON.stringify(v));
+    assert.ok(v.witness || v.run, 'swipe mutation must have counterexample evidence'); mutations++;
   }
   return {proven,mutations,concrete};
 }

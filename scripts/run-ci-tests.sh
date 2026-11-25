@@ -141,6 +141,8 @@ compile_direct_test list-display-order-sync \
   wBlock/ListDisplayOrder.swift wBlock/StableSnapshot.swift scripts/test_list_display_order_sync.swift
 compile_direct_test popover-window-shield \
   wBlock/InfoPresentation.swift wBlock/MacReorderableList.swift wBlock/Haptics.swift scripts/test_popover_window_shield.swift
+compile_direct_test swipe-back-navigation \
+  wBlock/SwipeBackNavigation.swift scripts/test_swipe_back_navigation.swift
 compile_direct_test info-popover-state \
   wBlock/InfoPresentation.swift scripts/test_info_popover_state.swift
 compile_direct_test file-lock-suspension \

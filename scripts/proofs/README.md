@@ -29,6 +29,9 @@ Stateful laws cover deferred uploads and per-key revision acknowledgment, along
 with the apply phase rail under out-of-order reports and failure/completion events.
 The info popover state machine covers click, selection, and dismissal sequences, with
 each token's anchor visibility as an input.
+The swipe-back gesture state machine covers macOS scroll-axis locking, momentum
+rejection, live finger tracking without premature commit while held, post-release
+tail snapping, Reduce Motion release commits, and single-commit isolation.
 The foreground run gate covers its work count, run starts, and the queued resumes
 that finishing a run hands back.
 The headless rebuild gate's cooldowns, failure backoff and outcome recording are proven likewise, and

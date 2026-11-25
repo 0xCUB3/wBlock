@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import wBlockCoreService
 
@@ -497,6 +498,68 @@ final class ResumeCount: @unchecked Sendable { var count = 0 }
             ? FilterUpdatePopupStatus.consumeSnapshot(groupIdentifier: group, now: now, lockDirectory: directory)
             : FilterUpdatePopupStatus.snapshot(groupIdentifier: group, now: now, lockDirectory: directory)
           return [ok ? 1 : 0, states.firstIndex(of: view.state)!, Int(view.startedAt ?? 0), Int(view.finishedAt ?? 0)]
+        }
+      case "swipeBack":
+        var state = SwipeBackGestureState()
+        func phaseOf(_ name: String) -> NSEvent.Phase {
+          switch name {
+          case "mayBegin": return .mayBegin
+          case "began": return .began
+          case "changed": return .changed
+          case "ended": return .ended
+          case "cancelled": return .cancelled
+          default: return []
+          }
+        }
+        func modeName(_ mode: SwipeBackGestureState.Mode) -> String {
+          switch mode {
+          case .idle: return "idle"
+          case .pendingAxis: return "pending"
+          case .tracking: return "tracking"
+          case .committing: return "committing"
+          }
+        }
+        func progressPermille(_ mode: SwipeBackGestureState.Mode) -> Int {
+          if case .tracking(let p, _, let rm) = mode { return rm ? 0 : Int((p * 1000).rounded()) }
+          return 0
+        }
+        return values.map { e -> [Any] in
+          let op = e["op"] as! String
+          var action = "none", stopped = false
+          switch op {
+          case "scroll":
+            let axis = e["axis"] as! String
+            let dx: CGFloat = axis == "back" ? 10 : 0
+            let dy: CGFloat = axis == "other" ? 10 : 0
+            let outcome = state.handleScroll(
+              phase: phaseOf(e["phase"] as! String),
+              hasMomentum: e.b("hasMomentum"),
+              dx: dx,
+              dy: dy,
+              swipeEnabled: e.b("swipeEnabled"),
+              reduceMotion: e.b("reduceMotionIn")
+            )
+            if outcome == .startTracking { action = "start" }
+          case "track":
+            let res = state.handleTrackUpdate(
+              amount: CGFloat(e.n("amount")) / 1000.0,
+              phase: phaseOf(e["phase"] as! String),
+              isComplete: e.b("isComplete")
+            )
+            switch res {
+            case .ignore: action = "none"; stopped = true
+            case .update: action = "update"
+            case .cancel(let s): action = "cancel"; stopped = s
+            case .commit(let s): action = "commit"; stopped = s
+            }
+          case "finishCommit":
+            state.finishCommit()
+          case "abort":
+            state.abort()
+          default:
+            preconditionFailure("unknown swipeBack op \(op)")
+          }
+          return [modeName(state.mode), action, progressPermille(state.mode), stopped ? 1 : 0]
         }
       default: preconditionFailure("unknown policy suite \(suite)")
       }

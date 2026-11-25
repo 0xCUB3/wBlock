@@ -955,6 +955,7 @@ struct SettingsView: View {
             // can scroll to them in a page that has grown long (#999).
             ScrollViewReader { proxy in
                 settingsList
+                    .swipeBackRootCompat()
                     .toolbar {
                         PauseBlockingToolbarItem(
                             filterManager: filterManager,

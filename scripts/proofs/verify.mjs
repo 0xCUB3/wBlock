@@ -5,7 +5,7 @@ import { mkdtempSync, readFileSync, writeFileSync, rmSync, readdirSync, existsSy
 import { tmpdir, homedir } from "node:os";
 import { join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { decisions, uploadRule, revisionRule, railRule, gateRule, infoRule, headlessGateRule, headlessOps, pauseRule, popupRule, verifyProofs } from "./policies.mjs";
+import { decisions, uploadRule, revisionRule, railRule, gateRule, infoRule, headlessGateRule, headlessOps, pauseRule, popupRule, swipeRule, verifyProofs } from "./policies.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url)),
   root = resolve(here, "../..");
@@ -336,6 +336,73 @@ machine(
   },
 );
 
+const swipeInput = (op, o = {}) => ({
+  op,
+  phase: "none",
+  hasMomentum: false,
+  swipeEnabled: true,
+  reduceMotionIn: false,
+  axis: "short",
+  amount: 0,
+  isComplete: false,
+  ...o,
+});
+const swipeScrolls = [
+  swipeInput("scroll", { phase: "mayBegin" }),
+  swipeInput("scroll", { phase: "began", axis: "short" }),
+  swipeInput("scroll", { phase: "began", axis: "back" }),
+  swipeInput("scroll", { phase: "began", axis: "back", reduceMotionIn: true }),
+  swipeInput("scroll", { phase: "began", axis: "back", hasMomentum: true }),
+  swipeInput("scroll", { phase: "began", axis: "back", swipeEnabled: false }),
+  swipeInput("scroll", { phase: "began", axis: "other" }),
+  swipeInput("scroll", { phase: "changed", axis: "back" }),
+  swipeInput("scroll", { phase: "changed", axis: "other" }),
+  swipeInput("scroll", { phase: "ended", axis: "back" }),
+];
+const swipeTracks = [
+  swipeInput("track", { phase: "changed", amount: 400 }),
+  swipeInput("track", { phase: "changed", amount: 996 }),
+  swipeInput("track", { phase: "ended", amount: 250 }),
+  swipeInput("track", { phase: "ended", amount: 350 }),
+  swipeInput("track", { phase: "ended", amount: 996 }),
+  swipeInput("track", { phase: "cancelled", amount: 400 }),
+  swipeInput("track", { phase: "none", amount: 996 }),
+  swipeInput("track", { phase: "none", amount: 0, isComplete: true }),
+  swipeInput("track", { phase: "none", amount: 1000, isComplete: true }),
+];
+const swipeAlphabet = [...swipeScrolls, ...swipeTracks, swipeInput("finishCommit"), swipeInput("abort")];
+const swipeDirected = [
+  // Normal live hold, release, and tail snap.
+  [
+    swipeInput("scroll", { phase: "mayBegin" }),
+    swipeInput("scroll", { phase: "changed", axis: "back" }),
+    swipeInput("track", { phase: "changed", amount: 400 }),
+    swipeInput("track", { phase: "changed", amount: 1000 }),
+    swipeInput("track", { phase: "ended", amount: 600 }),
+    swipeInput("track", { phase: "none", amount: 995 }),
+    swipeInput("track", { phase: "none", amount: 1000, isComplete: true }),
+    swipeInput("finishCommit"),
+  ],
+  // Reduce motion release commit and cancel.
+  [
+    swipeInput("scroll", { phase: "began", axis: "back", reduceMotionIn: true }),
+    swipeInput("track", { phase: "changed", amount: 400 }),
+    swipeInput("track", { phase: "ended", amount: 300 }),
+    swipeInput("finishCommit"),
+    swipeInput("scroll", { phase: "began", axis: "back", reduceMotionIn: true }),
+    swipeInput("track", { phase: "ended", amount: 299 }),
+  ],
+];
+machine(
+  "swipeBack",
+  swipeRule,
+  [...traces(swipeAlphabet, 2), ...swipeDirected],
+  (s) => {
+    const d = swipeRule.decode(s);
+    return [d.mode, d.action, d.progress, d.stopped ? 1 : 0];
+  },
+);
+
 const temp = mkdtempSync(join(tmpdir(), "wblock-policy-proofs-"));
 try {
   let products = process.env.WBLOCK_CORE_PRODUCTS;
@@ -359,6 +426,7 @@ try {
     "wBlock/ApplyChangesViewModel.swift",
     "wBlock/Haptics.swift",
     "wBlock/InfoPresentation.swift",
+    "wBlock/SwipeBackNavigation.swift",
     "scripts/proofs/PolicyProbe.swift",
   ];
   // The Swift probe compiles and runs in child processes while this process proves the laws.
