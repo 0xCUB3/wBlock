@@ -112,18 +112,101 @@ final class InfoPopoverPresenter: ObservableObject {
     var lastItem: Any?
     weak var sourceView: NSView?
 
+    /// Minimum horizontal clearance beside the anchor so macOS keeps the info
+    /// popover's side arrow (460 pt content + 26 pt popover chrome + margin).
+    nonisolated static let requiredSideClearance: CGFloat = 504
+
+    /// Keeps the full anchor rect when either horizontal side fits on screen.
+    /// Otherwise collapses horizontally to a 1 pt slice (preferring the click X)
+    /// so NSPopover always has room for a side arrow instead of dropping it when
+    /// a wide row sits near the vertical middle of the screen.
+    static func sideFittingRect(
+        _ rect: CGRect,
+        screenRect: CGRect,
+        screenVisible: CGRect,
+        clickScreenX: CGFloat? = nil,
+        requiredClearance: CGFloat = requiredSideClearance
+    ) -> CGRect {
+        guard rect.width > 1, !screenVisible.isEmpty else { return rect }
+        let leftSpace = screenRect.minX - screenVisible.minX
+        let rightSpace = screenVisible.maxX - screenRect.maxX
+        if max(leftSpace, rightSpace) >= requiredClearance {
+            return rect
+        }
+
+        var targetScreenX: CGFloat
+        if let clickScreenX {
+            targetScreenX = min(max(clickScreenX, screenRect.minX), screenRect.maxX)
+        } else {
+            let leftOfTrailing = screenRect.maxX - screenVisible.minX
+            let rightOfLeading = screenVisible.maxX - screenRect.minX
+            targetScreenX = leftOfTrailing >= rightOfLeading ? screenRect.maxX : screenRect.minX
+        }
+
+        let leftAtTarget = targetScreenX - screenVisible.minX
+        let rightAtTarget = screenVisible.maxX - targetScreenX
+        if max(leftAtTarget, rightAtTarget) < requiredClearance {
+            if leftAtTarget <= rightAtTarget {
+                targetScreenX = max(screenRect.minX, screenVisible.maxX - requiredClearance)
+            } else {
+                targetScreenX = min(screenRect.maxX, screenVisible.minX + requiredClearance)
+            }
+        }
+
+        let offset = min(max(targetScreenX - screenRect.minX, 0), max(0, rect.width - 1))
+        return CGRect(x: rect.minX + offset, y: rect.minY, width: 1, height: rect.height)
+    }
+
     var attachmentRect: CGRect {
         guard let token = state.presented, let view = anchors[token]?.view, let sourceView,
               let window = view.window, sourceView.window === window else { return .zero }
         let visible = view.bounds.intersection(view.visibleRect)
         guard !visible.isEmpty else { return .zero }
         let rect = sourceView.convert(visible, from: view)
-        return CGRect(x: rect.minX - sourceView.bounds.minX,
-                      y: sourceView.isFlipped ? rect.minY - sourceView.bounds.minY : sourceView.bounds.maxY - rect.maxY,
-                      width: rect.width, height: rect.height)
+        let swiftUIRect = CGRect(
+            x: rect.minX - sourceView.bounds.minX,
+            y: sourceView.isFlipped ? rect.minY - sourceView.bounds.minY : sourceView.bounds.maxY - rect.maxY,
+            width: rect.width, height: rect.height
+        )
+        guard let screenVisible = window.screen?.visibleFrame else { return swiftUIRect }
+        let screenRect = window.convertToScreen(view.convert(visible, to: nil))
+        let clickScreenX: CGFloat?
+        if let click = presentedClick, click.token == token {
+            let clampedX = min(max(click.localX, visible.minX), visible.maxX)
+            let windowPoint = view.convert(NSPoint(x: clampedX, y: visible.midY), to: nil)
+            clickScreenX = window.convertPoint(toScreen: windowPoint).x
+        } else {
+            clickScreenX = nil
+        }
+        return Self.sideFittingRect(
+            swiftUIRect,
+            screenRect: screenRect,
+            screenVisible: screenVisible,
+            clickScreenX: clickScreenX
+        )
     }
 
     private var anchors: [UUID: (id: AnyHashable, view: InfoPopoverAnchorView)] = [:]
+    private var pendingClick: (token: UUID, localX: CGFloat)?
+    private var presentedClick: (token: UUID, localX: CGFloat)?
+
+    private func localClickX(in view: InfoPopoverAnchorView, from event: NSEvent?, allowPointerFallback: Bool) -> CGFloat? {
+        guard let window = view.window else { return nil }
+        let visible = view.bounds.intersection(view.visibleRect)
+        guard !visible.isEmpty else { return nil }
+        let windowPoint: NSPoint?
+        if let event, event.windowNumber == window.windowNumber,
+           event.type == .leftMouseUp || event.type == .leftMouseDown {
+            windowPoint = event.locationInWindow
+        } else if allowPointerFallback {
+            windowPoint = window.mouseLocationOutsideOfEventStream
+        } else {
+            windowPoint = nil
+        }
+        guard let windowPoint else { return nil }
+        let local = view.convert(windowPoint, from: nil)
+        return visible.contains(local) ? local.x : nil
+    }
 
     func register(_ token: UUID, id: AnyHashable, view: InfoPopoverAnchorView) { anchors[token] = (id, view) }
     /// SwiftUI can host a second, window-less copy of an anchor with the same
@@ -132,10 +215,12 @@ final class InfoPopoverPresenter: ObservableObject {
     /// cleared before it opens (#931).
     func unregister(_ token: UUID, view: InfoPopoverAnchorView) {
         guard anchors[token]?.view === view, let id = anchors.removeValue(forKey: token)?.id else { return }
+        if pendingClick?.token == token { pendingClick = nil }
         // A presented row that moves (a category change from its own popover)
         // follows its new anchor; one that leaves the list closes its popover.
         DispatchQueue.main.async { [self] in
             guard anchors[token] == nil, state.presented == token else { return }
+            if presentedClick?.token == token { presentedClick = nil }
             if let moved = anchors.first(where: { $0.value.id == id && $0.value.view.window != nil })?.key {
                 _ = state.request(moved, mouseUp: nil)
             } else {
@@ -146,7 +231,13 @@ final class InfoPopoverPresenter: ObservableObject {
     }
 
     func select(_ id: AnyHashable?) {
-        guard let id else { state.clear(); return }
+        let click = pendingClick
+        pendingClick = nil
+        guard let id else {
+            presentedClick = nil
+            state.clear()
+            return
+        }
         let event = NSApp.currentEvent
         let visible = anchors.compactMap { token, anchor -> InfoPopoverState.Anchor? in
             let view = anchor.view
@@ -159,17 +250,37 @@ final class InfoPopoverPresenter: ObservableObject {
            let hit = visible.first(where: { $0.windowNumber == event.windowNumber && $0.frame.contains(event.locationInWindow) }) {
             state.clicked(hit.token, id: id)
         }
+        let fromKeyboard = event?.type == .keyDown
         // An item with no visible anchor, or a closing click, must not leave
         // a selection behind that no popover shows.
-        guard let token = state.anchor(for: id, in: visible, fromKeyboard: event?.type == .keyDown),
-              state.request(token, mouseUp: mouseUp) else { return clearSelection() }
+        guard let token = state.anchor(for: id, in: visible, fromKeyboard: fromKeyboard),
+              state.request(token, mouseUp: mouseUp) else {
+            presentedClick = nil
+            return clearSelection()
+        }
+        if !fromKeyboard,
+           let localX = (click?.token == token ? click?.localX : nil)
+            ?? anchors[token].flatMap({ localClickX(in: $0.view, from: event, allowPointerFallback: true) }) {
+            presentedClick = (token, localX)
+        } else {
+            presentedClick = nil
+        }
     }
 
-    func clicked(_ token: UUID, id: AnyHashable) { state.clicked(token, id: id) }
+    func clicked(_ token: UUID, id: AnyHashable) {
+        state.clicked(token, id: id)
+        if let view = anchors[token]?.view,
+           let localX = localClickX(in: view, from: NSApp.currentEvent, allowPointerFallback: true) {
+            pendingClick = (token, localX)
+        } else {
+            pendingClick = nil
+        }
+    }
 
     func dismiss(_ token: UUID) {
         let event = NSApp.currentEvent
         guard state.dismiss(token, mouseDown: event?.type == .leftMouseDown ? event?.eventNumber : nil) else { return }
+        presentedClick = nil
         clearSelection()
     }
 }

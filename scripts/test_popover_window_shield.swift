@@ -52,6 +52,27 @@ private struct ClippedFixture: View {
             .infoPresentation(item: $model.selected) { _ in Text("Details").frame(width: 420, height: 640) }
     }
 }
+private struct WideRowFixture: View {
+    @ObservedObject var model: Model
+    var body: some View {
+        VStack {
+            Spacer()
+            HStack {
+                Text("Wide Filter Row")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, 16)
+                    .infoPopoverAnchor(1, capturesClicks: false)
+                Toggle("", isOn: .constant(true)).labelsHidden()
+            }
+            .padding(.horizontal, 32)
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .infoPresentation(item: $model.selected) { _ in
+            Text("Filter Info").frame(width: 460, height: 640)
+        }
+    }
+}
 private extension NSView {
     var descendants: [NSView] { [self] + subviews.flatMap(\.descendants) }
 }
@@ -203,7 +224,53 @@ struct PopoverWindowShieldTests {
         presenter.select("shared")
         precondition(clearedSelection && presenter.state.presented == nil, "no visible anchor must clear the selection")
 
+        // Wide row anchors must keep a side arrow even when neither side of the
+        // full row fits on screen (e.g. wide/maximized window near vertical middle).
+        let screen1440 = CGRect(x: 0, y: 0, width: 1440, height: 900)
+        // Narrow window with ample left clearance keeps the full row rect.
+        let spacious = CGRect(x: 32, y: 300, width: 440, height: 60)
+        let spaciousScreen = CGRect(x: 600, y: 300, width: 440, height: 60)
+        precondition(InfoPopoverPresenter.sideFittingRect(spacious, screenRect: spaciousScreen, screenVisible: screen1440, clickScreenX: 700) == spacious,
+                     "rows with horizontal room beside them must keep their full anchor rect")
+        // Maximized window row collapses horizontally to the click X so one side fits.
+        let wide = CGRect(x: 32, y: 400, width: 1340, height: 60)
+        let wideScreen = CGRect(x: 32, y: 400, width: 1340, height: 60)
+        let leftClick = InfoPopoverPresenter.sideFittingRect(wide, screenRect: wideScreen, screenVisible: screen1440, clickScreenX: 160)
+        precondition(leftClick == CGRect(x: 160, y: 400, width: 1, height: 60),
+                     "wide row must collapse to a 1 pt slice at click X")
+        // Without a click X (keyboard/menu), fall back to the row edge with more screen clearance.
+        let noClick = InfoPopoverPresenter.sideFittingRect(wide, screenRect: wideScreen, screenVisible: screen1440, clickScreenX: nil)
+        precondition(noClick == CGRect(x: 32, y: 400, width: 1, height: 60),
+                     "without a click, wide row must pick the edge leaving more horizontal clearance")
+        // Tiny scaled display (1000 pt wide) nudges dead-center clicks enough to fit a side arrow.
+        let screen1000 = CGRect(x: 0, y: 0, width: 1000, height: 640)
+        let wide1000 = CGRect(x: 32, y: 300, width: 900, height: 60)
+        let centerClick = InfoPopoverPresenter.sideFittingRect(wide1000, screenRect: wide1000, screenVisible: screen1000, clickScreenX: 500)
+        precondition(centerClick.width == 1 && (screen1000.maxX - centerClick.minX) >= InfoPopoverPresenter.requiredSideClearance,
+                     "dead-center click on a tight display must nudge enough for a side arrow")
+
+        // Live maximized-window check: a tall 460x640 popover on a middle wide row must keep a side arrow.
+        if let visibleScreen = NSScreen.main?.visibleFrame {
+            let wideModel = Model()
+            let wideHost = NSHostingView(rootView: WideRowFixture(model: wideModel))
+            window.setFrame(visibleScreen, display: true)
+            window.contentView = wideHost
+            window.makeKeyAndOrderFront(nil)
+            pump()
+            wideModel.selected = Item(id: 1)
+            pump()
+            precondition(wideModel.selected?.id == 1 && popups().count == 1,
+                         "wide middle row must present its native popover")
+            let frameView = popups()[0].contentView?.superview
+            let anchorEdge = frameView?.value(forKey: "anchorEdge") as? UInt
+            precondition(anchorEdge == 0 || anchorEdge == 2,
+                         "wide middle row popover must keep a side arrow (0=minX or 2=maxX), got \(String(describing: anchorEdge))")
+            wideModel.selected = nil
+            pump()
+            precondition(popups().isEmpty, "wide middle row popover must dismiss cleanly")
+        }
+
         window.orderOut(nil)
-        print("PASS: rapid A->B->A, pre-readiness cancellation/reopen, exact attachment geometry, shield isolation, and clipped-anchor selection")
+        print("PASS: rapid A->B->A, pre-readiness cancellation/reopen, exact attachment geometry, shield isolation, clipped-anchor selection, and wide-row side arrow")
     }
 }
