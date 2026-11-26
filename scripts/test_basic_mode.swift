@@ -107,6 +107,14 @@ struct BasicModeTests {
         }
         precondition(BasicBundle.annoyance(.cookies).state(in: lists) == .on, "Both Cookie lists must be .on")
 
+        // Every Standard mode category toggle uses descriptive wording instead of generic "Enabled" (#1168)
+        for bundle in BasicBundle.allCases {
+            precondition(!bundle.toggleTitle.isEmpty, "Bundle \(bundle.id) must have a toggleTitle")
+            precondition(bundle.toggleTitle != "Enabled", "Bundle \(bundle.id) must not use generic Enabled label")
+        }
+        precondition(BasicBundle.core(.ads).toggleTitle == "Block Ads")
+        precondition(BasicBundle.annoyance(.cookies).toggleTitle == "Block Cookie Notices")
+
         // Concise peek notes omit redundant category restatements and keep differentiating notes
         if let easyList = lists.first(where: { $0.name == "EasyList" }) {
             precondition(BasicBundle.concisePeekNote(for: easyList) == nil, "EasyList should omit redundant description in Peek")

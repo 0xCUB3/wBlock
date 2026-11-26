@@ -1002,7 +1002,7 @@ struct BasicBundlePeekView: View {
             // Deliberate master switch (+ Reset to Recommended when customized)
             VStack(spacing: 0) {
                 HStack {
-                    Text("Enabled")
+                    Text(bundle.toggleTitle)
                         .font(.body.weight(.medium))
                         .foregroundStyle(.primary)
                     Spacer(minLength: 12)

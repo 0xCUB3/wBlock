@@ -34,6 +34,14 @@ enum CoreProtectionBundle: String, CaseIterable, Identifiable, Hashable, Sendabl
         NSLocalizedString(titleKey, comment: "Core protection bundle title")
     }
 
+    var toggleTitle: String {
+        switch self {
+        case .ads: NSLocalizedString("Block Ads", comment: "Core protection bundle toggle title")
+        case .privacy: NSLocalizedString("Block Trackers", comment: "Core protection bundle toggle title")
+        case .security: NSLocalizedString("Block Malware & Scams", comment: "Core protection bundle toggle title")
+        }
+    }
+
     var subtitle: String {
         switch self {
         case .ads:
@@ -98,6 +106,18 @@ extension AnnoyanceChoice {
 
     var tint: Color {
         .accentColor
+    }
+
+    var toggleTitle: String {
+        switch self {
+        case .cookies: NSLocalizedString("Block Cookie Notices", comment: "Annoyance bundle toggle title")
+        case .popups: NSLocalizedString("Block Pop-ups", comment: "Annoyance bundle toggle title")
+        case .banners: NSLocalizedString("Block Mobile App Banners", comment: "Annoyance bundle toggle title")
+        case .social: NSLocalizedString("Block Social Widgets", comment: "Annoyance bundle toggle title")
+        case .chat: NSLocalizedString("Block Chat Widgets", comment: "Annoyance bundle toggle title")
+        case .general: NSLocalizedString("Block General Annoyances", comment: "Annoyance bundle toggle title")
+        case .ai: NSLocalizedString("Block AI Content", comment: "Annoyance bundle toggle title")
+        }
     }
 
     var examples: [String] {
@@ -215,6 +235,13 @@ enum BasicBundle: Hashable, Identifiable, Sendable {
 
     var localizedTitle: String {
         NSLocalizedString(titleKey, comment: "Basic bundle title")
+    }
+
+    var toggleTitle: String {
+        switch self {
+        case .core(let core): core.toggleTitle
+        case .annoyance(let choice): choice.toggleTitle
+        }
     }
 
     var subtitle: String {

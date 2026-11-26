@@ -1308,3 +1308,13 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Turn on Show All Lists in Settings, then hold the Pause button to pause specific components." = "Turn on Show All Lists in Settings, then hold the Pause button to pause specific components.";
 "Hold the Pause button to pause specific components." = "Hold the Pause button to pause specific components.";
 "More Details & Actions" = "More Details & Actions";
+"Block Ads" = "Block Ads";
+"Block Trackers" = "Block Trackers";
+"Block Malware & Scams" = "Block Malware & Scams";
+"Block Cookie Notices" = "Block Cookie Notices";
+"Block Pop-ups" = "Block Pop-ups";
+"Block Mobile App Banners" = "Block Mobile App Banners";
+"Block Social Widgets" = "Block Social Widgets";
+"Block Chat Widgets" = "Block Chat Widgets";
+"Block General Annoyances" = "Block General Annoyances";
+"Block AI Content" = "Block AI Content";
