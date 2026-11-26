@@ -20,5 +20,25 @@
             "requestDomains": ["youtube.com", "m.youtube.com"],
             "resourceTypes": ["main_frame", "sub_frame"]
         }
+    },
+    {
+        "id": 2,
+        "priority": 20000,
+        "action": {
+            "type": "allow"
+        },
+        "condition": {
+            "requestDomains": ["challenges.cloudflare.com"]
+        }
+    },
+    {
+        "id": 3,
+        "priority": 20000,
+        "action": {
+            "type": "allow"
+        },
+        "condition": {
+            "domains": ["challenges.cloudflare.com"]
+        }
     }
 ]

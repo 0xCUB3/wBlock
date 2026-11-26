@@ -7,6 +7,14 @@
 (function () {
   'use strict';
 
+  try {
+    const cfHost = typeof location !== 'undefined' && typeof location.hostname === 'string' ? location.hostname : '';
+    const cfPath = typeof location !== 'undefined' && typeof location.pathname === 'string' ? location.pathname : '';
+    if (cfHost === 'challenges.cloudflare.com' || cfHost.endsWith('.challenges.cloudflare.com') || cfPath.startsWith('/cdn-cgi/challenge')) {
+      return;
+    }
+  } catch {}
+
   if (typeof browser === 'undefined' || !browser.runtime || !browser.runtime.sendMessage || !browser.runtime.onMessage) {
     return;
   }

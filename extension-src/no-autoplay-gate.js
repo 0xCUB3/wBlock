@@ -226,6 +226,7 @@
         // so each root gets its own listeners; weak references let removed
         // shadow roots go.
         var roots = [];
+        var observedRoots = typeof WeakSet === 'function' ? new WeakSet() : null;
         function onLoadStart(event) {
             var media = event.target;
             if (isMedia(media) && isLiveStream(media)) {
@@ -238,8 +239,9 @@
         }
 
         function guardRoot(root) {
-            if (!root || root._wblockNoAutoplayObserved) return;
-            root._wblockNoAutoplayObserved = true;
+            if (!root || (observedRoots ? observedRoots.has(root) : root._wblockNoAutoplayObserved)) return;
+            if (observedRoots) observedRoots.add(root);
+            else root._wblockNoAutoplayObserved = true;
             roots.push(new WeakRef(root));
             try {
                 root.addEventListener('loadstart', onLoadStart, true);
@@ -250,14 +252,12 @@
 
         try {
             var nativeAttachShadow = Element.prototype.attachShadow;
-            if (nativeAttachShadow && !nativeAttachShadow._wblockNoAutoplayPatched) {
-                var patchedAttachShadow = function () {
+            if (nativeAttachShadow) {
+                Element.prototype.attachShadow = function () {
                     var root = nativeAttachShadow.apply(this, arguments);
                     guardRoot(root);
                     return root;
                 };
-                patchedAttachShadow._wblockNoAutoplayPatched = true;
-                Element.prototype.attachShadow = patchedAttachShadow;
             }
         } catch (e) { /* ignore */ }
 

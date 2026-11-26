@@ -5,6 +5,14 @@
 
 (() => {
 
+try {
+    const cfHost = typeof location !== 'undefined' && typeof location.hostname === 'string' ? location.hostname : '';
+    const cfPath = typeof location !== 'undefined' && typeof location.pathname === 'string' ? location.pathname : '';
+    if (cfHost === 'challenges.cloudflare.com' || cfHost.endsWith('.challenges.cloudflare.com') || cfPath.startsWith('/cdn-cgi/challenge')) {
+        return;
+    }
+} catch (_) {}
+
 // iOS Safari keeps a frame alive while an extension event still holds its
 // listener, so detach on pagehide or iframe-heavy pages run out of memory (#861).
 const listenWhileShown = (event, listener) => {

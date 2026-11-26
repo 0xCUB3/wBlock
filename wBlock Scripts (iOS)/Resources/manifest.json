@@ -29,6 +29,11 @@
             "matches": [
                 "<all_urls>"
             ],
+            "exclude_matches": [
+                "*://challenges.cloudflare.com/*",
+                "*://*.challenges.cloudflare.com/*",
+                "*://*/cdn-cgi/challenge*"
+            ],
             "run_at": "document_start",
             "all_frames": true,
             "match_about_blank": true,
@@ -40,6 +45,11 @@
             ],
             "matches": [
                 "<all_urls>"
+            ],
+            "exclude_matches": [
+                "*://challenges.cloudflare.com/*",
+                "*://*.challenges.cloudflare.com/*",
+                "*://*/cdn-cgi/challenge*"
             ],
             "run_at": "document_start",
             "all_frames": true

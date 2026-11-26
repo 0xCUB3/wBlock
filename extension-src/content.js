@@ -96,8 +96,7 @@
     try {
       const host = window.location && typeof window.location.hostname === "string" ? window.location.hostname : "";
       const path = window.location && typeof window.location.pathname === "string" ? window.location.pathname : "";
-      if (host === "challenges.cloudflare.com") return true;
-      if (path.startsWith("/cdn-cgi/challenge-platform")) return true;
+      if (host === "challenges.cloudflare.com" || host.endsWith(".challenges.cloudflare.com")) return true;
       if (path.startsWith("/cdn-cgi/challenge")) return true;
     } catch (_) {}
     return false;

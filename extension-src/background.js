@@ -31,13 +31,31 @@
   // files injected right after; each file runs and removes its own queue.
   // Injected functions and files are exempt from the page's CSP, unlike a
   // page script element. Runs as a function, so it must not close over anything.
+  const CLOUDFLARE_CHALLENGE_EXCLUDES = [
+    '*://challenges.cloudflare.com/*',
+    '*://*.challenges.cloudflare.com/*',
+    '*://*/cdn-cgi/challenge*'
+  ];
+  const isCloudflareChallengeURL = url => {
+    if (typeof url !== 'string') return false;
+    try {
+      const { hostname, pathname } = new URL(url);
+      return hostname === 'challenges.cloudflare.com'
+        || hostname.endsWith('.challenges.cloudflare.com')
+        || pathname.startsWith('/cdn-cgi/challenge');
+    } catch (_) {
+      return false;
+    }
+  };
+  const sameStringList = (a, b) => Array.isArray(a) && Array.isArray(b)
+    && a.length === b.length && a.every((value, index) => value === b[index]);
   const WARM_SCRIPTLET_PREFIX = 'wblock-early-';
   const WARM_SCRIPTLET_LIMIT = 32;
   const WARM_SCRIPTLET_LEASE_MS = 30 * 60 * 1000;
   const warmScriptletFiles = new Map();
   let warmScriptletSync = Promise.resolve();
   const warmOriginFromUrl = url => {
-    if (typeof url !== 'string') return null;
+    if (typeof url !== 'string' || isCloudflareChallengeURL(url)) return null;
     try {
       const parsed = new URL(url);
       if ((parsed.protocol !== 'http:' && parsed.protocol !== 'https:') || parsed.port) return null;
@@ -72,6 +90,7 @@
       await browser.scripting.registerContentScripts([{
         id,
         matches: [match],
+        excludeMatches: CLOUDFLARE_CHALLENGE_EXCLUDES,
         js,
         runAt: 'document_start',
         world: 'MAIN',
@@ -1131,6 +1150,7 @@
     id: "wblock-no-autoplay",
     js: ["no-autoplay-gate.js", "no-autoplay.js"],
     matches: ["<all_urls>"],
+    excludeMatches: CLOUDFLARE_CHALLENGE_EXCLUDES,
     allFrames: true,
     runAt: "document_start"
   };
@@ -1162,21 +1182,27 @@
       const active = await isNoAutoplayActive();
       if (active === null) return;
       const ids = [NO_AUTOPLAY_SCRIPT.id];
+      const installedScripts = canRegisterNoAutoplay
+        ? await browser.scripting.getRegisteredContentScripts({ ids })
+        : [];
       const loaded = canRegisterNoAutoplay
-        ? (await browser.scripting.getRegisteredContentScripts({ ids })).length > 0
+        ? installedScripts.length > 0
         : !force && (noAutoplayLoaded ?? active);
+      const scriptCurrent = !canRegisterNoAutoplay || !active
+        || (loaded && sameStringList(installedScripts[0]?.excludeMatches, NO_AUTOPLAY_SCRIPT.excludeMatches));
       noAutoplayLoaded = active;
-      if (active === loaded) return;
+      if (active === loaded && scriptCurrent) return;
       if (canRegisterNoAutoplay) {
-        await (active
-          ? browser.scripting.registerContentScripts([NO_AUTOPLAY_SCRIPT])
-          : browser.scripting.unregisterContentScripts({ ids }));
+        if (loaded) await browser.scripting.unregisterContentScripts({ ids });
+        if (active) await browser.scripting.registerContentScripts([NO_AUTOPLAY_SCRIPT]);
       }
-      if (!active) return;
+      if (!active || loaded) return;
       // Registration only reaches documents that start later. Not awaited, so
       // the popup's reply does not wait on every tab.
       browser.tabs.query({}).then(tabs => tabs.forEach(tab => {
-        if (typeof tab.id === "number") injectNoAutoplay({ tabId: tab.id, allFrames: true });
+        if (typeof tab.id === "number" && !isCloudflareChallengeURL(tab.url)) {
+          injectNoAutoplay({ tabId: tab.id, allFrames: true });
+        }
       }), () => {});
     }).catch(error => console.warn("[wBlock] No Autoplay setup failed:", error));
     return noAutoplaySync;
@@ -1191,12 +1217,17 @@
     id: 1700000,
     priority: 2,
     action: { type: "modifyHeaders", requestHeaders: [{ header: "Sec-GPC", operation: "set", value: "1" }] },
-    condition: { resourceTypes: ["main_frame", "sub_frame", "stylesheet", "script", "image", "font", "xmlhttprequest", "ping", "media", "websocket", "other"] }
+    condition: {
+      excludedRequestDomains: ["challenges.cloudflare.com"],
+      excludedDomains: ["challenges.cloudflare.com"],
+      resourceTypes: ["main_frame", "sub_frame", "stylesheet", "script", "image", "font", "xmlhttprequest", "ping", "media", "websocket", "other"]
+    }
   };
   const GPC_SCRIPT = {
     id: "wblock-gpc",
     js: ["gpc.js"],
     matches: ["<all_urls>"],
+    excludeMatches: CLOUDFLARE_CHALLENGE_EXCLUDES,
     allFrames: true,
     runAt: "document_start",
     world: "MAIN"
@@ -1232,18 +1263,29 @@
       const ids = [GPC_SCRIPT.id];
       const installedRule = await getDynamicRuleById(dnr, GPC_RULE.id);
       const ruleInstalled = !!installedRule;
-      const scriptLoaded = (await browser.scripting.getRegisteredContentScripts({ ids })).length > 0;
+      const installedScripts = await browser.scripting.getRegisteredContentScripts({ ids });
+      const scriptLoaded = installedScripts.length > 0;
       if (!response.enabled) {
         if (scriptLoaded) await browser.scripting.unregisterContentScripts({ ids });
         if (ruleInstalled) await dnr.updateDynamicRules({ removeRuleIds: [GPC_RULE.id] });
         if (epoch === gpcSyncEpoch) lastSyncedGPCEnabled = false;
         return;
       }
-      // Builds before the blocked-request count installed it at priority 1.
-      if (!ruleInstalled || installedRule.priority !== GPC_RULE.priority) {
+      // Builds before the blocked-request count installed it at priority 1, and
+      // builds before #1167 had no Cloudflare challenge exclusions.
+      const ruleCurrent = ruleInstalled
+        && installedRule.priority === GPC_RULE.priority
+        && sameStringList(installedRule.condition?.excludedRequestDomains, GPC_RULE.condition.excludedRequestDomains)
+        && sameStringList(installedRule.condition?.excludedDomains, GPC_RULE.condition.excludedDomains);
+      if (!ruleCurrent) {
         await dnr.updateDynamicRules({ removeRuleIds: ruleInstalled ? [GPC_RULE.id] : [], addRules: [GPC_RULE] });
       }
-      if (!scriptLoaded) await browser.scripting.registerContentScripts([GPC_SCRIPT]);
+      const scriptCurrent = scriptLoaded
+        && sameStringList(installedScripts[0]?.excludeMatches, GPC_SCRIPT.excludeMatches);
+      if (!scriptCurrent) {
+        if (scriptLoaded) await browser.scripting.unregisterContentScripts({ ids });
+        await browser.scripting.registerContentScripts([GPC_SCRIPT]);
+      }
       if (epoch === gpcSyncEpoch) lastSyncedGPCEnabled = true;
     }).catch(error => {
       lastSyncedGPCEnabled = null;
@@ -1309,7 +1351,8 @@
       // blocks inline scripts. Inject the bundled function directly so a
       // strict CSP cannot block an eval inside the injected callback.
       const tabId = sender && sender.tab ? sender.tab.id : undefined;
-      if (typeof tabId !== "number" || !browser.scripting || typeof globalThis.__wblockNoAutoplayGate !== "function" || typeof message.token !== "string") {
+      if (typeof tabId !== "number" || !browser.scripting || typeof globalThis.__wblockNoAutoplayGate !== "function"
+        || typeof message.token !== "string" || isCloudflareChallengeURL(sender && sender.url)) {
         return { ok: false };
       }
       try {
@@ -1372,6 +1415,7 @@
     }
     if (message && message.action === "wblock:getCleanURL") {
       const url = typeof message.url === "string" ? message.url : "";
+      if (isCloudflareChallengeURL(url)) return { ok: true, cleanUrl: url };
       const response = await sendPriorityNativeMessage({ action: "getCleanPageURL", url });
       const cleanUrl = response && typeof response.cleanUrl === "string" ? response.cleanUrl : url;
       return {
@@ -1701,11 +1745,12 @@
     // InitContentScript handler) and asks for its scriptlets once it can be
     // targeted, since only the background can inject them past the page's CSP.
     if (message && message.action === "wblock:restoreFrameStyles") {
+      if (isCloudflareChallengeURL(sender && sender.url)) return { restored: false, state: "inactive" };
       return restoreFrameStyles(sender);
     }
     if (message && message.action === "wblock:injectScriptlets") {
       const tabId = sender.tab && sender.tab.id;
-      if (!tabId || !Array.isArray(message.scriptlets)) return { injected: false };
+      if (!tabId || !Array.isArray(message.scriptlets) || isCloudflareChallengeURL(sender.url)) return { injected: false };
       const failedScriptlets = await runScriptlets({ tabId, frameIds: [sender.frameId ?? 0] }, message.scriptlets, sender.url);
       return { injected: failedScriptlets.length === 0, failedScriptlets };
     }
@@ -1766,6 +1811,9 @@
       // For instance, frames can be created as 'about:blank' or 'data:text/html'
       url = topUrl;
       blankFrame = true;
+    }
+    if (isCloudflareChallengeURL(url) || isCloudflareChallengeURL(topUrl)) {
+      return { type: MessageType.InitContentScript, disabled: true, paused: false };
     }
     const resolved = await resolveFrameConfiguration(lookup, url, topUrl);
     if (resolved.error) return { type: MessageType.InitContentScript, state: "error", error: resolved.error };
@@ -2217,7 +2265,8 @@
   const replacementTabs = new Set();
   const refusedOrigins = new Set();
   const replaceShutOutTab = async tab => {
-    if (!browser.scripting?.executeScript || !/^https?:/i.test(tab.url || "") || checkingShutOutTabs.has(tab.id)) return;
+    if (!browser.scripting?.executeScript || !/^https?:/i.test(tab.url || "")
+      || isCloudflareChallengeURL(tab.url) || checkingShutOutTabs.has(tab.id)) return;
     const origin = new URL(tab.url).origin;
     if (refusedOrigins.has(origin)) return;
     checkingShutOutTabs.add(tab.id);
@@ -2896,7 +2945,8 @@
     syncNoAutoplayScripts();
     syncGlobalPrivacyControl();
     if (!canRegisterNoAutoplay && request && request.type === MessageType.InitContentScript
-      && sender && sender.tab && typeof sender.tab.id === "number" && Number.isSafeInteger(sender.frameId)) {
+      && sender && sender.tab && typeof sender.tab.id === "number" && Number.isSafeInteger(sender.frameId)
+      && !isCloudflareChallengeURL(sender.url)) {
       isNoAutoplayActive().then(active => {
         if (active) injectNoAutoplay({ tabId: sender.tab.id, frameIds: [sender.frameId] });
       }, () => {});

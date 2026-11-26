@@ -40,6 +40,35 @@
         && !!browser.storage.local;
     if (!hasExtensionContext) return;
 
+    function isCloudflareChallengeLocation() {
+        try {
+            var host = typeof location !== 'undefined' && typeof location.hostname === 'string' ? location.hostname : '';
+            var path = typeof location !== 'undefined' && typeof location.pathname === 'string' ? location.pathname : '';
+            if (host === 'challenges.cloudflare.com' || host.endsWith('.challenges.cloudflare.com')) return true;
+            if (path.startsWith('/cdn-cgi/challenge')) return true;
+        } catch (e) { /* ignore */ }
+        return false;
+    }
+
+    // Never patch attachShadow/createElement on Cloudflare Turnstile frames
+    // or challenge pages, even when a stale warm hint is present (#1167).
+    if (isCloudflareChallengeLocation()) {
+        try { localStorage.removeItem(HINT_KEY); } catch (e) { /* ignore */ }
+        return;
+    }
+
+    var cloudflareChallengeTitleRegex = /just a moment|verifying you are human|attention required|enable cookies/i;
+    function isCloudflareChallengePage() {
+        try {
+            if (cloudflareChallengeTitleRegex.test(typeof document.title === 'string' ? document.title : '')) return true;
+            if (typeof document.querySelector === 'function'
+                && document.querySelector('script[src^="/cdn-cgi/challenge-platform"],script[src*="challenges.cloudflare.com"],#challenge-form,#challenge-stage,#challenge-runner')) {
+                return true;
+            }
+        } catch (e) { /* ignore */ }
+        return false;
+    }
+
     // The same bundled gate is loaded before this controller.
     var noAutoplayGate = globalThis.__wblockNoAutoplayGate;
     if (typeof noAutoplayGate !== 'function') return;
@@ -237,6 +266,7 @@
     async function computeShouldArm() {
         var host = location.hostname;
         if (!host) return false;
+        if (isCloudflareChallengePage()) return false;
         var enabled = false;
         var siteAllowed = false;
         var allowKey = ALLOW_PREFIX + host;

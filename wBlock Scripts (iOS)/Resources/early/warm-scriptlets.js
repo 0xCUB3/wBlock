@@ -5,6 +5,11 @@
 // whenever blocking is paused, disabled, or rules change.
 (function () {
   try {
+    var host = location && typeof location.hostname === 'string' ? location.hostname : '';
+    var path = location && typeof location.pathname === 'string' ? location.pathname : '';
+    if (host === 'challenges.cloudflare.com' || host.endsWith('.challenges.cloudflare.com') || path.startsWith('/cdn-cgi/challenge')) {
+      return null;
+    }
     var raw = localStorage.getItem('__wblock_scriptlets_v1');
     if (!raw) return null;
     var entry = JSON.parse(raw);
