@@ -1025,7 +1025,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Blocks Swedish ads, trackers, social media widgets, annoyances, and sponsored articles." = "스웨덴 광고, 추적기, 소셜 미디어 위젯, 방해 요소, 후원 기사를 차단합니다.";
 "Blocks ad and tracking hosts that other lists miss, from the wBlock project." = "다른 목록이 놓치는 광고 및 추적 호스트를 차단합니다. wBlock 프로젝트에서 제공합니다.";
 "Blocks ads and trackers on Macedonian websites." = "마케도니아 웹사이트에서 광고와 추적기를 차단합니다.";
-"Blocks ads from mobile ad networks, from the AdGuard project." = "모바일 광고 네트워크의 광고를 차단합니다. AdGuard 프로젝트에서 제공합니다.";
+"Blocks ads from mobile ad networks, from the AdGuard project. Recommended for iPhone." = "모바일 광고 네트워크의 광고를 차단합니다. AdGuard 프로젝트에서 제공합니다. iPhone에 권장됩니다.";
 "Blocks ads on Albanian and Kosovar websites." = "알바니아어 및 코소보 웹사이트의 광고를 차단합니다.";
 "Blocks ads on Arabic websites, from the EasyList project." = "아랍어 웹사이트의 광고를 차단합니다. EasyList 프로젝트에서 제공합니다.";
 "Blocks ads on Bulgarian websites, from the EasyList project." = "불가리아어 웹사이트의 광고를 차단합니다. EasyList 프로젝트에서 제공합니다.";

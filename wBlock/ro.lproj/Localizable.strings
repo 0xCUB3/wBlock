@@ -1025,7 +1025,7 @@ Pentru a le reactiva, dezactivează alte filtre mari și aplică din nou modific
 "Blocks Swedish ads, trackers, social media widgets, annoyances, and sponsored articles." = "Blochează reclamele, instrumentele de urmărire, widgeturile rețelelor sociale, elementele enervante și articolele sponsorizate suedeze.";
 "Blocks ad and tracking hosts that other lists miss, from the wBlock project." = "Blochează gazdele de reclame și de urmărire pe care alte liste le ratează. Din proiectul wBlock.";
 "Blocks ads and trackers on Macedonian websites." = "Blochează reclamele și instrumentele de urmărire de pe site-urile web macedonene.";
-"Blocks ads from mobile ad networks, from the AdGuard project." = "Blochează reclamele din rețelele de publicitate mobilă. Din proiectul AdGuard.";
+"Blocks ads from mobile ad networks, from the AdGuard project. Recommended for iPhone." = "Blochează reclamele din rețelele de publicitate mobilă. Din proiectul AdGuard. Recomandat pentru iPhone.";
 "Blocks ads on Albanian and Kosovar websites." = "Blochează reclamele de pe site-urile web albaneze și kosovare.";
 "Blocks ads on Arabic websites, from the EasyList project." = "Blochează reclamele de pe site-urile web în limba arabă. Din proiectul EasyList.";
 "Blocks ads on Bulgarian websites, from the EasyList project." = "Blochează reclamele de pe site-urile web în limba bulgară. Din proiectul EasyList.";

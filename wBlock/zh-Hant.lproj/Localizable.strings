@@ -1025,7 +1025,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Blocks Swedish ads, trackers, social media widgets, annoyances, and sponsored articles." = "封鎖瑞典語廣告、追蹤器、社群媒體小工具、惱人內容和贊助文章。";
 "Blocks ad and tracking hosts that other lists miss, from the wBlock project." = "封鎖其他清單遺漏的廣告和追蹤主機，來自 wBlock 專案。";
 "Blocks ads and trackers on Macedonian websites." = "封鎖馬其頓語網站上的廣告和追蹤器。";
-"Blocks ads from mobile ad networks, from the AdGuard project." = "封鎖來自行動廣告網路的廣告，來自 AdGuard 專案。";
+"Blocks ads from mobile ad networks, from the AdGuard project. Recommended for iPhone." = "封鎖來自行動廣告網路的廣告，來自 AdGuard 專案。推薦用於 iPhone。";
 "Blocks ads on Albanian and Kosovar websites." = "封鎖阿爾巴尼亞語和科索沃網站上的廣告。";
 "Blocks ads on Arabic websites, from the EasyList project." = "封鎖阿拉伯語網站上的廣告，來自 EasyList 專案。";
 "Blocks ads on Bulgarian websites, from the EasyList project." = "封鎖保加利亞語網站上的廣告，來自 EasyList 專案。";

@@ -758,7 +758,7 @@ class FilterListLoader {
             FilterList(
                 id: UUID(), name: "AdGuard Mobile Filter",
                 url: Self.adGuardUBlockURL(11), category: FilterListCategory.ads,
-                description: "Blocks ads from mobile ad networks, from the AdGuard project.")
+                description: "Blocks ads from mobile ad networks, from the AdGuard project. Recommended for iPhone.")
         )
         #endif
         filterLists.append(contentsOf: [

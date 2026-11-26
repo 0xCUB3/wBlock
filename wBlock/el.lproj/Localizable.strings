@@ -1025,7 +1025,7 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Blocks Swedish ads, trackers, social media widgets, annoyances, and sponsored articles." = "Αποκλείει σουηδικές διαφημίσεις, προγράμματα παρακολούθησης, γραφικά στοιχεία κοινωνικών δικτύων, ενοχλήσεις και χορηγούμενα άρθρα.";
 "Blocks ad and tracking hosts that other lists miss, from the wBlock project." = "Αποκλείει τομείς διαφημίσεων και παρακολούθησης που χάνουν άλλες λίστες, από το έργο wBlock.";
 "Blocks ads and trackers on Macedonian websites." = "Αποκλείει διαφημίσεις και προγράμματα παρακολούθησης σε ιστότοπους της Μακεδονίας.";
-"Blocks ads from mobile ad networks, from the AdGuard project." = "Αποκλείει διαφημίσεις από δίκτυα διαφήμισης για κινητά, από το έργο AdGuard.";
+"Blocks ads from mobile ad networks, from the AdGuard project. Recommended for iPhone." = "Αποκλείει διαφημίσεις από δίκτυα διαφήμισης για κινητά, από το έργο AdGuard. Προτείνεται για iPhone.";
 "Blocks ads on Albanian and Kosovar websites." = "Αποκλείει διαφημίσεις σε αλβανικούς και κοσοβάρικους ιστότοπους.";
 "Blocks ads on Arabic websites, from the EasyList project." = "Αποκλείει διαφημίσεις σε ιστότοπους στα αραβικά, από το έργο EasyList.";
 "Blocks ads on Bulgarian websites, from the EasyList project." = "Αποκλείει διαφημίσεις σε βουλγαρικούς ιστότοπους, από το έργο EasyList.";

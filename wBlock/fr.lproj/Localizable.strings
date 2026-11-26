@@ -1025,7 +1025,7 @@ Pour les réactiver, désactivez d’autres gros filtres puis appliquez à nouve
 "Blocks Swedish ads, trackers, social media widgets, annoyances, and sponsored articles." = "Bloque les publicités, traceurs, widgets de réseaux sociaux, nuisances et articles sponsorisés sur les sites suédois.";
 "Blocks ad and tracking hosts that other lists miss, from the wBlock project." = "Bloque les hôtes de publicité et de pistage que d'autres listes laissent passer. Du projet wBlock.";
 "Blocks ads and trackers on Macedonian websites." = "Bloque les publicités et les traceurs sur les sites web macédoniens.";
-"Blocks ads from mobile ad networks, from the AdGuard project." = "Bloque les publicités des réseaux publicitaires mobiles. Du projet AdGuard.";
+"Blocks ads from mobile ad networks, from the AdGuard project. Recommended for iPhone." = "Bloque les publicités des réseaux publicitaires mobiles. Du projet AdGuard. Recommandé pour iPhone.";
 "Blocks ads on Albanian and Kosovar websites." = "Bloque les publicités sur les sites web albanais et kosovars.";
 "Blocks ads on Arabic websites, from the EasyList project." = "Bloque les publicités sur les sites web en arabe. Du projet EasyList.";
 "Blocks ads on Bulgarian websites, from the EasyList project." = "Bloque les publicités sur les sites web bulgares. Du projet EasyList.";

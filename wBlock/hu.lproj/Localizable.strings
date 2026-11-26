@@ -1025,7 +1025,7 @@ Az újbóli engedélyezésükhöz tilts le más nagy szűrőket, majd alkalmazd 
 "Blocks Swedish ads, trackers, social media widgets, annoyances, and sponsored articles." = "Blokkolja a svéd hirdetéseket, nyomkövetőket, közösségi médiás widgeteket, zavaró elemeket és szponzorált cikkeket.";
 "Blocks ad and tracking hosts that other lists miss, from the wBlock project." = "Olyan hirdetési és követő hosztokat blokkol, amelyeket más listák kihagynak. A wBlock projekt listája.";
 "Blocks ads and trackers on Macedonian websites." = "Blokkolja a hirdetéseket és nyomkövetőket a macedón webhelyeken.";
-"Blocks ads from mobile ad networks, from the AdGuard project." = "A mobil hirdetési hálózatok hirdetéseit blokkolja. Az AdGuard projekt listája.";
+"Blocks ads from mobile ad networks, from the AdGuard project. Recommended for iPhone." = "A mobil hirdetési hálózatok hirdetéseit blokkolja. Az AdGuard projekt listája. iPhone-ra ajánlott.";
 "Blocks ads on Albanian and Kosovar websites." = "Blokkolja a hirdetéseket az albán és koszovói webhelyeken.";
 "Blocks ads on Arabic websites, from the EasyList project." = "Blokkolja a hirdetéseket az arab nyelvű webhelyeken. Az EasyList projekt listája.";
 "Blocks ads on Bulgarian websites, from the EasyList project." = "Blokkolja a hirdetéseket a bolgár webhelyeken. Az EasyList projekt listája.";

@@ -1025,7 +1025,7 @@ Aby włączyć je ponownie, wyłącz inne duże filtry i ponownie zastosuj zmian
 "Blocks Swedish ads, trackers, social media widgets, annoyances, and sponsored articles." = "Blokuje szwedzkie reklamy, moduły śledzące, widżety mediów społecznościowych, uciążliwości i sponsorowane artykuły.";
 "Blocks ad and tracking hosts that other lists miss, from the wBlock project." = "Blokuje hosty reklamowe i śledzące, których nie wykrywają inne listy. Z projektu wBlock.";
 "Blocks ads and trackers on Macedonian websites." = "Blokuje reklamy i moduły śledzące na macedońskich stronach internetowych.";
-"Blocks ads from mobile ad networks, from the AdGuard project." = "Blokuje reklamy z mobilnych sieci reklamowych. Z projektu AdGuard.";
+"Blocks ads from mobile ad networks, from the AdGuard project. Recommended for iPhone." = "Blokuje reklamy z mobilnych sieci reklamowych. Z projektu AdGuard. Zalecane na iPhone'a.";
 "Blocks ads on Albanian and Kosovar websites." = "Blokuje reklamy na albańskich i kosowskich stronach internetowych.";
 "Blocks ads on Arabic websites, from the EasyList project." = "Blokuje reklamy na arabskich stronach internetowych. Z projektu EasyList.";
 "Blocks ads on Bulgarian websites, from the EasyList project." = "Blokuje reklamy na bułgarskich stronach internetowych. Z projektu EasyList.";

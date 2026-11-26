@@ -1034,7 +1034,7 @@ Bu filtreleri yeniden etkinleştirmek için diğer büyük filtreleri devre dı�
 "Blocks Swedish ads, trackers, social media widgets, annoyances, and sponsored articles." = "İsveççe reklamları, izleyicileri, sosyal medya widget'larını, can sıkıcı öğeleri ve sponsorlu makaleleri engeller.";
 "Blocks ad and tracking hosts that other lists miss, from the wBlock project." = "Diğer listelerin kaçırdığı reklam ve izleme sunucularını engeller. wBlock projesinden.";
 "Blocks ads and trackers on Macedonian websites." = "Makedonca web sitelerindeki reklamları ve izleyicileri engeller.";
-"Blocks ads from mobile ad networks, from the AdGuard project." = "Mobil reklam ağlarından gelen reklamları engeller. AdGuard projesinden.";
+"Blocks ads from mobile ad networks, from the AdGuard project. Recommended for iPhone." = "Mobil reklam ağlarından gelen reklamları engeller. AdGuard projesinden. iPhone için önerilir.";
 "Blocks ads on Albanian and Kosovar websites." = "Arnavutça ve Kosova'daki web sitelerinde reklamları engeller.";
 "Blocks ads on Arabic websites, from the EasyList project." = "Arapça web sitelerindeki reklamları engeller. EasyList projesinden.";
 "Blocks ads on Bulgarian websites, from the EasyList project." = "Bulgarca web sitelerindeki reklamları engeller. EasyList projesinden.";
