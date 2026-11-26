@@ -602,7 +602,7 @@ struct UserScriptManagerView: View {
                 default: selectedScript = routed
                 }
             }
-        ).tallInfoSheetPresentationCompat()
+        )
     }
 
     /// Fetches a remote script's content without changing its enabled state (#665).
@@ -1037,6 +1037,7 @@ struct UserScriptInfoSidebar: View {
     let script: UserScript
     let contentLength: Int
     let isDownloaded: Bool
+    var showsAllDetails: Bool = true
     let formatFileSize: (Int) -> String
 
     var body: some View {
@@ -1058,14 +1059,16 @@ struct UserScriptInfoSidebar: View {
                     script.isUserStyle ? "Userstyle" : "Userscript",
                     comment: "Content type"
                 ), valueStyle: .typeBadge)
-                if let author = metadata.author { InfoMetadataRow(title: "Author", value: author) }
-                if let homepage = metadata.homepage {
-                    InfoMetadataRow(title: "Homepage", value: homepage.absoluteString, url: homepage)
-                }
                 if !script.isLocal { InfoMetadataRow.downloadStatus(isDownloaded) }
                 if isDownloaded, !script.version.isEmpty { InfoMetadataRow(title: "Version", value: script.version) }
-                if script.url != nil { ScriptURLView(script: script) }
                 if contentLength > 0 { InfoMetadataRow(title: "Size", value: formatFileSize(contentLength)) }
+                if showsAllDetails {
+                    if let author = metadata.author { InfoMetadataRow(title: "Author", value: author) }
+                    if let homepage = metadata.homepage {
+                        InfoMetadataRow(title: "Homepage", value: homepage.absoluteString, url: homepage)
+                    }
+                    if script.url != nil { ScriptURLView(script: script) }
+                }
             }
         }
     }
@@ -1087,6 +1090,20 @@ struct UserScriptInfoView: View {
     @State private var showingSettings = false
     @State private var showingSource = false
     @State private var confirmingDelete = false
+    #if os(iOS)
+    @State private var isExpanded = false
+    #endif
+
+    private var showsAllDetails: Bool {
+        #if os(iOS)
+        if #available(iOS 16.0, *) {
+            return isExpanded
+        }
+        return true
+        #else
+        return true
+        #endif
+    }
 
     // Persisted metadata is already available; disk hydration only enriches it.
     private var liveScript: UserScript? {
@@ -1110,13 +1127,28 @@ struct UserScriptInfoView: View {
                         }
                     } onDismiss: { dismiss() }
                 } content: {
-                    UserScriptInfoSidebar(
-                        script: script,
-                        contentLength: script.content.utf8.count,
-                        isDownloaded: userScriptManager.hasDownloadedContent(for: script),
-                        formatFileSize: formatFileSize
-                    )
-                    actionList(for: script)
+                    VStack(alignment: .leading, spacing: 16) {
+                        UserScriptInfoSidebar(
+                            script: script,
+                            contentLength: script.content.utf8.count,
+                            isDownloaded: userScriptManager.hasDownloadedContent(for: script),
+                            showsAllDetails: showsAllDetails,
+                            formatFileSize: formatFileSize
+                        )
+                        if showsAllDetails {
+                            actionList(for: script)
+                                .transition(.opacity.combined(with: .move(edge: .top)))
+                        } else {
+                            #if os(iOS)
+                            InfoSheetExpandButton {
+                                withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
+                                    isExpanded = true
+                                }
+                            }
+                            #endif
+                        }
+                    }
+                    .animation(.spring(response: 0.32, dampingFraction: 0.86), value: showsAllDetails)
                 }
                 #if os(macOS)
                 .frame(width: 460)
@@ -1138,6 +1170,9 @@ struct UserScriptInfoView: View {
                 #endif
             }
         }
+        #if os(iOS)
+        .expandableInfoSheetPresentationCompat(isExpanded: $isExpanded)
+        #endif
         .sheet(isPresented: $showingMetadataEditor, onDismiss: {
             Task { script = await userScriptManager.userScriptEditorSnapshot(withId: scriptId) }
         }) {

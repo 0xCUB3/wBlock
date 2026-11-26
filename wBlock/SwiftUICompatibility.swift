@@ -252,8 +252,8 @@ extension View {
         }
     }
 
-    /// Info popups open fully expanded so filters and userscripts use the same
-    /// starting height and do not hide metadata behind a collapsed detent (#739).
+    /// Sub-sheets (Settings, Fallbacks, Match Patterns, Category Info) open
+    /// expanded so forms and lists have full height.
     @ViewBuilder
     func infoSheetPresentationCompat() -> some View {
         if #available(iOS 16.0, macOS 13.0, *) {
@@ -262,13 +262,6 @@ extension View {
         } else {
             self
         }
-    }
-
-    /// Backward-compatible name for callers that used the old userscript-only
-    /// height. It now matches every other info sheet.
-    @ViewBuilder
-    func tallInfoSheetPresentationCompat() -> some View {
-        infoSheetPresentationCompat()
     }
 
     @ViewBuilder

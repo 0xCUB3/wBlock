@@ -19,6 +19,20 @@ struct FilterInfoView: View {
     @State private var confirmingDelete = false
     @State private var cachedMetadata = ContentInfoMetadata()
     @State private var cachedByteCount: Int?
+    #if os(iOS)
+    @State private var isExpanded = false
+    #endif
+
+    private var showsAllDetails: Bool {
+        #if os(iOS)
+        if #available(iOS 16.0, *) {
+            return isExpanded
+        }
+        return true
+        #else
+        return true
+        #endif
+    }
 
     private var isDownloaded: Bool { filterManager.loader.filterFileExists(liveFilter) }
     private var isRemote: Bool { ["http", "https"].contains(liveFilter.url.scheme?.lowercased()) }
@@ -41,6 +55,8 @@ struct FilterInfoView: View {
             }
             #if os(macOS)
             .frame(width: 460)
+            #else
+            .expandableInfoSheetPresentationCompat(isExpanded: $isExpanded)
             #endif
         }
         .sheet(isPresented: $showingMetadataEditor) {
@@ -91,32 +107,46 @@ struct FilterInfoView: View {
             }
             InfoMetadataList {
                 InfoMetadataRow(title: "Type", value: NSLocalizedString("Filters", comment: "Content type"), valueStyle: .typeBadge)
+                if isDownloaded || isRemote { InfoMetadataRow.downloadStatus(isDownloaded) }
                 if liveFilter.isSelected, let submitted = liveFilter.uniqueRuleCount {
                     InfoMetadataRow(title: "Source Rules", value: submitted.formatted())
                 }
-                if let author = credit?.author ?? cachedMetadata.author {
-                    InfoMetadataRow(title: "Author", value: author)
-                }
-                ForEach(credit?.homepages ?? cachedMetadata.homepage.map { [$0] } ?? [], id: \.self) { homepage in
-                    InfoMetadataRow(title: "Homepage", value: homepage.absoluteString, url: homepage)
-                }
-                if isDownloaded || isRemote { InfoMetadataRow.downloadStatus(isDownloaded) }
                 if isDownloaded, !liveFilter.version.isEmpty { InfoMetadataRow(title: "Version", value: liveFilter.version) }
-                if isRemote {
-                    VStack(alignment: .leading, spacing: 6) {
-                        InfoMetadataRow(title: "Source URL", value: liveFilter.url.absoluteString, url: liveFilter.url)
-                        HStack {
-                            CopyURLButton(url: liveFilter.url)
-                            FilterFallbacksButton { perform(.fallbacks) { showingFallbacks = true } }
-                        }
-                    }
-                }
                 if let size = cachedByteCount {
                     InfoMetadataRow(title: "Size", value: ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .file))
                 }
+                if showsAllDetails {
+                    if let author = credit?.author ?? cachedMetadata.author {
+                        InfoMetadataRow(title: "Author", value: author)
+                    }
+                    ForEach(credit?.homepages ?? cachedMetadata.homepage.map { [$0] } ?? [], id: \.self) { homepage in
+                        InfoMetadataRow(title: "Homepage", value: homepage.absoluteString, url: homepage)
+                    }
+                    if isRemote {
+                        VStack(alignment: .leading, spacing: 6) {
+                            InfoMetadataRow(title: "Source URL", value: liveFilter.url.absoluteString, url: liveFilter.url)
+                            HStack {
+                                CopyURLButton(url: liveFilter.url)
+                                FilterFallbacksButton { perform(.fallbacks) { showingFallbacks = true } }
+                            }
+                        }
+                    }
+                }
             }
-            actionList
+            if showsAllDetails {
+                actionList
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            } else {
+                #if os(iOS)
+                InfoSheetExpandButton {
+                    withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
+                        isExpanded = true
+                    }
+                }
+                #endif
+            }
         }
+        .animation(.spring(response: 0.32, dampingFraction: 0.86), value: showsAllDetails)
     }
 
     private var actionList: some View {

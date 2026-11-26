@@ -1081,7 +1081,6 @@ struct ContentView: View {
             }
         )
         .riskyFilterAlert($pendingRiskyEnable)
-        .infoSheetPresentationCompat()
     }
 
     private func filterCategoryInfoContent(_ category: FilterListCategory) -> some View {

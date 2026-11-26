@@ -101,6 +101,7 @@ struct InfoSheetContainer<Header: View, Content: View>: View {
                     .padding(.top, 4)
                     #endif
             }
+            .scrollBounceBasedOnSizeCompat()
             // An inset reserves space but still lets rows draw behind the
             // header. Keep the viewport below it, including Duo's side bars.
             .clipped()
@@ -132,6 +133,96 @@ extension View {
         } else {
             self
         }
+    }
+
+    /// Presents filter and userscript info sheets at medium height first, then
+    /// expands to large on drag or tap to reveal full details and actions (#1168).
+    @ViewBuilder
+    func expandableInfoSheetPresentationCompat(isExpanded: Binding<Bool>) -> some View {
+        if #available(iOS 16.0, *) {
+            modifier(ExpandableInfoSheetDetentsModifier(isExpanded: isExpanded))
+        } else {
+            self
+        }
+    }
+}
+
+@available(iOS 16.0, *)
+private struct ExpandableInfoSheetDetentsModifier: ViewModifier {
+    @Binding var isExpanded: Bool
+    @State private var selectedDetent: PresentationDetent = .medium
+    @State private var allowsDetentGestureExpand = false
+
+    func body(content: Content) -> some View {
+        Group {
+            if #available(iOS 16.4, *) {
+                content
+                    .presentationContentInteraction(isExpanded ? .scrolls : .resizes)
+            } else {
+                content
+            }
+        }
+        .presentationDetents([.medium, .large], selection: $selectedDetent)
+        .presentationDragIndicator(.visible)
+        .onAppear {
+            allowsDetentGestureExpand = false
+            let initial: PresentationDetent = isExpanded ? .large : .medium
+            if selectedDetent != initial {
+                selectedDetent = initial
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                allowsDetentGestureExpand = true
+            }
+        }
+        .onChangeCompat(of: isExpanded) { _, expanded in
+            let target: PresentationDetent = expanded ? .large : .medium
+            if selectedDetent != target {
+                selectedDetent = target
+            }
+        }
+        .onChangeCompat(of: selectedDetent) { _, detent in
+            if detent == .large, !isExpanded {
+                guard allowsDetentGestureExpand else {
+                    selectedDetent = .medium
+                    return
+                }
+                withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
+                    isExpanded = true
+                }
+            } else if detent == .medium, isExpanded {
+                withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
+                    isExpanded = false
+                }
+            }
+        }
+    }
+}
+
+/// Compact prompt shown at medium detent to reveal full metadata and actions.
+struct InfoSheetExpandButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button {
+            Haptics.play(.tap)
+            action()
+        } label: {
+            HStack {
+                Text("More Details & Actions")
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(.primary)
+                Spacer()
+                Image(systemName: "chevron.down")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+                    .accessibilityHidden(true)
+            }
+            .padding(.horizontal, 14)
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .background(Color.groupFill, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+        .buttonStyle(.plain)
     }
 }
 

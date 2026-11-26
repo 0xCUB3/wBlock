@@ -961,21 +961,13 @@ struct BasicBundlePeekView: View {
             .padding(16)
             .frame(width: 360)
         #else
-        if #available(iOS 16.0, *) {
-            PeekSheetDetentsHost(showAllLists: $showAllLists) {
-                ScrollView {
-                    peekBody
-                        .padding(SheetDesign.contentHorizontalPadding)
-                }
-                .scrollBounceBasedOnSizeCompat()
-                .opaqueSheetBackgroundCompat()
-            }
-        } else {
-            ScrollView {
-                peekBody
-                    .padding(SheetDesign.contentHorizontalPadding)
-            }
+        ScrollView {
+            peekBody
+                .padding(SheetDesign.contentHorizontalPadding)
         }
+        .scrollBounceBasedOnSizeCompat()
+        .opaqueSheetBackgroundCompat()
+        .expandableInfoSheetPresentationCompat(isExpanded: $showAllLists)
         #endif
     }
 
@@ -1178,59 +1170,6 @@ struct BasicBundlePeekView: View {
         .padding(.vertical, 7)
     }
 }
-
-#if os(iOS)
-@available(iOS 16.0, *)
-private struct PeekSheetDetentsHost<Content: View>: View {
-    @Binding var showAllLists: Bool
-    @ViewBuilder let content: () -> Content
-    @State private var selectedDetent: PresentationDetent = .medium
-    @State private var allowsDetentGestureExpand = false
-
-    var body: some View {
-        Group {
-            if #available(iOS 16.4, *) {
-                content()
-                    .presentationContentInteraction(showAllLists ? .scrolls : .resizes)
-            } else {
-                content()
-            }
-        }
-        .presentationDetents([.medium, .large], selection: $selectedDetent)
-        .presentationDragIndicator(.visible)
-        .onAppear {
-            allowsDetentGestureExpand = false
-            if !showAllLists, selectedDetent != .medium {
-                selectedDetent = .medium
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                allowsDetentGestureExpand = true
-            }
-        }
-        .onChangeCompat(of: showAllLists) { _, expanded in
-            let target: PresentationDetent = expanded ? .large : .medium
-            if selectedDetent != target {
-                selectedDetent = target
-            }
-        }
-        .onChangeCompat(of: selectedDetent) { _, detent in
-            if detent == .large, !showAllLists {
-                guard allowsDetentGestureExpand else {
-                    selectedDetent = .medium
-                    return
-                }
-                withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
-                    showAllLists = true
-                }
-            } else if detent == .medium, showAllLists {
-                withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
-                    showAllLists = false
-                }
-            }
-        }
-    }
-}
-#endif
 
 // MARK: - Scoped Category / Unowned Lists Sheet
 
