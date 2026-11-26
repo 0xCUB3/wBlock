@@ -254,11 +254,23 @@ struct ContentView: View {
         }
     }
 
+    private struct CapacityPopoverItem: Identifiable {
+        let id = "safariRuleCapacity"
+    }
+
+    private var capacityPopoverItem: Binding<CapacityPopoverItem?> {
+        Binding(
+            get: { showingCapacityPopover ? CapacityPopoverItem() : nil },
+            set: { showingCapacityPopover = ($0 != nil) }
+        )
+    }
+
     private func clearFilterPopoverSelections() {
         selectedFilterInfo = nil
         selectedFilterSettings = nil
         selectedFilterFallbacks = nil
         selectedCategoryInfo = nil
+        showingCapacityPopover = false
     }
 
     private func switchAppMode(to newMode: AppMode, fromToggle: Bool = false) {
@@ -616,6 +628,11 @@ struct ContentView: View {
                                 .infoSheetPresentationCompat()
                         }
                         .infoPresentation(item: $selectedCategoryInfo, content: filterCategoryInfoContent)
+                        #if os(macOS)
+                        .infoPresentation(item: capacityPopoverItem, arrowEdge: .bottom) { _ in
+                            RuleCapacityPopoverView(filterManager: filterManager)
+                        }
+                        #endif
                         .transition(.opacity)
                 }
             }
@@ -854,9 +871,7 @@ struct ContentView: View {
             .buttonStyle(.plain)
             .noFocusRingCompat()
             #if os(macOS)
-            .modalPopover(isPresented: $showingCapacityPopover, arrowEdge: .top) {
-                RuleCapacityPopoverView(filterManager: filterManager)
-            }
+            .infoPopoverAnchor(CapacityPopoverItem().id)
             #else
             .sheet(isPresented: $showingCapacityPopover) {
                 RuleCapacityPopoverView(filterManager: filterManager)
@@ -1237,7 +1252,6 @@ struct FilterRowView: View, Equatable {
                 .accessibilityAddTraits(.isButton)
                 .accessibilityAction { onInfo() }
                 .contentShape(.interaction, Rectangle())
-                .infoPopoverAnchor(filter.id, capturesClicks: false)
             #endif
             if filter.isRemoteURL && (isDownloading || !isDownloaded) {
                 ContentDownloadControl(isDownloading: isDownloading, name: text.name, action: onDownload)
@@ -1282,6 +1296,7 @@ struct FilterRowView: View, Equatable {
                         .fontWeight(.medium)
                         .foregroundStyle(.primary)
                         .fixedSize(horizontal: false, vertical: true)
+                        .infoPopoverAnchor(filter.id, capturesClicks: false)
                     #if os(iOS)
                     RowDisclosureChevron()
                     #endif

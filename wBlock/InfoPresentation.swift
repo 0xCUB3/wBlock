@@ -23,11 +23,12 @@ extension View {
     @ViewBuilder
     func infoPresentation<Item: Identifiable, Info: View>(
         item: Binding<Item?>,
+        arrowEdge: Edge = .trailing,
         onDismiss: @escaping () -> Void = {},
         @ViewBuilder content: @escaping (Item) -> Info
     ) -> some View {
         #if os(macOS)
-        modifier(InfoPresentationModifier(item: item, onDismiss: onDismiss, info: content))
+        modifier(InfoPresentationModifier(item: item, arrowEdge: arrowEdge, onDismiss: onDismiss, info: content))
         #else
         sheet(item: item, onDismiss: onDismiss, content: content)
         #endif
@@ -39,10 +40,7 @@ extension View {
         @ViewBuilder content: @escaping () -> Content
     ) -> some View {
         #if os(macOS)
-        background {
-            if isPresented.wrappedValue { PopoverWindowShield { isPresented.wrappedValue = false } }
-        }
-        .popover(isPresented: isPresented, arrowEdge: arrowEdge, content: content)
+        modifier(ModalPopoverModifier(isPresented: isPresented, arrowEdge: arrowEdge, popoverContent: content))
         #else
         popover(isPresented: isPresented, arrowEdge: arrowEdge, content: content)
         #endif
@@ -110,6 +108,7 @@ final class InfoPopoverPresenter: ObservableObject {
     @Published private(set) var state = InfoPopoverState()
     var clearSelection: () -> Void = {}
     var lastItem: Any?
+    var arrowEdge: Edge = .trailing
     weak var sourceView: NSView?
 
     /// Minimum horizontal clearance beside the anchor so macOS keeps the info
@@ -117,14 +116,13 @@ final class InfoPopoverPresenter: ObservableObject {
     nonisolated static let requiredSideClearance: CGFloat = 504
 
     /// Keeps the full anchor rect when either horizontal side fits on screen.
-    /// Otherwise collapses horizontally to a 1 pt slice (preferring the click X)
-    /// so NSPopover always has room for a side arrow instead of dropping it when
-    /// a wide row sits near the vertical middle of the screen.
+    /// Otherwise collapses deterministically to a 1 pt slice on the edge with
+    /// more room (independent of mouse position) so a very long name on a tight
+    /// display still keeps its side arrow instead of dropping it.
     static func sideFittingRect(
         _ rect: CGRect,
         screenRect: CGRect,
         screenVisible: CGRect,
-        clickScreenX: CGFloat? = nil,
         requiredClearance: CGFloat = requiredSideClearance
     ) -> CGRect {
         guard rect.width > 1, !screenVisible.isEmpty else { return rect }
@@ -134,19 +132,14 @@ final class InfoPopoverPresenter: ObservableObject {
             return rect
         }
 
-        var targetScreenX: CGFloat
-        if let clickScreenX {
-            targetScreenX = min(max(clickScreenX, screenRect.minX), screenRect.maxX)
-        } else {
-            let leftOfTrailing = screenRect.maxX - screenVisible.minX
-            let rightOfLeading = screenVisible.maxX - screenRect.minX
-            targetScreenX = leftOfTrailing >= rightOfLeading ? screenRect.maxX : screenRect.minX
-        }
+        let leftOfTrailing = screenRect.maxX - screenVisible.minX
+        let rightOfLeading = screenVisible.maxX - screenRect.minX
+        var targetScreenX = rightOfLeading >= leftOfTrailing ? screenRect.minX : screenRect.maxX
 
         let leftAtTarget = targetScreenX - screenVisible.minX
         let rightAtTarget = screenVisible.maxX - targetScreenX
         if max(leftAtTarget, rightAtTarget) < requiredClearance {
-            if leftAtTarget <= rightAtTarget {
+            if rightAtTarget >= leftAtTarget {
                 targetScreenX = max(screenRect.minX, screenVisible.maxX - requiredClearance)
             } else {
                 targetScreenX = min(screenRect.maxX, screenVisible.minX + requiredClearance)
@@ -168,45 +161,17 @@ final class InfoPopoverPresenter: ObservableObject {
             y: sourceView.isFlipped ? rect.minY - sourceView.bounds.minY : sourceView.bounds.maxY - rect.maxY,
             width: rect.width, height: rect.height
         )
-        guard let screenVisible = window.screen?.visibleFrame else { return swiftUIRect }
+        guard arrowEdge == .leading || arrowEdge == .trailing,
+              let screenVisible = window.screen?.visibleFrame else { return swiftUIRect }
         let screenRect = window.convertToScreen(view.convert(visible, to: nil))
-        let clickScreenX: CGFloat?
-        if let click = presentedClick, click.token == token {
-            let clampedX = min(max(click.localX, visible.minX), visible.maxX)
-            let windowPoint = view.convert(NSPoint(x: clampedX, y: visible.midY), to: nil)
-            clickScreenX = window.convertPoint(toScreen: windowPoint).x
-        } else {
-            clickScreenX = nil
-        }
         return Self.sideFittingRect(
             swiftUIRect,
             screenRect: screenRect,
-            screenVisible: screenVisible,
-            clickScreenX: clickScreenX
+            screenVisible: screenVisible
         )
     }
 
     private var anchors: [UUID: (id: AnyHashable, view: InfoPopoverAnchorView)] = [:]
-    private var pendingClick: (token: UUID, localX: CGFloat)?
-    private var presentedClick: (token: UUID, localX: CGFloat)?
-
-    private func localClickX(in view: InfoPopoverAnchorView, from event: NSEvent?, allowPointerFallback: Bool) -> CGFloat? {
-        guard let window = view.window else { return nil }
-        let visible = view.bounds.intersection(view.visibleRect)
-        guard !visible.isEmpty else { return nil }
-        let windowPoint: NSPoint?
-        if let event, event.windowNumber == window.windowNumber,
-           event.type == .leftMouseUp || event.type == .leftMouseDown {
-            windowPoint = event.locationInWindow
-        } else if allowPointerFallback {
-            windowPoint = window.mouseLocationOutsideOfEventStream
-        } else {
-            windowPoint = nil
-        }
-        guard let windowPoint else { return nil }
-        let local = view.convert(windowPoint, from: nil)
-        return visible.contains(local) ? local.x : nil
-    }
 
     func register(_ token: UUID, id: AnyHashable, view: InfoPopoverAnchorView) { anchors[token] = (id, view) }
     /// SwiftUI can host a second, window-less copy of an anchor with the same
@@ -215,12 +180,10 @@ final class InfoPopoverPresenter: ObservableObject {
     /// cleared before it opens (#931).
     func unregister(_ token: UUID, view: InfoPopoverAnchorView) {
         guard anchors[token]?.view === view, let id = anchors.removeValue(forKey: token)?.id else { return }
-        if pendingClick?.token == token { pendingClick = nil }
         // A presented row that moves (a category change from its own popover)
         // follows its new anchor; one that leaves the list closes its popover.
         DispatchQueue.main.async { [self] in
             guard anchors[token] == nil, state.presented == token else { return }
-            if presentedClick?.token == token { presentedClick = nil }
             if let moved = anchors.first(where: { $0.value.id == id && $0.value.view.window != nil })?.key {
                 _ = state.request(moved, mouseUp: nil)
             } else {
@@ -231,10 +194,7 @@ final class InfoPopoverPresenter: ObservableObject {
     }
 
     func select(_ id: AnyHashable?) {
-        let click = pendingClick
-        pendingClick = nil
         guard let id else {
-            presentedClick = nil
             state.clear()
             return
         }
@@ -246,42 +206,79 @@ final class InfoPopoverPresenter: ObservableObject {
             return .init(token: token, id: anchor.id, windowNumber: window.windowNumber, frame: view.convert(view.bounds, to: nil))
         }
         let mouseUp = event?.type == .leftMouseUp ? event?.eventNumber : nil
-        if let event, event.type == .leftMouseUp || event.type == .leftMouseDown,
-           let hit = visible.first(where: { $0.windowNumber == event.windowNumber && $0.frame.contains(event.locationInWindow) }) {
-            state.clicked(hit.token, id: id)
+        if let event, event.type == .leftMouseUp || event.type == .leftMouseDown {
+            let inWindow = visible.filter { $0.windowNumber == event.windowNumber }
+            // Anchors sit on the row's name, so a click elsewhere on a duplicated
+            // regional row matches by vertical band when it misses the title rect.
+            let hit = inWindow.first(where: { $0.frame.contains(event.locationInWindow) })
+                ?? inWindow.min(by: { abs($0.frame.midY - event.locationInWindow.y) < abs($1.frame.midY - event.locationInWindow.y) })
+            if let hit { state.clicked(hit.token, id: id) }
         }
         let fromKeyboard = event?.type == .keyDown
         // An item with no visible anchor, or a closing click, must not leave
         // a selection behind that no popover shows.
         guard let token = state.anchor(for: id, in: visible, fromKeyboard: fromKeyboard),
               state.request(token, mouseUp: mouseUp) else {
-            presentedClick = nil
             return clearSelection()
-        }
-        if !fromKeyboard,
-           let localX = (click?.token == token ? click?.localX : nil)
-            ?? anchors[token].flatMap({ localClickX(in: $0.view, from: event, allowPointerFallback: true) }) {
-            presentedClick = (token, localX)
-        } else {
-            presentedClick = nil
         }
     }
 
     func clicked(_ token: UUID, id: AnyHashable) {
         state.clicked(token, id: id)
-        if let view = anchors[token]?.view,
-           let localX = localClickX(in: view, from: NSApp.currentEvent, allowPointerFallback: true) {
-            pendingClick = (token, localX)
-        } else {
-            pendingClick = nil
-        }
     }
 
     func dismiss(_ token: UUID) {
         let event = NSApp.currentEvent
         guard state.dismiss(token, mouseDown: event?.type == .leftMouseDown ? event?.eventNumber : nil) else { return }
-        presentedClick = nil
         clearSelection()
+    }
+}
+
+private struct ModalPopoverModifier<PopoverContent: View>: ViewModifier {
+    @Binding var isPresented: Bool
+    let arrowEdge: Edge
+    let popoverContent: () -> PopoverContent
+    @State private var presented = false
+    @State private var closingEventNumber: Int?
+
+    private func dismissFromCurrentEvent() {
+        let event = NSApp.currentEvent
+        closingEventNumber = event?.type == .leftMouseDown ? event?.eventNumber : nil
+        presented = false
+        isPresented = false
+    }
+
+    private func sync(_ requested: Bool) {
+        if !requested {
+            presented = false
+            return
+        }
+        let event = NSApp.currentEvent
+        if event?.type == .leftMouseUp, let num = event?.eventNumber, num == closingEventNumber {
+            closingEventNumber = nil
+            isPresented = false
+            return
+        }
+        closingEventNumber = nil
+        presented = true
+    }
+
+    func body(content: Content) -> some View {
+        let popoverBinding = Binding(
+            get: { presented },
+            set: { if !$0 { dismissFromCurrentEvent() } }
+        )
+        let base = content
+            .background {
+                if presented { PopoverWindowShield { dismissFromCurrentEvent() } }
+            }
+            .popover(isPresented: popoverBinding, arrowEdge: arrowEdge, content: popoverContent)
+            .onAppear { if isPresented { sync(true) } }
+        if #available(macOS 14.0, *) {
+            base.onChange(of: isPresented) { sync($1) }
+        } else {
+            base.onChange(of: isPresented, perform: sync)
+        }
     }
 }
 
@@ -300,6 +297,7 @@ private extension EnvironmentValues {
 
 private struct InfoPresentationModifier<Item: Identifiable, Info: View>: ViewModifier {
     @Binding var item: Item?
+    let arrowEdge: Edge
     let onDismiss: () -> Void
     let info: (Item) -> Info
     @StateObject private var presenter = InfoPopoverPresenter()
@@ -308,6 +306,7 @@ private struct InfoPresentationModifier<Item: Identifiable, Info: View>: ViewMod
     func body(content: Content) -> some View {
         let selection = $item
         presenter.clearSelection = { selection.wrappedValue = nil }
+        presenter.arrowEdge = arrowEdge
         if let item { presenter.lastItem = item }
         // Keep the closing popover's content until it finishes animating away.
         let shown = item ?? presenter.lastItem as? Item
@@ -322,7 +321,7 @@ private struct InfoPresentationModifier<Item: Identifiable, Info: View>: ViewMod
             .background {
                 if let token { PopoverWindowShield { presenter.dismiss(token) } }
             }
-            .popover(isPresented: isPresented, attachmentAnchor: .rect(.rect(presenter.attachmentRect)), arrowEdge: .leading) {
+            .popover(isPresented: isPresented, attachmentAnchor: .rect(.rect(presenter.attachmentRect)), arrowEdge: arrowEdge) {
                 if let shown { info(shown).id(shown.id).font(.body).onDisappear(perform: onDismiss) }
             }
         if #available(macOS 14.0, *) {

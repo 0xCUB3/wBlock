@@ -20,6 +20,17 @@ struct BasicFiltersView: View {
         let id = "alsoOn"
     }
 
+    private struct LanguagesPopoverItem: Identifiable {
+        let id = "languages"
+    }
+
+    private var languagesPopoverItem: Binding<LanguagesPopoverItem?> {
+        Binding(
+            get: { showingLanguagesSheet ? LanguagesPopoverItem() : nil },
+            set: { showingLanguagesSheet = ($0 != nil) }
+        )
+    }
+
     @AppStorage(ListDisplayOrder.filtersKey) private var filterDisplayOrder = Data()
     @State private var toggleMemory = BasicBundleToggleMemory()
     @State private var peekBundle: BasicBundle?
@@ -269,6 +280,13 @@ struct BasicFiltersView: View {
                 options: languageOptions
             )
         }
+        #else
+        .infoPresentation(item: languagesPopoverItem) { _ in
+            RegionalLanguageList(
+                selectedLanguages: languageSelectionBinding,
+                options: languageOptions
+            )
+        }
         #endif
         .onAppear {
             storedLanguageCodes = Self.readStoredLanguageCodes()
@@ -388,6 +406,7 @@ struct BasicFiltersView: View {
                         .foregroundStyle(.primary)
                         .lineLimit(1)
                         .fixedSize(horizontal: true, vertical: false)
+                        .infoPopoverAnchor(bundle.id, capturesClicks: false)
 
                     Text(state.accessibilityLabel)
                         .font(.caption2.weight(.medium))
@@ -409,7 +428,6 @@ struct BasicFiltersView: View {
         }
         .buttonStyle(.plain)
         .noFocusRingCompat()
-        .infoPopoverAnchor(bundle.id)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(core.localizedTitle))
         .accessibilityValue(Text(state.accessibilityLabel))
@@ -439,6 +457,7 @@ struct BasicFiltersView: View {
                             Text(core.localizedTitle)
                                 .font(.body.weight(.medium))
                                 .foregroundStyle(.primary)
+                                .infoPopoverAnchor(bundle.id, capturesClicks: false)
                             Text(core.subtitle)
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
@@ -459,7 +478,6 @@ struct BasicFiltersView: View {
                 }
                 .buttonStyle(.plain)
                 .noFocusRingCompat()
-                .infoPopoverAnchor(bundle.id)
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(Text(core.localizedTitle))
                 .accessibilityValue(Text(state.accessibilityLabel))
@@ -609,6 +627,7 @@ struct BasicFiltersView: View {
                                 .font(.body.weight(.medium))
                                 .foregroundStyle(.primary)
                                 .fixedSize(horizontal: false, vertical: true)
+                                .infoPopoverAnchor(bundle.id, capturesClicks: false)
                             if choice == .cookies {
                                 Text("Recommended")
                                     .font(.caption)
@@ -635,7 +654,6 @@ struct BasicFiltersView: View {
             }
             .buttonStyle(.plain)
             .noFocusRingCompat()
-            .infoPopoverAnchor(bundle.id)
             .accessibilityLabel(Text(LocalizedStringKey(choice.title)))
             .accessibilityValue(Text(state.accessibilityLabel))
 
@@ -694,6 +712,7 @@ struct BasicFiltersView: View {
                     Text("Languages")
                         .font(.body.weight(.medium))
                         .foregroundStyle(.primary)
+                        .infoPopoverAnchor(LanguagesPopoverItem().id, capturesClicks: false)
                     Text(verbatim: languageSummary)
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -711,14 +730,6 @@ struct BasicFiltersView: View {
         }
         .buttonStyle(.plain)
         .noFocusRingCompat()
-        #if os(macOS)
-        .popover(isPresented: $showingLanguagesSheet) {
-            RegionalLanguageList(
-                selectedLanguages: languageSelectionBinding,
-                options: languageOptions
-            )
-        }
-        #endif
     }
 
     private var alsoOnSummary: String {
@@ -775,6 +786,7 @@ struct BasicFiltersView: View {
                     Text("Also on")
                         .font(.body.weight(.medium))
                         .foregroundStyle(.primary)
+                        .infoPopoverAnchor("alsoOn", capturesClicks: false)
                     Text(alsoOnSummary)
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -790,7 +802,6 @@ struct BasicFiltersView: View {
         }
         .buttonStyle(.plain)
         .noFocusRingCompat()
-        .infoPopoverAnchor("alsoOn")
     }
 
     // MARK: - Footer

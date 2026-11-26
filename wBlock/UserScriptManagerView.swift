@@ -664,6 +664,7 @@ struct UserScriptManagerView: View {
                     .fontWeight(.medium)
                     .foregroundStyle(.primary)
                     .fixedSize(horizontal: false, vertical: true)
+                    .infoPopoverAnchor(script.id, capturesClicks: false)
                 if script.isBeta {
                     Badge(text: "Beta", color: .orange)
                 }
@@ -774,7 +775,6 @@ struct UserScriptManagerView: View {
                 selectedScriptInfo = SelectedUserScript(id: script.id, action: .info)
             }
             .contentShape(.interaction, Rectangle())
-            .infoPopoverAnchor(script.id, capturesClicks: false)
             #endif
 
             if !script.isLocal && (downloadingScriptIDs.contains(script.id) || !script.isDownloaded) {

@@ -512,7 +512,7 @@ struct SettingsView: View {
                 .buttonStyle(.plain)
                 .noFocusRingCompat()
                 #if os(macOS)
-                .modalPopover(isPresented: $showingRuleCapacity, arrowEdge: .top) {
+                .modalPopover(isPresented: $showingRuleCapacity, arrowEdge: .bottom) {
                     RuleCapacityPopoverView(filterManager: filterManager)
                 }
                 #else
