@@ -72,6 +72,36 @@ struct Test {
 
         let cancelled = FilterRuleAnalysis.analyze(content: content, isCancelled: { true })
         require(cancelled.lines.isEmpty, "cancellation yields an empty analysis")
+
+        // #1169: negative integers in set-cookie are supported; invalid scriptlet
+        // parameter values are marked unsupported in the filter viewer.
+        let scriptletParams = FilterRuleAnalysis.analyze(content: """
+        duckduckgo.com##+js(set-cookie, bg, -1)
+        duckduckgo.com#%#//scriptlet('set-cookie', 'bg', '-1')
+        duckduckgo.com##+js(set-cookie-reload, bg, -1)
+        duckduckgo.com##+js(set-cookie, bg, -32767, /)
+        duckduckgo.com##+js(set-cookie, bg, invalid)
+        duckduckgo.com#%#//scriptlet('set-cookie', 'bg', 'invalid')
+        duckduckgo.com##+js(set-cookie, bg, -32768)
+        duckduckgo.com##+js(set-cookie, bg, -1, /badpath)
+        duckduckgo.com#@#+js(set-cookie, bg)
+        duckduckgo.com##+js(trusted-set-cookie, bg, custom, 1day, /)
+        duckduckgo.com##+js(trusted-set-cookie, bg, custom, bad-expiry)
+        duckduckgo.com##+js(set-local-storage-item, k, -1)
+        duckduckgo.com##+js(set-local-storage-item, k, invalid)
+        duckduckgo.com##+js(set-attr, div, data-x, true)
+        duckduckgo.com##+js(set-attr, div, data-x, -1)
+        """)
+        let expectedScriptletKinds: [FilterRuleKind] = [
+            .advanced, .advanced, .advanced, .advanced,
+            .unsupported, .unsupported, .unsupported, .unsupported,
+            .advanced, .advanced, .unsupported,
+            .advanced, .unsupported, .advanced, .unsupported
+        ]
+        require(
+            scriptletParams.lines.map(\.kind) == expectedScriptletKinds,
+            "scriptlet parameter classification: \(scriptletParams.lines.map(\.kind.rawValue))"
+        )
         print("PASS test_issue_675_rule_analysis")
     }
 }

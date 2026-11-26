@@ -350,6 +350,11 @@ fn scriptlet(
     if name.is_empty() && (!exception || !args.is_empty()) {
         return invalid("scriptlet without a name");
     }
+    if !exception {
+        if let Err(reason) = check_scriptlet_args(name, &args) {
+            return unsupported(reason);
+        }
+    }
     ParsedLine::Rule(Rule::Scriptlet(ScriptletRule {
         source,
         raw: raw.to_string(),
@@ -358,6 +363,157 @@ fn scriptlet(
         name: name.to_string(),
         args,
     }))
+}
+
+/// Safe literal values accepted by uBO's `set-cookie` / `set-local-storage-item`
+/// (`get-safe-cookie-values.fn` in resources.json).
+const SAFE_COOKIE_VALUES: &[&str] = &[
+    "accept", "reject",
+    "accepted", "rejected", "notaccepted",
+    "allow", "disallow", "deny",
+    "allowed", "denied",
+    "approved", "disapproved",
+    "checked", "unchecked",
+    "dismiss", "dismissed",
+    "enable", "disable",
+    "enabled", "disabled",
+    "essential", "nonessential",
+    "forbidden", "forever",
+    "hide", "hidden",
+    "necessary", "required",
+    "ok",
+    "on", "off",
+    "true", "t", "false", "f",
+    "yes", "y", "no", "n",
+    "all", "none", "functional",
+    "granted", "done",
+    "decline", "declined",
+    "closed", "next", "mandatory",
+    "disagree", "agree",
+    "set", "unset",
+    "given",
+];
+
+/// Additional literal values accepted by uBO's `set-local-storage-item` /
+/// `set-session-storage-item` (`set-local-storage-item.fn`).
+const SAFE_STORAGE_VALUES: &[&str] = &[
+    "", "undefined", "null", "{}", "[]", "\"\"", "$remove$",
+];
+
+/// Matches JS `/^("?)(.+)\1$/`: strips one pair of surrounding `"` when the
+/// inner slice is non-empty.
+fn unquote_double_quotes(s: &str) -> &str {
+    s.strip_prefix('"')
+        .and_then(|inner| inner.strip_suffix('"'))
+        .filter(|inner| !inner.is_empty())
+        .unwrap_or(s)
+}
+
+/// Matches JS `/^-?\d+$/` (or `/^\d+$/` when `min >= 0`) within `[min, max]`.
+fn is_scriptlet_int(s: &str, min: i32, max: i32) -> bool {
+    let digits = if min < 0 {
+        s.strip_prefix('-').unwrap_or(s)
+    } else {
+        s
+    };
+    !digits.is_empty()
+        && digits.bytes().all(|b| b.is_ascii_digit())
+        && s.parse::<i32>().is_ok_and(|n| (min..=max).contains(&n))
+}
+
+fn is_safe_cookie_value(raw: &str) -> bool {
+    let lower = raw.to_ascii_lowercase();
+    let unquoted = unquote_double_quotes(&lower);
+    SAFE_COOKIE_VALUES.contains(&unquoted) || is_scriptlet_int(unquoted, -32767, 32767)
+}
+
+fn is_safe_storage_value(raw: &str) -> bool {
+    let mapped = match raw {
+        "emptyArr" => "[]",
+        "emptyObj" => "{}",
+        _ => raw,
+    };
+    let lower = mapped.to_ascii_lowercase();
+    let unquoted = unquote_double_quotes(&lower);
+    SAFE_STORAGE_VALUES.contains(&unquoted)
+        || SAFE_COOKIE_VALUES.contains(&unquoted)
+        || is_scriptlet_int(unquoted, -32767, 32767)
+}
+
+fn is_valid_cookie_path(path: &str) -> bool {
+    matches!(path, "" | "/" | "none")
+}
+
+/// Rejects non-exception scriptlet calls whose parameter values the bundled
+/// uBO scriptlets reject with an immediate no-op return, so the filter viewer
+/// marks them unsupported and the engine does not ship dead rules.
+fn check_scriptlet_args(name: &str, args: &[String]) -> Result<(), &'static str> {
+    let arg = |i: usize| args.get(i).map(String::as_str).unwrap_or("");
+    match name {
+        "set-cookie" | "set-cookie-reload" => {
+            if arg(0).is_empty() {
+                return Err("set-cookie requires a cookie name");
+            }
+            if !is_safe_cookie_value(arg(1)) {
+                return Err("unsupported set-cookie value");
+            }
+            if !is_valid_cookie_path(arg(2)) {
+                return Err("unsupported set-cookie path");
+            }
+        }
+        "trusted-set-cookie" | "trusted-set-cookie-reload" => {
+            if arg(0).is_empty() {
+                return Err("trusted-set-cookie requires a cookie name");
+            }
+            let expires = arg(2);
+            if !expires.is_empty()
+                && expires != "1day"
+                && expires != "1year"
+                && !expires.bytes().all(|b| b.is_ascii_digit())
+            {
+                return Err("unsupported trusted-set-cookie expiration");
+            }
+            if !is_valid_cookie_path(arg(3)) {
+                return Err("unsupported trusted-set-cookie path");
+            }
+        }
+        "set-local-storage-item" | "set-session-storage-item" => {
+            if arg(0).is_empty() {
+                return Err("storage scriptlet requires a key");
+            }
+            if !is_safe_storage_value(arg(1)) {
+                return Err("unsupported storage item value");
+            }
+        }
+        "trusted-set-local-storage-item" | "trusted-set-session-storage-item" => {
+            if arg(0).is_empty() {
+                return Err("storage scriptlet requires a key");
+            }
+        }
+        "set-attr" => {
+            if arg(0).is_empty() || arg(1).is_empty() {
+                return Err("set-attr requires selector and attribute");
+            }
+            let value = arg(2);
+            let lower = value.to_ascii_lowercase();
+            let valid = matches!(lower.as_str(), "" | "false" | "true")
+                || is_scriptlet_int(value, 0, 32767)
+                || (value.len() >= 3
+                    && value.starts_with('[')
+                    && value.ends_with(']')
+                    && !value.contains(['\n', '\r']));
+            if !valid {
+                return Err("unsupported set-attr value");
+            }
+        }
+        "trusted-set-attr" => {
+            if arg(0).is_empty() || arg(1).is_empty() {
+                return Err("trusted-set-attr requires selector and attribute");
+            }
+        }
+        _ => {}
+    }
+    Ok(())
 }
 
 /// An AdGuard `#%#` rule: `//scriptlet('name', ...)` becomes the call
@@ -1357,6 +1513,143 @@ mod tests {
             ("##+js()", "invalid: scriptlet without a name"),
             ("##+js(, x)", "invalid: scriptlet without a name"),
             ("##+js(aopr", "invalid: relative selector at top level"),
+            // set-cookie & set-cookie-reload parameter validation (#1169)
+            (
+                "duckduckgo.com##+js(set-cookie, bg, -1)",
+                "[h:duckduckgo.com] js set-cookie[bg | -1]",
+            ),
+            (
+                "duckduckgo.com##+js(set-cookie, bg, -32767)",
+                "[h:duckduckgo.com] js set-cookie[bg | -32767]",
+            ),
+            (
+                "duckduckgo.com##+js(set-cookie, bg, 32767, /)",
+                "[h:duckduckgo.com] js set-cookie[bg | 32767 | /]",
+            ),
+            (
+                "duckduckgo.com##+js(set-cookie, bg, 0, none)",
+                "[h:duckduckgo.com] js set-cookie[bg | 0 | none]",
+            ),
+            (
+                "duckduckgo.com##+js(set-cookie, bg, '\"-1\"')",
+                "[h:duckduckgo.com] js set-cookie[bg | \"-1\"]",
+            ),
+            (
+                "duckduckgo.com##+js(set-cookie, consent, Accept)",
+                "[h:duckduckgo.com] js set-cookie[consent | Accept]",
+            ),
+            (
+                "duckduckgo.com##+js(set-cookie-reload, bg, -1)",
+                "[h:duckduckgo.com] js set-cookie-reload[bg | -1]",
+            ),
+            (
+                "duckduckgo.com##+js(set-cookie, bg, -32768)",
+                "unsupported: unsupported set-cookie value",
+            ),
+            (
+                "duckduckgo.com##+js(set-cookie, bg, 32768)",
+                "unsupported: unsupported set-cookie value",
+            ),
+            (
+                "duckduckgo.com##+js(set-cookie, bg, +1)",
+                "unsupported: unsupported set-cookie value",
+            ),
+            (
+                "duckduckgo.com##+js(set-cookie, bg, invalid)",
+                "unsupported: unsupported set-cookie value",
+            ),
+            (
+                "duckduckgo.com##+js(set-cookie, bg)",
+                "unsupported: unsupported set-cookie value",
+            ),
+            (
+                "duckduckgo.com##+js(set-cookie)",
+                "unsupported: set-cookie requires a cookie name",
+            ),
+            (
+                "duckduckgo.com##+js(set-cookie, bg, -1, /search)",
+                "unsupported: unsupported set-cookie path",
+            ),
+            (
+                "duckduckgo.com##+js(set-cookie-reload, bg, invalid)",
+                "unsupported: unsupported set-cookie value",
+            ),
+            // Scriptlet exceptions may omit or shorten arguments.
+            (
+                "duckduckgo.com#@#+js(set-cookie)",
+                "@[h:duckduckgo.com] js set-cookie[]",
+            ),
+            (
+                "duckduckgo.com#@#+js(set-cookie, bg)",
+                "@[h:duckduckgo.com] js set-cookie[bg]",
+            ),
+            // trusted-set-cookie
+            (
+                "example.com##+js(trusted-set-cookie, k, custom_val, 1day, /)",
+                "[h:example.com] js trusted-set-cookie[k | custom_val | 1day | /]",
+            ),
+            (
+                "example.com##+js(trusted-set-cookie, k, custom_val, 3600, none)",
+                "[h:example.com] js trusted-set-cookie[k | custom_val | 3600 | none]",
+            ),
+            (
+                "example.com##+js(trusted-set-cookie, k, custom_val, bad)",
+                "unsupported: unsupported trusted-set-cookie expiration",
+            ),
+            (
+                "example.com##+js(trusted-set-cookie, k, custom_val, , /bad)",
+                "unsupported: unsupported trusted-set-cookie path",
+            ),
+            // set-local-storage-item & set-session-storage-item
+            (
+                "example.com##+js(set-local-storage-item, k, -1)",
+                "[h:example.com] js set-local-storage-item[k | -1]",
+            ),
+            (
+                "example.com##+js(set-local-storage-item, k, emptyArr)",
+                "[h:example.com] js set-local-storage-item[k | emptyArr]",
+            ),
+            (
+                "example.com##+js(set-local-storage-item, k, $remove$)",
+                "[h:example.com] js set-local-storage-item[k | $remove$]",
+            ),
+            (
+                "example.com##+js(set-local-storage-item, k)",
+                "[h:example.com] js set-local-storage-item[k]",
+            ),
+            (
+                "example.com##+js(set-session-storage-item, k, invalid)",
+                "unsupported: unsupported storage item value",
+            ),
+            (
+                "example.com##+js(set-local-storage-item, k, -32768)",
+                "unsupported: unsupported storage item value",
+            ),
+            // set-attr & trusted-set-attr
+            (
+                "example.com##+js(set-attr, div, data-x, 0)",
+                "[h:example.com] js set-attr[div | data-x | 0]",
+            ),
+            (
+                "example.com##+js(set-attr, div, data-x, [data-src])",
+                "[h:example.com] js set-attr[div | data-x | [data-src]]",
+            ),
+            (
+                "example.com##+js(set-attr, div, data-x, -1)",
+                "unsupported: unsupported set-attr value",
+            ),
+            (
+                "example.com##+js(set-attr, div, data-x, 32768)",
+                "unsupported: unsupported set-attr value",
+            ),
+            (
+                "example.com##+js(set-attr, div, data-x, foo)",
+                "unsupported: unsupported set-attr value",
+            ),
+            (
+                "example.com##+js(trusted-set-attr, path, d, M0 0)",
+                "[h:example.com] js trusted-set-attr[path | d | M0 0]",
+            ),
         ]);
     }
 
