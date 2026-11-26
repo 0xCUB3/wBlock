@@ -950,55 +950,61 @@ struct SettingsView: View {
 
     @ViewBuilder
     private var settingsContent: some View {
+        #if os(macOS)
         CompatibleNavigationStack {
-            // Section headers carry ids, so the pills
-            // can scroll to them in a page that has grown long (#999).
-            ScrollViewReader { proxy in
-                settingsList
-                    .swipeBackRootCompat()
-                    .toolbar {
-                        PauseBlockingToolbarItem(
-                            filterManager: filterManager,
-                            allowsComponentMenu: appMode == .advanced
-                        )
-                    }
-                    .topBarCompat {
-                        if filterManager.isBlockingPaused {
-                            PauseBlockingBanner(filterManager: filterManager)
-                        }
-                    }
-                    .onChangeCompat(of: scrollTarget) { _, target in
-                        guard let target else { return }
-                        withAnimation { proxy.scrollTo(target, anchor: Self.sectionScrollAnchor) }
-                        scrollTarget = nil
-                    }
-                    .onAppear {
-                        let isAdvanced = (appMode == .advanced)
+            settingsRootContent
+        }
+        #else
+        settingsRootContent
+        #endif
+    }
+
+    private var settingsRootContent: some View {
+        // Section headers carry ids, so the pills
+        // can scroll to them in a page that has grown long (#999).
+        ScrollViewReader { proxy in
+            settingsList
+                .swipeBackRootCompat()
+                .toolbar {
+                    PauseBlockingToolbarItem(
+                        filterManager: filterManager,
+                        allowsComponentMenu: appMode == .advanced
+                    )
+                }
+                .topBarCompat(isVisible: filterManager.isBlockingPaused) {
+                    PauseBlockingBanner(filterManager: filterManager)
+                }
+                .onChangeCompat(of: scrollTarget) { _, target in
+                    guard let target else { return }
+                    withAnimation { proxy.scrollTo(target, anchor: Self.sectionScrollAnchor) }
+                    scrollTarget = nil
+                }
+                .onAppear {
+                    let isAdvanced = (appMode == .advanced)
+                    showAllListsSwitch = isAdvanced
+                    #if os(iOS)
+                    showsStatusPills = isAdvanced
+                    deferStatusPillsSyncOnModeChange = false
+                    #endif
+                }
+                .onChangeCompat(of: appMode) { _, newMode in
+                    let isAdvanced = (newMode == .advanced)
+                    if showAllListsSwitch != isAdvanced {
                         showAllListsSwitch = isAdvanced
-                        #if os(iOS)
-                        showsStatusPills = isAdvanced
+                    }
+                    #if os(iOS)
+                    if deferStatusPillsSyncOnModeChange {
                         deferStatusPillsSyncOnModeChange = false
-                        #endif
-                    }
-                    .onChangeCompat(of: appMode) { _, newMode in
-                        let isAdvanced = (newMode == .advanced)
-                        if showAllListsSwitch != isAdvanced {
-                            showAllListsSwitch = isAdvanced
-                        }
-                        #if os(iOS)
-                        if deferStatusPillsSyncOnModeChange {
-                            deferStatusPillsSyncOnModeChange = false
-                            if isListNearTop, showsStatusPills != isAdvanced {
-                                withAnimation(.easeInOut(duration: 0.22)) {
-                                    showsStatusPills = isAdvanced
-                                }
+                        if isListNearTop, showsStatusPills != isAdvanced {
+                            withAnimation(.easeInOut(duration: 0.22)) {
+                                showsStatusPills = isAdvanced
                             }
-                        } else if showsStatusPills != isAdvanced {
-                            showsStatusPills = isAdvanced
                         }
-                        #endif
+                    } else if showsStatusPills != isAdvanced {
+                        showsStatusPills = isAdvanced
                     }
-            }
+                    #endif
+                }
         }
     }
 

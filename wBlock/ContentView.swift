@@ -575,76 +575,78 @@ struct ContentView: View {
     }
 
     private var filtersView: some View {
-        // Keep CompatibleNavigationStack as the direct tab root so TabView
-        // hosts its UINavigationController directly instead of nesting it
-        // inside a UIHostingController, which pushed the mobile toolbar and
-        // content downward on launch (#1162).
-        CompatibleNavigationStack(requiresNavigationView: false) {
-            Group {
-                if appMode == .basic {
-                    BasicFiltersView(
-                        filterManager: filterManager,
-                        safariHealth: safariHealth,
-                        lastUpdatedDate: latestFilterUpdateDate,
-                        onOpenHealthDetail: { showingHealthDetail = true },
-                        onCheckForUpdates: {
-                            guard !filterManager.isLoading else { return }
-                            Task { await filterManager.checkForUpdates(scope: .all, presentation: .refresh, autoApply: true) }
-                        },
-                        onHealthAction: handleHealthAction,
-                        onHeroVisibilityChange: { visible in
-                            if isBasicHeroVisible != visible { isBasicHeroVisible = visible }
-                        },
-                        onSwitchToAdvanced: { switchAppMode(to: .advanced) }
-                    )
-                    .sheet(isPresented: $showingCapacityPopover) {
-                        RuleCapacityPopoverView(filterManager: filterManager)
-                    }
-                    #if os(iOS)
-                    .topScrollEdgeEffectCompat()
-                    .navigationTitle("")
-                    #endif
-                    .modifier(basicToolbar)
-                    .transition(.opacity)
-                } else {
-                    nativeFiltersListView
-                        .modifier(topBanners)
-                        #if os(iOS)
-                        .searchableCompat(
-                            text: $filterSearchText,
-                            isPresented: $showFilterSearch,
-                            prompt: "Search filters"
-                        )
-                        #endif
-                        // Inside the stack, like Userscripts; iOS ignores toolbar items attached outside it.
-                        .modifier(filtersToolbar)
-                        .infoPresentation(item: $selectedFilterInfo, content: filterInfoContent)
-                        .infoPresentation(item: $selectedFilterSettings) { filter in
-                            FilterSettingsView(filter: filter, filterManager: filterManager)
-                                .infoSheetPresentationCompat()
-                        }
-                        .infoPresentation(item: $selectedFilterFallbacks) { filter in
-                            FilterFallbacksView(filter: filter, urls: FilterListURLMirror.fallbackURLs(for: filter.url))
-                                .infoSheetPresentationCompat()
-                        }
-                        .infoPresentation(item: $selectedCategoryInfo, content: filterCategoryInfoContent)
-                        #if os(macOS)
-                        .infoPresentation(item: capacityPopoverItem, arrowEdge: .bottom) { _ in
-                            RuleCapacityPopoverView(filterManager: filterManager)
-                        }
-                        #endif
-                        .transition(.opacity)
-                }
-            }
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
-        }
         #if os(macOS)
+        CompatibleNavigationStack(requiresNavigationView: false) {
+            filtersTabContent
+        }
         .frame(
             minWidth: 480, idealWidth: 540, maxWidth: .infinity,
             minHeight: 550, idealHeight: 720, maxHeight: .infinity
         )
+        #else
+        filtersTabContent
+        #endif
+    }
+
+    private var filtersTabContent: some View {
+        Group {
+            if appMode == .basic {
+                BasicFiltersView(
+                    filterManager: filterManager,
+                    safariHealth: safariHealth,
+                    lastUpdatedDate: latestFilterUpdateDate,
+                    onOpenHealthDetail: { showingHealthDetail = true },
+                    onCheckForUpdates: {
+                        guard !filterManager.isLoading else { return }
+                        Task { await filterManager.checkForUpdates(scope: .all, presentation: .refresh, autoApply: true) }
+                    },
+                    onHealthAction: handleHealthAction,
+                    onHeroVisibilityChange: { visible in
+                        if isBasicHeroVisible != visible { isBasicHeroVisible = visible }
+                    },
+                    onSwitchToAdvanced: { switchAppMode(to: .advanced) }
+                )
+                .sheet(isPresented: $showingCapacityPopover) {
+                    RuleCapacityPopoverView(filterManager: filterManager)
+                }
+                #if os(iOS)
+                .topScrollEdgeEffectCompat()
+                #endif
+                .modifier(basicToolbar)
+                .transition(.opacity)
+            } else {
+                nativeFiltersListView
+                    .modifier(topBanners)
+                    #if os(iOS)
+                    .searchableCompat(
+                        text: $filterSearchText,
+                        isPresented: $showFilterSearch,
+                        prompt: "Search filters"
+                    )
+                    #endif
+                    // Inside the stack, like Userscripts; iOS ignores toolbar items attached outside it.
+                    .modifier(filtersToolbar)
+                    .infoPresentation(item: $selectedFilterInfo, content: filterInfoContent)
+                    .infoPresentation(item: $selectedFilterSettings) { filter in
+                        FilterSettingsView(filter: filter, filterManager: filterManager)
+                            .infoSheetPresentationCompat()
+                    }
+                    .infoPresentation(item: $selectedFilterFallbacks) { filter in
+                        FilterFallbacksView(filter: filter, urls: FilterListURLMirror.fallbackURLs(for: filter.url))
+                            .infoSheetPresentationCompat()
+                    }
+                    .infoPresentation(item: $selectedCategoryInfo, content: filterCategoryInfoContent)
+                    #if os(macOS)
+                    .infoPresentation(item: capacityPopoverItem, arrowEdge: .bottom) { _ in
+                        RuleCapacityPopoverView(filterManager: filterManager)
+                    }
+                    #endif
+                    .transition(.opacity)
+            }
+        }
+        #if os(iOS)
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
         #endif
     }
 
@@ -756,52 +758,58 @@ struct ContentView: View {
     }
 
     private var userscriptsView: some View {
+        #if os(macOS)
         CompatibleNavigationStack(requiresNavigationView: false) {
-            Group {
-                if appMode == .basic {
-                    BasicExtrasView(
-                        userScriptManager: userScriptManager,
-                        filterManager: filterManager,
-                        onRefresh: {
-                            guard !filterManager.isLoading else { return }
-                            await filterManager.checkForUpdates(scope: .scripts, presentation: .refresh)
-                        },
-                        onSwitchToAdvanced: { switchAppMode(to: .advanced) }
-                    )
-                    #if os(iOS)
-                    .topScrollEdgeEffectCompat()
-                    .navigationTitle("")
-                    #endif
-                    .modifier(basicToolbar)
-                    .topBarCompat {
-                        if filterManager.isBlockingPaused {
-                            PauseBlockingBanner(filterManager: filterManager)
-                        }
-                    }
-                    .transition(.opacity)
-                } else {
-                    UserScriptManagerView(
-                        userScriptManager: userScriptManager,
-                        tabSelection: tabSelection,
-                        addRequest: addUserScriptRequest,
-                        searchRequest: userScriptSearchRequest,
-                        onRefresh: {
-                            guard !filterManager.isLoading else { return }
-                            await filterManager.checkForUpdates(scope: .scripts, presentation: .refresh)
-                        },
-                        applyButton: AnyView(applyChangesToolbarButton),
-                        splitsApply: splitsApply,
-                        pauseButton: AnyView(PauseBlockingButton(filterManager: filterManager)),
-                        isApplying: filterManager.showingApplyProgressSheet
-                    )
-                    .modifier(topBanners)
-                    .transition(.opacity)
-                }
-            }
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
+            userscriptsTabContent
         }
+        #else
+        userscriptsTabContent
+        #endif
+    }
+
+    private var userscriptsTabContent: some View {
+        Group {
+            if appMode == .basic {
+                BasicExtrasView(
+                    userScriptManager: userScriptManager,
+                    filterManager: filterManager,
+                    onRefresh: {
+                        guard !filterManager.isLoading else { return }
+                        await filterManager.checkForUpdates(scope: .scripts, presentation: .refresh)
+                    },
+                    onSwitchToAdvanced: { switchAppMode(to: .advanced) }
+                )
+                #if os(iOS)
+                .topScrollEdgeEffectCompat()
+                #endif
+                .modifier(basicToolbar)
+                .topBarCompat(isVisible: filterManager.isBlockingPaused) {
+                    PauseBlockingBanner(filterManager: filterManager)
+                }
+                .transition(.opacity)
+            } else {
+                UserScriptManagerView(
+                    userScriptManager: userScriptManager,
+                    tabSelection: tabSelection,
+                    addRequest: addUserScriptRequest,
+                    searchRequest: userScriptSearchRequest,
+                    onRefresh: {
+                        guard !filterManager.isLoading else { return }
+                        await filterManager.checkForUpdates(scope: .scripts, presentation: .refresh)
+                    },
+                    applyButton: AnyView(applyChangesToolbarButton),
+                    splitsApply: splitsApply,
+                    pauseButton: AnyView(PauseBlockingButton(filterManager: filterManager)),
+                    isApplying: filterManager.showingApplyProgressSheet
+                )
+                .modifier(topBanners)
+                .transition(.opacity)
+            }
+        }
+        #if os(iOS)
+        .navigationTitle("")
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
     }
 
     private var settingsView: some View {
@@ -812,19 +820,22 @@ struct ContentView: View {
     }
 
     private var topBanners: some ViewModifier {
-        ProgressBanners(
+        let showsDegradedBanner = safariHealth.isDegraded && healthStatus.isExtensionDegraded
+        let showsPausedBanner = filterManager.isBlockingPaused
+        return ProgressBanners(
             filterManager: filterManager,
-            applyProgress: filterManager.applyProgressViewModel
+            applyProgress: filterManager.applyProgressViewModel,
+            hasLeading: showsDegradedBanner || showsPausedBanner
         ) {
             VStack(spacing: 0) {
-                if safariHealth.isDegraded && healthStatus.isExtensionDegraded {
+                if showsDegradedBanner {
                     SafariHealthCompactBanner(
                         status: healthStatus,
                         onTapDetail: { showingHealthDetail = true },
                         onOpenSettings: { SafariExtensionSetupSupport.openScriptsExtensionSettings() }
                     )
                 }
-                if filterManager.isBlockingPaused {
+                if showsPausedBanner {
                     PauseBlockingBanner(filterManager: filterManager)
                 }
             }

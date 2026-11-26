@@ -13,6 +13,7 @@ import SwiftUI
 struct ProgressBanners<Leading: View>: ViewModifier {
     @ObservedObject var filterManager: AppFilterManager
     @ObservedObject var applyProgress: ApplyChangesViewModel
+    var hasLeading = true
     @ViewBuilder let leading: Leading
 
     private enum Banner { case apply, check, applied, noUpdates }
@@ -79,7 +80,7 @@ struct ProgressBanners<Leading: View>: ViewModifier {
                 .padding(.horizontal, 12)
                 .padding(.top, 6)
             }
-            .topBarCompat { leading }
+            .topBarCompat(isVisible: hasLeading) { leading }
             .animation(.easeInOut(duration: 0.25), value: banner)
     }
 

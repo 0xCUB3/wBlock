@@ -44,12 +44,21 @@ struct AppTabView<Filters: View, Userscripts: View, Settings: View, Accessory: V
             legacyTabs
         }
         #else
-        nativeTabs
+        iosTabs.modifier(
+            TabBottomAccessoryCompat(
+                isEnabled: isBottomAccessoryEnabled,
+                accessory: bottomAccessory
+            )
+        )
         #endif
     }
 
+    #if os(macOS)
     private var nativeTabs: some View {
-        let tabs = TabView(selection: $selection.value) {
+        // Recreate the macOS 26 tab bar when the second tab's title changes
+        // ("Extras" <-> "Userscripts") so AppKit does not leave a stale
+        // selection pill rendered on the resized segment.
+        TabView(selection: $selection.value) {
             filters
                 .tag(0)
                 .tabItem { Label("Filters", systemImage: "list.bullet.rectangle") }
@@ -60,22 +69,58 @@ struct AppTabView<Filters: View, Userscripts: View, Settings: View, Accessory: V
                 .tag(2)
                 .tabItem { Label("Settings", systemImage: "gear") }
         }
-        #if os(macOS)
-        // Recreate the macOS 26 tab bar when the second tab's title changes
-        // ("Extras" <-> "Userscripts") so AppKit does not leave a stale
-        // selection pill rendered on the resized segment.
-        return tabs
-            .id(tabBarIdentity)
-            .frame(minWidth: MacTabWindow.minimumWidth, idealWidth: max(540, MacTabWindow.minimumWidth), minHeight: 550, idealHeight: 720)
-        #else
-        return tabs.modifier(
-            TabBottomAccessoryCompat(
-                isEnabled: isBottomAccessoryEnabled,
-                accessory: bottomAccessory
-            )
-        )
-        #endif
+        .id(tabBarIdentity)
+        .frame(minWidth: MacTabWindow.minimumWidth, idealWidth: max(540, MacTabWindow.minimumWidth), minHeight: 550, idealHeight: 720)
     }
+    #else
+    /// Hosts each tab's `NavigationStack` directly inside iOS 18+ `Tab` (and
+    /// `TabView` on older iOS) with no conditional wrapper around the stack so
+    /// iPadOS's floating tab bar merges cleanly with each tab's navigation bar
+    /// instead of pushing the toolbar and content down (#1162, #1168).
+    @ViewBuilder
+    private var iosTabs: some View {
+        if #available(iOS 18.0, *) {
+            TabView(selection: $selection.value) {
+                Tab("Filters", systemImage: "list.bullet.rectangle", value: 0) {
+                    NavigationStack { filters }
+                }
+                Tab(secondTabTitle, systemImage: "doc.text.fill", value: 1) {
+                    NavigationStack { userscripts }
+                }
+                Tab("Settings", systemImage: "gear", value: 2) {
+                    NavigationStack { settings }
+                }
+            }
+        } else if #available(iOS 16.0, *) {
+            TabView(selection: $selection.value) {
+                NavigationStack { filters }
+                    .tag(0)
+                    .tabItem { Label("Filters", systemImage: "list.bullet.rectangle") }
+                NavigationStack { userscripts }
+                    .tag(1)
+                    .tabItem { Label(secondTabTitle, systemImage: "doc.text.fill") }
+                NavigationStack { settings }
+                    .tag(2)
+                    .tabItem { Label("Settings", systemImage: "gear") }
+            }
+        } else {
+            TabView(selection: $selection.value) {
+                NavigationView { filters }
+                    .navigationViewStyle(StackNavigationViewStyle())
+                    .tag(0)
+                    .tabItem { Label("Filters", systemImage: "list.bullet.rectangle") }
+                NavigationView { userscripts }
+                    .navigationViewStyle(StackNavigationViewStyle())
+                    .tag(1)
+                    .tabItem { Label(secondTabTitle, systemImage: "doc.text.fill") }
+                NavigationView { settings }
+                    .navigationViewStyle(StackNavigationViewStyle())
+                    .tag(2)
+                    .tabItem { Label("Settings", systemImage: "gear") }
+            }
+        }
+    }
+    #endif
 
     #if os(macOS)
     private var legacyTabs: some View {

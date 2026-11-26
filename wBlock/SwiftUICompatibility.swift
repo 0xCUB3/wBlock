@@ -182,17 +182,23 @@ extension View {
     /// A strip under the top toolbar. iOS 26 blends it into the toolbar's
     /// scroll edge effect. Older systems and the Mac, whose lists are AppKit
     /// scroll views that effect never reaches, get the bar material (#1059).
+    /// Skips mounting `safeAreaBar(edge: .top)` when `isVisible` is false so
+    /// an empty bar never pushes iOS/iPadOS scroll content down (#1168).
     @ViewBuilder
-    func topBarCompat<Bar: View>(@ViewBuilder _ bar: () -> Bar) -> some View {
-        #if os(iOS)
-        if #available(iOS 26.0, *) {
-            safeAreaBar(edge: .top, content: bar)
-        } else {
+    func topBarCompat<Bar: View>(isVisible: Bool = true, @ViewBuilder _ bar: () -> Bar) -> some View {
+        if isVisible {
+            #if os(iOS)
+            if #available(iOS 26.0, *) {
+                safeAreaBar(edge: .top, content: bar)
+            } else {
+                safeAreaInset(edge: .top) { bar().background(.bar) }
+            }
+            #else
             safeAreaInset(edge: .top) { bar().background(.bar) }
+            #endif
+        } else {
+            self
         }
-        #else
-        safeAreaInset(edge: .top) { bar().background(.bar) }
-        #endif
     }
 
     /// The bar stays up while searching: hiding it on focus and bringing it
