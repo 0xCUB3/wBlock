@@ -77,8 +77,18 @@ class AppDelegate: NSObject {
     /// SwiftUI's delegate adaptor wraps this object, so `UIApplication.shared.delegate`
     /// is not an `AppDelegate` on iOS.
     private(set) static weak var current: AppDelegate?
-    var filterManager: AppFilterManager?
+    private var filterManagerWaiters: [CheckedContinuation<AppFilterManager, Never>] = []
+    var filterManager: AppFilterManager? {
+        didSet {
+            guard let filterManager, !filterManagerWaiters.isEmpty else { return }
+            let waiters = filterManagerWaiters
+            filterManagerWaiters = []
+            waiters.forEach { $0.resume(returning: filterManager) }
+        }
+    }
     var hasPendingApplyNotification = false
+    /// Trigger saved when a foreground catch-up was skipped for an upgrade rebuild or active apply.
+    private var deferredForegroundCatchUpTrigger: String?
 
     override init() {
         super.init()
@@ -113,6 +123,16 @@ class AppDelegate: NSObject {
     private let backgroundProcessingIdentifier = "com.alexanderskula.wblock.filter-processing"
 
     #endif
+
+    nonisolated static func shouldDeferForegroundCatchUp(skipReason: String) -> Bool {
+        skipReason == "awaiting_app_upgrade" || skipReason == "foreground_apply"
+    }
+
+    func triggerDeferredForegroundCatchUpIfNeeded() {
+        guard let trigger = deferredForegroundCatchUpTrigger else { return }
+        deferredForegroundCatchUpTrigger = nil
+        runForegroundAutoUpdate(trigger: trigger, forceWhenOverdue: true, logSchedule: false)
+    }
 }
 
 private extension AppDelegate {
@@ -135,6 +155,70 @@ private extension AppDelegate {
             force: true,
             policy: resolvedPolicy
         )
+    }
+
+    private func waitForFilterManagerReady() async {
+        let manager: AppFilterManager = if let filterManager {
+            filterManager
+        } else {
+            await withCheckedContinuation { filterManagerWaiters.append($0) }
+        }
+        await manager.waitUntilReady()
+    }
+
+    /// Runs foreground catch-up once the filter manager finishes launch setup so progress
+    /// updates are connected and an upgrade rebuild is not racing the scheduler. If skipped
+    /// for an upgrade rebuild or foreground apply, remembers the trigger to run right after.
+    private func runForegroundAutoUpdate(
+        trigger: String,
+        forceWhenOverdue: Bool,
+        logSchedule: Bool
+    ) {
+        #if os(macOS)
+        guard !HeadlessLaunch.isHeadlessProcess else { return }
+        #endif
+        guard !BlockingPauseStore.isPaused(.filters) else { return }
+
+        // The catch-up recompiles every list. At the UI's inherited priority it
+        // stalled scrolling for seconds right after launch, so it yields the CPU.
+        Task(priority: .utility) {
+            await self.waitForFilterManagerReady()
+            let status = await SharedAutoUpdateManager.shared.nextScheduleStatus()
+            let isDueSoon = status.remaining.map { $0 < self.dueSoonThresholdSeconds } ?? false
+            let shouldForce: Bool
+            let catchUpReason: AutoUpdateDiagnosticResult?
+            if forceWhenOverdue {
+                shouldForce = status.isOverdue || (isDueSoon && !status.isRunning)
+                catchUpReason = shouldForce ? (status.isOverdue ? .overdue : .dueSoon) : nil
+            } else {
+                let oneHourInSeconds: TimeInterval = 3600
+                let isSignificantlyOverdue = status.remaining == 0
+                    && status.scheduledAt.map { Date().timeIntervalSince($0) > oneHourInSeconds } ?? false
+                shouldForce = isSignificantlyOverdue && !status.isRunning
+                catchUpReason = shouldForce ? .overdue : nil
+            }
+
+            let outcome: SharedAutoUpdateManager.AutoUpdateRunOutcome
+            if shouldForce {
+                os_log("App active with overdue/due update (%{public}@) - forcing update", type: .info, trigger)
+                outcome = await self.runForcedAutoUpdate(trigger: trigger)
+            } else {
+                outcome = await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: trigger)
+            }
+
+            if case .skipped(let reason) = outcome {
+                if Self.shouldDeferForegroundCatchUp(skipReason: reason) {
+                    await MainActor.run { self.deferredForegroundCatchUpTrigger = trigger }
+                }
+            } else if let catchUpReason {
+                await ProtobufDataManager.shared.recordAutoUpdateForegroundCatchUp(reason: catchUpReason)
+            }
+
+            await self.showOverLimitFailure(after: outcome)
+            if logSchedule {
+                await ConcurrentLogManager.shared.info(.autoUpdate, scheduleMessage(from: status), metadata: [:])
+            }
+        }
     }
 
     @MainActor
@@ -324,45 +408,11 @@ extension AppDelegate: NSApplicationDelegate {
         }
 
         // Opportunistic update on app launch
-        Task {
-            let status = await SharedAutoUpdateManager.shared.nextScheduleStatus()
-
-            // Force update if significantly overdue (>1 hour past scheduled time)
-            let oneHourInSeconds: TimeInterval = 3600
-            let isSignificantlyOverdue = if let remaining = status.remaining {
-                remaining == 0 && status.scheduledAt != nil && Date().timeIntervalSince(status.scheduledAt!) > oneHourInSeconds
-            } else {
-                false
-            }
-
-            if isSignificantlyOverdue && !status.isRunning {
-                os_log("App launch: update significantly overdue (>1h) - forcing update", type: .info)
-                await runForcedAutoUpdate(trigger: "AppLaunch")
-            } else {
-                await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "AppLaunch")
-            }
-
-            await ConcurrentLogManager.shared.info(.autoUpdate, scheduleMessage(from: status), metadata: [:])
-        }
+        runForegroundAutoUpdate(trigger: "AppLaunch", forceWhenOverdue: false, logSchedule: true)
     }
     
     func applicationWillBecomeActive(_ notification: Notification) {
-        guard !HeadlessLaunch.isHeadlessProcess else { return }
-        guard !BlockingPauseStore.isPaused(.filters) else { return }
-
-        // Check if update is overdue when app becomes active
-        Task {
-            let status = await SharedAutoUpdateManager.shared.nextScheduleStatus()
-            let isDueSoon = if let remaining = status.remaining { remaining < dueSoonThresholdSeconds } else { false }
-
-            // If overdue or due soon, force update
-            let outcome = if status.isOverdue || (isDueSoon && !status.isRunning) {
-                await runForcedAutoUpdate(trigger: "BecomeActive")
-            } else {
-                await SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "BecomeActive")
-            }
-            await showOverLimitFailure(after: outcome)
-        }
+        runForegroundAutoUpdate(trigger: "BecomeActive", forceWhenOverdue: true, logSchedule: false)
     }
     
     // MARK: - macOS Auto-Update System
@@ -529,28 +579,8 @@ extension AppDelegate: UIApplicationDelegate {
     }
 
     @objc private func appDidBecomeActive() {
-        guard !BlockingPauseStore.isPaused(.filters) else { return }
-
         // Run opportunistic updates only when app is active (not during background launches).
-        // The catch-up recompiles every list. At the UI's inherited priority it
-        // stalled scrolling for seconds right after launch, so it yields the CPU.
-        Task(priority: .utility) {
-            let status = await SharedAutoUpdateManager.shared.nextScheduleStatus()
-            let isDueSoon = if let remaining = status.remaining { remaining < dueSoonThresholdSeconds } else { false }
-
-            // If overdue or due soon, force update
-            if status.isOverdue || (isDueSoon && !status.isRunning) {
-                let catchUpReason: AutoUpdateDiagnosticResult = status.isOverdue ? .overdue : .dueSoon
-                os_log("App became active with overdue/due update - forcing update", type: .info)
-                await ProtobufDataManager.shared.recordAutoUpdateForegroundCatchUp(reason: catchUpReason)
-                await showOverLimitFailure(after: runForcedAutoUpdate(trigger: "BecomeActive"))
-            } else {
-                // Normal opportunistic update
-                await showOverLimitFailure(after: SharedAutoUpdateManager.shared.maybeRunAutoUpdate(trigger: "BecomeActive"))
-            }
-
-            await ConcurrentLogManager.shared.info(.autoUpdate, scheduleMessage(from: status), metadata: [:])
-        }
+        runForegroundAutoUpdate(trigger: "BecomeActive", forceWhenOverdue: true, logSchedule: true)
     }
     
     @objc private func appDidEnterBackground() {

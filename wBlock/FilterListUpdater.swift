@@ -628,6 +628,8 @@ final class FilterListUpdater: @unchecked Sendable {
         _ filters: [FilterList],
         progressCallback: @escaping (FilterRefreshProgress) async -> Void
     ) async -> RefreshFiltersResult {
+        await ProtobufDataManager.shared.waitUntilLoaded()
+        _ = await ProtobufDataManager.shared.refreshFromDiskIfModified()
         let (lastSuccessfulCheck, interval) = await refreshFreshnessWindow()
         let lastCheckedByID = await perFilterLastChecked(for: filters)
         let filtersToRefresh = FilterRefreshPlanner.filtersRequiringNetworkRefresh(

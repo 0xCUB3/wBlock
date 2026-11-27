@@ -771,6 +771,8 @@ To re-enable these filters, disable other large filters and apply changes again.
 "%@ → %@ Safari rules" = "%@ → Safariルール%@件";
 "%@ Safari rules" = "Safariルール%@件";
 "Changes Applied" = "変更を適用しました";
+"1 Update Applied" = "1件のアップデートを適用しました";
+"%d Updates Applied" = "%d件のアップデートを適用しました";
 "Cosmetic Filtering" = "コスメティックフィルタリング";
 "Hides ad placeholders and other page elements with CSS. Turning this off leaves only network blocking, which uses fewer rules and less CPU." = "広告の枠やその他のページ要素をCSSで非表示にします。オフにするとネットワークブロックのみになり、ルール数とCPU使用量が減ります。";
 "Replace Titles" = "タイトルを置き換える";

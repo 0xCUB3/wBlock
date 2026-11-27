@@ -86,6 +86,7 @@ extension AppFilterManager {
     func refreshRuleCountsOnForeground() async {
         _ = await dataManager.refreshFromDiskIfModified()
         refreshRuleCountsFromStore()
+        await adoptPersistedDownloadMetadata()
     }
 
     /// Commits the in-memory counts to the store. Callers await it, so the store leads

@@ -408,6 +408,22 @@ struct ApplyProgressPresentation: Equatable {
         Self.percentString(progress)
     }
 
+    /// Title for the completion banner: names the applied update count when updates landed,
+    /// and falls back to the generic label for config-only applies.
+    static func appliedBannerTitle(filterUpdates: Int, scriptUpdates: Int) -> String {
+        let total = max(0, filterUpdates) + max(0, scriptUpdates)
+        if total == 1 {
+            return String(localized: "1 Update Applied")
+        }
+        if total > 1 {
+            return String.localizedStringWithFormat(
+                String(localized: "%d Updates Applied"),
+                total
+            )
+        }
+        return String(localized: "Changes Applied")
+    }
+
     static func make(from state: ApplyChangesState) -> ApplyProgressPresentation {
         let focused = focusedStep(in: state)
         let nodes = state.phases.map { step in

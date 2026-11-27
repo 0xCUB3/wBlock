@@ -513,7 +513,7 @@ public actor SharedAutoUpdateManager {
         case reloading(done: Int, total: Int)
         /// Engine publish, userscript updates, and the final save.
         case saving
-        case finished
+        case finished(AutoUpdateCompletion?)
     }
 
     /// Set by the app; helper processes leave it nil.
@@ -874,11 +874,38 @@ public actor SharedAutoUpdateManager {
         _ = await ProtobufDataManager.shared.refreshFromDiskIfModified()
         let interval = await getAutoUpdateIntervalHours()
         let nowTimestamp = now.timeIntervalSince1970
-        let isRunning = await getAutoUpdateIsRunning()
 
         // Get last check time timestamp (when we last attempted an update check)
         let lastCheckTimeInt64 = await getAutoUpdateLastCheckTime()
         let lastCheckTime: Date? = lastCheckTimeInt64 > 0 ? Date(timeIntervalSince1970: TimeInterval(lastCheckTimeInt64)) : nil
+
+        // A killed background task can leave the persisted running flag set on disk.
+        // On iOS only the main app runs full updates, so `runInProgress` is authoritative there;
+        // extensions and macOS also treat a persisted flag older than `staleRunInterval` as dead.
+        let isRunning: Bool
+        #if os(iOS)
+        if !Self.isAppExtensionProcess {
+            isRunning = runInProgress
+        } else {
+            isRunning = Self.isPersistedRunActive(
+                persistedIsRunning: await getAutoUpdateIsRunning(),
+                runningSince: await getAutoUpdateRunningSinceTime(),
+                lastCheck: lastCheckTimeInt64,
+                now: nowTimestamp
+            )
+        }
+        #else
+        if runInProgress {
+            isRunning = true
+        } else {
+            isRunning = Self.isPersistedRunActive(
+                persistedIsRunning: await getAutoUpdateIsRunning(),
+                runningSince: await getAutoUpdateRunningSinceTime(),
+                lastCheck: lastCheckTimeInt64,
+                now: nowTimestamp
+            )
+        }
+        #endif
 
         // Get last successful update timestamp (when filters actually changed)
         let lastSuccessfulInt64 = await getAutoUpdateLastSuccessfulTime()
@@ -979,9 +1006,41 @@ public actor SharedAutoUpdateManager {
     /// Validators and check times are saved every this many lists, so a run that expires
     /// keeps the checks it finished.
     private static let checkPersistBatchSize = 4
-    /// An app run that started longer ago than this is treated as killed, not running, when
-    /// the extension stages on iOS.
-    private static let staleRunInterval: TimeInterval = 15 * 60
+    /// An app run that started longer ago than this is treated as killed, not running.
+    public static let staleRunInterval: TimeInterval = 15 * 60
+
+    /// Whether a persisted `isRunning` flag represents a live run rather than a process
+    /// the system killed before cleanup could clear it.
+    public static func isPersistedRunActive(
+        persistedIsRunning: Bool,
+        runningSince: Int64,
+        lastCheck: Int64,
+        now: TimeInterval,
+        staleInterval: TimeInterval = staleRunInterval
+    ) -> Bool {
+        guard persistedIsRunning else { return false }
+        let runStarted = TimeInterval(runningSince > 0 ? runningSince : lastCheck)
+        return now - runStarted <= staleInterval
+    }
+
+    /// Whether a single filter list is due to be checked in a non-forced run.
+    /// Lists checked within both their advertised expiry and the user's configured
+    /// auto-update interval are skipped (for example, when resuming after a background
+    /// task expired partway through), while no list is skipped past the configured interval.
+    public static func isFilterDueForCheck(
+        force: Bool,
+        hasPendingRevision: Bool,
+        lastChecked: Int64?,
+        expirySeconds: TimeInterval?,
+        intervalSeconds: TimeInterval,
+        now: TimeInterval
+    ) -> Bool {
+        if force || hasPendingRevision { return true }
+        guard let checkedAt = lastChecked, checkedAt > 0 else { return true }
+        guard let expires = expirySeconds else { return true }
+        let effectiveExpiry = intervalSeconds > 0 ? min(expires, intervalSeconds) : expires
+        return now - TimeInterval(checkedAt) >= effectiveExpiry
+    }
 
     private func runIfNeeded(
         trigger: String,
@@ -1206,11 +1265,13 @@ public actor SharedAutoUpdateManager {
 
         func finishStartedRun(_ outcome: AutoUpdateRunOutcome) async -> AutoUpdateRunOutcome {
             await ProtobufDataManager.shared.setAutoUpdateIsRunning(false)
-            // Before reporting, so the app's follow-up apply does not wait.
-            finishForegroundRun()
-            await reportRunProgress(.finished)
             let didPersistCleanup = await ProtobufDataManager.shared.saveDataImmediately()
             invalidateStatusCache()
+            // Release the gate and notify the app after saving, so metadata adoption
+            // and any follow-up apply read the updated store immediately.
+            finishForegroundRun()
+            let completion: AutoUpdateCompletion? = if case .completed(let summary) = outcome { summary } else { nil }
+            await reportRunProgress(.finished(completion))
             let endTimestamp = Date().timeIntervalSince1970
             let duration = endTimestamp - startTimestamp
             os_log("Auto-update completed at %.0f (duration: %.1fs)", log: log, type: .info, endTimestamp, duration)
@@ -1361,7 +1422,8 @@ public actor SharedAutoUpdateManager {
             )
             try throwIfCancelled()
             let updateResult = try await checkAndFetchUpdates(
-                filters: selectedFilters, force: shouldForce, isBackground: policy.isBackground
+                filters: selectedFilters, force: shouldForce, isBackground: policy.isBackground,
+                intervalSeconds: interval * 3600
             )
             try throwIfCancelled()
             var updatedFilterSet = updateResult.updatedFilters
@@ -1749,11 +1811,13 @@ public actor SharedAutoUpdateManager {
         #if os(iOS)
         // The running flag is trusted only while its run is recent. A run the system killed
         // leaves the flag set, and that would stop staging for good.
-        let isRunning = await getAutoUpdateIsRunning()
-        let runningSince = await getAutoUpdateRunningSinceTime()
-        let runStarted = TimeInterval(runningSince > 0 ? runningSince : await getAutoUpdateLastCheckTime())
-        let isStaleRun = Date().timeIntervalSince1970 - runStarted > Self.staleRunInterval
-        guard !isRunning || isStaleRun else { return .skipped(reason: "app_run_in_progress") }
+        let isActiveRun = Self.isPersistedRunActive(
+            persistedIsRunning: await getAutoUpdateIsRunning(),
+            runningSince: await getAutoUpdateRunningSinceTime(),
+            lastCheck: await getAutoUpdateLastCheckTime(),
+            now: Date().timeIntervalSince1970
+        )
+        guard !isActiveRun else { return .skipped(reason: "app_run_in_progress") }
         #else
         // On macOS the app or its agent may be updating right now; the lease
         // is the cross-process check. Release it at once: RunningBoard also
@@ -1802,7 +1866,8 @@ public actor SharedAutoUpdateManager {
         let updateResult: UpdateFetchResult
         do {
             updateResult = try await checkAndFetchUpdates(
-                filters: selectedFilters, force: false, isBackground: true, deferIncludeExpansion: true
+                filters: selectedFilters, force: false, isBackground: true, deferIncludeExpansion: true,
+                intervalSeconds: interval * 3600
             )
             try Task.checkCancellation()
         } catch is CancellationError {
@@ -1965,12 +2030,13 @@ public actor SharedAutoUpdateManager {
     /// Lists due for a check, least recently checked first, so a run that expires partway
     /// through does not check the same head of the list every time. A list is due when the
     /// run is forced, a revision of it is waiting to be applied, it was never checked, or
-    /// its `! Diff-Expires:` interval has passed.
+    /// the shorter of its advertised expiry and `intervalSeconds` has passed.
     private func checkAndFetchUpdates(
         filters: [FilterList],
         force: Bool,
         isBackground: Bool,
-        deferIncludeExpansion: Bool = false
+        deferIncludeExpansion: Bool = false,
+        intervalSeconds: TimeInterval = 0
     ) async throws -> UpdateFetchResult {
         try Task.checkCancellation()
         let remoteFilters = filters.filter(\.canUpdateAutomatically)
@@ -1991,10 +2057,14 @@ public actor SharedAutoUpdateManager {
         let now = Date().timeIntervalSince1970
         let due = remoteFilters.filter { filter in
             let id = filter.id.uuidString
-            if force || pendingIDs.contains(id) { return true }
-            guard let checkedAt = lastCheckedByID[id], checkedAt > 0 else { return true }
-            guard let expires = expirySeconds(for: filter, containerURL: containerURL) else { return true }
-            return now - TimeInterval(checkedAt) >= expires
+            return Self.isFilterDueForCheck(
+                force: force,
+                hasPendingRevision: pendingIDs.contains(id),
+                lastChecked: lastCheckedByID[id],
+                expirySeconds: expirySeconds(for: filter, containerURL: containerURL),
+                intervalSeconds: intervalSeconds,
+                now: now
+            )
         }
         .sorted { (lastCheckedByID[$0.id.uuidString] ?? 0) < (lastCheckedByID[$1.id.uuidString] ?? 0) }
 

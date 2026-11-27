@@ -211,6 +211,48 @@ decision('importReview', booleans('present','same','blank'),
     m.law('an untouched field stays automatic', ({present}) => present.not(), o => o.override.not().and(o.cleared.not())),
   ], e => ({override: e.present}));
 
+// SharedAutoUpdateManager.isPersistedRunActive: a stale flag left by a killed process stops counting as running.
+decision('persistedRunActive', {persisted:bool, runningSince:nat, lastCheck:nat, now:nat, stale:nat},
+  ({persisted,runningSince,lastCheck,now,stale}) => {
+    const started = when(runningSince.gt(0), runningSince, lastCheck);
+    return {active: persisted.and(now.atMost(started.plus(stale)))};
+  }, m => [
+    m.law('cleared flag is never active', ({persisted}) => persisted.not(), o => o.active.not()),
+    m.law('stale runningSince expires', ({runningSince,now,stale}) => runningSince.gt(0).and(now.gt(runningSince.plus(stale))), o => o.active.not()),
+    m.law('legacy flag without runningSince expires by lastCheck', ({runningSince,lastCheck,now,stale}) => runningSince.eq(0).and(now.gt(lastCheck.plus(stale))), o => o.active.not()),
+    m.law('recent running flag stays active', ({persisted,runningSince,now,stale}) => persisted.and(runningSince.gt(0), now.atMost(runningSince.plus(stale))), o => o.active),
+  ], [
+    e => ({active: e.persisted.or(e.persisted.not())}),
+    e => ({active: e.persisted}),
+    e => ({active: e.persisted.and(e.runningSince.eq(0).or(e.now.atMost(e.runningSince.plus(e.stale))))}),
+    e => ({active: e.persisted.and(e.persisted.not())}),
+  ]);
+
+// SharedAutoUpdateManager.isFilterDueForCheck: non-forced checks honor short list expiry for partial-run resume,
+// but never skip a list past the user's configured auto-update interval.
+decision('filterDueCheck', {force:bool, pending:bool, hasExpiry:bool, lastChecked:nat, expiry:nat, interval:nat, now:nat},
+  ({force,pending,hasExpiry,lastChecked,expiry,interval,now}) => {
+    const effective = when(interval.gt(0), min(expiry, interval), expiry);
+    return {due: force.or(pending, lastChecked.eq(0), hasExpiry.not(), now.atLeast(lastChecked.plus(effective)))};
+  }, m => [
+    m.law('forced runs always check every list', ({force}) => force, o => o.due),
+    m.law('pending revisions always check', ({pending}) => pending, o => o.due),
+    m.law('never-checked lists always check', ({lastChecked}) => lastChecked.eq(0), o => o.due),
+    m.law('lists without expiry always check', ({hasExpiry}) => hasExpiry.not(), o => o.due),
+    m.law('lists are never skipped past configured interval', ({interval,lastChecked,now}) => interval.gt(0).and(now.atLeast(lastChecked.plus(interval))), o => o.due),
+    m.law('recently checked lists within both expiry and interval are skipped',
+      ({force,pending,lastChecked,hasExpiry,expiry,interval,now}) =>
+        force.not().and(pending.not(), lastChecked.gt(0), hasExpiry, now.lt(lastChecked.plus(expiry)), interval.eq(0).or(now.lt(lastChecked.plus(interval)))),
+      o => o.due.not()),
+  ], [
+    e => ({due: e.pending.or(e.lastChecked.eq(0), e.hasExpiry.not(), e.now.atLeast(e.lastChecked.plus(when(e.interval.gt(0), min(e.expiry, e.interval), e.expiry))))}),
+    e => ({due: e.force.or(e.lastChecked.eq(0), e.hasExpiry.not(), e.now.atLeast(e.lastChecked.plus(when(e.interval.gt(0), min(e.expiry, e.interval), e.expiry))))}),
+    e => ({due: e.force.or(e.pending, e.hasExpiry.not(), e.now.atLeast(e.lastChecked.plus(when(e.interval.gt(0), min(e.expiry, e.interval), e.expiry))))}),
+    e => ({due: e.force.or(e.pending, e.lastChecked.eq(0), e.now.atLeast(e.lastChecked.plus(when(e.interval.gt(0), min(e.expiry, e.interval), e.expiry))))}),
+    e => ({due: e.force.or(e.pending, e.lastChecked.eq(0), e.hasExpiry.not(), e.now.atLeast(e.lastChecked.plus(e.expiry)))}),
+    e => ({due: e.force.or(e.force.not())}),
+  ]);
+
 export const upload = rule('deferred uploads').inputs({take:bool,syncing:bool,trigger:nat}).state({pending:0,kind:0,value:0});
 const uploadStep = ({take,syncing,trigger,pending}) => ({
   pending:when(take,0,when(syncing,trigger.plus(1),pending)), kind:when(take,2,when(syncing,1,0)),

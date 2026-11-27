@@ -81,6 +81,24 @@ for (const e of flags(["custom", "userName", "titlePresent", "titleBlank", "user
     version: o.versionUnknown ? "Unknown" : "2025.1",
   }));
 for (const e of flags(["present", "same", "blank"])) decision("importReview", [e]);
+{
+  const values = [];
+  for (const persisted of [false, true])
+    for (const runningSince of [0, 50, 90, 110])
+      for (const lastCheck of [0, 50, 90, 110])
+        for (const stale of [0, 10, 50])
+          values.push({ persisted, runningSince, lastCheck, now: 100, stale });
+  decision("persistedRunActive", values);
+}
+{
+  const values = [];
+  for (const e of flags(["force", "pending", "hasExpiry"]))
+    for (const lastChecked of [0, 50, 90, 100])
+      for (const expiry of [5, 20, 60])
+        for (const interval of [0, 10, 40])
+          values.push({ ...e, lastChecked, expiry, interval, now: 100 });
+  decision("filterDueCheck", values);
+}
 for (const e of flags(["tomb", "local", "remote", "existed"]))
   for (const deletedAt of [0, 99, 100, 101])
     for (const remoteAt of [0, 99, 100, 101]) decision("custom", [{ ...e, deletedAt, remoteAt }]);

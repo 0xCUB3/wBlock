@@ -290,7 +290,15 @@ extension AppFilterManager {
             // when the run was cancelled before it committed. A refused commit keeps the
             // run's counts on screen instead (see saveRuleCounts).
             refreshRuleCountsFromStore()
-            Task { await SharedAutoUpdateManager.shared.endForegroundWork() }
+            let shouldTriggerDeferredCatchUp = lastApplySucceeded && !hasError
+            Task {
+                await SharedAutoUpdateManager.shared.endForegroundWork()
+                if shouldTriggerDeferredCatchUp {
+                    await MainActor.run {
+                        AppDelegate.current?.triggerDeferredForegroundCatchUpIfNeeded()
+                    }
+                }
+            }
         }
         ApplyCancellation.reset()
         let applyTask = Task {

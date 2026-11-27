@@ -171,6 +171,31 @@ final class ResumeCount: @unchecked Sendable { var count = 0 }
           let result = ImportMetadataReview.userProvided(edited, automatic: automatic)
           return ["override": result != nil, "cleared": result == ""]
         }
+      case "persistedRunActive":
+        return values.map { e -> Values in
+          [
+            "active": SharedAutoUpdateManager.isPersistedRunActive(
+              persistedIsRunning: e.b("persisted"),
+              runningSince: Int64(e.n("runningSince")),
+              lastCheck: Int64(e.n("lastCheck")),
+              now: TimeInterval(e.n("now")),
+              staleInterval: TimeInterval(e.n("stale"))
+            )
+          ]
+        }
+      case "filterDueCheck":
+        return values.map { e -> Values in
+          [
+            "due": SharedAutoUpdateManager.isFilterDueForCheck(
+              force: e.b("force"),
+              hasPendingRevision: e.b("pending"),
+              lastChecked: Int64(e.n("lastChecked")),
+              expirySeconds: e.b("hasExpiry") ? TimeInterval(e.n("expiry")) : nil,
+              intervalSeconds: TimeInterval(e.n("interval")),
+              now: TimeInterval(e.n("now"))
+            )
+          ]
+        }
       case "custom", "remote":
         return values.map { e -> Values in
           if suite == "custom" {

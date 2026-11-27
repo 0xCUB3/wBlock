@@ -142,6 +142,16 @@ import Foundation
     precondition(
       ApplyProgressPresentation.make(from: vm.state).progress == 1
         && vm.state.phases.allSatisfy { $0.status == .complete })
+    precondition(ApplyProgressPresentation.appliedBannerTitle(filterUpdates: 0, scriptUpdates: 0) == String(localized: "Changes Applied"))
+    precondition(ApplyProgressPresentation.appliedBannerTitle(filterUpdates: -2, scriptUpdates: 0) == String(localized: "Changes Applied"))
+    precondition(ApplyProgressPresentation.appliedBannerTitle(filterUpdates: 1, scriptUpdates: 0) == String(localized: "1 Update Applied"))
+    precondition(ApplyProgressPresentation.appliedBannerTitle(filterUpdates: 0, scriptUpdates: 1) == String(localized: "1 Update Applied"))
+    precondition(
+      ApplyProgressPresentation.appliedBannerTitle(filterUpdates: 21, scriptUpdates: 0)
+        == String.localizedStringWithFormat(String(localized: "%d Updates Applied"), 21))
+    precondition(
+      ApplyProgressPresentation.appliedBannerTitle(filterUpdates: 2, scriptUpdates: 1)
+        == String.localizedStringWithFormat(String(localized: "%d Updates Applied"), 3))
     print("PASS: progress formatting, numeric boundaries, accessibility, and setters")
   }
 }

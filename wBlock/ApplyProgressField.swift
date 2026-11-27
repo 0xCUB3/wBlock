@@ -93,7 +93,10 @@ struct ProgressBanners<Leading: View>: ViewModifier {
             UpdateCheckBanner(filterManager: filterManager)
         case .applied:
             DoneBanner(
-                title: String(localized: "Changes Applied"),
+                title: ApplyProgressPresentation.appliedBannerTitle(
+                    filterUpdates: applyProgress.state.filterUpdatesFound,
+                    scriptUpdates: applyProgress.state.scriptsUpdatedCount
+                ),
                 message: String.localizedStringWithFormat(
                     String(localized: "%@ Safari rules"),
                     filterManager.lastRuleCount.formatted()

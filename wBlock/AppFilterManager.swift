@@ -576,6 +576,7 @@ class AppFilterManager: ObservableObject {
 
         self.pausedComponents = BlockingPauseStore.pausedComponents()
         self.isBlockingPaused = !self.pausedComponents.isEmpty
+        SharedAutoUpdateManager.runProgressHandler = { [weak self] in self?.showAutoUpdateProgress($0) }
         registerResumeRequestObserver()
         registerFilterUpdateRequestObserver()
 
@@ -922,7 +923,6 @@ class AppFilterManager: ObservableObject {
     @discardableResult
     func setup() -> Task<Void, Never>? {
         filterUpdater.filterListManager = self
-        SharedAutoUpdateManager.runProgressHandler = { [weak self] in self?.showAutoUpdateProgress($0) }
 
         // Load filter lists from protobuf data manager. Keep the in-memory
         // boundary unique even when older or concurrent data supplies repeats.
@@ -1289,8 +1289,12 @@ class AppFilterManager: ObservableObject {
         var lists = filterLists
         var changed = false
         for index in lists.indices {
-            guard let newer = stored[lists[index].id], let date = newer.lastUpdated,
-                  date > (lists[index].lastUpdated ?? .distantPast) else { continue }
+            guard let newer = stored[lists[index].id], let date = newer.lastUpdated else { continue }
+            let hasNewerDate = date > (lists[index].lastUpdated ?? .distantPast)
+            let hasMetadataChange = newer.version != lists[index].version
+                || newer.sourceRuleCount != lists[index].sourceRuleCount
+                || newer.uniqueRuleCount != lists[index].uniqueRuleCount
+            guard hasNewerDate || (date == lists[index].lastUpdated && hasMetadataChange) else { continue }
             lists[index].version = newer.version
             lists[index].lastUpdated = date
             lists[index].sourceRuleCount = newer.sourceRuleCount
@@ -1304,23 +1308,47 @@ class AppFilterManager: ObservableObject {
 
     private func showAutoUpdateProgress(_ progress: SharedAutoUpdateManager.RunProgress) {
         let sheet = applyProgressViewModel
-        if progress == .finished {
+        if case .finished(let completion) = progress {
             guard isAutoUpdateRunning else { return }
             isAutoUpdateRunning = false
             refreshRuleCountsFromStore()
-            Task { await adoptPersistedDownloadMetadata() }
-            if autoApplyWaitingForAutoUpdate {
-                // Hand the open sheet to the rebuild instead of closing it and
-                // floating a second "Applying filters" card over the app.
-                autoApplyWaitingForAutoUpdate = false
-                if hasUnappliedChanges, !isLoading, !isApplyInFlight, !pausedComponents.contains(.filters) {
-                    Task { await self.performFilterUpdate(checkForUpdates: false, downloadMissing: true) }
+            let shouldFollowUpApply = autoApplyWaitingForAutoUpdate
+            autoApplyWaitingForAutoUpdate = false
+            let ownedSheet = autoUpdateOwnsProgressSheet
+            let wasWatching = showingApplyProgressSheet
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                await self.adoptPersistedDownloadMetadata()
+                if shouldFollowUpApply,
+                   self.hasUnappliedChanges, !self.isLoading, !self.isApplyInFlight, !self.pausedComponents.contains(.filters) {
+                    // Hand the open sheet to the rebuild instead of closing it and
+                    // floating a second "Applying filters" card over the app.
+                    await self.performFilterUpdate(checkForUpdates: false, downloadMissing: true)
                     return
                 }
-            }
-            if autoUpdateOwnsProgressSheet {
-                sheet.updateIsLoading(false)
-                showingApplyProgressSheet = false
+                if ownedSheet {
+                    let updatedFilters = completion?.updatedFilters ?? 0
+                    let updatedScripts = completion?.updatedScripts ?? 0
+                    let failedScripts = completion?.failedScripts ?? 0
+                    sheet.updateFilterUpdatesFound(updatedFilters)
+                    sheet.updateScriptsUpdateResult(updated: updatedScripts, failed: failedScripts)
+                    let totalUpdated = updatedFilters + updatedScripts
+                    if let completion, totalUpdated > 0 {
+                        sheet.markFinished()
+                        self.showingApplyProgressSheet = false
+                        if !wasWatching,
+                           UserDefaults.standard.string(forKey: AppMode.storageKey) == AppMode.advanced.rawValue,
+                           !sheet.state.resultNeedsAttention, self.failedReloadTargets.isEmpty {
+                            self.showingAppliedBanner = true
+                        }
+                    } else {
+                        sheet.updateIsLoading(false)
+                        self.showingApplyProgressSheet = false
+                        if wasWatching, completion != nil, failedScripts == 0 {
+                            self.showingNoUpdatesAlert = true
+                        }
+                    }
+                }
             }
             return
         }
