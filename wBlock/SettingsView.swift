@@ -1613,43 +1613,54 @@ struct PauseBlockingButton: View {
     @ObservedObject var filterManager: AppFilterManager
     var allowsComponentMenu: Bool = true
 
-    private func toggle(isPaused: Bool) {
-        if !isPaused {
+    private func setPaused(_ pause: Bool) {
+        if pause {
             Haptics.play(.paused)
         }
-        Task { await filterManager.setBlockingPaused(!isPaused) }
+        Task { await filterManager.setBlockingPaused(pause) }
     }
 
     var body: some View {
         let isPaused = !filterManager.pausedComponents.isEmpty
         let title: LocalizedStringKey = isPaused ? "Resume Blocking" : "Pause Blocking"
+        let pauseBinding = Binding(
+            get: { isPaused },
+            set: { newValue in
+                guard newValue != isPaused else { return }
+                setPaused(newValue)
+            }
+        )
         #if os(macOS)
-        return Button {
-            toggle(isPaused: isPaused)
-        } label: {
-            Label(title, systemImage: isPaused ? "pause.circle.fill" : "pause.circle")
+        return Toggle(isOn: pauseBinding) {
+            Label(title, systemImage: "pause.fill")
         }
+        .toggleStyle(.button)
         .help(title)
         .disabled(filterManager.isReloadBusy)
         #else
         if allowsComponentMenu {
-            Menu {
+            let menu = Menu {
                 Section("Pause Blocking") { PauseBlockingControls(filterManager: filterManager) }
             } label: {
-                Label(title, systemImage: isPaused ? "pause.circle.fill" : "pause.circle")
+                Label(title, systemImage: "pause.fill")
             } primaryAction: {
-                toggle(isPaused: isPaused)
+                setPaused(!isPaused)
             }
             // A tap pauses or resumes; a long press opens the menu.
             .menuIndicator(.hidden)
             .help(title)
             .disabled(filterManager.isReloadBusy)
-        } else {
-            Button {
-                toggle(isPaused: isPaused)
-            } label: {
-                Label(title, systemImage: isPaused ? "pause.circle.fill" : "pause.circle")
+
+            if isPaused {
+                menu.buttonStyle(.borderedProminent)
+            } else {
+                menu
             }
+        } else {
+            Toggle(isOn: pauseBinding) {
+                Label(title, systemImage: "pause.fill")
+            }
+            .toggleStyle(.button)
             .help(title)
             .disabled(filterManager.isReloadBusy)
         }
