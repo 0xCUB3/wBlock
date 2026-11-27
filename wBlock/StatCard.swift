@@ -7,66 +7,22 @@
 
 import SwiftUI
 
-private struct StatsSummaryLayoutKey: EnvironmentKey {
-    static let defaultValue = false
-}
-
-private struct StatsSummaryWidthKey: EnvironmentKey {
-    static let defaultValue: CGFloat? = nil
-}
-
-/// The widest summary card's natural width.
-private struct StatCardWidthPreference: PreferenceKey {
-    static let defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = max(value, nextValue())
-    }
-}
-
-private extension EnvironmentValues {
-    var isStatsSummary: Bool {
-        get { self[StatsSummaryLayoutKey.self] }
-        set { self[StatsSummaryLayoutKey.self] = newValue }
-    }
-
-    var statsSummaryWidth: CGFloat? {
-        get { self[StatsSummaryWidthKey.self] }
-        set { self[StatsSummaryWidthKey.self] = newValue }
-    }
-}
-
-/// Every tab's summary row shares spacing and horizontal clearance. On macOS
-/// each card takes the widest card in its row's natural width, but never less than the 155pt
-/// every other pill uses, so short counts don't shrink a tab's pills (#921).
+/// Equal-width summary row shared across platforms; each card takes an equal
+/// share of the available width as a rounded rectangle (#1170).
 struct StatsCardsView<Content: View>: View {
-    var compact = false
     @ViewBuilder var content: Content
-    @State private var cardWidth: CGFloat?
 
     var body: some View {
-        HStack(spacing: compact ? 8 : 12) { content }
-        #if os(iOS)
-        .fixedSize(horizontal: false, vertical: true)
-        #else
-        .environment(\.statsSummaryWidth, cardWidth)
-        .onPreferenceChange(StatCardWidthPreference.self) { width in
-            if width > 0, width != cardWidth { cardWidth = width }
-        }
-        #endif
-        .padding(.horizontal)
-        .environment(\.isStatsSummary, true)
+        HStack(spacing: 12) { content }
+            .fixedSize(horizontal: false, vertical: true)
     }
 }
 
 struct StatCard: View {
-    @Environment(\.isStatsSummary) private var isStatsSummary
-    @Environment(\.statsSummaryWidth) private var summaryWidth
     let title: String
     let value: String
     let icon: String
     let valueColor: Color
-    /// Folds the icon into the title line so three cards fit an iPhone row.
-    let compact: Bool
     /// Draws the row chevron after the title so a tappable card reads as one,
     /// and stands apart from the static cards beside it.
     let showsDisclosure: Bool
@@ -76,47 +32,35 @@ struct StatCard: View {
         value: String,
         icon: String,
         valueColor: Color = .primary,
-        compact: Bool = false,
         showsDisclosure: Bool = false
     ) {
         self.title = title
         self.value = value
         self.icon = icon
         self.valueColor = valueColor
-        self.compact = compact
         self.showsDisclosure = showsDisclosure
     }
 
-    private var content: some View {
+    var body: some View {
         HStack(spacing: 10) {
-            if !compact {
-                Image(systemName: icon)
-                    .scaledSystemFont(size: 22, relativeTo: .title2)
-                    .foregroundStyle(valueColor)
-                    .frame(width: 30)
-                    .symbolRenderingMode(.hierarchical)
-            }
+            Image(systemName: icon)
+                .scaledSystemFont(size: 22, relativeTo: .title2)
+                .foregroundStyle(valueColor)
+                .frame(width: 30)
+                .symbolRenderingMode(.hierarchical)
 
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 4) {
-                    if compact {
-                        Image(systemName: icon)
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                    }
                     Text(LocalizedStringKey({
-                    #if os(iOS)
-                    switch title {
-                    case "Enabled Lists": "Enabled"
-                    case "Applied Rules": "Rules"
-                    case "Rule Capacity": "Capacity"
-                    case "Next Update": "Updates"
-                    case "iCloud Sync": "iCloud"
-                    default: title
-                    }
-                    #else
-                    title
-                    #endif
+                        #if os(iOS)
+                        switch title {
+                        case "Next Update": "Updates"
+                        case "iCloud Sync": "iCloud"
+                        default: title
+                        }
+                        #else
+                        title
+                        #endif
                     }()))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
@@ -135,44 +79,19 @@ struct StatCard: View {
                     .truncationMode(.tail)
                     .minimumScaleFactor(0.6)
                     .allowsTightening(true)
-                    #if os(iOS)
-                    .frame(minWidth: compact ? 0 : 60, alignment: .leading)
-                    #else
-                    .frame(minWidth: isStatsSummary ? nil : (compact ? 0 : 60), alignment: .leading)
-                    #endif
             }
         }
         .padding(.vertical, 12)
-        .padding(.horizontal, compact ? 14 : 20)
-    }
-
-    var body: some View {
-        #if os(iOS)
-        content
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-            .background {
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .fill(Color(UIColor.secondarySystemGroupedBackground))
-            }
-        #else
-        // A summary card is as wide as the row's widest card when there's
-        // room and shrinks evenly with its neighbors when there isn't, as a
-        // native row would, rather than switching layouts early (#1091).
-        let width = max(isStatsSummary ? summaryWidth ?? 0 : 0, compact ? 0 : 155)
-        Group {
-            if isStatsSummary {
-                content
-                    .background {
-                        content.fixedSize().hidden().background {
-                            GeometryReader { Color.clear.preference(key: StatCardWidthPreference.self, value: $0.size.width) }
-                        }
-                    }
-                    .frame(idealWidth: width, maxWidth: width, alignment: .leading)
-            } else {
-                content.fixedSize().frame(minWidth: width, alignment: .leading)
-            }
+        .padding(.horizontal, 16)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .background {
+            #if os(iOS)
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(Color(UIColor.secondarySystemGroupedBackground))
+            #else
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(.regularMaterial)
+            #endif
         }
-        .background(Capsule().fill(.regularMaterial))
-        #endif
     }
 }

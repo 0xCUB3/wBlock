@@ -749,7 +749,7 @@ struct ContentView: View {
         #else
         MacReorderableList(
             sections: macFilterSections,
-            header: AnyView(statsCardsView.padding(.vertical, 16)),
+            header: AnyView(statsCardsView.padding(.horizontal, 16).padding(.top, 16).padding(.bottom, 4)),
             scrollToTopToken: filtersScrollToTopToken,
             onMove: commitFilterMove
         )
@@ -843,61 +843,61 @@ struct ContentView: View {
     }
 
     private var statsCardsView: some View {
-        StatsCardsView {
-            Button {
-                showingCapacityPopover = true
-            } label: {
-                StatCard(
-                    title: {
-                        #if os(iOS)
-                        return "Safari Rules"
-                        #else
-                        return (enabledListsCount == 0 || !hasAppliedFilters) && !filtersPaused ? "Source Rules" : "Safari Rules"
-                        #endif
-                    }(),
-                    value: filtersPaused
-                        ? String(localized: "N/A")
-                        : enabledListsCount == 0
-                        ? "0"
-                        : (hasAppliedFilters
-                            ? appliedSafariRulesCount.formatted()
-                            : (sourceRulesCount > 0 ? "~\(sourceRulesCount.formatted())" : "0")),
-                    icon: "shield.lefthalf.filled",
-                    valueColor: enabledListsCount == 0 || filtersPaused || !hasAppliedFilters ? .secondary : .primary,
-                    showsDisclosure: true
-                )
-                .overlay(alignment: .topTrailing) {
-                    if shouldShowRuleLimitIndicator {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.caption2)
-                            .foregroundStyle(.orange)
-                            .padding(.trailing, 6)
-                            .padding(.top, 4)
-                    }
-                }
-                #if os(iOS)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                #endif
-            }
-            .buttonStyle(.plain)
-            .noFocusRingCompat()
-            #if os(macOS)
-            .infoPopoverAnchor(CapacityPopoverItem().id)
-            #else
-            .sheet(isPresented: $showingCapacityPopover) {
-                RuleCapacityPopoverView(filterManager: filterManager)
-            }
-            #endif
-
-            StatCard(
-                title: "Enabled",
-                value: "\(enabledListsCount)",
-                icon: "checkmark.circle"
+        let totalCapacity = filterManager.safariRuleCapacity
+        let capacityFraction = filtersPaused ? 0 : filterManager.safariRuleCapacityFraction
+        let usedRules = filtersPaused ? 0 : appliedSafariRulesCount
+        let hidingRules = filtersPaused ? 0 : (filterManager.appliedRuleCounts?.elementHiding ?? 0)
+        let title: LocalizedStringKey = (enabledListsCount == 0 || !hasAppliedFilters) && !filtersPaused
+            ? "Source Rules"
+            : "Safari Rules"
+        let valueText: String = filtersPaused
+            ? String(localized: "N/A")
+            : enabledListsCount == 0
+            ? "0"
+            : (hasAppliedFilters
+                ? appliedSafariRulesCount.formatted()
+                : (sourceRulesCount > 0 ? "~\(sourceRulesCount.formatted())" : "0"))
+        let valueColor: Color = enabledListsCount == 0 || filtersPaused || !hasAppliedFilters
+            ? .secondary
+            : (capacityFraction > 0.8 ? .orange : .primary)
+        let capacityColor: Color = capacityFraction > 0.9 ? .red : (capacityFraction > 0.8 ? .orange : .secondary)
+        let conversionText: String? = !filtersPaused && sourceRulesCount > 0 && hasAppliedFilters
+            ? LocalizedStrings.format(
+                "%@ → %@ Safari rules",
+                comment: "Rule capacity popover: source rule count converted to Safari rule count",
+                sourceRulesCount.formatted(),
+                appliedSafariRulesCount.formatted()
             )
-            #if os(iOS)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            #endif
+            : nil
+        let capacityText: String? = filtersPaused
+            ? nil
+            : "\(usedRules.formatted()) / \(totalCapacity.formatted()) rules (\(LocalizedFormatting.percent(capacityFraction)))"
+
+        return Button {
+            showingCapacityPopover = true
+        } label: {
+            FiltersRuleCapacityCard(
+                title: title,
+                valueText: valueText,
+                valueColor: valueColor,
+                showsRuleLimitWarning: shouldShowRuleLimitIndicator,
+                hidingRules: hidingRules,
+                usedRules: usedRules,
+                totalCapacity: totalCapacity,
+                conversionText: conversionText,
+                capacityText: capacityText,
+                capacityColor: capacityColor
+            )
         }
+        .buttonStyle(.plain)
+        .noFocusRingCompat()
+        #if os(macOS)
+        .infoPopoverAnchor(CapacityPopoverItem().id)
+        #else
+        .sheet(isPresented: $showingCapacityPopover) {
+            RuleCapacityPopoverView(filterManager: filterManager)
+        }
+        #endif
     }
 
     private func categoryHeader(_ category: FilterListCategory) -> some View {
@@ -2563,7 +2563,7 @@ struct RuleCapacityPopoverView: View {
                         .foregroundStyle(overallFraction > 0.8 ? Color.orange : Color.secondary)
                 }
 
-                ruleTypeBar(
+                RuleTypeCapacityBar(
                     hiding: filterManager.appliedRuleCounts?.elementHiding ?? 0,
                     total: totalUsed, capacity: totalCapacity
                 )
@@ -2636,7 +2636,7 @@ struct RuleCapacityPopoverView: View {
                                     .foregroundStyle(slotFraction > 0.9 ? Color.red : (slotFraction > 0.8 ? Color.orange : Color.secondary))
                             }
 
-                            ruleTypeBar(
+                            RuleTypeCapacityBar(
                                 hiding: filterManager.appliedRuleCounts?.elementHidingByTarget[target.bundleIdentifier] ?? 0,
                                 total: count, capacity: ContentBlockerService.safariContentBlockerRuleLimit
                             )
@@ -2653,9 +2653,29 @@ struct RuleCapacityPopoverView: View {
         }
     }
 
-    /// Network and element hiding rules in the colors of their Rule Types rows,
-    /// so a bar shows what fills it (email feedback).
-    private func ruleTypeBar(hiding: Int, total: Int, capacity: Int) -> some View {
+    private func ruleTypeRow(_ kind: FilterRuleKind, title: String? = nil, count: Int, limit: Int? = nil) -> some View {
+        HStack(spacing: 8) {
+            Circle()
+                .fill(FilterRulesView.color(for: kind))
+                .frame(width: 8, height: 8)
+            Text(title ?? FilterRulesView.title(for: kind))
+                .font(.subheadline)
+            Spacer()
+            Text(limit.map { "\(count.formatted()) / \($0.formatted())" } ?? count.formatted())
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.secondary)
+        }
+    }
+}
+
+/// Network and element hiding rules in the colors of their Rule Types rows,
+/// shared by the Filters summary card and the Rule Capacity popover.
+struct RuleTypeCapacityBar: View {
+    let hiding: Int
+    let total: Int
+    let capacity: Int
+
+    var body: some View {
         GeometryReader { proxy in
             let scale = proxy.size.width / CGFloat(max(capacity, 1))
             let hidingWidth = CGFloat(min(hiding, total)) * scale
@@ -2671,18 +2691,128 @@ struct RuleCapacityPopoverView: View {
             .background(Capsule().fill(Color.secondary.opacity(0.15)))
         }
     }
+}
 
-    private func ruleTypeRow(_ kind: FilterRuleKind, title: String? = nil, count: Int, limit: Int? = nil) -> some View {
-        HStack(spacing: 8) {
-            Circle()
-                .fill(FilterRulesView.color(for: kind))
-                .frame(width: 8, height: 8)
-            Text(title ?? FilterRulesView.title(for: kind))
-                .font(.subheadline)
-            Spacer()
-            Text(limit.map { "\(count.formatted()) / \($0.formatted())" } ?? count.formatted())
-                .font(.caption.monospacedDigit())
-                .foregroundStyle(.secondary)
+/// Full-width Safari Rules capacity summary card at the top of Filters (#1170).
+private struct FiltersRuleCapacityCard: View {
+    let title: LocalizedStringKey
+    let valueText: String
+    let valueColor: Color
+    let showsRuleLimitWarning: Bool
+    let hidingRules: Int
+    let usedRules: Int
+    let totalCapacity: Int
+    let conversionText: String?
+    let capacityText: String?
+    let capacityColor: Color
+
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    #endif
+
+    private var usesStackedLayout: Bool {
+        #if os(iOS)
+        horizontalSizeClass == .compact
+        #else
+        false
+        #endif
+    }
+
+    var body: some View {
+        Group {
+            if usesStackedLayout {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        summaryColumn
+                        Spacer(minLength: 8)
+                        if let capacityText {
+                            Text(capacityText)
+                                .font(.caption.monospacedDigit())
+                                .foregroundStyle(capacityColor)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
+                        }
+                    }
+
+                    RuleTypeCapacityBar(hiding: hidingRules, total: usedRules, capacity: totalCapacity)
+                        .frame(height: 8)
+
+                    if let conversionText {
+                        Text(conversionText)
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                    }
+                }
+            } else {
+                HStack(alignment: .center, spacing: 20) {
+                    summaryColumn
+                        .fixedSize(horizontal: true, vertical: false)
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        RuleTypeCapacityBar(hiding: hidingRules, total: usedRules, capacity: totalCapacity)
+                            .frame(height: 10)
+
+                        if conversionText != nil || capacityText != nil {
+                            HStack(spacing: 8) {
+                                if let conversionText {
+                                    Text(conversionText)
+                                        .font(.caption.monospacedDigit())
+                                        .foregroundStyle(.secondary)
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.85)
+                                }
+                                Spacer(minLength: 8)
+                                if let capacityText {
+                                    Text(capacityText)
+                                        .font(.caption.monospacedDigit())
+                                        .foregroundStyle(capacityColor)
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.85)
+                                }
+                            }
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background {
+            #if os(iOS)
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(Color(UIColor.secondarySystemGroupedBackground))
+            #else
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(.regularMaterial)
+            #endif
+        }
+        .contentShape(Rectangle())
+    }
+
+    private var summaryColumn: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 4) {
+                Text(title)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                RowDisclosureChevron()
+                if showsRuleLimitWarning {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.caption2)
+                        .foregroundStyle(.orange)
+                }
+            }
+
+            Text(valueText)
+                .font(.title2.monospacedDigit())
+                .fontWeight(.semibold)
+                .foregroundStyle(valueColor)
+                .lineLimit(1)
         }
     }
 }

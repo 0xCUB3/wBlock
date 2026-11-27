@@ -45,7 +45,6 @@ struct SettingsView: View {
     @State private var syncProbeError: String?
     @State private var showingSyncAdoptPrompt = false
     @State private var syncAdoptTimestamp: String?
-    @State private var showingRuleCapacity = false
     @State private var showingBlockedCountWarning = false
     @State private var scrollTarget: SettingsSection?
     @AppStorage(AppAppearance.storageKey) private var appearance = AppAppearance.system
@@ -478,56 +477,17 @@ struct SettingsView: View {
         #endif
     }
 
-    /// The same stat pills the Filters and Userscripts tabs open with, so every
-    /// tab's list starts below one row of pills. On a narrow Mac window the
-    /// pills shrink together instead of switching to the compact layout (#924, #1091).
+    /// Equal-width status cards at the top of Settings (#924, #1170).
     private var statusPills: some View {
-        #if os(iOS)
-        statusPills(compact: true)
-        #else
-        statusPills(compact: false)
-        #endif
-    }
-
-    private func statusPills(compact: Bool) -> some View {
-        let capacity = filterManager.safariRuleCapacityFraction
-        // Relative times in the pills age while Settings stays open.
-        return TimelineView(.periodic(from: .now, by: 30)) { context in
-            StatsCardsView(compact: compact) {
-                Button {
-                    showingRuleCapacity = true
-                } label: {
-                    StatCard(
-                        title: "Rule Capacity",
-                        value: LocalizedFormatting.percent(capacity),
-                        icon: "shield.lefthalf.filled",
-                        valueColor: capacity > 0.8 ? .orange : .primary,
-                        compact: compact,
-                        showsDisclosure: true
-                    )
-                    #if os(iOS)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    #endif
-                }
-                .buttonStyle(.plain)
-                .noFocusRingCompat()
-                #if os(macOS)
-                .modalPopover(isPresented: $showingRuleCapacity, arrowEdge: .bottom) {
-                    RuleCapacityPopoverView(filterManager: filterManager)
-                }
-                #else
-                .sheet(isPresented: $showingRuleCapacity) {
-                    RuleCapacityPopoverView(filterManager: filterManager)
-                }
-                #endif
-
+        // Relative times in the cards age while Settings stays open.
+        TimelineView(.periodic(from: .now, by: 30)) { context in
+            StatsCardsView {
                 pillButton(to: .autoUpdate) {
                     StatCard(
                         title: "Next Update",
                         value: nextUpdateValue,
                         icon: "clock.arrow.circlepath",
-                        valueColor: autoUpdateEnabled ? .primary : .secondary,
-                        compact: compact
+                        valueColor: autoUpdateEnabled ? .primary : .secondary
                     )
                 }
 
@@ -538,8 +498,7 @@ struct SettingsView: View {
                             value: syncPillValue(now: context.date),
                             icon: syncManager.status == .error ? "exclamationmark.icloud" : "icloud",
                             valueColor: syncManager.status == .error ? .red
-                                : (syncManager.isEnabled ? .primary : .secondary),
-                            compact: compact
+                                : (syncManager.isEnabled ? .primary : .secondary)
                         )
                     }
                 }
@@ -547,13 +506,11 @@ struct SettingsView: View {
         }
     }
 
-    /// A pill that scrolls to the section it summarizes (#999).
+    /// A card that scrolls to the section it summarizes (#999).
     private func pillButton<Label: View>(to section: SettingsSection, @ViewBuilder label: () -> Label) -> some View {
         Button { scrollTarget = section } label: {
             label()
-                #if os(iOS)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                #endif
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         }
         .buttonStyle(.plain)
         .noFocusRingCompat()

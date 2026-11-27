@@ -172,18 +172,6 @@ struct UserScriptManagerView: View {
     @State private var handledAddRequest = 0
     @State private var handledSearchRequest = 0
 
-    private var totalScriptsCount: Int {
-        scripts.filter { !$0.isUserStyle }.count
-    }
-
-    private var totalStylesCount: Int {
-        scripts.filter(\.isUserStyle).count
-    }
-
-    private var enabledScriptsCount: Int {
-        scripts.filter(\.isEnabled).count
-    }
-
     private var trimmedSearchText: String {
         searchText.trimmingCharacters(in: .whitespacesAndNewlines)
     }
@@ -323,11 +311,6 @@ struct UserScriptManagerView: View {
         let sections = displayedScriptSections
         #if os(iOS)
         List {
-            Section {
-                statsCardsView
-                    .unifiedTabCardSectionRow()
-            }
-
             if scripts.isEmpty {
                 Section {
                     emptyStateView
@@ -358,7 +341,7 @@ struct UserScriptManagerView: View {
         #else
         MacReorderableList(
             sections: scripts.isEmpty || sections.isEmpty ? [] : macScriptSections,
-            header: AnyView(statsCardsView.padding(.vertical, 16)),
+            header: nil,
             emptyContent: scripts.isEmpty ? AnyView(emptyStateView.padding(.vertical, 40))
                 : (sections.isEmpty ? AnyView(noSearchResultsView.padding(.vertical, 40)) : nil),
             onMove: commitScriptMove
@@ -547,42 +530,6 @@ struct UserScriptManagerView: View {
         return true
     }
     #endif
-
-    private var statsCardsView: some View {
-        // Three full cards overflow an iPhone row (#626). With a style installed
-        // the cards drop to the compact layout, which keeps one row of three.
-        let compact: Bool = {
-            #if os(iOS)
-            totalStylesCount > 0
-            #else
-            false
-            #endif
-        }()
-        return StatsCardsView(compact: compact) {
-            StatCard(
-                title: "Scripts",
-                value: "\(totalScriptsCount)",
-                icon: "doc.text",
-                compact: compact
-            )
-
-            if totalStylesCount > 0 {
-                StatCard(
-                    title: "Styles",
-                    value: "\(totalStylesCount)",
-                    icon: "paintbrush",
-                    compact: compact
-                )
-            }
-
-            StatCard(
-                title: "Enabled",
-                value: "\(enabledScriptsCount)",
-                icon: "checkmark.circle",
-                compact: compact
-            )
-        }
-    }
 
     private func displaySectionHeader(_ section: UserScriptDisplaySection) -> some View {
         ListCategoryHeader(title: section.title, info: nil)

@@ -323,14 +323,14 @@ struct MacReorderableList: NSViewRepresentable {
     static let nativeListBottomInset: CGFloat = 16
 
     var sections: [MacListSection]
-    let header: AnyView
+    let header: AnyView?
     var emptyContent: AnyView? = nil
     var scrollToTopToken: Int = 0
     let onMove: (MacListMove) -> Bool
     private var topContentInset: CGFloat? = nil
 
     init(
-        sections: [MacListSection], header: AnyView, emptyContent: AnyView? = nil,
+        sections: [MacListSection], header: AnyView? = nil, emptyContent: AnyView? = nil,
         scrollToTopToken: Int = 0,
         onMove: @escaping (MacListMove) -> Bool
     ) {
@@ -496,7 +496,7 @@ struct MacReorderableList: NSViewRepresentable {
                 value.content = content
                 return value
             }
-            roots = [node(.header, model.header)]
+            roots = model.header.map { [node(.header, $0)] } ?? []
             for section in model.sections {
                 let parent = node(.section(section.id), AnyView(section.header
                     .font(.headline).padding(.horizontal, 20).padding(.top, 16).padding(.bottom, 12)))
@@ -604,7 +604,7 @@ struct MacReorderableList: NSViewRepresentable {
         /// A live resize re-measures only visible rows; the rest follow once it ends.
         func widthChanged() {
             guard let outline else { return }
-            if let header = roots.first,
+            if let header = roots.first, case .header = header.id,
                let view = outline.view(atColumn: 0, row: 0, makeIfNecessary: false) as? MacListHostingView {
                 view.setContent(hosted(header))
             }
