@@ -82,13 +82,19 @@ struct AppTabView<Filters: View, Userscripts: View, Settings: View, Accessory: V
         if #available(iOS 18.0, *) {
             TabView(selection: $selection.value) {
                 Tab("Filters", systemImage: "list.bullet.rectangle", value: 0) {
-                    NavigationStack { filters }
+                    NavigationStack {
+                        filters.background(tabBarLayoutReconciler)
+                    }
                 }
                 Tab(secondTabTitle, systemImage: "doc.text.fill", value: 1) {
-                    NavigationStack { userscripts }
+                    NavigationStack {
+                        userscripts.background(tabBarLayoutReconciler)
+                    }
                 }
                 Tab("Settings", systemImage: "gear", value: 2) {
-                    NavigationStack { settings }
+                    NavigationStack {
+                        settings.background(tabBarLayoutReconciler)
+                    }
                 }
             }
         } else if #available(iOS 16.0, *) {
@@ -119,6 +125,14 @@ struct AppTabView<Filters: View, Userscripts: View, Settings: View, Accessory: V
                     .tabItem { Label("Settings", systemImage: "gear") }
             }
         }
+    }
+
+    @available(iOS 18.0, *)
+    private var tabBarLayoutReconciler: some View {
+        FloatingTabBarLayoutReconciler()
+            .frame(width: 0, height: 0)
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
     }
     #endif
 
@@ -172,6 +186,70 @@ extension AppTabView where Accessory == EmptyView {
 }
 
 #if os(iOS)
+/// Reconciles iPadOS 18+ floating tab bar safe-area integration on initial
+/// launch. SwiftUI's `TabHostingController` is initially laid out by
+/// `UITabBarController` before its child `NavigationStack` registers, leaving
+/// `safeAreaInsets.top` inflated by the floating tab bar height (pushing both
+/// the navigation toolbar and scroll content down until `didBecomeActive`
+/// triggers a bar layout pass). Toggling `setTabBarHidden` once without
+/// animation before the first frame forces `UITabBarController` to recompute
+/// its integrated bar layout immediately (#1168).
+@available(iOS 18.0, *)
+private struct FloatingTabBarLayoutReconciler: UIViewControllerRepresentable {
+    func makeUIViewController(context: Context) -> ReconcilerViewController {
+        ReconcilerViewController()
+    }
+
+    func updateUIViewController(_ uiViewController: ReconcilerViewController, context: Context) {
+        uiViewController.reconcileIfNeeded()
+    }
+
+    final class ReconcilerViewController: UIViewController {
+        private var didReconcile = false
+
+        override func loadView() {
+            let emptyView = UIView(frame: .zero)
+            emptyView.isUserInteractionEnabled = false
+            emptyView.isHidden = true
+            view = emptyView
+        }
+
+        override func viewWillAppear(_ animated: Bool) {
+            super.viewWillAppear(animated)
+            reconcileIfNeeded()
+        }
+
+        override func viewDidLayoutSubviews() {
+            super.viewDidLayoutSubviews()
+            reconcileIfNeeded()
+        }
+
+        override func viewDidAppear(_ animated: Bool) {
+            super.viewDidAppear(animated)
+            reconcileIfNeeded()
+            didReconcile = true
+        }
+
+        func reconcileIfNeeded() {
+            guard !didReconcile,
+                  let tabBarController = tabBarController,
+                  let selected = tabBarController.selectedViewController,
+                  !tabBarController.isTabBarHidden,
+                  selected.children.contains(where: { $0 is UINavigationController }),
+                  selected.view.safeAreaInsets.top > tabBarController.view.safeAreaInsets.top + 1
+            else { return }
+
+            didReconcile = true
+            UIView.performWithoutAnimation {
+                tabBarController.setTabBarHidden(true, animated: false)
+                tabBarController.view.layoutIfNeeded()
+                tabBarController.setTabBarHidden(false, animated: false)
+                tabBarController.view.layoutIfNeeded()
+            }
+        }
+    }
+}
+
 private struct TabBottomAccessoryCompat<Accessory: View>: ViewModifier {
     let isEnabled: Bool
     let accessory: () -> Accessory
