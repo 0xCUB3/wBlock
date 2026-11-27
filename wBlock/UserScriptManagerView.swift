@@ -1135,9 +1135,10 @@ struct UserScriptInfoView: View {
                             showsAllDetails: showsAllDetails,
                             formatFileSize: formatFileSize
                         )
+                        .zIndex(1)
                         if showsAllDetails {
                             actionList(for: script)
-                                .transition(.opacity.combined(with: .move(edge: .top)))
+                                .transition(.opacity)
                         } else {
                             #if os(iOS)
                             InfoSheetExpandButton {
@@ -1145,6 +1146,7 @@ struct UserScriptInfoView: View {
                                     isExpanded = true
                                 }
                             }
+                            .transition(.asymmetric(insertion: .opacity, removal: .identity))
                             #endif
                         }
                     }

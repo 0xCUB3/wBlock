@@ -55,10 +55,11 @@ struct FilterInfoView: View {
             }
             #if os(macOS)
             .frame(width: 460)
-            #else
-            .expandableInfoSheetPresentationCompat(isExpanded: $isExpanded)
             #endif
         }
+        #if os(iOS)
+        .expandableInfoSheetPresentationCompat(isExpanded: $isExpanded)
+        #endif
         .sheet(isPresented: $showingMetadataEditor) {
             EditCustomFilterView(filterManager: filterManager, filter: liveFilter)
         }
@@ -133,9 +134,10 @@ struct FilterInfoView: View {
                     }
                 }
             }
+            .zIndex(1)
             if showsAllDetails {
                 actionList
-                    .transition(.opacity.combined(with: .move(edge: .top)))
+                    .transition(.opacity)
             } else {
                 #if os(iOS)
                 InfoSheetExpandButton {
@@ -143,6 +145,7 @@ struct FilterInfoView: View {
                         isExpanded = true
                     }
                 }
+                .transition(.asymmetric(insertion: .opacity, removal: .identity))
                 #endif
             }
         }

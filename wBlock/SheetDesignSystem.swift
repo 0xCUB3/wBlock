@@ -6,6 +6,9 @@
 //
 
 import SwiftUI
+#if os(iOS)
+import UIKit
+#endif
 
 // MARK: - Design System Constants
 
@@ -162,6 +165,7 @@ private struct ExpandableInfoSheetDetentsModifier: ViewModifier {
                 content
             }
         }
+        .background(SheetDetentSynchronizer(isExpanded: isExpanded))
         .presentationDetents([.medium, .large], selection: $selectedDetent)
         .presentationDragIndicator(.visible)
         .onAppear {
@@ -193,6 +197,53 @@ private struct ExpandableInfoSheetDetentsModifier: ViewModifier {
                 withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
                     isExpanded = false
                 }
+            }
+        }
+    }
+}
+
+/// Ensures programmatic `isExpanded` transitions animate the hosting
+/// `UISheetPresentationController` to the matching detent even when SwiftUI
+/// drops a `presentationDetents(selection:)` update alongside a
+/// `presentationContentInteraction` change.
+@available(iOS 16.0, *)
+private struct SheetDetentSynchronizer: UIViewControllerRepresentable {
+    let isExpanded: Bool
+
+    final class Coordinator {
+        var lastRequestedExpanded: Bool
+        init(isExpanded: Bool) {
+            lastRequestedExpanded = isExpanded
+        }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(isExpanded: isExpanded)
+    }
+
+    func makeUIViewController(context: Context) -> UIViewController {
+        let controller = UIViewController()
+        controller.view.isUserInteractionEnabled = false
+        controller.view.backgroundColor = .clear
+        return controller
+    }
+
+    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {
+        guard context.coordinator.lastRequestedExpanded != isExpanded else { return }
+        context.coordinator.lastRequestedExpanded = isExpanded
+        let target: UISheetPresentationController.Detent.Identifier = isExpanded ? .large : .medium
+        DispatchQueue.main.async {
+            var current: UIViewController? = uiViewController
+            while let vc = current {
+                if let sheet = vc.sheetPresentationController {
+                    if sheet.selectedDetentIdentifier != target {
+                        sheet.animateChanges {
+                            sheet.selectedDetentIdentifier = target
+                        }
+                    }
+                    break
+                }
+                current = vc.parent
             }
         }
     }
