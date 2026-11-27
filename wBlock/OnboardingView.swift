@@ -10,6 +10,7 @@ import AppKit
 struct OnboardingView: View {
     enum OnboardingStep: Int, CaseIterable, Identifiable {
         case quickReview
+        case extras
         case regional
         case annoyances
         case userscripts
@@ -122,6 +123,8 @@ struct OnboardingView: View {
         let isBaselineEnabledByDefault: Bool
         let languageCodes: [String]
         let isBeta: Bool
+        let symbolName: String
+        let tint: Color
     }
 
     private let userscriptDescriptionFallbacksByName: [String: String] = [
@@ -146,13 +149,16 @@ struct OnboardingView: View {
                 return languages.isEmpty || !Set(languages).isDisjoint(with: selectedLanguages)
             }
             .map { script in
-                OnboardingUserScriptItem(
+                let badge = BasicExtrasView.badgeStyle(for: script, userScriptManager: userScriptManager)
+                return OnboardingUserScriptItem(
                     id: script.id.uuidString,
                     name: script.localizedDisplayName,
                     description: resolvedUserscriptDescription(for: script),
                     isBaselineEnabledByDefault: isBaselineUserscriptEnabledByDefault(script),
                     languageCodes: userScriptManager.builtInLanguages(for: script),
-                    isBeta: userScriptManager.isBeta(for: script)
+                    isBeta: userScriptManager.isBeta(for: script),
+                    symbolName: badge.symbol,
+                    tint: badge.tint
                 )
             }
     }
@@ -198,6 +204,7 @@ struct OnboardingView: View {
                 .padding(.horizontal)
         }
         .padding(.vertical)
+        .environment(\.selectableRowUsesSwitch, true)
         .interactiveDismissDisabled(!hasCompletedOnboarding)
     #if os(macOS)
         // One height for every step: the sheet sized itself to the content and
@@ -321,9 +328,22 @@ struct OnboardingView: View {
     private var activeOnboardingSteps: [OnboardingStep] {
         switch chosenMode {
         case .basic:
-            [.quickReview, .setup]
+            var steps: [OnboardingStep] = [.quickReview]
+            if !basicOnboardingFeaturedExtras.isEmpty {
+                steps.append(.extras)
+            }
+            if CloudSyncManager.shared.isCloudKitAvailable {
+                steps.append(.sync)
+            }
+            steps.append(.setup)
+            return steps
         case .advanced:
-            [.regional, .annoyances, .userscripts, .sync, .setup]
+            var steps: [OnboardingStep] = [.regional, .annoyances, .userscripts]
+            if CloudSyncManager.shared.isCloudKitAvailable {
+                steps.append(.sync)
+            }
+            steps.append(.setup)
+            return steps
         }
     }
 
@@ -380,6 +400,8 @@ struct OnboardingView: View {
         switch step {
         case .quickReview:
             quickReviewStep
+        case .extras:
+            extrasStep
         case .regional:
             regionalStep
         case .annoyances:
@@ -637,24 +659,77 @@ struct OnboardingView: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
+        }
+    }
 
-            // Featured non-beta extras (tinyShield remains silently enabled in baseline)
-            let featuredExtras = basicOnboardingFeaturedExtras
+    /// Standard onboarding step 2: featured non-beta extras with icons (#1172).
+    private var extrasStep: some View {
+        let featuredExtras = basicOnboardingFeaturedExtras
+        return VStack(alignment: .leading, spacing: 12) {
+            Text("Extras")
+                .font(.title2.bold())
+            Text("Choose any extra features you want to enable. You can change these later in Extras.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
             if !featuredExtras.isEmpty {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Extras")
-                        .font(.headline)
-                    SelectableRowGroup(data: featuredExtras) { item in
-                        userscriptCard(for: item, showLanguageCaption: true)
+                VStack(spacing: 0) {
+                    ForEach(Array(featuredExtras.enumerated()), id: \.element.id) { index, item in
+                        standardExtraRow(for: item)
+                        if index < featuredExtras.count - 1 {
+                            Divider().padding(.leading, 52)
+                        }
                     }
                 }
-            }
-
-            // iCloud Sync
-            if CloudSyncManager.shared.isCloudKitAvailable {
-                cloudSyncCard
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
             }
         }
+    }
+
+    private func standardExtraRow(for script: OnboardingUserScriptItem) -> some View {
+        let isOn = selectedUserscripts.contains(script.id)
+        let languageCaption: String = !script.languageCodes.isEmpty
+            ? script.languageCodes
+                .map { RegionalLanguageOption(code: $0).nativeName }
+                .joined(separator: ", ")
+            : ""
+
+        return HStack(spacing: 12) {
+            IconBadge(
+                systemName: script.symbolName,
+                tint: script.tint,
+                isOn: isOn
+            )
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 6) {
+                    Text(script.name)
+                        .font(.subheadline.weight(.medium))
+                    if script.isBeta {
+                        Badge(text: "Beta", color: .orange)
+                    }
+                }
+                if !languageCaption.isEmpty {
+                    Text(languageCaption)
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.secondary)
+                }
+                Text(script.description)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
+            Spacer(minLength: 8)
+            Toggle("", isOn: Binding(
+                get: { isOn },
+                set: { setUserscript(script, enabled: $0) }
+            ))
+            .labelsHidden()
+            .toggleStyle(.switch)
+            .fixedSize()
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
     }
 
     private var basicOnboardingFeaturedExtras: [OnboardingUserScriptItem] {
@@ -668,13 +743,16 @@ struct OnboardingView: View {
                 return languages.isEmpty || !Set(languages).isDisjoint(with: selectedLanguages)
             }
             .map { script in
-                OnboardingUserScriptItem(
+                let badge = BasicExtrasView.badgeStyle(for: script, userScriptManager: userScriptManager)
+                return OnboardingUserScriptItem(
                     id: script.id.uuidString,
                     name: script.localizedDisplayName,
                     description: resolvedUserscriptDescription(for: script),
                     isBaselineEnabledByDefault: isBaselineUserscriptEnabledByDefault(script),
                     languageCodes: userScriptManager.builtInLanguages(for: script),
-                    isBeta: userScriptManager.isBeta(for: script)
+                    isBeta: userScriptManager.isBeta(for: script),
+                    symbolName: badge.symbol,
+                    tint: badge.tint
                 )
             }
     }
@@ -913,6 +991,7 @@ struct OnboardingView: View {
 
                         Toggle("", isOn: contentBlockerSetupBinding)
                             .labelsHidden()
+                            .toggleStyle(.switch)
                             .disabled(isRefreshingContentBlockers)
                     }
 
@@ -967,6 +1046,7 @@ struct OnboardingView: View {
 
                         Toggle("", isOn: advancedSetupBinding)
                             .labelsHidden()
+                            .toggleStyle(.switch)
                             .disabled(isRefreshingScriptsExtensionState)
                     }
                 }
@@ -1106,6 +1186,22 @@ struct OnboardingView: View {
         }
     }
 
+    private func setUserscript(_ script: OnboardingUserScriptItem, enabled: Bool) {
+        if enabled {
+            selectedUserscripts.insert(script.id)
+            manuallyDeselectedBaselineUserscripts.remove(script.id)
+            if !script.isBaselineEnabledByDefault {
+                manuallySelectedUserscripts.insert(script.id)
+            }
+        } else {
+            selectedUserscripts.remove(script.id)
+            manuallySelectedUserscripts.remove(script.id)
+            if script.isBaselineEnabledByDefault {
+                manuallyDeselectedBaselineUserscripts.insert(script.id)
+            }
+        }
+    }
+
     private func userscriptCard(
         for script: OnboardingUserScriptItem,
         showLanguageCaption: Bool = false
@@ -1124,19 +1220,7 @@ struct OnboardingView: View {
             badge: script.isBeta ? "Beta" : nil,
             isSelected: isSelected
         ) {
-            if isSelected {
-                selectedUserscripts.remove(script.id)
-                manuallySelectedUserscripts.remove(script.id)
-                if script.isBaselineEnabledByDefault {
-                    manuallyDeselectedBaselineUserscripts.insert(script.id)
-                }
-            } else {
-                selectedUserscripts.insert(script.id)
-                manuallyDeselectedBaselineUserscripts.remove(script.id)
-                if !script.isBaselineEnabledByDefault {
-                    manuallySelectedUserscripts.insert(script.id)
-                }
-            }
+            setUserscript(script, enabled: !isSelected)
         }
     }
 

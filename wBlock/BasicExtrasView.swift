@@ -307,7 +307,7 @@ struct BasicExtrasView: View {
                 ringPhase: ringPhase
             )
         } else {
-            let style = badgeStyle(for: script)
+            let style = Self.badgeStyle(for: script, userScriptManager: userScriptManager)
             IconBadge(
                 systemName: style.symbol,
                 tint: style.tint,
@@ -402,7 +402,7 @@ struct BasicExtrasView: View {
         }
     }
 
-    private func badgeStyle(for script: UserScript) -> (symbol: String, tint: Color) {
+    static func badgeStyle(for script: UserScript, userScriptManager: UserScriptManager) -> (symbol: String, tint: Color) {
         if userScriptManager.isTubeCleaner(script) {
             return ("play.rectangle.fill", .accentColor)
         }

@@ -1,9 +1,24 @@
 import SwiftUI
 
+private struct SelectableRowUsesSwitchKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    /// Draws `SelectableRow` with a trailing toggle switch on macOS too
+    /// (matching iOS and icon-bearing rows in onboarding, #1172).
+    var selectableRowUsesSwitch: Bool {
+        get { self[SelectableRowUsesSwitchKey.self] }
+        set { self[SelectableRowUsesSwitchKey.self] = newValue }
+    }
+}
+
 /// One choice in a pick list, drawn with the native control as in the
-/// available-updates review (#1088): a checkbox on macOS, a switch on iOS.
+/// available-updates review (#1088): a checkbox on macOS (or switch when
+/// `selectableRowUsesSwitch` is set), a switch on iOS.
 /// Onboarding, Annoyances Info, and the review share it.
 struct SelectableRow: View {
+    @Environment(\.selectableRowUsesSwitch) private var usesSwitch
     let title: Text
     /// A short line under the title, such as the languages a list covers.
     var caption: String = ""
@@ -12,7 +27,7 @@ struct SelectableRow: View {
     let isSelected: Bool
     let action: () -> Void
 
-    var body: some View {
+    private var toggleControl: some View {
         Toggle(isOn: Binding(get: { isSelected }, set: { _ in action() })) {
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
@@ -39,8 +54,17 @@ struct SelectableRow: View {
                 }
             }
         }
+    }
+
+    var body: some View {
         #if os(macOS)
-        .toggleStyle(RowCheckboxStyle())
+        if usesSwitch {
+            toggleControl.toggleStyle(MacTrailingSwitchToggleStyle())
+        } else {
+            toggleControl.toggleStyle(RowCheckboxStyle())
+        }
+        #else
+        toggleControl
         #endif
     }
 }

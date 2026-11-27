@@ -1318,3 +1318,4 @@ To re-enable these filters, disable other large filters and apply changes again.
 "Block Chat Widgets" = "Block Chat Widgets";
 "Block General Annoyances" = "Block General Annoyances";
 "Block AI Content" = "Block AI Content";
+"Choose any extra features you want to enable. You can change these later in Extras." = "Choose any extra features you want to enable. You can change these later in Extras.";
