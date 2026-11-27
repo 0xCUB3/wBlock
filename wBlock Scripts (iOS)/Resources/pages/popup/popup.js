@@ -814,6 +814,7 @@ async function notifyZapperRulesChanged(tabId) {
 
 let zapperRulesExpanded = false;
 let userscriptsExpanded = false;
+let moreExpanded = false;
 let currentZapperRules = [];
 let currentPageUserScripts = [];
 let host = '';
@@ -934,6 +935,13 @@ function setUserscriptsExpanded(expanded) {
     if (list) list.hidden = !hasScripts;
     if (empty) empty.hidden = hasScripts;
     setDisclosureOpen(document.getElementById('userscripts-panel'), expanded, toggle);
+}
+
+function setMoreExpanded(expanded) {
+    moreExpanded = expanded;
+    const toggle = document.getElementById('more-toggle');
+    if (toggle) toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+    setDisclosureOpen(document.getElementById('more-panel'), expanded, toggle);
 }
 
 function renderZapperRules(rules) {
@@ -1123,6 +1131,39 @@ async function setSiteZapperDisabled(host, disabled) {
     }
     const nextDisabled = response.disabled;
     await setSyncMeta(host, { disabled: nextDisabled });
+    return response;
+}
+
+async function getSiteCosmeticFilteringState(host) {
+    if (!host) return { enabled: false, globalEnabled: true };
+    try {
+        const response = await sendNativeMessage({
+            action: 'getSiteCosmeticFilteringState',
+            host,
+        });
+        if (!response || typeof response.enabled !== 'boolean') {
+            return { enabled: null, globalEnabled: true };
+        }
+        return {
+            enabled: response.enabled,
+            globalEnabled: response.globalEnabled !== false,
+        };
+    } catch (error) {
+        console.error('[wBlock] Failed to get cosmetic filtering state:', error);
+        return { enabled: null, globalEnabled: true };
+    }
+}
+
+async function setSiteCosmeticFilteringState(host, enabled) {
+    if (!host) return;
+    const response = await sendNativeMessage({
+        action: 'setSiteCosmeticFilteringState',
+        host,
+        enabled: Boolean(enabled),
+    }, 10000);
+    if (!response || response.ok !== true || typeof response.enabled !== 'boolean') {
+        throw new Error((response && response.error) || 'Invalid cosmetic filtering state response');
+    }
     return response;
 }
 
@@ -1580,10 +1621,29 @@ function updateNoAutoplayControls(state, options = {}) {
     }
 }
 
+function updateCosmeticControls(state, options = {}) {
+    const section = document.getElementById('more-section');
+    const toggle = document.getElementById('cosmetic-site-toggle');
+    const hint = document.getElementById('cosmetic-site-hint');
+    const hasHost = Boolean(options.host);
+    if (section) section.hidden = !hasHost;
+    if (!hasHost) setMoreExpanded(false);
+    const globalEnabled = state ? state.globalEnabled !== false : true;
+    const enabled = state && typeof state.enabled === 'boolean' ? state.enabled : null;
+    if (toggle) {
+        toggle.checked = enabled === true && globalEnabled;
+        toggle.disabled = options.locked === true
+            || options.siteDisabled === true
+            || !globalEnabled
+            || enabled === null;
+    }
+    if (hint) hint.hidden = globalEnabled;
+}
+
 // The per-site switches act on `host`, so they stay locked until the
 // current site's state is on screen.
 function lockSiteControls() {
-    for (const id of ['site-enabled-toggle', 'enable-toggle', 'userscripts-site-toggle', 'zapper-enabled-toggle', 'no-autoplay-site-toggle', 'zapper-activate', 'zapper-rules-toggle', 'zapper-clear']) {
+    for (const id of ['site-enabled-toggle', 'enable-toggle', 'userscripts-site-toggle', 'zapper-enabled-toggle', 'no-autoplay-site-toggle', 'cosmetic-site-toggle', 'zapper-activate', 'zapper-rules-toggle', 'zapper-clear']) {
         const control = document.getElementById(id);
         if (control) control.disabled = true;
     }
@@ -1634,6 +1694,13 @@ function setupListeners() {
     if (userscriptsToggle) {
         userscriptsToggle.addEventListener('click', () => {
             setUserscriptsExpanded(!userscriptsExpanded);
+        });
+    }
+
+    const moreToggle = document.getElementById('more-toggle');
+    if (moreToggle) {
+        moreToggle.addEventListener('click', () => {
+            setMoreExpanded(!moreExpanded);
         });
     }
 
@@ -1824,6 +1891,48 @@ function setupListeners() {
                 console.error('[wBlock] Failed to update No Autoplay site setting:', error);
                 setError(t('popup_error_update_site_setting', undefined, 'Failed to update site setting.'));
                 noAutoplaySiteToggle.checked = !nextAllowed;
+            } finally {
+                await refreshUi({ preserveError: true });
+            }
+        });
+    }
+
+    const cosmeticSiteToggle = document.getElementById('cosmetic-site-toggle');
+    if (cosmeticSiteToggle) {
+        cosmeticSiteToggle.addEventListener('change', async () => {
+            const nextEnabled = cosmeticSiteToggle.checked;
+            const targetHost = host;
+            const targetTab = tab;
+            try {
+                if (!targetHost) {
+                    cosmeticSiteToggle.checked = !nextEnabled;
+                    return;
+                }
+                setError('');
+                cosmeticSiteToggle.disabled = true;
+                const updateResult = await setSiteCosmeticFilteringState(targetHost, nextEnabled);
+                try {
+                    await browser.runtime.sendMessage({ action: 'wblock:clearCache' });
+                } catch (error) {
+                    console.warn('[wBlock] Failed to clear configuration cache:', error);
+                }
+                const failedTargets = Number(updateResult && updateResult.failedTargets) || 0;
+                const requiresFullApply = Boolean(updateResult && updateResult.requiresFullApply);
+                if (requiresFullApply) {
+                    setError(t(
+                        'popup_warning_open_app_to_apply',
+                        undefined,
+                        'Open wBlock to finish applying filters.'
+                    ));
+                } else if (failedTargets > 0) {
+                    setError(t('popup_error_update_site_setting', undefined, 'Failed to update site setting.'));
+                }
+                cosmeticSiteToggle.checked = Boolean(updateResult && updateResult.enabled);
+                await reloadActiveTab(targetTab && targetTab.id);
+            } catch (error) {
+                console.error('[wBlock] Failed to update cosmetic filtering setting:', error);
+                setError(t('popup_error_update_site_setting', undefined, 'Failed to update site setting.'));
+                cosmeticSiteToggle.checked = !nextEnabled;
             } finally {
                 await refreshUi({ preserveError: true });
             }
@@ -2053,6 +2162,7 @@ async function refreshUi(options = {}) {
         const noAutoplayState = await getNoAutoplayState('');
         if (stale()) return;
         updateNoAutoplayControls(noAutoplayState, { host: '', locked: true });
+        updateCosmeticControls({ enabled: false, globalEnabled: true }, { host: '', locked: true });
         return;
     }
 
@@ -2069,15 +2179,17 @@ async function refreshUi(options = {}) {
         : probeTabSupport(tab.id);
     const zapperStatePromise = getAuthoritativeZapperState(host);
     const noAutoplayStatePromise = getNoAutoplayState(host);
+    const cosmeticStatePromise = getSiteCosmeticFilteringState(host);
 
     setStatus(t('popup_status_checking', undefined, 'Checking…'), 'neutral');
 
-    const [pauseState, siteState, zapperState, contentScriptReachable, noAutoplayState] = await Promise.all([
+    const [pauseState, siteState, zapperState, contentScriptReachable, noAutoplayState, cosmeticState] = await Promise.all([
         blockingPausedPromise,
         disabledPromise,
         zapperStatePromise,
         contentScriptReachablePromise,
         noAutoplayStatePromise,
+        cosmeticStatePromise,
     ]);
     if (stale()) return;
     const disabled = siteState.disabled;
@@ -2094,6 +2206,7 @@ async function refreshUi(options = {}) {
         if (pausedPrompt) pausedPrompt.hidden = true;
         if (resumeButton) resumeButton.hidden = true;
         updateNoAutoplayControls(noAutoplayState, { host, locked: true });
+        updateCosmeticControls(cosmeticState, { host, locked: true });
         return;
     }
 
@@ -2151,6 +2264,11 @@ async function refreshUi(options = {}) {
         zapperEnabledToggle.disabled = siteWhitelisted || zapperPaused || siteToggleInFlight;
     }
     updateNoAutoplayControls(noAutoplayState, { host, siteDisabled: siteWhitelisted, locked: siteToggleInFlight });
+    updateCosmeticControls(cosmeticState, {
+        host,
+        siteDisabled: siteWhitelisted || siteDisabled || filtersPaused,
+        locked: siteToggleInFlight,
+    });
     const shouldCommitSiteStatus = !skipSiteToggleCommit || blockingPaused;
     if (shouldCommitSiteStatus) {
         if (resuming) {

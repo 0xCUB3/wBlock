@@ -512,6 +512,10 @@ body {
   margin-inline-end: 14px;
 }
 
+.disclosure-subrow {
+  box-shadow: inset 0 0.5px 0 var(--separator);
+}
+
 .rules {
   margin: 0;
   display: flex;

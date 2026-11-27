@@ -21,6 +21,62 @@ enum ContentBlockerRuleArray {
         }
     }
 
+    /// Byte offset immediately after the last leading `css-display-none` rule
+    /// (`Tier::GenericHide`), or nil when the array does not begin with one.
+    /// Used to inject per-site cosmetic `ignore-previous-rules` entries without
+    /// cancelling any network rules that follow.
+    static func leadingCssDisplayNoneEnd(_ json: Data) -> Int? {
+        let needle = Array("\"css-display-none\"".utf8)
+        return json.withUnsafeBytes { raw -> Int? in
+            guard let bytes = raw.baseAddress?.assumingMemoryBound(to: UInt8.self) else { return nil }
+            let end = raw.count
+            var index = 0
+            var depth = 0
+            var opened = false
+            var elementStart: Int?
+            var prefixEnd: Int?
+            while index < end {
+                let byte = bytes[index]
+                index += 1
+                switch byte {
+                case 0x20, 0x09, 0x0A, 0x0D: continue
+                case 0x5B where !opened:
+                    opened = true; depth = 1
+                case _ where !opened:
+                    return nil
+                case 0x22:
+                    guard depth > 1, let close = closingQuote(bytes, from: index, end: end) else { return nil }
+                    index = close + 1
+                case 0x7B, 0x5B:
+                    if depth == 1 {
+                        guard byte == 0x7B else { return nil }
+                        elementStart = index - 1
+                    }
+                    depth += 1
+                case 0x7D, 0x5D:
+                    depth -= 1
+                    if depth == 0 {
+                        return byte == 0x5D ? prefixEnd : nil
+                    } else if depth == 1, let start = elementStart {
+                        let length = index - start
+                        let isCosmetic = needle.withUnsafeBufferPointer { pattern in
+                            memmem(bytes + start, length, pattern.baseAddress, pattern.count) != nil
+                        }
+                        elementStart = nil
+                        if isCosmetic {
+                            prefixEnd = index
+                        } else {
+                            return prefixEnd
+                        }
+                    }
+                default:
+                    continue
+                }
+            }
+            return nil
+        }
+    }
+
     /// `keptEnd` is the offset just past rule number `keeping`, when the array has more.
     private static func scan(
         _ raw: UnsafeRawBufferPointer, keeping: Int?

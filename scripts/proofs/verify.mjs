@@ -99,6 +99,9 @@ for (const e of flags(["present", "same", "blank"])) decision("importReview", [e
           values.push({ ...e, lastChecked, expiry, interval, now: 100 });
   decision("filterDueCheck", values);
 }
+for (const e of flags(["globalOn", "onlySelected", "inExcluded", "inSelected", "targetOn", "hasCompiled", "compiledAllows"])) {
+  decision("cosmeticSite", [e]);
+}
 for (const e of flags(["tomb", "local", "remote", "existed"]))
   for (const deletedAt of [0, 99, 100, 101])
     for (const remoteAt of [0, 99, 100, 101]) decision("custom", [{ ...e, deletedAt, remoteAt }]);

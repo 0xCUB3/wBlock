@@ -283,6 +283,12 @@ public enum WebExtensionRequestHandler {
             case "setSiteDisabledState":
                 handleSetSiteDisabledState(message: message!, context: context)
                 return
+            case "getSiteCosmeticFilteringState":
+                handleGetSiteCosmeticFilteringState(message: message!, context: context)
+                return
+            case "setSiteCosmeticFilteringState":
+                handleSetSiteCosmeticFilteringState(message: message!, context: context)
+                return
             case "getCleanPageURL":
                 Task { @MainActor in
                     let original = message?["url"] as? String ?? ""
@@ -385,8 +391,16 @@ public enum WebExtensionRequestHandler {
                                 message?["payload"] = nil
                                 message?["state"] = "error"
                                 message?["error"] = errorMessage
+                            } else if var payload = lookup.payload {
+                                // Honor per-site cosmetic filtering immediately without stripping scriptlets.
+                                if !CosmeticFilteringPreference.isEnabled(onHost: site.host ?? "") {
+                                    payload["css"] = []
+                                    payload["styles"] = []
+                                    payload["procedural"] = []
+                                }
+                                message?["payload"] = payload
                             } else {
-                                message?["payload"] = lookup.payload
+                                message?["payload"] = nil
                             }
                         }
                     }
@@ -633,6 +647,93 @@ public enum WebExtensionRequestHandler {
                 "requiresFullApply": summary.requiresFullApply
             ])
             context.completeRequest(returningItems: [response])
+        }
+    }
+
+    private static func handleGetSiteCosmeticFilteringState(message: [String: Any?], context: NSExtensionContext) {
+        let host = (message["host"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let globalEnabled = CosmeticFilteringPreference.isEnabled()
+        let enabled = host.isEmpty
+            ? globalEnabled
+            : CosmeticFilteringPreference.isEnabled(onHost: host)
+        context.completeRequest(returningItems: [createResponse(with: [
+            "ok": true,
+            "enabled": enabled,
+            "globalEnabled": globalEnabled
+        ])])
+    }
+
+    private static func handleSetSiteCosmeticFilteringState(message: [String: Any?], context: NSExtensionContext) {
+        let host = (message["host"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let enabled = message["enabled"] as? Bool ?? true
+        guard let normalizedHost = DisabledSitesNormalizer.normalizedDomain(host) else {
+            context.completeRequest(returningItems: [createResponse(with: ["ok": false, "error": "Invalid host"])])
+            return
+        }
+        guard CosmeticFilteringPreference.isEnabled() else {
+            context.completeRequest(returningItems: [createResponse(with: [
+                "ok": false,
+                "enabled": false,
+                "globalEnabled": false,
+                "error": "Cosmetic filtering is disabled globally"
+            ])])
+            return
+        }
+
+        Task { @MainActor in
+            let previousSites = CosmeticFilteringPreference.sites()
+            let nextSites = CosmeticFilteringPreference.updating(
+                sites: previousSites,
+                enabled: enabled,
+                onHost: normalizedHost
+            )
+            let compiledSites = CosmeticFilteringPreference.compiledSites()
+            let needsFullApplyForEnable = enabled
+                && CosmeticFilteringPreference.requiresFullApply(enablingHost: normalizedHost, compiledSites: compiledSites)
+
+            guard nextSites != previousSites else {
+                context.completeRequest(returningItems: [createResponse(with: [
+                    "ok": true,
+                    "enabled": CosmeticFilteringPreference.isEnabled(onHost: normalizedHost),
+                    "globalEnabled": true,
+                    "changed": false,
+                    "reloadedTargets": 0,
+                    "skippedTargets": 0,
+                    "failedTargets": 0,
+                    "requiresFullApply": needsFullApplyForEnable
+                ])])
+                return
+            }
+
+            CosmeticFilteringPreference.setSites(nextSites)
+            let effectiveDisabledSites = await currentFilterDisabledSites()
+            let cosmeticDisabledSites = CosmeticFilteringPreference.fastPathDisabledSites(
+                isEnabled: true,
+                sites: nextSites,
+                compiledSites: compiledSites
+            )
+            #if os(macOS)
+            let platform: Platform = .macOS
+            #else
+            let platform: Platform = .iOS
+            #endif
+            let summary = await Task.detached(priority: .userInitiated) {
+                await applyDisabledSitesFastPath(
+                    disabledSites: effectiveDisabledSites,
+                    cosmeticDisabledSites: cosmeticDisabledSites,
+                    platform: platform
+                )
+            }.value
+            context.completeRequest(returningItems: [createResponse(with: [
+                "ok": true,
+                "enabled": CosmeticFilteringPreference.isEnabled(onHost: normalizedHost),
+                "globalEnabled": true,
+                "changed": true,
+                "reloadedTargets": summary.reloadedTargets,
+                "skippedTargets": summary.skippedTargets,
+                "failedTargets": summary.failedTargets,
+                "requiresFullApply": summary.requiresFullApply || needsFullApplyForEnable
+            ])])
         }
     }
 
@@ -1118,7 +1219,11 @@ public enum WebExtensionRequestHandler {
         SharedLogFile.append(line, to: sharedWebExtensionLogFilename)
     }
 
-    private static func applyDisabledSitesFastPath(disabledSites: [String], platform: Platform) async -> (
+    private static func applyDisabledSitesFastPath(
+        disabledSites: [String],
+        cosmeticDisabledSites: [String]? = nil,
+        platform: Platform
+    ) async -> (
         reloadedTargets: Int,
         skippedTargets: Int,
         failedTargets: Int,
@@ -1137,7 +1242,8 @@ public enum WebExtensionRequestHandler {
                 _ = try ContentBlockerService.fastUpdateDisabledSitesWithOutputChange(
                     groupIdentifier: groupID,
                     targetRulesFilename: target.rulesFilename,
-                    disabledSites: disabledSites
+                    disabledSites: disabledSites,
+                    cosmeticDisabledSites: cosmeticDisabledSites
                 )
                 targetsToReload.append(target)
             } catch let error as CocoaError where error.code == .fileReadCorruptFile {

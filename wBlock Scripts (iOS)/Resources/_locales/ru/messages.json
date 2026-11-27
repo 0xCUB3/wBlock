@@ -277,5 +277,17 @@
   "popup_autoplay_site": {
     "message": "Автовоспроизведение на этом сайте",
     "description": "Label for the per-site autoplay switch; overrides the global default either way."
+  },
+  "popup_more": {
+    "message": "Ещё",
+    "description": "Disclosure button label for additional per-site controls in the popup."
+  },
+  "popup_cosmetic_filtering": {
+    "message": "Косметическая фильтрация",
+    "description": "Label for the per-site cosmetic filtering switch inside the popup's More section."
+  },
+  "popup_cosmetic_filtering_off_globally": {
+    "message": "Косметическая фильтрация отключена в настройках.",
+    "description": "Hint shown under the cosmetic filtering switch when cosmetic filtering is disabled globally in Settings."
   }
 }

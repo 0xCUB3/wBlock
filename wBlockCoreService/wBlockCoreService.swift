@@ -635,9 +635,17 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         containerURL.appendingPathComponent("\(targetRulesFilename)\(publishedOutputStateFileSuffix)")
     }
 
-    private static func disabledSitesDigest(_ disabledSites: [String]) -> String {
+    private static func disabledSitesDigest(
+        _ disabledSites: [String],
+        cosmeticDisabledSites: [String] = []
+    ) -> String {
         let normalized = DisabledSitesNormalizer.normalizedDomains(from: disabledSites)
-        let encoded = (try? JSONEncoder().encode(normalized)) ?? Data()
+        let normalizedCosmetic = FilterListSiteExclusion.normalizedDomains(from: cosmeticDisabledSites)
+        if normalizedCosmetic.isEmpty {
+            let encoded = (try? JSONEncoder().encode(normalized)) ?? Data()
+            return DigestSupport.sha256Hex(encoded)
+        }
+        let encoded = (try? JSONEncoder().encode([normalized, normalizedCosmetic])) ?? Data()
         return DigestSupport.sha256Hex(encoded)
     }
 
@@ -1597,6 +1605,7 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
     private static func finalizeAndSaveContentBlockerResult(
         baseJSON: Data,
         disabledSites: [String],
+        cosmeticDisabledSites: [String] = [],
         knownBaseCount: Int? = nil,
         ruleLimit: Int = safariContentBlockerRuleLimit,
         groupIdentifier: String,
@@ -1608,6 +1617,7 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         let finalized = finalizeContentBlockerJSON(
             baseJSON: baseJSON,
             disabledSites: disabledSites,
+            cosmeticDisabledSites: cosmeticDisabledSites,
             knownBaseCount: knownBaseCount,
             ruleLimit: ruleLimit
         )
@@ -1961,10 +1971,13 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         groupIdentifier: String,
         targetRulesFilename: String,
         disabledSites: [String],
+        cosmeticDisabledSites: [String]? = nil,
         containerURL explicitContainerURL: URL? = nil,
         allowTruncation: Bool = false
     ) throws -> (safariRulesCount: Int, truncatedRuleCount: Int, advancedRulesText: String?, outputChanged: Bool) {
         let sitesToUse = disabledSites
+        let cosmeticSitesToUse = cosmeticDisabledSites
+            ?? CosmeticFilteringPreference.currentFastPathDisabledSites(groupIdentifier: groupIdentifier)
 
         guard let containerURL = explicitContainerURL ?? FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: groupIdentifier
@@ -1991,7 +2004,7 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
             throw CocoaError(.fileReadCorruptFile)
         }
 
-        let sitesDigest = disabledSitesDigest(sitesToUse)
+        let sitesDigest = disabledSitesDigest(sitesToUse, cosmeticDisabledSites: cosmeticSitesToUse)
         let currentBaseIdentity = outputIdentity(baseURL)
         if let publishedState = loadPublishedOutputState(targetRulesFilename: targetRulesFilename, containerURL: containerURL),
            publishedState.schema == publishedOutputStateSchema,
@@ -2028,6 +2041,7 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         let finalized = try finalizeAndSaveContentBlockerResult(
             baseJSON: baseJSON,
             disabledSites: sitesToUse,
+            cosmeticDisabledSites: cosmeticSitesToUse,
             knownBaseCount: baseCount,
             groupIdentifier: groupIdentifier,
             targetRulesFilename: targetRulesFilename,
@@ -2410,6 +2424,7 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
     public static func finalizeContentBlockerJSON(
         baseJSON: Data,
         disabledSites: [String],
+        cosmeticDisabledSites: [String] = [],
         knownBaseCount: Int? = nil,
         ruleLimit: Int = safariContentBlockerRuleLimit
     ) -> (json: Data, ruleCount: Int, truncatedRuleCount: Int) {
@@ -2417,9 +2432,22 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         let sites = Array(
             DisabledSitesNormalizer.normalizedDomains(from: disabledSites).prefix(limit)
         )
+        let candidateCosmetic = FilterListSiteExclusion.normalizedDomains(from: cosmeticDisabledSites)
+            .filter { !CosmeticFilteringPreference.matchesHost($0, entries: sites) }
+        let hasLeadingCosmetic = !candidateCosmetic.isEmpty
+            && ContentBlockerRuleArray.leadingCssDisplayNoneEnd(baseJSON) != nil
+        let cosmeticSites = hasLeadingCosmetic
+            ? Array(candidateCosmetic.prefix(max(limit - sites.count, 0)))
+            : []
+        let injectedCount = sites.count + cosmeticSites.count
         let baseCount = knownBaseCount ?? ContentBlockerRuleArray.count(baseJSON) ?? 0
 
-        guard !sites.isEmpty else {
+        func injectAll(into json: Data) -> Data {
+            let withCosmetic = injectCosmeticIgnoreRules(into: json, cosmeticDisabledSites: cosmeticSites)
+            return injectIgnoreRulesForDisabledSites(json: withCosmetic, disabledSites: sites)
+        }
+
+        guard injectedCount > 0 else {
             if baseCount <= limit {
                 return (baseJSON, baseCount, 0)
             }
@@ -2429,20 +2457,20 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
             return (baseJSON, min(baseCount, limit), max(0, baseCount - limit))
         }
 
-        if baseCount + sites.count <= limit {
+        if baseCount + injectedCount <= limit {
             return (
-                injectIgnoreRulesForDisabledSites(json: baseJSON, disabledSites: sites),
-                baseCount + sites.count,
+                injectAll(into: baseJSON),
+                baseCount + injectedCount,
                 0
             )
         }
 
-        let maxBase = max(limit - sites.count, 0)
+        let maxBase = max(limit - injectedCount, 0)
         guard let truncated = ContentBlockerRuleArray.truncated(baseJSON, to: maxBase) else {
             if baseCount <= maxBase {
                 return (
-                    injectIgnoreRulesForDisabledSites(json: baseJSON, disabledSites: sites),
-                    baseCount + sites.count,
+                    injectAll(into: baseJSON),
+                    baseCount + injectedCount,
                     0
                 )
             }
@@ -2450,8 +2478,8 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         }
 
         return (
-            injectIgnoreRulesForDisabledSites(json: truncated.json, disabledSites: sites),
-            truncated.ruleCount + sites.count,
+            injectAll(into: truncated.json),
+            truncated.ruleCount + injectedCount,
             max(0, baseCount - truncated.ruleCount)
         )
     }
@@ -2484,6 +2512,32 @@ www.youtube.com#%#//scriptlet('trusted-youtube-backoff-recovery')
         let sharedFileURL = appGroupURL.appendingPathComponent(filename)
         try FilterArtifactStorage.write(Data(contents.utf8), to: sharedFileURL)
         os_log(.info, "Successfully saved rules to %@", sharedFileURL.path)
+    }
+
+    private static func cosmeticDisabledSiteIgnoreRuleJSON(for site: String) -> String {
+        let trimmedSite = site.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let pattern = FilterListSiteExclusion.wildcardTopURLPattern(trimmedSite) {
+            return "{\"action\":{\"type\":\"ignore-previous-rules\"},\"trigger\":{\"url-filter\":\".*\",\"resource-type\":[\"document\"],\"if-top-url\":[\"\(escapeForJSONString(pattern))\"]}}"
+        }
+        let wildcardDomain = trimmedSite.hasPrefix("*") ? trimmedSite : "*\(trimmedSite)"
+        let escapedDomain = escapeForJSONString(wildcardDomain)
+        return "{\"action\":{\"type\":\"ignore-previous-rules\"},\"trigger\":{\"url-filter\":\".*\",\"resource-type\":[\"document\"],\"if-domain\":[\"\(escapedDomain)\"]}}"
+    }
+
+    /// Inserts cosmetic-only `ignore-previous-rules` right after the leading
+    /// `css-display-none` prefix (`Tier::GenericHide`) so network rules that
+    /// follow stay active on those sites.
+    private static func injectCosmeticIgnoreRules(into json: Data, cosmeticDisabledSites: [String]) -> Data {
+        guard !cosmeticDisabledSites.isEmpty,
+              let prefixEnd = ContentBlockerRuleArray.leadingCssDisplayNoneEnd(json)
+        else { return json }
+        let rules = Data(cosmeticDisabledSites.map { cosmeticDisabledSiteIgnoreRuleJSON(for: $0) }.joined(separator: ",").utf8)
+        var result = Data(capacity: json.count + rules.count + 1)
+        result.append(json.prefix(prefixEnd))
+        result.append(0x2C)
+        result.append(rules)
+        result.append(json.suffix(from: prefixEnd))
+        return result
     }
 
     private static func disabledSiteIgnoreRuleJSON(for site: String) -> String {

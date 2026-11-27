@@ -1303,6 +1303,7 @@
         "getBlockingPausedState", "getResumeRequestStatus", "resumeBlocking", "openApp",
         "getSiteDisabledState", "setSiteDisabledState", "setSiteZapperDisabled",
         "getSiteFilterDisabledState", "setSiteFilterDisabledState", "setUserScriptsSiteDisabled", "setAllSiteComponentsDisabled",
+        "getSiteCosmeticFilteringState", "setSiteCosmeticFilteringState",
         "getPageUserScripts", "setUserScriptSiteDisabledState", "getNoAutoplayState",
         "setNoAutoplaySiteAllowed", "setNoAutoplayEnabled"
       ]);

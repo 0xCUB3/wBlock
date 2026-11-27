@@ -277,5 +277,17 @@
   "popup_autoplay_site": {
     "message": "Bu sitede otomatik oynatma",
     "description": "Label for the per-site autoplay switch; overrides the global default either way."
+  },
+  "popup_more": {
+    "message": "Daha Fazla",
+    "description": "Disclosure button label for additional per-site controls in the popup."
+  },
+  "popup_cosmetic_filtering": {
+    "message": "Kozmetik Filtreleme",
+    "description": "Label for the per-site cosmetic filtering switch inside the popup's More section."
+  },
+  "popup_cosmetic_filtering_off_globally": {
+    "message": "Kozmetik filtreleme Ayarlar'da kapalı.",
+    "description": "Hint shown under the cosmetic filtering switch when cosmetic filtering is disabled globally in Settings."
   }
 }

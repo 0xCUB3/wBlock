@@ -1211,6 +1211,7 @@ extension AppFilterManager {
                     self.lastApplySucceeded = true
                     self.persistUpgradeRebuildSignature()
                     self.clearFailedUpgradeRebuildSignature()
+                    CosmeticFilteringPreference.recordCompiledSites(runSnapshot.cosmeticSites)
                 } else {
                     // Leftover downloads of turned-off lists need another apply.
                     self.markNonSelectionChangesPending()

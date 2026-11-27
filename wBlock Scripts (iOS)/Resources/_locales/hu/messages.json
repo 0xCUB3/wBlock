@@ -277,5 +277,17 @@
   "popup_autoplay_site": {
     "message": "Automatikus lejátszás ezen a webhelyen",
     "description": "Label for the per-site autoplay switch; overrides the global default either way."
+  },
+  "popup_more": {
+    "message": "Továbbiak",
+    "description": "Disclosure button label for additional per-site controls in the popup."
+  },
+  "popup_cosmetic_filtering": {
+    "message": "Kozmetikai szűrés",
+    "description": "Label for the per-site cosmetic filtering switch inside the popup's More section."
+  },
+  "popup_cosmetic_filtering_off_globally": {
+    "message": "A kozmetikai szűrés ki van kapcsolva a Beállításokban.",
+    "description": "Hint shown under the cosmetic filtering switch when cosmetic filtering is disabled globally in Settings."
   }
 }

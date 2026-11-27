@@ -138,6 +138,12 @@ const requiredIds = [
   "no-autoplay-enabled-toggle",
   "no-autoplay-site-row",
   "no-autoplay-site-toggle",
+  "more-section",
+  "more-toggle",
+  "more-panel",
+  "cosmetic-site-row",
+  "cosmetic-site-toggle",
+  "cosmetic-site-hint",
   "paused-prompt",
   "paused-prompt-message",
   "paused-prompt-title",
@@ -160,16 +166,18 @@ const requiredIds = [
   "zapper-rules-toggle",
 ];
 for (const id of requiredIds) elements.set(id, makeElement("div", id));
-for (const id of ["enable-toggle", "no-autoplay-enabled-toggle", "no-autoplay-site-toggle", "userscripts-toggle", "zapper-enabled-toggle"]) {
+for (const id of ["enable-toggle", "no-autoplay-enabled-toggle", "no-autoplay-site-toggle", "cosmetic-site-toggle", "userscripts-toggle", "zapper-enabled-toggle"]) {
   elements.get(id).localName = "input";
   elements.get(id).tagName = "INPUT";
 }
-for (const id of ["resume-blocking", "update-filters", "zapper-activate", "zapper-clear", "zapper-rules-toggle"]) {
+for (const id of ["resume-blocking", "update-filters", "zapper-activate", "zapper-clear", "zapper-rules-toggle", "more-toggle"]) {
   elements.get(id).localName = "button";
   elements.get(id).tagName = "BUTTON";
 }
 elements.get("userscripts-panel").hidden = true;
 elements.get("zapper-rules-panel").hidden = true;
+elements.get("more-panel").hidden = true;
+elements.get("cosmetic-site-hint").hidden = true;
 
 const storage = new Map();
 const nativeMessages = [];
@@ -193,6 +201,9 @@ let zapperMutationResponse = { ok: true, disabled: true };
 let zapperRules = [];
 let noAutoplayGlobalEnabled = true;
 let noAutoplaySiteAllowedOverride = null;
+let cosmeticGlobalEnabled = true;
+let cosmeticSiteEnabled = true;
+let cosmeticRequiresFullApply = false;
 let siteStateHook = null;
 const tabListeners = { activated: [], updated: [] };
 const sandbox = {
@@ -252,6 +263,20 @@ const sandbox = {
         }
         if (message?.action === "setUserScriptSiteDisabledState") return { ok: true };
         if (message?.action === "setSiteZapperDisabled") return zapperMutationResponse;
+        if (message?.action === "getSiteCosmeticFilteringState") {
+          return { ok: true, enabled: cosmeticGlobalEnabled && cosmeticSiteEnabled, globalEnabled: cosmeticGlobalEnabled };
+        }
+        if (message?.action === "setSiteCosmeticFilteringState") {
+          cosmeticSiteEnabled = message.enabled === true;
+          return {
+            ok: true,
+            enabled: cosmeticGlobalEnabled && cosmeticSiteEnabled,
+            globalEnabled: cosmeticGlobalEnabled,
+            changed: true,
+            failedTargets: 0,
+            requiresFullApply: cosmeticRequiresFullApply,
+          };
+        }
         return { ok: true };
       },
     },
@@ -511,5 +536,50 @@ sandbox.document.hidden = false;
 for (const listener of documentListeners.get("visibilitychange") || []) listener();
 await settle();
 check("a hidden popup catches up once shown", elements.get("site-host").textContent === "background.test");
+
+// More disclosure + per-site Cosmetic Filtering toggle (#1163).
+filterDisabled = false;
+whitelisted = false;
+componentsDisabled = false;
+paused = false;
+cosmeticGlobalEnabled = true;
+cosmeticSiteEnabled = true;
+await sandbox.__refreshPopupForTest();
+await settle();
+check("More panel starts collapsed", elements.get("more-panel").hidden === true);
+elements.get("more-toggle").dispatchEvent({ type: "click" });
+await settle();
+check("clicking More expands the panel", elements.get("more-panel").hidden === false && elements.get("more-toggle").getAttribute("aria-expanded") === "true");
+check("Cosmetic Filtering switch is on and enabled when active",
+  elements.get("cosmetic-site-toggle").checked === true
+  && elements.get("cosmetic-site-toggle").disabled === false
+  && elements.get("cosmetic-site-hint").hidden === true);
+
+const reloadsBeforeCosmetic = reloads.length;
+const clearsBeforeCosmetic = runtimeMessages.filter((m) => m.action === "wblock:clearCache").length;
+elements.get("cosmetic-site-toggle").checked = false;
+elements.get("cosmetic-site-toggle").dispatchEvent({ type: "change" });
+await settle();
+check("toggling Cosmetic Filtering off sends native mutation, clears cache, and reloads tab",
+  nativeMessages.some((m) => m.action === "setSiteCosmeticFilteringState" && m.enabled === false)
+  && runtimeMessages.filter((m) => m.action === "wblock:clearCache").length > clearsBeforeCosmetic
+  && reloads.length > reloadsBeforeCosmetic
+  && elements.get("cosmetic-site-toggle").checked === false);
+
+cosmeticGlobalEnabled = false;
+await sandbox.__refreshPopupForTest();
+await settle();
+check("global Cosmetic Filtering off locks switch and shows Settings hint",
+  elements.get("cosmetic-site-toggle").checked === false
+  && elements.get("cosmetic-site-toggle").disabled === true
+  && elements.get("cosmetic-site-hint").hidden === false);
+
+cosmeticGlobalEnabled = true;
+filterDisabled = true;
+await sandbox.__refreshPopupForTest();
+await settle();
+check("Content Filtering off on this site locks the Cosmetic Filtering switch",
+  elements.get("cosmetic-site-toggle").disabled === true
+  && elements.get("cosmetic-site-hint").hidden === true);
 
 if (failures > 0) process.exitCode = 1;

@@ -277,5 +277,17 @@
   "popup_autoplay_site": {
     "message": "在此網站自動播放",
     "description": "Label for the per-site autoplay switch; overrides the global default either way."
+  },
+  "popup_more": {
+    "message": "更多",
+    "description": "Disclosure button label for additional per-site controls in the popup."
+  },
+  "popup_cosmetic_filtering": {
+    "message": "元素隱藏過濾",
+    "description": "Label for the per-site cosmetic filtering switch inside the popup's More section."
+  },
+  "popup_cosmetic_filtering_off_globally": {
+    "message": "已在設定中關閉元素隱藏過濾。",
+    "description": "Hint shown under the cosmetic filtering switch when cosmetic filtering is disabled globally in Settings."
   }
 }

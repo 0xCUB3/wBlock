@@ -196,6 +196,30 @@ final class ResumeCount: @unchecked Sendable { var count = 0 }
             )
           ]
         }
+      case "cosmeticSite":
+        return values.map { e -> Values in
+          let host = "example.com"
+          var sites = CosmeticFilteringPreference.Sites(
+            selectedSites: e.b("inSelected") ? [host] : [],
+            excludedSites: e.b("inExcluded") ? [host] : []
+          )
+          sites.onlySelectedSites = e.b("onlySelected")
+          let globalOn = e.b("globalOn")
+          let targetOn = e.b("targetOn")
+          let before = CosmeticFilteringPreference.isEnabled(onHost: host, isEnabled: globalOn, sites: sites)
+          let updated = CosmeticFilteringPreference.updating(sites: sites, enabled: targetOn, onHost: host)
+          let after = CosmeticFilteringPreference.isEnabled(onHost: host, isEnabled: globalOn, sites: updated)
+          let compiled: CosmeticFilteringPreference.Sites? = e.b("hasCompiled")
+            ? (e.b("compiledAllows") ? .all : CosmeticFilteringPreference.Sites(excludedSites: [host]))
+            : nil
+          return [
+            "before": before,
+            "after": after,
+            "afterExcluded": CosmeticFilteringPreference.matchesHost(host, entries: updated.excludedSites),
+            "afterSelected": CosmeticFilteringPreference.matchesHost(host, entries: updated.selectedSites ?? []),
+            "fullApply": targetOn && CosmeticFilteringPreference.requiresFullApply(enablingHost: host, compiledSites: compiled),
+          ]
+        }
       case "custom", "remote":
         return values.map { e -> Values in
           if suite == "custom" {

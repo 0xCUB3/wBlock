@@ -253,6 +253,33 @@ decision('filterDueCheck', {force:bool, pending:bool, hasExpiry:bool, lastChecke
     e => ({due: e.force.or(e.force.not())}),
   ]);
 
+// CosmeticFilteringPreference per-site toggle: global off locks site off; in all-sites mode excluded lists turn
+// a host off; in selected-only mode selected lists turn a host on; toggling sets the requested per-site state
+// and only enabling a host stripped at compile time requires a full apply.
+decision('cosmeticSite', booleans('globalOn','onlySelected','inExcluded','inSelected','targetOn','hasCompiled','compiledAllows'),
+  ({globalOn,onlySelected,inExcluded,inSelected,targetOn,hasCompiled,compiledAllows}) => {
+    const before = globalOn.and(onlySelected.and(inSelected).or(onlySelected.not().and(inExcluded.not())));
+    const afterExcluded = onlySelected.and(inExcluded).or(onlySelected.not().and(targetOn.not()));
+    const afterSelected = onlySelected.not().and(inSelected).or(onlySelected.and(targetOn));
+    const after = globalOn.and(onlySelected.and(afterSelected).or(onlySelected.not().and(afterExcluded.not())));
+    const fullApply = targetOn.and(hasCompiled.not().or(compiledAllows.not()));
+    return {before, after, afterExcluded, afterSelected, fullApply};
+  }, m => [
+    m.law('global cosmetic off disables every site before and after', ({globalOn}) => globalOn.not(), o => o.before.not().and(o.after.not())),
+    m.law('toggling sets the site to the requested state when global is on', ({globalOn}) => globalOn, (o,e) => iff(o.after, e.targetOn)),
+    m.law('all-sites mode preserves selectedSites untouched', ({onlySelected}) => onlySelected.not(), (o,e) => iff(o.afterSelected, e.inSelected)),
+    m.law('selected-only mode preserves excludedSites untouched', ({onlySelected}) => onlySelected, (o,e) => iff(o.afterExcluded, e.inExcluded)),
+    m.law('disabling a site never requires a full apply', ({targetOn}) => targetOn.not(), o => o.fullApply.not()),
+    m.law('re-enabling a site compiled as allowed never requires a full apply', ({targetOn,hasCompiled,compiledAllows}) => targetOn.and(hasCompiled, compiledAllows), o => o.fullApply.not()),
+  ], [
+    e => ({after: e.targetOn}),
+    e => ({after: e.globalOn.and(e.targetOn.not())}),
+    e => ({afterSelected: e.targetOn}),
+    e => ({afterExcluded: e.targetOn.not()}),
+    e => ({fullApply: e.hasCompiled.not().or(e.compiledAllows.not())}),
+    e => ({fullApply: e.targetOn}),
+  ]);
+
 export const upload = rule('deferred uploads').inputs({take:bool,syncing:bool,trigger:nat}).state({pending:0,kind:0,value:0});
 const uploadStep = ({take,syncing,trigger,pending}) => ({
   pending:when(take,0,when(syncing,trigger.plus(1),pending)), kind:when(take,2,when(syncing,1,0)),

@@ -277,5 +277,17 @@
   "popup_autoplay_site": {
     "message": "이 사이트에서 자동 재생",
     "description": "Label for the per-site autoplay switch; overrides the global default either way."
+  },
+  "popup_more": {
+    "message": "더 보기",
+    "description": "Disclosure button label for additional per-site controls in the popup."
+  },
+  "popup_cosmetic_filtering": {
+    "message": "요소 숨김 필터링",
+    "description": "Label for the per-site cosmetic filtering switch inside the popup's More section."
+  },
+  "popup_cosmetic_filtering_off_globally": {
+    "message": "설정에서 요소 숨김 필터링이 꺼져 있습니다.",
+    "description": "Hint shown under the cosmetic filtering switch when cosmetic filtering is disabled globally in Settings."
   }
 }

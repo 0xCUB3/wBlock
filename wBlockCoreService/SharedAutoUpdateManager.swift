@@ -1616,6 +1616,9 @@ public actor SharedAutoUpdateManager {
             if helperStagedUpdates {
                 await ProtobufDataManager.shared.setAutoUpdateForceNext(true)
             } else if fullyApplied {
+                if rebuildSummary != nil {
+                    CosmeticFilteringPreference.recordCompiledSites(CosmeticFilteringPreference.effectiveSites())
+                }
                 await ProtobufDataManager.shared.setAutoUpdateLastSuccessfulTime(Int64(successTime))
             }
             if helperStagedUpdates || fullyApplied {
