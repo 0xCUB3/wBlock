@@ -321,6 +321,48 @@ struct RedirectDNRRuleTests {
 
         expectEqual(generated.summary.resourceRedirectRules, 3, "summary counts both stand-ins and uritransform redirects")
         expectEqual(generated.summary.skippedRules, 10, "all incompatible uritransform rules reported as skipped")
+
+        // Issue #1176: user-defined RegexRedirectPreference rules (including slash-delimited
+        // regex patterns and $N capture groups, plus raw patterns and disabled/invalid rules).
+        let mediumRule = RegexRedirectPreference.Rule(
+            pattern: #"/^https?:\/\/(?:www\.)?(?:[a-z0-9]+\.)?medium\.com\/(.*)$/"#,
+            replacement: "https://scribe.rawbit.ninja/$1",
+            isEnabled: true,
+            isDocumentOnly: true
+        )
+        let rawRule = RegexRedirectPreference.Rule(
+            pattern: #"^https?://old\.example/([^/]+)/(.*)$"#,
+            replacement: #"https://new.example/\2/$1"#,
+            isEnabled: true,
+            isDocumentOnly: false
+        )
+        let disabledRule = RegexRedirectPreference.Rule(
+            pattern: #"^https?://disabled\.example/(.*)$"#,
+            replacement: "https://other.example/$1",
+            isEnabled: false
+        )
+        let invalidRule = RegexRedirectPreference.Rule(
+            pattern: #"/[unterminated/"#,
+            replacement: "https://other.example/$1",
+            isEnabled: true
+        )
+        expect(RegexRedirectPreference.validationError(pattern: mediumRule.pattern, replacement: mediumRule.replacement) == nil, "medium rule validates")
+        expect(RegexRedirectPreference.validationError(pattern: invalidRule.pattern, replacement: invalidRule.replacement) != nil, "invalid regex rejected")
+
+        let customGenerated = RemoveParamDNRRuleGenerator.generateRules(
+            from: "",
+            regexRedirects: [mediumRule, rawRule, disabledRule, invalidRule]
+        )
+        expectEqual(customGenerated.rules.count, 2, "only enabled valid regex redirect rules emit")
+        let emittedMedium = customGenerated.rules.first { $0.action.redirect?.regexSubstitution == #"https://scribe.rawbit.ninja/\1"# }
+        expect(emittedMedium != nil, "Medium -> Scribe rule emitted with \\1 capture group")
+        expectEqual(emittedMedium?.condition.regexFilter, #"^https?://(?:www\.)?(?:[a-z0-9]+\.)?medium\.com/(.*)$"#, "slash-delimited regex unescapes \\/")
+        expectEqual(emittedMedium?.condition.resourceTypes, ["main_frame"], "document-only regex redirect scopes to main_frame")
+        expectEqual(emittedMedium?.condition.isUrlFilterCaseSensitive, true, "slash-delimited regex without /i preserves case sensitivity")
+
+        let emittedRaw = customGenerated.rules.first { $0.action.redirect?.regexSubstitution == #"https://new.example/\2/\1"# }
+        expect(emittedRaw != nil, "raw regex redirect mixes \\2 and $1 cleanly")
+        expectEqual(emittedRaw?.condition.resourceTypes, nil, "all-requests redirect leaves resourceTypes nil")
     }
 
     static func expect(_ condition: Bool, _ message: String) {

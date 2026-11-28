@@ -63,7 +63,7 @@ struct SiteSettingsView: View {
 
     var body: some View {
         page
-        .pageTitle("Site Settings")
+        .pageTitle("Website Settings")
         .modifier(SitePageToolbar(
             canUndo: !undoStack.isEmpty && !isMutationInFlight,
             canRedo: !redoStack.isEmpty && !isMutationInFlight,

@@ -948,28 +948,31 @@ extension RemoveParamDNRRuleGenerator {
         replacement = normalizeEscapedSeparator(replacement, separator: "$")
         replacement = normalizeEscapedSeparator(replacement, separator: ",")
 
-        var substitution = ""
-        substitution.reserveCapacity(replacement.count)
-        var index = replacement.startIndex
-        while index < replacement.endIndex {
-            if replacement[index] == "$" {
-                let digitsStart = replacement.index(after: index)
-                var digitsEnd = digitsStart
-                while digitsEnd < replacement.endIndex,
-                      replacement[digitsEnd].isASCII, replacement[digitsEnd].isNumber {
-                    digitsEnd = replacement.index(after: digitsEnd)
-                }
-                if digitsEnd > digitsStart {
-                    substitution.append("\\")
-                    substitution.append(contentsOf: replacement[digitsStart..<digitsEnd])
-                    index = digitsEnd
-                    continue
-                }
-            }
-            substitution.append(replacement[index])
-            index = replacement.index(after: index)
+        return RegexRedirectPreference.rewriteDollarCaptureGroups(replacement)
+    }
+
+    /// Compiles a user-defined `RegexRedirectPreference.Rule` into a Safari DNR
+    /// `regexSubstitution` redirect rule.
+    static func regexRedirectDeclarativeRule(for rule: RegexRedirectPreference.Rule) -> DeclarativeRule? {
+        guard rule.isEnabled,
+              let parsed = RegexRedirectPreference.parsedRegexFilter(from: rule.pattern),
+              let substitution = RegexRedirectPreference.normalizedSubstitution(from: rule.replacement)
+        else { return nil }
+
+        var condition = RuleCondition()
+        condition.regexFilter = parsed.filter
+        if parsed.isCaseSensitive {
+            condition.isUrlFilterCaseSensitive = true
         }
-        return substitution
+        if rule.isDocumentOnly {
+            condition.resourceTypes = ["main_frame"]
+        }
+        return DeclarativeRule(
+            id: 0,
+            priority: uriTransformPriority,
+            action: RuleAction(type: "redirect", redirect: Redirect(regexSubstitution: substitution)),
+            condition: condition
+        )
     }
 
     static func uriTransformRule(for line: URITransformLine) -> DeclarativeRule? {

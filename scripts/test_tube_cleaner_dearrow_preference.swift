@@ -39,7 +39,7 @@ struct TubeCleanerDeArrowPreferenceTests {
         )
         expect(configured.hasSuffix("window.__probe = true;"), "script content was not preserved")
         expect(
-            configured.contains("\nconst __wblockTubeCleanerFeatures = {\"backgroundPlayback\":true,\"captions\":true,\"chapters\":true,\"hideShorts\":false,\"pictureInPicture\":true,\"resumePosition\":true,\"sponsorBlock\":true,\"toolbar\":true};\n"),
+            configured.contains("\nconst __wblockTubeCleanerFeatures = {\"backgroundPlayback\":true,\"captions\":true,\"chapters\":true,\"disableAutoplay\":false,\"disableStableVolume\":false,\"hideShorts\":false,\"pictureInPicture\":true,\"resumePosition\":true,\"sponsorBlock\":true,\"toolbar\":true};\n"),
             "default features constant must be prepended (#671): \(configured.prefix(400))"
         )
         var features = TubeCleanerDeArrowPreference.Features()
@@ -56,8 +56,12 @@ struct TubeCleanerDeArrowPreferenceTests {
         expect(!legacy.chapters && !legacy.hideShorts, "older saved features must decode without resetting")
         var shortsHidden = TubeCleanerDeArrowPreference.Features()
         shortsHidden.hideShorts = true
-        expect(shortsHidden.allEnabled && shortsHidden.disabledCount == 0, "hiding Shorts is not a disabled feature")
-        expect(TubeCleanerDeArrowPreference.configuredExecutableContent("x", settings: settings, features: shortsHidden).contains("\"hideShorts\":true"), "Shorts preference reaches the script")
+        shortsHidden.disableAutoplay = true
+        shortsHidden.disableStableVolume = true
+        expect(shortsHidden.allEnabled && shortsHidden.disabledCount == 0, "opt-in switches are not disabled features")
+        let configuredOptIn = TubeCleanerDeArrowPreference.configuredExecutableContent("x", settings: settings, features: shortsHidden)
+        expect(configuredOptIn.contains("\"hideShorts\":true"), "Shorts preference reaches the script")
+        expect(configuredOptIn.contains("\"disableAutoplay\":true") && configuredOptIn.contains("\"disableStableVolume\":true"), "autoplay and stable volume preferences reach the script")
         print("PASS: Tube Cleaner DeArrow preference")
     }
 

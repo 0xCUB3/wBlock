@@ -240,12 +240,10 @@ struct BasicFiltersView: View {
             scrollOffset = offset
             onHeroVisibilityChange(offset < 110)
         }
-        #if os(iOS)
         .refreshable {
             guard !filterManager.isLoading else { return }
             await filterManager.checkForUpdates(scope: .filters, presentation: .refresh, autoApply: true)
         }
-        #endif
         .infoPresentation(item: $peekBundle) { bundle in
             BasicBundlePeekView(
                 bundle: bundle,
@@ -628,11 +626,6 @@ struct BasicFiltersView: View {
                                 .foregroundStyle(.primary)
                                 .fixedSize(horizontal: false, vertical: true)
                                 .infoPopoverAnchor(bundle.id, capturesClicks: false)
-                            if choice == .cookies {
-                                Text("Recommended")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
                             if state == .partlyOn {
                                 Text("Custom")
                                     .font(.caption2.weight(.semibold))

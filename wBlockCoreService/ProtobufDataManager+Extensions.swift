@@ -334,13 +334,14 @@ extension ProtobufDataManager {
         data.whitelist.lastUpdated = Int64(Date().timeIntervalSince1970)
     }
 
-    /// The combined switch derives its state from the independent component preferences.
+    /// The combined switch derives its state from the blocking components
+    /// (filtering, userscripts, and element zapper). Per-site autoplay is
+    /// independent so toggling autoplay never flips wBlock on/off (#1175).
     public func areAllSiteComponentsDisabled(onHost host: String) -> Bool {
         HostMatcher.isHostDisabled(host: host, disabledSites: disabledSites)
             || (HostMatcher.isHostDisabled(host: host, disabledSites: filterDisabledSites)
                 && areUserScriptsDisabled(onHost: host)
-                && isZapperDisabled(forHost: host)
-                && isAutoplayAllowed(onHost: host))
+                && isZapperDisabled(forHost: host))
     }
 
     /// One disk transaction keeps a failed save from changing only some components.
@@ -363,9 +364,6 @@ extension ProtobufDataManager {
             Self.setSiteDisabled(disabled, onHost: host, in: &data.whitelist.filterDisabledSites, includingParents: !removedExactWhitelistEntry)
             Self.setSiteDisabled(disabled, onHost: host, in: &data.whitelist.userScriptsDisabledSites, includingParents: !removedExactWhitelistEntry)
             Self.setZapperRulesDisabled(disabled, forHost: host, in: &data)
-            // Turning wBlock off on a site lets autoplay play; turning it back on
-            // restores the global autoplay policy rather than forcing blocking on (#1136).
-            Self.setAutoplayAllowed(disabled ? true : !data.whitelist.noAutoplayEnabled, onHost: host, in: &data)
         }
         if saved { UserScriptManager.invalidateDocumentStartExecutionCache() }
         return saved && !HostMatcher.isHostDisabled(host: host, disabledSites: disabledSites)

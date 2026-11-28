@@ -36,6 +36,7 @@ struct WBlockBackup: Codable, Sendable {
     var globalPrivacyControlEnabled: Bool?
     var filtersShowEnabledOnly: Bool?
     var userScriptsShowEnabledOnly: Bool?
+    var regexRedirectRules: [RegexRedirectPreference.Rule]?
     struct FilterSelection: Codable, Sendable {
         var url: String
         var isSelected: Bool
@@ -233,7 +234,8 @@ struct WBlockBackup: Codable, Sendable {
         darkReaderFollowsSystemAppearance: Bool? = nil,
         globalPrivacyControlEnabled: Bool? = nil,
         filtersShowEnabledOnly: Bool? = nil,
-        userScriptsShowEnabledOnly: Bool? = nil
+        userScriptsShowEnabledOnly: Bool? = nil,
+        regexRedirectRules: [RegexRedirectPreference.Rule]? = nil
     ) {
         self.version = version
         self.createdAt = createdAt
@@ -262,6 +264,7 @@ struct WBlockBackup: Codable, Sendable {
         self.globalPrivacyControlEnabled = globalPrivacyControlEnabled
         self.filtersShowEnabledOnly = filtersShowEnabledOnly
         self.userScriptsShowEnabledOnly = userScriptsShowEnabledOnly
+        self.regexRedirectRules = regexRedirectRules
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -285,7 +288,7 @@ struct WBlockBackup: Codable, Sendable {
         case appearance
         case cosmeticFilteringEnabled, cosmeticFilteringSites, tubeCleanerFeatures, tubeCleanerDeArrow, playerCleanerFeatures
         case darkReaderFollowsSystemAppearance, globalPrivacyControlEnabled
-        case filtersShowEnabledOnly, userScriptsShowEnabledOnly
+        case filtersShowEnabledOnly, userScriptsShowEnabledOnly, regexRedirectRules
     }
 
     init(from decoder: Decoder) throws {
@@ -317,6 +320,7 @@ struct WBlockBackup: Codable, Sendable {
         globalPrivacyControlEnabled = try container.decodeIfPresent(Bool.self, forKey: .globalPrivacyControlEnabled)
         filtersShowEnabledOnly = try container.decodeIfPresent(Bool.self, forKey: .filtersShowEnabledOnly)
         userScriptsShowEnabledOnly = try container.decodeIfPresent(Bool.self, forKey: .userScriptsShowEnabledOnly)
+        regexRedirectRules = try container.decodeIfPresent([RegexRedirectPreference.Rule].self, forKey: .regexRedirectRules)
     }
 }
 
@@ -631,7 +635,8 @@ enum BackupManager {
             darkReaderFollowsSystemAppearance: DarkReaderAppearancePreference.followsSystemAppearance(),
             globalPrivacyControlEnabled: filterManager.dataManager.isGlobalPrivacyControlEnabled,
             filtersShowEnabledOnly: UserDefaults.standard.bool(forKey: ListDisplayOrder.filtersEnabledOnlyKey),
-            userScriptsShowEnabledOnly: ProtobufDataManager.shared.getUserScriptShowEnabledOnly()
+            userScriptsShowEnabledOnly: ProtobufDataManager.shared.getUserScriptShowEnabledOnly(),
+            regexRedirectRules: RegexRedirectPreference.rules()
         )
     }
 
@@ -785,6 +790,9 @@ enum BackupManager {
         }
         if let enabledOnly = backup.userScriptsShowEnabledOnly {
             ProtobufDataManager.shared.setUserScriptShowEnabledOnly(enabledOnly)
+        }
+        if let redirects = backup.regexRedirectRules {
+            RegexRedirectPreference.setRules(redirects)
         }
 
         // 7. Mark unapplied changes so user can apply

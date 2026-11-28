@@ -61,10 +61,10 @@ struct AppTabView<Filters: View, Userscripts: View, Settings: View, Accessory: V
         TabView(selection: $selection.value) {
             filters
                 .tag(0)
-                .tabItem { Label("Filters", systemImage: "list.bullet.rectangle") }
+                .tabItem { Label("Filters", systemImage: "shield.lefthalf.filled") }
             userscripts
                 .tag(1)
-                .tabItem { Label(secondTabTitle, systemImage: "doc.text.fill") }
+                .tabItem { Label(secondTabTitle, systemImage: "puzzlepiece.extension") }
             settings
                 .tag(2)
                 .tabItem { Label("Settings", systemImage: "gear") }
@@ -81,12 +81,12 @@ struct AppTabView<Filters: View, Userscripts: View, Settings: View, Accessory: V
     private var iosTabs: some View {
         if #available(iOS 18.0, *) {
             TabView(selection: $selection.value) {
-                Tab("Filters", systemImage: "list.bullet.rectangle", value: 0) {
+                Tab("Filters", systemImage: "shield.lefthalf.filled", value: 0) {
                     NavigationStack {
                         filters.background(tabBarLayoutReconciler)
                     }
                 }
-                Tab(secondTabTitle, systemImage: "doc.text.fill", value: 1) {
+                Tab(secondTabTitle, systemImage: "puzzlepiece.extension", value: 1) {
                     NavigationStack {
                         userscripts.background(tabBarLayoutReconciler)
                     }
@@ -101,10 +101,10 @@ struct AppTabView<Filters: View, Userscripts: View, Settings: View, Accessory: V
             TabView(selection: $selection.value) {
                 NavigationStack { filters }
                     .tag(0)
-                    .tabItem { Label("Filters", systemImage: "list.bullet.rectangle") }
+                    .tabItem { Label("Filters", systemImage: "shield.lefthalf.filled") }
                 NavigationStack { userscripts }
                     .tag(1)
-                    .tabItem { Label(secondTabTitle, systemImage: "doc.text.fill") }
+                    .tabItem { Label(secondTabTitle, systemImage: "puzzlepiece.extension") }
                 NavigationStack { settings }
                     .tag(2)
                     .tabItem { Label("Settings", systemImage: "gear") }
@@ -114,11 +114,11 @@ struct AppTabView<Filters: View, Userscripts: View, Settings: View, Accessory: V
                 NavigationView { filters }
                     .navigationViewStyle(StackNavigationViewStyle())
                     .tag(0)
-                    .tabItem { Label("Filters", systemImage: "list.bullet.rectangle") }
+                    .tabItem { Label("Filters", systemImage: "shield.lefthalf.filled") }
                 NavigationView { userscripts }
                     .navigationViewStyle(StackNavigationViewStyle())
                     .tag(1)
-                    .tabItem { Label(secondTabTitle, systemImage: "doc.text.fill") }
+                    .tabItem { Label(secondTabTitle, systemImage: "puzzlepiece.extension") }
                 NavigationView { settings }
                     .navigationViewStyle(StackNavigationViewStyle())
                     .tag(2)

@@ -216,9 +216,26 @@ public enum RemoveParamDNRRuleGenerator {
         from rulesText: String,
         redirectSources: [String] = [],
         scopedRedirectSources: Set<Int> = [],
+        regexRedirects: [RegexRedirectPreference.Rule] = [],
         disabledSites: [String] = []
     ) -> (rules: [DeclarativeRule], summary: Summary) {
         let resolvedRedirects = resourceRedirectRules(fromSources: redirectSources, scopedSources: scopedRedirectSources)
+        let customRegexRedirectRules: [DeclarativeRule] = {
+            var rules: [DeclarativeRule] = []
+            var seen = Set<Data>()
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.sortedKeys]
+            for existing in resolvedRedirects.rules {
+                if let key = try? encoder.encode(existing) { seen.insert(key) }
+            }
+            for entry in regexRedirects {
+                guard let rule = regexRedirectDeclarativeRule(for: entry) else { continue }
+                if let key = try? encoder.encode(rule), seen.insert(key).inserted {
+                    rules.append(rule)
+                }
+            }
+            return rules
+        }()
         let disabledRules = makeDisabledSiteAllowRules(
             disabledSites,
             startingID: ruleIDBase,
@@ -240,7 +257,7 @@ public enum RemoveParamDNRRuleGenerator {
         // Resource replacements and URL transforms stand in ahead of query
         // stripping when the budget is tight; their allow exceptions stay in
         // `protectiveRules` so truncation never widens redirects.
-        for rule in resolvedRedirects.rules {
+        for rule in customRegexRedirectRules + resolvedRedirects.rules {
             generatedSourceRuleCount += 1
             if sourceRulesInOrder.count < maxGeneratedRules {
                 sourceRulesInOrder.append(rule)
@@ -344,6 +361,7 @@ public enum RemoveParamDNRRuleGenerator {
         disabledSites: [String],
         blockedCount: Bool,
         groupIdentifier: String,
+        regexRedirects: [RegexRedirectPreference.Rule]? = nil,
         containerURL explicitContainerURL: URL? = nil
     ) throws -> Summary {
         generationLock.lock()
@@ -353,11 +371,18 @@ public enum RemoveParamDNRRuleGenerator {
         ) else {
             throw CocoaError(.fileNoSuchFile)
         }
+        let resolvedRegexRedirects = regexRedirects ?? RegexRedirectPreference.rules(groupIdentifier: groupIdentifier)
         return try FileLock.withLock(
             at: containerURL.appendingPathComponent(saveLockFilename, isDirectory: false),
             timeout: saveLockTimeoutSeconds
         ) {
-            try saveRulesLocked(for: filters, disabledSites: disabledSites, blockedCount: blockedCount, containerURL: containerURL)
+            try saveRulesLocked(
+                for: filters,
+                disabledSites: disabledSites,
+                blockedCount: blockedCount,
+                regexRedirects: resolvedRegexRedirects,
+                containerURL: containerURL
+            )
         }
     }
 
@@ -365,10 +390,15 @@ public enum RemoveParamDNRRuleGenerator {
         for filters: [FilterList],
         disabledSites: [String],
         blockedCount: Bool,
+        regexRedirects: [RegexRedirectPreference.Rule],
         containerURL: URL
     ) throws -> Summary {
         let inputKey = generationInputKey(
-            for: filters, disabledSites: disabledSites, blockedCount: blockedCount, containerURL: containerURL
+            for: filters,
+            disabledSites: disabledSites,
+            blockedCount: blockedCount,
+            regexRedirects: regexRedirects,
+            containerURL: containerURL
         )
         if let saved = savedGeneration(containerURL: containerURL), saved.inputKey == inputKey,
            rulesFilesExist(containerURL: containerURL) {
@@ -388,6 +418,7 @@ public enum RemoveParamDNRRuleGenerator {
             from: extracted.removeParam,
             redirectSources: extracted.redirectSources,
             scopedRedirectSources: extracted.scopedRedirectSources,
+            regexRedirects: regexRedirects,
             disabledSites: disabledSites
         )
         try? FileManager.default.removeItem(at: containerURL.appendingPathComponent(generationStateFilename))
@@ -442,7 +473,7 @@ public enum RemoveParamDNRRuleGenerator {
     }
 
     /// Bump when the generator's output changes for the same inputs.
-    private static let generationSchema = 10
+    private static let generationSchema = 11
     private static let generationStateFilename = "dnr-generation-state.json"
 
     private final class BuildMarker {}
@@ -452,6 +483,7 @@ public enum RemoveParamDNRRuleGenerator {
         for filters: [FilterList],
         disabledSites: [String],
         blockedCount: Bool,
+        regexRedirects: [RegexRedirectPreference.Rule],
         containerURL: URL
     ) -> String {
         let bundle = Bundle(for: BuildMarker.self)
@@ -460,6 +492,13 @@ public enum RemoveParamDNRRuleGenerator {
         canonical += "blocked=\(blockedCount ? blockedCountExtractionFormat : 0)\n"
         canonical += "redirect=\(redirectExtractionFormat)|\(compatibilityRedirectLines)\n"
         canonical += "disabled=\(disabledSites.joined(separator: "\n"))\n"
+        if !regexRedirects.isEmpty {
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.sortedKeys]
+            if let data = try? encoder.encode(regexRedirects), let json = String(data: data, encoding: .utf8) {
+                canonical += "regexRedirects=\(json)\n"
+            }
+        }
         for filter in filters {
             guard let sourceURL = ContentBlockerIncrementalCache.existingLocalFileURL(
                 for: filter,

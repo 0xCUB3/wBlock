@@ -156,18 +156,14 @@ struct ElementZapperSettingsView: View {
                 .lineLimit(1)
                 .truncationMode(.tail)
             Spacer()
-            HStack(spacing: 0) {
+            HStack(spacing: 4) {
                 Button {
                     editingRule = RuleSelection(domain: domain, rule: rule)
                 } label: {
                     Image(systemName: "pencil.circle.fill")
                         .foregroundStyle(.secondary)
                         .scaledSystemFont(size: 18)
-                        #if os(macOS)
-                        .frame(minWidth: 28)
-                        #else
-                        .frame(minWidth: 44, minHeight: 44)
-                        #endif
+                        .frame(minWidth: 28, minHeight: 28)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -179,11 +175,7 @@ struct ElementZapperSettingsView: View {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundStyle(.secondary)
                         .scaledSystemFont(size: 18)
-                        #if os(macOS)
-                        .frame(minWidth: 28)
-                        #else
-                        .frame(minWidth: 44, minHeight: 44)
-                        #endif
+                        .frame(minWidth: 28, minHeight: 28)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)

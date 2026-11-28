@@ -152,11 +152,9 @@ struct BasicExtrasView: View {
             .frame(maxWidth: 680)
             .frame(maxWidth: .infinity)
         }
-        #if os(iOS)
         .refreshable {
             await onRefresh()
         }
-        #endif
         .alert("Enable Beta Feature?", isPresented: Binding(
             get: { pendingBetaScript != nil },
             set: { if !$0 { pendingBetaScript = nil } }

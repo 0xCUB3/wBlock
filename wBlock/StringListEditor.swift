@@ -70,11 +70,7 @@ struct StringListEditor: View {
             Spacer()
             Button { update(items.filter { $0 != item }) } label: {
                 Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
-                    #if os(macOS)
-                    .frame(minWidth: 28)
-                    #else
-                    .frame(minWidth: 44, minHeight: 44)
-                    #endif
+                    .frame(minWidth: 28, minHeight: 28)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -129,11 +125,7 @@ struct AddItemButton: View {
             Image(systemName: isBusy ? "hourglass" : "plus.circle.fill")
                 .font(.title2)
                 .foregroundStyle(canAdd ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.secondary))
-                #if os(macOS)
                 .frame(minWidth: 28, minHeight: 28)
-                #else
-                .frame(minWidth: 44, minHeight: 44)
-                #endif
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

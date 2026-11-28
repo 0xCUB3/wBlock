@@ -30,6 +30,8 @@ public enum TubeCleanerDeArrowPreference {
         public var resumePosition = true
         public var toolbar = true
         public var hideShorts = false
+        public var disableAutoplay = false
+        public var disableStableVolume = false
 
         public init() {}
 
@@ -47,11 +49,15 @@ public enum TubeCleanerDeArrowPreference {
             resumePosition = try value(.resumePosition, defaults.resumePosition)
             toolbar = try value(.toolbar, defaults.toolbar)
             hideShorts = try value(.hideShorts, defaults.hideShorts)
+            disableAutoplay = try value(.disableAutoplay, defaults.disableAutoplay)
+            disableStableVolume = try value(.disableStableVolume, defaults.disableStableVolume)
         }
 
         public var allEnabled: Bool {
             var features = self
             features.hideShorts = false
+            features.disableAutoplay = false
+            features.disableStableVolume = false
             return features == Features()
         }
         public var disabledCount: Int {

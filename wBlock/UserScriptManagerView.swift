@@ -1474,6 +1474,8 @@ struct TubeCleanerFeaturesPicker: View {
             Toggle("Quality and Audio Toolbar", isOn: $features.toolbar)
             Divider()
             Toggle("Hide Shorts", isOn: $features.hideShorts)
+            Toggle("Disable Autoplay", isOn: $features.disableAutoplay)
+            Toggle("Disable Stable Volume", isOn: $features.disableStableVolume)
         } label: {
             UserScriptSettingsPill(title: Text(summary), systemImage: "slider.horizontal.3")
         }

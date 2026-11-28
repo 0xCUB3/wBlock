@@ -276,26 +276,9 @@ struct SettingsView: View {
         )
     }
 
-    /// Autoplay and Appearance lead General; the site pages follow under
-    /// Websites (#999).
     @ViewBuilder
     private var generalSection: some View {
         Section {
-            Toggle(isOn: autoplayBinding) {
-                rowLabel(
-                    "Autoplay",
-                    detail: Text("Turn this on to allow video and audio playback without user action.")
-                )
-            }
-            if !ProtobufDataManager.safariHasGlobalPrivacyControl {
-                Toggle(isOn: globalPrivacyControlBinding) {
-                    rowLabel(
-                        "Global Privacy Control",
-                        detail: Text("Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it. Enabling GPC may make your browser easier to fingerprint.")
-                            + Text(" ") + Text(gpcLearnMore)
-                    )
-                }
-            }
             appearancePicker
             #if os(iOS)
             if PortraitOrientationLock.isAvailable {
@@ -307,6 +290,22 @@ struct SettingsView: View {
                     }
             }
             #endif
+
+            Toggle(isOn: showAllListsBinding) {
+                rowLabel(
+                    "Show All Lists",
+                    detail: Text("Shows every filter list and userscript, with search, reordering, custom lists, and a manual Apply button.")
+                )
+            }
+
+            Toggle(isOn: blockedRequestCountBinding) {
+                rowLabel(
+                    "Blocked Request Count",
+                    detail: Text("Shows on the toolbar icon how many requests wBlock blocked on the current page. Only some blocks are counted.")
+                )
+            }
+
+            openSafariSettingsButton
         } header: {
             #if os(macOS)
             if appMode == .advanced {
@@ -375,8 +374,28 @@ struct SettingsView: View {
                 SiteSettingsView(filterManager: filterManager)
                     .swipeBackNavigationCompat()
             } label: {
-                SettingsRowLabel("Site Settings", systemImage: "globe", accessory: .push)
+                SettingsRowLabel("Website Settings", systemImage: "globe", accessory: .push)
             }
+
+            Toggle(isOn: autoplayBinding) {
+                rowLabel(
+                    "Autoplay",
+                    detail: Text("Turn this on to allow video and audio playback without user action.")
+                )
+            }
+
+            if !ProtobufDataManager.safariHasGlobalPrivacyControl {
+                Toggle(isOn: globalPrivacyControlBinding) {
+                    rowLabel(
+                        "Global Privacy Control",
+                        detail: Text("Global Privacy Control asks websites not to sell or share your personal information. Some places require sites to honor it. Enabling GPC may make your browser easier to fingerprint.")
+                            + Text(" ") + Text(gpcLearnMore)
+                    )
+                }
+            }
+
+            cosmeticFilteringControls
+                .leadingAlignedListRowSeparatorCompat()
 
             NavigationLink {
                 ElementZapperSettingsView(filterManager: filterManager)
@@ -385,7 +404,12 @@ struct SettingsView: View {
                 SettingsRowLabel("Element Zapper", systemImage: "wand.and.stars", accessory: .push)
             }
 
-            openSafariSettingsButton
+            NavigationLink {
+                RegexRedirectsView(filterManager: filterManager)
+                    .swipeBackNavigationCompat()
+            } label: {
+                SettingsRowLabel("Regex Redirects", systemImage: "arrow.triangle.turn.up.right.circle", accessory: .push)
+            }
         } header: {
             sectionHeader(.websites)
         }
@@ -394,13 +418,6 @@ struct SettingsView: View {
     @ViewBuilder
     private var advancedSection: some View {
         Section {
-            Toggle(isOn: showAllListsBinding) {
-                rowLabel(
-                    "Show All Lists",
-                    detail: Text("Shows every filter list and userscript, with search, reordering, custom lists, and a manual Apply button.")
-                )
-            }
-
             NavigationLink {
                 LogsView()
                     .macToolbarTitle("Logs")
@@ -415,19 +432,6 @@ struct SettingsView: View {
             } label: {
                 SettingsRowLabel("Background Diagnostics", systemImage: "stethoscope", accessory: .push)
             }
-
-            cosmeticFilteringControls
-                .leadingAlignedListRowSeparatorCompat()
-
-            // Opt-in and partial, so it sits with the other power-user settings.
-            Toggle(isOn: blockedRequestCountBinding) {
-                rowLabel(
-                    "Blocked Request Count",
-                    detail: Text("Shows on the toolbar icon how many requests wBlock blocked on the current page. Only some blocks are counted.")
-                )
-            }
-
-            backupButtons
         } header: {
             sectionHeader(.advanced)
         }
@@ -748,6 +752,8 @@ struct SettingsView: View {
                 .disabled(syncManager.isSyncing)
                 #endif
             }
+
+            backupButtons
         } header: {
             sectionHeader(.sync)
         } footer: {
@@ -1677,8 +1683,8 @@ enum SettingsSection: Hashable {
         case .general: return "General"
         case .websites: return "Websites"
         case .autoUpdate: return "Auto-Update"
-        case .sync: return "Sync"
-        case .advanced: return "Advanced"
+        case .sync: return "Sync & Backup"
+        case .advanced: return "Diagnostics"
         case .about: return "About"
         case .reset: return "Reset"
         }
